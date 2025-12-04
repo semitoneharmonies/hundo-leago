@@ -1,0 +1,261 @@
+body {
+  margin: 0;
+  background-color: #0f172a;
+  font-family: Arial, sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 40px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 95%;
+  max-width: 1200px;
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  color: white;
+}
+
+h1 {
+  text-align: center;
+  color: #ff4d4f;
+  margin-bottom: 30px;
+}
+
+h2 {
+  border-bottom: 1px solid #334155;
+  padding-bottom: 6px;
+}
+
+a {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+input {
+  padding: 8px;
+  margin: 5px 5px 5px 0;
+  border-radius: 6px;
+  border: none;
+}
+
+button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  margin: 5px 5px 5px 0;
+  background: #334155;
+  color: white;
+}
+
+button:hover {
+  background: #475569;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+li {
+  margin-bottom: 6px;
+}
+
+/* ---------- Layout columns ---------- */
+.columns {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* each column will take equal space, but never smaller than 280px */
+.columns > .left,
+.columns > .right {
+  flex: 1 1 50%;
+  min-width: 280px;
+}
+
+/* Make sure the container stays centered and comfortable on very wide screens */
+.page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;   /* horizontal centering */
+  align-items: flex-start;   /* align top */
+  padding: 40px 0;           /* optional vertical spacing */
+}
+
+.container {
+  width: 95%;
+  max-width: 1200px;
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  color: white;
+}
+
+
+/* Small screens: stack columns vertically */
+@media (max-width: 880px) {
+  .columns {
+    flex-direction: column;
+  }
+
+  .columns > .left,
+  .columns > .right {
+    min-width: auto;
+  }
+
+  /* Make input fields and buttons full width on small screens */
+  .columns input,
+  .columns button {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  /* Make roster items stack nicely */
+  .roster-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .roster-item button {
+    margin-top: 6px;
+    width: 100%;
+  }
+}
+
+.left, .right {
+  background: #1e293b; /* matches container background or slightly darker */
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+}
+
+input {
+  width: calc(100% - 10px); /* full width minus margin */
+  box-sizing: border-box;
+}
+
+button {
+  background: #2563eb; /* nicer blue */
+  color: white;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+h2 {
+  margin-bottom: 15px;
+}
+
+ul {
+  margin-top: 10px;
+  padding-left: 15px;
+}
+
+li {
+  margin-bottom: 10px;
+}
+
+.roster-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #1e293b; /* matches column background */
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.buyout-button {
+  background-color: #ff4d4f; /* bright red */
+  color: white;
+}
+
+.buyout-button:hover {
+  background-color: #ff6b6b; /* slightly lighter red on hover */
+}
+
+.free-agent-item {
+  background-color: #334155; /* dark blue card */
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.free-agent-item.assigned {
+  background-color: #16a34a; /* green for assigned */
+  color: white;
+}
+
+.free-agent-item button {
+  background-color: #ff4d4f; /* red for actions inside the card */
+  color: white;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.free-agent-item button:hover {
+  background-color: #ff6b6b;
+}
+
+/* Team roster items */
+.roster-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid #334155;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  background: #1e293b;
+}
+
+.roster-item button {
+  background: #475569;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+}
+
+.roster-item button:hover {
+  background: #64748b;
+}
+
+.selected-team {
+  background-color: #334155;  /* dark blue-gray highlight */
+  color: #60a5fa;             /* bright blue text */
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* Drag & drop visuals */
+.roster-row[draggable="true"] {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.roster-row.drag-over {
+  box-shadow: 0 6px 18px rgba(96,165,250,0.12);
+  transform: translateY(-4px);
+  border-color: #60a5fa;
+}
+
