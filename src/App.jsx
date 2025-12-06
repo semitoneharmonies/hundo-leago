@@ -252,99 +252,153 @@ const [selectedSnapshotId, setSelectedSnapshotId] = useState("");
   const [auctionDetailsPlayer, setAuctionDetailsPlayer] = useState(null);
 const [hasLoaded, setHasLoaded] = useState(false);
 
+// ---- Load league from backend (with fallback + seeding) ----
+async function loadLeagueFromBackend() {
+  let loadedFromServer = false;
+
+  try {
+    console.log("[LOAD] Fetching league from backend:", API_URL);
+    const res = await fetch(API_URL);
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log("[LOAD] Backend responded with:", data);
+
+      let stateToUse = data;
+
+      // 🧊 If backend is "empty" (first time deploy), seed it with defaults
+      const isEmpty =
+        !data.teams || !Array.isArray(data.teams) || data.teams.length === 0;
+
+      if (isEmpty) {
+        console.log(
+          "[LOAD] Backend has no teams yet. Seeding with initialTeams."
+        );
+        const seeded = {
+          teams: initialTeams,
+          freeAgents: [],
+          leagueLog: [],
+          tradeProposals: [],
+          nextAuctionDeadline: getNextSundayDeadline(),
+        };
+
+        stateToUse = seeded;
+
+        // Try to POST this default state back to backend so everyone shares it
+        try {
+          await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...seeded,
+              nextAuctionDeadline: seeded.nextAuctionDeadline.toISOString(),
+            }),
+          });
+          console.log("[LOAD] Seeded backend with default league state.");
+        } catch (err) {
+          console.warn("[LOAD] Failed to seed backend with defaults", err);
+        }
+      }
+
+      // Apply state from backend (or seeded defaults)
+      setTeams(stateToUse.teams || []);
+      setFreeAgents(stateToUse.freeAgents || []);
+      setLeagueLog(stateToUse.leagueLog || []);
+      setTradeProposals(stateToUse.tradeProposals || []);
+
+      if (stateToUse.nextAuctionDeadline) {
+        setNextAuctionDeadline(new Date(stateToUse.nextAuctionDeadline));
+      } else {
+        const deadline = getNextSundayDeadline();
+        setNextAuctionDeadline(deadline);
+      }
+
+      // Cache locally as backup
+      try {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            teams: stateToUse.teams || [],
+            freeAgents: stateToUse.freeAgents || [],
+            leagueLog: stateToUse.leagueLog || [],
+            tradeProposals: stateToUse.tradeProposals || [],
+            nextAuctionDeadline: (
+              stateToUse.nextAuctionDeadline
+                ? new Date(stateToUse.nextAuctionDeadline)
+                : getNextSundayDeadline()
+            ).toISOString(),
+          })
+        );
+      } catch (err) {
+        console.error("[LOAD] Failed to cache league state locally", err);
+      }
+
+      loadedFromServer = true;
+    } else {
+      console.warn(
+        "[LOAD] Backend responded with non-OK status:",
+        res.status,
+        res.statusText
+      );
+    }
+  } catch (err) {
+    console.warn(
+      "[LOAD] Failed to reach backend, will fall back to localStorage/defaults",
+      err
+    );
+  }
+
+  // 🔁 Fallback: localStorage, then hardcoded defaults
+  if (!loadedFromServer) {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        console.log("[LOAD] Loaded state from localStorage:", data);
+
+        setTeams(data.teams && Array.isArray(data.teams) ? data.teams : initialTeams);
+        setFreeAgents(data.freeAgents || []);
+        setLeagueLog(data.leagueLog || []);
+        setTradeProposals(data.tradeProposals || []);
+        if (data.nextAuctionDeadline) {
+          setNextAuctionDeadline(new Date(data.nextAuctionDeadline));
+        } else {
+          setNextAuctionDeadline(getNextSundayDeadline());
+        }
+      } else {
+        console.log(
+          "[LOAD] No localStorage backup found. Using frontend defaults."
+        );
+        setTeams(initialTeams);
+        setFreeAgents([]);
+        setLeagueLog([]);
+        setTradeProposals([]);
+        setNextAuctionDeadline(getNextSundayDeadline());
+      }
+    } catch (err) {
+      console.error(
+        "[LOAD] Failed to load from localStorage. Using pure defaults.",
+        err
+      );
+      setTeams(initialTeams);
+      setFreeAgents([]);
+      setLeagueLog([]);
+      setTradeProposals([]);
+      setNextAuctionDeadline(getNextSundayDeadline());
+    }
+  }
+
+  setHasLoaded(true);
+  console.log("[LOAD] Initial load complete, hasLoaded = true");
+}
 
   // ---- Load saved league from localStorage (if any) ----
   // ---- Load saved league from backend (with localStorage fallback) ----
+// Load league data from backend on startup
 useEffect(() => {
-  const load = async () => {
-    let loadedFromServer = false;
-
-    try {
-      console.log("[LOAD] Trying backend first:", API_URL);
-      const res = await fetch(API_URL);
-      if (res.ok) {
-        const data = await res.json();
-        console.log("[LOAD] Backend responded with state:", data);
-
-        if (data.teams && Array.isArray(data.teams)) {
-          setTeams(data.teams);
-        }
-        if (data.freeAgents && Array.isArray(data.freeAgents)) {
-          setFreeAgents(data.freeAgents);
-        }
-        if (data.leagueLog && Array.isArray(data.leagueLog)) {
-          setLeagueLog(data.leagueLog);
-        }
-        if (data.tradeProposals && Array.isArray(data.tradeProposals)) {
-          setTradeProposals(data.tradeProposals);
-        }
-        if (data.nextAuctionDeadline) {
-          setNextAuctionDeadline(new Date(data.nextAuctionDeadline));
-        }
-
-        // cache locally as backup
-        try {
-          window.localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(data)
-          );
-        } catch (err) {
-          console.error("[LOAD] Failed to cache league state locally", err);
-        }
-
-        loadedFromServer = true;
-      } else {
-        console.warn(
-          "[LOAD] Backend responded with non-OK status, falling back to localStorage:",
-          res.status,
-          res.statusText
-        );
-      }
-    } catch (err) {
-      console.warn(
-        "[LOAD] Failed to reach backend, falling back to localStorage",
-        err
-      );
-    }
-
-    if (!loadedFromServer) {
-      // 2) Fallback: localStorage
-      try {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const data = JSON.parse(raw);
-          console.log("[LOAD] Loaded state from localStorage:", data);
-
-          if (data.teams && Array.isArray(data.teams)) {
-            setTeams(data.teams);
-          }
-          if (data.freeAgents && Array.isArray(data.freeAgents)) {
-            setFreeAgents(data.freeAgents);
-          }
-          if (data.leagueLog && Array.isArray(data.leagueLog)) {
-            setLeagueLog(data.leagueLog);
-          }
-          if (data.tradeProposals && Array.isArray(data.tradeProposals)) {
-            setTradeProposals(data.tradeProposals);
-          }
-          if (data.nextAuctionDeadline) {
-            setNextAuctionDeadline(new Date(data.nextAuctionDeadline));
-          }
-        } else {
-          console.log("[LOAD] No localStorage backup found. Using frontend defaults.");
-        }
-      } catch (err) {
-        console.error("[LOAD] Failed to load league state from localStorage", err);
-      }
-    }
-
-    // ✅ IMPORTANT: mark that initial load is finished
-    setHasLoaded(true);
-    console.log("[LOAD] Initial load complete, hasLoaded = true");
-  };
-
-  load();
+  loadLeagueFromBackend();
 }, []);
+
 
 
 
