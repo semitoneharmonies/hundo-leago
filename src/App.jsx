@@ -1396,6 +1396,45 @@ const handleRestoreSnapshot = async () => {
     alert("Error restoring snapshot. Check console for details.");
   }
 };
+// Create a new snapshot on the backend, then refresh the list
+const handleCreateSnapshot = async () => {
+  try {
+    setSnapshotsError("");
+    setSnapshotsLoading(true);
+
+    // ⬇️ Adjust URL if your backend path is slightly different
+    const res = await fetch(
+      `${BACKEND_BASE_URL}/api/snapshots`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // If your backend expects no body, you can remove "body"
+        body: JSON.stringify({
+          reason: "Manual snapshot from commissioner",
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(`Snapshot creation failed: ${res.status}`);
+    }
+
+    // Optional: you can read the response if it returns the snapshot
+    // const data = await res.json();
+
+    // Refresh list so the new snapshot appears in the dropdown
+    await fetchSnapshots();
+
+    alert("Snapshot created successfully.");
+  } catch (err) {
+    console.error("[Snapshots] Failed to create snapshot", err);
+    setSnapshotsError("Failed to create snapshot. Please try again.");
+  } finally {
+    setSnapshotsLoading(false);
+  }
+};
 
   const commissionerAddPlayer = () => {
     if (!currentUser || currentUser.role !== "commissioner") return;
@@ -3491,60 +3530,70 @@ return (
                   </p>
 
                   <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "6px",
-                      alignItems: "center",
-                      marginTop: "6px",
-                    }}
-                  >
-                    <select
-                      value={selectedSnapshotId}
-                      onChange={(e) =>
-                        setSelectedSnapshotId(e.target.value)
-                      }
-                      style={{ minWidth: "260px" }}
-                    >
-                      <option value="">Select snapshot…</option>
-                      {snapshots.map((s) => {
-                        const label = new Date(
-                          s.createdAt
-                        ).toLocaleString();
-                        return (
-                          <option key={s.id} value={s.id}>
-                            {label} ({s.id})
-                          </option>
-                        );
-                      })}
-                    </select>
+  style={{
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "6px",
+    alignItems: "center",
+    marginTop: "6px",
+  }}
+>
+  {/* NEW: create snapshot button */}
+  <button
+    onClick={handleCreateSnapshot}
+    disabled={snapshotsLoading}
+    style={{ padding: "4px 10px", fontSize: "0.8rem" }}
+  >
+    {snapshotsLoading ? "Working…" : "Create snapshot now"}
+  </button>
 
-                    <button
-                      onClick={fetchSnapshots}
-                      disabled={snapshotsLoading}
-                      style={{ padding: "4px 10px", fontSize: "0.8rem" }}
-                    >
-                      {snapshotsLoading ? "Refreshing…" : "Refresh list"}
-                    </button>
+  <select
+    value={selectedSnapshotId}
+    onChange={(e) =>
+      setSelectedSnapshotId(e.target.value)
+    }
+    style={{ minWidth: "260px" }}
+  >
+    <option value="">Select snapshot…</option>
+    {snapshots.map((s) => {
+      const label = new Date(
+        s.createdAt
+      ).toLocaleString();
+      return (
+        <option key={s.id} value={s.id}>
+          {label} ({s.id})
+        </option>
+      );
+    })}
+  </select>
 
-                    <button
-                      onClick={handleRestoreSnapshot}
-                      disabled={!selectedSnapshotId}
-                      style={{
-                        padding: "4px 10px",
-                        fontSize: "0.8rem",
-                        backgroundColor: selectedSnapshotId
-                          ? "#b91c1c"
-                          : "#4b5563",
-                        color: "#f9fafb",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: selectedSnapshotId ? "pointer" : "default",
-                      }}
-                    >
-                      Restore snapshot
-                    </button>
-                  </div>
+  <button
+    onClick={fetchSnapshots}
+    disabled={snapshotsLoading}
+    style={{ padding: "4px 10px", fontSize: "0.8rem" }}
+  >
+    {snapshotsLoading ? "Working…" : "Refresh list"}
+  </button>
+
+  <button
+    onClick={handleRestoreSnapshot}
+    disabled={!selectedSnapshotId}
+    style={{
+      padding: "4px 10px",
+      fontSize: "0.8rem",
+      backgroundColor: selectedSnapshotId
+        ? "#b91c1c"
+        : "#4b5563",
+      color: "#f9fafb",
+      border: "none",
+      borderRadius: "4px",
+      cursor: selectedSnapshotId ? "pointer" : "default",
+    }}
+  >
+    Restore snapshot
+  </button>
+</div>
+
 
                   {snapshotsError && (
                     <p
