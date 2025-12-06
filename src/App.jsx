@@ -2223,6 +2223,21 @@ const handleManagerProfileImageChange = (e) => {
       );
     }
   }
+  // ---- Enforce retained-salary slots (max 3 per team) ----
+  const fromRetentionAfter = countRetentionSpots(newFromTeam);
+  const toRetentionAfter = countRetentionSpots(newToTeam);
+
+  if (fromRetentionAfter > 3 || toRetentionAfter > 3) {
+    let msg = "This trade would exceed the 3 retained-salary slots rule:\n\n";
+    if (fromRetentionAfter > 3) {
+      msg += `${fromName} would have ${fromRetentionAfter} retained-salary players (max 3).\n`;
+    }
+    if (toRetentionAfter > 3) {
+      msg += `${toName} would have ${toRetentionAfter} retained-salary players (max 3).\n`;
+    }
+    alert(msg.trim());
+    return;
+  }
 
   // ---- Post-trade legality checks ----
   const issues = [];
@@ -3609,57 +3624,94 @@ return (
                 buyouts: [...(toTeamObj.buyouts || [])],
               };
 
-              const offeredNames = tradeDraft.offeredPlayers;
-              const requestedNames = tradeDraft.requestedPlayers;
+             const offeredNames = tradeDraft.offeredPlayers;
+const requestedNames = tradeDraft.requestedPlayers;
 
-              const offeredObjs = previewFrom.roster.filter((p) =>
-                offeredNames.includes(p.name)
-              );
-              const requestedObjs = previewTo.roster.filter((p) =>
-                requestedNames.includes(p.name)
-              );
+const offeredObjs = previewFrom.roster.filter((p) =>
+  offeredNames.includes(p.name)
+);
+const requestedObjs = previewTo.roster.filter((p) =>
+  requestedNames.includes(p.name)
+);
 
-              // Apply salary retention from fromTeam
-              const retentionMap = tradeDraft.retentionFrom || {};
-              const retainedEntries = [];
-              const adjustedOffered = offeredObjs.map((player) => {
-                const raw = retentionMap[player.name];
-                if (raw == null || raw === "") return player;
+// --- Salary retention in preview (both sides) ---
+const retentionFromDraftMap = tradeDraft.retentionFrom || {};
+const retentionToDraftMap = tradeDraft.retentionTo || {};
 
-                const amt = Number(raw);
-                if (!amt || amt <= 0) return player;
+const retainedFromEntries = [];
+const retainedToEntries = [];
 
-                const maxAllowed = Math.floor(player.salary * 0.5);
-                const applied = Math.min(amt, maxAllowed);
-                if (applied <= 0) return player;
+// fromTeam retains salary on players it sends out
+const adjustedOffered = offeredObjs.map((player) => {
+  const raw = retentionFromDraftMap[player.name];
+  if (raw == null || raw === "") return player;
 
-                retainedEntries.push({
-                  player: `${player.name} (retained in trade)`,
-                  penalty: applied,
-                  retained: true,
-                });
+  const amt = Number(raw);
+  if (!amt || amt <= 0) return player;
 
-                return {
-                  ...player,
-                  salary: Math.max(0, player.salary - applied),
-                };
-              });
+  const maxAllowed = Math.floor(player.salary * 0.5);
+  const applied = Math.min(amt, maxAllowed);
+  if (applied <= 0) return player;
 
-              previewFrom.buyouts = [
-                ...(previewFrom.buyouts || []),
-                ...retainedEntries,
-              ];
+  retainedFromEntries.push({
+    player: `${player.name} (retained in trade)`,
+    penalty: applied,
+    retained: true,
+  });
 
-              // Move players
-              previewFrom.roster = previewFrom.roster.filter(
-                (p) => !offeredNames.includes(p.name)
-              );
-              previewTo.roster = previewTo.roster.filter(
-                (p) => !requestedNames.includes(p.name)
-              );
+  return {
+    ...player,
+    salary: Math.max(0, player.salary - applied),
+  };
+});
 
-              previewFrom.roster.push(...requestedObjs);
-              previewTo.roster.push(...adjustedOffered);
+// toTeam retains salary on players it sends out (requested players)
+const adjustedRequested = requestedObjs.map((player) => {
+  const raw = retentionToDraftMap[player.name];
+  if (raw == null || raw === "") return player;
+
+  const amt = Number(raw);
+  if (!amt || amt <= 0) return player;
+
+  const maxAllowed = Math.floor(player.salary * 0.5);
+  const applied = Math.min(amt, maxAllowed);
+  if (applied <= 0) return player;
+
+  retainedToEntries.push({
+    player: `${player.name} (retained in trade)`,
+    penalty: applied,
+    retained: true,
+  });
+
+  return {
+    ...player,
+    salary: Math.max(0, player.salary - applied),
+  };
+});
+
+// Attach retained-salary buyouts to the correct teams
+previewFrom.buyouts = [
+  ...(previewFrom.buyouts || []),
+  ...retainedFromEntries,
+];
+previewTo.buyouts = [
+  ...(previewTo.buyouts || []),
+  ...retainedToEntries,
+];
+
+// Move players
+previewFrom.roster = previewFrom.roster.filter(
+  (p) => !offeredNames.includes(p.name)
+);
+previewTo.roster = previewTo.roster.filter(
+  (p) => !requestedNames.includes(p.name)
+);
+
+// After retention, adjusted salaries travel with the player
+previewFrom.roster.push(...adjustedRequested);
+previewTo.roster.push(...adjustedOffered);
+
+
 
               // Apply buyout penalty transfers (same logic as accept handler)
               const penaltyFromDraft =
