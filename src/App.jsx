@@ -300,11 +300,29 @@ async function loadLeagueFromBackend() {
         }
       }
 
+      // 🧩 Normalize trade proposals from backend
+      const normalizedTrades = (stateToUse.tradeProposals || []).map((tr) => ({
+        ...tr,
+        status: tr.status || "pending",
+        penaltyFrom: typeof tr.penaltyFrom === "number"
+          ? tr.penaltyFrom
+          : Number(tr.penaltyFrom || 0),
+        penaltyTo: typeof tr.penaltyTo === "number"
+          ? tr.penaltyTo
+          : Number(tr.penaltyTo || 0),
+        createdAt: tr.createdAt || Date.now(),
+        expiresAt:
+          tr.expiresAt ||
+          (tr.createdAt || Date.now()) + 7 * 24 * 60 * 60 * 1000,
+        retentionFrom: tr.retentionFrom || tr.retention || {},
+        retentionTo: tr.retentionTo || {},
+      }));
+
       // Apply state from backend (or seeded defaults)
       setTeams(stateToUse.teams || []);
       setFreeAgents(stateToUse.freeAgents || []);
       setLeagueLog(stateToUse.leagueLog || []);
-      setTradeProposals(stateToUse.tradeProposals || []);
+      setTradeProposals(normalizedTrades);
 
       if (stateToUse.nextAuctionDeadline) {
         setNextAuctionDeadline(new Date(stateToUse.nextAuctionDeadline));
@@ -321,7 +339,7 @@ async function loadLeagueFromBackend() {
             teams: stateToUse.teams || [],
             freeAgents: stateToUse.freeAgents || [],
             leagueLog: stateToUse.leagueLog || [],
-            tradeProposals: stateToUse.tradeProposals || [],
+            tradeProposals: normalizedTrades,
             nextAuctionDeadline: (
               stateToUse.nextAuctionDeadline
                 ? new Date(stateToUse.nextAuctionDeadline)
@@ -356,10 +374,30 @@ async function loadLeagueFromBackend() {
         const data = JSON.parse(raw);
         console.log("[LOAD] Loaded state from localStorage:", data);
 
-        setTeams(data.teams && Array.isArray(data.teams) ? data.teams : initialTeams);
+        const normalizedTrades = (data.tradeProposals || []).map((tr) => ({
+          ...tr,
+          status: tr.status || "pending",
+          penaltyFrom: typeof tr.penaltyFrom === "number"
+            ? tr.penaltyFrom
+            : Number(tr.penaltyFrom || 0),
+          penaltyTo: typeof tr.penaltyTo === "number"
+            ? tr.penaltyTo
+            : Number(tr.penaltyTo || 0),
+          createdAt: tr.createdAt || Date.now(),
+          expiresAt:
+            tr.expiresAt ||
+            (tr.createdAt || Date.now()) + 7 * 24 * 60 * 60 * 1000,
+          retentionFrom: tr.retentionFrom || tr.retention || {},
+          retentionTo: tr.retentionTo || {},
+        }));
+
+        setTeams(
+          data.teams && Array.isArray(data.teams) ? data.teams : initialTeams
+        );
         setFreeAgents(data.freeAgents || []);
         setLeagueLog(data.leagueLog || []);
-        setTradeProposals(data.tradeProposals || []);
+        setTradeProposals(normalizedTrades);
+
         if (data.nextAuctionDeadline) {
           setNextAuctionDeadline(new Date(data.nextAuctionDeadline));
         } else {
@@ -391,6 +429,7 @@ async function loadLeagueFromBackend() {
   setHasLoaded(true);
   console.log("[LOAD] Initial load complete, hasLoaded = true");
 }
+
 
   // ---- Load saved league from localStorage (if any) ----
   // ---- Load saved league from backend (with localStorage fallback) ----
@@ -4215,6 +4254,167 @@ return (
             </div>
           );
         })()}
+{/* 📨 My Pending Trades (for current user) */}
+{currentUser && (
+  <div
+    style={{
+      marginTop: "20px",
+      padding: "10px",
+      borderRadius: "6px",
+      border: "1px solid #1f2937",
+      background: "#020617",
+    }}
+  >
+    <h3 style={{ marginBottom: "8px", color: "#e5e7eb" }}>
+      My Pending Trades
+    </h3>
+
+    {tradeProposals.filter((tr) => {
+      if (tr.status !== "pending") return false;
+
+      if (currentUser.role === "commissioner") {
+        // Commish sees all pending trades
+        return true;
+      }
+
+      if (currentUser.role === "manager") {
+        return (
+          tr.fromTeam === currentUser.teamName ||
+          tr.toTeam === currentUser.teamName
+        );
+      }
+
+      return false;
+    }).length === 0 && (
+      <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
+        No pending trades for your team.
+      </p>
+    )}
+
+    {tradeProposals
+      .filter((tr) => {
+        if (tr.status !== "pending") return false;
+
+        if (currentUser.role === "commissioner") {
+          return true;
+        }
+
+        if (currentUser.role === "manager") {
+          return (
+            tr.fromTeam === currentUser.teamName ||
+            tr.toTeam === currentUser.teamName
+          );
+        }
+
+        return false;
+      })
+      .map((tr) => {
+        const isProposer =
+          currentUser.role === "manager" &&
+          currentUser.teamName === tr.fromTeam;
+        const isReceiver =
+          currentUser.role === "manager" &&
+          currentUser.teamName === tr.toTeam;
+        const isCommish = currentUser.role === "commissioner";
+
+        const penaltySummaryParts = [];
+        if (tr.penaltyFrom && tr.penaltyFrom > 0) {
+          penaltySummaryParts.push(
+            `${tr.fromTeam} sends $${tr.penaltyFrom} in buyout penalty`
+          );
+        }
+        if (tr.penaltyTo && tr.penaltyTo > 0) {
+          penaltySummaryParts.push(
+            `${tr.toTeam} sends $${tr.penaltyTo} in buyout penalty`
+          );
+        }
+        const penaltySummary =
+          penaltySummaryParts.length > 0
+            ? " (" + penaltySummaryParts.join("; ") + ")"
+            : "";
+
+        return (
+          <div
+            key={tr.id}
+            style={{
+              marginBottom: "8px",
+              padding: "8px",
+              borderRadius: "4px",
+              background: "#020617",
+              border: "1px solid #334155",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              fontSize: "0.85rem",
+            }}
+          >
+            <div>
+              <strong>{tr.fromTeam}</strong> sends{" "}
+              {tr.offeredPlayers.join(", ") || "no players"}{" "}
+              to <strong>{tr.toTeam}</strong> for{" "}
+              {tr.requestedPlayers.join(", ") || "no players"}
+              {penaltySummary && <> {penaltySummary}</>}
+            </div>
+
+            {/* Buttons row */}
+            <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+              {/* Proposing manager can cancel */}
+              {isProposer && tr.status === "pending" && (
+                <button
+                  onClick={() => handleCancelTrade(tr.id)}
+                  style={{
+                    padding: "2px 6px",
+                    fontSize: "0.75rem",
+                    backgroundColor: "#6b7280",
+                    color: "#f9fafb",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+
+              {/* Receiver or commissioner can accept/reject */}
+              {(isReceiver || isCommish) && tr.status === "pending" && (
+                <>
+                  <button
+                    onClick={() => handleAcceptTrade(tr.id)}
+                    style={{
+                      padding: "2px 6px",
+                      fontSize: "0.75rem",
+                      backgroundColor: "#16a34a",
+                      color: "#f9fafb",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleRejectTrade(tr.id)}
+                    style={{
+                      padding: "2px 6px",
+                      fontSize: "0.75rem",
+                      backgroundColor: "#b91c1c",
+                      color: "#f9fafb",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
+  </div>
+)}
 
 
       {/* League-wide activity history */}
