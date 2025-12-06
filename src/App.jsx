@@ -7,8 +7,8 @@ const MIN_FORWARDS = 8;
 const MIN_DEFENSEMEN = 4;
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 const STORAGE_KEY = "hundo-leago-state-v1";
-const API_URL = "http://localhost:4000/api/league"; // change to your real URL when deployed
-const SNAPSHOTS_API_URL = "http://localhost:4000/api/snapshots";
+const API_URL = "https://hundo-leago-backend.onrender.com/api/league";
+const SNAPSHOTS_API_URL = "https://hundo-leago-backend.onrender.com/api/snapshots";
 
 
 

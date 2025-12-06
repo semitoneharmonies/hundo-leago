@@ -72,24 +72,24 @@
           "name": "DeBrincat",
           "salary": 4,
           "position": "F"
-        },
-        {
-          "name": "Pastrnak",
-          "salary": 10,
-          "position": "F"
         }
       ],
       "buyouts": [
         {
-          "player": "Kucherov (retained in trade)",
-          "penalty": 3,
-          "retained": true
+          "player": "Kucherov",
+          "penalty": 4
         }
-      ]
+      ],
+      "profilePic": "blob:https://hundoleago.netlify.app/d8e932a9-6507-41d7-b431-98bdb7cb23f1"
     },
     {
       "name": "El Camino",
       "roster": [
+        {
+          "name": "Pastrnak",
+          "salary": 10,
+          "position": "F"
+        },
         {
           "name": "Suzuki",
           "salary": 8,
@@ -158,11 +158,6 @@
         {
           "name": "Tippett",
           "salary": 1,
-          "position": "F"
-        },
-        {
-          "name": "Kucherov",
-          "salary": 13,
           "position": "F"
         }
       ],
@@ -496,27 +491,25 @@
   "freeAgents": [],
   "leagueLog": [
     {
-      "type": "tradeAccepted",
-      "id": 1764988163896.7183,
-      "fromTeam": "Pacino Amigo",
-      "toTeam": "El Camino",
-      "requestedPlayers": [
-        "Pastrnak"
-      ],
-      "offeredPlayers": [
-        "Kucherov"
-      ],
-      "penaltyFrom": 0,
-      "penaltyTo": 0,
-      "retentionFrom": {
-        "Kucherov": 3
-      },
-      "retentionTo": {},
-      "timestamp": 1764988163896
+      "type": "tradeAutoCancelled",
+      "tradeId": 1764993202131.4663,
+      "reason": "playerMovedOrBoughtOut",
+      "id": 1764993928075.5361,
+      "timestamp": 1764993928075
+    },
+    {
+      "type": "buyout",
+      "team": "Pacino Amigo",
+      "player": "Kucherov",
+      "penalty": 4,
+      "beforeCap": 100,
+      "afterCap": 88,
+      "id": 1764993928075.3723,
+      "timestamp": 1764993928075
     },
     {
       "type": "tradeProposed",
-      "id": 1764988137759.8345,
+      "id": 1764993202131.6814,
       "fromTeam": "Pacino Amigo",
       "toTeam": "El Camino",
       "requestedPlayers": [
@@ -528,15 +521,15 @@
       "penaltyFrom": 0,
       "penaltyTo": 0,
       "retentionFrom": {
-        "Kucherov": 3
+        "Kucherov": 2
       },
       "retentionTo": {},
-      "timestamp": 1764988137759
+      "timestamp": 1764993202131
     }
   ],
   "tradeProposals": [
     {
-      "id": 1764988137759.4155,
+      "id": 1764993202131.4663,
       "fromTeam": "Pacino Amigo",
       "toTeam": "El Camino",
       "requestedPlayers": [
@@ -548,12 +541,13 @@
       "penaltyFrom": 0,
       "penaltyTo": 0,
       "retentionFrom": {
-        "Kucherov": 3
+        "Kucherov": 2
       },
       "retentionTo": {},
-      "status": "accepted",
-      "createdAt": 1764988137759,
-      "expiresAt": 1765592937759
+      "status": "cancelled",
+      "createdAt": 1764993202131,
+      "expiresAt": 1765598002131,
+      "autoCancelled": true
     }
   ],
   "nextAuctionDeadline": "2025-12-08T00:00:00.000Z"
