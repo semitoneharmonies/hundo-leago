@@ -228,6 +228,8 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   // League-wide activity log
   const [leagueLog, setLeagueLog] = useState([]);
   const [historyFilter, setHistoryFilter] = useState("all");
+  const [hasLoaded, setHasLoaded] = useState(false);
+
 // Load league from backend on first page load
 useEffect(() => {
   console.log("[LOAD] Fetching league from backend:", API_URL);
@@ -247,12 +249,46 @@ useEffect(() => {
       if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
       if (Array.isArray(data.leagueLog)) setLeagueLog(data.leagueLog);
       if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
+
+      setHasLoaded(true);
     })
     .catch((err) => {
       console.error("[LOAD] Failed to load league from backend:", err);
+      setHasLoaded(true);
       // If this fails, the app will fall back to your seeded defaults (current behavior)
     });
 }, []);
+// Save current league state to backend
+const saveLeagueToBackend = async (nextState) => {
+  try {
+    const res = await fetch(API_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nextState),
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.error("[SAVE] Failed to save league to backend:", err);
+  }
+};
+// Auto-save whenever league state changes (after initial load)
+useEffect(() => {
+  if (!hasLoaded) return;
+
+  const stateToSave = {
+    teams,
+    tradeProposals,
+    freeAgents,
+    leagueLog,
+    tradeBlock,
+  };
+
+  console.log("[SAVE] Sending league to backend...");
+  saveLeagueToBackend(stateToSave);
+}, [teams, tradeProposals, freeAgents, leagueLog, tradeBlock]);
 
   // --- Helpers ---
 
