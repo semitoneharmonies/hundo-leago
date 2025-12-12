@@ -942,6 +942,26 @@ return (
               alignItems: "flex-start",
             }}
           >
+            <CommissionerPanel
+  currentUser={currentUser}
+  apiUrl={API_URL}
+  teams={teams}
+  setTeams={setTeams}
+  tradeProposals={tradeProposals}
+  setTradeProposals={setTradeProposals}
+  freeAgents={freeAgents}
+  setFreeAgents={setFreeAgents}
+  leagueLog={leagueLog}
+  setLeagueLog={setLeagueLog}
+  tradeBlock={tradeBlock}
+  setTradeBlock={setTradeBlock}
+  onResolveAuctions={handleResolveAuctions}
+  onCommissionerRemoveBid={handleCommissionerRemoveBid}
+  getDefaultLeagueState={getDefaultLeagueState}
+  leagueSettings={leagueSettings}
+  setLeagueSettings={setLeagueSettings}
+/>
+
             {/* LEFT: Roster + internal trade builder summary */}
             <TeamRosterPanel
               team={selectedTeam}
