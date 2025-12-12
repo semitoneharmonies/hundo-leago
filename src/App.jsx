@@ -231,6 +231,8 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   const [leagueLog, setLeagueLog] = useState([]);
   const [historyFilter, setHistoryFilter] = useState("all");
   const [hasLoaded, setHasLoaded] = useState(false);
+const saveTimerRef = useRef(null);
+const lastSavedJsonRef = useRef("");
 
   useEffect(() => {
   const socket = socketIOClient("https://hundo-leago-backend.onrender.com", {
@@ -356,10 +358,14 @@ useEffect(() => {
   if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
   saveTimerRef.current = setTimeout(async () => {
-    console.log("[SAVE] Debounced save…");
-    await saveLeagueToBackend(stateToSave);
-    lastSavedJsonRef.current = json;
-  }, 800);
+  console.log("[SAVE] Debounced save…");
+
+  // IMPORTANT: set this BEFORE the POST so the socket reload doesn't trigger another save
+  lastSavedJsonRef.current = json;
+
+  await saveLeagueToBackend(stateToSave);
+}, 800);
+
 
   return () => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -380,8 +386,6 @@ useEffect(() => {
     }
     return false;
   };
-const saveTimerRef = useRef(null);
-const lastSavedJsonRef = useRef("");
 
   // Update roster order for a team (used by drag & drop in TeamRosterPanel)
   const handleUpdateTeamRoster = (teamName, newRoster) => {
