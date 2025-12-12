@@ -88,6 +88,30 @@ export const totalRetainedSalary = (team) => {
 //   Roster position helpers
 // -------------------------------
 
+// Standard roster ordering:
+// Forwards first, then Defense
+// Within each group: salary high -> low
+// Tie-breaker: name A -> Z (stable-ish)
+export function sortRosterStandard(roster = []) {
+  const list = [...(roster || [])];
+
+  const posRank = (p) => ((p?.position || "F") === "D" ? 1 : 0);
+  const salaryNum = (p) => Number(p?.salary) || 0;
+  const nameKey = (p) => String(p?.name || "").toLowerCase();
+
+  list.sort((a, b) => {
+    const pr = posRank(a) - posRank(b);
+    if (pr !== 0) return pr;
+
+    const sd = salaryNum(b) - salaryNum(a);
+    if (sd !== 0) return sd;
+
+    return nameKey(a).localeCompare(nameKey(b));
+  });
+
+  return list;
+}
+
 // Count forwards / defensemen
 export const countPositions = (team) => {
   const counts = { F: 0, D: 0 };
@@ -359,6 +383,10 @@ export function buildTradeImpactPreview({
     // After retention, adjusted salaries travel with the player
     previewFrom.roster.push(...adjustedRequested);
     previewTo.roster.push(...adjustedOffered);
+      // ✅ Re-sort rosters so incoming players land in the right spot
+  previewFrom.roster = sortRosterStandard(previewFrom.roster);
+  previewTo.roster = sortRosterStandard(previewTo.roster);
+
 
     // Apply buyout penalty transfers (same logic as accept handler)
     const penaltyFromNum =
@@ -1663,10 +1691,11 @@ export function resolveAuctions({
     };
 
     // Simulate adding this player
-        const candidateTeam = {
-      ...team,
-      roster: [...(team.roster || []), newPlayer],
-    };
+     const candidateTeam = {
+  ...team,
+  roster: sortRosterStandard([...(team.roster || []), newPlayer]),
+};
+
 
     // ✅ Always award the player, even if it makes the roster illegal.
     // Your existing UI that uses isTeamIllegal(...) will flag the team later.
