@@ -258,6 +258,23 @@ useEffect(() => {
       // If this fails, the app will fall back to your seeded defaults (current behavior)
     });
 }, []);
+// Restore login from localStorage on refresh
+useEffect(() => {
+  try {
+    const raw = localStorage.getItem("hundo_currentUser");
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved && saved.role) {
+      setCurrentUser(saved);
+      if (saved.role === "manager" && saved.teamName) {
+        setSelectedTeamName(saved.teamName);
+      }
+    }
+  } catch (e) {
+    console.warn("[LOGIN] Failed to restore saved login:", e);
+  }
+}, []);
+
 // Save current league state to backend
 const saveLeagueToBackend = async (nextState) => {
   try {
@@ -773,6 +790,13 @@ const handleCommissionerRemoveBid = (bidId) => {
       role: user.role,
       teamName: user.role === "manager" ? user.teamName : null,
     });
+    const nextUser = {
+  role: user.role,
+  teamName: user.role === "manager" ? user.teamName : null,
+};
+setCurrentUser(nextUser);
+localStorage.setItem("hundo_currentUser", JSON.stringify(nextUser));
+
     setLoginError("");
     setLoginPassword("");
 
@@ -788,6 +812,8 @@ const handleCommissionerRemoveBid = (bidId) => {
     setLoginPassword("");
     setLoginError("");
     setTradeDraft(null);
+    localStorage.removeItem("hundo_currentUser");
+
   };
 
 
