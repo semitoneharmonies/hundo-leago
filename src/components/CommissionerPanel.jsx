@@ -1,0 +1,894 @@
+// src/components/CommissionerPanel.jsx
+import React, { useEffect, useMemo, useState } from "react";
+
+/**
+ * CommissionerPanel
+ *
+ * This component is UI + small helper logic.
+ * App.jsx should pass the league state + setters + a few callbacks.
+ *
+ * Required props:
+ * - currentUser
+ * - apiUrl (the same API_URL you use in App.jsx, e.g. https://.../api/league)
+ * - teams, setTeams
+ * - tradeProposals, setTradeProposals
+ * - freeAgents, setFreeAgents
+ * - leagueLog, setLeagueLog
+ * - tradeBlock, setTradeBlock
+ * - onResolveAuctions (commissioner action you already have)
+ * - onCommissionerRemoveBid (commissioner action you already have)
+ *
+ * Also recommended:
+ * - getDefaultLeagueState()  -> returns { teams, tradeProposals, freeAgents, leagueLog, tradeBlock, settings? }
+ *   (we’ll wire this from App.jsx later)
+ */
+
+function safeNumber(x, fallback = 0) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function nowId() {
+  return Date.now() + Math.random();
+}
+
+function sortRosterDefault(roster = []) {
+  const forwards = roster.filter((p) => p.position !== "D");
+  const defense = roster.filter((p) => p.position === "D");
+  forwards.sort((a, b) => (b.salary || 0) - (a.salary || 0));
+  defense.sort((a, b) => (b.salary || 0) - (a.salary || 0));
+  return [...forwards, ...defense];
+}
+
+export default function CommissionerPanel({
+  currentUser,
+  apiUrl,
+
+  teams,
+  setTeams,
+  tradeProposals,
+  setTradeProposals,
+  freeAgents,
+  setFreeAgents,
+  leagueLog,
+  setLeagueLog,
+  tradeBlock,
+  setTradeBlock,
+
+  onResolveAuctions,
+  onCommissionerRemoveBid,
+
+  // optional, but recommended
+  getDefaultLeagueState,
+  // optional: if you store settings in league state, pass current settings and setter
+  leagueSettings,
+  setLeagueSettings,
+}) {
+  const isCommish = currentUser?.role === "commissioner";
+  if (!isCommish) return null;
+
+  // Derive API base so we can call /api/snapshots using the same origin
+  const apiBase = useMemo(() => {
+    // apiUrl expected to end with "/api/league"
+    if (!apiUrl) return "";
+    return apiUrl.replace(/\/api\/league\/?$/, "");
+  }, [apiUrl]);
+
+  // ----------------------------
+  // Local UI state
+  // ----------------------------
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [adminMessage, setAdminMessage] = useState("");
+
+  // Freeze league (stored in settings if provided; otherwise local-only)
+  const frozen = Boolean(leagueSettings?.frozen);
+  const [localFrozen, setLocalFrozen] = useState(false);
+
+  // Snapshots
+  const [snapshots, setSnapshots] = useState([]);
+  const [snapshotsLoading, setSnapshotsLoading] = useState(false);
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState("");
+  const [newSnapshotName, setNewSnapshotName] = useState("");
+
+  // Roster editor
+  const [editTeamName, setEditTeamName] = useState(teams?.[0]?.name || "");
+  const [editRoster, setEditRoster] = useState([]);
+  const [editBuyouts, setEditBuyouts] = useState([]);
+  const [editRetained, setEditRetained] = useState([]);
+
+  // ----------------------------
+  // Init roster editor when team changes
+  // ----------------------------
+  useEffect(() => {
+    const team = (teams || []).find((t) => t.name === editTeamName);
+    setEditRoster(
+      (team?.roster || []).map((p) => ({
+        name: p.name || "",
+        salary: safeNumber(p.salary, 0),
+        position: p.position === "D" ? "D" : "F",
+      }))
+    );
+    setEditBuyouts(
+      (team?.buyouts || []).map((b) => ({
+        player: b.player || "",
+        penalty: safeNumber(b.penalty, 0),
+      }))
+    );
+    setEditRetained(
+      (team?.retainedSalaries || []).map((r) => ({
+        // keep fields flexible because your retention shape may evolve
+        player: r.player || "",
+        amount: safeNumber(r.amount, safeNumber(r.retainedAmount, 0)),
+        note: r.note || r.fromTeam || "",
+      }))
+    );
+  }, [editTeamName, teams]);
+
+  // ----------------------------
+  // Helpers
+  // ----------------------------
+  const addLog = (entry) => {
+    setLeagueLog((prev) => [{ id: entry.id || nowId(), ...entry }, ...(prev || [])]);
+  };
+
+  const effectiveFrozen = leagueSettings ? frozen : localFrozen;
+
+  const setFrozen = (nextFrozen) => {
+    if (leagueSettings && typeof setLeagueSettings === "function") {
+      setLeagueSettings((prev) => ({
+        ...(prev || {}),
+        frozen: Boolean(nextFrozen),
+      }));
+
+      addLog({
+        type: "commFreezeToggle",
+        by: "Commissioner",
+        frozen: Boolean(nextFrozen),
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    // fallback local-only
+    setLocalFrozen(Boolean(nextFrozen));
+    addLog({
+      type: "commFreezeToggle",
+      by: "Commissioner",
+      frozen: Boolean(nextFrozen),
+      timestamp: Date.now(),
+    });
+  };
+
+  // ----------------------------
+  // Snapshot calls
+  // ----------------------------
+  const loadSnapshots = async () => {
+    if (!apiBase) return;
+    setSnapshotsLoading(true);
+    try {
+      const res = await fetch(`${apiBase}/api/snapshots`);
+      const data = await res.json();
+      const list = Array.isArray(data?.snapshots) ? data.snapshots : [];
+      setSnapshots(list);
+      if (list.length && !selectedSnapshotId) {
+        setSelectedSnapshotId(list[0].id);
+      }
+    } catch (e) {
+      console.error("[SNAPSHOTS] load failed:", e);
+      setAdminMessage("Failed to load snapshots.");
+    } finally {
+      setSnapshotsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Load snapshot list when panel first appears
+    loadSnapshots();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBase]);
+
+  const restoreSnapshot = async (snapshotId) => {
+    if (!apiBase || !snapshotId) return;
+    if (!window.confirm(`Restore snapshot "${snapshotId}"? This overwrites the league state.`)) return;
+
+    setBusy(true);
+    setAdminMessage("");
+    try {
+      const res = await fetch(`${apiBase}/api/snapshots/restore`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: snapshotId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+
+      addLog({
+        type: "commRestoreSnapshot",
+        by: "Commissioner",
+        snapshotId,
+        timestamp: Date.now(),
+      });
+
+      setAdminMessage(`Snapshot restored: ${snapshotId}`);
+    } catch (e) {
+      console.error("[SNAPSHOTS] restore failed:", e);
+      setAdminMessage(`Restore failed: ${e.message || "unknown error"}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createSnapshot = async () => {
+    // NOTE: Your backend does NOT currently have a snapshot create endpoint in the server.js you pasted.
+    // This will 404 until we add it. The UI is ready for when we do.
+    if (!apiBase) return;
+
+    const name = (newSnapshotName || "").trim();
+
+    setBusy(true);
+    setAdminMessage("");
+    try {
+      const res = await fetch(`${apiBase}/api/snapshots/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name || null }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
+
+      addLog({
+        type: "commCreateSnapshot",
+        by: "Commissioner",
+        snapshotId: data.snapshotId || null,
+        timestamp: Date.now(),
+      });
+
+      setNewSnapshotName("");
+      setAdminMessage("Snapshot created.");
+      await loadSnapshots();
+    } catch (e) {
+      console.error("[SNAPSHOTS] create failed:", e);
+      setAdminMessage(
+        `Snapshot create failed (likely missing backend endpoint). ${e.message || ""}`.trim()
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ----------------------------
+  // Reset to defaults (requires getDefaultLeagueState)
+  // ----------------------------
+  const resetToDefaults = () => {
+    if (typeof getDefaultLeagueState !== "function") {
+      window.alert(
+        "Reset needs getDefaultLeagueState() passed into CommissionerPanel. We'll wire this from App.jsx next."
+      );
+      return;
+    }
+
+    if (resetConfirmText !== "RESET") {
+      window.alert('Type RESET in the box to confirm.');
+      return;
+    }
+
+    if (!window.confirm("Final confirmation: reset league to defaults? This will overwrite everything.")) return;
+
+    const def = getDefaultLeagueState();
+
+    setTeams(def.teams || []);
+    setTradeProposals(def.tradeProposals || []);
+    setFreeAgents(def.freeAgents || []);
+    setLeagueLog(def.leagueLog || []);
+    setTradeBlock(def.tradeBlock || []);
+    if (def.settings && typeof setLeagueSettings === "function") {
+      setLeagueSettings(def.settings);
+    }
+
+    addLog({
+      type: "commResetDefaults",
+      by: "Commissioner",
+      timestamp: Date.now(),
+    });
+
+    setResetConfirmText("");
+    setAdminMessage("League reset to defaults (local state updated).");
+  };
+
+  // ----------------------------
+  // Roster editor apply
+  // ----------------------------
+  const applyRosterEdits = () => {
+    const cleanedRoster = (editRoster || [])
+      .map((p) => ({
+        name: (p.name || "").trim(),
+        salary: safeNumber(p.salary, 0),
+        position: p.position === "D" ? "D" : "F",
+      }))
+      .filter((p) => p.name);
+
+    const cleanedBuyouts = (editBuyouts || [])
+      .map((b) => ({
+        player: (b.player || "").trim(),
+        penalty: safeNumber(b.penalty, 0),
+      }))
+      .filter((b) => b.player);
+
+    const cleanedRetained = (editRetained || [])
+      .map((r) => ({
+        player: (r.player || "").trim(),
+        amount: safeNumber(r.amount, 0),
+        note: (r.note || "").trim(),
+      }))
+      .filter((r) => r.player);
+
+    setTeams((prev) =>
+      (prev || []).map((t) => {
+        if (t.name !== editTeamName) return t;
+        return {
+          ...t,
+          roster: sortRosterDefault(cleanedRoster),
+          buyouts: cleanedBuyouts,
+          retainedSalaries: cleanedRetained,
+        };
+      })
+    );
+
+    addLog({
+      type: "commEditTeam",
+      by: "Commissioner",
+      team: editTeamName,
+      timestamp: Date.now(),
+    });
+
+    setAdminMessage(`Saved edits for ${editTeamName}`);
+  };
+
+  const addRosterRow = () => {
+    setEditRoster((prev) => [...(prev || []), { name: "", salary: 1, position: "F" }]);
+  };
+
+  const addBuyoutRow = () => {
+    setEditBuyouts((prev) => [...(prev || []), { player: "", penalty: 0 }]);
+  };
+
+  const addRetentionRow = () => {
+    setEditRetained((prev) => [...(prev || []), { player: "", amount: 0, note: "" }]);
+  };
+
+  // ----------------------------
+  // Trades admin
+  // ----------------------------
+  const forceCancelTrade = (tradeId) => {
+    if (!tradeId) return;
+    if (!window.confirm("Force-cancel this trade?")) return;
+
+    setTradeProposals((prev) =>
+      (prev || []).map((tr) =>
+        tr.id === tradeId ? { ...tr, status: "cancelled", cancelledBy: "Commissioner" } : tr
+      )
+    );
+
+    addLog({
+      type: "commCancelTrade",
+      by: "Commissioner",
+      tradeId,
+      timestamp: Date.now(),
+    });
+  };
+
+  const clearAllPendingTrades = () => {
+    if (!window.confirm("Clear ALL pending trades?")) return;
+
+    setTradeProposals((prev) =>
+      (prev || []).map((tr) => (tr.status === "pending" ? { ...tr, status: "cancelled", cancelledBy: "Commissioner" } : tr))
+    );
+
+    addLog({
+      type: "commClearPendingTrades",
+      by: "Commissioner",
+      timestamp: Date.now(),
+    });
+  };
+
+  // ----------------------------
+  // Auctions admin
+  // ----------------------------
+  const clearAllBids = () => {
+    if (!window.confirm("Clear ALL auction bids?")) return;
+    setFreeAgents([]);
+    addLog({
+      type: "commClearAllBids",
+      by: "Commissioner",
+      timestamp: Date.now(),
+    });
+  };
+
+  // ----------------------------
+  // UI
+  // ----------------------------
+  const panelStyle = {
+    background: "#071023",
+    border: "1px solid #1e293b",
+    borderRadius: "10px",
+    padding: "14px 16px",
+    marginBottom: "14px",
+  };
+
+  const sectionTitle = {
+    margin: "0 0 10px 0",
+    fontSize: "1.0rem",
+    color: "#e2e8f0",
+  };
+
+  const smallLabel = { fontSize: "0.8rem", color: "#94a3b8" };
+
+  const buttonStyle = {
+    padding: "6px 10px",
+    borderRadius: "8px",
+    border: "1px solid #334155",
+    background: "#0b1220",
+    color: "#e2e8f0",
+    cursor: "pointer",
+  };
+
+  const dangerButton = {
+    ...buttonStyle,
+    border: "1px solid #7f1d1d",
+    background: "#2a0f12",
+    color: "#fecaca",
+  };
+
+  const inputStyle = {
+    padding: "6px 10px",
+    borderRadius: "8px",
+    border: "1px solid #334155",
+    background: "#020617",
+    color: "#e2e8f0",
+    width: "100%",
+  };
+
+  const rowGrid = {
+    display: "grid",
+    gridTemplateColumns: "1.2fr 0.6fr 0.4fr 0.2fr",
+    gap: "8px",
+    alignItems: "center",
+    marginBottom: "8px",
+  };
+
+  const buyoutGrid = {
+    display: "grid",
+    gridTemplateColumns: "1.3fr 0.5fr 0.2fr",
+    gap: "8px",
+    alignItems: "center",
+    marginBottom: "8px",
+  };
+
+  const retentionGrid = {
+    display: "grid",
+    gridTemplateColumns: "1.0fr 0.5fr 1.0fr 0.2fr",
+    gap: "8px",
+    alignItems: "center",
+    marginBottom: "8px",
+  };
+
+  const pendingTrades = (tradeProposals || []).filter((t) => t.status === "pending");
+
+  return (
+    <div style={panelStyle}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center" }}>
+        <h2 style={{ margin: 0, color: "#ff4d4f" }}>Commissioner Panel</h2>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <span style={smallLabel}>League frozen:</span>
+          <button
+            style={effectiveFrozen ? dangerButton : buttonStyle}
+            onClick={() => setFrozen(!effectiveFrozen)}
+            disabled={busy}
+            title="Freeze prevents managers from making changes (we’ll wire enforcement next)."
+          >
+            {effectiveFrozen ? "Unfreeze" : "Freeze"}
+          </button>
+        </div>
+      </div>
+
+      {adminMessage && (
+        <div style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", border: "1px solid #334155", color: "#cbd5e1" }}>
+          {adminMessage}
+        </div>
+      )}
+
+      {/* SNAPSHOTS */}
+      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
+        <h3 style={sectionTitle}>Snapshots</h3>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          <button style={buttonStyle} onClick={loadSnapshots} disabled={snapshotsLoading || busy}>
+            {snapshotsLoading ? "Loading…" : "Refresh list"}
+          </button>
+
+          <div style={{ minWidth: "260px" }}>
+            <select
+              style={inputStyle}
+              value={selectedSnapshotId}
+              onChange={(e) => setSelectedSnapshotId(e.target.value)}
+            >
+              <option value="">Select a snapshot…</option>
+              {(snapshots || []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.id} ({new Date(s.createdAt).toLocaleString()})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            style={dangerButton}
+            onClick={() => restoreSnapshot(selectedSnapshotId)}
+            disabled={!selectedSnapshotId || busy}
+            title="Restores the snapshot on the backend. All clients update via WebSocket."
+          >
+            Restore snapshot
+          </button>
+        </div>
+
+        <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "1fr auto", gap: "10px", alignItems: "center" }}>
+          <input
+            style={inputStyle}
+            value={newSnapshotName}
+            onChange={(e) => setNewSnapshotName(e.target.value)}
+            placeholder="Optional snapshot name (e.g. 'Post-testing cleanup')"
+          />
+          <button style={buttonStyle} onClick={createSnapshot} disabled={busy} title="Requires backend endpoint /api/snapshots/create">
+            Create snapshot now
+          </button>
+        </div>
+
+        <p style={{ ...smallLabel, marginTop: "8px" }}>
+          Auto-weekly snapshots are a backend feature. We’ll add them after manual snapshots work.
+        </p>
+      </div>
+
+      {/* RESET DEFAULTS */}
+      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
+        <h3 style={sectionTitle}>Danger Zone</h3>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "10px", alignItems: "center" }}>
+          <input
+            style={inputStyle}
+            value={resetConfirmText}
+            onChange={(e) => setResetConfirmText(e.target.value)}
+            placeholder='Type RESET to enable "Reset to defaults"'
+          />
+          <button style={dangerButton} onClick={resetToDefaults} disabled={busy} title="Requires getDefaultLeagueState() wired from App.jsx">
+            Reset to defaults
+          </button>
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
+          <button style={dangerButton} onClick={clearAllBids} disabled={busy}>
+            Clear all bids
+          </button>
+          <button style={dangerButton} onClick={clearAllPendingTrades} disabled={busy}>
+            Cancel all pending trades
+          </button>
+        </div>
+      </div>
+
+      {/* FULL ROSTER EDITOR */}
+      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
+        <h3 style={sectionTitle}>Roster Editor</h3>
+
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ minWidth: "240px" }}>
+            <select style={inputStyle} value={editTeamName} onChange={(e) => setEditTeamName(e.target.value)}>
+              {(teams || []).map((t) => (
+                <option key={t.name} value={t.name}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button style={buttonStyle} onClick={applyRosterEdits} disabled={busy}>
+            Apply edits to {editTeamName}
+          </button>
+
+          <button
+            style={buttonStyle}
+            onClick={() => setEditRoster((prev) => sortRosterDefault(prev))}
+            disabled={busy}
+            title="Sort roster: F first then D, by salary desc."
+          >
+            Re-sort roster
+          </button>
+        </div>
+
+        {/* Roster table */}
+        <div style={{ marginTop: "12px" }}>
+          <div style={{ ...smallLabel, marginBottom: "6px" }}>Players</div>
+
+          <div style={{ ...rowGrid, ...smallLabel }}>
+            <div>Name</div>
+            <div>Salary</div>
+            <div>Pos</div>
+            <div></div>
+          </div>
+
+          {(editRoster || []).map((p, idx) => (
+            <div key={`${idx}-${p.name}`} style={rowGrid}>
+              <input
+                style={inputStyle}
+                value={p.name}
+                onChange={(e) =>
+                  setEditRoster((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], name: e.target.value };
+                    return next;
+                  })
+                }
+                placeholder="Player name"
+              />
+              <input
+                style={inputStyle}
+                type="number"
+                value={p.salary}
+                onChange={(e) =>
+                  setEditRoster((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], salary: safeNumber(e.target.value, 0) };
+                    return next;
+                  })
+                }
+              />
+              <select
+                style={inputStyle}
+                value={p.position}
+                onChange={(e) =>
+                  setEditRoster((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], position: e.target.value === "D" ? "D" : "F" };
+                    return next;
+                  })
+                }
+              >
+                <option value="F">F</option>
+                <option value="D">D</option>
+              </select>
+              <button
+                style={dangerButton}
+                onClick={() => setEditRoster((prev) => prev.filter((_, i) => i !== idx))}
+                disabled={busy}
+                title="Remove row"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <button style={{ ...buttonStyle, marginTop: "8px" }} onClick={addRosterRow} disabled={busy}>
+            + Add player
+          </button>
+        </div>
+
+        {/* Buyouts */}
+        <div style={{ marginTop: "14px" }}>
+          <div style={{ ...smallLabel, marginBottom: "6px" }}>Buyouts</div>
+
+          <div style={{ ...buyoutGrid, ...smallLabel }}>
+            <div>Player</div>
+            <div>Penalty</div>
+            <div></div>
+          </div>
+
+          {(editBuyouts || []).map((b, idx) => (
+            <div key={`${idx}-${b.player}`} style={buyoutGrid}>
+              <input
+                style={inputStyle}
+                value={b.player}
+                onChange={(e) =>
+                  setEditBuyouts((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], player: e.target.value };
+                    return next;
+                  })
+                }
+                placeholder="Player"
+              />
+              <input
+                style={inputStyle}
+                type="number"
+                value={b.penalty}
+                onChange={(e) =>
+                  setEditBuyouts((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], penalty: safeNumber(e.target.value, 0) };
+                    return next;
+                  })
+                }
+              />
+              <button
+                style={dangerButton}
+                onClick={() => setEditBuyouts((prev) => prev.filter((_, i) => i !== idx))}
+                disabled={busy}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <button style={{ ...buttonStyle, marginTop: "8px" }} onClick={addBuyoutRow} disabled={busy}>
+            + Add buyout
+          </button>
+        </div>
+
+        {/* Retentions */}
+        <div style={{ marginTop: "14px" }}>
+          <div style={{ ...smallLabel, marginBottom: "6px" }}>Retained Salaries</div>
+
+          <div style={{ ...retentionGrid, ...smallLabel }}>
+            <div>Player</div>
+            <div>Amount</div>
+            <div>Note</div>
+            <div></div>
+          </div>
+
+          {(editRetained || []).map((r, idx) => (
+            <div key={`${idx}-${r.player}`} style={retentionGrid}>
+              <input
+                style={inputStyle}
+                value={r.player}
+                onChange={(e) =>
+                  setEditRetained((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], player: e.target.value };
+                    return next;
+                  })
+                }
+                placeholder="Player"
+              />
+              <input
+                style={inputStyle}
+                type="number"
+                value={r.amount}
+                onChange={(e) =>
+                  setEditRetained((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], amount: safeNumber(e.target.value, 0) };
+                    return next;
+                  })
+                }
+              />
+              <input
+                style={inputStyle}
+                value={r.note}
+                onChange={(e) =>
+                  setEditRetained((prev) => {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], note: e.target.value };
+                    return next;
+                  })
+                }
+                placeholder="e.g. retained from Pacino / deadline / etc."
+              />
+              <button
+                style={dangerButton}
+                onClick={() => setEditRetained((prev) => prev.filter((_, i) => i !== idx))}
+                disabled={busy}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <button style={{ ...buttonStyle, marginTop: "8px" }} onClick={addRetentionRow} disabled={busy}>
+            + Add retained salary
+          </button>
+        </div>
+      </div>
+
+      {/* TRADES ADMIN */}
+      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
+        <h3 style={sectionTitle}>Trades Admin</h3>
+
+        <div style={smallLabel}>Pending trades: {pendingTrades.length}</div>
+
+        {(pendingTrades || []).length === 0 ? (
+          <div style={{ ...smallLabel, marginTop: "8px" }}>No pending trades.</div>
+        ) : (
+          <div style={{ marginTop: "10px", display: "grid", gap: "8px" }}>
+            {pendingTrades.map((tr) => (
+              <div
+                key={tr.id}
+                style={{
+                  border: "1px solid #334155",
+                  borderRadius: "10px",
+                  padding: "10px",
+                  background: "#020617",
+                }}
+              >
+                <div style={{ color: "#e2e8f0", fontSize: "0.9rem" }}>
+                  <strong>{tr.fromTeam}</strong> → <strong>{tr.toTeam}</strong>
+                </div>
+                <div style={smallLabel}>
+                  Offers: {(tr.offeredPlayers || []).join(", ") || "—"} | Requests:{" "}
+                  {(tr.requestedPlayers || []).join(", ") || "—"}
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+                  <button style={dangerButton} onClick={() => forceCancelTrade(tr.id)} disabled={busy}>
+                    Force-cancel
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* AUCTIONS ADMIN */}
+      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
+        <h3 style={sectionTitle}>Auctions Admin</h3>
+
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button style={buttonStyle} onClick={onResolveAuctions} disabled={busy}>
+            Resolve auctions now
+          </button>
+          <button style={dangerButton} onClick={clearAllBids} disabled={busy}>
+            Clear all bids
+          </button>
+        </div>
+
+        <div style={{ marginTop: "10px" }}>
+          <div style={smallLabel}>Current bids: {(freeAgents || []).length}</div>
+
+          {(freeAgents || []).length === 0 ? (
+            <div style={{ ...smallLabel, marginTop: "6px" }}>No active bids.</div>
+          ) : (
+            <div style={{ marginTop: "8px", display: "grid", gap: "6px" }}>
+              {(freeAgents || []).slice(0, 50).map((b) => (
+                <div
+                  key={b.id}
+                  style={{
+                    border: "1px solid #334155",
+                    borderRadius: "10px",
+                    padding: "8px 10px",
+                    background: "#020617",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "10px",
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ color: "#e2e8f0" }}>
+                    <strong>{b.player}</strong> ({b.position}) — ${b.amount} — {b.team}
+                  </div>
+                  <button
+                    style={dangerButton}
+                    onClick={() => onCommissionerRemoveBid?.(b.id)}
+                    disabled={busy}
+                    title="Remove this bid"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              {(freeAgents || []).length > 50 && (
+                <div style={smallLabel}>Showing first 50 bids…</div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop: "12px", ...smallLabel }}>
+        Tip: We can add “Freeze enforcement” next (block managers from placing bids / proposing trades / buyouts when frozen).
+      </div>
+    </div>
+  );
+}
