@@ -262,7 +262,7 @@ useEffect(() => {
 const saveLeagueToBackend = async (nextState) => {
   try {
     const res = await fetch(API_URL, {
-      method: "PUT",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nextState),
     });
