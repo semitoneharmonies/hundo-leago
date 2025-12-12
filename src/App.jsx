@@ -798,6 +798,9 @@ const handlePlaceBid = ({ playerName, position, amount }) => {
   }
 
   setFreeAgents(result.nextFreeAgents);
+  if (result.logEntry) {
+    setLeagueLog((prev) => [result.logEntry, ...prev]);
+  }
 
   if (result.warningMessage) {
     window.alert(result.warningMessage);
