@@ -7,6 +7,7 @@ import { io as socketIOClient } from "socket.io-client";
 import TeamRosterPanel from "./components/TeamRosterPanel";
 import LeagueHistoryPanel from "./components/LeagueHistoryPanel";
 import TeamToolsPanel from "./components/TeamToolsPanel";
+import CommissionerPanel from "./components/CommissionerPanel";
 import TopBar from "./components/TopBar";
 import {
   calculateBuyout,
@@ -200,9 +201,22 @@ const sortedInitialTeams = initialTeams.map((team) => ({
   ...team,
   roster: sortRosterDefault(team.roster || []),
 }));
+function getDefaultLeagueState() {
+  return {
+    teams: sortedInitialTeams,
+    tradeProposals: [],
+    freeAgents: [],
+    leagueLog: [],
+    tradeBlock: [],
+    settings: { frozen: false },
+  };
+}
 
 
 function App() {
+
+  const [leagueSettings, setLeagueSettings] = useState({ frozen: false });
+
   // --- Core league state ---
 const [teams, setTeams] = useState(sortedInitialTeams);
 
@@ -253,6 +267,8 @@ const lastSavedJsonRef = useRef("");
         if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
         if (Array.isArray(data.leagueLog)) setLeagueLog(data.leagueLog);
         if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
+        if (data?.settings) setLeagueSettings(data.settings);
+
       })
       .catch((err) => console.error("[WS] reload failed:", err));
   });
@@ -281,6 +297,8 @@ useEffect(() => {
       if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
       if (Array.isArray(data.leagueLog)) setLeagueLog(data.leagueLog);
       if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
+      if (data?.settings) setLeagueSettings(data.settings);
+
 
       // IMPORTANT: initialize lastSavedJson so autosave doesn't immediately fire
       lastSavedJsonRef.current = JSON.stringify({
@@ -289,6 +307,8 @@ useEffect(() => {
         freeAgents: Array.isArray(data.freeAgents) ? data.freeAgents : [],
         leagueLog: Array.isArray(data.leagueLog) ? data.leagueLog : [],
         tradeBlock: Array.isArray(data.tradeBlock) ? data.tradeBlock : [],
+        settings: data?.settings || { frozen: false },
+
       });
 
       setHasLoaded(true);
@@ -342,12 +362,13 @@ useEffect(() => {
   if (!hasLoaded) return;
 
   const stateToSave = {
-    teams,
-    tradeProposals,
-    freeAgents,
-    leagueLog,
-    tradeBlock,
-  };
+  teams,
+  tradeProposals,
+  freeAgents,
+  leagueLog,
+  tradeBlock,
+  settings: leagueSettings,
+};
 
   const json = JSON.stringify(stateToSave);
 
@@ -370,7 +391,7 @@ useEffect(() => {
   return () => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
   };
-}, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock]);
+}, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock, leagueSettings]);
 
 
   // --- Helpers ---
