@@ -30,6 +30,9 @@ const MIN_DEFENSEMEN = 4;
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "https://hundo-leago-backend.onrender.com/api/league";
+  // Phase 0 safety: allow disabling autosave from Netlify env var
+const DISABLE_AUTOSAVE = import.meta.env.VITE_DISABLE_AUTOSAVE === "true";
+
 
 
 // Very simple "login" setup – front-end only
@@ -215,6 +218,22 @@ function getDefaultLeagueState() {
 
 function App() {
 
+    // --- Phase 0 safety: prevent accidental "empty save" wipes ---
+  const leagueStateLooksValid = (state) => {
+    if (!state) return false;
+
+    const teamsOk = Array.isArray(state.teams) && state.teams.length > 0;
+    if (!teamsOk) return false;
+
+    // "Seeded" check: at least one team has at least one roster player
+    const hasAnyRosteredPlayer = state.teams.some(
+      (t) => Array.isArray(t.roster) && t.roster.length > 0
+    );
+    if (!hasAnyRosteredPlayer) return false;
+
+    return true;
+  };
+
   const [leagueSettings, setLeagueSettings] = useState({ frozen: false });
 
   // --- Core league state ---
@@ -361,14 +380,34 @@ const saveLeagueToBackend = async (nextState) => {
 useEffect(() => {
   if (!hasLoaded) return;
 
+  // If a save was queued previously, and we now want to bail, cancel it.
+  const cancelQueuedSave = () => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+  };
+
+  if (DISABLE_AUTOSAVE) {
+    cancelQueuedSave();
+    console.warn("[SAVE] Autosave disabled via VITE_DISABLE_AUTOSAVE=true");
+    return;
+  }
+
   const stateToSave = {
-  teams,
-  tradeProposals,
-  freeAgents,
-  leagueLog,
-  tradeBlock,
-  settings: leagueSettings,
-};
+    teams,
+    tradeProposals,
+    freeAgents,
+    leagueLog,
+    tradeBlock,
+    settings: leagueSettings,
+  };
+
+  if (!leagueStateLooksValid(stateToSave)) {
+    cancelQueuedSave();
+    console.warn("[SAVE] Skipping save: state does not look valid/seeded yet.");
+    return;
+  }
 
   const json = JSON.stringify(stateToSave);
 
@@ -391,7 +430,7 @@ useEffect(() => {
   return () => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
   };
-}, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock, leagueSettings]);
+}, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock, leagueSettings, DISABLE_AUTOSAVE]);
 
 
   // --- Helpers ---
