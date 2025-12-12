@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { io as socketIOClient } from "socket.io-client";
 
@@ -274,20 +274,26 @@ useEffect(() => {
     .then((data) => {
       console.log("[LOAD] Backend responded with keys:", Object.keys(data || {}));
 
-      // Expecting backend shape like:
-      // { teams, tradeProposals, freeAgents, leagueLog, tradeBlock }
       if (Array.isArray(data.teams)) setTeams(data.teams);
       if (Array.isArray(data.tradeProposals)) setTradeProposals(data.tradeProposals);
       if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
       if (Array.isArray(data.leagueLog)) setLeagueLog(data.leagueLog);
       if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
 
+      // IMPORTANT: initialize lastSavedJson so autosave doesn't immediately fire
+      lastSavedJsonRef.current = JSON.stringify({
+        teams: Array.isArray(data.teams) ? data.teams : [],
+        tradeProposals: Array.isArray(data.tradeProposals) ? data.tradeProposals : [],
+        freeAgents: Array.isArray(data.freeAgents) ? data.freeAgents : [],
+        leagueLog: Array.isArray(data.leagueLog) ? data.leagueLog : [],
+        tradeBlock: Array.isArray(data.tradeBlock) ? data.tradeBlock : [],
+      });
+
       setHasLoaded(true);
     })
     .catch((err) => {
       console.error("[LOAD] Failed to load league from backend:", err);
-      setHasLoaded(true);
-      // If this fails, the app will fall back to your seeded defaults (current behavior)
+      // DO NOT setHasLoaded(true) here
     });
 }, []);
 
@@ -341,9 +347,25 @@ useEffect(() => {
     tradeBlock,
   };
 
-  console.log("[SAVE] Sending league to backend...");
-  saveLeagueToBackend(stateToSave);
-}, [teams, tradeProposals, freeAgents, leagueLog, tradeBlock]);
+  const json = JSON.stringify(stateToSave);
+
+  // If nothing changed since last save, do nothing
+  if (json === lastSavedJsonRef.current) return;
+
+  // Debounce: wait a bit after the last change
+  if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+  saveTimerRef.current = setTimeout(async () => {
+    console.log("[SAVE] Debounced save…");
+    await saveLeagueToBackend(stateToSave);
+    lastSavedJsonRef.current = json;
+  }, 800);
+
+  return () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  };
+}, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock]);
+
 
   // --- Helpers ---
 
@@ -358,6 +380,8 @@ useEffect(() => {
     }
     return false;
   };
+const saveTimerRef = useRef(null);
+const lastSavedJsonRef = useRef("");
 
   // Update roster order for a team (used by drag & drop in TeamRosterPanel)
   const handleUpdateTeamRoster = (teamName, newRoster) => {
