@@ -654,6 +654,13 @@ useEffect(() => {
     if (!result.ok && result.error) {
       window.alert(result.error);
     }
+    if (result.ok && result.warnings && result.warnings.length > 0) {
+  window.alert(
+    "Trade accepted, but it creates roster/cap issues:\n\n" +
+      result.warnings.join("\n")
+  );
+}
+
   };
 
   const handleRejectTrade = (tradeId) => {

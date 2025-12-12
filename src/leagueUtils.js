@@ -1245,26 +1245,20 @@ export function acceptTradeById({
   }
 
   // 5) Run post-trade legality checks (cap, roster size, positions)
-  const issues = buildPostTradeIssues({
-    fromTeam: fromAfter,
-    toTeam: toAfter,
-    fromName: trade.fromTeam,
-    toName: trade.toTeam,
-    capLimit,
-    maxRosterSize,
-    minForwards,
-    minDefensemen,
-  });
+// NOTE: We NO LONGER block acceptance. We only warn + log.
+const issues = buildPostTradeIssues({
+  fromTeam: fromAfter,
+  toTeam: toAfter,
+  fromName: trade.fromTeam,
+  toName: trade.toTeam,
+  capLimit,
+  maxRosterSize,
+  minForwards,
+  minDefensemen,
+});
 
-  if (issues && issues.length > 0) {
-    console.warn("[acceptTradeById] issues after applying trade:", issues);
-    return {
-      ok: false,
-      error:
-        "This trade would now violate roster/cap rules:\n\n" +
-        issues.join("\n"),
-    };
-  }
+const warningIssues = Array.isArray(issues) ? issues : [];
+
 
   // 6) Build updated teams array
   const updatedTeams = (teams || []).map((t) => {
@@ -1316,32 +1310,48 @@ export function acceptTradeById({
   });
 
     // 8) Build log entry
-  const logEntries = [
-    {
-      type: "tradeAccepted",
-      id: now + Math.random(),
-      fromTeam: trade.fromTeam,
-      toTeam: trade.toTeam,
-      requestedPlayers: [...(trade.requestedPlayers || [])],
-      offeredPlayers: [...(trade.offeredPlayers || [])],
-      penaltyFrom: trade.penaltyFrom ?? 0,
-      penaltyTo: trade.penaltyTo ?? 0,
-      retentionFrom: trade.retentionFrom || {},
-      retentionTo: trade.retentionTo || {},
-      offeredDetails,
-      requestedDetails,
-      timestamp: now,
-    },
-  ];
+  // 8) Build log entry
+const logEntries = [
+  {
+    type: "tradeAccepted",
+    id: now + Math.random(),
+    fromTeam: trade.fromTeam,
+    toTeam: trade.toTeam,
+    requestedPlayers: [...(trade.requestedPlayers || [])],
+    offeredPlayers: [...(trade.offeredPlayers || [])],
+    penaltyFrom: trade.penaltyFrom ?? 0,
+    penaltyTo: trade.penaltyTo ?? 0,
+    retentionFrom: trade.retentionFrom || {},
+    retentionTo: trade.retentionTo || {},
+    offeredDetails,
+    requestedDetails,
+    timestamp: now,
+  },
+];
+
+// If accepting the trade creates roster/cap issues, we log them as warnings (but still accept)
+if (warningIssues.length > 0) {
+  logEntries.unshift({
+    type: "illegalRosterWarning",
+    id: now + Math.random(),
+    context: "tradeAccepted",
+    fromTeam: trade.fromTeam,
+    toTeam: trade.toTeam,
+    tradeId: trade.id,
+    issues: warningIssues,
+    timestamp: now,
+  });
+}
 
 
-  console.log("[acceptTradeById] success");
-  return {
-    ok: true,
-    teams: updatedTeams,
-    tradeProposals: updatedTrades,
-    logEntries,
-  };
+
+ return {
+  ok: true,
+  teams: updatedTeams,
+  tradeProposals: updatedTrades,
+  logEntries,
+  warnings: warningIssues, // <-- NEW
+};
 }
 
 
