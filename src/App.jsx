@@ -1,6 +1,8 @@
 // src/App.jsx
 import React, { useEffect, useState } from "react";
 import "./App.css";
+import { io as socketIOClient } from "socket.io-client";
+
 
 import TeamRosterPanel from "./components/TeamRosterPanel";
 import LeagueHistoryPanel from "./components/LeagueHistoryPanel";
@@ -229,6 +231,36 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   const [leagueLog, setLeagueLog] = useState([]);
   const [historyFilter, setHistoryFilter] = useState("all");
   const [hasLoaded, setHasLoaded] = useState(false);
+
+  useEffect(() => {
+  const socket = socketIOClient("https://hundo-leago-backend.onrender.com", {
+    transports: ["websocket"],
+  });
+
+  socket.on("connect", () => {
+    console.log("[WS] connected:", socket.id);
+  });
+
+  socket.on("league:updated", () => {
+    console.log("[WS] league updated → reloading");
+    fetch(API_URL)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.teams)) setTeams(data.teams);
+        if (Array.isArray(data.tradeProposals)) setTradeProposals(data.tradeProposals);
+        if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
+        if (Array.isArray(data.leagueLog)) setLeagueLog(data.leagueLog);
+        if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
+      })
+      .catch((err) => console.error("[WS] reload failed:", err));
+  });
+
+  socket.on("disconnect", () => {
+    console.log("[WS] disconnected");
+  });
+
+  return () => socket.disconnect();
+}, []);
 
 // Load league from backend on first page load
 useEffect(() => {
