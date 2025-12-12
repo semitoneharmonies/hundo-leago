@@ -905,7 +905,7 @@ const handleLogin = () => {
 return (
   <div className="page">
     <div className="container">
-      <TopBar
+            <TopBar
         currentUser={currentUser}
         loginTeamName={loginTeamName}
         loginPassword={loginPassword}
@@ -920,98 +920,91 @@ return (
         setSelectedTeamName={setSelectedTeamName}
       />
 
-      {/* main 2-column layout and history stay as they are now */}
-      {/* e.g. your <div style={{ background... }}> with TeamRosterPanel + TeamToolsPanel, and LeagueHistoryPanel below */}
+      {/* FULL WIDTH: Commissioner Panel (NOT inside the grid) */}
+      <div style={{ marginTop: "12px", marginBottom: "12px" }}>
+        <CommissionerPanel
+          currentUser={currentUser}
+          apiUrl={API_URL}
+          teams={teams}
+          setTeams={setTeams}
+          tradeProposals={tradeProposals}
+          setTradeProposals={setTradeProposals}
+          freeAgents={freeAgents}
+          setFreeAgents={setFreeAgents}
+          leagueLog={leagueLog}
+          setLeagueLog={setLeagueLog}
+          tradeBlock={tradeBlock}
+          setTradeBlock={setTradeBlock}
+          onResolveAuctions={handleResolveAuctions}
+          onCommissionerRemoveBid={handleCommissionerRemoveBid}
+          getDefaultLeagueState={getDefaultLeagueState}
+          leagueSettings={leagueSettings}
+          setLeagueSettings={setLeagueSettings}
+        />
+      </div>
 
-
-
-        {/* MAIN LAYOUT: 2 columns (left wide roster + trade builder, right tools) */}
+      {/* MAIN LAYOUT: 2 columns */}
+      <div
+        style={{
+          background: "#020617",
+          border: "1px solid #1e293b",
+          borderRadius: "8px",
+          padding: "12px 16px",
+        }}
+      >
         <div
           style={{
-            background: "#020617",
-            border: "1px solid #1e293b",
-            borderRadius: "8px",
-            padding: "12px 16px",
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr",
+            gap: "16px",
+            alignItems: "flex-start",
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "2fr 1fr",
-              gap: "16px",
-              alignItems: "flex-start",
-            }}
-          >
-            <CommissionerPanel
-  currentUser={currentUser}
-  apiUrl={API_URL}
-  teams={teams}
-  setTeams={setTeams}
-  tradeProposals={tradeProposals}
-  setTradeProposals={setTradeProposals}
-  freeAgents={freeAgents}
-  setFreeAgents={setFreeAgents}
-  leagueLog={leagueLog}
-  setLeagueLog={setLeagueLog}
-  tradeBlock={tradeBlock}
-  setTradeBlock={setTradeBlock}
-  onResolveAuctions={handleResolveAuctions}
-  onCommissionerRemoveBid={handleCommissionerRemoveBid}
-  getDefaultLeagueState={getDefaultLeagueState}
-  leagueSettings={leagueSettings}
-  setLeagueSettings={setLeagueSettings}
-/>
+          <TeamRosterPanel
+            team={selectedTeam}
+            teams={teams}
+            capLimit={CAP_LIMIT}
+            maxRosterSize={MAX_ROSTER_SIZE}
+            minForwards={MIN_FORWARDS}
+            minDefensemen={MIN_DEFENSEMEN}
+            currentUser={currentUser}
+            tradeDraft={tradeDraft}
+            setTradeDraft={setTradeDraft}
+            canManageTeam={canManageTeam}
+            onUpdateTeamRoster={handleUpdateTeamRoster}
+            onBuyout={handleBuyout}
+            onCommissionerRemovePlayer={handleCommissionerRemovePlayer}
+            onManagerProfileImageChange={handleManagerProfileImageChange}
+            onSubmitTradeDraft={handleSubmitTradeDraft}
+            onAddToTradeBlock={handleAddTradeBlockEntry}
+          />
 
-            {/* LEFT: Roster + internal trade builder summary */}
-            <TeamRosterPanel
-              team={selectedTeam}
-              teams={teams}
-              capLimit={CAP_LIMIT}
-              maxRosterSize={MAX_ROSTER_SIZE}
-              minForwards={MIN_FORWARDS}
-              minDefensemen={MIN_DEFENSEMEN}
-              currentUser={currentUser}
-              tradeDraft={tradeDraft}
-              setTradeDraft={setTradeDraft}
-              canManageTeam={canManageTeam}
-              onUpdateTeamRoster={handleUpdateTeamRoster}
-              onBuyout={handleBuyout}
-              onCommissionerRemovePlayer={handleCommissionerRemovePlayer}
-              onManagerProfileImageChange={handleManagerProfileImageChange}
-              onSubmitTradeDraft={handleSubmitTradeDraft}
-              onAddToTradeBlock={handleAddTradeBlockEntry} 
-            />
-
-            {/* RIGHT: Team tools + pending trades */}
-            <TeamToolsPanel
-  currentUser={currentUser}
-  selectedTeam={selectedTeam}
-  teams={teams}
-  capLimit={CAP_LIMIT}
-  maxRosterSize={MAX_ROSTER_SIZE}
-  minForwards={MIN_FORWARDS}
-  minDefensemen={MIN_DEFENSEMEN}
-  tradeDraft={tradeDraft}
-  setTradeDraft={setTradeDraft}
-  tradeProposals={tradeProposals}
-  onSubmitTradeDraft={handleSubmitTradeDraft}
-  onAcceptTrade={handleAcceptTrade}
-  onRejectTrade={handleRejectTrade}
-  onCancelTrade={handleCancelTrade}
-  onCounterTrade={handleCounterTrade}
-  tradeBlock={tradeBlock}
-  onAddTradeBlockEntry={handleAddTradeBlockEntry}
-    // Auctions
-  freeAgents={freeAgents}
-  onPlaceBid={handlePlaceBid}
-  onResolveAuctions={handleResolveAuctions}
-  onCommissionerRemoveBid={handleCommissionerRemoveBid}
-
-/>
-
-
-          </div>
+          <TeamToolsPanel
+            currentUser={currentUser}
+            selectedTeam={selectedTeam}
+            teams={teams}
+            capLimit={CAP_LIMIT}
+            maxRosterSize={MAX_ROSTER_SIZE}
+            minForwards={MIN_FORWARDS}
+            minDefensemen={MIN_DEFENSEMEN}
+            tradeDraft={tradeDraft}
+            setTradeDraft={setTradeDraft}
+            tradeProposals={tradeProposals}
+            onSubmitTradeDraft={handleSubmitTradeDraft}
+            onAcceptTrade={handleAcceptTrade}
+            onRejectTrade={handleRejectTrade}
+            onCancelTrade={handleCancelTrade}
+            onCounterTrade={handleCounterTrade}
+            tradeBlock={tradeBlock}
+            onAddTradeBlockEntry={handleAddTradeBlockEntry}
+            freeAgents={freeAgents}
+            onPlaceBid={handlePlaceBid}
+            onResolveAuctions={handleResolveAuctions}
+            onCommissionerRemoveBid={handleCommissionerRemoveBid}
+          />
         </div>
+      </div>
+
 
         {/* FULL WIDTH: League history */}
         <LeagueHistoryPanel
