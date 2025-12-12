@@ -258,22 +258,28 @@ useEffect(() => {
       // If this fails, the app will fall back to your seeded defaults (current behavior)
     });
 }, []);
+
+
 // Restore login from localStorage on refresh
+
 useEffect(() => {
   try {
     const raw = localStorage.getItem("hundo_currentUser");
     if (!raw) return;
+
     const saved = JSON.parse(raw);
-    if (saved && saved.role) {
-      setCurrentUser(saved);
-      if (saved.role === "manager" && saved.teamName) {
-        setSelectedTeamName(saved.teamName);
-      }
+    if (!saved || !saved.role) return;
+
+    setCurrentUser(saved);
+
+    if (saved.role === "manager" && saved.teamName) {
+      setSelectedTeamName(saved.teamName);
     }
   } catch (e) {
     console.warn("[LOGIN] Failed to restore saved login:", e);
   }
 }, []);
+
 
 // Save current league state to backend
 const saveLeagueToBackend = async (nextState) => {
@@ -775,36 +781,34 @@ const handleCommissionerRemoveBid = (bidId) => {
 
   // --- Login / logout ---
 
-  const handleLogin = () => {
-    const trimmedTeam = loginTeamName.trim();
-    const user = managers.find(
-      (m) =>
-        m.teamName === trimmedTeam && m.password === loginPassword
-    );
-    if (!user) {
-      setLoginError("Invalid team or password.");
-      return;
-    }
+const handleLogin = () => {
+  const trimmedTeam = loginTeamName.trim();
+  const user = managers.find(
+    (m) => m.teamName === trimmedTeam && m.password === loginPassword
+  );
 
-    setCurrentUser({
-      role: user.role,
-      teamName: user.role === "manager" ? user.teamName : null,
-    });
-    const nextUser = {
-  role: user.role,
-  teamName: user.role === "manager" ? user.teamName : null,
-};
-setCurrentUser(nextUser);
-localStorage.setItem("hundo_currentUser", JSON.stringify(nextUser));
+  if (!user) {
+    setLoginError("Invalid team or password.");
+    return;
+  }
 
-    setLoginError("");
-    setLoginPassword("");
-
-    // When a manager logs in, default selected team = their own
-    if (user.role === "manager") {
-      setSelectedTeamName(user.teamName);
-    }
+  const nextUser = {
+    role: user.role,
+    teamName: user.role === "manager" ? user.teamName : null,
   };
+
+  setCurrentUser(nextUser);
+  localStorage.setItem("hundo_currentUser", JSON.stringify(nextUser));
+
+  setLoginError("");
+  setLoginPassword("");
+
+  // When a manager logs in, default selected team = their own
+  if (user.role === "manager") {
+    setSelectedTeamName(user.teamName);
+  }
+};
+
 
   const handleLogout = () => {
     setCurrentUser(null);
