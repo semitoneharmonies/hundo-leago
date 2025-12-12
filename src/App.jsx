@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 
 import TeamRosterPanel from "./components/TeamRosterPanel";
@@ -23,6 +23,11 @@ const CAP_LIMIT = 100;
 const MAX_ROSTER_SIZE = 15;
 const MIN_FORWARDS = 8;
 const MIN_DEFENSEMEN = 4;
+// Backend endpoint (Netlify env var first, fallback hard-coded)
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://hundo-leago-backend.onrender.com/api/league";
+
 
 // Very simple "login" setup – front-end only
 const managers = [
@@ -223,6 +228,31 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   // League-wide activity log
   const [leagueLog, setLeagueLog] = useState([]);
   const [historyFilter, setHistoryFilter] = useState("all");
+// Load league from backend on first page load
+useEffect(() => {
+  console.log("[LOAD] Fetching league from backend:", API_URL);
+
+  fetch(API_URL)
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((data) => {
+      console.log("[LOAD] Backend responded with keys:", Object.keys(data || {}));
+
+      // Expecting backend shape like:
+      // { teams, tradeProposals, freeAgents, leagueLog, tradeBlock }
+      if (Array.isArray(data.teams)) setTeams(data.teams);
+      if (Array.isArray(data.tradeProposals)) setTradeProposals(data.tradeProposals);
+      if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
+      if (Array.isArray(data.leagueLog)) setLeagueLog(data.leagueLog);
+      if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
+    })
+    .catch((err) => {
+      console.error("[LOAD] Failed to load league from backend:", err);
+      // If this fails, the app will fall back to your seeded defaults (current behavior)
+    });
+}, []);
 
   // --- Helpers ---
 
