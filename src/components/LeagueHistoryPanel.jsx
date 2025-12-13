@@ -30,7 +30,13 @@ function getEntryIcon(entry) {
   }
 }
 
-function LeagueHistoryPanel({ leagueLog, historyFilter, setHistoryFilter }) {
+function LeagueHistoryPanel({
+  leagueLog,
+  historyFilter,
+  setHistoryFilter,
+  currentUser,
+  onDeleteLogEntry,
+}) {
   const entries = leagueLog || [];
 
   const filtered = entries.filter((entry) => {
@@ -241,15 +247,37 @@ function LeagueHistoryPanel({ leagueLog, historyFilter, setHistoryFilter }) {
                   <span style={{ width: "18px", textAlign: "center" }}>{icon}</span>
                   <span>{text}</span>
                 </span>
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "#6b7280",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {formatTimestamp(entry.timestamp)}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+  <span
+    style={{
+      fontSize: "0.75rem",
+      color: "#6b7280",
+      whiteSpace: "nowrap",
+    }}
+  >
+    {formatTimestamp(entry.timestamp)}
+  </span>
+
+  {currentUser?.role === "commissioner" && typeof onDeleteLogEntry === "function" && (
+    <button
+      onClick={() => onDeleteLogEntry(entry)}
+      title="Delete this log entry"
+      style={{
+        padding: "2px 8px",
+        fontSize: "0.8rem",
+        lineHeight: 1.2,
+        borderRadius: "4px",
+        border: "none",
+        cursor: "pointer",
+        backgroundColor: "#b91c1c",
+        color: "#f9fafb",
+      }}
+    >
+      X
+    </button>
+  )}
+</div>
+
               </div>
             );
           })}

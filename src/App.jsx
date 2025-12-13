@@ -667,11 +667,13 @@ const markAllNotificationsRead = () => {
         );
 
         newLogEntry = {
-          type: "commRemovePlayer",
-          team: team.name,
-          player: playerName,
-          timestamp: Date.now(),
-        };
+  id: Date.now() + Math.random(),
+  type: "commRemovePlayer",
+  team: team.name,
+  player: playerName,
+  timestamp: Date.now(),
+};
+
 
         return {
           ...team,
@@ -684,6 +686,59 @@ const markAllNotificationsRead = () => {
       setLeagueLog((prev) => [newLogEntry, ...prev]);
     }
   };
+// Remove exactly ONE matching log entry (by id when possible, fallback to signature)
+const removeOneLogEntry = (prevLog, entryToRemove) => {
+  if (!Array.isArray(prevLog)) return [];
+
+  // Best case: id exists
+  if (entryToRemove?.id != null) {
+    let removed = false;
+    return prevLog.filter((e) => {
+      if (removed) return true;
+      if (e?.id === entryToRemove.id) {
+        removed = true;
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Fallback: match on a "signature" of stable-ish fields
+  const sig = (e) =>
+    JSON.stringify({
+      type: e?.type ?? null,
+      timestamp: e?.timestamp ?? null,
+      team: e?.team ?? null,
+      player: e?.player ?? null,
+      fromTeam: e?.fromTeam ?? null,
+      toTeam: e?.toTeam ?? null,
+      amount: e?.amount ?? null,
+      penalty: e?.penalty ?? null,
+      // add more fields here if you ever need tighter matching
+    });
+
+  const targetSig = sig(entryToRemove);
+
+  let removed = false;
+  return prevLog.filter((e) => {
+    if (removed) return true;
+    if (sig(e) === targetSig) {
+      removed = true;
+      return false;
+    }
+    return true;
+  });
+};
+
+const handleCommissionerDeleteLogEntry = (entry) => {
+  if (!currentUser || currentUser.role !== "commissioner") return;
+
+  // optional safety confirm (recommended)
+  const ok = window.confirm("Delete this activity log entry? This cannot be undone.");
+  if (!ok) return;
+
+  setLeagueLog((prev) => removeOneLogEntry(prev, entry));
+};
 
   // Manager profile picture upload
   const handleManagerProfileImageChange = (event) => {
@@ -1189,6 +1244,8 @@ return (
           leagueLog={leagueLog}
           historyFilter={historyFilter}
           setHistoryFilter={setHistoryFilter}
+            currentUser={currentUser}
+  onDeleteLogEntry={handleCommissionerDeleteLogEntry}
         />
       </div>
     </div>
