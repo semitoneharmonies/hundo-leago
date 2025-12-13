@@ -477,16 +477,33 @@ const Header = ({
     </div>
 
     {isManagerViewingOwnTeam && (
-      <label>
-        <input
-          type="file"
-          hidden
-          accept="image/*"
-          onChange={onManagerProfileImageChange}
-        />
-        Change logo
-      </label>
-    )}
+  <>
+    <input
+      id={`logo-upload-${team.name}`}
+      type="file"
+      accept="image/*"
+      onChange={onManagerProfileImageChange}
+      style={{ display: "none" }}
+    />
+
+    <label
+      htmlFor={`logo-upload-${team.name}`}
+      style={{
+        display: "inline-block",
+        padding: "6px 10px",
+        borderRadius: "8px",
+        border: "1px solid #334155",
+        background: "#0b1220",
+        color: "#e2e8f0",
+        cursor: "pointer",
+        fontSize: "0.85rem",
+      }}
+    >
+      Change logo
+    </label>
+  </>
+)}
+
   </div>
 );
 
