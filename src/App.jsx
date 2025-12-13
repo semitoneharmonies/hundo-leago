@@ -293,7 +293,9 @@ const illegalFlagRef = useRef(false);
         if (Array.isArray(data.teams)) setTeams(data.teams);
         if (Array.isArray(data.tradeProposals)) setTradeProposals(data.tradeProposals);
         if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
-        if (Array.isArray(data.leagueLog)) setLeagueLog(data.leagueLog);
+if (Array.isArray(data.leagueLog)) {
+  setLeagueLog(data.leagueLog.filter((e) => e?.type !== "faBidRemoved"));
+}
         if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
         if (data?.settings) setLeagueSettings(data.settings);
 
@@ -323,7 +325,10 @@ useEffect(() => {
       if (Array.isArray(data.teams)) setTeams(data.teams);
       if (Array.isArray(data.tradeProposals)) setTradeProposals(data.tradeProposals);
       if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
-      if (Array.isArray(data.leagueLog)) setLeagueLog(data.leagueLog);
+if (Array.isArray(data.leagueLog)) {
+  const cleaned = data.leagueLog.filter((e) => e?.type !== "faBidRemoved");
+  setLeagueLog(cleaned);
+}
       if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
       if (data?.settings) setLeagueSettings(data.settings);
 
@@ -333,7 +338,9 @@ useEffect(() => {
         teams: Array.isArray(data.teams) ? data.teams : [],
         tradeProposals: Array.isArray(data.tradeProposals) ? data.tradeProposals : [],
         freeAgents: Array.isArray(data.freeAgents) ? data.freeAgents : [],
-        leagueLog: Array.isArray(data.leagueLog) ? data.leagueLog : [],
+leagueLog: Array.isArray(data.leagueLog)
+  ? data.leagueLog.filter((e) => e?.type !== "faBidRemoved")
+  : [],
         tradeBlock: Array.isArray(data.tradeBlock) ? data.tradeBlock : [],
         settings: data?.settings || { frozen: false },
 
@@ -1026,24 +1033,7 @@ const handleCommissionerRemoveBid = (bidId) => {
 
   setFreeAgents(nextFreeAgents);
 
-  // Optional: log bid removal
-  if (removedBid) {
-    const now = Date.now();
-    setLeagueLog((prev) => [
-      {
-        type: "faBidRemoved",
-        id: now + Math.random(),
-        team: removedBid.team,
-        player: removedBid.player,
-        amount: removedBid.amount,
-        timestamp: now,
-      },
-      ...prev,
-    ]);
-  }
 };
-
-
 
   // --- Login / logout ---
 
