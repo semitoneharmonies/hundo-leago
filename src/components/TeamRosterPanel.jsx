@@ -311,6 +311,21 @@ function TeamRosterPanel({
                 {canEditThisTeam && (
                   <button onClick={() => moveToIR(p.name)}>IR</button>
                 )}
+                
+{canEditThisTeam && onAddToTradeBlock && (
+  <button
+    onClick={() =>
+      onAddToTradeBlock({
+        team: team.name,
+        player: p.name,
+        needs: "",
+      })
+    }
+    title="Adds this player to your Trade Block list"
+  >
+    Trade Block
+  </button>
+)}
 
                 {isManagerViewingOtherTeam && (
                   <button onClick={() => toggleRequestPlayer(p.name)}>

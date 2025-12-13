@@ -19,6 +19,7 @@ import {
   placeFreeAgentBid,
   resolveAuctions,
   removeAuctionBidById,
+  isTeamIllegal,
 } from "./leagueUtils";
 
 // League rules
@@ -266,6 +267,14 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   const [hasLoaded, setHasLoaded] = useState(false);
 const saveTimerRef = useRef(null);
 const lastSavedJsonRef = useRef("");
+// -------------------------
+// Notifications (TopBar bell)
+// -------------------------
+const [notifications, setNotifications] = useState([]);
+const [unreadCount, setUnreadCount] = useState(0);
+const [lastSeenTs, setLastSeenTs] = useState(0);
+const illegalFlagRef = useRef(false);
+
 
   useEffect(() => {
   const socket = socketIOClient("https://hundo-leago-backend.onrender.com", {
@@ -432,6 +441,133 @@ useEffect(() => {
   };
 }, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock, leagueSettings, DISABLE_AUTOSAVE]);
 
+// ------------------------------------
+// Notifications: restore last-seen time
+// ------------------------------------
+useEffect(() => {
+  if (!currentUser) return;
+
+  const key =
+    currentUser.role === "manager"
+      ? `hundo_lastSeenNotif_${currentUser.teamName}`
+      : "hundo_lastSeenNotif_commish";
+
+  const raw = localStorage.getItem(key);
+  const ts = raw ? Number(raw) : 0;
+  setLastSeenTs(Number.isFinite(ts) ? ts : 0);
+}, [currentUser]);
+
+// ------------------------------------
+// Notifications: compute notification list
+// ------------------------------------
+useEffect(() => {
+  if (!currentUser) {
+    setNotifications([]);
+    setUnreadCount(0);
+    return;
+  }
+
+  const myTeamName =
+    currentUser.role === "manager" ? currentUser.teamName : null;
+
+  // 1) Incoming trade offers (pending trades addressed to you)
+  const tradeReceived = (tradeProposals || [])
+    .filter((tr) => tr?.status === "pending")
+    .filter((tr) =>
+      currentUser.role === "commissioner" ? true : tr.toTeam === myTeamName
+    )
+    .map((tr) => ({
+      id: `trade-received-${tr.id}`,
+      timestamp: tr.createdAt || tr.updatedAt || tr.id || 0,
+      title: `Trade offer from ${tr.fromTeam}`,
+      body: `Offered: ${(tr.offeredPlayers || []).join(", ")}`,
+    }));
+
+  // 2) Trades you sent that got accepted
+ const tradeAccepted = (leagueLog || [])
+  .filter((e) => String(e?.type || "").toLowerCase() === "tradeaccepted")
+  .filter((e) =>
+    currentUser.role === "commissioner" ? true : e.fromTeam === myTeamName
+  )
+  .map((e) => ({
+    id: `trade-accepted-${e.id}`,
+    timestamp: e.timestamp,
+    title: `Trade accepted by ${e.toTeam}`,
+    body: `You received: ${(e.requestedPlayers || []).join(", ")}`,
+  }));
+
+
+  // 3) Auction wins
+  const auctionWins = (leagueLog || [])
+    .filter((e) => e?.type === "faSigned")
+    .filter((e) =>
+      currentUser.role === "commissioner" ? true : e.team === myTeamName
+    )
+    .map((e) => ({
+      id: `auction-${e.id}`,
+      timestamp: e.timestamp,
+      title: `Auction won: ${e.player}`,
+      body: `Signed for $${e.amount}`,
+    }));
+
+  // 4) Illegal roster (edge-triggered so it only fires when you become illegal)
+  let illegalNotifs = [];
+  if (currentUser.role === "manager") {
+    const myTeam = teams.find((t) => t.name === myTeamName);
+
+    const illegalNow = myTeam
+      ? isTeamIllegal(myTeam, {
+          capLimit: CAP_LIMIT,
+          maxRosterSize: MAX_ROSTER_SIZE,
+          minForwards: MIN_FORWARDS,
+          minDefensemen: MIN_DEFENSEMEN,
+        })
+      : false;
+
+    if (illegalNow && !illegalFlagRef.current) {
+      illegalNotifs.push({
+        id: `illegal-${myTeamName}`,
+timestamp: Date.now(),
+
+        title: "Illegal roster",
+        body: "Your team violates cap or roster rules.",
+      });
+    }
+
+    illegalFlagRef.current = illegalNow;
+  }
+
+  const combined = [
+    ...tradeReceived,
+    ...tradeAccepted,
+    ...auctionWins,
+    ...illegalNotifs,
+  ].sort((a, b) => b.timestamp - a.timestamp);
+
+  const withUnread = combined.map((n) => ({
+    ...n,
+    unread: n.timestamp > lastSeenTs,
+  }));
+
+  setNotifications(withUnread);
+  setUnreadCount(withUnread.filter((n) => n.unread).length);
+}, [currentUser, tradeProposals, leagueLog, teams, lastSeenTs]);
+
+// ------------------------------------
+// Notifications: "mark all read"
+// ------------------------------------
+const markAllNotificationsRead = () => {
+  if (!currentUser) return;
+
+  const key =
+    currentUser.role === "manager"
+      ? `hundo_lastSeenNotif_${currentUser.teamName}`
+      : "hundo_lastSeenNotif_commish";
+
+  const now = Date.now();
+  localStorage.setItem(key, String(now));
+  setLastSeenTs(now);
+};
 
   // --- Helpers ---
 
@@ -967,6 +1103,9 @@ return (
         handleLogin={handleLogin}
         handleLogout={handleLogout}
         setSelectedTeamName={setSelectedTeamName}
+        notifications={notifications}
+  unreadCount={unreadCount}
+  onMarkAllNotificationsRead={markAllNotificationsRead}
       />
 
       {/* FULL WIDTH: Commissioner Panel (NOT inside the grid) */}

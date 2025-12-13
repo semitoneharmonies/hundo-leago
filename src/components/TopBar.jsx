@@ -1,5 +1,5 @@
 // src/components/TopBar.jsx
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 function TopBar({
   currentUser,
@@ -14,9 +14,28 @@ function TopBar({
   handleLogin,
   handleLogout,
   setSelectedTeamName,
+    notifications,
+  unreadCount,
+  onMarkAllNotificationsRead,
 }) {
   const selectedTeam =
     teams.find((t) => t.name === selectedTeamName) || null;
+  // -----------------------
+  // Notifications bell UI
+  // -----------------------
+  const [open, setOpen] = useState(false);
+  const bellRef = useRef(null);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!open) return;
+      if (bellRef.current && !bellRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
 
   return (
     <div
@@ -181,21 +200,198 @@ function TopBar({
               }}
             >
               {/* Small role chip, no big "logged in as" sentence */}
-              <span
+<span
+  style={{
+    fontSize: "0.8rem",
+    color: "#9ca3af",
+    padding: "2px 8px",
+    borderRadius: "999px",
+    border: "1px solid #374151",
+    background: "#020617",
+    whiteSpace: "nowrap",
+  }}
+>
+  {currentUser.role === "commissioner"
+    ? "Commissioner"
+    : currentUser.teamName}
+</span>
+
+{/* Notifications bell */}
+<div ref={bellRef} style={{ position: "relative" }}>
+  <button
+    onClick={() => {
+      const next = !open;
+      setOpen(next);
+
+      // Optional behavior: mark read as soon as they open the dropdown
+      if (
+        next &&
+        unreadCount > 0 &&
+        typeof onMarkAllNotificationsRead === "function"
+      ) {
+        onMarkAllNotificationsRead();
+      }
+    }}
+    title="Notifications"
+    style={{
+      position: "relative",
+      padding: "6px 10px",
+      borderRadius: "8px",
+      border: "1px solid #334155",
+      background: "#0b1220",
+      color: unreadCount > 0 ? "#e5e7eb" : "#64748b",
+      cursor: "pointer",
+    }}
+  >
+    🔔
+    {unreadCount > 0 && (
+      <span
+        style={{
+          position: "absolute",
+          top: "-6px",
+          right: "-6px",
+          background: "#ef4444",
+          color: "#fff",
+          borderRadius: "999px",
+          padding: "2px 6px",
+          fontSize: "0.75rem",
+          border: "1px solid #0b1220",
+        }}
+      >
+        {unreadCount}
+      </span>
+    )}
+  </button>
+
+  {open && (
+    <div
+      style={{
+        position: "absolute",
+        right: 0,
+        top: "110%",
+        width: "320px",
+        background: "#020617",
+        border: "1px solid #1e293b",
+        borderRadius: "10px",
+        padding: "10px",
+        zIndex: 50,
+        boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <strong style={{ color: "#e5e7eb" }}>Notifications</strong>
+        <button
+          onClick={() => setOpen(false)}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#94a3b8",
+            cursor: "pointer",
+            fontSize: "0.9rem",
+          }}
+          title="Close"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div
+        style={{
+          marginTop: 8,
+          maxHeight: "280px",
+          overflowY: "auto",
+        }}
+      >
+        {(notifications || []).length === 0 ? (
+          <div
+            style={{
+              color: "#94a3b8",
+              fontSize: "0.9rem",
+              padding: "8px 2px",
+            }}
+          >
+            No new notifications.
+          </div>
+        ) : (
+          (notifications || [])
+            .slice(0, 20)
+            .map((n) => (
+              <div
+                key={n.id}
                 style={{
-                  fontSize: "0.8rem",
-                  color: "#9ca3af",
-                  padding: "2px 8px",
-                  borderRadius: "999px",
-                  border: "1px solid #374151",
-                  background: "#020617",
-                  whiteSpace: "nowrap",
+                  border: "1px solid #1f2937",
+                  borderRadius: "8px",
+                  padding: "8px",
+                  marginTop: "8px",
+                  background: n.unread ? "#0b1220" : "#020617",
                 }}
               >
-                {currentUser.role === "commissioner"
-                  ? "Commissioner"
-                  : currentUser.teamName}
-              </span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#e5e7eb",
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    {n.title}
+                  </div>
+                  {n.unread && (
+                    <span style={{ color: "#fca5a5", fontSize: "0.75rem" }}>
+                      NEW
+                    </span>
+                  )}
+                </div>
+                <div
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: "0.85rem",
+                    marginTop: 4,
+                  }}
+                >
+                  {n.body}
+                </div>
+              </div>
+            ))
+        )}
+      </div>
+
+      {(notifications || []).length > 0 && (
+        <button
+          onClick={() => {
+            if (typeof onMarkAllNotificationsRead === "function")
+              onMarkAllNotificationsRead();
+          }}
+          style={{
+            marginTop: "10px",
+            width: "100%",
+            padding: "8px 10px",
+            borderRadius: "8px",
+            border: "1px solid #334155",
+            background: "#0b1220",
+            color: "#e5e7eb",
+            cursor: "pointer",
+          }}
+        >
+          Mark all read
+        </button>
+      )}
+    </div>
+  )}
+</div>
+
               <button onClick={handleLogout}>Logout</button>
             </div>
           )}
