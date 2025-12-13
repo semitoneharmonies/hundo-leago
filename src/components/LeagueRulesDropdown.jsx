@@ -6,7 +6,11 @@ function LeagueRulesDropdown({ onClose }) {
     <div style={wrap}>
       <div style={headerRow}>
         <div style={title}>League Rules & How To</div>
-        <button onClick={onClose} style={closeBtn} aria-label="Close League Rules">
+        <button
+          onClick={onClose}
+          style={closeBtn}
+          aria-label="Close League Rules"
+        >
           ✕
         </button>
       </div>
@@ -18,11 +22,18 @@ function LeagueRulesDropdown({ onClose }) {
           <RuleLine label="Cap Limit" value="$100" />
           <RuleLine label="Max Roster Size" value="15" />
           <RuleLine label="Minimum Positions" value="8F / 4D" />
+          <RuleLine label="IR Slots" value="4 (IR players don’t count vs cap)" />
           <RuleLine label="Trade Expiry" value="7 days after proposal" />
+          <RuleLine label="Retention Limit" value="Max 50% per player" />
+          <RuleLine label="Retention Spots" value="3 retained players max" />
           <RuleLine label="Auction Rollover" value="Sunday @ 4:00 PM" />
           <RuleLine label="New Auctions Close" value="Thursday @ 11:59 PM" />
+          <RuleLine label="Auction Tiebreaker" value="Earliest bid wins (if tied)" />
           <RuleLine label="Buyout Penalty" value="25% of salary (rounded up)" />
-          <RuleLine label="Auction Buyout Lock" value="14 days after signing (follows player if traded)" />
+          <RuleLine
+            label="Auction Buyout Lock"
+            value="14 days after signing (follows player if traded)"
+          />
         </div>
       </div>
 
@@ -30,42 +41,120 @@ function LeagueRulesDropdown({ onClose }) {
       <div style={content}>
         <Section title="Rosters & Salary Cap">
           <p style={p}>
-            Each team must stay under the league cap limit and maintain a legal active roster.
+            Each team must stay under the league cap limit and maintain a legal
+            active roster.
           </p>
           <ul style={ul}>
-            <li style={li}>Cap Limit: <strong>$100</strong></li>
-            <li style={li}>Max active roster size: <strong>15</strong></li>
-            <li style={li}>Minimum positions: <strong>8 Forwards</strong> and <strong>4 Defense</strong></li>
+            <li style={li}>
+              Cap Limit: <strong>$100</strong>
+            </li>
+            <li style={li}>
+              Max active roster size: <strong>15</strong>
+            </li>
+            <li style={li}>
+              Minimum positions: <strong>8 Forwards</strong> and{" "}
+              <strong>4 Defense</strong>
+            </li>
+          </ul>
+        </Section>
+
+        <Section title="Injured Reserve (IR)">
+          <p style={p}>
+            IR is for injured players and helps keep your active roster legal.
+          </p>
+          <ul style={ul}>
+            <li style={li}>
+              Max IR slots: <strong>4</strong>
+            </li>
+            <li style={li}>
+              IR players do <strong>not</strong> count toward your cap.
+            </li>
           </ul>
         </Section>
 
         <Section title="Buyouts">
           <p style={p}>
-            Buyouts remove a player from your roster and add a buyout penalty to your team.
+            Buyouts remove a player from your roster and add a buyout penalty to
+            your team.
           </p>
           <ul style={ul}>
-            <li style={li}>Buyout penalty is <strong>25%</strong> of the player’s salary (rounded up).</li>
-            <li style={li}>Players signed via free-agent auction have a <strong>14-day buyout lock</strong> (the lock follows the player if traded).</li>
+            <li style={li}>
+              Buyout penalty is <strong>25%</strong> of the player’s salary
+              (rounded up).
+            </li>
+            <li style={li}>
+              Players signed via free-agent auction have a{" "}
+              <strong>14-day buyout lock</strong> (the lock follows the player
+              if traded).
+            </li>
           </ul>
         </Section>
 
         <Section title="Trades">
           <p style={p}>
-            Trades are proposed between two teams and must be accepted to take effect.
+            Trades are proposed between two teams and must be accepted to take
+            effect.
           </p>
           <ul style={ul}>
-            <li style={li}>Trade proposals expire <strong>1 week</strong> after they’re created.</li>
-            <li style={li}>Trades can include retained salary and/or buyout penalty transfers (when enabled in the trade builder).</li>
+            <li style={li}>
+              Trade proposals expire <strong>1 week</strong> after they’re
+              created.
+            </li>
+            <li style={li}>
+              Trades can include retained salary and/or buyout penalty transfers
+              (when enabled in the trade builder).
+            </li>
+            <li style={li}>
+              Retained salary limit: <strong>max 50%</strong> of a player’s
+              salary.
+            </li>
+            <li style={li}>
+              Retention spots: <strong>3</strong> retained-salary players max.
+            </li>
           </ul>
         </Section>
 
         <Section title="Free Agent Auctions">
+          <p style={p}>Free agents are signed through weekly auctions.</p>
+          <ul style={ul}>
+            <li style={li}>
+              Auction rollover: <strong>Sunday at 4:00 PM</strong>
+            </li>
+            <li style={li}>
+              New auctions close: <strong>Thursday at 11:59 PM</strong>
+            </li>
+            <li style={li}>
+              Ties: if two bids are the same amount, the{" "}
+              <strong>earlier</strong> bid wins.
+            </li>
+            <li style={li}>
+              Winning a bid signs the player to your roster at the winning
+              salary.
+            </li>
+          </ul>
+        </Section>
+
+        <Section title="Commissioner Tools">
           <p style={p}>
-            Free agents are signed through weekly auctions.
+            Commissioner features are for maintaining and administering the
+            league.
           </p>
           <ul style={ul}>
-            <li style={li}>Auction rollover: <strong>Sunday at 4:00 PM</strong></li>
-            <li style={li}>New auctions close: <strong>Thursday at 11:59 PM</strong></li>
+            <li style={li}>
+              Reset League: restores the league back to the original default
+              state.
+            </li>
+            <li style={li}>
+              Resolve Auctions: processes the current weekly auctions at
+              rollover.
+            </li>
+            <li style={li}>
+              Snapshots: create/restore saved league states (useful as
+              checkpoints).
+            </li>
+            <li style={li}>
+              Freeze League (when enabled): prevents normal roster changes.
+            </li>
           </ul>
         </Section>
       </div>
@@ -100,9 +189,9 @@ const wrap = {
   width: 520,
   maxWidth: "90vw",
 
-    maxHeight: "calc(100vh - 140px)",
+  maxHeight: "calc(100vh - 140px)",
   overflowY: "auto",
-  
+
   background: "#020617",
   border: "1px solid #1f2937",
   borderRadius: 10,
@@ -164,8 +253,18 @@ const sectionTitle = {
   color: "#e5e7eb",
 };
 
-const p = { margin: "8px 0", color: "#cbd5e1", fontSize: "0.85rem", lineHeight: 1.35 };
-const ul = { margin: "6px 0 0 18px", color: "#cbd5e1", fontSize: "0.85rem", lineHeight: 1.35 };
+const p = {
+  margin: "8px 0",
+  color: "#cbd5e1",
+  fontSize: "0.85rem",
+  lineHeight: 1.35,
+};
+const ul = {
+  margin: "6px 0 0 18px",
+  color: "#cbd5e1",
+  fontSize: "0.85rem",
+  lineHeight: 1.35,
+};
 const li = { marginBottom: 6 };
 
 export default LeagueRulesDropdown;
