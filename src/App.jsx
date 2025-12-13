@@ -267,6 +267,77 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   const [hasLoaded, setHasLoaded] = useState(false);
 const saveTimerRef = useRef(null);
 const lastSavedJsonRef = useRef("");
+
+// -------------------------
+// Auction win sound (manager)
+// -------------------------
+const winSoundLockRef = useRef(false);
+
+const playAuctionWinSound = async () => {
+  if (winSoundLockRef.current) return;
+  winSoundLockRef.current = true;
+  setTimeout(() => (winSoundLockRef.current = false), 1500);
+
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    const ctx = new AudioCtx();
+
+    // attempt to resume if browser started it suspended
+    if (ctx.state === "suspended") {
+      await ctx.resume().catch(() => {});
+    }
+
+    const beep = (freq, start, dur, gainVal = 0.05) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      gain.gain.value = gainVal;
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur);
+    };
+
+    beep(523.25, 0.00, 0.12);
+    beep(659.25, 0.13, 0.12);
+    beep(783.99, 0.26, 0.18);
+
+    setTimeout(() => ctx.close?.(), 800);
+  } catch (e) {
+    console.warn("[SOUND] win sound blocked or failed:", e);
+  }
+};
+// ------------------------------------
+// Auction win: play sound once per new win
+// ------------------------------------
+useEffect(() => {
+  if (!currentUser || currentUser.role !== "manager") return;
+
+  const teamName = currentUser.teamName;
+  if (!teamName) return;
+
+  // Find newest win entry for this manager
+  const latestWin = (leagueLog || [])
+    .filter((e) => e?.type === "faSigned" && e?.team === teamName)
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+
+  if (!latestWin?.timestamp) return;
+
+  const key = `hundo_lastHeardAuctionWin_${teamName}`;
+  const lastHeard = Number(localStorage.getItem(key) || "0");
+
+  if (latestWin.timestamp > lastHeard) {
+    // Mark first, then play (prevents double-play if re-render happens mid-sound)
+    localStorage.setItem(key, String(latestWin.timestamp));
+    playAuctionWinSound();
+  }
+}, [currentUser, leagueLog]);
+
 // -------------------------
 // Notifications (TopBar bell)
 // -------------------------
