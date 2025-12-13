@@ -68,6 +68,12 @@ export default function CommissionerPanel({
   const isCommish = currentUser?.role === "commissioner";
   if (!isCommish) return null;
 
+  const loginHistory = [...(leagueLog || [])]
+  .filter((e) => e?.type === "managerLogin")
+  .sort((a, b) => (b?.timestamp || 0) - (a?.timestamp || 0));
+
+
+
   // Derive API base so we can call /api/snapshots using the same origin
   const apiBase = useMemo(() => {
     // apiUrl expected to end with "/api/league"
@@ -886,10 +892,44 @@ export default function CommissionerPanel({
           )}
         </div>
       </div>
+{/* LOGIN HISTORY */}
+<div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
+  <h3 style={sectionTitle}>Manager Login History</h3>
 
+  {loginHistory.length === 0 ? (
+    <div style={smallLabel}>No manager logins recorded yet.</div>
+  ) : (
+    <div style={{ display: "grid", gap: "6px", marginTop: "8px" }}>
+      {loginHistory.slice(0, 50).map((e) => (
+        <div
+          key={e.id}
+          style={{
+            border: "1px solid #334155",
+            borderRadius: "8px",
+            padding: "6px 10px",
+            background: "#020617",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: "0.85rem",
+          }}
+        >
+          <span style={{ color: "#e2e8f0" }}>
+            <strong>{e.team}</strong> logged in
+          </span>
+          <span style={{ color: "#6b7280", fontSize: "0.75rem" }}>
+            {new Date(e.timestamp).toLocaleString()}
+          </span>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
       <div style={{ marginTop: "12px", ...smallLabel }}>
         Tip: We can add “Freeze enforcement” next (block managers from placing bids / proposing trades / buyouts when frozen).
       </div>
+      
+
     </div>
   );
 }
