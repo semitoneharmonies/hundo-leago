@@ -41,6 +41,24 @@ export const calculateBuyout = (salary) => {
   return Math.ceil(s * 0.25);
 };
 
+// -------------------------------
+//   Buyout lock after FA signing
+// -------------------------------
+
+// 14 days (in ms)
+export const BUYOUT_LOCK_MS = 14 * 24 * 60 * 60 * 1000;
+
+export function isBuyoutLocked(player, now = Date.now()) {
+  const until = Number(player?.buyoutLockedUntil || 0);
+  return until > now;
+}
+
+export function getBuyoutLockDaysLeft(player, now = Date.now()) {
+  const until = Number(player?.buyoutLockedUntil || 0);
+  if (!until || until <= now) return 0;
+  return Math.ceil((until - now) / (24 * 60 * 60 * 1000));
+}
+
 export const totalCap = (team) => {
   if (!team) return 0;
 
@@ -1229,7 +1247,12 @@ export function resolveAuctions({
     const newSalary = Number(winner.amount) || 0;
     const position = winner.position || "F";
 
-    const newPlayer = { name: playerName, salary: newSalary, position };
+const newPlayer = {
+  name: playerName,
+  salary: newSalary,
+  position,
+  buyoutLockedUntil: now + BUYOUT_LOCK_MS,
+};
 
     const candidateTeam = {
       ...team,
