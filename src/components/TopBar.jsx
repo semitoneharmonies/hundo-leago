@@ -24,9 +24,6 @@ function TopBar({
     [teams, selectedTeamName]
   );
 
-  // -----------------------
-  // Dropdown UI state
-  // -----------------------
   const [notifOpen, setNotifOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
 
@@ -41,9 +38,8 @@ function TopBar({
       const clickedBell = bellRef.current && bellRef.current.contains(target);
       const clickedRules = rulesRef.current && rulesRef.current.contains(target);
 
-      if (bellRef.current && !clickedBell) setNotifOpen(false);
-if (rulesRef.current && !clickedRules) setRulesOpen(false);
-
+      if (!clickedBell) setNotifOpen(false);
+      if (!clickedRules) setRulesOpen(false);
     };
 
     document.addEventListener("mousedown", onDocClick);
@@ -71,18 +67,47 @@ if (rulesRef.current && !clickedRules) setRulesOpen(false);
           gap: "12px",
         }}
       >
-        {/* Left: App title */}
-        <div
-          style={{
-            fontSize: "1.75rem",
-            fontWeight: 900,
-            letterSpacing: "0.5px",
-            color: "#f97316",
-            textShadow: "0 0 8px rgba(249,115,22,0.4)",
-            fontFamily: "'Oswald', sans-serif",
-          }}
-        >
-          HUNDO LEAGO
+        {/* Left: Title + League Rules */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div
+            style={{
+              fontSize: "1.75rem",
+              fontWeight: 900,
+              letterSpacing: "0.5px",
+              color: "#f97316",
+              textShadow: "0 0 8px rgba(249,115,22,0.4)",
+              fontFamily: "'Oswald', sans-serif",
+              whiteSpace: "nowrap",
+            }}
+          >
+            HUNDO LEAGO
+          </div>
+
+          {/* League Rules button + dropdown (always visible) */}
+          <div ref={rulesRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => {
+                setRulesOpen((prev) => !prev);
+                setNotifOpen(false);
+              }}
+              title="League Rules"
+              style={{
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: "1px solid #334155",
+                background: "#0b1220",
+                color: "#e5e7eb",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              League Rules
+            </button>
+
+            {rulesOpen && (
+              <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
+            )}
+          </div>
         </div>
 
         {/* Middle: Selected team logo + View Team selector */}
@@ -98,7 +123,6 @@ if (rulesRef.current && !clickedRules) setRulesOpen(false);
             flexShrink: 0,
           }}
         >
-          {/* Team logo bubble */}
           {selectedTeam?.profilePic ? (
             <img
               src={selectedTeam.profilePic}
@@ -164,7 +188,7 @@ if (rulesRef.current && !clickedRules) setRulesOpen(false);
           </select>
         </div>
 
-        {/* Right: Login / Logout + buttons */}
+        {/* Right: Login / Logout + Notifications */}
         <div style={{ minWidth: "260px" }}>
           {!currentUser ? (
             <form
@@ -229,33 +253,6 @@ if (rulesRef.current && !clickedRules) setRulesOpen(false);
                   ? "Commissioner"
                   : currentUser.teamName}
               </span>
-
-              {/* League Rules button + dropdown */}
-              <div ref={rulesRef} style={{ position: "relative" }}>
-                <button
-                  onClick={() => {
-                    setRulesOpen((prev) => !prev);
-                    setNotifOpen(false);
-                  }}
-                  title="League Rules"
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: "8px",
-                    border: "1px solid #334155",
-                    background: "#0b1220",
-                    color: "#e5e7eb",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  League Rules
-                </button>
-
-                {rulesOpen && (
-  <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
-)}
-
-              </div>
 
               {/* Notifications bell + dropdown */}
               <div ref={bellRef} style={{ position: "relative" }}>
@@ -388,7 +385,9 @@ if (rulesRef.current && !clickedRules) setRulesOpen(false);
                                 {n.title}
                               </div>
                               {n.unread && (
-                                <span style={{ color: "#fca5a5", fontSize: "0.75rem" }}>
+                                <span
+                                  style={{ color: "#fca5a5", fontSize: "0.75rem" }}
+                                >
                                   NEW
                                 </span>
                               )}
