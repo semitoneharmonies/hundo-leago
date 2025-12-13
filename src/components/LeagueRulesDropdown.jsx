@@ -95,7 +95,7 @@ function RuleLine({ label, value }) {
 const wrap = {
   position: "absolute",
   top: "100%",
-  right: 0,
+  left: 0,
   marginTop: 8,
   width: 520,
   maxWidth: "90vw",
