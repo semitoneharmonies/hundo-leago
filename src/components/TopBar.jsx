@@ -41,8 +41,9 @@ function TopBar({
       const clickedBell = bellRef.current && bellRef.current.contains(target);
       const clickedRules = rulesRef.current && rulesRef.current.contains(target);
 
-      if (!clickedBell) setNotifOpen(false);
-      if (!clickedRules) setRulesOpen(false);
+      if (bellRef.current && !clickedBell) setNotifOpen(false);
+if (rulesRef.current && !clickedRules) setRulesOpen(false);
+
     };
 
     document.addEventListener("mousedown", onDocClick);
@@ -251,17 +252,9 @@ function TopBar({
                 </button>
 
                 {rulesOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      top: "110%",
-                      zIndex: 60,
-                    }}
-                  >
-                    <LeagueRulesDropdown />
-                  </div>
-                )}
+  <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
+)}
+
               </div>
 
               {/* Notifications bell + dropdown */}
