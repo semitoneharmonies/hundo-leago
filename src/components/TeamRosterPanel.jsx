@@ -486,21 +486,15 @@ const Header = ({
       style={{ display: "none" }}
     />
 
-    <label
-      htmlFor={`logo-upload-${team.name}`}
-      style={{
-        display: "inline-block",
-        padding: "6px 10px",
-        borderRadius: "8px",
-        border: "1px solid #334155",
-        background: "#0b1220",
-        color: "#e2e8f0",
-        cursor: "pointer",
-        fontSize: "0.85rem",
-      }}
-    >
-      Change logo
-    </label>
+    <label className="logoUploadBtn">
+  <input
+    type="file"
+    hidden
+    accept="image/*"
+    onChange={onManagerProfileImageChange}
+  />
+  Change logo
+</label>
   </>
 )}
 
