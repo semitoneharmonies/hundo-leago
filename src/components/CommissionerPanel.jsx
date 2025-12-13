@@ -872,9 +872,16 @@ export default function CommissionerPanel({
                     alignItems: "center",
                   }}
                 >
-                  <div style={{ color: "#e2e8f0" }}>
-                    <strong>{b.player}</strong> ({b.position}) — ${b.amount} — {b.team}
-                  </div>
+                  <div
+  style={{ color: "#e2e8f0" }}
+  title={`Bid: $${b.amount}`}
+>
+  <strong>{b.player}</strong> ({b.position}) — {b.team}
+  <span style={{ marginLeft: "8px", color: "#94a3b8", fontSize: "0.8rem" }}>
+    (hover for bid)
+  </span>
+</div>
+
                   <button
                     style={dangerButton}
                     onClick={() => onCommissionerRemoveBid?.(b.id)}
