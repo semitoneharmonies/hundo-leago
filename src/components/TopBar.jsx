@@ -84,30 +84,33 @@ function TopBar({
           </div>
 
           {/* League Rules button + dropdown (always visible) */}
-          <div ref={rulesRef} style={{ position: "relative" }}>
-            <button
-              onClick={() => {
-                setRulesOpen((prev) => !prev);
-                setNotifOpen(false);
-              }}
-              title="League Rules"
-              style={{
-                padding: "6px 10px",
-                borderRadius: "8px",
-                border: "1px solid #334155",
-                background: "#0b1220",
-                color: "#e5e7eb",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              League Rules
-            </button>
+          {currentUser && (
+  <div ref={rulesRef} style={{ position: "relative" }}>
+    <button
+      onClick={() => {
+        setRulesOpen((prev) => !prev);
+        setNotifOpen(false);
+      }}
+      title="League Rules"
+      style={{
+        padding: "6px 10px",
+        borderRadius: "8px",
+        border: "1px solid #334155",
+        background: "#0b1220",
+        color: "#e5e7eb",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      League Rules
+    </button>
 
-            {rulesOpen && (
-              <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
-            )}
-          </div>
+    {rulesOpen && (
+      <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
+    )}
+  </div>
+)}
+
         </div>
 
         {/* Middle: Selected team logo + View Team selector */}

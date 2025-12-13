@@ -99,6 +99,10 @@ const wrap = {
   marginTop: 8,
   width: 520,
   maxWidth: "90vw",
+
+    maxHeight: "calc(100vh - 140px)",
+  overflowY: "auto",
+  
   background: "#020617",
   border: "1px solid #1f2937",
   borderRadius: 10,
