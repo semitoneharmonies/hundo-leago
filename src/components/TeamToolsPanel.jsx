@@ -1244,75 +1244,77 @@ const isPlayerRostered = (playerName) => {
           </div>
          <button
   onClick={() => {
-    try {
-      console.log("[AUCTION] Start/place bid clicked", {
-        bidPlayerName,
-        bidPosition,
-        bidAmount,
-        nowMs,
-        nextSunday: nextSunday?.toISOString?.(),
-        auctionCutoff: auctionCutoff?.toISOString?.(),
-        hasOnPlaceBid: typeof onPlaceBid,
-      });
+  try {
+    console.log("[AUCTION] Start/place bid clicked", {
+      bidPlayerName,
+      bidPosition,
+      bidAmount,
+      nowMs,
+      nextSunday: nextSunday?.toISOString?.(),
+      auctionCutoff: auctionCutoff?.toISOString?.(),
+      hasOnPlaceBid: typeof onPlaceBid,
+    });
 
-      const trimmedName = bidPlayerName.trim();
+    const trimmedName = bidPlayerName.trim();
 
-      if (!trimmedName || !bidAmount) {
-        window.alert("Enter a player name and bid amount.");
-        return;
-      }
-
-      if (typeof onPlaceBid !== "function") {
-        window.alert("Auction error: onPlaceBid is not wired (not a function).");
-        console.error("[AUCTION] onPlaceBid is not a function:", onPlaceBid);
-        return;
-      }
-
-      const lowerName = trimmedName.toLowerCase();
-
-      // Are we bidding on an existing live auction, or starting a new one?
-      const isExistingAuction = activeAuctionsByPlayer.some(
-        (a) => a.key === lowerName
-      );
-
-      // ⛔ No bids at all after Sunday deadline
-      if (nowMs > nextSunday.getTime()) {
-        window.alert(
-          "Auction window is closed. Bids after the Sunday 4:00 PM deadline do not count."
-        );
-        return;
-      }
-
-      // If this is a new auction (player not in live auctions yet),
-      // enforce the Thursday 11:59pm cutoff.
-      if (!isExistingAuction && nowMs > auctionCutoff.getTime()) {
-        window.alert(
-          "Too late to start a new auction for this week. You can start new auctions again after this Sunday’s deadline."
-        );
-        return;
-      }
-
-      // Prevent auctions on players who are already rostered
-      if (!isExistingAuction && isPlayerRostered(trimmedName)) {
-        window.alert(
-          "This player is already on a roster. You cannot start a free-agent auction for rostered players."
-        );
-        return;
-      }
-
-      onPlaceBid({
-        playerName: trimmedName,
-        position: bidPosition,
-        amount: bidAmount,
-      });
-
-      setBidPlayerName("");
-      setBidAmount("");
-    } catch (err) {
-      console.error("[AUCTION] Start/place bid crashed:", err);
-      window.alert("Auction crashed — check console for [AUCTION] error.");
+    if (!trimmedName || !bidAmount) {
+      window.alert("Enter a player name and bid amount.");
+      return;
     }
-  }}
+
+    if (typeof onPlaceBid !== "function") {
+      window.alert("Auction error: onPlaceBid is not wired (not a function).");
+      console.error("[AUCTION] onPlaceBid is not a function:", onPlaceBid);
+      return;
+    }
+
+    // ✅ define once, use everywhere
+    const lowerName = trimmedName.toLowerCase();
+
+    // Existing auction?
+    const isExistingAuction = activeAuctionsByPlayer.some(
+      (a) => a.key === lowerName
+    );
+
+    // ⛔ No bids after Sunday deadline
+    if (nowMs > nextSunday.getTime()) {
+      window.alert(
+        "Auction window is closed. Bids after the Sunday 4:00 PM deadline do not count."
+      );
+      return;
+    }
+
+    // ⛔ Too late to START a new auction
+    if (!isExistingAuction && nowMs > auctionCutoff.getTime()) {
+      window.alert(
+        "Too late to start a new auction for this week. You can start new auctions again after this Sunday’s deadline."
+      );
+      return;
+    }
+
+    // ✅ Case-insensitive roster check
+if (!isExistingAuction && isPlayerRostered(trimmedName)) {
+  window.alert(
+    "This player is already on a roster. You cannot start a free-agent auction for rostered players."
+  );
+  return;
+}
+
+
+    onPlaceBid({
+      playerName: trimmedName, // keep original casing for display
+      position: bidPosition,
+      amount: bidAmount,
+    });
+
+    setBidPlayerName("");
+    setBidAmount("");
+  } catch (err) {
+    console.error("[AUCTION] Start/place bid crashed:", err);
+    window.alert("Auction crashed — check console for [AUCTION] error.");
+  }
+}}
+
   style={{
     padding: "4px 10px",
     fontSize: "0.85rem",
