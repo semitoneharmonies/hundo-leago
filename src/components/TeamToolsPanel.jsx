@@ -89,15 +89,18 @@ function TeamToolsPanel({
   })();
 
   // 🔒 Helper: is this player already on any roster?
-  const isPlayerRostered = (playerName) => {
-    if (!teams || !teams.length) return false;
-    const lower = playerName.toLowerCase();
-    return teams.some((t) =>
-      (t.roster || []).some(
-        (p) => p.name && p.name.toLowerCase() === lower
-      )
-    );
-  };
+ const normalizeName = (s) => String(s || "").trim().toLowerCase();
+
+const isPlayerRostered = (playerName) => {
+  if (!teams || !teams.length) return false;
+  const key = normalizeName(playerName);
+  if (!key) return false;
+
+  return teams.some((t) =>
+    (t.roster || []).some((p) => normalizeName(p?.name) === key)
+  );
+};
+
 
   const handleLiveBidInputChange = (playerKey, value) => {
     setLiveBidInputs((prev) => ({

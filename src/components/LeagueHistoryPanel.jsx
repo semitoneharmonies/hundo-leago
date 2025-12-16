@@ -29,6 +29,8 @@ function getEntryIcon(entry) {
       return "•";
   }
 }
+const HISTORY_MAX_HEIGHT_PX = 420; // ~10 rows depending on font/spacing
+
 
 function LeagueHistoryPanel({
   leagueLog,
@@ -60,7 +62,7 @@ function LeagueHistoryPanel({
 
   if (historyFilter === "auctions") {
     // auction-related items (currently FA signings)
-    return entry.type === "faSigned" || entry.type === "faBid";
+return entry.type === "faSigned" || entry.type === "faAuctionStarted";
   }
 
   return true;
@@ -173,13 +175,21 @@ function LeagueHistoryPanel({
         </p>
       ) : (
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
-            fontSize: "0.9rem",
-          }}
-        >
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    fontSize: "0.9rem",
+
+    // ✅ fixed-size scroll box
+    maxHeight: "420px",
+    overflowY: "auto",
+    overflowX: "hidden",
+    WebkitOverflowScrolling: "touch",
+    paddingRight: "6px",
+  }}
+>
+
           {filtered.map((entry) => {
             let text = "";
 
@@ -223,11 +233,15 @@ function LeagueHistoryPanel({
               text = `Trade between ${entry.fromTeam} and ${entry.toTeam} expired.`;
             } else if (entry.type === "faSigned") {
               text = `${entry.team} won free agent ${entry.player} for $${entry.amount}.`;
+              } else if (entry.type === "faAuctionStarted") {
+  text = `${entry.player} is up for auction!`;
+
             } else {
               text = JSON.stringify(entry);
             }
 
             const icon = getEntryIcon(entry);
+            
 
             return (
               <div
@@ -257,6 +271,7 @@ function LeagueHistoryPanel({
   >
     {formatTimestamp(entry.timestamp)}
   </span>
+  
 
   {currentUser?.role === "commissioner" && typeof onDeleteLogEntry === "function" && (
     <button

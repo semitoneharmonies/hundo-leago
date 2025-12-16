@@ -212,7 +212,7 @@ function getDefaultLeagueState() {
     freeAgents: [],
     leagueLog: [],
     tradeBlock: [],
-    settings: { frozen: false },
+settings: { frozen: false, managerLoginHistory: [] },
   };
 }
 
@@ -368,7 +368,13 @@ if (Array.isArray(data.leagueLog)) {
   setLeagueLog(data.leagueLog.filter((e) => e?.type !== "faBidRemoved"));
 }
         if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
-        if (data?.settings) setLeagueSettings(data.settings);
+if (data?.settings) {
+  setLeagueSettings({
+    frozen: false,
+    managerLoginHistory: [],
+    ...data.settings,
+  });
+}
 
       })
       .catch((err) => console.error("[WS] reload failed:", err));
@@ -1180,6 +1186,32 @@ const handleLogin = () => {
   };
 
   setCurrentUser(nextUser);
+  
+ // Record manager login (keep only last 10)
+if (nextUser.role === "manager" && typeof setLeagueSettings === "function") {
+  const now = Date.now();
+  const entry = {
+    id: now + Math.random(),
+    type: "managerLogin",
+    teamName: nextUser.teamName,
+    timestamp: now,
+  };
+
+  setLeagueSettings((prev) => {
+    const base = prev || { frozen: false, managerLoginHistory: [] };
+    const history = Array.isArray(base.managerLoginHistory)
+      ? base.managerLoginHistory
+      : [];
+
+    // Optional: avoid immediate duplicates (same team logging in twice instantly)
+    const deduped = history.filter(
+      (e) => !(e?.teamName === entry.teamName && e?.timestamp === entry.timestamp)
+    );
+
+    return { ...base, managerLoginHistory: [entry, ...deduped].slice(0, 10) };
+  });
+}
+
   localStorage.setItem("hundo_currentUser", JSON.stringify(nextUser));
 
   setLoginError("");
@@ -1223,6 +1255,7 @@ return (
   unreadCount={unreadCount}
   onMarkAllNotificationsRead={markAllNotificationsRead}
       />
+      
 
       {/* FULL WIDTH: Commissioner Panel (NOT inside the grid) */}
       <div style={{ marginTop: "12px", marginBottom: "12px" }}>
@@ -1300,7 +1333,6 @@ return (
             onCancelTrade={handleCancelTrade}
             onCounterTrade={handleCounterTrade}
             tradeBlock={tradeBlock}
-            onAddTradeBlockEntry={handleAddTradeBlockEntry}
             freeAgents={freeAgents}
             onPlaceBid={handlePlaceBid}
             onResolveAuctions={handleResolveAuctions}

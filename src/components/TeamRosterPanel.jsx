@@ -7,6 +7,9 @@ import {
   countPositions,
   isTeamIllegal,
   countRetentionSpots,
+    isBuyoutLocked,
+  getBuyoutLockDaysLeft,
+
 } from "../leagueUtils";
 
 const MAX_IR = 4;
@@ -265,6 +268,8 @@ function TeamRosterPanel({
           const offered = isPlayerOffered(p.name);
           const penalty = calculateBuyout(p.salary);
           const newCap = capUsed - p.salary + penalty;
+const locked = isBuyoutLocked(p);
+const daysLeft = locked ? getBuyoutLockDaysLeft(p) : 0;
 
           return (
             <div
@@ -291,14 +296,29 @@ function TeamRosterPanel({
 
               <div style={{ display: "flex", gap: 6 }}>
                 {canEditThisTeam && (
-                  <button
-                    onMouseEnter={() => setHoveredBuyoutPlayer(p.name)}
-                    onMouseLeave={() => setHoveredBuyoutPlayer(null)}
-                    onClick={() => onBuyout(team.name, p.name)}
-                  >
-                    Buyout
-                  </button>
-                )}
+  <button
+    onMouseEnter={() => setHoveredBuyoutPlayer(p.name)}
+    onMouseLeave={() => setHoveredBuyoutPlayer(null)}
+    onClick={() => {
+      if (locked) return;
+      onBuyout(team.name, p.name);
+    }}
+    disabled={locked}
+    style={
+      locked
+        ? {
+            backgroundColor: "#1e40af", // muted blue
+            opacity: 0.55,
+            cursor: "not-allowed",
+          }
+        : undefined
+    }
+    title={locked ? `Buyout locked: ${daysLeft} day(s) left` : undefined}
+  >
+    {locked ? `Buyout (${daysLeft}d)` : "Buyout"}
+  </button>
+)}
+
 
                 {hoveredBuyoutPlayer === p.name && (
                   <div style={tooltipStyle}>

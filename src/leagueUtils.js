@@ -1274,13 +1274,11 @@ const newPlayer = {
     });
   }
 
-  const nextFreeAgents = bids.map((bid) => {
-    if (!resolvedBidIds.has(bid.id)) return bid;
-    const isWinner = winningBidIds.has(bid.id);
-    return { ...bid, resolved: true, winningTeam: isWinner ? bid.team : null };
-  });
+// ✅ Delete all bids for auctions that were resolved this rollover
+const nextFreeAgents = bids.filter((bid) => !resolvedBidIds.has(bid.id));
 
-  return { nextTeams, nextFreeAgents, newLogs };
+return { nextTeams, nextFreeAgents, newLogs };
+
 }
 
 export function removeAuctionBidById(freeAgents, bidId) {
@@ -1312,14 +1310,17 @@ export function placeFreeAgentBid({
   const team = allTeams.find((t) => t.name === biddingTeamName);
   if (!team) return { ok: false, errorMessage: "Your team could not be found." };
 
-  const trimmedName = (playerName || "").trim();
-  if (!trimmedName) return { ok: false, errorMessage: "Please enter a player name to bid on." };
+ const normalizeName = (s) => String(s || "").trim().toLowerCase();
 
-  const lowerName = trimmedName.toLowerCase();
+const trimmedName = (playerName || "").trim();
+if (!trimmedName) return { ok: false, errorMessage: "Please enter a player name to bid on." };
 
-  const isOnRoster = allTeams.some((t) =>
-    (t.roster || []).some((p) => (p.name || "").toLowerCase() === lowerName)
-  );
+const key = normalizeName(trimmedName);
+
+const isOnRoster = allTeams.some((t) =>
+  (t.roster || []).some((p) => normalizeName(p?.name) === key)
+);
+
   if (isOnRoster) {
     return {
       ok: false,
@@ -1380,16 +1381,15 @@ export function placeFreeAgentBid({
   const nextFreeAgents = [...bids, newEntry];
 
   const logEntry = createdNewAuction
-    ? {
-        type: "faAuctionStarted",
-        id: now + Math.random(),
-        team: biddingTeamName,
-        player: trimmedName,
-        amount,
-        position: finalPosition,
-        timestamp,
-      }
-    : null;
+  ? {
+      type: "faAuctionStarted",
+      id: now + Math.random(),
+      player: trimmedName,
+      position: finalPosition,
+      timestamp,
+    }
+  : null;
+
 
   return { ok: true, nextFreeAgents, logEntry, warningMessage };
 }

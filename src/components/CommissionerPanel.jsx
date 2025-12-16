@@ -900,14 +900,20 @@ export default function CommissionerPanel({
         </div>
       </div>
 {/* LOGIN HISTORY */}
-<div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
+<div
+  style={{
+    marginTop: "14px",
+    paddingTop: "14px",
+    borderTop: "1px solid #1e293b",
+  }}
+>
   <h3 style={sectionTitle}>Manager Login History</h3>
 
   {loginHistory.length === 0 ? (
     <div style={smallLabel}>No manager logins recorded yet.</div>
   ) : (
     <div style={{ display: "grid", gap: "6px", marginTop: "8px" }}>
-      {loginHistory.slice(0, 50).map((e) => (
+      {loginHistory.slice(0, 10).map((e) => (
         <div
           key={e.id}
           style={{
@@ -922,20 +928,19 @@ export default function CommissionerPanel({
           }}
         >
           <span style={{ color: "#e2e8f0" }}>
-            <strong>{e.team}</strong> logged in
+            <strong>{e.teamName}</strong> logged in
           </span>
           <span style={{ color: "#6b7280", fontSize: "0.75rem" }}>
-            {new Date(e.timestamp).toLocaleString()}
+            {e.timestamp ? new Date(e.timestamp).toLocaleString() : "—"}
           </span>
         </div>
       ))}
+      {loginHistory.length > 10 && (
+        <div style={smallLabel}>Showing last 10 logins.</div>
+      )}
     </div>
   )}
 </div>
-      <div style={{ marginTop: "12px", ...smallLabel }}>
-        Tip: We can add “Freeze enforcement” next (block managers from placing bids / proposing trades / buyouts when frozen).
-      </div>
-      
 
     </div>
   );
