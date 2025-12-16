@@ -59,6 +59,7 @@ function TopBar({
       }}
     >
       <div
+        className="topBar"
         style={{
           display: "flex",
           flexWrap: "wrap",

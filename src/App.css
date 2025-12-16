@@ -78,6 +78,35 @@ li {
   align-items: flex-start;
 }
 
+/* ---------- Top bar layout ---------- */
+.topBar {
+  flex-wrap: nowrap;          /* desktop: single row */
+}
+
+/* Prevent left side from shrinking */
+.topBar > :first-child {
+  flex-shrink: 0;
+}
+
+/* Let login form shrink instead of wrapping */
+.topBar form,
+.topBar .loginForm {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+/* Mobile: allow wrapping */
+@media (max-width: 820px) {
+  .topBar {
+    flex-wrap: wrap;
+  }
+}
+@media (min-width: 821px) {
+  .topBar input {
+    max-width: 160px;
+  }
+}
+
 /* each column will take equal space, but never smaller than 280px */
 .columns > .left,
 .columns > .right {
