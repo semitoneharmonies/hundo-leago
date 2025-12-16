@@ -268,11 +268,22 @@ html {
   min-height: 100vh;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 12px;
+@media (max-width: 820px) {
+  .container {
+    padding: 8px; /* mobile only */
+  }
+
+  .mainGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  h1, h2, h3 {
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
 }
+
 
 /* Your main 2-column layout */
 .mainGrid {
@@ -281,6 +292,10 @@ html {
   gap: 16px;
   align-items: start;
 }
+.mainGrid > * {
+  min-width: 0; /* IMPORTANT: allows columns to shrink instead of overflowing */
+}
+
 
 /* Make form elements behave nicely on phones */
 input,
@@ -306,11 +321,6 @@ button {
     margin-top: 8px;
     margin-bottom: 8px;
   }
-}
-
-/* Prevent accidental horizontal overflow */
-body {
-  overflow-x: hidden;
 }
 
 /* If a panel contains something wide, let it scroll instead of forcing zoom */
