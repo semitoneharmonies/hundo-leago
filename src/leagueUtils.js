@@ -1333,9 +1333,15 @@ const isOnRoster = allTeams.some((t) =>
     return { ok: false, errorMessage: "Please enter a valid positive bid amount." };
   }
 
-  const existingActive = bids.find((fa) => !fa.resolved && fa.player.toLowerCase() === lowerName);
-  const hasActiveAuction = !!existingActive;
-  const createdNewAuction = !hasActiveAuction;
+  // normalize once and use everywhere
+const lowerName = key; // key is already normalizeName(trimmedName)
+
+const existingActive = bids.find(
+  (fa) => !fa.resolved && normalizeName(fa.player) === lowerName
+);
+const hasActiveAuction = !!existingActive;
+const createdNewAuction = !hasActiveAuction;
+
 
   const baseDate = typeof now === "number" ? new Date(now) : now;
   const nextSunday = getNextSundayDeadline(baseDate);
@@ -1362,7 +1368,8 @@ const isOnRoster = allTeams.some((t) =>
       `You'll need to buy out players to get back under $${capLimit}.`;
   }
 
-  const existingEntry = existingActive || bids.find((f) => f.player.toLowerCase() === lowerName);
+const existingEntry =
+  existingActive || bids.find((f) => normalizeName(f.player) === lowerName);
   const finalPosition = existingEntry?.position || position || "F";
 
   const timestamp = typeof now === "number" ? now : now.getTime();
