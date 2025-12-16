@@ -1242,67 +1242,90 @@ const isPlayerRostered = (playerName) => {
               style={{ width: "90px" }}
             />
           </div>
-          <button
-            onClick={() => {
-              const trimmedName = bidPlayerName.trim();
+         <button
+  onClick={() => {
+    try {
+      console.log("[AUCTION] Start/place bid clicked", {
+        bidPlayerName,
+        bidPosition,
+        bidAmount,
+        nowMs,
+        nextSunday: nextSunday?.toISOString?.(),
+        auctionCutoff: auctionCutoff?.toISOString?.(),
+        hasOnPlaceBid: typeof onPlaceBid,
+      });
 
-              if (!trimmedName || !bidAmount) {
-                window.alert("Enter a player name and bid amount.");
-                return;
-              }
+      const trimmedName = bidPlayerName.trim();
 
-              const lowerName = trimmedName.toLowerCase();
+      if (!trimmedName || !bidAmount) {
+        window.alert("Enter a player name and bid amount.");
+        return;
+      }
 
-              // Are we bidding on an existing live auction, or starting a new one?
-              const isExistingAuction = activeAuctionsByPlayer.some(
-                (a) => a.key === lowerName
-              );
+      if (typeof onPlaceBid !== "function") {
+        window.alert("Auction error: onPlaceBid is not wired (not a function).");
+        console.error("[AUCTION] onPlaceBid is not a function:", onPlaceBid);
+        return;
+      }
 
-              // ⛔ No bids at all after Sunday deadline
-              if (nowMs > nextSunday.getTime()) {
-                window.alert(
-                  "Auction window is closed. Bids after the Sunday 4:00 PM deadline do not count."
-                );
-                return;
-              }
+      const lowerName = trimmedName.toLowerCase();
 
-              // If this is a new auction (player not in live auctions yet),
-              // enforce the Thursday 11:59pm cutoff.
-              if (!isExistingAuction && nowMs > auctionCutoff.getTime()) {
-                window.alert(
-                  "Too late to start a new auction for this week. You can start new auctions again after this Sunday’s deadline."
-                );
-                return;
-              }
+      // Are we bidding on an existing live auction, or starting a new one?
+      const isExistingAuction = activeAuctionsByPlayer.some(
+        (a) => a.key === lowerName
+      );
 
-              // Prevent auctions on players who are already rostered
-              if (!isExistingAuction && isPlayerRostered(trimmedName)) {
-                window.alert(
-                  "This player is already on a roster. You cannot start a free-agent auction for rostered players."
-                );
-                return;
-              }
+      // ⛔ No bids at all after Sunday deadline
+      if (nowMs > nextSunday.getTime()) {
+        window.alert(
+          "Auction window is closed. Bids after the Sunday 4:00 PM deadline do not count."
+        );
+        return;
+      }
 
-              onPlaceBid({
-                playerName: trimmedName,
-                position: bidPosition,
-                amount: bidAmount,
-              });
-              setBidPlayerName("");
-              setBidAmount("");
-            }}
-            style={{
-              padding: "4px 10px",
-              fontSize: "0.85rem",
-              backgroundColor: "#16a34a",
-              color: "#e5e7eb",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Start / place bid
-          </button>
+      // If this is a new auction (player not in live auctions yet),
+      // enforce the Thursday 11:59pm cutoff.
+      if (!isExistingAuction && nowMs > auctionCutoff.getTime()) {
+        window.alert(
+          "Too late to start a new auction for this week. You can start new auctions again after this Sunday’s deadline."
+        );
+        return;
+      }
+
+      // Prevent auctions on players who are already rostered
+      if (!isExistingAuction && isPlayerRostered(trimmedName)) {
+        window.alert(
+          "This player is already on a roster. You cannot start a free-agent auction for rostered players."
+        );
+        return;
+      }
+
+      onPlaceBid({
+        playerName: trimmedName,
+        position: bidPosition,
+        amount: bidAmount,
+      });
+
+      setBidPlayerName("");
+      setBidAmount("");
+    } catch (err) {
+      console.error("[AUCTION] Start/place bid crashed:", err);
+      window.alert("Auction crashed — check console for [AUCTION] error.");
+    }
+  }}
+  style={{
+    padding: "4px 10px",
+    fontSize: "0.85rem",
+    backgroundColor: "#16a34a",
+    color: "#e5e7eb",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+  }}
+>
+  Start / place bid
+</button>
+
         </div>
       ) : (
         <p style={{ fontSize: "0.85rem", color: "#6b7280" }}>
