@@ -32,7 +32,6 @@ These features function correctly but need cleanup, polish, or refinement.
     → new bids should replace the previous bid
   - Bids from completed auctions are still visible to teams  
     → these should be deleted after auction rollover
-  - Countdown timer works but needs visual polish
 
 ### Roster Panel
 - Functional and usable
