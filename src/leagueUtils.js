@@ -1210,14 +1210,16 @@ export function resolveAuctions({
   }
 
   const bidsByPlayer = new Map();
-  for (const bid of activeBids) {
-    const key = (bid.player || "").toLowerCase();
-    if (!key) continue;
-    if (!bidsByPlayer.has(key)) bidsByPlayer.set(key, []);
-    bidsByPlayer.get(key).push(bid);
-  }
 
-  const winningBidIds = new Set();
+ for (const bid of activeBids) {
+const key = String(bid?.auctionKey || bid?.player || "").trim().toLowerCase();
+
+  if (!key) continue;
+  if (!bidsByPlayer.has(key)) bidsByPlayer.set(key, []);
+  bidsByPlayer.get(key).push(bid);
+}
+
+
   const resolvedBidIds = new Set();
   const newLogs = [];
 
@@ -1260,8 +1262,6 @@ const newPlayer = {
     };
 
     nextTeams = nextTeams.map((t, idx) => (idx === teamIdx ? candidateTeam : t));
-
-    winningBidIds.add(winner.id);
 
     newLogs.push({
       type: "faSigned",
@@ -1336,9 +1336,12 @@ const isOnRoster = allTeams.some((t) =>
   // normalize once and use everywhere
 const lowerName = key; // key is already normalizeName(trimmedName)
 
-const existingActive = bids.find(
-  (fa) => !fa.resolved && normalizeName(fa.player) === lowerName
-);
+const existingActive = bids.find((fa) => {
+  if (fa?.resolved) return false;
+  const faKey = String(fa?.auctionKey || normalizeName(fa?.player)).trim().toLowerCase();
+  return faKey === lowerName;
+});
+
 const hasActiveAuction = !!existingActive;
 const createdNewAuction = !hasActiveAuction;
 
@@ -1369,23 +1372,51 @@ const createdNewAuction = !hasActiveAuction;
   }
 
 const existingEntry =
-  existingActive || bids.find((f) => normalizeName(f.player) === lowerName);
+  existingActive ||
+  bids.find((f) => {
+    const fKey = String(f?.auctionKey || normalizeName(f?.player))
+      .trim()
+      .toLowerCase();
+    return fKey === lowerName;
+  });
+
   const finalPosition = existingEntry?.position || position || "F";
 
   const timestamp = typeof now === "number" ? now : now.getTime();
 
   const newEntry = {
-    id: `bid-${timestamp}-${Math.random().toString(36).slice(2)}`,
-    player: trimmedName,
-    team: biddingTeamName,
-    amount,
-    position: finalPosition,
-    assigned: false,
-    resolved: false,
-    timestamp,
-  };
+  id: `bid-${timestamp}-${Math.random().toString(36).slice(2)}`,
+  auctionKey: lowerName, // ✅ canonical key for this auction/player
+  player: trimmedName,
+  team: biddingTeamName,
+  amount,
+  position: finalPosition,
+  assigned: false,
+  resolved: false,
+  timestamp,
+};
 
-  const nextFreeAgents = [...bids, newEntry];
+
+// ✅ Enforce: one ACTIVE bid per team per player
+// If this team already has an active bid for this player, replace it.
+// (We only touch bids where !resolved, and same player + same team)
+const nextFreeAgents = (() => {
+  const next = [];
+
+  for (const b of bids) {
+const sameAuction =
+  String(b?.auctionKey || normalizeName(b?.player)).trim().toLowerCase() === lowerName;
+    const sameTeam = String(b?.team || "") === String(biddingTeamName || "");
+    const active = !b?.resolved;
+
+if (active && sameAuction && sameTeam) continue;
+
+    next.push(b);
+  }
+
+  next.push(newEntry);
+  return next;
+})();
 
   const logEntry = createdNewAuction
   ? {

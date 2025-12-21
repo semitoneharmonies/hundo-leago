@@ -65,8 +65,9 @@ function TeamToolsPanel({
   const bids = freeAgents || [];
   const activeBids = bids.filter((b) => !b.resolved);
   const myBids = isManager
-    ? bids.filter((b) => b.team === myTeamName)
-    : [];
+  ? bids.filter((b) => b.team === myTeamName && !b.resolved)
+  : [];
+
 
   // Group active bids by player (for live auctions list)
   const activeAuctionsByPlayer = (() => {
@@ -74,7 +75,7 @@ function TeamToolsPanel({
     for (const b of activeBids) {
       const playerName = b.player || "";
       if (!playerName) continue;
-      const key = playerName.toLowerCase();
+const key = b.auctionKey || playerName.trim().toLowerCase();
       if (!byKey.has(key)) {
         byKey.set(key, {
           key,
@@ -1180,23 +1181,32 @@ const isPlayerRostered = (playerName) => {
       />
 
       <h3 style={{ marginTop: 0 }}>Free Agent Auctions</h3>
-      <p
-        style={{
-          fontSize: "0.8rem",
-          color: "#9ca3af",
-          marginTop: 0,
-          marginBottom: "4px",
-        }}
-      >
-        Next auction run:{" "}
-        <strong>{nextSunday.toLocaleString()}</strong>
-        <br />
-        New players can be put up for auction until{" "}
-        <strong>{auctionCutoff.toLocaleString()}</strong>.
-        <br />
-        Time remaining:{" "}
-        <strong>{formatCountdown(timeRemainingMs)}</strong>
-      </p>
+     <div
+  style={{
+    fontSize: "0.8rem",
+    color: "#9ca3af",
+    marginTop: 0,
+    marginBottom: "6px",
+  }}
+>
+  <div>Time remaining:</div>
+
+  <div
+    className={`auction-countdown ${
+      timeRemainingMs < 24 * 60 * 60 * 1000 ? "urgent" : ""
+    } ${
+      timeRemainingMs < 60 * 60 * 1000 ? "critical" : ""
+    }`}
+  >
+    <div className="label">
+      {timeRemainingMs < 60 * 60 * 1000
+        ? "FINAL HOUR"
+        : "Auction rollover in"}
+    </div>
+    <div className="time">{formatCountdown(timeRemainingMs)}</div>
+  </div>
+</div>
+
 
       {/* Manager: start a new auction */}
       {isManager ? (
@@ -1269,7 +1279,7 @@ const isPlayerRostered = (playerName) => {
     }
 
     // ✅ define once, use everywhere
-    const lowerName = trimmedName.toLowerCase();
+const lowerName = normalizeName(trimmedName);
 
     // Existing auction?
     const isExistingAuction = activeAuctionsByPlayer.some(
@@ -1550,7 +1560,7 @@ if (!isExistingAuction && isPlayerRostered(trimmedName)) {
       {isManager && (
         <div style={{ marginTop: "12px" }}>
           <h4 style={{ margin: "0 0 4px 0", fontSize: "0.95rem" }}>
-            Your bids
+            Your active bids
           </h4>
           {myBids.length === 0 ? (
             <p style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
