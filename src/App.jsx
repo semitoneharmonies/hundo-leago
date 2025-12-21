@@ -22,15 +22,21 @@ import {
   isTeamIllegal,
 } from "./leagueUtils";
 
+// Backend endpoint (Netlify env var first, fallback hard-coded)
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://hundo-leago-backend.onrender.com/api/league";
+
+  const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ||
+  "https://hundo-leago-backend.onrender.com";
+
 // League rules
 const CAP_LIMIT = 100;
 const MAX_ROSTER_SIZE = 15;
 const MIN_FORWARDS = 8;
 const MIN_DEFENSEMEN = 4;
-// Backend endpoint (Netlify env var first, fallback hard-coded)
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://hundo-leago-backend.onrender.com/api/league";
+
   // Phase 0 safety: allow disabling autosave from Netlify env var
 const DISABLE_AUTOSAVE = import.meta.env.VITE_DISABLE_AUTOSAVE === "true";
 
@@ -348,9 +354,10 @@ const illegalFlagRef = useRef(false);
 
 
   useEffect(() => {
-  const socket = socketIOClient("https://hundo-leago-backend.onrender.com", {
-    transports: ["websocket"],
-  });
+  const socket = socketIOClient(SOCKET_URL, {
+  transports: ["websocket"],
+});
+
 
   socket.on("connect", () => {
     console.log("[WS] connected:", socket.id);
