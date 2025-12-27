@@ -26,12 +26,7 @@ These features function correctly but need cleanup, polish, or refinement.
 ### Blind Auctions
 - Core auction flow works
 - Auction rollover is scheduled for Sunday at 4:00 PM PT  
-  - Rollover was triggered manually last week; automatic rollover still needs confirmation
-- Issues to address:
-  - Teams can currently place multiple bids on the same free agent  
-    → new bids should replace the previous bid
-  - Bids from completed auctions are still visible to teams  
-    → these should be deleted after auction rollover
+
 
 ### Roster Panel
 - Functional and usable
