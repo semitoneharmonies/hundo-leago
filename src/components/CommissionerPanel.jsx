@@ -343,14 +343,15 @@ export default function CommissionerPanel({
   .filter((b) => b.player && b.penalty > 0);
 
 
-
-    const cleanedRetained = (editRetained || [])
+const cleanedRetained = (editRetained || [])
   .map((r) => ({
     player: (r.player || "").trim(),
-penalty: Math.max(0, safeNumber(r.amount, 0)),    retained: true,
+    penalty: Math.max(0, safeNumber(r.amount, 0)),
+    retained: true,
     note: (r.note || "").trim(),
   }))
   .filter((r) => r.player && r.penalty > 0);
+
 
 
     setTeams((prev) =>
@@ -893,13 +894,15 @@ const addRosterRow = () => {
                     alignItems: "center",
                   }}
                 >
-                  <div
+                 <div
   style={{ color: "#e2e8f0" }}
-  title={`Bid: $${b.amount}`}
+  title={`Bid: $${b.amount} • Team: ${b.team || "—"}`}
 >
-  <strong>{b.player}</strong> ({b.position}) — {b.team}
+  <strong>{b.player}</strong>
+  {b.position ? ` (${b.position})` : ""}
+
   <span style={{ marginLeft: "8px", color: "#94a3b8", fontSize: "0.8rem" }}>
-    (hover for bid)
+    (hover for bid + team)
   </span>
 </div>
 
