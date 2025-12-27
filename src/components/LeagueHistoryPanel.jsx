@@ -9,6 +9,22 @@ function formatTimestamp(ts) {
 
 function getEntryIcon(entry) {
   switch (entry.type) {
+        case "commEditTeam":
+      return "🛠️";
+    case "commFreezeToggle":
+      return "🧊";
+    case "commClearAllBids":
+      return "🧽";
+    case "commClearPendingTrades":
+      return "🚫";
+    case "commCancelTrade":
+      return "🛑";
+    case "commRestoreSnapshot":
+      return "🕘";
+    case "commCreateSnapshot":
+      return "📸";
+    case "commResetDefaults":
+      return "⚠️";
     case "buyout":
       return "💸";
     case "commRemovePlayer":
@@ -25,6 +41,9 @@ function getEntryIcon(entry) {
       return "⏰";
     case "faSigned":
       return "🆓";
+      case "faAuctionStarted":
+  return "🔨";
+
     default:
       return "•";
   }
@@ -57,8 +76,19 @@ function LeagueHistoryPanel({
   }
 
   if (historyFilter === "comm") {
-    return entry.type === "commRemovePlayer";
-  }
+  return (
+    entry.type === "commRemovePlayer" ||
+    entry.type === "commEditTeam" ||
+    entry.type === "commFreezeToggle" ||
+    entry.type === "commClearAllBids" ||
+    entry.type === "commClearPendingTrades" ||
+    entry.type === "commCancelTrade" ||
+    entry.type === "commRestoreSnapshot" ||
+    entry.type === "commCreateSnapshot" ||
+    entry.type === "commResetDefaults"
+  );
+}
+
 
   if (historyFilter === "auctions") {
     // auction-related items (currently FA signings)
@@ -235,6 +265,24 @@ return entry.type === "faSigned" || entry.type === "faAuctionStarted";
               text = `${entry.team} won free agent ${entry.player} for $${entry.amount}.`;
               } else if (entry.type === "faAuctionStarted") {
   text = `${entry.player} is up for auction!`;
+            } else if (entry.type === "commEditTeam") {
+text = `Commissioner updated ${entry.team}${entry.summary ? ` (${entry.summary})` : ""}.`;
+            } else if (entry.type === "commFreezeToggle") {
+              text = entry.frozen
+                ? "Commissioner froze the league."
+                : "Commissioner unfroze the league.";
+            } else if (entry.type === "commClearAllBids") {
+              text = "Commissioner cleared all auction bids.";
+            } else if (entry.type === "commClearPendingTrades") {
+              text = "Commissioner cancelled all pending trades.";
+            } else if (entry.type === "commCancelTrade") {
+              text = "Commissioner force-cancelled a trade.";
+            } else if (entry.type === "commRestoreSnapshot") {
+              text = `Commissioner restored snapshot ${entry.snapshotId}.`;
+            } else if (entry.type === "commCreateSnapshot") {
+              text = `Commissioner created a snapshot${entry.snapshotId ? ` (${entry.snapshotId})` : ""}.`;
+            } else if (entry.type === "commResetDefaults") {
+              text = "Commissioner reset the league to defaults.";
 
             } else {
               text = JSON.stringify(entry);

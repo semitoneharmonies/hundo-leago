@@ -367,11 +367,13 @@ const cleanedRetained = (editRetained || [])
     );
 
     addLog({
-      type: "commEditTeam",
-      by: "Commissioner",
-      team: editTeamName,
-      timestamp: Date.now(),
-    });
+  type: "commEditTeam",
+  by: "Commissioner",
+  team: editTeamName,
+  summary: "Edited roster/buyouts/retained",
+  timestamp: Date.now(),
+});
+
 
     setAdminMessage(`Saved edits for ${editTeamName}`);
   };
