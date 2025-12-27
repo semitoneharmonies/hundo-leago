@@ -1,0 +1,213 @@
+# Roadmap — Phase 1: Persistent Database & Cleanup (Hundo Leago)
+
+## Goal (Plain English)
+Make Hundo Leago **impossible to accidentally reset** during normal use (deploys, restarts, crashes, reconnects).
+Phase 1 is complete when the backend is the **single durable source of truth**, and league state only changes when an explicit action happens.
+
+This phase is intentionally boring and foundational — it prevents “league got wiped” disasters before we add players/stats/matchups.
+
+---
+
+## Scope
+### In scope
+- Durable persistence for the entire league state
+- Remove/disable any automatic resets/auto-seeding in production
+- Backend-first “single source of truth” enforcement
+- Versioning + basic migrations so future changes don’t break old data
+- Safety tooling: snapshots/restore, backups (minimum viable)
+- Basic hardening: validation, logging, guardrails
+
+### Out of scope (Phase 2+)
+- Player database + stat ingestion
+- Matchups, standings, playoffs, scoring
+- Multi-league support
+- Full auth system (can add lightweight protection if needed)
+
+---
+
+## Phase 1 Strategy (Recommended Path)
+We will do this in **three sub-phases** so progress is visible and we don’t get trapped in a rewrite.
+
+### Phase 1A — Minimum Viable Persistence (Stop resets)
+Store **the whole league state** as one persisted object (single file or single DB row/document).
+- Fastest route to “no more resets”
+- Keeps current frontend mostly intact
+- Lets us refactor later without breaking the league
+
+### Phase 1B — Cleanup + Guardrails
+Backend validates and rejects invalid updates, adds schemaVersion, and makes state changes auditable.
+
+### Phase 1C — Optional: Normalize Storage (Later, only if needed)
+Split into tables/collections (teams, trades, auctions, logs, etc.) if/when scale demands it.
+Not required for Phase 1 completion.
+
+---
+
+## Decision Checklist (Pick one persistence option)
+Choose ONE of these for Phase 1A:
+- **Option A: SQLite (local file DB)** — simplest operationally, very easy to start
+- **Option B: Postgres (Render managed)** — more “production standard”, slightly more setup
+- **Option C: JSON file on persistent disk** — fastest to implement, but requires careful locking
+
+**Default recommendation for Phase 1A:** Start with **SQLite or Postgres** if possible.  
+(If we’re already using Render persistent disk successfully, JSON-on-disk can be acceptable short-term.)
+
+---
+
+## North Star Rules (Non-negotiable)
+- Backend is the **single source of truth**
+- Deploy/restart must NOT change league state
+- League state must NOT auto-reset unless commissioner explicitly triggers it
+- Live league changes must never be reverted to code defaults
+- Risky changes must be behind a “flag” or done on a staging copy
+
+---
+
+## Current Known Risks (What we’re fixing)
+- Any “seed defaults if empty” logic can wipe or overwrite live state
+- In-memory state gets lost on server restart
+- Race conditions: multiple writes at once may corrupt state (especially JSON file approach)
+- Frontend mutations that bypass validation can create illegal league states
+
+---
+
+## Data Model: “League State” (Phase 1A)
+In Phase 1A we persist a single object:
+
+- teams[]
+- freeAgents[] (bids/auctions)
+- tradeProposals[]
+- leagueLog[]
+- snapshots[]
+- meta: { schemaVersion, createdAt, seasonId, lastUpdatedAt, ... }
+
+**Schema versioning is mandatory** in Phase 1B.
+
+---
+
+## Milestones & Tasks
+
+# Milestone 1 — Freeze current behavior (Baseline)
+**Purpose:** Create a stable baseline so Phase 1 changes don’t break working features.
+
+### Tasks
+- [ ] Tag current working commit (e.g., `phase0-stable`)
+- [ ] Add a simple “smoke test checklist” (manual)
+- [ ] Confirm: auctions, trades, commissioner tools, activity log, roster edits function “well enough”
+
+### Acceptance
+- [ ] Everyone can still use the site
+- [ ] No new features added here — only stability baseline
+
+---
+
+# Milestone 2 — Phase 1A: Persistence (No more resets)
+**Purpose:** Make league state survive restarts/deploys.
+
+### Tasks
+- [ ] Implement a `LeagueStore` module on backend:
+  - `loadLeague()`
+  - `saveLeague(state)`
+  - `initLeagueIfEmpty()` (ONLY for first-time setup, never overwrites existing)
+- [ ] Ensure server loads persisted state on boot
+- [ ] Ensure every state mutation route saves after mutation
+- [ ] Remove/disable any production auto-seeding logic
+- [ ] Add a safe “commissioner-only reset” endpoint (explicit)
+- [ ] Add a safe “commissioner-only import defaults” endpoint (explicit)
+
+### Acceptance (Must pass)
+- [ ] Restart backend → league state is unchanged
+- [ ] Redeploy backend → league state is unchanged
+- [ ] Frontend refresh → league state is unchanged
+- [ ] No silent overwrites from code defaults
+- [ ] Commissioner can explicitly reset (and only commissioner)
+
+---
+
+# Milestone 3 — Phase 1B: Validation, Audit, Versioning
+**Purpose:** Make state safe to extend and hard to corrupt.
+
+### Tasks
+- [ ] Add `schemaVersion` to persisted league state
+- [ ] Add validation on load:
+  - If missing fields → repair with defaults (non-destructive)
+  - If invalid types → reject or repair safely
+- [ ] Add validation on write:
+  - Reject illegal updates (cap violations, roster size violations, etc.) OR ensure backend applies rules consistently
+- [ ] Add audit log standards:
+  - Every mutation logs: type, timestamp, actor, before/after summary
+- [ ] Add migration function:
+  - `migrateLeagueState(state)` that upgrades older schemaVersion to current
+
+### Acceptance
+- [ ] Old state can load even after code updates (via migration)
+- [ ] Invalid payloads don’t corrupt the database
+- [ ] Every major action has an activity log entry consistently
+
+---
+
+# Milestone 4 — Safety Tooling (Snapshots + Backups)
+**Purpose:** Make it easy to recover from mistakes.
+
+### Tasks
+- [ ] Ensure snapshot creation/restore is persisted (not memory-only)
+- [ ] Add “daily backup” option (manual button is OK for Phase 1)
+- [ ] Add “export league JSON” endpoint (commissioner-only)
+- [ ] Add “import league JSON” endpoint (commissioner-only, requires confirmation flag)
+
+### Acceptance
+- [ ] Can recover from a bad deploy or bug using snapshot/backup without losing the season
+
+---
+
+# Milestone 5 — Deployment Hardening & Environment Separation
+**Purpose:** Prevent production mistakes and allow safer testing.
+
+### Tasks
+- [ ] Add environment config:
+  - `NODE_ENV`, `LEAGUE_ENV` = `prod` / `staging`
+- [ ] Ensure prod uses prod storage, staging uses staging storage
+- [ ] Disable dangerous endpoints in prod unless commissioner + explicit flag
+- [ ] Add a simple “/health” endpoint
+- [ ] Add basic rate limiting / request size limits (lightweight)
+
+### Acceptance
+- [ ] Staging testing cannot wipe prod league
+- [ ] Prod has guardrails against accidental destructive operations
+
+---
+
+## Session Plan (Work one chunk at a time)
+Use these as “one session” slices:
+
+1) **Baseline + tag + smoke checklist**
+2) **LeagueStore module + load/save wiring**
+3) **Remove production auto-seeding + add explicit reset/import endpoints**
+4) **Persist snapshots + ensure mutation routes always save**
+5) **Schema versioning + migrateLeagueState scaffolding**
+6) **Validation on load + safe repairs**
+7) **Validation on write + backend rule enforcement**
+8) **Export/import + backup workflow**
+9) **Staging vs production separation + hardening**
+
+---
+
+## Smoke Test Checklist (Manual)
+Run after each milestone:
+- [ ] Team roster edits persist after refresh
+- [ ] Trades: propose/accept/reject/cancel persist after refresh
+- [ ] Auctions: place bid persists after refresh
+- [ ] Commissioner actions persist after refresh
+- [ ] Activity log entries persist after refresh
+- [ ] Restart backend → everything remains unchanged
+
+---
+
+## Definition of Done (Phase 1 Complete)
+Phase 1 is done when:
+- [ ] League data persists across restarts and deploys
+- [ ] No automatic resets occur in production
+- [ ] Backend validates and version-controls league state
+- [ ] Snapshots/backups allow recovery
+- [ ] Staging/prod separation prevents accidents
+- [ ] We can confidently start Phase 2 (player database + stats) without fear of wiping the league
