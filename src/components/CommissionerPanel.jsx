@@ -110,26 +110,37 @@ export default function CommissionerPanel({
   useEffect(() => {
     const team = (teams || []).find((t) => t.name === editTeamName);
     setEditRoster(
-      (team?.roster || []).map((p) => ({
-        name: p.name || "",
-        salary: safeNumber(p.salary, 0),
-        position: p.position === "D" ? "D" : "F",
-      }))
-    );
-    setEditBuyouts(
-      (team?.buyouts || []).map((b) => ({
-        player: b.player || "",
-        penalty: safeNumber(b.penalty, 0),
-      }))
-    );
-    setEditRetained(
-      (team?.retainedSalaries || []).map((r) => ({
-        // keep fields flexible because your retention shape may evolve
-        player: r.player || "",
-        amount: safeNumber(r.amount, safeNumber(r.retainedAmount, 0)),
-        note: r.note || r.fromTeam || "",
-      }))
-    );
+  (team?.roster || []).map((p) => ({
+    _rowId: nowId(),
+    name: p.name || "",
+    salary: safeNumber(p.salary, 0),
+    position: p.position === "D" ? "D" : "F",
+  }))
+);
+
+   setEditBuyouts(
+  (team?.buyouts || [])
+    .filter((b) => !b?.retained)
+    .map((b) => ({
+      _rowId: nowId(),
+      player: b.player || "",
+      penalty: safeNumber(b.penalty, 0),
+    }))
+);
+
+
+  setEditRetained(
+  (team?.buyouts || [])
+    .filter((b) => b?.retained)
+    .map((r) => ({
+      _rowId: nowId(),
+      player: r.player || "",
+      amount: safeNumber(r.penalty, 0),
+      note: r.note || r.fromTeam || "",
+    }))
+);
+
+
   }, [editTeamName, teams]);
 
   // ----------------------------
@@ -314,38 +325,43 @@ export default function CommissionerPanel({
   // Roster editor apply
   // ----------------------------
   const applyRosterEdits = () => {
-    const cleanedRoster = (editRoster || [])
-      .map((p) => ({
-        name: (p.name || "").trim(),
-        salary: safeNumber(p.salary, 0),
-        position: p.position === "D" ? "D" : "F",
-      }))
+   const cleanedRoster = (editRoster || [])
+  .map((p) => ({
+    name: (p.name || "").trim(),
+    salary: safeNumber(p.salary, 0),
+    position: p.position === "D" ? "D" : "F",
+  }))
+
+
       .filter((p) => p.name);
 
     const cleanedBuyouts = (editBuyouts || [])
-      .map((b) => ({
-        player: (b.player || "").trim(),
-        penalty: safeNumber(b.penalty, 0),
-      }))
-      .filter((b) => b.player);
+  .map((b) => ({
+    player: (b.player || "").trim(),
+    penalty: Math.max(0, safeNumber(b.penalty, 0)),
+  }))
+  .filter((b) => b.player && b.penalty > 0);
+
+
 
     const cleanedRetained = (editRetained || [])
-      .map((r) => ({
-        player: (r.player || "").trim(),
-        amount: safeNumber(r.amount, 0),
-        note: (r.note || "").trim(),
-      }))
-      .filter((r) => r.player);
+  .map((r) => ({
+    player: (r.player || "").trim(),
+penalty: Math.max(0, safeNumber(r.amount, 0)),    retained: true,
+    note: (r.note || "").trim(),
+  }))
+  .filter((r) => r.player && r.penalty > 0);
+
 
     setTeams((prev) =>
       (prev || []).map((t) => {
         if (t.name !== editTeamName) return t;
         return {
-          ...t,
-          roster: sortRosterDefault(cleanedRoster),
-          buyouts: cleanedBuyouts,
-          retainedSalaries: cleanedRetained,
-        };
+  ...t,
+  roster: sortRosterDefault(cleanedRoster),
+  buyouts: [...cleanedBuyouts, ...cleanedRetained],
+};
+
       })
     );
 
@@ -359,17 +375,19 @@ export default function CommissionerPanel({
     setAdminMessage(`Saved edits for ${editTeamName}`);
   };
 
-  const addRosterRow = () => {
-    setEditRoster((prev) => [...(prev || []), { name: "", salary: 1, position: "F" }]);
-  };
+const addRosterRow = () => {
+  setEditRoster((prev) => [...(prev || []), { _rowId: nowId(), name: "", salary: 1, position: "F" }]);
+};
+
 
   const addBuyoutRow = () => {
-    setEditBuyouts((prev) => [...(prev || []), { player: "", penalty: 0 }]);
-  };
+  setEditBuyouts((prev) => [...(prev || []), { _rowId: nowId(), player: "", penalty: 0 }]);
+};
 
   const addRetentionRow = () => {
-    setEditRetained((prev) => [...(prev || []), { player: "", amount: 0, note: "" }]);
-  };
+  setEditRetained((prev) => [...(prev || []), { _rowId: nowId(), player: "", amount: 0, note: "" }]);
+};
+
 
   // ----------------------------
   // Trades admin
@@ -629,7 +647,8 @@ export default function CommissionerPanel({
           </div>
 
           {(editRoster || []).map((p, idx) => (
-            <div key={`${idx}-${p.name}`} style={rowGrid}>
+  <div key={p._rowId || idx} style={rowGrid}>
+
               <input
                 style={inputStyle}
                 value={p.name}
@@ -695,7 +714,8 @@ export default function CommissionerPanel({
           </div>
 
           {(editBuyouts || []).map((b, idx) => (
-            <div key={`${idx}-${b.player}`} style={buyoutGrid}>
+  <div key={b._rowId || idx} style={buyoutGrid}>
+
               <input
                 style={inputStyle}
                 value={b.player}
@@ -746,8 +766,9 @@ export default function CommissionerPanel({
             <div></div>
           </div>
 
-          {(editRetained || []).map((r, idx) => (
-            <div key={`${idx}-${r.player}`} style={retentionGrid}>
+         {(editRetained || []).map((r, idx) => (
+  <div key={r._rowId || idx} style={retentionGrid}>
+
               <input
                 style={inputStyle}
                 value={r.player}
