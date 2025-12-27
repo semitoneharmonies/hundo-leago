@@ -46,12 +46,6 @@ These features function correctly but need cleanup, polish, or refinement.
 - Areas needing improvement:
   - Redundant “reset league to beginning” section  
     → unnecessary given snapshot system
-  - Auction bid viewer:
-    - Shows bids from completed auctions (should be cleaned up automatically)
-    - Bids are not grouped by auction, making them hard to read
-  - Edit player section:
-    - Player name input only accepts one character at a time (bug)
-  - Commissioner edits appear in League History as raw data instead of readable messages
   - Additional commissioner controls desired so league adjustments can be made through the UI instead of editing code
 
 ---
@@ -78,14 +72,11 @@ These features are intentionally not part of the current season.
 ---
 
 ## Known Issues
-- Auction rollover automation needs confirmation
-- Commissioner edit logs need human-readable formatting
-- Commissioner edit player input bug (single-character input)
+
 
 ---
 
 ## Next Focus
-- Confirm and stabilize auction rollover
-- Clean up blind auction behavior (bid replacement, post-rollover cleanup)
+
 - Improve commissioner panel usability and logging
 - Minor UI polish where it improves clarity without risking stability
