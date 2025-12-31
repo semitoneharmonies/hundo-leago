@@ -1377,9 +1377,10 @@ if (!isExistingAuction && isPlayerRostered(trimmedName)) {
                 const aAmt = Number(a.amount) || 0;
                 const bAmt = Number(b.amount) || 0;
                 if (bAmt !== aAmt) return bAmt - aAmt;
-                const aTs = a.timestamp || 0;
-                const bTs = b.timestamp || 0;
-                return aTs - bTs;
+                const aTs = Number(a.firstTimestamp ?? a.timestamp ?? 0) || 0;
+const bTs = Number(b.firstTimestamp ?? b.timestamp ?? 0) || 0;
+return aTs - bTs;
+
               });
 
               return (

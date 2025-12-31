@@ -1272,112 +1272,180 @@ const key = String(bid?.auctionKey || bid?.player || "").trim().toLowerCase();
   const bAmt = Number(b.amount) || 0;
   if (bAmt !== aAmt) return bAmt - aAmt;
 
-  // ✅ Tie-break: who bid first for this auction (not who edited most recently)
+  // Tie-break: who bid first for this auction
   const aTs = Number(a.firstTimestamp ?? a.timestamp ?? 0) || 0;
   const bTs = Number(b.firstTimestamp ?? b.timestamp ?? 0) || 0;
   return aTs - bTs;
 });
 
+if (sorted.length === 0) continue;
 
-    const winner = sorted[0];
-    if (!winner) continue;
+// --- helpers scoped to this auction ---
+const normTeam = (t) => String(t || "").trim().toLowerCase();
+const winningTeamKeyFor = (bid) => normTeam(bid?.team);
 
-       const playerName = winner.player;
-    const winningTeamName = winner.team;
+// Is player already on ANY roster? (hard block at resolution time)
+const normalizeName = (s) => String(s || "").trim().toLowerCase();
+const isRosteredSomewhere = (playerName) => {
+  const key = normalizeName(playerName);
+  if (!key) return false;
+  return (nextTeams || []).some((t) =>
+    (t.roster || []).some((p) => normalizeName(p?.name) === key)
+  );
+};
 
-    // ✅ Anti-bluff pricing (team-normalized so spacing/casing can't create fake "other teams")
-    const normTeam = (t) => String(t || "").trim().toLowerCase();
-    const winningTeamKey = normTeam(winningTeamName);
+// Compute anti-bluff price for a given “candidate winner”
+const computePricePaid = (candidateWinner, allBidsForPlayer) => {
+  const winningTeamName = candidateWinner?.team;
+  const winningKey = normTeam(winningTeamName);
 
-    const distinctTeams = new Set(
-      playerBids
-        .map((b) => normTeam(b?.team))
-        .filter(Boolean)
-    ).size;
+  const distinctTeams = new Set(
+    allBidsForPlayer.map((b) => normTeam(b?.team)).filter(Boolean)
+  ).size;
 
-    let pricePaid = Number(winner.amount) || 0;
+  // default: pay current amount
+  let pricePaid = Number(candidateWinner.amount) || 0;
 
-    // If only one team bid on this player: pay most recent bid amount (current behavior)
-    if (distinctTeams <= 1) {
-      pricePaid = Number(winner.amount) || 0;
-    } else {
-      // Multiple teams bid: winner may pay their LOWER original bid if it still would have won
-      const otherBids = playerBids.filter((b) => normTeam(b?.team) !== winningTeamKey);
+  if (distinctTeams <= 1) {
+    return pricePaid;
+  }
 
-      const othersHighest = otherBids.reduce((max, b) => {
-        const amt = Number(b.amount) || 0;
-        return amt > max ? amt : max;
-      }, 0);
+  const otherBids = allBidsForPlayer.filter(
+    (b) => normTeam(b?.team) !== winningKey
+  );
 
-      const winnerMinRaw = Number(winner.minAmount ?? winner.amount);
-      const winnerMin =
-        Number.isFinite(winnerMinRaw) && winnerMinRaw > 0
-          ? winnerMinRaw
-          : Number(winner.amount) || 0;
+  const othersHighest = otherBids.reduce((max, b) => {
+    const amt = Number(b.amount) || 0;
+    return amt > max ? amt : max;
+  }, 0);
 
-      if (winnerMin > othersHighest) {
-        // Winner's original/lowest bid still beats all others
-        pricePaid = winnerMin;
-      } else if (winnerMin === othersHighest) {
-        // Tie case: winner only "still would win" if they were earlier than the best other team
-        const winnerTs = Number(winner.firstTimestamp ?? winner.timestamp ?? 0) || 0;
+  const winnerMinRaw = Number(candidateWinner.minAmount ?? candidateWinner.amount);
+  const winnerMin =
+    Number.isFinite(winnerMinRaw) && winnerMinRaw > 0
+      ? winnerMinRaw
+      : Number(candidateWinner.amount) || 0;
 
-        let bestOtherTs = Infinity;
-        for (const b of otherBids) {
-          const amt = Number(b.amount) || 0;
-          if (amt !== othersHighest) continue;
+  if (winnerMin > othersHighest) {
+    return winnerMin;
+  }
 
-          const ts = Number(b.firstTimestamp ?? b.timestamp ?? 0) || 0;
-          if (ts < bestOtherTs) bestOtherTs = ts;
-        }
+  if (winnerMin === othersHighest) {
+    const winnerTs =
+      Number(candidateWinner.firstTimestamp ?? candidateWinner.timestamp ?? 0) || 0;
 
-        if (winnerTs && bestOtherTs !== Infinity && winnerTs < bestOtherTs) {
-          pricePaid = winnerMin;
-        } else {
-          pricePaid = Number(winner.amount) || 0;
-        }
-      } else {
-        // WinnerMin is not enough to win, so they pay their current bid
-        pricePaid = Number(winner.amount) || 0;
-      }
+    let bestOtherTs = Infinity;
+    for (const b of otherBids) {
+      const amt = Number(b.amount) || 0;
+      if (amt !== othersHighest) continue;
+      const ts = Number(b.firstTimestamp ?? b.timestamp ?? 0) || 0;
+      if (ts < bestOtherTs) bestOtherTs = ts;
     }
 
+    if (winnerTs && bestOtherTs !== Infinity && winnerTs < bestOtherTs) {
+      return winnerMin;
+    }
 
-    for (const bid of playerBids) resolvedBidIds.add(bid.id);
+    return Number(candidateWinner.amount) || 0;
+  }
 
-        const teamIdx = nextTeams.findIndex(
-      (t) => String(t?.name || "").trim().toLowerCase() === winningTeamKey
-    );
-    if (teamIdx === -1) continue;
+  return Number(candidateWinner.amount) || 0;
+};
 
+// Find the first bid (highest-to-lowest) that results in a LEGAL roster
+let winningBid = null;
+let finalPricePaid = 0;
 
-    const team = nextTeams[teamIdx];
-const newSalary = Number(pricePaid) || 0;
-    const position = winner.position || "F";
+for (const candidate of sorted) {
+  const playerName = candidate?.player;
+  if (!playerName) continue;
+
+  // Hard-block rostered players at resolution time
+  if (isRosteredSomewhere(playerName)) continue;
+
+  const teamKey = winningTeamKeyFor(candidate);
+  const teamIdx = nextTeams.findIndex(
+    (t) => String(t?.name || "").trim().toLowerCase() === teamKey
+  );
+  if (teamIdx === -1) continue;
+
+  const pricePaid = computePricePaid(candidate, playerBids);
+  if (!(pricePaid > 0)) continue;
+
+  const team = nextTeams[teamIdx];
+  const position = candidate.position || "F";
+
+  const newPlayer = {
+    name: playerName,
+    salary: Number(pricePaid) || 0,
+    position,
+    buyoutLockedUntil: now + BUYOUT_LOCK_MS,
+  };
+
+  const candidateTeam = {
+    ...team,
+    roster: sortRosterStandard([...(team.roster || []), newPlayer]),
+  };
+
+  // If this signing makes them illegal, try the next best bid
+  const illegal = isTeamIllegal(candidateTeam, {
+    capLimit,
+    maxRosterSize,
+    minForwards,
+    minDefensemen,
+  });
+
+  if (illegal) continue;
+
+  // ✅ Found a legal winner
+  winningBid = candidate;
+  finalPricePaid = Number(pricePaid) || 0;
+  break;
+}
+
+// Mark all bids for this auction as resolved/cleared no matter what
+for (const bid of playerBids) resolvedBidIds.add(bid.id);
+
+// If no legal winner, do nothing (auction dies quietly)
+if (!winningBid) {
+  continue;
+}
+
+const playerName = winningBid.player;
+const winningTeamName = winningBid.team;
+const winningTeamKey = normTeam(winningTeamName);
+
+const teamIdx = nextTeams.findIndex(
+  (t) => String(t?.name || "").trim().toLowerCase() === winningTeamKey
+);
+if (teamIdx === -1) continue;
+
+const team = nextTeams[teamIdx];
+const position = winningBid.position || "F";
 
 const newPlayer = {
   name: playerName,
-  salary: newSalary,
+  salary: Number(finalPricePaid) || 0,
   position,
   buyoutLockedUntil: now + BUYOUT_LOCK_MS,
 };
 
-    const candidateTeam = {
-      ...team,
-      roster: sortRosterStandard([...(team.roster || []), newPlayer]),
-    };
+const candidateTeam = {
+  ...team,
+  roster: sortRosterStandard([...(team.roster || []), newPlayer]),
+};
 
-    nextTeams = nextTeams.map((t, idx) => (idx === teamIdx ? candidateTeam : t));
+nextTeams = nextTeams.map((t, idx) => (idx === teamIdx ? candidateTeam : t));
 
-    newLogs.push({
-      type: "faSigned",
-      id: now + Math.random(),
-      team: winningTeamName,
-      player: playerName,
-      amount: newSalary,
-      position,
-      timestamp: now,
-    });
+newLogs.push({
+  type: "faSigned",
+  id: now + Math.random(),
+  team: winningTeamName,
+  player: playerName,
+  amount: Number(finalPricePaid) || 0,
+  position,
+  timestamp: now,
+});
+
   }
 
 // ✅ Delete all bids for auctions that were resolved this rollover
@@ -1401,6 +1469,10 @@ export function removeAuctionBidById(freeAgents, bidId) {
 // -------------------------------
 //   Free-agent bid creation / validation
 // -------------------------------
+
+// 1h15m cooldown
+const BID_EDIT_COOLDOWN_MS = 75 * 60 * 1000;
+
 export function placeFreeAgentBid({
   teams,
   freeAgents,
@@ -1416,23 +1488,22 @@ export function placeFreeAgentBid({
 }) {
   const allTeams = teams || [];
   const bids = freeAgents || [];
-const norm = (s) => String(s || "").trim();
+
+  const normalizeName = (s) => String(s || "").trim().toLowerCase();
+  const normalizeTeam = (s) => String(s || "").trim().toLowerCase();
 
   const team = allTeams.find((t) => t.name === biddingTeamName);
   if (!team) return { ok: false, errorMessage: "Your team could not be found." };
 
- const normalizeName = (s) => String(s || "").trim().toLowerCase();
-const normTeam = (s) => String(s || "").trim();
+  const trimmedName = (playerName || "").trim();
+  if (!trimmedName) return { ok: false, errorMessage: "Please enter a player name to bid on." };
 
-const trimmedName = (playerName || "").trim();
-if (!trimmedName) return { ok: false, errorMessage: "Please enter a player name to bid on." };
+  const auctionKey = normalizeName(trimmedName);
 
-const key = normalizeName(trimmedName);
-
-const isOnRoster = allTeams.some((t) =>
-  (t.roster || []).some((p) => normalizeName(p?.name) === key)
-);
-
+  // Block bidding on rostered players
+  const isOnRoster = allTeams.some((t) =>
+    (t.roster || []).some((p) => normalizeName(p?.name) === auctionKey)
+  );
   if (isOnRoster) {
     return {
       ok: false,
@@ -1441,23 +1512,21 @@ const isOnRoster = allTeams.some((t) =>
   }
 
   const amount = Number(rawAmount);
-  if (isNaN(amount) || amount <= 0) {
+  if (!Number.isFinite(amount) || amount <= 0) {
     return { ok: false, errorMessage: "Please enter a valid positive bid amount." };
   }
 
-  // normalize once and use everywhere
-const lowerName = key; // key is already normalizeName(trimmedName)
+  // Find if auction already exists (active)
+  const existingActive = bids.find((fa) => {
+    if (fa?.resolved) return false;
+    const key = String(fa?.auctionKey || normalizeName(fa?.player)).trim().toLowerCase();
+    return key === auctionKey;
+  });
 
-const existingActive = bids.find((fa) => {
-  if (fa?.resolved) return false;
-  const faKey = String(fa?.auctionKey || normalizeName(fa?.player)).trim().toLowerCase();
-  return faKey === lowerName;
-});
+  const hasActiveAuction = !!existingActive;
+  const createdNewAuction = !hasActiveAuction;
 
-const hasActiveAuction = !!existingActive;
-const createdNewAuction = !hasActiveAuction;
-
-
+  // Auction cutoff logic (your existing rule)
   const baseDate = typeof now === "number" ? new Date(now) : now;
   const nextSunday = getNextSundayDeadline(baseDate);
   const newAuctionCutoff = getNewAuctionCutoff(nextSunday);
@@ -1472,9 +1541,9 @@ const createdNewAuction = !hasActiveAuction;
     };
   }
 
+  // Cap warning (unchanged)
   const teamCap = totalCap(team);
   const totalAfterBid = teamCap + amount;
-
   let warningMessage = null;
   if (totalAfterBid > capLimit) {
     const overBy = totalAfterBid - capLimit;
@@ -1483,86 +1552,139 @@ const createdNewAuction = !hasActiveAuction;
       `You'll need to buy out players to get back under $${capLimit}.`;
   }
 
-const existingEntry =
-  existingActive ||
-  bids.find((f) => {
-    const fKey = String(f?.auctionKey || normalizeName(f?.player))
-      .trim()
-      .toLowerCase();
-    return fKey === lowerName;
+  const timestamp = typeof now === "number" ? now : now.getTime();
+
+  // Find this team's existing ACTIVE bid for this auction (if any)
+  const existingTeamBid = bids.find((b) => {
+    if (b?.resolved) return false;
+    const sameAuction =
+      String(b?.auctionKey || normalizeName(b?.player)).trim().toLowerCase() === auctionKey;
+    const sameTeam = normalizeTeam(b?.team) === normalizeTeam(biddingTeamName);
+    return sameAuction && sameTeam;
   });
+
+  const isEdit = !!existingTeamBid;
+
+  // Determine starter team for this auction
+  // We store it on bids so it survives reload.
+  const auctionStartedBy =
+    existingTeamBid?.auctionStartedBy ||
+    existingActive?.auctionStartedBy ||
+    (createdNewAuction ? normalizeTeam(biddingTeamName) : null);
+
+  const isStarterTeam = normalizeTeam(biddingTeamName) === normalizeTeam(auctionStartedBy);
+
+  // -----------------------------
+  // NEW RULE 1: Non-starter first bids must be >= $2
+  // -----------------------------
+  if (hasActiveAuction && !existingTeamBid) {
+    if (amount < 2) {
+      return {
+        ok: false,
+        errorMessage:
+          "Minimum bid is $2 when joining an existing auction (non-starter bid).",
+      };
+    }
+  }
+
+  // -----------------------------
+  // NEW RULE 2 + 3: Edit limits + cooldown
+  // -----------------------------
+  if (isEdit) {
+    const maxEdits = isStarterTeam ? 2 : 1;
+
+    const prevEditCount = Number(existingTeamBid?.editCount || 0);
+    if (prevEditCount >= maxEdits) {
+      return {
+        ok: false,
+        errorMessage: isStarterTeam
+          ? "You have used your 2 bid edits for this auction."
+          : "You have used your 1 bid edit for this auction.",
+      };
+    }
+
+    const lastEditAt = Number(existingTeamBid?.lastEditAt || existingTeamBid?.timestamp || 0) || 0;
+    if (lastEditAt && timestamp - lastEditAt < BID_EDIT_COOLDOWN_MS) {
+      const msLeft = BID_EDIT_COOLDOWN_MS - (timestamp - lastEditAt);
+      const minsLeft = Math.ceil(msLeft / 60000);
+      return {
+        ok: false,
+        errorMessage: `Cooldown active. You can edit this bid again in about ${minsLeft} minute(s).`,
+      };
+    }
+  }
+
+  // Preserve tie-break + lowest bid
+  const firstTimestamp =
+    Number(existingTeamBid?.firstTimestamp ?? existingTeamBid?.timestamp ?? timestamp) || timestamp;
+
+  const prevMin =
+    Number(existingTeamBid?.minAmount ?? existingTeamBid?.amount ?? amount) || amount;
+
+  const minAmount = Math.min(prevMin, amount);
+
+  const nextEditCount = isEdit ? (Number(existingTeamBid?.editCount || 0) + 1) : 0;
+
+  // If auction already exists, preserve the “canonical” position from existing entries
+  const existingEntry =
+    existingActive ||
+    bids.find((f) => {
+      const fKey = String(f?.auctionKey || normalizeName(f?.player)).trim().toLowerCase();
+      return fKey === auctionKey;
+    });
 
   const finalPosition = existingEntry?.position || position || "F";
 
-  const timestamp = typeof now === "number" ? now : now.getTime();
+  const newEntry = {
+    id: `bid-${timestamp}-${Math.random().toString(36).slice(2)}`,
+    auctionKey, // canonical key
+    player: trimmedName,
+    team: biddingTeamName,
 
-// ✅ Find this team's existing ACTIVE bid for this auction (if any)
-const existingTeamBid = bids.find((b) => {
-  if (b?.resolved) return false;
+    amount,       // current/max willingness to pay
+    minAmount,    // lowest bid they've placed in this auction
+    firstTimestamp, // when they first bid in this auction
 
-  const sameAuction =
-    String(b?.auctionKey || normalizeName(b?.player)).trim().toLowerCase() === lowerName;
+    // NEW: starter metadata + edit controls
+    auctionStartedBy: auctionStartedBy || normalizeTeam(biddingTeamName),
+    auctionStartedAt: Number(existingActive?.auctionStartedAt || timestamp) || timestamp,
+    editCount: nextEditCount,
+    lastEditAt: timestamp,
 
-const sameTeam = normTeam(b?.team) === normTeam(biddingTeamName);
-  return sameAuction && sameTeam;
-});
+    position: finalPosition,
+    assigned: false,
+    resolved: false,
+    timestamp, // last updated (UI/debug)
+  };
 
-// ✅ Preserve "who bid first" tie-break + preserve the lowest bid they've made
-const firstTimestamp =
-  Number(existingTeamBid?.firstTimestamp ?? existingTeamBid?.timestamp ?? timestamp) || timestamp;
+  // Enforce: one ACTIVE bid per team per auction (replace if exists)
+  const nextFreeAgents = (() => {
+    const next = [];
 
-const prevMin =
-  Number(existingTeamBid?.minAmount ?? existingTeamBid?.amount ?? amount) || amount;
+    for (const b of bids) {
+      const sameAuction =
+        String(b?.auctionKey || normalizeName(b?.player)).trim().toLowerCase() === auctionKey;
+      const sameTeam = normalizeTeam(b?.team) === normalizeTeam(biddingTeamName);
+      const active = !b?.resolved;
 
-const minAmount = Math.min(prevMin, amount);
+      if (active && sameAuction && sameTeam) continue;
+      next.push(b);
+    }
 
-const newEntry = {
-  id: `bid-${timestamp}-${Math.random().toString(36).slice(2)}`,
-  auctionKey: lowerName, // ✅ canonical key for this auction/player
-  player: trimmedName,
-  team: biddingTeamName,
-  amount, // current/max willingness to pay
-  minAmount, // ✅ lowest bid they've placed this auction
-  firstTimestamp, // ✅ when they first bid this auction
-  position: finalPosition,
-  assigned: false,
-  resolved: false,
-  timestamp, // last updated time (still useful for UI/debug)
-};
-
-
-
-// ✅ Enforce: one ACTIVE bid per team per player
-// If this team already has an active bid for this player, replace it.
-// (We only touch bids where !resolved, and same player + same team)
-const nextFreeAgents = (() => {
-  const next = [];
-
-  for (const b of bids) {
-const sameAuction =
-  String(b?.auctionKey || normalizeName(b?.player)).trim().toLowerCase() === lowerName;
-const sameTeam = normTeam(b?.team) === normTeam(biddingTeamName);
-    const active = !b?.resolved;
-
-if (active && sameAuction && sameTeam) continue;
-
-    next.push(b);
-  }
-
-  next.push(newEntry);
-  return next;
-})();
+    next.push(newEntry);
+    return next;
+  })();
 
   const logEntry = createdNewAuction
-  ? {
-      type: "faAuctionStarted",
-      id: now + Math.random(),
-      player: trimmedName,
-      position: finalPosition,
-      timestamp,
-    }
-  : null;
-
+    ? {
+        type: "faAuctionStarted",
+        id: timestamp + Math.random(),
+        player: trimmedName,
+        position: finalPosition,
+        startedBy: biddingTeamName,
+        timestamp,
+      }
+    : null;
 
   return { ok: true, nextFreeAgents, logEntry, warningMessage };
 }

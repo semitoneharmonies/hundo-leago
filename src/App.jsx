@@ -1112,21 +1112,28 @@ const handlePlaceBid = ({ playerName, position, amount }) => {
   });
 
   if (!result.ok) {
-    if (result.errorMessage) {
-      window.alert(result.errorMessage);
-    }
+    // Hide meta-rule details from managers (cooldown / edits / min bid).
+    const raw = String(result.errorMessage || "");
+    const meta =
+      raw.toLowerCase().includes("cooldown") ||
+      raw.toLowerCase().includes("edit") ||
+      raw.toLowerCase().includes("minimum") ||
+      raw.toLowerCase().includes("min bid");
+
+    window.alert(meta ? "Bid not allowed." : (result.errorMessage || "Bid not allowed."));
     return;
   }
 
   setFreeAgents(result.nextFreeAgents);
+
   if (result.logEntry) {
     setLeagueLog((prev) => [result.logEntry, ...prev]);
   }
 
-  if (result.warningMessage) {
-    window.alert(result.warningMessage);
-  }
+  // ✅ Do NOT show warning messages to managers
+  // if (result.warningMessage) window.alert(result.warningMessage);
 };
+
 // Commissioner resolves all active auctions
 const handleResolveAuctions = () => {
   if (!currentUser || currentUser.role !== "commissioner") {
