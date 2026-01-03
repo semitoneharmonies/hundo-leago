@@ -1,0 +1,231 @@
+# Hundo Leago — Phase 1 Roadmap
+
+**Phase Name:** Persistence & Cleanup
+**Purpose:** Make the live league state safe, durable, debuggable, and future‑proof without breaking the active season.
+
+This phase focuses on **infrastructure, safety, and correctness**, not new gameplay features.
+
+---
+
+## Guiding Rules (Read First)
+
+* The backend is the **single source of truth**.
+* Live league data must **never reset accidentally**.
+* Phase 1 work is done on a **separate branch**, not `main`.
+* Changes are merged into `main` **only after** they are proven safe.
+* No Phase 1 work should require a league reset.
+
+---
+
+## Phase 1 Goals
+
+By the end of Phase 1, the system should:
+
+* Reliably load and save league state across restarts
+* Never partially write or corrupt data
+* Support backups and restores
+* Support schema versioning and migrations
+* Prevent frontend defaults from overwriting live data
+* Be safe to evolve for future seasons
+
+---
+
+## Session Breakdown (Beginner‑Friendly)
+
+Each session is designed for **~4–8 hours**.
+Do not rush. Stability > speed.
+
+---
+
+## Session 1 — Baseline & Safety Rails
+
+**Goal:** Make league state self‑describing and verifiable.
+
+### Tasks
+
+* Add `schemaVersion` to league state
+* Add metadata fields:
+
+  * `lastSavedAt` (timestamp)
+  * `lastSavedBy` ("system", "commissioner", etc.)
+* Ensure backend startup logic:
+
+  * If a saved league file exists → load it
+  * Never overwrite it with defaults
+* Add a `/health` or `/debug/state` endpoint that returns:
+
+  * schemaVersion
+  * loadedFromDisk: true/false
+
+### Done When
+
+* You can restart the backend and see proof it loaded live data
+* Defaults are never silently applied
+
+---
+
+## Session 2 — Atomic Writes (Corruption Prevention)
+
+**Goal:** Prevent half‑written or corrupted JSON files.
+
+### Tasks
+
+* Change save logic to:
+
+  1. Write to a temporary file
+  2. Rename it to the real state file
+* Add basic validation before saving:
+
+  * Must contain teams array
+  * Must contain leagueLog
+* If validation fails:
+
+  * Reject save
+  * Log a clear error
+
+### Done When
+
+* Killing the server mid‑save cannot corrupt state
+* Invalid state never overwrites valid state
+
+---
+
+## Session 3 — Default State Isolation
+
+**Goal:** Make it impossible to accidentally reset the league.
+
+### Tasks
+
+* Move default league data into a separate module/file
+* Ensure defaults are only used when:
+
+  * No state file exists **and**
+  * Explicitly allowed (e.g. first‑run only)
+* Harden commissioner “Reset League”:
+
+  * Require a typed confirmation phrase
+  * Log the reset clearly
+
+### Done When
+
+* No code path can reset prod without explicit intent
+
+---
+
+## Session 4 — Backups & Restore
+
+**Goal:** Always have a rollback option.
+
+### Tasks
+
+* On save (or on interval), create timestamped backups
+* Store backups alongside league state
+* Add commissioner tools:
+
+  * List backups
+  * Restore a backup
+* Restoration must:
+
+  * Validate data
+  * Log the restore
+
+### Done When
+
+* You can recover from mistakes in minutes
+
+---
+
+## Session 5 — Schema Cleanup Pass
+
+**Goal:** Make data consistent and predictable.
+
+### Tasks
+
+* Standardize IDs (bids, trades, logs)
+* Normalize field names and types
+* Remove unused or legacy fields safely
+* Document canonical field meanings
+
+### Done When
+
+* State shape is consistent everywhere
+* Future features don’t need guesswork
+
+---
+
+## Session 6 — Migration Framework
+
+**Goal:** Allow safe evolution over time.
+
+### Tasks
+
+* Implement `migrateLeagueState(state)`
+* Support upgrading older schema versions
+* Add at least one example migration
+* On startup:
+
+  * Load → migrate → validate → save
+
+### Done When
+
+* Older state files can be upgraded safely
+
+---
+
+## Session 7 — Write API Cleanup
+
+**Goal:** Reduce accidental state damage.
+
+### Tasks
+
+* Ensure all mutations happen through explicit backend actions
+* Avoid frontend sending full league blobs
+* Centralize validation per action (buyout, trade, auction)
+
+### Done When
+
+* State changes are controlled and auditable
+
+---
+
+## Session 8 — Staging & Release Process
+
+**Goal:** Merge Phase 1 safely.
+
+### Tasks
+
+* Create a staging environment or alternate state path
+* Deploy Phase 1 branch to staging
+* Run a manual sanity checklist
+* Merge to `main` only when stable
+
+### Done When
+
+* Phase 1 is live without impacting the season
+
+---
+
+## Definition of “Phase 1 Complete”
+
+Phase 1 is complete when:
+
+* League state never resets unexpectedly
+* Restarts are safe
+* Backups exist and are usable
+* Schema changes are manageable
+* You feel confident evolving the system
+
+---
+
+## What Phase 1 Does NOT Include
+
+* Player stats or scoring
+* Matchups or standings
+* Auth or multi‑league support
+* Season resets
+
+Those belong to later phases.
+
+---
+
+**Rule of thumb:** If a change could end a season, it belongs in Phase 1 — and it must be boring, careful, and safe.
