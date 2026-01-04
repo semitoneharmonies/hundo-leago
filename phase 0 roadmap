@@ -1,0 +1,203 @@
+# Hundo Leago — Phase 0 Finish Roadmap
+
+**Phase Name:** Phase 0 — Stability & Rule Lock‑In
+**Purpose:** Finish and harden the current live‑season system so it can run reliably with real managers, real money‑like constraints, and minimal commissioner intervention.
+
+Phase 0 is **not** about new fantasy features. It is about making sure the current league can finish a season without surprises, exploits, or emergency fixes.
+
+---
+
+## Phase 0 Core Truths (Non‑Negotiable)
+
+* The site is **live** and in active use.
+* Backend persisted state is the **source of truth**.
+* Temporary illegal rosters **are allowed**:
+
+  * From **Sunday 4:00 PM → Monday 4:00 PM PT**
+  * After auction resolution or trades
+* Rosters must be legal by **Monday at 4:00 PM PT**.
+* The system must never block actions just because a roster is temporarily illegal.
+
+---
+
+## Phase 0 Goals (What “Done” Means)
+
+By the end of Phase 0:
+
+* Auctions are fair, understandable, and abuse‑resistant
+* Trades and buyouts cannot silently create broken state
+* Temporary illegality is allowed but clearly surfaced
+* Commissioner tools are safe and auditable
+* The league can finish a season with confidence
+
+---
+
+## Session Breakdown (Bite‑Sized, Beginner‑Friendly)
+
+Each session targets **~3–6 hours** and should be done in a fresh chat.
+
+---
+
+## Session 0A — Production Safety Lock‑In
+
+**Goal:** Eliminate any chance of accidentally wiping live data.
+
+### Tasks
+
+* Verify frontend never seeds default rosters into backend
+* Confirm backend always prefers persisted state over defaults
+* Add explicit comments / guardrails around any reset logic
+
+### Done When
+
+* You are confident no normal deploy can reset the league
+
+---
+
+## Session 0B — Illegal Roster Window Rules
+
+**Goal:** Encode the *grace period* rules explicitly.
+
+### Tasks
+
+* Document (in code comments + rules UI):
+
+  * Illegal rosters are allowed from Sunday 4 → Monday 4
+* Ensure **no system logic** blocks:
+
+  * Auction wins
+  * Trade acceptance
+  * Buyouts
+    solely due to illegality during the window
+* Ensure legality checks are **warnings**, not blockers
+
+### Done When
+
+* Illegal roster warnings are clear but non‑blocking
+
+---
+
+## Session 0C — Auction Edge‑Case Hardening
+
+**Goal:** Make auction outcomes predictable and explainable.
+
+### Tasks
+
+* Confirm behavior when winning bid creates illegal roster:
+
+  * Allow win
+  * Log the illegality
+* Improve logging clarity:
+
+  * Price paid vs max bid
+  * Why a price was chosen (anti‑bluff rule)
+* Improve UI clarity (optional but recommended):
+
+  * Show edits remaining
+  * Show cooldown timer
+
+### Done When
+
+* Managers understand *why* they paid what they paid
+
+---
+
+## Session 0D — Pending Trade Interaction Rules
+
+**Goal:** Prevent dangling or invalid trades.
+
+### Rules
+
+* Players **may** be involved in actions while in pending trades
+* If a player in a pending trade is **bought out**:
+
+  * That trade must be **automatically cancelled**
+
+### Tasks
+
+* On buyout:
+
+  * Detect pending trades involving that player
+  * Cancel them automatically
+  * Log the cancellation with reason: `playerBoughtOut`
+
+### Done When
+
+* No pending trade references a non‑existent player
+
+---
+
+## Session 0E — Activity Log Completeness
+
+**Goal:** Make the league history trustworthy.
+
+### Tasks
+
+* Ensure all destructive actions log clearly:
+
+  * Buyouts
+  * Trade cancellations (manual + automatic)
+  * Commissioner removals
+* Ensure logs are ordered, timestamped, and readable
+
+### Done When
+
+* The log can explain *any* roster change
+
+---
+
+## Session 0F — Commissioner Tool Safety Pass
+
+**Goal:** Prevent accidental damage by the commissioner.
+
+### Tasks
+
+* Add confirmations to irreversible actions
+* Ensure commissioner actions cannot leave half‑applied state
+* Ensure commissioner actions always log
+
+### Done When
+
+* Commissioner mistakes are recoverable and visible
+
+---
+
+## Session 0G — End‑of‑Season Readiness
+
+**Goal:** Make it safe to *finish* the season.
+
+### Tasks
+
+* Confirm nothing auto‑resets on date changes
+* Confirm snapshots/backups exist (manual OK for Phase 0)
+* Document end‑of‑season procedure (manual steps)
+
+### Done When
+
+* You know exactly how the season ends without panic
+
+---
+
+## Definition of “Phase 0 Complete”
+
+Phase 0 is complete when:
+
+* You trust the system during high‑stress moments
+* Managers cannot exploit auctions or trades
+* Temporary illegal states are allowed and visible
+* No single bug can force a league reset
+
+---
+
+## What Phase 0 Explicitly Does NOT Include
+
+* Player stats or scoring
+* Matchups or standings
+* Draft system
+* Auth or multi‑league support
+
+Those belong to Phase 1+.
+
+---
+
+**Phase 0 mantra:** If it affects a live league today, it must be boring, explicit, and safe.
