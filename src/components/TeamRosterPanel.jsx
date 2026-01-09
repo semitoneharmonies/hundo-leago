@@ -296,37 +296,41 @@ const daysLeft = locked ? getBuyoutLockDaysLeft(p) : 0;
 
               <div style={{ display: "flex", gap: 6 }}>
                 {canEditThisTeam && (
-  <button
+  <div
+    style={{ position: "relative", display: "inline-block" }}
     onMouseEnter={() => setHoveredBuyoutPlayer(p.name)}
     onMouseLeave={() => setHoveredBuyoutPlayer(null)}
-    onClick={() => {
-      if (locked) return;
-      onBuyout(team.name, p.name);
-    }}
-    disabled={locked}
-    style={
-      locked
-        ? {
-            backgroundColor: "#1e40af", // muted blue
-            opacity: 0.55,
-            cursor: "not-allowed",
-          }
-        : undefined
-    }
-    title={locked ? `Buyout locked: ${daysLeft} day(s) left` : undefined}
   >
-    {locked ? `Buyout (${daysLeft}d)` : "Buyout"}
-  </button>
+    <button
+      onClick={() => {
+        if (locked) return;
+        onBuyout(team.name, p.name);
+      }}
+      disabled={locked}
+      style={
+        locked
+          ? {
+              backgroundColor: "#1e40af",
+              opacity: 0.55,
+              cursor: "not-allowed",
+            }
+          : undefined
+      }
+      title={locked ? `Buyout locked: ${daysLeft} day(s) left` : undefined}
+    >
+      {locked ? `Buyout (${daysLeft}d)` : "Buyout"}
+    </button>
+
+    {hoveredBuyoutPlayer === p.name && (
+      <div style={tooltipStyle}>
+        Penalty: ${penalty}
+        <br />
+        New cap: ${newCap}
+      </div>
+    )}
+  </div>
 )}
 
-
-                {hoveredBuyoutPlayer === p.name && (
-                  <div style={tooltipStyle}>
-                    Penalty: ${penalty}
-                    <br />
-                    New cap: ${newCap}
-                  </div>
-                )}
 
                 {canEditThisTeam && (
                   <button onClick={() => moveToIR(p.name)}>IR</button>
@@ -452,12 +456,20 @@ const illegalStyle = {
 
 const tooltipStyle = {
   position: "absolute",
+  left: "100%",
+  top: "50%",
+  transform: "translate(8px, -50%)",
   background: "#020617",
   border: "1px solid #4b5563",
-  padding: "6px",
+  padding: "6px 8px",
   fontSize: "0.75rem",
-  zIndex: 10,
+  zIndex: 50,
+  whiteSpace: "nowrap",
+  pointerEvents: "none", // critical: tooltip can’t steal hover/click
+  borderRadius: 6,
+  boxShadow: "0 8px 20px rgba(0,0,0,0.45)",
 };
+
 
 const Section = ({ title, children }) => (
   <div style={{ marginTop: 16 }}>

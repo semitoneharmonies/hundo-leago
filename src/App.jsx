@@ -225,21 +225,42 @@ settings: { frozen: false, managerLoginHistory: [] },
 
 function App() {
 
-    // --- Phase 0 safety: prevent accidental "empty save" wipes ---
-  const leagueStateLooksValid = (state) => {
-    if (!state) return false;
+ // --- Phase 0 safety: prevent accidental wipes ---
+// "Valid" means: looks like a real league, not an empty/malformed response.
+const leagueStateLooksValid = (state) => {
+  if (!state) return false;
 
-    const teamsOk = Array.isArray(state.teams) && state.teams.length > 0;
-    if (!teamsOk) return false;
+  const teamsOk =
+    Array.isArray(state.teams) &&
+    state.teams.length === 6 && // you have 6 teams; strict on purpose for Phase 0
+    state.teams.every((t) => typeof t?.name === "string");
 
-    // "Seeded" check: at least one team has at least one roster player
-    const hasAnyRosteredPlayer = state.teams.some(
-      (t) => Array.isArray(t.roster) && t.roster.length > 0
-    );
-    if (!hasAnyRosteredPlayer) return false;
+  if (!teamsOk) return false;
 
-    return true;
+  // must have at least one rostered player somewhere
+  const hasAnyRosteredPlayer = state.teams.some(
+    (t) => Array.isArray(t.roster) && t.roster.length > 0
+  );
+  if (!hasAnyRosteredPlayer) return false;
+
+  return true;
+};
+
+const normalizeLoadedLeague = (data) => {
+  const cleanLog = Array.isArray(data?.leagueLog)
+    ? data.leagueLog.filter((e) => e?.type !== "faBidRemoved")
+    : [];
+
+  return {
+    teams: Array.isArray(data?.teams) ? data.teams : null,
+    tradeProposals: Array.isArray(data?.tradeProposals) ? data.tradeProposals : [],
+    freeAgents: Array.isArray(data?.freeAgents) ? data.freeAgents : [],
+    leagueLog: cleanLog,
+    tradeBlock: Array.isArray(data?.tradeBlock) ? data.tradeBlock : [],
+    settings: data?.settings || { frozen: false, managerLoginHistory: [] },
   };
+};
+
 
   const [leagueSettings, setLeagueSettings] = useState({ frozen: false });
 
@@ -362,30 +383,36 @@ const illegalFlagRef = useRef(false);
   socket.on("connect", () => {
     console.log("[WS] connected:", socket.id);
   });
+socket.on("league:updated", () => {
+  console.log("[WS] league updated → reloading");
+  fetch(API_URL)
+    .then((r) => r.json())
+    .then((data) => {
+      const loadedState = normalizeLoadedLeague(data);
 
-  socket.on("league:updated", () => {
-    console.log("[WS] league updated → reloading");
-    fetch(API_URL)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data.teams)) setTeams(data.teams);
-        if (Array.isArray(data.tradeProposals)) setTradeProposals(data.tradeProposals);
-        if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
-if (Array.isArray(data.leagueLog)) {
-  setLeagueLog(data.leagueLog.filter((e) => e?.type !== "faBidRemoved"));
-}
-        if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
-if (data?.settings) {
-  setLeagueSettings({
-    frozen: false,
-    managerLoginHistory: [],
-    ...data.settings,
-  });
-}
+      if (!leagueStateLooksValid(loadedState)) {
+        console.error("[WS] Invalid or incomplete league state on reload. Ignoring update.");
+        return;
+      }
 
-      })
-      .catch((err) => console.error("[WS] reload failed:", err));
-  });
+      setTeams(loadedState.teams);
+      setTradeProposals(loadedState.tradeProposals);
+      setFreeAgents(loadedState.freeAgents);
+      setLeagueLog(loadedState.leagueLog);
+      setTradeBlock(loadedState.tradeBlock);
+
+      setLeagueSettings({
+        frozen: false,
+        managerLoginHistory: [],
+        ...loadedState.settings,
+      });
+
+      // Prevent autosave echo after WS reload
+      lastSavedJsonRef.current = JSON.stringify(loadedState);
+    })
+    .catch((err) => console.error("[WS] reload failed:", err));
+});
+
 
   socket.on("disconnect", () => {
     console.log("[WS] disconnected");
@@ -406,29 +433,30 @@ useEffect(() => {
     .then((data) => {
       console.log("[LOAD] Backend responded with keys:", Object.keys(data || {}));
 
-      if (Array.isArray(data.teams)) setTeams(data.teams);
-      if (Array.isArray(data.tradeProposals)) setTradeProposals(data.tradeProposals);
-      if (Array.isArray(data.freeAgents)) setFreeAgents(data.freeAgents);
-if (Array.isArray(data.leagueLog)) {
-  const cleaned = data.leagueLog.filter((e) => e?.type !== "faBidRemoved");
-  setLeagueLog(cleaned);
-}
-      if (Array.isArray(data.tradeBlock)) setTradeBlock(data.tradeBlock);
-      if (data?.settings) setLeagueSettings(data.settings);
+      const loadedState = normalizeLoadedLeague(data);
 
+      // CRITICAL: Do NOT enter "loaded" mode unless the response is valid.
+      if (!leagueStateLooksValid(loadedState)) {
+        console.error(
+          "[LOAD] Invalid or incomplete league state from backend. NOT enabling autosave."
+        );
+        return; // hasLoaded stays false -> autosave never runs
+      }
+
+      setTeams(loadedState.teams);
+      setTradeProposals(loadedState.tradeProposals);
+      setFreeAgents(loadedState.freeAgents);
+      setLeagueLog(loadedState.leagueLog);
+      setTradeBlock(loadedState.tradeBlock);
+
+      setLeagueSettings({
+        frozen: false,
+        managerLoginHistory: [],
+        ...loadedState.settings,
+      });
 
       // IMPORTANT: initialize lastSavedJson so autosave doesn't immediately fire
-      lastSavedJsonRef.current = JSON.stringify({
-        teams: Array.isArray(data.teams) ? data.teams : [],
-        tradeProposals: Array.isArray(data.tradeProposals) ? data.tradeProposals : [],
-        freeAgents: Array.isArray(data.freeAgents) ? data.freeAgents : [],
-leagueLog: Array.isArray(data.leagueLog)
-  ? data.leagueLog.filter((e) => e?.type !== "faBidRemoved")
-  : [],
-        tradeBlock: Array.isArray(data.tradeBlock) ? data.tradeBlock : [],
-        settings: data?.settings || { frozen: false },
-
-      });
+      lastSavedJsonRef.current = JSON.stringify(loadedState);
 
       setHasLoaded(true);
     })

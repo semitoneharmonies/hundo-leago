@@ -1,6 +1,8 @@
 // src/components/CommissionerPanel.jsx
 import React, { useEffect, useMemo, useState } from "react";
 
+const ENABLE_HARD_RESET = import.meta.env.VITE_ENABLE_HARD_RESET === "true";
+
 /**
  * CommissionerPanel
  *
@@ -71,7 +73,6 @@ export default function CommissionerPanel({
   const loginHistory = [...(leagueLog || [])]
   .filter((e) => e?.type === "managerLogin")
   .sort((a, b) => (b?.timestamp || 0) - (a?.timestamp || 0));
-
 
 
   // Derive API base so we can call /api/snapshots using the same origin
@@ -286,6 +287,10 @@ export default function CommissionerPanel({
   // Reset to defaults (requires getDefaultLeagueState)
   // ----------------------------
   const resetToDefaults = () => {
+    if (!ENABLE_HARD_RESET) {
+  window.alert("Hard reset is disabled in production.");
+  return;
+    }
     if (typeof getDefaultLeagueState !== "function") {
       window.alert(
         "Reset needs getDefaultLeagueState() passed into CommissionerPanel. We'll wire this from App.jsx next."
@@ -319,6 +324,8 @@ export default function CommissionerPanel({
 
     setResetConfirmText("");
     setAdminMessage("League reset to defaults (local state updated).");
+    
+
   };
 
   // ----------------------------
@@ -594,9 +601,15 @@ const addRosterRow = () => {
             onChange={(e) => setResetConfirmText(e.target.value)}
             placeholder='Type RESET to enable "Reset to defaults"'
           />
-          <button style={dangerButton} onClick={resetToDefaults} disabled={busy} title="Requires getDefaultLeagueState() wired from App.jsx">
-            Reset to defaults
-          </button>
+          <button
+  style={dangerButton}
+  onClick={resetToDefaults}
+  disabled={busy || !ENABLE_HARD_RESET}
+  title={!ENABLE_HARD_RESET ? "Hard reset disabled (VITE_ENABLE_HARD_RESET=false)" : "Reset league to defaults"}
+>
+  Reset to defaults
+</button>
+
         </div>
 
         <div style={{ display: "flex", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>

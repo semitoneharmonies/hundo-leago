@@ -29,7 +29,10 @@ function LeagueRulesDropdown({ onClose }) {
           <RuleLine label="Auction Rollover" value="Sunday @ 4:00 PM" />
           <RuleLine label="New Auctions Close" value="Thursday @ 11:59 PM" />
           <RuleLine label="Auction Tiebreaker" value="Earliest bid wins (if tied)" />
-          <RuleLine label="Buyout Penalty" value="25% of salary (rounded up)" />
+<RuleLine label="Joining Existing Auction" value="Min $2 bid (non-starter)" />
+<RuleLine label="Bid Edit Cooldown" value="75 minutes between edits" />
+<RuleLine label="Bid Edit Limits" value="Starter: 2 edits • Joiner: 1 edit" />
+<RuleLine label="Buyout Penalty" value="25% of salary (rounded up)" />
           <RuleLine
             label="Auction Buyout Lock"
             value="14 days after signing (follows player if traded)"
@@ -117,21 +120,43 @@ function LeagueRulesDropdown({ onClose }) {
         <Section title="Free Agent Auctions">
           <p style={p}>Free agents are signed through weekly auctions.</p>
           <ul style={ul}>
-            <li style={li}>
-              Auction rollover: <strong>Sunday at 4:00 PM</strong>
-            </li>
-            <li style={li}>
-              New auctions close: <strong>Thursday at 11:59 PM</strong>
-            </li>
-            <li style={li}>
-              Ties: if two bids are the same amount, the{" "}
-              <strong>earlier</strong> bid wins.
-            </li>
-            <li style={li}>
-              Winning a bid signs the player to your roster at the winning
-              salary.
-            </li>
-          </ul>
+  <li style={li}>
+    Auction rollover: <strong>Sunday at 4:00 PM</strong>
+  </li>
+  <li style={li}>
+    New auctions close: <strong>Thursday at 11:59 PM</strong>
+  </li>
+  <li style={li}>
+    Ties: if two bids are the same amount, the <strong>earlier</strong> bid wins.
+  </li>
+
+  <li style={li}>
+    <strong>Joining an existing auction:</strong> your first bid must be{" "}
+    <strong>$2 or higher</strong>.
+  </li>
+
+  <li style={li}>
+    <strong>Editing bids is limited:</strong> the team who started the auction can
+    edit their bid <strong>twice</strong>, and teams who join later can edit{" "}
+    <strong>once</strong>.
+  </li>
+
+  <li style={li}>
+    <strong>Edit cooldown:</strong> you must wait <strong>75 minutes</strong>{" "}
+    between bid edits (per auction).
+  </li>
+
+  <li style={li}>
+    <strong>Anti-bluff pricing:</strong> your bid is your <em>max</em>, but you may
+    end up paying less depending on competition. If you win and your{" "}
+    <strong>lowest bid</strong> still beats everyone else (or ties but you were earlier),
+    you pay your <strong>lowest bid</strong>. Otherwise you pay your current bid.
+  </li>
+
+  <li style={li}>
+    Winning a bid signs the player to your roster at the winning salary.
+  </li>
+</ul>
         </Section>
 
         <Section title="Commissioner Tools">
