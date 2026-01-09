@@ -53,24 +53,27 @@ function TeamRosterPanel({
   const activeRoster = fullRoster.filter((p) => !p.onIR);
   const irPlayers = fullRoster.filter((p) => p.onIR);
 
-  // ACTIVE TEAM (this is the key fix)
-  const activeTeam = { ...team, roster: activeRoster };
+ // ACTIVE TEAM (used for size + positional rules)
+const activeTeam = { ...team, roster: activeRoster };
 
-  // -----------------------
-  // Derived league info (ACTIVE ONLY)
-  // -----------------------
-  const capUsed = totalCap(activeTeam);
-  const capRemaining = capLimit - capUsed;
+// -----------------------
+// Derived league info
+// -----------------------
+// Cap already ignores IR inside totalCap(), so use full team for cap math
+const capUsed = totalCap(team);
+const capRemaining = capLimit - capUsed;
 
-  const { F, D } = countPositions(activeTeam);
-  const rosterSize = activeRoster.length;
+// Positional + roster-size checks should be ACTIVE ONLY
+const { F, D } = countPositions(activeTeam);
+const rosterSize = activeRoster.length;
 
-  const rosterIllegal = isTeamIllegal(activeTeam, {
-    capLimit,
-    maxRosterSize,
-    minForwards,
-    minDefensemen,
-  });
+const rosterIllegal = isTeamIllegal(activeTeam, {
+  capLimit,
+  maxRosterSize,
+  minForwards,
+  minDefensemen,
+});
+
 
   // -----------------------
   // Buyouts / retention
@@ -224,7 +227,7 @@ function TeamRosterPanel({
         D={D}
       />
 
-      {/* Cap summary (ACTIVE ONLY) */}
+{/* Cap summary (IR excluded automatically) */}
       <div
   style={{
     display: "flex",
@@ -267,13 +270,14 @@ function TeamRosterPanel({
           const requested = isPlayerRequested(p.name);
           const offered = isPlayerOffered(p.name);
           const penalty = calculateBuyout(p.salary);
-          const newCap = capUsed - p.salary + penalty;
+const countsForCapNow = !p.onIR; // cap ignores IR
+const newCap = capUsed - (countsForCapNow ? Number(p.salary) || 0 : 0) + penalty;
 const locked = isBuyoutLocked(p);
 const daysLeft = locked ? getBuyoutLockDaysLeft(p) : 0;
 
           return (
             <div
-              key={p.name}
+              key={`${p.name}-${p.position}-${p.salary}`}
               draggable={canEditThisTeam}
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={(e) => handleDragOver(e, index)}
@@ -381,7 +385,7 @@ const daysLeft = locked ? getBuyoutLockDaysLeft(p) : 0;
       {/* IR */}
       <Section title={`Injured Reserve (${irPlayers.length}/${MAX_IR})`}>
         {irPlayers.map((p) => (
-          <div key={p.name} style={rowStyle}>
+  <div key={`${p.name}-${p.position}-${p.salary}-ir`} style={rowStyle}>
             <div>
               {p.name}
               <div style={subText}>
@@ -471,16 +475,22 @@ const tooltipStyle = {
 };
 
 
-const Section = ({ title, children }) => (
-  <div style={{ marginTop: 16 }}>
-    <h3 style={{ marginBottom: 8 }}>{title}</h3>
-    {children.length === 0 ? (
-      <p style={{ color: "#9ca3af", fontSize: "0.85rem" }}>None</p>
-    ) : (
-      children
-    )}
-  </div>
-);
+const Section = ({ title, children }) => {
+  const childArray = React.Children.toArray(children);
+  const isEmpty = childArray.length === 0;
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <h3 style={{ marginBottom: 8 }}>{title}</h3>
+      {isEmpty ? (
+        <p style={{ color: "#9ca3af", fontSize: "0.85rem" }}>None</p>
+      ) : (
+        childArray
+      )}
+    </div>
+  );
+};
+
 
 const Header = ({
   team,
