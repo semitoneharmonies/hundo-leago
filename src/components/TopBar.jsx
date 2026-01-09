@@ -19,10 +19,11 @@ function TopBar({
   unreadCount,
   onMarkAllNotificationsRead,
 }) {
-  const selectedTeam = useMemo(
-    () => teams.find((t) => t.name === selectedTeamName) || null,
-    [teams, selectedTeamName]
-  );
+  const selectedTeam = useMemo(() => {
+  const safeTeams = Array.isArray(teams) ? teams : [];
+  return safeTeams.find((t) => t.name === selectedTeamName) || null;
+}, [teams, selectedTeamName]);
+
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -170,26 +171,31 @@ function TopBar({
           </span>
 
           <select
-            value={selectedTeamName}
-            onChange={(e) => setSelectedTeamName(e.target.value)}
-            style={{
-              background: "#1e293b",
-              color: "#f8fafc",
-              border: "1px solid #334155",
-              padding: "4px 10px",
-              borderRadius: "6px",
-              fontSize: "0.9rem",
-              fontWeight: 500,
-              cursor: "pointer",
-              minWidth: "150px",
-            }}
-          >
-            {teams.map((t) => (
-              <option key={t.name} value={t.name}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+  value={selectedTeamName}
+  onChange={(e) => setSelectedTeamName(e.target.value)}
+  style={{
+    background: "#1e293b",
+    color: "#f8fafc",
+    border: "1px solid #334155",
+    padding: "4px 10px",
+    borderRadius: "6px",
+    fontSize: "0.9rem",
+    fontWeight: 500,
+    cursor: "pointer",
+    minWidth: "150px",
+  }}
+>
+  <option value="" disabled>
+    Select a team…
+  </option>
+
+  {(Array.isArray(teams) ? teams : []).map((t) => (
+    <option key={t.name} value={t.name}>
+      {t.name}
+    </option>
+  ))}
+</select>
+
         </div>
 
         {/* Right: Login / Logout + Notifications */}

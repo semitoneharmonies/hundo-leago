@@ -265,15 +265,14 @@ const normalizeLoadedLeague = (data) => {
   const [leagueSettings, setLeagueSettings] = useState({ frozen: false });
 
   // --- Core league state ---
-const [teams, setTeams] = useState(sortedInitialTeams);
+const [teams, setTeams] = useState([]); // start empty; backend is source of truth
 
   // Who is logged in?
   const [currentUser, setCurrentUser] = useState(null);
 
   // Selected team in the dropdown
-  const [selectedTeamName, setSelectedTeamName] = useState(
-    initialTeams[0]?.name || ""
-  );
+  const [selectedTeamName, setSelectedTeamName] = useState("");
+
 
   // Very simple login form state
   const [loginTeamName, setLoginTeamName] = useState("");
@@ -395,7 +394,13 @@ socket.on("league:updated", () => {
         return;
       }
 
-      setTeams(loadedState.teams);
+      setTeams(Array.isArray(loadedState.teams) ? loadedState.teams : []);
+      // If nothing is selected yet, pick a safe default after WS reload
+setSelectedTeamName((prev) => {
+  if (prev) return prev;
+  return loadedState.teams?.[0]?.name || "";
+});
+
       setTradeProposals(loadedState.tradeProposals);
       setFreeAgents(loadedState.freeAgents);
       setLeagueLog(loadedState.leagueLog);
@@ -408,7 +413,15 @@ socket.on("league:updated", () => {
       });
 
       // Prevent autosave echo after WS reload
-      lastSavedJsonRef.current = JSON.stringify(loadedState);
+      lastSavedJsonRef.current = JSON.stringify({
+  teams: loadedState.teams,
+  tradeProposals: loadedState.tradeProposals,
+  freeAgents: loadedState.freeAgents,
+  leagueLog: loadedState.leagueLog,
+  tradeBlock: loadedState.tradeBlock,
+  settings: loadedState.settings,
+});
+
     })
     .catch((err) => console.error("[WS] reload failed:", err));
 });
@@ -443,7 +456,13 @@ useEffect(() => {
         return; // hasLoaded stays false -> autosave never runs
       }
 
-      setTeams(loadedState.teams);
+      setTeams(Array.isArray(loadedState.teams) ? loadedState.teams : []);
+      // Set a safe default selected team once real data is loaded
+setSelectedTeamName((prev) => {
+  if (prev) return prev; // keep whatever was already selected (e.g., login restore)
+  return loadedState.teams?.[0]?.name || "";
+});
+
       setTradeProposals(loadedState.tradeProposals);
       setFreeAgents(loadedState.freeAgents);
       setLeagueLog(loadedState.leagueLog);
@@ -456,7 +475,15 @@ useEffect(() => {
       });
 
       // IMPORTANT: initialize lastSavedJson so autosave doesn't immediately fire
-      lastSavedJsonRef.current = JSON.stringify(loadedState);
+      lastSavedJsonRef.current = JSON.stringify({
+  teams: loadedState.teams,
+  tradeProposals: loadedState.tradeProposals,
+  freeAgents: loadedState.freeAgents,
+  leagueLog: loadedState.leagueLog,
+  tradeBlock: loadedState.tradeBlock,
+  settings: loadedState.settings,
+});
+
 
       setHasLoaded(true);
     })
@@ -491,19 +518,31 @@ useEffect(() => {
 // Save current league state to backend
 const saveLeagueToBackend = async (nextState) => {
   try {
+    const payload = {
+      ...nextState,
+      meta: {
+        actorRole: currentUser?.role || "unknown",
+        actorTeam: currentUser?.teamName || null,
+        clientTs: Date.now(),
+      },
+    };
+
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nextState),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${text}`);
     }
   } catch (err) {
     console.error("[SAVE] Failed to save league to backend:", err);
   }
 };
+
+
 // Auto-save whenever league state changes (after initial load)
 useEffect(() => {
   if (!hasLoaded) return;
@@ -635,13 +674,17 @@ useEffect(() => {
     const myTeam = teams.find((t) => t.name === myTeamName);
 
     const illegalNow = myTeam
-      ? isTeamIllegal(myTeam, {
-          capLimit: CAP_LIMIT,
-          maxRosterSize: MAX_ROSTER_SIZE,
-          minForwards: MIN_FORWARDS,
-          minDefensemen: MIN_DEFENSEMEN,
-        })
-      : false;
+  ? isTeamIllegal(
+      { ...myTeam, roster: (myTeam.roster || []).filter((p) => !p.onIR) },
+      {
+        capLimit: CAP_LIMIT,
+        maxRosterSize: MAX_ROSTER_SIZE,
+        minForwards: MIN_FORWARDS,
+        minDefensemen: MIN_DEFENSEMEN,
+      }
+    )
+  : false;
+
 
     if (illegalNow && !illegalFlagRef.current) {
       illegalNotifs.push({
@@ -691,7 +734,8 @@ const markAllNotificationsRead = () => {
   // --- Helpers ---
 
   const selectedTeam =
-    teams.find((t) => t.name === selectedTeamName) || null;
+  (Array.isArray(teams) ? teams : []).find((t) => t.name === selectedTeamName) || null;
+
 
   const canManageTeam = (teamName) => {
     if (!currentUser) return false;
