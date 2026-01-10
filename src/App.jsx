@@ -263,6 +263,19 @@ const normalizeLoadedLeague = (data) => {
 
 
   const [leagueSettings, setLeagueSettings] = useState({ frozen: false });
+// Phase 0B Option A: show a clear message when writes are blocked (HTTP 423)
+const [freezeBanner, setFreezeBanner] = useState("");
+const freezeBannerTimerRef = useRef(null);
+const showFreezeBanner = (msg = "League is frozen. Changes are disabled.") => {
+  setFreezeBanner(msg);
+
+  // auto-clear after a few seconds so it doesn't hang forever
+  if (freezeBannerTimerRef.current) clearTimeout(freezeBannerTimerRef.current);
+  freezeBannerTimerRef.current = setTimeout(() => {
+    setFreezeBanner("");
+    freezeBannerTimerRef.current = null;
+  }, 8000);
+};
 
   // --- Core league state ---
 const [teams, setTeams] = useState([]); // start empty; backend is source of truth
@@ -533,14 +546,30 @@ const saveLeagueToBackend = async (nextState) => {
       body: JSON.stringify(payload),
     });
 
+    // ✅ Frozen league: backend blocks manager writes with 423
+    if (res.status === 423) {
+      // Don't change commissioner behavior; commissioner shouldn't hit this anyway.
+      if (currentUser?.role === "manager") {
+        showFreezeBanner("League is frozen. Changes are disabled.");
+      }
+
+      // IMPORTANT: throw so autosave treats it as a failed write (and logs it)
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP 423 ${text}`);
+    }
+
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(`HTTP ${res.status} ${text}`);
     }
+
+    // ✅ Successful save clears any prior banner
+    if (freezeBanner) setFreezeBanner("");
   } catch (err) {
     console.error("[SAVE] Failed to save league to backend:", err);
   }
 };
+
 
 
 // Auto-save whenever league state changes (after initial load)
@@ -1340,6 +1369,8 @@ return (
         notifications={notifications}
   unreadCount={unreadCount}
   onMarkAllNotificationsRead={markAllNotificationsRead}
+  freezeBanner={freezeBanner}
+
       />
       
 

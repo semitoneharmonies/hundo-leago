@@ -18,6 +18,8 @@ function TopBar({
   notifications,
   unreadCount,
   onMarkAllNotificationsRead,
+  freezeBanner,
+
 }) {
   const selectedTeam = useMemo(() => {
   const safeTeams = Array.isArray(teams) ? teams : [];
@@ -459,6 +461,21 @@ function TopBar({
           )}
         </div>
       </div>
+            {freezeBanner && (
+        <div
+          style={{
+            marginTop: "8px",
+            padding: "10px 12px",
+            borderRadius: "10px",
+            border: "1px solid #7f1d1d",
+            background: "#2a0f12",
+            color: "#fecaca",
+            fontWeight: 700,
+          }}
+        >
+          {freezeBanner}
+        </div>
+      )}
     </div>
   );
 }
