@@ -65,6 +65,13 @@ Hundo Leago runs an entire fantasy season **end-to-end**, without reliance on ex
 
 ### Core Capabilities
 
+* Secure accounts and authentication:
+  * Managers have their own login (team name + password, or equivalent)
+  * Permissions prevent users from acting as other teams
+* Commissioner-controlled league configuration:
+  * Create/remove teams
+  * Edit team names
+  * Control league settings at season start
 * Centralized NHL player database
 * Daily stat ingestion
 * Commissioner-configurable scoring rules
@@ -72,6 +79,11 @@ Hundo Leago runs an entire fantasy season **end-to-end**, without reliance on ex
 * League standings
 * Playoffs
 * Entry draft and lottery
+
+Season Initialization:
+* New season start with empty rosters
+* Rosters are populated via an in-person Free Agent Draft process
+* Commissioner can input/import draft results into the site to fill each team’s roster
 
 ### Site Structure & Navigation
 
