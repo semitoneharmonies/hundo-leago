@@ -284,11 +284,8 @@ const daysLeft = locked ? getBuyoutLockDaysLeft(p) : 0;
               onDrop={(e) => handleDrop(e, index)}
               style={{
                 ...rowStyle,
-                background: requested
-                  ? "#022c22"
-                  : offered
-                  ? "#1e293b"
-                  : "#020617",
+                 ...(requested || offered ? { background: "#083329" } : {}),
+
               }}
             >
               <div>

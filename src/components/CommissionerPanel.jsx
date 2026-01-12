@@ -56,16 +56,14 @@ export default function CommissionerPanel({
   setLeagueLog,
   tradeBlock,
   setTradeBlock,
-
   onResolveAuctions,
   onCommissionerRemoveBid,
-
-
   // optional, but recommended
   getDefaultLeagueState,
   // optional: if you store settings in league state, pass current settings and setter
   leagueSettings,
   setLeagueSettings,
+  commitLeagueUpdate,
 }) {
   const isCommish = currentUser?.role === "commissioner";
   if (!isCommish) return null;
@@ -153,31 +151,51 @@ export default function CommissionerPanel({
 
   const effectiveFrozen = leagueSettings ? frozen : localFrozen;
 
-  const setFrozen = (nextFrozen) => {
-    if (leagueSettings && typeof setLeagueSettings === "function") {
-      setLeagueSettings((prev) => ({
-        ...(prev || {}),
-        frozen: Boolean(nextFrozen),
-      }));
+const setFrozen = (nextFrozen) => {
+  const nextVal = Boolean(nextFrozen);
 
-      addLog({
+  // Small safety confirm (freezing affects everyone)
+  if (nextVal) {
+    const ok = window.confirm("Freeze the league? Managers will be blocked from making changes.");
+    if (!ok) return;
+  }
+
+  if (typeof commitLeagueUpdate === "function") {
+    commitLeagueUpdate("commFreezeToggle", (prev) => {
+      const prevSettings = prev?.settings || {};
+      const now = Date.now();
+
+      const entry = {
+        id: nowId(),
         type: "commFreezeToggle",
         by: "Commissioner",
-        frozen: Boolean(nextFrozen),
-        timestamp: Date.now(),
-      });
-      return;
-    }
+        frozen: nextVal,
+        timestamp: now,
+      };
 
-    // fallback local-only
-    setLocalFrozen(Boolean(nextFrozen));
-    addLog({
-      type: "commFreezeToggle",
-      by: "Commissioner",
-      frozen: Boolean(nextFrozen),
-      timestamp: Date.now(),
+      return {
+        settings: { ...prevSettings, frozen: nextVal },
+        leagueLog: [entry, ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : [])],
+      };
     });
-  };
+    return;
+  }
+
+  // fallback local-only (shouldn’t be used once commitLeagueUpdate is wired)
+  if (leagueSettings && typeof setLeagueSettings === "function") {
+    setLeagueSettings((prev) => ({ ...(prev || {}), frozen: nextVal }));
+  } else {
+    setLocalFrozen(nextVal);
+  }
+
+  addLog({
+    type: "commFreezeToggle",
+    by: "Commissioner",
+    frozen: nextVal,
+    timestamp: Date.now(),
+  });
+};
+
 
   // ----------------------------
   // Snapshot calls
@@ -286,104 +304,147 @@ export default function CommissionerPanel({
   // ----------------------------
   // Reset to defaults (requires getDefaultLeagueState)
   // ----------------------------
-  const resetToDefaults = () => {
-    if (!ENABLE_HARD_RESET) {
-  window.alert("Hard reset is disabled in production.");
-  return;
-    }
-    if (typeof getDefaultLeagueState !== "function") {
-      window.alert(
-        "Reset needs getDefaultLeagueState() passed into CommissionerPanel. We'll wire this from App.jsx next."
-      );
-      return;
-    }
+ const resetToDefaults = () => {
+  if (!ENABLE_HARD_RESET) {
+    window.alert("Hard reset is disabled in production.");
+    return;
+  }
+  if (typeof getDefaultLeagueState !== "function") {
+    window.alert("Reset needs getDefaultLeagueState() passed in.");
+    return;
+  }
+  if (resetConfirmText !== "RESET") {
+    window.alert('Type RESET in the box to confirm.');
+    return;
+  }
+  if (!window.confirm("Final confirmation: reset league to defaults? This overwrites everything.")) return;
 
-    if (resetConfirmText !== "RESET") {
-      window.alert('Type RESET in the box to confirm.');
-      return;
-    }
+  const def = getDefaultLeagueState();
+  const now = Date.now();
 
-    if (!window.confirm("Final confirmation: reset league to defaults? This will overwrite everything.")) return;
+  const logEntry = {
+    id: nowId(),
+    type: "commResetDefaults",
+    by: "Commissioner",
+    timestamp: now,
+  };
 
-    const def = getDefaultLeagueState();
-
-    setTeams(def.teams || []);
-    setTradeProposals(def.tradeProposals || []);
-    setFreeAgents(def.freeAgents || []);
-    setLeagueLog(def.leagueLog || []);
-    setTradeBlock(def.tradeBlock || []);
-    if (def.settings && typeof setLeagueSettings === "function") {
-      setLeagueSettings(def.settings);
-    }
-
-    addLog({
-      type: "commResetDefaults",
-      by: "Commissioner",
-      timestamp: Date.now(),
+  if (typeof commitLeagueUpdate === "function") {
+    commitLeagueUpdate("commResetDefaults", () => {
+      return {
+        teams: Array.isArray(def?.teams) ? def.teams : [],
+        tradeProposals: Array.isArray(def?.tradeProposals) ? def.tradeProposals : [],
+        freeAgents: Array.isArray(def?.freeAgents) ? def.freeAgents : [],
+        tradeBlock: Array.isArray(def?.tradeBlock) ? def.tradeBlock : [],
+        settings: def?.settings || { frozen: false, managerLoginHistory: [] },
+        leagueLog: [logEntry, ...(Array.isArray(def?.leagueLog) ? def.leagueLog : [])],
+      };
     });
 
     setResetConfirmText("");
-    setAdminMessage("League reset to defaults (local state updated).");
-    
+    setAdminMessage("League reset to defaults.");
+    return;
+  }
 
-  };
+  // fallback (shouldn’t be used once commitLeagueUpdate is wired)
+  setTeams(def.teams || []);
+  setTradeProposals(def.tradeProposals || []);
+  setFreeAgents(def.freeAgents || []);
+  setTradeBlock(def.tradeBlock || []);
+  if (def.settings && typeof setLeagueSettings === "function") setLeagueSettings(def.settings);
+  setLeagueLog([logEntry, ...(def.leagueLog || [])]);
+
+  setResetConfirmText("");
+  setAdminMessage("League reset to defaults (local state updated).");
+};
+
 
   // ----------------------------
   // Roster editor apply
   // ----------------------------
-  const applyRosterEdits = () => {
-   const cleanedRoster = (editRoster || [])
-  .map((p) => ({
-    name: (p.name || "").trim(),
-    salary: safeNumber(p.salary, 0),
-    position: p.position === "D" ? "D" : "F",
-  }))
+ const applyRosterEdits = () => {
+  const cleanedRoster = (editRoster || [])
+    .map((p) => ({
+      name: (p.name || "").trim(),
+      salary: safeNumber(p.salary, 0),
+      position: p.position === "D" ? "D" : "F",
+    }))
+    .filter((p) => p.name);
 
+  const cleanedBuyouts = (editBuyouts || [])
+    .map((b) => ({
+      player: (b.player || "").trim(),
+      penalty: Math.max(0, safeNumber(b.penalty, 0)),
+    }))
+    .filter((b) => b.player && b.penalty > 0);
 
-      .filter((p) => p.name);
+  const cleanedRetained = (editRetained || [])
+    .map((r) => ({
+      player: (r.player || "").trim(),
+      penalty: Math.max(0, safeNumber(r.amount, 0)),
+      retained: true,
+      note: (r.note || "").trim(),
+    }))
+    .filter((r) => r.player && r.penalty > 0);
 
-    const cleanedBuyouts = (editBuyouts || [])
-  .map((b) => ({
-    player: (b.player || "").trim(),
-    penalty: Math.max(0, safeNumber(b.penalty, 0)),
-  }))
-  .filter((b) => b.player && b.penalty > 0);
+  if (!window.confirm(`Apply roster edits to ${editTeamName}?`)) return;
 
+  if (typeof commitLeagueUpdate === "function") {
+    commitLeagueUpdate("commEditTeam", (prev) => {
+      const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
+      const now = Date.now();
 
-const cleanedRetained = (editRetained || [])
-  .map((r) => ({
-    player: (r.player || "").trim(),
-    penalty: Math.max(0, safeNumber(r.amount, 0)),
-    retained: true,
-    note: (r.note || "").trim(),
-  }))
-  .filter((r) => r.player && r.penalty > 0);
-
-
-
-    setTeams((prev) =>
-      (prev || []).map((t) => {
-        if (t.name !== editTeamName) return t;
+      const nextTeams = prevTeams.map((t) => {
+        if (t?.name !== editTeamName) return t;
         return {
-  ...t,
-  roster: sortRosterDefault(cleanedRoster),
-  buyouts: [...cleanedBuyouts, ...cleanedRetained],
-};
+          ...t,
+          roster: sortRosterDefault(cleanedRoster),
+          buyouts: [...cleanedBuyouts, ...cleanedRetained],
+        };
+      });
 
-      })
-    );
+      const entry = {
+        id: nowId(),
+        type: "commEditTeam",
+        by: "Commissioner",
+        team: editTeamName,
+        summary: "Edited roster/buyouts/retained",
+        timestamp: now,
+      };
 
-    addLog({
-  type: "commEditTeam",
-  by: "Commissioner",
-  team: editTeamName,
-  summary: "Edited roster/buyouts/retained",
-  timestamp: Date.now(),
-});
-
+      return {
+        teams: nextTeams,
+        leagueLog: [entry, ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : [])],
+      };
+    });
 
     setAdminMessage(`Saved edits for ${editTeamName}`);
-  };
+    return;
+  }
+
+  // fallback
+  setTeams((prev) =>
+    (prev || []).map((t) => {
+      if (t.name !== editTeamName) return t;
+      return {
+        ...t,
+        roster: sortRosterDefault(cleanedRoster),
+        buyouts: [...cleanedBuyouts, ...cleanedRetained],
+      };
+    })
+  );
+
+  addLog({
+    type: "commEditTeam",
+    by: "Commissioner",
+    team: editTeamName,
+    summary: "Edited roster/buyouts/retained",
+    timestamp: Date.now(),
+  });
+
+  setAdminMessage(`Saved edits for ${editTeamName}`);
+};
+
 
 const addRosterRow = () => {
   setEditRoster((prev) => [...(prev || []), { _rowId: nowId(), name: "", salary: 1, position: "F" }]);
@@ -403,22 +464,53 @@ const addRosterRow = () => {
   // Trades admin
   // ----------------------------
   const forceCancelTrade = (tradeId) => {
-    if (!tradeId) return;
-    if (!window.confirm("Force-cancel this trade?")) return;
+  if (!tradeId) return;
 
-    setTradeProposals((prev) =>
-      (prev || []).map((tr) =>
-        tr.id === tradeId ? { ...tr, status: "cancelled", cancelledBy: "Commissioner" } : tr
-      )
-    );
+  const ok = window.confirm("Force-cancel this trade? This cannot be undone.");
+  if (!ok) return;
 
-    addLog({
-      type: "commCancelTrade",
-      by: "Commissioner",
-      tradeId,
-      timestamp: Date.now(),
+  if (typeof commitLeagueUpdate === "function") {
+    commitLeagueUpdate("commCancelTrade", (prev) => {
+      const prevTrades = Array.isArray(prev?.tradeProposals) ? prev.tradeProposals : [];
+      const now = Date.now();
+
+      const nextTrades = prevTrades.map((tr) => {
+        if (tr?.id !== tradeId) return tr;
+        return {
+          ...tr,
+          status: "cancelled",
+          cancelledBy: "Commissioner",
+          autoCancelled: false,
+          reason: "commissionerForceCancel",
+          updatedAt: now,
+        };
+      });
+
+      const entry = {
+        id: nowId(),
+        type: "commCancelTrade",
+        by: "Commissioner",
+        tradeId,
+        timestamp: now,
+      };
+
+      return {
+        tradeProposals: nextTrades,
+        leagueLog: [entry, ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : [])],
+      };
     });
-  };
+    return;
+  }
+
+  // fallback
+  setTradeProposals((prev) =>
+    (prev || []).map((tr) =>
+      tr.id === tradeId ? { ...tr, status: "cancelled", cancelledBy: "Commissioner" } : tr
+    )
+  );
+  addLog({ type: "commCancelTrade", by: "Commissioner", tradeId, timestamp: Date.now() });
+};
+
 
   const clearAllPendingTrades = () => {
     if (!window.confirm("Clear ALL pending trades?")) return;
@@ -438,14 +530,33 @@ const addRosterRow = () => {
   // Auctions admin
   // ----------------------------
   const clearAllBids = () => {
-    if (!window.confirm("Clear ALL auction bids?")) return;
-    setFreeAgents([]);
-    addLog({
-      type: "commClearAllBids",
-      by: "Commissioner",
-      timestamp: Date.now(),
+  const ok = window.confirm("Clear ALL auction bids? This cannot be undone.");
+  if (!ok) return;
+
+  if (typeof commitLeagueUpdate === "function") {
+    commitLeagueUpdate("commClearAllBids", (prev) => {
+      const now = Date.now();
+      const entry = {
+        id: nowId(),
+        type: "commClearAllBids",
+        by: "Commissioner",
+        clearedCount: Array.isArray(prev?.freeAgents) ? prev.freeAgents.length : 0,
+        timestamp: now,
+      };
+
+      return {
+        freeAgents: [],
+        leagueLog: [entry, ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : [])],
+      };
     });
-  };
+    return;
+  }
+
+  // fallback
+  setFreeAgents([]);
+  addLog({ type: "commClearAllBids", by: "Commissioner", timestamp: Date.now() });
+};
+
 
   // ----------------------------
   // UI

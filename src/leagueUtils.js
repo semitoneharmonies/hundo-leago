@@ -1219,6 +1219,9 @@ export function cancelTradesForPlayer(
 // -------------------------------
 //   Auctions / bids helpers
 // -------------------------------
+const normalizeName = (s) => String(s || "").trim().toLowerCase();
+const normalizeTeam = (s) => String(s || "").trim().toLowerCase();
+
 export function resolveAuctions({
   teams,
   freeAgents,
@@ -1246,10 +1249,17 @@ export function resolveAuctions({
 });
 
 if (activeBids.length === 0) {
-  // Drop anything already resolved. Keep everything else as-is.
-  const nextFreeAgents = (bids || []).filter((b) => !b?.resolved);
+  const nextFreeAgents = (bids || []).filter((b) => {
+    if (b?.resolved) return false;
+    const key = String(b?.auctionKey || b?.player || "").trim();
+    const team = String(b?.team || "").trim();
+    const amt = Number(b?.amount) || 0;
+    return Boolean(b?.id && key && team && amt > 0);
+  });
+
   return { nextTeams: originalTeams, nextFreeAgents, newLogs: [] };
 }
+
 
 
   const bidsByPlayer = new Map();
@@ -1281,11 +1291,11 @@ const key = String(bid?.auctionKey || bid?.player || "").trim().toLowerCase();
 if (sorted.length === 0) continue;
 
 // --- helpers scoped to this auction ---
-const normTeam = (t) => String(t || "").trim().toLowerCase();
-const winningTeamKeyFor = (bid) => normTeam(bid?.team);
+const winningTeamKeyFor = (bid) => normalizeTeam(bid?.team);
+
 
 // Is player already on ANY roster? (hard block at resolution time)
-const normalizeName = (s) => String(s || "").trim().toLowerCase();
+
 const isRosteredSomewhere = (playerName) => {
   const key = normalizeName(playerName);
   if (!key) return false;
@@ -1297,11 +1307,11 @@ const isRosteredSomewhere = (playerName) => {
 // Compute anti-bluff price for a given “candidate winner”
 const computePricePaid = (candidateWinner, allBidsForPlayer) => {
   const winningTeamName = candidateWinner?.team;
-  const winningKey = normTeam(winningTeamName);
+  const winningKey = normalizeTeam(winningTeamName);
 
-  const distinctTeams = new Set(
-    allBidsForPlayer.map((b) => normTeam(b?.team)).filter(Boolean)
-  ).size;
+const distinctTeams = new Set(
+  allBidsForPlayer.map((b) => normalizeTeam(b?.team)).filter(Boolean)
+).size;
 
   // default: pay current amount
   let pricePaid = Number(candidateWinner.amount) || 0;
@@ -1311,8 +1321,8 @@ const computePricePaid = (candidateWinner, allBidsForPlayer) => {
   }
 
   const otherBids = allBidsForPlayer.filter(
-    (b) => normTeam(b?.team) !== winningKey
-  );
+  (b) => normalizeTeam(b?.team) !== winningKey
+);
 
   const othersHighest = otherBids.reduce((max, b) => {
     const amt = Number(b.amount) || 0;
@@ -1412,7 +1422,7 @@ if (!winningBid) {
 
 const playerName = winningBid.player;
 const winningTeamName = winningBid.team;
-const winningTeamKey = normTeam(winningTeamName);
+const winningTeamKey = normalizeTeam(winningTeamName);
 
 const teamIdx = nextTeams.findIndex(
   (t) => String(t?.name || "").trim().toLowerCase() === winningTeamKey
@@ -1450,9 +1460,17 @@ newLogs.push({
 
 // ✅ Delete all bids for auctions that were resolved this rollover
 // Also drop any already-resolved bids to keep storage clean.
-const nextFreeAgents = bids.filter(
-  (bid) => !bid?.resolved && !resolvedBidIds.has(bid.id)
-);
+const nextFreeAgents = (bids || []).filter((b) => {
+  if (b?.resolved) return false;
+  if (resolvedBidIds.has(b?.id)) return false;
+
+  const key = String(b?.auctionKey || b?.player || "").trim();
+  const team = String(b?.team || "").trim();
+  const amt = Number(b?.amount) || 0;
+
+  return Boolean(b?.id && key && team && amt > 0);
+});
+
 
 return { nextTeams, nextFreeAgents, newLogs };
 
@@ -1471,7 +1489,99 @@ export function removeAuctionBidById(freeAgents, bidId) {
 // -------------------------------
 
 // 1h15m cooldown
-const BID_EDIT_COOLDOWN_MS = 75 * 60 * 1000;
+export const BID_EDIT_COOLDOWN_MS = 75 * 60 * 1000;
+
+// -------------------------------
+//   Auction UI helpers (single source of truth)
+// -------------------------------
+function normalizeTeamName(s) {
+  return String(s || "").trim().toLowerCase();
+}
+
+function getMyActiveBidForAuctionBids(auctionBids, teamName) {
+  const t = normalizeTeamName(teamName);
+  return (
+    (auctionBids || []).find(
+      (b) => !b?.resolved && normalizeTeamName(b?.team) === t
+    ) || null
+  );
+}
+
+function getAuctionStartedByKeyFromBids(auctionBids) {
+  const bids = auctionBids || [];
+
+  // Preferred: explicit starter field (your new data has this)
+  const raw = bids.find((b) => b?.auctionStartedBy)?.auctionStartedBy;
+  if (raw) return normalizeTeamName(raw);
+
+  // Fallback for older data: assume first bid team started it
+  const firstTeam = bids[0]?.team;
+  return normalizeTeamName(firstTeam);
+}
+
+/**
+ * UI-only: should the "Place bid" button be enabled, and why?
+ * Mirrors the same rules enforced in placeFreeAgentBid:
+ * - joining existing auction must be >= $2
+ * - edit limits (starter 2, others 1)
+ * - 75 minute cooldown between edits
+ */
+export function computeBidUiStateForAuction({
+  auctionBids,
+  myTeamName,
+  nowMs,
+  inputValue,
+}) {
+  const myBid = getMyActiveBidForAuctionBids(auctionBids, myTeamName);
+  const hasMyBid = !!myBid;
+
+  const startedByKey = getAuctionStartedByKeyFromBids(auctionBids);
+  const isStarterTeam = normalizeTeamName(myTeamName) === startedByKey;
+
+  const maxEdits = isStarterTeam ? 2 : 1;
+  const editsUsed = Number(myBid?.editCount || 0);
+
+  const lastEditAt = Number(myBid?.lastEditAt || myBid?.timestamp || 0) || 0;
+  const cooldownLeftMs = lastEditAt
+    ? Math.max(0, BID_EDIT_COOLDOWN_MS - (nowMs - lastEditAt))
+    : 0;
+
+  const amount = Number(String(inputValue ?? "").trim());
+
+  // Rule: joining existing auction (no prior bid yet) must be >= $2.
+  // Editing your existing bid can be $1+.
+  const minRequired = hasMyBid ? 1 : 2;
+
+  const invalidAmount = !Number.isFinite(amount) || amount <= 0;
+  const belowMin = !invalidAmount && amount < minRequired;
+
+  const editLimitReached = hasMyBid && editsUsed >= maxEdits;
+  const cooldownActive = hasMyBid && cooldownLeftMs > 0;
+
+  const disabled =
+    invalidAmount || belowMin || editLimitReached || cooldownActive;
+
+  let reason = "";
+  if (invalidAmount) reason = "Enter a valid bid amount.";
+  else if (belowMin) reason = `Minimum bid is $${minRequired} to join this auction.`;
+  else if (editLimitReached) reason = `No edits left (${editsUsed}/${maxEdits}).`;
+  else if (cooldownActive) {
+    const mins = Math.ceil(cooldownLeftMs / 60000);
+    reason = `Cooldown active (${mins} min left).`;
+  }
+
+  return {
+    hasMyBid,
+    isStarterTeam,
+    maxEdits,
+    editsUsed,
+    cooldownLeftMs,
+    minRequired,
+    disabled,
+    reason,
+  };
+}
+
 
 export function placeFreeAgentBid({
   teams,
@@ -1488,9 +1598,6 @@ export function placeFreeAgentBid({
 }) {
   const allTeams = teams || [];
   const bids = freeAgents || [];
-
-  const normalizeName = (s) => String(s || "").trim().toLowerCase();
-  const normalizeTeam = (s) => String(s || "").trim().toLowerCase();
 
   const team = allTeams.find((t) => t.name === biddingTeamName);
   if (!team) return { ok: false, errorMessage: "Your team could not be found." };

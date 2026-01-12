@@ -55,7 +55,7 @@ function TopBar({
         position: "sticky",
         top: 0,
         zIndex: 50,
-        background: "#020617",
+        background: "#07162b",
         borderBottom: "1px solid #1f2937",
         padding: "8px 12px",
         marginBottom: "16px",

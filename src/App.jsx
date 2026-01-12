@@ -16,6 +16,7 @@ import {
   acceptTradeById,
   rejectTradeById,
   cancelTradeById,
+  cancelTradesForPlayer, 
   placeFreeAgentBid,
   resolveAuctions,
   removeAuctionBidById,
@@ -306,6 +307,80 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   const [hasLoaded, setHasLoaded] = useState(false);
 const saveTimerRef = useRef(null);
 const lastSavedJsonRef = useRef("");
+const autoCancelLockRef = useRef(false);
+
+
+// ------------------------------------
+// Option B: Single write funnel (Phase 0)
+// ------------------------------------
+const leagueStateRef = useRef({
+  teams: [],
+  tradeProposals: [],
+  freeAgents: [],
+  leagueLog: [],
+  tradeBlock: [],
+  settings: { frozen: false, managerLoginHistory: [] },
+});
+
+// Keep a live snapshot of latest state so commits can compute next state once
+useEffect(() => {
+  leagueStateRef.current = {
+    teams,
+    tradeProposals,
+    freeAgents,
+    leagueLog,
+    tradeBlock,
+    settings: leagueSettings,
+  };
+}, [teams, tradeProposals, freeAgents, leagueLog, tradeBlock, leagueSettings]);
+
+/**
+ * commitLeagueUpdate
+ * - Blocks manager writes when frozen (Option B)
+ * - Computes next state once, then applies state setters
+ * - Safety: refuses to write invalid league shapes in Phase 0
+ *
+ * updater(prev) must return either:
+ *  - null/undefined => no-op
+ *  - { teams?, tradeProposals?, freeAgents?, leagueLog?, tradeBlock?, settings? }
+ */
+const commitLeagueUpdate = (reason, updater) => {
+  // Local freeze gate (fast UX)
+  if (typeof guardWriteIfFrozen === "function" && guardWriteIfFrozen()) {
+    console.warn("[COMMIT] blocked (frozen):", reason);
+    return false;
+  }
+
+  const prev = leagueStateRef.current;
+  const patch = updater?.(prev);
+
+  if (!patch) {
+    console.warn("[COMMIT] no-op:", reason);
+    return false;
+  }
+
+  const next = {
+    ...prev,
+    ...patch,
+  };
+
+  // Phase 0 shape safety: don’t allow accidental wipes / malformed writes
+  if (!leagueStateLooksValid(next)) {
+    console.error("[COMMIT] rejected (invalid next state):", reason, next);
+    return false;
+  }
+
+  // Apply only the keys that changed
+  if (patch.teams) setTeams(patch.teams);
+  if (patch.tradeProposals) setTradeProposals(patch.tradeProposals);
+  if (patch.freeAgents) setFreeAgents(patch.freeAgents);
+  if (patch.leagueLog) setLeagueLog(patch.leagueLog);
+  if (patch.tradeBlock) setTradeBlock(patch.tradeBlock);
+  if (patch.settings) setLeagueSettings(patch.settings);
+
+  return true;
+};
+
 
 // -------------------------
 // Auction win sound (manager)
@@ -528,7 +603,9 @@ useEffect(() => {
 }, []);
 
 
+
 // Save current league state to backend
+// Returns: true = saved, false = rejected/failed
 const saveLeagueToBackend = async (nextState) => {
   try {
     const payload = {
@@ -548,27 +625,33 @@ const saveLeagueToBackend = async (nextState) => {
 
     // ✅ Frozen league: backend blocks manager writes with 423
     if (res.status === 423) {
-      // Don't change commissioner behavior; commissioner shouldn't hit this anyway.
       if (currentUser?.role === "manager") {
         showFreezeBanner("League is frozen. Changes are disabled.");
       }
 
-      // IMPORTANT: throw so autosave treats it as a failed write (and logs it)
+      // Optional: still log details for debugging
       const text = await res.text().catch(() => "");
-      throw new Error(`HTTP 423 ${text}`);
+      console.warn("[SAVE] Blocked (423 frozen):", text);
+
+      return false; // ✅ rejected
     }
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new Error(`HTTP ${res.status} ${text}`);
+      console.error("[SAVE] Failed:", `HTTP ${res.status}`, text);
+      return false; // ✅ failed
     }
 
     // ✅ Successful save clears any prior banner
     if (freezeBanner) setFreezeBanner("");
+
+    return true; // ✅ success
   } catch (err) {
     console.error("[SAVE] Failed to save league to backend:", err);
+    return false; // ✅ failed
   }
 };
+
 
 
 
@@ -616,11 +699,14 @@ useEffect(() => {
   saveTimerRef.current = setTimeout(async () => {
   console.log("[SAVE] Debounced save…");
 
-  // IMPORTANT: set this BEFORE the POST so the socket reload doesn't trigger another save
-  lastSavedJsonRef.current = json;
+  const ok = await saveLeagueToBackend(stateToSave);
 
-  await saveLeagueToBackend(stateToSave);
+  // Only mark as saved if the backend actually accepted it
+  if (ok) {
+    lastSavedJsonRef.current = json;
+  }
 }, 800);
+
 
 
   return () => {
@@ -774,103 +860,258 @@ const markAllNotificationsRead = () => {
     }
     return false;
   };
+const isManagerFrozen =
+  leagueSettings?.frozen === true && currentUser?.role === "manager";
 
-  // Update roster order for a team (used by drag & drop in TeamRosterPanel)
-  const handleUpdateTeamRoster = (teamName, newRoster) => {
-    setTeams((prev) =>
-      prev.map((t) =>
-        t.name === teamName ? { ...t, roster: newRoster } : t
-      )
-    );
-  };
+const guardWriteIfFrozen = () => {
+  if (!isManagerFrozen) return false; // not blocked
+  showFreezeBanner("League is frozen. Changes are disabled.");
+  return true; // blocked
+};
+const normalizeKey = (s) => String(s || "").trim().toLowerCase();
 
-  // Buyout handler: remove player from roster, add penalty entry, log it
-  const handleBuyout = (teamName, playerName) => {
-    // 1) Figure out the penalty BEFORE changing state
-    const team = teams.find((t) => t.name === teamName);
-    let penalty = 0;
+const rosterHasPlayer = (teamObj, playerName) => {
+  const key = normalizeKey(playerName);
+  return (teamObj?.roster || []).some((p) => normalizeKey(p?.name) === key);
+};
 
-    if (team) {
-      const player = (team.roster || []).find(
-        (p) => p.name === playerName
-      );
-      if (player) {
-        penalty = calculateBuyout(player.salary);
+// Decide reason for missing player:
+// - if we can see a buyout log entry for that team+player at/after trade.createdAt -> playerBoughtOut
+// - else -> playerRemoved
+const getRemovalReasonForTrade = ({ trade, teamName, playerName, leagueLog }) => {
+  const createdAt = Number(trade?.createdAt || 0) || 0;
+  const tKey = normalizeKey(teamName);
+  const pKey = normalizeKey(playerName);
+
+  const buyoutHit = (leagueLog || []).some((e) => {
+    if (e?.type !== "buyout") return false;
+    if (normalizeKey(e?.team) !== tKey) return false;
+    if (normalizeKey(e?.player) !== pKey) return false;
+    const ts = Number(e?.timestamp || 0) || 0;
+    return ts >= createdAt;
+  });
+
+  return buyoutHit ? "playerBoughtOut" : "playerRemoved";
+};
+// ------------------------------------
+// Session 0D: auto-cancel broken pending trades (global safety net)
+// Catches ANY player removal path (including commissioner edits that bypass handlers)
+// ------------------------------------
+useEffect(() => {
+  if (!hasLoaded) return;
+  if (autoCancelLockRef.current) return;
+
+  const pending = (tradeProposals || []).filter((tr) => tr?.status === "pending");
+  if (pending.length === 0) return;
+
+  const teamsByName = new Map(
+    (teams || []).map((t) => [normalizeKey(t?.name), t])
+  );
+
+  const cancellations = [];
+
+  for (const tr of pending) {
+    const fromTeam = teamsByName.get(normalizeKey(tr?.fromTeam));
+    const toTeam = teamsByName.get(normalizeKey(tr?.toTeam));
+    if (!fromTeam || !toTeam) continue;
+
+    // If any offered player is missing from fromTeam roster -> cancel
+    for (const pName of tr.offeredPlayers || []) {
+      if (!rosterHasPlayer(fromTeam, pName)) {
+        cancellations.push({
+          tradeId: tr.id,
+          reason: getRemovalReasonForTrade({
+            trade: tr,
+            teamName: tr.fromTeam,
+            playerName: pName,
+            leagueLog,
+          }),
+        });
+        break;
       }
     }
 
-    // 2) Update the teams state (remove player from roster)
-    setTeams((prev) =>
-      prev.map((team) => {
-        if (team.name !== teamName) return team;
+    // If already cancelling, skip checking requested side
+    if (cancellations.some((c) => c.tradeId === tr.id)) continue;
 
-        const newRoster = (team.roster || []).filter(
-          (p) => p.name !== playerName
-        );
+    // If any requested player is missing from toTeam roster -> cancel
+    for (const pName of tr.requestedPlayers || []) {
+      if (!rosterHasPlayer(toTeam, pName)) {
+        cancellations.push({
+          tradeId: tr.id,
+          reason: getRemovalReasonForTrade({
+            trade: tr,
+            teamName: tr.toTeam,
+            playerName: pName,
+            leagueLog,
+          }),
+        });
+        break;
+      }
+    }
+  }
 
-        const buyouts = [
-          ...(team.buyouts || []),
-          {
-            player: playerName,
-            penalty,
-          },
-        ];
+  if (cancellations.length === 0) return;
 
-        return {
-          ...team,
-          roster: newRoster,
-          buyouts,
-        };
-      })
+  autoCancelLockRef.current = true;
+
+  commitLeagueUpdate("trade:autoCancelMissingPlayers", (prev) => {
+    let nextTrades = prev.tradeProposals || [];
+    let nextLog = prev.leagueLog || [];
+
+    for (const c of cancellations) {
+      const res = cancelTradeById(nextTrades, nextLog, c.tradeId, {
+        autoCancelled: true,
+        reason: c.reason,
+        cancelledBy: "System",
+      });
+      nextTrades = res.nextTradeProposals;
+      nextLog = res.nextLeagueLog;
+    }
+
+    return {
+      tradeProposals: nextTrades,
+      leagueLog: nextLog,
+    };
+  });
+
+  // release lock next tick
+  setTimeout(() => {
+    autoCancelLockRef.current = false;
+  }, 0);
+}, [hasLoaded, teams, tradeProposals, leagueLog]);
+
+
+ // Update roster order for a team (used by drag & drop in TeamRosterPanel)
+const handleUpdateTeamRoster = (teamName, newRoster) => {
+  commitLeagueUpdate("rosterReorder", (prev) => {
+    const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
+    if (!teamName || !Array.isArray(newRoster)) return null;
+
+    const nextTeams = prevTeams.map((t) =>
+      t?.name === teamName ? { ...t, roster: newRoster } : t
     );
 
-    // 3) Add a league log entry
+    return { teams: nextTeams };
+  });
+};
+;
+
+  // Buyout handler: remove player from roster, add penalty entry, log it
+const handleBuyout = (teamName, playerName) => {
+  commitLeagueUpdate("buyout", (prev) => {
+    const prevTeams = Array.isArray(prev.teams) ? prev.teams : [];
+    const prevTrades = Array.isArray(prev.tradeProposals) ? prev.tradeProposals : [];
+    const prevLog = Array.isArray(prev.leagueLog) ? prev.leagueLog : [];
+
+    // Find team + player to compute penalty
+    const team = prevTeams.find((t) => t?.name === teamName);
+    if (!team) return null;
+
+    const player = (team.roster || []).find((p) => p?.name === playerName);
+    if (!player) return null;
+
+    const penalty = calculateBuyout(Number(player.salary) || 0);
+
+    // ✅ Session 0D: cancel any pending trades involving this player (because of buyout)
+    const cancelResult = cancelTradesForPlayer(
+      prevTrades,
+      prevLog,
+      teamName,
+      playerName,
+      { reason: "playerBoughtOut", autoCancelled: true }
+    );
+
+    const nextTeams = prevTeams.map((t) => {
+      if (t.name !== teamName) return t;
+
+      const newRoster = (t.roster || []).filter((p) => p.name !== playerName);
+
+      const buyouts = [
+        ...(t.buyouts || []),
+        { player: playerName, penalty },
+      ];
+
+      return { ...t, roster: newRoster, buyouts };
+    });
+
     const now = Date.now();
-    setLeagueLog((prev) => [
-      {
-        type: "buyout",
-        id: now + Math.random(),
-        team: teamName,
-        player: playerName,
-        penalty,
-        timestamp: now,
-      },
-      ...prev,
-    ]);
-  };
+    const buyoutLogEntry = {
+      type: "buyout",
+      id: now + Math.random(),
+      team: teamName,
+      player: playerName,
+      penalty,
+      timestamp: now,
+    };
 
-  // Commissioner removes a player altogether (no penalty)
-  const handleCommissionerRemovePlayer = (teamName, playerName) => {
-    let newLogEntry = null;
-
-    setTeams((prev) =>
-      prev.map((team) => {
-        if (team.name !== teamName) return team;
-
-        const newRoster = (team.roster || []).filter(
-          (p) => p.name !== playerName
-        );
-
-        newLogEntry = {
-  id: Date.now() + Math.random(),
-  type: "commRemovePlayer",
-  team: team.name,
-  player: playerName,
-  timestamp: Date.now(),
+    // cancelResult.nextLeagueLog already includes the tradeCancelled logs (if any)
+    return {
+      teams: nextTeams,
+      tradeProposals: cancelResult.nextTradeProposals,
+      leagueLog: [buyoutLogEntry, ...(cancelResult.nextLeagueLog || prevLog)],
+    };
+  });
 };
 
 
-        return {
-          ...team,
-          roster: newRoster,
-        };
-      })
+
+ // Commissioner removes a player altogether (no penalty)
+// Session 0D: removing a player cancels affected pending trades
+const handleCommissionerRemovePlayer = (teamName, playerName) => {
+  if (!currentUser || currentUser.role !== "commissioner") return;
+
+  commitLeagueUpdate("commRemovePlayer", (prev) => {
+    const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
+    const prevTrades = Array.isArray(prev?.tradeProposals) ? prev.tradeProposals : [];
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+
+    if (!teamName || !playerName) return null;
+
+    // 1) Remove player from roster
+    const nextTeams = prevTeams.map((t) => {
+      if (t?.name !== teamName) return t;
+
+      const nextRoster = (t.roster || []).filter((p) => p?.name !== playerName);
+      return { ...t, roster: nextRoster };
+    });
+
+    const now = Date.now();
+
+    // 2) Cancel any pending trades involving this player (Session 0D)
+    const cancelRes = cancelTradesForPlayer(
+      prevTrades,
+      prevLog,
+      teamName,
+      playerName,
+      {
+        reason: "playerRemoved",
+        autoCancelled: true,
+        cancelledBy: "Commissioner",
+      }
     );
 
-    if (newLogEntry) {
-      setLeagueLog((prev) => [newLogEntry, ...prev]);
-    }
-  };
+    const nextTrades = cancelRes?.nextTradeProposals ?? prevTrades;
+    const logAfterCancels = cancelRes?.nextLeagueLog ?? prevLog;
+
+    // 3) Log the commissioner removal itself
+    const commRemoveLogEntry = {
+      id: now + Math.random(),
+      type: "commRemovePlayer",
+      team: teamName,
+      player: playerName,
+      timestamp: now,
+    };
+
+    return {
+      teams: nextTeams,
+      tradeProposals: nextTrades,
+      leagueLog: [commRemoveLogEntry, ...logAfterCancels],
+    };
+  });
+};
+
+
 // Remove exactly ONE matching log entry (by id when possible, fallback to signature)
 const removeOneLogEntry = (prevLog, entryToRemove) => {
   if (!Array.isArray(prevLog)) return [];
@@ -918,53 +1159,82 @@ const removeOneLogEntry = (prevLog, entryToRemove) => {
 const handleCommissionerDeleteLogEntry = (entry) => {
   if (!currentUser || currentUser.role !== "commissioner") return;
 
-  // optional safety confirm (recommended)
   const ok = window.confirm("Delete this activity log entry? This cannot be undone.");
   if (!ok) return;
 
-  setLeagueLog((prev) => removeOneLogEntry(prev, entry));
+  commitLeagueUpdate("commDeleteLogEntry", (prev) => {
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+    const nextLog = removeOneLogEntry(prevLog, entry);
+
+    // optional: log that a deletion occurred (meta-log)
+    const now = Date.now();
+    const deletionLog = {
+      type: "commDeleteLogEntry",
+      id: now + Math.random(),
+      deletedType: entry?.type || null,
+      deletedId: entry?.id ?? null,
+      timestamp: now,
+    };
+
+    return { leagueLog: [deletionLog, ...nextLog] };
+  });
 };
 
+
   // Manager profile picture upload
-  const handleManagerProfileImageChange = (event) => {
-    const file = event.target.files?.[0];
-    if (!file || !currentUser || currentUser.role !== "manager") return;
+const handleManagerProfileImageChange = (event) => {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
+  if (!currentUser || currentUser.role !== "manager" || !currentUser.teamName) return;
 
-      setTeams((prev) =>
-        prev.map((team) =>
-          team.name === currentUser.teamName
-            ? { ...team, profilePic: dataUrl }
-            : team
-        )
+  const teamName = currentUser.teamName;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+
+    commitLeagueUpdate("profilePic", (prev) => {
+      const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
+
+      const nextTeams = prevTeams.map((t) =>
+        t?.name === teamName ? { ...t, profilePic: dataUrl } : t
       );
-    };
-    reader.readAsDataURL(file);
+
+      return { teams: nextTeams };
+    });
   };
 
-   // --- Trade submission from draft (from TeamRosterPanel / TeamToolsPanel) ---
-  const handleSubmitTradeDraft = (draft) => {
-    if (!draft) return;
+  reader.readAsDataURL(file);
+};
 
-    const fromTeamObj = teams.find((t) => t.name === draft.fromTeam);
-    const toTeamObj = teams.find((t) => t.name === draft.toTeam);
+
+   // --- Trade submission from draft (from TeamRosterPanel / TeamToolsPanel) ---
+ // --- Trade submission from draft (from TeamRosterPanel / TeamToolsPanel) ---
+const handleSubmitTradeDraft = (draft) => {
+  if (!draft) return;
+
+  const committed = commitLeagueUpdate("trade:propose", (prev) => {
+    const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
+    const prevTrades = Array.isArray(prev?.tradeProposals)
+      ? prev.tradeProposals
+      : [];
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+
+    const fromTeamObj = prevTeams.find((t) => t.name === draft.fromTeam);
+    const toTeamObj = prevTeams.find((t) => t.name === draft.toTeam);
 
     const validation = validateTradeDraft({
       tradeDraft: draft,
       fromTeamObj,
       toTeamObj,
-      existingProposals: tradeProposals,
+      existingProposals: prevTrades,
       maxRetentionSpots: 3,
     });
 
     if (!validation.ok) {
-      if (validation.errorMessage) {
-        window.alert(validation.errorMessage);
-      }
-      return;
+      if (validation.errorMessage) window.alert(validation.errorMessage);
+      return null;
     }
 
     const {
@@ -983,18 +1253,15 @@ const handleCommissionerDeleteLogEntry = (entry) => {
       penaltyTo: penaltyToAmount,
       retentionFrom: validatedRetentionFrom,
       retentionTo: validatedRetentionTo,
-      existingTrades: tradeProposals,
+      existingTrades: prevTrades,
     });
-
-    setTradeProposals((prev) => [newTrade, ...prev]);
 
     // Build per-player details for logging (based on current rosters)
     const offeredDetails = (newTrade.offeredPlayers || []).map((name) => {
       const p =
         (fromTeamObj?.roster || []).find((pl) => pl.name === name) || null;
       const baseSalary = p ? Number(p.salary) || 0 : 0;
-      const retainedAmount =
-        Number(newTrade.retentionFrom?.[name] || 0) || 0;
+      const retainedAmount = Number(newTrade.retentionFrom?.[name] || 0) || 0;
       const newSalary = Math.max(0, baseSalary - retainedAmount);
 
       return {
@@ -1011,8 +1278,7 @@ const handleCommissionerDeleteLogEntry = (entry) => {
       const p =
         (toTeamObj?.roster || []).find((pl) => pl.name === name) || null;
       const baseSalary = p ? Number(p.salary) || 0 : 0;
-      const retainedAmount =
-        Number(newTrade.retentionTo?.[name] || 0) || 0;
+      const retainedAmount = Number(newTrade.retentionTo?.[name] || 0) || 0;
       const newSalary = Math.max(0, baseSalary - retainedAmount);
 
       return {
@@ -1025,29 +1291,32 @@ const handleCommissionerDeleteLogEntry = (entry) => {
       };
     });
 
-    // Log it in league history as a proposed trade
-    setLeagueLog((prev) => [
-      {
-        type: "tradeProposed",
-        id: newTrade.id,
-        fromTeam: newTrade.fromTeam,
-        toTeam: newTrade.toTeam,
-        requestedPlayers: newTrade.requestedPlayers,
-        offeredPlayers: newTrade.offeredPlayers,
-        penaltyFrom: newTrade.penaltyFrom,
-        penaltyTo: newTrade.penaltyTo,
-        retentionFrom: newTrade.retentionFrom,
-        retentionTo: newTrade.retentionTo,
-        offeredDetails,
-        requestedDetails,
-        timestamp: newTrade.createdAt,
-      },
-      ...prev,
-    ]);
+    const logEntry = {
+      type: "tradeProposed",
+      id: newTrade.id,
+      fromTeam: newTrade.fromTeam,
+      toTeam: newTrade.toTeam,
+      requestedPlayers: newTrade.requestedPlayers,
+      offeredPlayers: newTrade.offeredPlayers,
+      penaltyFrom: newTrade.penaltyFrom,
+      penaltyTo: newTrade.penaltyTo,
+      retentionFrom: newTrade.retentionFrom,
+      retentionTo: newTrade.retentionTo,
+      offeredDetails,
+      requestedDetails,
+      timestamp: newTrade.createdAt,
+    };
 
-    // Clear draft
-    setTradeDraft(null);
-  };
+    return {
+      tradeProposals: [newTrade, ...prevTrades],
+      leagueLog: [logEntry, ...prevLog],
+    };
+  });
+
+  // UI-only state reset (don’t include in league writes)
+  if (committed) setTradeDraft(null);
+};
+
 
 
   // --- Trade handlers using helpers from leagueUtils ---
@@ -1113,37 +1382,52 @@ const handleCommissionerDeleteLogEntry = (entry) => {
   // --- Trade Block handlers ---
 
   const handleAddTradeBlockEntry = ({ team, player, needs }) => {
+  const trimmedTeam = (team || "").trim();
   const trimmedPlayer = (player || "").trim();
-  if (!trimmedPlayer || !team) return;
+  if (!trimmedTeam || !trimmedPlayer) return;
 
   const trimmedNeeds = (needs || "").trim();
 
-  setTradeBlock((prev) => {
-    // Remove any existing entry for this team + player to avoid duplicates
-    const filtered = prev.filter(
+  commitLeagueUpdate("tradeBlock:add", (prev) => {
+    const prevBlock = Array.isArray(prev?.tradeBlock) ? prev.tradeBlock : [];
+
+    // Remove any existing entry for this team + player (case-insensitive)
+    const filtered = prevBlock.filter(
       (e) =>
         !(
-          e.team === team &&
-          e.player.toLowerCase() === trimmedPlayer.toLowerCase()
+          String(e?.team || "").trim() === trimmedTeam &&
+          String(e?.player || "").trim().toLowerCase() === trimmedPlayer.toLowerCase()
         )
     );
 
-    return [
+    const nextBlock = [
       {
         id: Date.now() + Math.random(),
-        team,
+        team: trimmedTeam,
         player: trimmedPlayer,
         needs: trimmedNeeds,
       },
       ...filtered,
     ];
+
+    return { tradeBlock: nextBlock };
   });
 };
 
 
+
   const handleRemoveTradeBlockEntry = (entryId) => {
-    setTradeBlock((prev) => prev.filter((e) => e.id !== entryId));
-  };
+  commitLeagueUpdate("tradeBlock:remove", (prev) => {
+    const prevBlock = Array.isArray(prev?.tradeBlock) ? prev.tradeBlock : [];
+    const nextBlock = prevBlock.filter((e) => e?.id !== entryId);
+
+    // If nothing changed, treat as no-op (avoids pointless re-renders)
+    if (nextBlock.length === prevBlock.length) return null;
+
+    return { tradeBlock: nextBlock };
+  });
+};
+
 
     // --- Counter offer handler ---
 const handleCounterTrade = (trade) => {
@@ -1190,6 +1474,7 @@ const handleCounterTrade = (trade) => {
 };
 // --- Auction handlers ---
 
+
 // Manager places a free-agent bid
 const handlePlaceBid = ({ playerName, position, amount }) => {
   if (!currentUser || currentUser.role !== "manager") {
@@ -1199,88 +1484,149 @@ const handlePlaceBid = ({ playerName, position, amount }) => {
 
   const biddingTeamName = currentUser.teamName;
 
-  const result = placeFreeAgentBid({
-    teams,
-    freeAgents,
-    biddingTeamName,
-    playerName,
-    position,
-    rawAmount: amount,
-    capLimit: CAP_LIMIT,
-    maxRosterSize: MAX_ROSTER_SIZE,
-    minForwards: MIN_FORWARDS,
-    minDefensemen: MIN_DEFENSEMEN,
+  let errorToShow = null;
+
+  const ok = commitLeagueUpdate("bid:place", (prev) => {
+    const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
+    const prevFreeAgents = Array.isArray(prev?.freeAgents) ? prev.freeAgents : [];
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+
+    const result = placeFreeAgentBid({
+      teams: prevTeams,
+      freeAgents: prevFreeAgents,
+      biddingTeamName,
+      playerName,
+      position,
+      rawAmount: amount,
+      capLimit: CAP_LIMIT,
+      maxRosterSize: MAX_ROSTER_SIZE,
+      minForwards: MIN_FORWARDS,
+      minDefensemen: MIN_DEFENSEMEN,
+    });
+
+    if (!result.ok) {
+      const raw = String(result.errorMessage || "");
+      const meta =
+        raw.toLowerCase().includes("cooldown") ||
+        raw.toLowerCase().includes("edit") ||
+        raw.toLowerCase().includes("minimum") ||
+        raw.toLowerCase().includes("min bid");
+
+      errorToShow = meta ? "Bid not allowed." : (result.errorMessage || "Bid not allowed.");
+      return null; // no state change
+    }
+
+    const patch = { freeAgents: result.nextFreeAgents };
+
+    if (result.logEntry) {
+      patch.leagueLog = [result.logEntry, ...prevLog];
+    }
+
+    // OPTIONAL: if you want managers to see cap warnings (this is non-meta and useful)
+    if (result.warningMessage) {
+      // You can decide if you want to surface this or not
+      // errorToShow = result.warningMessage; // (or handle separately)
+    }
+
+    return patch;
   });
 
-  if (!result.ok) {
-    // Hide meta-rule details from managers (cooldown / edits / min bid).
-    const raw = String(result.errorMessage || "");
-    const meta =
-      raw.toLowerCase().includes("cooldown") ||
-      raw.toLowerCase().includes("edit") ||
-      raw.toLowerCase().includes("minimum") ||
-      raw.toLowerCase().includes("min bid");
-
-    window.alert(meta ? "Bid not allowed." : (result.errorMessage || "Bid not allowed."));
-    return;
+  if (!ok && errorToShow) {
+    window.alert(errorToShow);
   }
-
-  setFreeAgents(result.nextFreeAgents);
-
-  if (result.logEntry) {
-    setLeagueLog((prev) => [result.logEntry, ...prev]);
-  }
-
-  // ✅ Do NOT show warning messages to managers
-  // if (result.warningMessage) window.alert(result.warningMessage);
 };
 
-// Commissioner resolves all active auctions
+
+
+// Commissioner resolves all active auctions (atomic + logged + confirmed)
 const handleResolveAuctions = () => {
   if (!currentUser || currentUser.role !== "commissioner") {
     window.alert("Only the commissioner can resolve auctions.");
     return;
   }
 
-  const result = resolveAuctions({
-    teams,
-    freeAgents,
-    capLimit: CAP_LIMIT,
-    maxRosterSize: MAX_ROSTER_SIZE,
-    minForwards: MIN_FORWARDS,
-    minDefensemen: MIN_DEFENSEMEN,
+  const ok = window.confirm(
+    "Resolve auctions now?\n\nThis will assign winning bids, clear resolved bids, and update rosters."
+  );
+  if (!ok) return;
+
+  commitLeagueUpdate("commResolveAuctions", (prev) => {
+    const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
+    const prevFreeAgents = Array.isArray(prev?.freeAgents) ? prev.freeAgents : [];
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+
+    const now = Date.now();
+
+    const result = resolveAuctions({
+      teams: prevTeams,
+      freeAgents: prevFreeAgents,
+      capLimit: CAP_LIMIT,
+      maxRosterSize: MAX_ROSTER_SIZE,
+      minForwards: MIN_FORWARDS,
+      minDefensemen: MIN_DEFENSEMEN,
+      now,
+    });
+
+    const commLog = {
+      type: "commResolveAuctions",
+      id: now + Math.random(),
+      resolvedCount: Array.isArray(result?.newLogs) ? result.newLogs.length : 0,
+      remainingBids: Array.isArray(result?.nextFreeAgents) ? result.nextFreeAgents.length : 0,
+      timestamp: now,
+    };
+
+    const newLogs = Array.isArray(result?.newLogs) ? result.newLogs : [];
+
+    return {
+      teams: result?.nextTeams ?? prevTeams,
+      freeAgents: result?.nextFreeAgents ?? prevFreeAgents,
+      leagueLog: [commLog, ...newLogs, ...prevLog],
+    };
   });
 
-  // Update teams and freeAgents
-  setTeams(result.nextTeams);
-  setFreeAgents(result.nextFreeAgents);
-
-  // Log successful signings
-  if (result.newLogs && result.newLogs.length > 0) {
-    setLeagueLog((prev) => [...result.newLogs, ...prev]);
-  }
-
-  if (result.newLogs && result.newLogs.length > 0) {
-    window.alert("Auctions resolved. Check League Activity for signings.");
-  } else {
-    window.alert("No active auctions to resolve.");
-  }
+  // Optional UX message (kept outside commit so it doesn't affect state)
+  window.alert("Auctions resolved. Check League Activity for signings.");
 };
-// Commissioner can remove a specific bid (e.g. typo)
+
+// Commissioner can remove a specific bid (e.g. typo) — atomic + confirmed + logged
 const handleCommissionerRemoveBid = (bidId) => {
   if (!currentUser || currentUser.role !== "commissioner") {
     window.alert("Only the commissioner can remove bids.");
     return;
   }
 
-  const { nextFreeAgents, removedBid } = removeAuctionBidById(
-    freeAgents,
-    bidId
-  );
+  commitLeagueUpdate("commRemoveBid", (prev) => {
+    const prevFreeAgents = Array.isArray(prev?.freeAgents) ? prev.freeAgents : [];
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
 
-  setFreeAgents(nextFreeAgents);
+    const target = prevFreeAgents.find((b) => b?.id === bidId) || null;
+    if (!target) return null;
 
+    const ok = window.confirm(
+      `Remove this bid?\n\nPlayer: ${target.player}\nTeam: ${target.team}\nAmount: $${target.amount}`
+    );
+    if (!ok) return null;
+
+    const { nextFreeAgents, removedBid } = removeAuctionBidById(prevFreeAgents, bidId);
+
+    const now = Date.now();
+    const logEntry = {
+      type: "commRemoveBid",
+      id: now + Math.random(),
+      bidId,
+      player: removedBid?.player || target?.player || "",
+      team: removedBid?.team || target?.team || "",
+      amount: Number(removedBid?.amount ?? target?.amount ?? 0) || 0,
+      timestamp: now,
+    };
+
+    return {
+      freeAgents: nextFreeAgents,
+      leagueLog: [logEntry, ...prevLog],
+    };
+  });
 };
+
 
   // --- Login / logout ---
 
@@ -1394,6 +1740,7 @@ return (
           getDefaultLeagueState={getDefaultLeagueState}
           leagueSettings={leagueSettings}
           setLeagueSettings={setLeagueSettings}
+          commitLeagueUpdate={commitLeagueUpdate}
         />
       </div>
 

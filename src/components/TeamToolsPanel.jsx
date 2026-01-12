@@ -7,6 +7,7 @@ import {
   formatCountdown,
   countRetentionSpots,
   totalBuyoutPenalty,
+  computeBidUiStateForAuction,
 } from "../leagueUtils";
 
 function TeamToolsPanel({
@@ -75,7 +76,7 @@ function TeamToolsPanel({
     for (const b of activeBids) {
       const playerName = b.player || "";
       if (!playerName) continue;
-const key = b.auctionKey || playerName.trim().toLowerCase();
+const key = String(b.auctionKey || playerName).trim().toLowerCase();
       if (!byKey.has(key)) {
         byKey.set(key, {
           key,
@@ -127,12 +128,17 @@ const isPlayerRostered = (playerName) => {
       );
       return;
     }
+if (typeof onPlaceBid !== "function") {
+  window.alert("Auction error: onPlaceBid is not wired (not a function).");
+  return;
+}
 
     onPlaceBid({
-      playerName: auction.playerName,
-      position: auction.position,
-      amount: rawAmount,
-    });
+  playerName: auction.playerName, // keep display name
+  position: auction.position,
+  amount: rawAmount,
+});
+
 
     // Clear just this player's inline input
     setLiveBidInputs((prev) => ({
@@ -309,6 +315,19 @@ const isPlayerRostered = (playerName) => {
     }
     return "#e5e7eb";
   };
+  const pillStyle = {
+  display: "inline-block",
+  padding: "2px 8px",
+  borderRadius: "999px",
+  border: "1px solid #334155",
+  background: "#0b1220",
+  color: "#e2e8f0",
+  fontSize: "0.75rem",
+  marginRight: "6px",
+  marginTop: "4px",
+  whiteSpace: "nowrap",
+};
+
 
   // Final “can submit” check: must have players selected
   // AND must not break retention limits.
@@ -614,84 +633,117 @@ const isPlayerRostered = (playerName) => {
                     }}
                   >
                     {/* From team preview */}
-                    <div style={{ flex: 1, minWidth: "160px" }}>
-                      <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-                        {tradeDraft.fromTeam}
-                      </div>
-                      <div>
-                        Cap:{" "}
-                        <span>
-                          ${fromPreview.capBefore} →{" "}
-                          <span
-                            style={{
-                              color: capColor(fromPreview.capAfter, fromPreview.capBefore),
-                            }}
-                          >
-                            ${fromPreview.capAfter}
-                          </span>{" "}
-                          ({fromPreview.capDiff >= 0 ? "+" : ""}
-                          {fromPreview.capDiff})
-                        </span>
-                      </div>
-                      <div>
-                        Roster:{" "}
-                        <span style={{ color: rosterColor(fromPreview.sizeAfter) }}>
-                          {fromPreview.sizeBefore} → {fromPreview.sizeAfter}
-                        </span>
-                      </div>
-                      <div>
-                        <span style={{ color: posColor(fromPreview.posAfter) }}>
-                          F: {fromPreview.posBefore.F} → {fromPreview.posAfter.F}, D:{" "}
-                          {fromPreview.posBefore.D} → {fromPreview.posAfter.D}
-                        </span>
-                      </div>
-                      <div>
-                        Buyouts: ${fromPreview.penaltiesBefore} → ${fromPreview.penaltiesAfter}
-                      </div>
-                      <div>
-                        Retentions: {fromPreview.retentionBefore} → {fromPreview.retentionAfter}
-                      </div>
-                    </div>
+<div style={{ flex: 1, minWidth: "160px" }}>
+  <div style={{ fontWeight: 800, marginBottom: "4px", fontSize: "1.05rem" }}>
+    {tradeDraft.fromTeam}
+  </div>
+
+  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "6px" }}>
+    Receiving:
+    {tradeDraft.requestedPlayers?.length ? (
+      <span style={{ marginLeft: "6px" }}>
+        {tradeDraft.requestedPlayers.map((name) => (
+          <span key={`recv-from-${name}`} style={pillStyle}>
+            {name}
+          </span>
+        ))}
+      </span>
+    ) : (
+      <span style={{ marginLeft: "6px" }}>—</span>
+    )}
+  </div>
+
+  <div>
+    Cap:{" "}
+    <span>
+      ${fromPreview.capBefore} →{" "}
+      <span style={{ color: capColor(fromPreview.capAfter, fromPreview.capBefore) }}>
+        ${fromPreview.capAfter}
+      </span>{" "}
+      ({fromPreview.capDiff >= 0 ? "+" : ""}
+      {fromPreview.capDiff})
+    </span>
+  </div>
+
+  <div>
+    Roster:{" "}
+    <span style={{ color: rosterColor(fromPreview.sizeAfter) }}>
+      {fromPreview.sizeBefore} → {fromPreview.sizeAfter}
+    </span>
+  </div>
+
+  <div>
+    <span style={{ color: posColor(fromPreview.posAfter) }}>
+      F: {fromPreview.posBefore.F} → {fromPreview.posAfter.F}, D:{" "}
+      {fromPreview.posBefore.D} → {fromPreview.posAfter.D}
+    </span>
+  </div>
+
+  <div>
+    Buyouts: ${fromPreview.penaltiesBefore} → ${fromPreview.penaltiesAfter}
+  </div>
+
+  <div>
+    Retentions: {fromPreview.retentionBefore} → {fromPreview.retentionAfter}
+  </div>
+</div>
+
 
                     {/* To team preview */}
-                    <div style={{ flex: 1, minWidth: "160px" }}>
-                      <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-                        {tradeDraft.toTeam}
-                      </div>
-                      <div>
-                        Cap:{" "}
-                        <span>
-                          ${toPreview.capBefore} →{" "}
-                          <span
-                            style={{
-                              color: capColor(toPreview.capAfter, toPreview.capBefore),
-                            }}
-                          >
-                            ${toPreview.capAfter}
-                          </span>{" "}
-                          ({toPreview.capDiff >= 0 ? "+" : ""}
-                          {toPreview.capDiff})
-                        </span>
-                      </div>
-                      <div>
-                        Roster:{" "}
-                        <span style={{ color: rosterColor(toPreview.sizeAfter) }}>
-                          {toPreview.sizeBefore} → {toPreview.sizeAfter}
-                        </span>
-                      </div>
-                      <div>
-                        <span style={{ color: posColor(toPreview.posAfter) }}>
-                          F: {toPreview.posBefore.F} → {toPreview.posAfter.F}, D:{" "}
-                          {toPreview.posBefore.D} → {toPreview.posAfter.D}
-                        </span>
-                      </div>
-                      <div>
-                        Buyouts: ${toPreview.penaltiesBefore} → ${toPreview.penaltiesAfter}
-                      </div>
-                      <div>
-                        Retentions: {toPreview.retentionBefore} → {toPreview.retentionAfter}
-                      </div>
-                    </div>
+<div style={{ flex: 1, minWidth: "160px" }}>
+  <div style={{ fontWeight: 800, marginBottom: "4px", fontSize: "1.05rem" }}>
+    {tradeDraft.toTeam}
+  </div>
+
+  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "6px" }}>
+    Receiving:
+    {tradeDraft.offeredPlayers?.length ? (
+      <span style={{ marginLeft: "6px" }}>
+        {tradeDraft.offeredPlayers.map((name) => (
+          <span key={`recv-to-${name}`} style={pillStyle}>
+            {name}
+          </span>
+        ))}
+      </span>
+    ) : (
+      <span style={{ marginLeft: "6px" }}>—</span>
+    )}
+  </div>
+
+  <div>
+    Cap:{" "}
+    <span>
+      ${toPreview.capBefore} →{" "}
+      <span style={{ color: capColor(toPreview.capAfter, toPreview.capBefore) }}>
+        ${toPreview.capAfter}
+      </span>{" "}
+      ({toPreview.capDiff >= 0 ? "+" : ""}
+      {toPreview.capDiff})
+    </span>
+  </div>
+
+  <div>
+    Roster:{" "}
+    <span style={{ color: rosterColor(toPreview.sizeAfter) }}>
+      {toPreview.sizeBefore} → {toPreview.sizeAfter}
+    </span>
+  </div>
+
+  <div>
+    <span style={{ color: posColor(toPreview.posAfter) }}>
+      F: {toPreview.posBefore.F} → {toPreview.posAfter.F}, D:{" "}
+      {toPreview.posBefore.D} → {toPreview.posAfter.D}
+    </span>
+  </div>
+
+  <div>
+    Buyouts: ${toPreview.penaltiesBefore} → ${toPreview.penaltiesAfter}
+  </div>
+
+  <div>
+    Retentions: {toPreview.retentionBefore} → {toPreview.retentionAfter}
+  </div>
+</div>
                   </div>
 
                   {allIssues.length > 0 && (
@@ -1385,7 +1437,7 @@ return aTs - bTs;
 
               return (
                 <div
-                  key={auction.key}
+key={playerKey}
                   style={{
                     padding: "6px 8px",
                     borderRadius: "6px",
@@ -1428,51 +1480,72 @@ return aTs - bTs;
                     </div>
 
                     {/* Inline bid input for managers */}
-                    {isManager && (
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "6px",
-                          alignItems: "center",
-                        }}
-                      >
-                        <input
-                          type="number"
-                          min="1"
-                          placeholder="Bid $"
-                          value={inputValue}
-                          onChange={(e) =>
-                            handleLiveBidInputChange(
-                              playerKey,
-                              e.target.value
-                            )
-                          }
-                          style={{
-                            width: "80px",
-                            fontSize: "0.8rem",
-                          }}
-                        />
-                        <button
-                          onClick={() => handleLiveBidSubmit(auction)}
-                          style={{
-                            padding: "3px 8px",
-                            fontSize: "0.8rem",
-                            backgroundColor: "#0ea5e9",
-                            color: "#e5e7eb",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          Place bid
-                        </button>
-                      </div>
-                    )}
-                  </div>
+{isManager && (
+  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+    {(() => {
+      const ui = computeBidUiStateForAuction({
+  auctionBids: auction.bids,
+  myTeamName,
+  nowMs,
+  inputValue,
+});
+
+
+      return (
+        <>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            <input
+              type="number"
+              min={ui.minRequired}
+              placeholder={`Bid $ (min ${ui.minRequired})`}
+              value={inputValue}
+              onChange={(e) =>
+                handleLiveBidInputChange(playerKey, e.target.value)
+              }
+              style={{
+                width: "120px",
+                fontSize: "0.8rem",
+              }}
+            />
+
+            <button
+              onClick={() => {
+                if (ui.disabled) return;
+                handleLiveBidSubmit(auction);
+              }}
+              disabled={ui.disabled}
+              title={ui.reason || ""}
+              style={{
+                padding: "3px 8px",
+                fontSize: "0.8rem",
+                backgroundColor: ui.disabled ? "#4b5563" : "#0ea5e9",
+                color: "#e5e7eb",
+                border: "none",
+                borderRadius: "4px",
+                cursor: ui.disabled ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap",
+                opacity: ui.disabled ? 0.75 : 1,
+              }}
+            >
+              Place bid
+            </button>
+          </div>
+
+          {/* small status line */}
+          <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>
+            {ui.reason
+              ? ui.reason
+              : `Edits used: ${ui.editsUsed}/${ui.maxEdits}`}
+          </div>
+        </>
+      );
+    })()}
+  </div>
+)}
+
 
                   {/* Commissioner optional per-bid details */}
-                  {isCommissioner && showBidAmounts && sortedBids.length > 0 && (
+                                   {isCommissioner && showBidAmounts && sortedBids.length > 0 && (
                     <div
                       style={{
                         marginTop: "4px",
@@ -1480,20 +1553,10 @@ return aTs - bTs;
                         color: "#e5e7eb",
                       }}
                     >
-                      <div
-                        style={{
-                          marginBottom: "2px",
-                          color: "#fbbf24",
-                        }}
-                      >
+                      <div style={{ marginBottom: "2px", color: "#fbbf24" }}>
                         Bid details:
                       </div>
-                      <ul
-                        style={{
-                          margin: 0,
-                          paddingLeft: "16px",
-                        }}
-                      >
+                      <ul style={{ margin: 0, paddingLeft: "16px" }}>
                         {sortedBids.map((b) => (
                           <li key={b.id}>
                             {b.team}: ${b.amount} (
@@ -1503,6 +1566,7 @@ return aTs - bTs;
                       </ul>
                     </div>
                   )}
+                  </div>
                 </div>
               );
             })}
