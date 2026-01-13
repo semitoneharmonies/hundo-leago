@@ -53,6 +53,8 @@ export default function CommissionerPanel({
   onCommissionerRemoveBid,
   leagueSettings,
   commitLeagueUpdate,
+    onCleanupDeleteLogs,
+
 }) {
   const isCommish = currentUser?.role === "commissioner";
 
@@ -929,6 +931,14 @@ const addRosterRow = () => {
           <button style={dangerButton} onClick={clearAllBids} disabled={busy}>
             Clear all bids
           </button>
+           <button
+    style={dangerButton}
+    onClick={() => onCleanupDeleteLogs?.()}
+    disabled={busy}
+    title="Removes old meta log entries created by the previous delete-log bug"
+  >
+    Cleanup old delete-logs
+  </button>
         </div>
 
         <div style={{ marginTop: "10px" }}>

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { io as socketIOClient } from "socket.io-client";
+import { playSound } from "./sound";
 
 
 import TeamRosterPanel from "./components/TeamRosterPanel";
@@ -219,45 +220,14 @@ const commitLeagueUpdate = (reason, updater) => {
 // -------------------------
 const winSoundLockRef = useRef(false);
 
-const playAuctionWinSound = async () => {
+const playAuctionWinSound = () => {
   if (winSoundLockRef.current) return;
   winSoundLockRef.current = true;
   setTimeout(() => (winSoundLockRef.current = false), 1500);
 
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-
-    const ctx = new AudioCtx();
-
-    // attempt to resume if browser started it suspended
-    if (ctx.state === "suspended") {
-      await ctx.resume().catch(() => {});
-    }
-
-    const beep = (freq, start, dur, gainVal = 0.05) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = freq;
-      gain.gain.value = gainVal;
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + dur);
-    };
-
-    beep(523.25, 0.00, 0.12);
-    beep(659.25, 0.13, 0.12);
-    beep(783.99, 0.26, 0.18);
-
-    setTimeout(() => ctx.close?.(), 800);
-  } catch (e) {
-    console.warn("[SOUND] win sound blocked or failed:", e);
-  }
+  playSound("/sounds/VGauctionwin-crop.wav", { volume: 0.8 });
 };
+
 // ------------------------------------
 // Auction win: play sound once per new win
 // ------------------------------------
@@ -283,6 +253,7 @@ useEffect(() => {
     playAuctionWinSound();
   }
 }, [currentUser, leagueLog]);
+
 
 // -------------------------
 // Notifications (TopBar bell)
@@ -1028,6 +999,20 @@ const handleCommissionerDeleteLogEntry = (entry) => {
   });
 };
 
+const handleCommissionerCleanupDeleteLogs = () => {
+  if (!currentUser || currentUser.role !== "commissioner") return;
+
+  const ok = window.confirm(
+    "Remove old 'delete log' meta entries?\n\nThis will delete ALL leagueLog entries of type: commDeleteLogEntry.\nIt will NOT touch trades, auctions, buyouts, etc."
+  );
+  if (!ok) return;
+
+  commitLeagueUpdate("commCleanupDeleteLogs", (prev) => {
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+    const nextLog = prevLog.filter((e) => e?.type !== "commDeleteLogEntry");
+    return { leagueLog: nextLog };
+  });
+};
 
 
   // Manager profile picture upload
@@ -1163,7 +1148,10 @@ const handleSubmitTradeDraft = (draft) => {
   });
 
   // UI-only state reset (don’t include in league writes)
-  if (committed) setTradeDraft(null);
+  if (committed) {
+  setTradeDraft(null);
+  playSound("/sounds/VGoffertrade-crop.wav", { volume: 0.55 });
+}
 };
 
 
@@ -1171,6 +1159,8 @@ const handleSubmitTradeDraft = (draft) => {
   // --- Trade handlers using helpers from leagueUtils ---
 
   const handleAcceptTrade = (tradeId) => {
+    let accepted = false;
+
     const result = acceptTradeById({
       tradeId,
       teams,
@@ -1190,6 +1180,9 @@ const handleSubmitTradeDraft = (draft) => {
     if (result.logEntries && result.logEntries.length > 0) {
       setLeagueLog((prev) => [...result.logEntries, ...prev]);
     }
+if (result.ok) {
+  accepted = true;
+}
 
     if (!result.ok && result.error) {
       window.alert(result.error);
@@ -1199,6 +1192,9 @@ const handleSubmitTradeDraft = (draft) => {
     "Trade accepted, but it creates roster/cap issues:\n\n" +
       result.warnings.join("\n")
   );
+}
+if (accepted) {
+  playSound("/sounds/VGaccepttrade-crop.wav", { volume: 0.6 });
 }
 
   };
@@ -1211,6 +1207,8 @@ const handleSubmitTradeDraft = (draft) => {
     );
     setTradeProposals(nextTradeProposals);
     setLeagueLog(nextLeagueLog);
+    playSound("/sounds/VGrejecttrade.wav", { volume: 0.55 });
+
   };
 
   const handleCancelTrade = (tradeId) => {
@@ -1408,6 +1406,9 @@ const handlePlaceBid = ({ playerName, position, amount }) => {
 
     return patch;
   });
+if (ok) {
+  playSound("/sounds/placebid-crop.wav", { volume: 0.5 });
+}
 
   if (!ok && errorToShow) {
     window.alert(errorToShow);
@@ -1614,6 +1615,8 @@ return (
           onCommissionerRemoveBid={handleCommissionerRemoveBid}
           leagueSettings={leagueSettings}
           commitLeagueUpdate={commitLeagueUpdate}
+         onCleanupDeleteLogs={handleCommissionerCleanupDeleteLogs}
+
         />
       </div>
 
