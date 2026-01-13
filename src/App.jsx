@@ -3,8 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { io as socketIOClient } from "socket.io-client";
 import { playSound } from "./sound";
-
-
+import { HOCKEY_QUOTES } from "./quotes";
 import TeamRosterPanel from "./components/TeamRosterPanel";
 import LeagueHistoryPanel from "./components/LeagueHistoryPanel";
 import TeamToolsPanel from "./components/TeamToolsPanel";
@@ -111,6 +110,9 @@ const showFreezeBanner = (msg = "League is frozen. Changes are disabled.") => {
   }, 8000);
 };
 
+  // --- Random quote (UI only) ---
+  const [dailyQuote, setDailyQuote] = useState(null);
+
   // --- Core league state ---
 const [teams, setTeams] = useState([]); // start empty; backend is source of truth
 
@@ -142,6 +144,22 @@ const saveTimerRef = useRef(null);
 const lastSavedJsonRef = useRef("");
 const autoCancelLockRef = useRef(false);
 
+// ------------------------------------
+// Random quote: pick once per full page load
+// ------------------------------------
+useEffect(() => {
+  if (!Array.isArray(HOCKEY_QUOTES) || HOCKEY_QUOTES.length === 0) return;
+
+  const lastIndex = Number(localStorage.getItem("hundo_lastQuoteIndex") || -1);
+
+  let nextIndex = Math.floor(Math.random() * HOCKEY_QUOTES.length);
+  if (HOCKEY_QUOTES.length > 1 && nextIndex === lastIndex) {
+    nextIndex = (nextIndex + 1) % HOCKEY_QUOTES.length;
+  }
+
+  localStorage.setItem("hundo_lastQuoteIndex", String(nextIndex));
+  setDailyQuote(HOCKEY_QUOTES[nextIndex]);
+}, []);
 
 // ------------------------------------
 // Option B: Single write funnel (Phase 0)
@@ -1600,6 +1618,33 @@ return (
 
       />
       
+      {dailyQuote && (
+        <div
+          style={{
+            marginTop: "10px",
+            marginBottom: "12px",
+            padding: "10px 14px",
+            borderRadius: "8px",
+            border: "1px solid #1e293b",
+            background: "#020617",
+            color: "#cbd5e1",
+            fontStyle: "italic",
+            textAlign: "center",
+          }}
+        >
+          “{dailyQuote.text}”
+          <div
+            style={{
+              marginTop: "6px",
+              fontStyle: "normal",
+              fontSize: "0.85rem",
+              color: "#94a3b8",
+            }}
+          >
+            — {dailyQuote.author}
+          </div>
+        </div>
+      )}
 
       {/* FULL WIDTH: Commissioner Panel (NOT inside the grid) */}
       <div style={{ marginTop: "12px", marginBottom: "12px" }}>
