@@ -1194,7 +1194,20 @@ if (typeof onPlaceBid !== "function") {
                   </span>
                   {canRemove && (
                     <button
-                      onClick={() => onRemoveTradeBlockEntry?.(entry)}
+                      onClick={() => {
+  if (typeof onRemoveTradeBlockEntry !== "function") {
+    console.error(
+      "[TRADE BLOCK] onRemoveTradeBlockEntry is not wired:",
+      onRemoveTradeBlockEntry
+    );
+    window.alert("Trade block remove is not wired (check App.jsx props).");
+    return;
+  }
+
+  console.log("[TRADE BLOCK] remove clicked", entry);
+  onRemoveTradeBlockEntry(entry);
+}}
+
 
                       style={{
                         padding: "2px 6px",

@@ -1023,19 +1023,11 @@ const handleCommissionerDeleteLogEntry = (entry) => {
     const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
     const nextLog = removeOneLogEntry(prevLog, entry);
 
-    // optional: log that a deletion occurred (meta-log)
-    const now = Date.now();
-    const deletionLog = {
-      type: "commDeleteLogEntry",
-      id: now + Math.random(),
-      deletedType: entry?.type || null,
-      deletedId: entry?.id ?? null,
-      timestamp: now,
-    };
-
-    return { leagueLog: [deletionLog, ...nextLog] };
+    // ✅ IMPORTANT: do NOT add a new log entry for the deletion
+    return { leagueLog: nextLog };
   });
 };
+
 
 
   // Manager profile picture upload
@@ -1292,19 +1284,21 @@ const handleSubmitTradeDraft = (draft) => {
     const norm = (x) => String(x ?? "").trim().toLowerCase();
 
     const nextBlock = prevBlock.filter((e) => {
-      // primary: remove by id (string-safe compare)
-      if (id != null && e?.id != null) {
-        return String(e.id) !== String(id);
-      }
+  // primary: remove by id (string-safe)
+  if (id != null && e?.id != null) return String(e.id) !== String(id);
 
-      // fallback: remove by team+player (case/space safe)
-      if (team && player) {
-        return !(norm(e?.team) === norm(team) && norm(e?.player) === norm(player));
-      }
+  // fallback: remove by team+player
+  if (team && player) {
+    return !(
+      String(e?.team || "") === String(team) &&
+      String(e?.player || "") === String(player)
+    );
+  }
 
-      // if we have nothing usable, don't remove
-      return true;
-    });
+  // if we have nothing usable, don't remove
+  return true;
+});
+;
 
     return { tradeBlock: nextBlock };
   });
@@ -1680,6 +1674,7 @@ return (
             onPlaceBid={handlePlaceBid}
             onResolveAuctions={handleResolveAuctions}
             onCommissionerRemoveBid={handleCommissionerRemoveBid}
+            onRemoveTradeBlockEntry={handleRemoveTradeBlockEntry}
           />
         </div>
       </div>
