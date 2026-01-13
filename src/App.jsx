@@ -1273,17 +1273,36 @@ const handleSubmitTradeDraft = (draft) => {
 
 
 
-  const handleRemoveTradeBlockEntry = (entryId) => {
-  commitLeagueUpdate("tradeBlock:remove", (prev) => {
-    const prevBlock = Array.isArray(prev?.tradeBlock) ? prev.tradeBlock : [];
-    const nextBlock = prevBlock.filter((e) => e?.id !== entryId);
+ const handleRemoveTradeBlockEntry = (arg) => {
+  if (typeof commitLeagueUpdate !== "function") return;
 
-    // If nothing changed, treat as no-op (avoids pointless re-renders)
-    if (nextBlock.length === prevBlock.length) return null;
+  const id = typeof arg === "object" ? arg?.id : arg;
+  const team = typeof arg === "object" ? arg?.team : null;
+  const player = typeof arg === "object" ? arg?.player : null;
+
+  commitLeagueUpdate("removeTradeBlockEntry", (prev) => {
+    const prevBlock = Array.isArray(prev?.tradeBlock) ? prev.tradeBlock : [];
+
+    const nextBlock = prevBlock.filter((e) => {
+      // primary: remove by id (if both sides have ids)
+      if (id != null && e?.id != null) return e.id !== id;
+
+      // fallback: remove by team+player
+      if (team && player) {
+        return !(
+          String(e?.team || "") === String(team) &&
+          String(e?.player || "") === String(player)
+        );
+      }
+
+      // if we have nothing usable, don't remove
+      return true;
+    });
 
     return { tradeBlock: nextBlock };
   });
 };
+
 
 
     // --- Counter offer handler ---

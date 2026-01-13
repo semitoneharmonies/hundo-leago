@@ -1196,7 +1196,7 @@ if (typeof onPlaceBid !== "function") {
                     <button
                       onClick={() =>
                         onRemoveTradeBlockEntry &&
-                        onRemoveTradeBlockEntry(entry.id)
+                        onRemoveTradeBlockEntry(entry)
                       }
                       style={{
                         padding: "2px 6px",
