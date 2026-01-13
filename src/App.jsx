@@ -1407,7 +1407,7 @@ const handlePlaceBid = ({ playerName, position, amount }) => {
     return patch;
   });
 if (ok) {
-  playSound("/sounds/placebid-crop.wav", { volume: 0.5 });
+  playSound("/sounds/VGplacebid-crop.wav", { volume: 0.5 });
 }
 
   if (!ok && errorToShow) {
