@@ -1,8 +1,6 @@
 // src/components/CommissionerPanel.jsx
 import React, { useEffect, useMemo, useState } from "react";
 
-const ENABLE_HARD_RESET = import.meta.env.VITE_ENABLE_HARD_RESET === "true";
-
 /**
  * CommissionerPanel
  *
@@ -47,30 +45,33 @@ export default function CommissionerPanel({
   apiUrl,
 
   teams,
-  setTeams,
   tradeProposals,
-  setTradeProposals,
   freeAgents,
-  setFreeAgents,
   leagueLog,
-  setLeagueLog,
   tradeBlock,
-  setTradeBlock,
   onResolveAuctions,
   onCommissionerRemoveBid,
-  // optional, but recommended
-  getDefaultLeagueState,
-  // optional: if you store settings in league state, pass current settings and setter
   leagueSettings,
-  setLeagueSettings,
   commitLeagueUpdate,
 }) {
   const isCommish = currentUser?.role === "commissioner";
-  if (!isCommish) return null;
 
-  const loginHistory = [...(leagueLog || [])]
-  .filter((e) => e?.type === "managerLogin")
-  .sort((a, b) => (b?.timestamp || 0) - (a?.timestamp || 0));
+
+ const managerLastLogin = leagueSettings?.managerLastLogin || {};
+
+// One row per team, sorted by team name (or sort by timestamp if you want)
+const loginHistory = (teams || [])
+  .filter((t) => t?.name)
+  .map((t) => {
+    const entry = managerLastLogin[t.name] || null;
+    return {
+      teamName: t.name,
+      timestamp: entry?.timestamp || null,
+    };
+  })
+  .sort((a, b) => a.teamName.localeCompare(b.teamName));
+
+
 
 
   // Derive API base so we can call /api/snapshots using the same origin
@@ -83,13 +84,11 @@ export default function CommissionerPanel({
   // ----------------------------
   // Local UI state
   // ----------------------------
-  const [resetConfirmText, setResetConfirmText] = useState("");
   const [busy, setBusy] = useState(false);
   const [adminMessage, setAdminMessage] = useState("");
 
   // Freeze league (stored in settings if provided; otherwise local-only)
   const frozen = Boolean(leagueSettings?.frozen);
-  const [localFrozen, setLocalFrozen] = useState(false);
 
   // Snapshots
   const [snapshots, setSnapshots] = useState([]);
@@ -145,56 +144,48 @@ export default function CommissionerPanel({
   // ----------------------------
   // Helpers
   // ----------------------------
-  const addLog = (entry) => {
-    setLeagueLog((prev) => [{ id: entry.id || nowId(), ...entry }, ...(prev || [])]);
-  };
 
-  const effectiveFrozen = leagueSettings ? frozen : localFrozen;
+  const effectiveFrozen = frozen;
+
 
 const setFrozen = (nextFrozen) => {
   const nextVal = Boolean(nextFrozen);
 
   // Small safety confirm (freezing affects everyone)
   if (nextVal) {
-    const ok = window.confirm("Freeze the league? Managers will be blocked from making changes.");
+    const ok = window.confirm(
+      "Freeze the league? Managers will be blocked from making changes."
+    );
     if (!ok) return;
   }
 
-  if (typeof commitLeagueUpdate === "function") {
-    commitLeagueUpdate("commFreezeToggle", (prev) => {
-      const prevSettings = prev?.settings || {};
-      const now = Date.now();
-
-      const entry = {
-        id: nowId(),
-        type: "commFreezeToggle",
-        by: "Commissioner",
-        frozen: nextVal,
-        timestamp: now,
-      };
-
-      return {
-        settings: { ...prevSettings, frozen: nextVal },
-        leagueLog: [entry, ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : [])],
-      };
-    });
+  if (typeof commitLeagueUpdate !== "function") {
+    window.alert("Freeze toggle is unavailable (commitLeagueUpdate missing).");
     return;
   }
 
-  // fallback local-only (shouldn’t be used once commitLeagueUpdate is wired)
-  if (leagueSettings && typeof setLeagueSettings === "function") {
-    setLeagueSettings((prev) => ({ ...(prev || {}), frozen: nextVal }));
-  } else {
-    setLocalFrozen(nextVal);
-  }
+  commitLeagueUpdate("commFreezeToggle", (prev) => {
+    const prevSettings = prev?.settings || {};
+    const now = Date.now();
 
-  addLog({
-    type: "commFreezeToggle",
-    by: "Commissioner",
-    frozen: nextVal,
-    timestamp: Date.now(),
+    const entry = {
+      id: nowId(),
+      type: "commFreezeToggle",
+      by: "Commissioner",
+      frozen: nextVal,
+      timestamp: now,
+    };
+
+    return {
+      settings: { ...prevSettings, frozen: nextVal },
+      leagueLog: [
+        entry,
+        ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : []),
+      ],
+    };
   });
 };
+
 
 
   // ----------------------------
@@ -225,138 +216,96 @@ const setFrozen = (nextFrozen) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiBase]);
 
-  const restoreSnapshot = async (snapshotId) => {
-    if (!apiBase || !snapshotId) return;
-    if (!window.confirm(`Restore snapshot "${snapshotId}"? This overwrites the league state.`)) return;
+ const restoreSnapshot = async (snapshotId) => {
+  if (!apiBase || !snapshotId) return;
+  if (!window.confirm(`Restore snapshot "${snapshotId}"? This overwrites the league state.`)) return;
 
-    setBusy(true);
-    setAdminMessage("");
-    try {
-      const res = await fetch(`${apiBase}/api/snapshots/restore`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: snapshotId }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || `HTTP ${res.status}`);
-      }
-
-      addLog({
-        type: "commRestoreSnapshot",
-        by: "Commissioner",
-        snapshotId,
-        timestamp: Date.now(),
-      });
-
-      setAdminMessage(`Snapshot restored: ${snapshotId}`);
-    } catch (e) {
-      console.error("[SNAPSHOTS] restore failed:", e);
-      setAdminMessage(`Restore failed: ${e.message || "unknown error"}`);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const createSnapshot = async () => {
-    // NOTE: Your backend does NOT currently have a snapshot create endpoint in the server.js you pasted.
-    // This will 404 until we add it. The UI is ready for when we do.
-    if (!apiBase) return;
-
-    const name = (newSnapshotName || "").trim();
-
-    setBusy(true);
-    setAdminMessage("");
-    try {
-      const res = await fetch(`${apiBase}/api/snapshots/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name || null }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || `HTTP ${res.status}`);
-      }
-
-      addLog({
-        type: "commCreateSnapshot",
-        by: "Commissioner",
-        snapshotId: data.snapshotId || null,
-        timestamp: Date.now(),
-      });
-
-      setNewSnapshotName("");
-      setAdminMessage("Snapshot created.");
-      await loadSnapshots();
-    } catch (e) {
-      console.error("[SNAPSHOTS] create failed:", e);
-      setAdminMessage(
-        `Snapshot create failed (likely missing backend endpoint). ${e.message || ""}`.trim()
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  // ----------------------------
-  // Reset to defaults (requires getDefaultLeagueState)
-  // ----------------------------
- const resetToDefaults = () => {
-  if (!ENABLE_HARD_RESET) {
-    window.alert("Hard reset is disabled in production.");
-    return;
-  }
-  if (typeof getDefaultLeagueState !== "function") {
-    window.alert("Reset needs getDefaultLeagueState() passed in.");
-    return;
-  }
-  if (resetConfirmText !== "RESET") {
-    window.alert('Type RESET in the box to confirm.');
-    return;
-  }
-  if (!window.confirm("Final confirmation: reset league to defaults? This overwrites everything.")) return;
-
-  const def = getDefaultLeagueState();
-  const now = Date.now();
-
-  const logEntry = {
-    id: nowId(),
-    type: "commResetDefaults",
-    by: "Commissioner",
-    timestamp: now,
-  };
-
-  if (typeof commitLeagueUpdate === "function") {
-    commitLeagueUpdate("commResetDefaults", () => {
-      return {
-        teams: Array.isArray(def?.teams) ? def.teams : [],
-        tradeProposals: Array.isArray(def?.tradeProposals) ? def.tradeProposals : [],
-        freeAgents: Array.isArray(def?.freeAgents) ? def.freeAgents : [],
-        tradeBlock: Array.isArray(def?.tradeBlock) ? def.tradeBlock : [],
-        settings: def?.settings || { frozen: false, managerLoginHistory: [] },
-        leagueLog: [logEntry, ...(Array.isArray(def?.leagueLog) ? def.leagueLog : [])],
-      };
+  setBusy(true);
+  setAdminMessage("");
+  try {
+    const res = await fetch(`${apiBase}/api/snapshots/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: snapshotId }),
     });
 
-    setResetConfirmText("");
-    setAdminMessage("League reset to defaults.");
-    return;
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || `HTTP ${res.status}`);
+    }
+
+    // Log it through the single write funnel (safe + consistent)
+    if (typeof commitLeagueUpdate === "function") {
+      commitLeagueUpdate("commRestoreSnapshot", (prev) => {
+        const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+        const entry = {
+          id: nowId(),
+          type: "commRestoreSnapshot",
+          by: "Commissioner",
+          snapshotId,
+          timestamp: Date.now(),
+        };
+        return { leagueLog: [entry, ...prevLog] };
+      });
+    }
+
+    setAdminMessage(`Snapshot restored: ${snapshotId}`);
+  } catch (e) {
+    console.error("[SNAPSHOTS] restore failed:", e);
+    setAdminMessage(`Restore failed: ${e.message || "unknown error"}`);
+  } finally {
+    setBusy(false);
   }
-
-  // fallback (shouldn’t be used once commitLeagueUpdate is wired)
-  setTeams(def.teams || []);
-  setTradeProposals(def.tradeProposals || []);
-  setFreeAgents(def.freeAgents || []);
-  setTradeBlock(def.tradeBlock || []);
-  if (def.settings && typeof setLeagueSettings === "function") setLeagueSettings(def.settings);
-  setLeagueLog([logEntry, ...(def.leagueLog || [])]);
-
-  setResetConfirmText("");
-  setAdminMessage("League reset to defaults (local state updated).");
 };
+
+
+ const createSnapshot = async () => {
+  if (!apiBase) return;
+
+  const name = (newSnapshotName || "").trim();
+
+  setBusy(true);
+  setAdminMessage("");
+  try {
+    const res = await fetch(`${apiBase}/api/snapshots/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name || null }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || `HTTP ${res.status}`);
+    }
+
+    if (typeof commitLeagueUpdate === "function") {
+      commitLeagueUpdate("commCreateSnapshot", (prev) => {
+        const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+        const entry = {
+          id: nowId(),
+          type: "commCreateSnapshot",
+          by: "Commissioner",
+          snapshotId: data.snapshotId || null,
+          timestamp: Date.now(),
+        };
+        return { leagueLog: [entry, ...prevLog] };
+      });
+    }
+
+    setNewSnapshotName("");
+    setAdminMessage("Snapshot created.");
+    await loadSnapshots();
+  } catch (e) {
+    console.error("[SNAPSHOTS] create failed:", e);
+    setAdminMessage(
+      `Snapshot create failed (likely missing backend endpoint). ${e.message || ""}`.trim()
+    );
+  } finally {
+    setBusy(false);
+  }
+};
+
 
 
   // ----------------------------
@@ -387,59 +336,41 @@ const setFrozen = (nextFrozen) => {
     }))
     .filter((r) => r.player && r.penalty > 0);
 
-  if (!window.confirm(`Apply roster edits to ${editTeamName}?`)) return;
+  const ok = window.confirm(`Apply roster edits to ${editTeamName}?`);
+  if (!ok) return;
 
-  if (typeof commitLeagueUpdate === "function") {
-    commitLeagueUpdate("commEditTeam", (prev) => {
-      const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
-      const now = Date.now();
-
-      const nextTeams = prevTeams.map((t) => {
-        if (t?.name !== editTeamName) return t;
-        return {
-          ...t,
-          roster: sortRosterDefault(cleanedRoster),
-          buyouts: [...cleanedBuyouts, ...cleanedRetained],
-        };
-      });
-
-      const entry = {
-        id: nowId(),
-        type: "commEditTeam",
-        by: "Commissioner",
-        team: editTeamName,
-        summary: "Edited roster/buyouts/retained",
-        timestamp: now,
-      };
-
-      return {
-        teams: nextTeams,
-        leagueLog: [entry, ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : [])],
-      };
-    });
-
-    setAdminMessage(`Saved edits for ${editTeamName}`);
+  if (typeof commitLeagueUpdate !== "function") {
+    window.alert("Roster edits are unavailable (commitLeagueUpdate missing).");
     return;
   }
 
-  // fallback
-  setTeams((prev) =>
-    (prev || []).map((t) => {
-      if (t.name !== editTeamName) return t;
+  commitLeagueUpdate("commEditTeam", (prev) => {
+    const prevTeams = Array.isArray(prev?.teams) ? prev.teams : [];
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+    const now = Date.now();
+
+    const nextTeams = prevTeams.map((t) => {
+      if (t?.name !== editTeamName) return t;
       return {
         ...t,
         roster: sortRosterDefault(cleanedRoster),
         buyouts: [...cleanedBuyouts, ...cleanedRetained],
       };
-    })
-  );
+    });
 
-  addLog({
-    type: "commEditTeam",
-    by: "Commissioner",
-    team: editTeamName,
-    summary: "Edited roster/buyouts/retained",
-    timestamp: Date.now(),
+    const entry = {
+      id: nowId(),
+      type: "commEditTeam",
+      by: "Commissioner",
+      team: editTeamName,
+      summary: "Edited roster/buyouts/retained",
+      timestamp: now,
+    };
+
+    return {
+      teams: nextTeams,
+      leagueLog: [entry, ...prevLog],
+    };
   });
 
   setAdminMessage(`Saved edits for ${editTeamName}`);
@@ -469,62 +400,92 @@ const addRosterRow = () => {
   const ok = window.confirm("Force-cancel this trade? This cannot be undone.");
   if (!ok) return;
 
+  if (typeof commitLeagueUpdate !== "function") {
+    window.alert("Force-cancel is unavailable (commitLeagueUpdate missing).");
+    return;
+  }
+
+  commitLeagueUpdate("commCancelTrade", (prev) => {
+    const prevTrades = Array.isArray(prev?.tradeProposals)
+      ? prev.tradeProposals
+      : [];
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+    const now = Date.now();
+
+    const nextTrades = prevTrades.map((tr) => {
+      if (tr?.id !== tradeId) return tr;
+      return {
+        ...tr,
+        status: "cancelled",
+        cancelledBy: "Commissioner",
+        autoCancelled: false,
+        reason: "commissionerForceCancel",
+        updatedAt: now,
+      };
+    });
+
+    const entry = {
+      id: nowId(),
+      type: "commCancelTrade",
+      by: "Commissioner",
+      tradeId,
+      timestamp: now,
+    };
+
+    return {
+      tradeProposals: nextTrades,
+      leagueLog: [entry, ...prevLog],
+    };
+  });
+};
+
+
+  const clearAllPendingTrades = () => {
+  const ok = window.confirm("Clear ALL pending trades?");
+  if (!ok) return;
+
   if (typeof commitLeagueUpdate === "function") {
-    commitLeagueUpdate("commCancelTrade", (prev) => {
-      const prevTrades = Array.isArray(prev?.tradeProposals) ? prev.tradeProposals : [];
+    commitLeagueUpdate("commClearPendingTrades", (prev) => {
+      const prevTrades = Array.isArray(prev?.tradeProposals)
+        ? prev.tradeProposals
+        : [];
+      const prevLog = Array.isArray(prev?.leagueLog)
+        ? prev.leagueLog
+        : [];
+
       const now = Date.now();
 
-      const nextTrades = prevTrades.map((tr) => {
-        if (tr?.id !== tradeId) return tr;
-        return {
-          ...tr,
-          status: "cancelled",
-          cancelledBy: "Commissioner",
-          autoCancelled: false,
-          reason: "commissionerForceCancel",
-          updatedAt: now,
-        };
-      });
+      const nextTrades = prevTrades.map((tr) =>
+        tr.status === "pending"
+          ? {
+              ...tr,
+              status: "cancelled",
+              cancelledBy: "Commissioner",
+              updatedAt: now,
+            }
+          : tr
+      );
 
       const entry = {
-        id: nowId(),
-        type: "commCancelTrade",
+        id: now + Math.random(),
+        type: "commClearPendingTrades",
         by: "Commissioner",
-        tradeId,
+        cancelledCount: prevTrades.filter((t) => t.status === "pending").length,
         timestamp: now,
       };
 
       return {
         tradeProposals: nextTrades,
-        leagueLog: [entry, ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : [])],
+        leagueLog: [entry, ...prevLog],
       };
     });
+
     return;
   }
 
-  // fallback
-  setTradeProposals((prev) =>
-    (prev || []).map((tr) =>
-      tr.id === tradeId ? { ...tr, status: "cancelled", cancelledBy: "Commissioner" } : tr
-    )
-  );
-  addLog({ type: "commCancelTrade", by: "Commissioner", tradeId, timestamp: Date.now() });
+  // No fallback. In Phase 1, if commitLeagueUpdate is missing, we do nothing.
 };
 
-
-  const clearAllPendingTrades = () => {
-    if (!window.confirm("Clear ALL pending trades?")) return;
-
-    setTradeProposals((prev) =>
-      (prev || []).map((tr) => (tr.status === "pending" ? { ...tr, status: "cancelled", cancelledBy: "Commissioner" } : tr))
-    );
-
-    addLog({
-      type: "commClearPendingTrades",
-      by: "Commissioner",
-      timestamp: Date.now(),
-    });
-  };
 
   // ----------------------------
   // Auctions admin
@@ -533,28 +494,28 @@ const addRosterRow = () => {
   const ok = window.confirm("Clear ALL auction bids? This cannot be undone.");
   if (!ok) return;
 
-  if (typeof commitLeagueUpdate === "function") {
-    commitLeagueUpdate("commClearAllBids", (prev) => {
-      const now = Date.now();
-      const entry = {
-        id: nowId(),
-        type: "commClearAllBids",
-        by: "Commissioner",
-        clearedCount: Array.isArray(prev?.freeAgents) ? prev.freeAgents.length : 0,
-        timestamp: now,
-      };
-
-      return {
-        freeAgents: [],
-        leagueLog: [entry, ...(Array.isArray(prev?.leagueLog) ? prev.leagueLog : [])],
-      };
-    });
+  if (typeof commitLeagueUpdate !== "function") {
+    window.alert("Clear bids is unavailable (commitLeagueUpdate missing).");
     return;
   }
 
-  // fallback
-  setFreeAgents([]);
-  addLog({ type: "commClearAllBids", by: "Commissioner", timestamp: Date.now() });
+  commitLeagueUpdate("commClearAllBids", (prev) => {
+    const now = Date.now();
+    const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
+
+    const entry = {
+      id: nowId(),
+      type: "commClearAllBids",
+      by: "Commissioner",
+      clearedCount: Array.isArray(prev?.freeAgents) ? prev.freeAgents.length : 0,
+      timestamp: now,
+    };
+
+    return {
+      freeAgents: [],
+      leagueLog: [entry, ...prevLog],
+    };
+  });
 };
 
 
@@ -627,6 +588,8 @@ const addRosterRow = () => {
   };
 
   const pendingTrades = (tradeProposals || []).filter((t) => t.status === "pending");
+
+  if (!isCommish) return null;
 
   return (
     <div style={panelStyle}>
@@ -701,37 +664,6 @@ const addRosterRow = () => {
         </p>
       </div>
 
-      {/* RESET DEFAULTS */}
-      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
-        <h3 style={sectionTitle}>Danger Zone</h3>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "10px", alignItems: "center" }}>
-          <input
-            style={inputStyle}
-            value={resetConfirmText}
-            onChange={(e) => setResetConfirmText(e.target.value)}
-            placeholder='Type RESET to enable "Reset to defaults"'
-          />
-          <button
-  style={dangerButton}
-  onClick={resetToDefaults}
-  disabled={busy || !ENABLE_HARD_RESET}
-  title={!ENABLE_HARD_RESET ? "Hard reset disabled (VITE_ENABLE_HARD_RESET=false)" : "Reset league to defaults"}
->
-  Reset to defaults
-</button>
-
-        </div>
-
-        <div style={{ display: "flex", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
-          <button style={dangerButton} onClick={clearAllBids} disabled={busy}>
-            Clear all bids
-          </button>
-          <button style={dangerButton} onClick={clearAllPendingTrades} disabled={busy}>
-            Cancel all pending trades
-          </button>
-        </div>
-      </div>
 
       {/* FULL ROSTER EDITOR */}
       <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
@@ -1063,9 +995,9 @@ const addRosterRow = () => {
     <div style={smallLabel}>No manager logins recorded yet.</div>
   ) : (
     <div style={{ display: "grid", gap: "6px", marginTop: "8px" }}>
-      {loginHistory.slice(0, 10).map((e) => (
+{loginHistory.map((e) => (
         <div
-          key={e.id}
+          key={e.teamName}
           style={{
             border: "1px solid #334155",
             borderRadius: "8px",
@@ -1085,9 +1017,6 @@ const addRosterRow = () => {
           </span>
         </div>
       ))}
-      {loginHistory.length > 10 && (
-        <div style={smallLabel}>Showing last 10 logins.</div>
-      )}
     </div>
   )}
 </div>

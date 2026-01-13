@@ -55,174 +55,6 @@ const managers = [
   { teamName: "Commissioner", role: "commissioner", password: "commish123" },
 ];
 
-// Initial data for teams and rosters, with positions
-const initialTeams = [
-  {
-    name: "Pacino Amigo",
-    roster: [
-      { name: "Kucherov", salary: 16, position: "F" },
-      { name: "Thomson", salary: 6, position: "F" },
-      { name: "Rantanen", salary: 8, position: "F" },
-      { name: "Reinhart", salary: 8, position: "F" },
-      { name: "Necas", salary: 3, position: "F" },
-      { name: "Hagel", salary: 2, position: "F" },
-      { name: "B Tkachuk", salary: 6, position: "F" },
-      { name: "Stutzle", salary: 3, position: "F" },
-      { name: "Q Hughes", salary: 15, position: "D" },
-      { name: "Morrissey", salary: 3, position: "D" },
-      { name: "Dahlin", salary: 9, position: "D" },
-      { name: "Hutson", salary: 7, position: "D" },
-      { name: "Boldy", salary: 6, position: "F" },
-      { name: "J Robsertson", salary: 4, position: "F" },
-      { name: "DeBrincat", salary: 4, position: "F" },
-    ],
-    buyouts: [],
-    retainedSalaries: [],
-    profilePic: null,
-  },
-  {
-    name: "El Camino",
-    roster: [
-      { name: "Pastrnak", salary: 10, position: "F" },
-      { name: "Suzuki", salary: 8, position: "F" },
-      { name: "Guenther", salary: 5, position: "F" },
-      { name: "Jarvis", salary: 8, position: "F" },
-      { name: "Johnston", salary: 5, position: "F" },
-      { name: "Snuggerud", salary: 1, position: "F" },
-      { name: "Aho", salary: 6, position: "F" },
-      { name: "Cozens", salary: 2, position: "F" },
-      { name: "LaComb", salary: 8, position: "D" },
-      { name: "Sergachev", salary: 8, position: "D" },
-      { name: "Werenski", salary: 15, position: "D" },
-      { name: "Hedman", salary: 5, position: "D" },
-      { name: "Hintz", salary: 4, position: "F" },
-      { name: "Byfield", salary: 3, position: "F" },
-      { name: "Tippett", salary: 1, position: "F" },
-    ],
-    buyouts: [],
-    retainedSalaries: [],
-    profilePic: null,
-  },
-  {
-    name: "DeNiro Amigo",
-    roster: [
-      { name: "Crosby", salary: 7, position: "F" },
-      { name: "Pettersson", salary: 11, position: "F" },
-      { name: "Panarin", salary: 11, position: "F" },
-      { name: "Ovechkin", salary: 7, position: "F" },
-      { name: "Celebrini", salary: 8, position: "F" },
-      { name: "Bedard", salary: 8, position: "F" },
-      { name: "Larkin", salary: 3, position: "F" },
-      { name: "Dadonov", salary: 7, position: "F" },
-      { name: "Hronek", salary: 5, position: "D" },
-      { name: "Theodore", salary: 6, position: "D" },
-      { name: "Josi", salary: 7, position: "D" },
-      { name: "Dobson", salary: 7, position: "D" },
-      { name: "DeBrusk", salary: 4, position: "F" },
-      { name: "Boeser", salary: 4, position: "F" },
-      { name: "Lekkerimaki", salary: 5, position: "F" },
-    ],
-    buyouts: [],
-    retainedSalaries: [],
-    profilePic: null,
-  },
-  {
-    name: "Champino",
-    roster: [
-      { name: "McDavid", salary: 16, position: "F" },
-      { name: "McKinnon", salary: 14, position: "F" },
-      { name: "Nylander", salary: 7, position: "F" },
-      { name: "Hyman", salary: 5, position: "F" },
-      { name: "Point", salary: 13, position: "F" },
-      { name: "Matthews", salary: 17, position: "F" },
-      { name: "Brown", salary: 1, position: "F" },
-      { name: "Monahan", salary: 2, position: "F" },
-      { name: "Parekh", salary: 4, position: "D" },
-      { name: "Heiskanen", salary: 10, position: "D" },
-      { name: "McAvoy", salary: 6, position: "D" },
-      { name: "Weegar", salary: 1, position: "D" },
-      { name: "Hamilton", salary: 2, position: "D" },
-      { name: "Lehkonen", salary: 1, position: "F" },
-      { name: "Stankoven", salary: 1, position: "F" },
-    ],
-    buyouts: [],
-    retainedSalaries: [],
-    profilePic: null,
-  },
-  {
-    name: "Bottle O Draino",
-    roster: [
-      { name: "Draisaitl", salary: 19, position: "F" },
-      { name: "Eichel", salary: 10, position: "F" },
-      { name: "Keller", salary: 10, position: "F" },
-      { name: "Caulfield", salary: 1, position: "F" },
-      { name: "Raymond", salary: 2, position: "F" },
-      { name: "Konecny", salary: 1, position: "F" },
-      { name: "J Miller", salary: 2, position: "F" },
-      { name: "Kempe", salary: 6, position: "F" },
-      { name: "Makar", salary: 20, position: "D" },
-      { name: "Sanderson", salary: 9, position: "D" },
-      { name: "E Karlsson", salary: 1, position: "D" },
-      { name: "Gostisbehere", salary: 1, position: "D" },
-      { name: "J Hughes", salary: 9, position: "F" },
-      { name: "Connor", salary: 1, position: "F" },
-      { name: "Schiefele", salary: 1, position: "F" },
-    ],
-    buyouts: [],
-    retainedSalaries: [],
-    profilePic: null,
-  },
-  {
-    name: "Imano Lizzo",
-    roster: [
-      { name: "Marner", salary: 10, position: "F" },
-      { name: "P Kane", salary: 2, position: "F" },
-      { name: "Demidov", salary: 6, position: "F" },
-      { name: "L Carlsson", salary: 6, position: "F" },
-      { name: "Bratt", salary: 6, position: "F" },
-      { name: "Thomas", salary: 6, position: "F" },
-      { name: "Knies", salary: 4, position: "F" },
-      { name: "Kaprizov", salary: 14, position: "F" },
-      { name: "Fox", salary: 9, position: "D" },
-      { name: "Bouchard", salary: 9, position: "D" },
-      { name: "Schaefer", salary: 6, position: "D" },
-      { name: "Chychrun", salary: 3, position: "D" },
-      { name: "Forsberg", salary: 7, position: "F" },
-      { name: "Tavares", salary: 2, position: "F" },
-      { name: "Michkov", salary: 6, position: "F" },
-    ],
-    buyouts: [],
-    retainedSalaries: [],
-    profilePic: null,
-  },
-];
-
-// Helper: default sort = forwards first (by salary desc), then defense (by salary desc)
-function sortRosterDefault(roster = []) {
-  const forwards = roster.filter((p) => p.position !== "D");
-  const defense = roster.filter((p) => p.position === "D");
-
-  forwards.sort((a, b) => (b.salary || 0) - (a.salary || 0));
-  defense.sort((a, b) => (b.salary || 0) - (a.salary || 0));
-
-  return [...forwards, ...defense];
-}
-
-const sortedInitialTeams = initialTeams.map((team) => ({
-  ...team,
-  roster: sortRosterDefault(team.roster || []),
-}));
-function getDefaultLeagueState() {
-  return {
-    teams: sortedInitialTeams,
-    tradeProposals: [],
-    freeAgents: [],
-    leagueLog: [],
-    tradeBlock: [],
-settings: { frozen: false, managerLoginHistory: [] },
-  };
-}
-
 
 function App() {
 
@@ -461,66 +293,80 @@ const [lastSeenTs, setLastSeenTs] = useState(0);
 const illegalFlagRef = useRef(false);
 
 
-  useEffect(() => {
-  const socket = socketIOClient(SOCKET_URL, {
-  transports: ["websocket"],
-});
+ const socketRef = useRef(null);
 
+useEffect(() => {
+  // Prevent double-connect in React Strict Mode dev
+  if (socketRef.current) return;
+
+  const socket = socketIOClient(SOCKET_URL, {
+    transports: ["websocket"],
+  });
+
+  socketRef.current = socket;
 
   socket.on("connect", () => {
     console.log("[WS] connected:", socket.id);
   });
-socket.on("league:updated", () => {
-  console.log("[WS] league updated → reloading");
-  fetch(API_URL)
-    .then((r) => r.json())
-    .then((data) => {
-      const loadedState = normalizeLoadedLeague(data);
 
-      if (!leagueStateLooksValid(loadedState)) {
-        console.error("[WS] Invalid or incomplete league state on reload. Ignoring update.");
-        return;
-      }
+  socket.on("connect_error", (err) => {
+    const msg = String(err?.message || "");
+    if (import.meta.env.DEV && msg.includes("closed before the connection is established")) {
+      // harmless strict-mode hiccup
+      return;
+    }
+    console.warn("[WS] connect_error:", err);
+  });
 
-      setTeams(Array.isArray(loadedState.teams) ? loadedState.teams : []);
-      // If nothing is selected yet, pick a safe default after WS reload
-setSelectedTeamName((prev) => {
-  if (prev) return prev;
-  return loadedState.teams?.[0]?.name || "";
-});
+  socket.on("league:updated", () => {
+    console.log("[WS] league updated → reloading");
+    fetch(API_URL)
+      .then((r) => r.json())
+      .then((data) => {
+        const loadedState = normalizeLoadedLeague(data);
 
-      setTradeProposals(loadedState.tradeProposals);
-      setFreeAgents(loadedState.freeAgents);
-      setLeagueLog(loadedState.leagueLog);
-      setTradeBlock(loadedState.tradeBlock);
+        if (!leagueStateLooksValid(loadedState)) {
+          console.error("[WS] Invalid or incomplete league state on reload. Ignoring update.");
+          return;
+        }
 
-      setLeagueSettings({
-        frozen: false,
-        managerLoginHistory: [],
-        ...loadedState.settings,
-      });
+        setTeams(Array.isArray(loadedState.teams) ? loadedState.teams : []);
+        setSelectedTeamName((prev) => prev || loadedState.teams?.[0]?.name || "");
 
-      // Prevent autosave echo after WS reload
-      lastSavedJsonRef.current = JSON.stringify({
-  teams: loadedState.teams,
-  tradeProposals: loadedState.tradeProposals,
-  freeAgents: loadedState.freeAgents,
-  leagueLog: loadedState.leagueLog,
-  tradeBlock: loadedState.tradeBlock,
-  settings: loadedState.settings,
-});
+        setTradeProposals(loadedState.tradeProposals);
+        setFreeAgents(loadedState.freeAgents);
+        setLeagueLog(loadedState.leagueLog);
+        setTradeBlock(loadedState.tradeBlock);
 
-    })
-    .catch((err) => console.error("[WS] reload failed:", err));
-});
+        setLeagueSettings({
+          frozen: false,
+          managerLoginHistory: [],
+          ...loadedState.settings,
+        });
 
+        lastSavedJsonRef.current = JSON.stringify({
+          teams: loadedState.teams,
+          tradeProposals: loadedState.tradeProposals,
+          freeAgents: loadedState.freeAgents,
+          leagueLog: loadedState.leagueLog,
+          tradeBlock: loadedState.tradeBlock,
+          settings: loadedState.settings,
+        });
+      })
+      .catch((err) => console.error("[WS] reload failed:", err));
+  });
 
   socket.on("disconnect", () => {
     console.log("[WS] disconnected");
   });
 
-  return () => socket.disconnect();
+  return () => {
+    socket.disconnect();
+    socketRef.current = null;
+  };
 }, []);
+
+
 
 // Load league from backend on first page load
 useEffect(() => {
@@ -623,18 +469,20 @@ const saveLeagueToBackend = async (nextState) => {
       body: JSON.stringify(payload),
     });
 
-    // ✅ Frozen league: backend blocks manager writes with 423
     if (res.status === 423) {
-      if (currentUser?.role === "manager") {
-        showFreezeBanner("League is frozen. Changes are disabled.");
-      }
+  // Optional: still log details for debugging
+  const text = await res.text().catch(() => "");
+  console.warn("[SAVE] Blocked (423 frozen):", text);
 
-      // Optional: still log details for debugging
-      const text = await res.text().catch(() => "");
-      console.warn("[SAVE] Blocked (423 frozen):", text);
+  // ✅ Show banner to user (managers only)
+  if (currentUser?.role === "manager") {
+  showFreezeBanner("League is frozen. Changes are disabled.");
+}
 
-      return false; // ✅ rejected
-    }
+
+  return false; // ✅ rejected
+}
+
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
@@ -699,6 +547,14 @@ useEffect(() => {
   saveTimerRef.current = setTimeout(async () => {
   console.log("[SAVE] Debounced save…");
 
+  const isManager = currentUser?.role === "manager";
+  const isFrozen = Boolean(leagueSettings?.frozen);
+
+  // ✅ Don’t even try autosave if frozen (backend will 423 anyway)
+  if (isManager && isFrozen) {
+    return;
+  }
+
   const ok = await saveLeagueToBackend(stateToSave);
 
   // Only mark as saved if the backend actually accepted it
@@ -709,10 +565,11 @@ useEffect(() => {
 
 
 
+
   return () => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
   };
-}, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock, leagueSettings, DISABLE_AUTOSAVE]);
+}, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock, leagueSettings, DISABLE_AUTOSAVE, currentUser]);
 
 // ------------------------------------
 // Notifications: restore last-seen time
@@ -1647,31 +1504,33 @@ const handleLogin = () => {
   };
 
   setCurrentUser(nextUser);
-  
- // Record manager login (keep only last 10)
-if (nextUser.role === "manager" && typeof setLeagueSettings === "function") {
+ // Record manager last-login — one entry per team (no ever-growing history)
+if (nextUser.role === "manager") {
   const now = Date.now();
   const entry = {
     id: now + Math.random(),
-    type: "managerLogin",
     teamName: nextUser.teamName,
     timestamp: now,
   };
 
-  setLeagueSettings((prev) => {
-    const base = prev || { frozen: false, managerLoginHistory: [] };
-    const history = Array.isArray(base.managerLoginHistory)
-      ? base.managerLoginHistory
-      : [];
+  if (typeof commitLeagueUpdate === "function") {
+    commitLeagueUpdate("managerLogin", (prev) => {
+      const prevSettings = prev?.settings || {};
+      const prevLast = prevSettings.managerLastLogin || {};
 
-    // Optional: avoid immediate duplicates (same team logging in twice instantly)
-    const deduped = history.filter(
-      (e) => !(e?.teamName === entry.teamName && e?.timestamp === entry.timestamp)
-    );
-
-    return { ...base, managerLoginHistory: [entry, ...deduped].slice(0, 10) };
-  });
+      return {
+        settings: {
+          ...prevSettings,
+          managerLastLogin: {
+            ...prevLast,
+            [entry.teamName]: entry,
+          },
+        },
+      };
+    });
+  }
 }
+
 
   localStorage.setItem("hundo_currentUser", JSON.stringify(nextUser));
 
@@ -1726,20 +1585,13 @@ return (
           currentUser={currentUser}
           apiUrl={API_URL}
           teams={teams}
-          setTeams={setTeams}
           tradeProposals={tradeProposals}
-          setTradeProposals={setTradeProposals}
           freeAgents={freeAgents}
-          setFreeAgents={setFreeAgents}
           leagueLog={leagueLog}
-          setLeagueLog={setLeagueLog}
           tradeBlock={tradeBlock}
-          setTradeBlock={setTradeBlock}
           onResolveAuctions={handleResolveAuctions}
           onCommissionerRemoveBid={handleCommissionerRemoveBid}
-          getDefaultLeagueState={getDefaultLeagueState}
           leagueSettings={leagueSettings}
-          setLeagueSettings={setLeagueSettings}
           commitLeagueUpdate={commitLeagueUpdate}
         />
       </div>
