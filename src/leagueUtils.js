@@ -1361,7 +1361,8 @@ const distinctTeams = new Set(
   return Number(candidateWinner.amount) || 0;
 };
 
-// Find the first bid (highest-to-lowest) that results in a LEGAL roster
+// Winner is ALWAYS the top bid (tie-break: earliest firstTimestamp),
+// even if it makes the roster illegal. (Grace period handled by league rules.)
 let winningBid = null;
 let finalPricePaid = 0;
 
@@ -1381,44 +1382,11 @@ for (const candidate of sorted) {
   const pricePaid = computePricePaid(candidate, playerBids);
   if (!(pricePaid > 0)) continue;
 
-  const team = nextTeams[teamIdx];
-  const position = candidate.position || "F";
-
-  const newPlayer = {
-    name: playerName,
-    salary: Number(pricePaid) || 0,
-    position,
-    buyoutLockedUntil: now + BUYOUT_LOCK_MS,
-  };
-
-  const candidateTeam = {
-    ...team,
-    roster: sortRosterStandard([...(team.roster || []), newPlayer]),
-  };
-
-  // If this signing makes them illegal, try the next best bid
-  const illegal = isTeamIllegal(candidateTeam, {
-    capLimit,
-    maxRosterSize,
-    minForwards,
-    minDefensemen,
-  });
-
-  if (illegal) continue;
-
-  // ✅ Found a legal winner
   winningBid = candidate;
   finalPricePaid = Number(pricePaid) || 0;
   break;
 }
 
-// Mark all bids for this auction as resolved/cleared no matter what
-for (const bid of playerBids) resolvedBidIds.add(bid.id);
-
-// If no legal winner, do nothing (auction dies quietly)
-if (!winningBid) {
-  continue;
-}
 
 const playerName = winningBid.player;
 const winningTeamName = winningBid.team;

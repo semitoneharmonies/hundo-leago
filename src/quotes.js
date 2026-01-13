@@ -63,6 +63,7 @@ export const HOCKEY_QUOTES = [
   { text: "P-Playoffs? Don't talk about playoffs! You kidding me? Playoffs? I just hope we can win a game", author: "Jim Mora" },
   { text: "We didn't underestimate them. They were a lot better than we thought.", author: "Bobby Robson" },
   { text: "If 100 white men chased a black man in the past, it was called the Ku Klux Klan. Today it's called golf.", author: "Tiger Woods" },
+  { text: "Baseball, basketball, weiner dog, short shorts, cigarette. Surfboard, ping pong, rugby ball, weiner dog, skiing down on the beach. Sports!", author: "Viagra Boys"},
 
 
 ];

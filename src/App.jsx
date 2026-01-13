@@ -1177,57 +1177,76 @@ const handleSubmitTradeDraft = (draft) => {
   // --- Trade handlers using helpers from leagueUtils ---
 
   const handleAcceptTrade = (tradeId) => {
-    let accepted = false;
+  if (!tradeId) return;
 
+  let accepted = false;
+  let warningMsg = null;
+  let errorMsg = null;
+
+  const ok = commitLeagueUpdate("trade:accept", (prev) => {
     const result = acceptTradeById({
       tradeId,
-      teams,
-      tradeProposals,
+      teams: prev.teams,
+      tradeProposals: prev.tradeProposals,
       capLimit: CAP_LIMIT,
       maxRosterSize: MAX_ROSTER_SIZE,
       minForwards: MIN_FORWARDS,
       minDefensemen: MIN_DEFENSEMEN,
     });
 
-    if (result.tradeProposals) {
-      setTradeProposals(result.tradeProposals);
+    if (!result.ok) {
+      errorMsg = result.error || "Trade could not be accepted.";
+      return null;
     }
-    if (result.teams) {
-      setTeams(result.teams);
-    }
-    if (result.logEntries && result.logEntries.length > 0) {
-      setLeagueLog((prev) => [...result.logEntries, ...prev]);
-    }
-if (result.ok) {
-  accepted = true;
-}
 
-    if (!result.ok && result.error) {
-      window.alert(result.error);
+    if (result.warnings && result.warnings.length > 0) {
+      warningMsg =
+        "Trade accepted, but it creates roster/cap issues:\n\n" +
+        result.warnings.join("\n");
     }
-    if (result.ok && result.warnings && result.warnings.length > 0) {
-  window.alert(
-    "Trade accepted, but it creates roster/cap issues:\n\n" +
-      result.warnings.join("\n")
-  );
-}
-if (accepted) {
-  playSound("/sounds/VGaccepttrade-crop.wav", { volume: 0.6 });
-}
 
-  };
+    accepted = true;
+
+    return {
+      teams: result.teams ?? prev.teams,
+      tradeProposals: result.tradeProposals ?? prev.tradeProposals,
+      leagueLog:
+        result.logEntries && result.logEntries.length > 0
+          ? [...result.logEntries, ...(prev.leagueLog || [])]
+          : prev.leagueLog,
+    };
+  });
+
+  if (!ok && errorMsg) window.alert(errorMsg);
+  if (ok && warningMsg) window.alert(warningMsg);
+
+  if (accepted) {
+    playSound("/sounds/VGaccepttrade-crop.wav", { volume: 0.6 });
+  }
+};
+
 
   const handleRejectTrade = (tradeId) => {
+  if (!tradeId) return;
+
+  const committed = commitLeagueUpdate("trade:reject", (prev) => {
     const { nextTradeProposals, nextLeagueLog } = rejectTradeById(
-      tradeProposals,
-      leagueLog,
+      prev.tradeProposals,
+      prev.leagueLog,
       tradeId
     );
-    setTradeProposals(nextTradeProposals);
-    setLeagueLog(nextLeagueLog);
-    playSound("/sounds/VGrejecttrade.wav", { volume: 0.55 });
 
-  };
+    return {
+      tradeProposals: nextTradeProposals,
+      leagueLog: nextLeagueLog,
+    };
+  });
+
+  if (committed) {
+    playSound("/sounds/VGrejecttrade.wav", { volume: 0.55 });
+  }
+};
+
 
   const handleCancelTrade = (tradeId) => {
     const { nextTradeProposals, nextLeagueLog } = cancelTradeById(
