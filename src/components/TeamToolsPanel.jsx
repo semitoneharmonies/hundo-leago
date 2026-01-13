@@ -1194,10 +1194,8 @@ if (typeof onPlaceBid !== "function") {
                   </span>
                   {canRemove && (
                     <button
-                      onClick={() =>
-                        onRemoveTradeBlockEntry &&
-                        onRemoveTradeBlockEntry(entry)
-                      }
+                      onClick={() => onRemoveTradeBlockEntry?.(entry)}
+
                       style={{
                         padding: "2px 6px",
                         fontSize: "0.75rem",

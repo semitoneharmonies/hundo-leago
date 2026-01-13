@@ -1274,25 +1274,32 @@ const handleSubmitTradeDraft = (draft) => {
 
 
  const handleRemoveTradeBlockEntry = (arg) => {
-  if (typeof commitLeagueUpdate !== "function") return;
+  // Accept either an id OR the full entry object
+  const id = (arg && typeof arg === "object") ? arg.id : arg;
+  const team = (arg && typeof arg === "object") ? arg.team : null;
 
-  const id = typeof arg === "object" ? arg?.id : arg;
-  const team = typeof arg === "object" ? arg?.team : null;
-  const player = typeof arg === "object" ? arg?.player : null;
+  // Support older shapes just in case
+  const player =
+    (arg && typeof arg === "object")
+      ? (arg.player ?? arg.playerName ?? arg.name ?? null)
+      : null;
+
+  if (typeof commitLeagueUpdate !== "function") return;
 
   commitLeagueUpdate("removeTradeBlockEntry", (prev) => {
     const prevBlock = Array.isArray(prev?.tradeBlock) ? prev.tradeBlock : [];
 
-    const nextBlock = prevBlock.filter((e) => {
-      // primary: remove by id (if both sides have ids)
-      if (id != null && e?.id != null) return e.id !== id;
+    const norm = (x) => String(x ?? "").trim().toLowerCase();
 
-      // fallback: remove by team+player
+    const nextBlock = prevBlock.filter((e) => {
+      // primary: remove by id (string-safe compare)
+      if (id != null && e?.id != null) {
+        return String(e.id) !== String(id);
+      }
+
+      // fallback: remove by team+player (case/space safe)
       if (team && player) {
-        return !(
-          String(e?.team || "") === String(team) &&
-          String(e?.player || "") === String(player)
-        );
+        return !(norm(e?.team) === norm(team) && norm(e?.player) === norm(player));
       }
 
       // if we have nothing usable, don't remove
@@ -1302,6 +1309,7 @@ const handleSubmitTradeDraft = (draft) => {
     return { tradeBlock: nextBlock };
   });
 };
+
 
 
 
