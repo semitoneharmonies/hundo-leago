@@ -64,6 +64,8 @@ export const HOCKEY_QUOTES = [
   { text: "We didn't underestimate them. They were a lot better than we thought.", author: "Bobby Robson" },
   { text: "If 100 white men chased a black man in the past, it was called the Ku Klux Klan. Today it's called golf.", author: "Tiger Woods" },
   { text: "Baseball, basketball, weiner dog, short shorts, cigarette. Surfboard, ping pong, rugby ball, weiner dog, skiing down on the beach. Sports!", author: "Viagra Boys"},
+{ text: "Will Smith don't gotta cuss in raps to sell records, well I do, so fuck him and fuck you too !!", author: "eminem"},
+{ text: "I heard it through the grapevine", author: "Marvin Gaye"},
 
 
 ];

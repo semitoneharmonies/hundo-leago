@@ -15,10 +15,7 @@ export function getNextSundayDeadline(from = new Date()) {
   candidate.setDate(candidate.getDate() + daysUntilSunday);
   candidate.setHours(16, 0, 0, 0); // 4:00 PM
 
-  if (candidate <= d) {
-    candidate.setDate(candidate.getDate() + 7);
-  }
-
+  if (candidate <= d) candidate.setDate(candidate.getDate() + 7);
   return candidate;
 }
 
@@ -59,47 +56,42 @@ export function getBuyoutLockDaysLeft(player, now = Date.now()) {
   return Math.ceil((until - now) / (24 * 60 * 60 * 1000));
 }
 
+// Total cap = roster (excluding IR) + buyout penalties + retained salary penalties
 export const totalCap = (team) => {
   if (!team) return 0;
 
-  // IR players do NOT count against the cap
   const rosterCap = (team.roster || []).reduce((sum, p) => {
-    const salary = Number(p.salary) || 0;
-    if (p.onIR) return sum;
-    return sum + salary;
+    if (p?.onIR) return sum;
+    return sum + (Number(p?.salary) || 0);
   }, 0);
 
   const allBuyouts = team.buyouts || [];
 
-  // True buyout penalties (not retained salary)
   const pureBuyoutCap = allBuyouts
-    .filter((b) => !b.retained)
-    .reduce((sum, b) => sum + (Number(b.penalty) || 0), 0);
+    .filter((b) => !b?.retained)
+    .reduce((sum, b) => sum + (Number(b?.penalty) || 0), 0);
 
-  // Retained-salary commitments (flagged with retained: true)
   const retainedCap = allBuyouts
-    .filter((b) => b.retained)
-    .reduce((sum, b) => sum + (Number(b.penalty) || 0), 0);
+    .filter((b) => !!b?.retained)
+    .reduce((sum, b) => sum + (Number(b?.penalty) || 0), 0);
 
   return rosterCap + pureBuyoutCap + retainedCap;
 };
 
-// Total buyout penalty (used in trading & summaries) – excludes retained salary
+// Total buyout penalty (excludes retained salary)
 export const totalBuyoutPenalty = (team) => {
   if (!team) return 0;
-
   return (team.buyouts || [])
-    .filter((b) => !b.retained)
-    .reduce((sum, b) => sum + (Number(b.penalty) || 0), 0);
+    .filter((b) => !b?.retained)
+    .reduce((sum, b) => sum + (Number(b?.penalty) || 0), 0);
 };
 
-// Total retained-salary cap hit (separate bucket)
+// Total retained salary cap hit (separate bucket)
 export const totalRetainedSalary = (team) => {
   if (!team) return 0;
-
   return (team.buyouts || [])
-    .filter((b) => b.retained)
-    .reduce((sum, b) => sum + (Number(b.penalty) || 0), 0);
+    .filter((b) => !!b?.retained)
+    .reduce((sum, b) => sum + (Number(b?.penalty) || 0), 0);
 };
 
 // -------------------------------
@@ -130,14 +122,162 @@ export function sortRosterStandard(roster = []) {
   return list;
 }
 
+// -------------------------------
+// Phase 2: one-time roster playerId backfill
+// -------------------------------
+const normName = (s) => String(s || "").trim().toLowerCase();
+
+export function applyRosterIdBackfill({
+  teams,
+  nameToIdMap,
+  playerApi,
+  updateNameFromDb = false,
+}) {
+  const inputTeams = Array.isArray(teams) ? teams : [];
+  const mapObj = nameToIdMap || {};
+  const byName =
+    playerApi && playerApi.byName && typeof playerApi.byName === "object"
+      ? playerApi.byName
+      : null;
+
+  const report = {
+    totalMissingBefore: 0,
+    filledByMap: 0,
+    filledByDbNameMatch: 0,
+    stillMissingAfter: 0,
+    unknownNames: [],
+  };
+
+  const nextTeams = inputTeams.map((t) => {
+    const roster = Array.isArray(t?.roster) ? t.roster : [];
+    const nextRoster = roster.map((p) => {
+      const hasPid = Number.isFinite(Number(p?.playerId)) && Number(p.playerId) > 0;
+      if (hasPid) return p;
+
+      report.totalMissingBefore += 1;
+
+      const key = normName(p?.name);
+      let pid = null;
+
+      const mapped = mapObj[key];
+      if (Number.isFinite(Number(mapped)) && Number(mapped) > 0) {
+        pid = Number(mapped);
+        report.filledByMap += 1;
+      } else if (byName && byName[key] && Number.isFinite(Number(byName[key]?.id))) {
+        pid = Number(byName[key].id);
+        report.filledByDbNameMatch += 1;
+      }
+
+      if (!pid) {
+        report.stillMissingAfter += 1;
+        if (key) report.unknownNames.push({ team: t?.name || "Unknown Team", name: p?.name || "" });
+        return p;
+      }
+
+      const next = { ...p, playerId: pid };
+
+      if (updateNameFromDb && byName && byName[key]?.name) {
+        next.name = byName[key].name;
+      }
+
+      return next;
+    });
+
+    return { ...t, roster: nextRoster };
+  });
+
+  return { nextTeams, report };
+}
+
+
+
+// -------------------------------
+// Phase 2: token helpers for trades
+// Supports tokens like "Connor McDavid" OR "id:8478402"
+// -------------------------------
+const norm = (s) => String(s || "").trim().toLowerCase();
+
+const parseIdToken = (token) => {
+  const s = String(token || "").trim();
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  if (!lower.startsWith("id:")) return null;
+  const raw = s.slice(3).trim();
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.trunc(n);
+};
+
+const playerIdFromRosterObj = (p) => {
+  const n = Number(p?.playerId);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.trunc(n);
+};
+
+// If token is id:####, matches by playerId; else matches normalized name
+const tokenMatchesRosterPlayer = (token, p) => {
+  if (!token || !p) return false;
+
+  const tokPid = parseIdToken(token);
+  if (tokPid) {
+    const pid = playerIdFromRosterObj(p);
+    return pid ? pid === tokPid : false;
+  }
+
+  return norm(p?.name) === norm(token);
+};
+
+// If both are id tokens, compare ids; else compare normalized strings
+const tokenEqualsToken = (a, b) => {
+  const aPid = parseIdToken(a);
+  const bPid = parseIdToken(b);
+  if (aPid && bPid) return aPid === bPid;
+  return norm(a) === norm(b);
+};
+
+// Build lookup sets from token arrays for faster checks
+const buildTokenSets = (tokens) => {
+  const ids = new Set();
+  const names = new Set();
+  for (const t of tokens || []) {
+    const pid = parseIdToken(t);
+    if (pid) ids.add(pid);
+    else {
+      const k = norm(t);
+      if (k) names.add(k);
+    }
+  }
+  return { ids, names };
+};
+
+const rosterPlayerMatchesTokenSets = (p, sets) => {
+  const pid = playerIdFromRosterObj(p);
+  if (pid && sets.ids.has(pid)) return true;
+  const nk = norm(p?.name);
+  if (nk && sets.names.has(nk)) return true;
+  return false;
+};
+
+// Convert a roster player into a "best token"
+// Prefer id token when available; fallback to name token.
+const rosterPlayerToBestToken = (p) => {
+  const pid = playerIdFromRosterObj(p);
+  if (pid) return `id:${pid}`;
+  return String(p?.name || "").trim();
+};
+
+// -------------------------------
+//   Roster counts / legality
+// -------------------------------
+
 // Count forwards / defensemen (IR players don’t count)
 export const countPositions = (team) => {
   const counts = { F: 0, D: 0 };
   if (!team || !Array.isArray(team.roster)) return counts;
 
   team.roster.forEach((p) => {
-    if (p.onIR) return;
-    const pos = p.position || "F";
+    if (p?.onIR) return;
+    const pos = p?.position || "F";
     if (pos === "D") counts.D++;
     else counts.F++;
   });
@@ -146,39 +286,53 @@ export const countPositions = (team) => {
 };
 
 // Count how many retained-salary *players* exist on this team
-// Identified by buyout entries with { retained: true } and a positive penalty
+// Uses playerId if present on the buyout entry; otherwise falls back to string label
 export const countRetentionSpots = (team) => {
   if (!team) return 0;
 
   const buyouts = team.buyouts || [];
-    const players = new Set(
-    buyouts
-      .filter((b) => b.retained && Number(b.penalty) > 0)
-      .map((b) => String(b.player || "").trim().toLowerCase())
-      .filter(Boolean)
-  );
+  const ids = new Set();
+  const names = new Set();
 
-  return players.size;
+  for (const b of buyouts) {
+    if (!b?.retained) continue;
+    if (!(Number(b?.penalty) > 0)) continue;
+
+    const pid = Number(b?.playerId);
+    if (Number.isFinite(pid) && pid > 0) {
+      ids.add(Math.trunc(pid));
+      continue;
+    }
+
+    const k = norm(b?.player);
+    if (k) names.add(k);
+  }
+
+  return ids.size + names.size;
 };
+
+// -------------------------------
+//   Buyout penalty transfer helper
+// -------------------------------
 
 // Move buyout penalty from one team to another.
 export function transferBuyoutPenalty(fromTeamObj, toTeamObj, amount) {
   const amt = Number(amount) || 0;
-
   if (!fromTeamObj || !toTeamObj || amt <= 0) {
     return { from: fromTeamObj, to: toTeamObj, transferred: 0 };
   }
 
   let remaining = amt;
 
-  // Clone buyouts
   const fromBuyouts = (fromTeamObj.buyouts || []).map((b) => ({
     ...b,
-    penalty: Number(b.penalty) || 0,
+    penalty: Number(b?.penalty) || 0,
   }));
 
   for (let i = 0; i < fromBuyouts.length && remaining > 0; i++) {
-    const p = fromBuyouts[i].penalty;
+    const p = Number(fromBuyouts[i]?.penalty) || 0;
+    if (p <= 0) continue;
+
     if (p <= remaining) {
       remaining -= p;
       fromBuyouts[i].penalty = 0;
@@ -189,12 +343,11 @@ export function transferBuyoutPenalty(fromTeamObj, toTeamObj, amount) {
   }
 
   const actualTransferred = amt - remaining;
-
-  const cleanedFrom = fromBuyouts.filter((b) => (Number(b.penalty) || 0) > 0);
+  const cleanedFrom = fromBuyouts.filter((b) => (Number(b?.penalty) || 0) > 0);
 
   const toBuyouts = [...(toTeamObj.buyouts || [])];
   if (actualTransferred > 0) {
-        toBuyouts.push({
+    toBuyouts.push({
       player: `Traded penalty from ${fromTeamObj.name}`,
       penalty: actualTransferred,
       retained: false,
@@ -229,25 +382,147 @@ export function formatCountdown(timeRemainingMs) {
 export function isTeamIllegal(team, options) {
   if (!team) return false;
 
-  const { capLimit, maxRosterSize, minForwards, minDefensemen } = options;
+  const { capLimit, maxRosterSize, minForwards, minDefensemen } = options || {};
 
-  const activeRoster = (team.roster || []).filter((p) => !p.onIR);
+  const activeRoster = (team.roster || []).filter((p) => !p?.onIR);
   const cap = totalCap(team);
   const size = activeRoster.length;
 
   const pos = countPositions({ ...team, roster: activeRoster });
 
-  if (cap > capLimit) return true;
-  if (size > maxRosterSize) return true;
-  if (pos.F < minForwards) return true;
-  if (pos.D < minDefensemen) return true;
+  if (capLimit != null && cap > capLimit) return true;
+  if (maxRosterSize != null && size > maxRosterSize) return true;
+  if (minForwards != null && pos.F < minForwards) return true;
+  if (minDefensemen != null && pos.D < minDefensemen) return true;
 
   return false;
 }
 
 // -------------------------------
-//   Trade impact preview helper
+//   Trades
 // -------------------------------
+
+// Build a normalized trade object
+export function buildTradeFromDraft({
+  fromTeam,
+  toTeam,
+  offeredPlayers,
+  requestedPlayers,
+  penaltyFrom,
+  penaltyTo,
+  retentionFrom,
+  retentionTo,
+  existingTrades = [],
+  createdAt,
+}) {
+  const created = createdAt ?? Date.now();
+  const expiresAt = created + 7 * 24 * 60 * 60 * 1000;
+
+  const baseId = `trade-${created}`;
+  const idAlreadyUsed = (existingTrades || []).some((t) => t?.id === baseId);
+  const id = idAlreadyUsed ? `${baseId}-${existingTrades.length + 1}` : baseId;
+
+  return {
+    id,
+    fromTeam,
+    toTeam,
+    offeredPlayers: [...(offeredPlayers || [])],
+    requestedPlayers: [...(requestedPlayers || [])],
+    penaltyFrom: Number(penaltyFrom) || 0,
+    penaltyTo: Number(penaltyTo) || 0,
+    retentionFrom: { ...(retentionFrom || {}) },
+    retentionTo: { ...(retentionTo || {}) },
+    status: "pending",
+    createdAt: created,
+    expiresAt,
+  };
+}
+
+// Visibility helpers
+export function getVisiblePendingTradesForUser(currentUser, tradeProposals) {
+  if (!currentUser) return [];
+
+  const pending = (tradeProposals || []).filter((tr) => tr && tr.status === "pending");
+  if (currentUser.role === "commissioner") return pending;
+
+  if (currentUser.role === "manager") {
+    return pending.filter(
+      (tr) => tr.fromTeam === currentUser.teamName || tr.toTeam === currentUser.teamName
+    );
+  }
+
+  return [];
+}
+
+// Expiry
+export function isTradeExpired(tr, now = Date.now()) {
+  if (!tr || tr.status !== "pending") return false;
+  if (!tr.expiresAt) return false;
+  return tr.expiresAt <= now;
+}
+
+// Does a pending trade involve this player token for this team?
+export function tradeInvolvesPlayer(tr, teamName, playerToken) {
+  if (!tr || !teamName || !playerToken) return false;
+  if (tr.status !== "pending") return false;
+
+  const teamKey = norm(teamName);
+  if (!teamKey) return false;
+
+  const fromKey = norm(tr.fromTeam);
+  const toKey = norm(tr.toTeam);
+
+  if (fromKey === teamKey) {
+    return (tr.offeredPlayers || []).some((p) => tokenEqualsToken(p, playerToken));
+  }
+
+  if (toKey === teamKey) {
+    return (tr.requestedPlayers || []).some((p) => tokenEqualsToken(p, playerToken));
+  }
+
+  return false;
+}
+
+export function getPendingTradesWithPlayer(tradeProposals, teamName, playerToken) {
+  return (tradeProposals || []).filter((tr) => tradeInvolvesPlayer(tr, teamName, playerToken));
+}
+
+// Normalize incoming proposals (durable defaults)
+export function normalizeTradeProposals(rawProposals) {
+  const now = Date.now();
+
+  return (rawProposals || []).map((tr) => {
+    const createdAt = tr?.createdAt || now;
+    const expiresAt = tr?.expiresAt || createdAt + 7 * 24 * 60 * 60 * 1000;
+
+    return {
+      ...tr,
+      status: tr?.status || "pending",
+      penaltyFrom: typeof tr?.penaltyFrom === "number" ? tr.penaltyFrom : Number(tr?.penaltyFrom || 0),
+      penaltyTo: typeof tr?.penaltyTo === "number" ? tr.penaltyTo : Number(tr?.penaltyTo || 0),
+      createdAt,
+      expiresAt,
+      retentionFrom: tr?.retentionFrom || tr?.retention || {},
+      retentionTo: tr?.retentionTo || {},
+    };
+  });
+}
+
+// Resolve retention value for a given roster player from a retention map.
+// Supports map keys as "id:####" OR player name.
+const getRetentionForPlayer = (player, retentionMap) => {
+  const pid = playerIdFromRosterObj(player);
+  const keyId = pid ? `id:${pid}` : null;
+  const keyName = String(player?.name || "").trim();
+
+  const m = retentionMap || {};
+  if (keyId && m[keyId] != null && m[keyId] !== "") return Number(m[keyId]);
+  if (m[keyName] != null && m[keyName] !== "") return Number(m[keyName]);
+
+  return 0;
+};
+
+// Trade impact preview helper (pure, no writes)
 export function buildTradeImpactPreview({
   fromTeam,
   toTeam,
@@ -262,10 +537,6 @@ export function buildTradeImpactPreview({
   minForwards,
   minDefensemen,
 }) {
-  let fromPreview = null;
-  let toPreview = null;
-  let issues = [];
-
   try {
     if (!fromTeam || !toTeam || (!offeredPlayers?.length && !requestedPlayers?.length)) {
       return { fromPreview: null, toPreview: null, issues: [] };
@@ -282,58 +553,51 @@ export function buildTradeImpactPreview({
       buyouts: [...(toTeam.buyouts || [])],
     };
 
-    const offeredNames = offeredPlayers || [];
-    const requestedNames = requestedPlayers || [];
+    const offeredSets = buildTokenSets(offeredPlayers || []);
+    const requestedSets = buildTokenSets(requestedPlayers || []);
 
-    const offeredObjs = previewFrom.roster.filter((p) => offeredNames.includes(p.name));
-    const requestedObjs = previewTo.roster.filter((p) => requestedNames.includes(p.name));
-
-    const retentionFromMap = retentionFrom || {};
-    const retentionToMap = retentionTo || {};
+    const offeredObjs = previewFrom.roster.filter((p) => rosterPlayerMatchesTokenSets(p, offeredSets));
+    const requestedObjs = previewTo.roster.filter((p) => rosterPlayerMatchesTokenSets(p, requestedSets));
 
     const retainedFromEntries = [];
     const retainedToEntries = [];
 
     const adjustedOffered = offeredObjs.map((player) => {
-      const raw = retentionFromMap[player.name];
-      if (raw == null || raw === "") return player;
-
-      const amt = Number(raw);
-      if (!amt || amt <= 0) return player;
+      const raw = getRetentionForPlayer(player, retentionFrom);
+      const amt = Number(raw) || 0;
+      if (!(amt > 0)) return player;
 
       const maxAllowed = Math.ceil((Number(player.salary) || 0) * 0.5);
       const applied = Math.min(amt, maxAllowed);
-      if (applied <= 0) return player;
+      if (!(applied > 0)) return player;
 
-            retainedFromEntries.push({
-        player: player.name, // stable identity for retention-spot counting
+      retainedFromEntries.push({
+        player: String(player?.name || "").trim(),
+        playerId: playerIdFromRosterObj(player) || null,
         note: "retained in trade",
         penalty: applied,
         retained: true,
       });
-
 
       return { ...player, salary: Math.max(0, (Number(player.salary) || 0) - applied) };
     });
 
     const adjustedRequested = requestedObjs.map((player) => {
-      const raw = retentionToMap[player.name];
-      if (raw == null || raw === "") return player;
-
-      const amt = Number(raw);
-      if (!amt || amt <= 0) return player;
+      const raw = getRetentionForPlayer(player, retentionTo);
+      const amt = Number(raw) || 0;
+      if (!(amt > 0)) return player;
 
       const maxAllowed = Math.ceil((Number(player.salary) || 0) * 0.5);
       const applied = Math.min(amt, maxAllowed);
-      if (applied <= 0) return player;
+      if (!(applied > 0)) return player;
 
-            retainedToEntries.push({
-        player: player.name, // stable identity for retention-spot counting
+      retainedToEntries.push({
+        player: String(player?.name || "").trim(),
+        playerId: playerIdFromRosterObj(player) || null,
         note: "retained in trade",
         penalty: applied,
         retained: true,
       });
-
 
       return { ...player, salary: Math.max(0, (Number(player.salary) || 0) - applied) };
     });
@@ -341,13 +605,12 @@ export function buildTradeImpactPreview({
     previewFrom.buyouts = [...(previewFrom.buyouts || []), ...retainedFromEntries];
     previewTo.buyouts = [...(previewTo.buyouts || []), ...retainedToEntries];
 
-    previewFrom.roster = previewFrom.roster.filter((p) => !offeredNames.includes(p.name));
-    previewTo.roster = previewTo.roster.filter((p) => !requestedNames.includes(p.name));
+    previewFrom.roster = previewFrom.roster.filter((p) => !rosterPlayerMatchesTokenSets(p, offeredSets));
+    previewTo.roster = previewTo.roster.filter((p) => !rosterPlayerMatchesTokenSets(p, requestedSets));
 
     previewFrom.roster.push(...adjustedRequested);
     previewTo.roster.push(...adjustedOffered);
 
-    // ✅ Sort preview rosters
     previewFrom.roster = sortRosterStandard(previewFrom.roster);
     previewTo.roster = sortRosterStandard(previewTo.roster);
 
@@ -371,12 +634,16 @@ export function buildTradeImpactPreview({
     const buildPreview = (beforeTeam, afterTeam) => {
       const capBefore = totalCap(beforeTeam);
       const capAfter = totalCap(afterTeam);
+
       const sizeBefore = (beforeTeam.roster || []).length;
       const sizeAfter = (afterTeam.roster || []).length;
+
       const posBefore = countPositions(beforeTeam);
       const posAfter = countPositions(afterTeam);
+
       const penaltiesBefore = totalBuyoutPenalty(beforeTeam);
       const penaltiesAfter = totalBuyoutPenalty(afterTeam);
+
       const retentionBefore = countRetentionSpots(beforeTeam);
       const retentionAfter = countRetentionSpots(afterTeam);
 
@@ -395,51 +662,47 @@ export function buildTradeImpactPreview({
       };
     };
 
-    fromPreview = buildPreview(fromTeam, simFrom);
-    toPreview = buildPreview(toTeam, simTo);
+    const fromPreview = buildPreview(fromTeam, simFrom);
+    const toPreview = buildPreview(toTeam, simTo);
 
-    const newIssues = [];
+    const issues = [];
 
-    if (fromPreview.capAfter > capLimit) {
-      newIssues.push(`${fromTeam.name} would be over the cap by $${fromPreview.capAfter - capLimit}.`);
-    }
-    if (toPreview.capAfter > capLimit) {
-      newIssues.push(`${toTeam.name} would be over the cap by $${toPreview.capAfter - capLimit}.`);
+    if (capLimit != null) {
+      if (fromPreview.capAfter > capLimit) issues.push(`${fromTeam.name} would be over the cap by $${fromPreview.capAfter - capLimit}.`);
+      if (toPreview.capAfter > capLimit) issues.push(`${toTeam.name} would be over the cap by $${toPreview.capAfter - capLimit}.`);
     }
 
-    if (fromPreview.sizeAfter > maxRosterSize) {
-      newIssues.push(`${fromTeam.name} would have ${fromPreview.sizeAfter} players (limit ${maxRosterSize}).`);
-    }
-    if (toPreview.sizeAfter > maxRosterSize) {
-      newIssues.push(`${toTeam.name} would have ${toPreview.sizeAfter} players (limit ${maxRosterSize}).`);
+    if (maxRosterSize != null) {
+      if (fromPreview.sizeAfter > maxRosterSize) issues.push(`${fromTeam.name} would have ${fromPreview.sizeAfter} players (limit ${maxRosterSize}).`);
+      if (toPreview.sizeAfter > maxRosterSize) issues.push(`${toTeam.name} would have ${toPreview.sizeAfter} players (limit ${maxRosterSize}).`);
     }
 
-    if (fromPreview.posAfter.F < minForwards || fromPreview.posAfter.D < minDefensemen) {
-      const parts = [];
-      if (fromPreview.posAfter.F < minForwards) parts.push(`${fromPreview.posAfter.F} F (min ${minForwards}) for ${fromTeam.name}`);
-      if (fromPreview.posAfter.D < minDefensemen) parts.push(`${fromPreview.posAfter.D} D (min ${minDefensemen}) for ${fromTeam.name}`);
-      newIssues.push(`Positional minimum issue: ${parts.join(", ")}.`);
+    if (minForwards != null || minDefensemen != null) {
+      if (minForwards != null || minDefensemen != null) {
+        if ((minForwards != null && fromPreview.posAfter.F < minForwards) || (minDefensemen != null && fromPreview.posAfter.D < minDefensemen)) {
+          const parts = [];
+          if (minForwards != null && fromPreview.posAfter.F < minForwards) parts.push(`${fromPreview.posAfter.F} F (min ${minForwards}) for ${fromTeam.name}`);
+          if (minDefensemen != null && fromPreview.posAfter.D < minDefensemen) parts.push(`${fromPreview.posAfter.D} D (min ${minDefensemen}) for ${fromTeam.name}`);
+          issues.push(`Positional minimum issue: ${parts.join(", ")}.`);
+        }
+
+        if ((minForwards != null && toPreview.posAfter.F < minForwards) || (minDefensemen != null && toPreview.posAfter.D < minDefensemen)) {
+          const parts = [];
+          if (minForwards != null && toPreview.posAfter.F < minForwards) parts.push(`${toPreview.posAfter.F} F (min ${minForwards}) for ${toTeam.name}`);
+          if (minDefensemen != null && toPreview.posAfter.D < minDefensemen) parts.push(`${toPreview.posAfter.D} D (min ${minDefensemen}) for ${toTeam.name}`);
+          issues.push(`Positional minimum issue: ${parts.join(", ")}.`);
+        }
+      }
     }
 
-    if (toPreview.posAfter.F < minForwards || toPreview.posAfter.D < minDefensemen) {
-      const parts = [];
-      if (toPreview.posAfter.F < minForwards) parts.push(`${toPreview.posAfter.F} F (min ${minForwards}) for ${toTeam.name}`);
-      if (toPreview.posAfter.D < minDefensemen) parts.push(`${toPreview.posAfter.D} D (min ${minDefensemen}) for ${toTeam.name}`);
-      newIssues.push(`Positional minimum issue: ${parts.join(", ")}.`);
-    }
-
-    issues = newIssues;
+    return { fromPreview, toPreview, issues };
   } catch (err) {
     console.error("[buildTradeImpactPreview] Failed to build preview", err);
     return { fromPreview: null, toPreview: null, issues: [] };
   }
-
-  return { fromPreview, toPreview, issues };
 }
 
-// -------------------------------
-//   Post-trade legality issues
-// -------------------------------
+// Post-trade legality issues (pure)
 export function buildPostTradeIssues({
   fromTeam,
   toTeam,
@@ -453,39 +716,37 @@ export function buildPostTradeIssues({
   const issues = [];
 
   const fromCap = totalCap(fromTeam);
-  if (fromCap > capLimit) issues.push(`${fromName} would be over the cap by $${fromCap - capLimit}.`);
+  if (capLimit != null && fromCap > capLimit) issues.push(`${fromName} would be over the cap by $${fromCap - capLimit}.`);
 
   const toCap = totalCap(toTeam);
-  if (toCap > capLimit) issues.push(`${toName} would be over the cap by $${toCap - capLimit}.`);
+  if (capLimit != null && toCap > capLimit) issues.push(`${toName} would be over the cap by $${toCap - capLimit}.`);
 
   const fromSize = (fromTeam.roster || []).length;
-  if (fromSize > maxRosterSize) issues.push(`${fromName} would have ${fromSize} players (limit ${maxRosterSize}).`);
+  if (maxRosterSize != null && fromSize > maxRosterSize) issues.push(`${fromName} would have ${fromSize} players (limit ${maxRosterSize}).`);
 
   const toSize = (toTeam.roster || []).length;
-  if (toSize > maxRosterSize) issues.push(`${toName} would have ${toSize} players (limit ${maxRosterSize}).`);
+  if (maxRosterSize != null && toSize > maxRosterSize) issues.push(`${toName} would have ${toSize} players (limit ${maxRosterSize}).`);
 
   const fromPos = countPositions(fromTeam);
-  if (fromPos.F < minForwards || fromPos.D < minDefensemen) {
+  if ((minForwards != null && fromPos.F < minForwards) || (minDefensemen != null && fromPos.D < minDefensemen)) {
     const parts = [];
-    if (fromPos.F < minForwards) parts.push(`${fromPos.F} F (min ${minForwards}) for ${fromName}`);
-    if (fromPos.D < minDefensemen) parts.push(`${fromPos.D} D (min ${minDefensemen}) for ${fromName}`);
+    if (minForwards != null && fromPos.F < minForwards) parts.push(`${fromPos.F} F (min ${minForwards}) for ${fromName}`);
+    if (minDefensemen != null && fromPos.D < minDefensemen) parts.push(`${fromPos.D} D (min ${minDefensemen}) for ${fromName}`);
     issues.push(`Positional minimum issue: ${parts.join(", ")}.`);
   }
 
   const toPos = countPositions(toTeam);
-  if (toPos.F < minForwards || toPos.D < minDefensemen) {
+  if ((minForwards != null && toPos.F < minForwards) || (minDefensemen != null && toPos.D < minDefensemen)) {
     const parts = [];
-    if (toPos.F < minForwards) parts.push(`${toPos.F} F (min ${minForwards}) for ${toName}`);
-    if (toPos.D < minDefensemen) parts.push(`${toPos.D} D (min ${minDefensemen}) for ${toName}`);
+    if (minForwards != null && toPos.F < minForwards) parts.push(`${toPos.F} F (min ${minForwards}) for ${toName}`);
+    if (minDefensemen != null && toPos.D < minDefensemen) parts.push(`${toPos.D} D (min ${minDefensemen}) for ${toName}`);
     issues.push(`Positional minimum issue: ${parts.join(", ")}.`);
   }
 
   return issues;
 }
 
-// -------------------------------
-//   Apply a trade to two teams
-// -------------------------------
+// Apply a trade to two teams (pure, returns updated teams)
 export function applyTradeToTeams({ fromTeam, toTeam, trade }) {
   if (!fromTeam || !toTeam || !trade) {
     return { updatedFromTeam: fromTeam, updatedToTeam: toTeam };
@@ -503,53 +764,47 @@ export function applyTradeToTeams({ fromTeam, toTeam, trade }) {
     buyouts: [...(toTeam.buyouts || [])],
   };
 
-  const offeredNames = trade.offeredPlayers || [];
-  const requestedNames = trade.requestedPlayers || [];
+  const offeredSets = buildTokenSets(trade.offeredPlayers || []);
+  const requestedSets = buildTokenSets(trade.requestedPlayers || []);
 
-  const offeredObjs = previewFrom.roster.filter((p) => offeredNames.includes(p.name));
-  const requestedObjs = previewTo.roster.filter((p) => requestedNames.includes(p.name));
-
-  const retentionFromDraftMap = trade.retentionFrom || {};
-  const retentionToDraftMap = trade.retentionTo || {};
+  const offeredObjs = previewFrom.roster.filter((p) => rosterPlayerMatchesTokenSets(p, offeredSets));
+  const requestedObjs = previewTo.roster.filter((p) => rosterPlayerMatchesTokenSets(p, requestedSets));
 
   const retainedFromEntries = [];
   const retainedToEntries = [];
 
   const adjustedOffered = offeredObjs.map((player) => {
-    const raw = retentionFromDraftMap[player.name];
-    if (raw == null || raw === "") return player;
-
-    const amt = Number(raw);
-    if (!amt || amt <= 0) return player;
+    const raw = getRetentionForPlayer(player, trade.retentionFrom);
+    const amt = Number(raw) || 0;
+    if (!(amt > 0)) return player;
 
     const maxAllowed = Math.ceil((Number(player.salary) || 0) * 0.5);
     const applied = Math.min(amt, maxAllowed);
-    if (applied <= 0) return player;
+    if (!(applied > 0)) return player;
 
-        retainedFromEntries.push({
-      player: player.name, // stable identity for retention-spot counting
+    retainedFromEntries.push({
+      player: String(player?.name || "").trim(),
+      playerId: playerIdFromRosterObj(player) || null,
       note: "retained in trade",
       penalty: applied,
       retained: true,
     });
 
-
     return { ...player, salary: Math.max(0, (Number(player.salary) || 0) - applied) };
   });
 
   const adjustedRequested = requestedObjs.map((player) => {
-    const raw = retentionToDraftMap[player.name];
-    if (raw == null || raw === "") return player;
-
-    const amt = Number(raw);
-    if (!amt || amt <= 0) return player;
+    const raw = getRetentionForPlayer(player, trade.retentionTo);
+    const amt = Number(raw) || 0;
+    if (!(amt > 0)) return player;
 
     const maxAllowed = Math.ceil((Number(player.salary) || 0) * 0.5);
     const applied = Math.min(amt, maxAllowed);
-    if (applied <= 0) return player;
+    if (!(applied > 0)) return player;
 
-        retainedToEntries.push({
-      player: player.name, // stable identity for retention-spot counting
+    retainedToEntries.push({
+      player: String(player?.name || "").trim(),
+      playerId: playerIdFromRosterObj(player) || null,
       note: "retained in trade",
       penalty: applied,
       retained: true,
@@ -561,20 +816,17 @@ export function applyTradeToTeams({ fromTeam, toTeam, trade }) {
   previewFrom.buyouts = [...(previewFrom.buyouts || []), ...retainedFromEntries];
   previewTo.buyouts = [...(previewTo.buyouts || []), ...retainedToEntries];
 
-  previewFrom.roster = previewFrom.roster.filter((p) => !offeredNames.includes(p.name));
-  previewTo.roster = previewTo.roster.filter((p) => !requestedNames.includes(p.name));
+  previewFrom.roster = previewFrom.roster.filter((p) => !rosterPlayerMatchesTokenSets(p, offeredSets));
+  previewTo.roster = previewTo.roster.filter((p) => !rosterPlayerMatchesTokenSets(p, requestedSets));
 
   previewFrom.roster.push(...adjustedRequested);
   previewTo.roster.push(...adjustedOffered);
 
-  // ✅ THIS is the “new code”: always keep rosters sorted after the trade
   previewFrom.roster = sortRosterStandard(previewFrom.roster);
   previewTo.roster = sortRosterStandard(previewTo.roster);
 
-  const penaltyFromDraft =
-    trade.penaltyFrom === "" || trade.penaltyFrom == null ? 0 : Number(trade.penaltyFrom);
-  const penaltyToDraft =
-    trade.penaltyTo === "" || trade.penaltyTo == null ? 0 : Number(trade.penaltyTo);
+  const penaltyFromDraft = trade.penaltyFrom === "" || trade.penaltyFrom == null ? 0 : Number(trade.penaltyFrom);
+  const penaltyToDraft = trade.penaltyTo === "" || trade.penaltyTo == null ? 0 : Number(trade.penaltyTo);
 
   let simFrom = previewFrom;
   let simTo = previewTo;
@@ -591,145 +843,13 @@ export function applyTradeToTeams({ fromTeam, toTeam, trade }) {
     simFrom = res.to;
   }
 
-  // (Optional but nice) ensure sorting is still true after penalty transfers
   simFrom = { ...simFrom, roster: sortRosterStandard(simFrom.roster || []) };
   simTo = { ...simTo, roster: sortRosterStandard(simTo.roster || []) };
 
-  return {
-    updatedFromTeam: simFrom,
-    updatedToTeam: simTo,
-  };
+  return { updatedFromTeam: simFrom, updatedToTeam: simTo };
 }
 
-// -------------------------------
-//   Build a normalized trade object
-// -------------------------------
-export function buildTradeFromDraft({
-  fromTeam,
-  toTeam,
-  offeredPlayers,
-  requestedPlayers,
-  penaltyFrom,
-  penaltyTo,
-  retentionFrom,
-  retentionTo,
-  existingTrades = [],
-  createdAt,
-}) {
-  const created = createdAt ?? Date.now();
-  const expiresAt = created + 7 * 24 * 60 * 60 * 1000;
-
-  const baseId = `trade-${created}`;
-  const idAlreadyUsed = existingTrades.some((t) => t.id === baseId);
-  const id = idAlreadyUsed ? `${baseId}-${existingTrades.length + 1}` : baseId;
-
-  return {
-    id,
-    fromTeam,
-    toTeam,
-    offeredPlayers: [...(offeredPlayers || [])],
-    requestedPlayers: [...(requestedPlayers || [])],
-    penaltyFrom: Number(penaltyFrom) || 0,
-    penaltyTo: Number(penaltyTo) || 0,
-    retentionFrom: { ...(retentionFrom || {}) },
-    retentionTo: { ...(retentionTo || {}) },
-    status: "pending",
-    createdAt: created,
-    expiresAt,
-  };
-}
-
-// -------------------------------
-//   Trade visibility helpers
-// -------------------------------
-export function getVisiblePendingTradesForUser(currentUser, tradeProposals) {
-  if (!currentUser) return [];
-
-  const pending = (tradeProposals || []).filter((tr) => tr && tr.status === "pending");
-
-  if (currentUser.role === "commissioner") return pending;
-
-  if (currentUser.role === "manager") {
-    return pending.filter(
-      (tr) => tr.fromTeam === currentUser.teamName || tr.toTeam === currentUser.teamName
-    );
-  }
-
-  return [];
-}
-
-// -------------------------------
-//   Trade expiry / auto-cancel helpers
-// -------------------------------
-export function isTradeExpired(tr, now = Date.now()) {
-  if (!tr || tr.status !== "pending") return false;
-  if (!tr.expiresAt) return false;
-  return tr.expiresAt <= now;
-}
-
-// -------------------------------
-//   Trade helpers
-// -------------------------------
-export function tradeInvolvesPlayer(tr, teamName, playerName) {
-  if (!tr || !teamName || !playerName) return false;
-  if (tr.status !== "pending") return false;
-
-  const norm = (s) => String(s || "").trim().toLowerCase();
-  const teamKey = norm(teamName);
-  const playerKey = norm(playerName);
-  if (!teamKey || !playerKey) return false;
-
-  const fromKey = norm(tr.fromTeam);
-  const toKey = norm(tr.toTeam);
-
-  if (
-    fromKey === teamKey &&
-    (tr.offeredPlayers || []).some((p) => norm(p) === playerKey)
-  ) {
-    return true;
-  }
-
-  if (
-    toKey === teamKey &&
-    (tr.requestedPlayers || []).some((p) => norm(p) === playerKey)
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-
-export function getPendingTradesWithPlayer(tradeProposals, teamName, playerName) {
-  return (tradeProposals || []).filter((tr) => tradeInvolvesPlayer(tr, teamName, playerName));
-}
-
-// -------------------------------
-//   Trade normalization helpers
-// -------------------------------
-export function normalizeTradeProposals(rawProposals) {
-  const now = Date.now();
-
-  return (rawProposals || []).map((tr) => {
-    const createdAt = tr.createdAt || now;
-    const expiresAt = tr.expiresAt || createdAt + 7 * 24 * 60 * 60 * 1000;
-
-    return {
-      ...tr,
-      status: tr.status || "pending",
-      penaltyFrom: typeof tr.penaltyFrom === "number" ? tr.penaltyFrom : Number(tr.penaltyFrom || 0),
-      penaltyTo: typeof tr.penaltyTo === "number" ? tr.penaltyTo : Number(tr.penaltyTo || 0),
-      createdAt,
-      expiresAt,
-      retentionFrom: tr.retentionFrom || tr.retention || {},
-      retentionTo: tr.retentionTo || {},
-    };
-  });
-}
-
-// -------------------------------
-//   Trade validation helper
-// -------------------------------
+// Validate a trade draft (pure)
 export function validateTradeDraft({
   tradeDraft,
   fromTeamObj,
@@ -737,9 +857,7 @@ export function validateTradeDraft({
   existingProposals = [],
   maxRetentionSpots = 3,
 }) {
-  if (!tradeDraft) {
-    return { ok: false, errorMessage: "No trade draft in progress." };
-  }
+  if (!tradeDraft) return { ok: false, errorMessage: "No trade draft in progress." };
 
   const {
     fromTeam,
@@ -764,11 +882,6 @@ export function validateTradeDraft({
     return { ok: false, errorMessage: "One of the teams in this trade no longer exists." };
   }
 
-    const norm = (s) => String(s || "").trim().toLowerCase();
-
-  const offeredNorm = new Set((offeredPlayers || []).map(norm));
-  const requestedNorm = new Set((requestedPlayers || []).map(norm));
-
   const maxPenaltyFrom = totalBuyoutPenalty(fromTeamObj);
   const maxPenaltyTo = totalBuyoutPenalty(toTeamObj);
 
@@ -776,128 +889,96 @@ export function validateTradeDraft({
   let penaltyToAmount = 0;
 
   if (penaltyFrom !== undefined && penaltyFrom !== "") {
-    const numericFrom = Number(penaltyFrom);
-    if (isNaN(numericFrom) || numericFrom < 0) {
-      return {
-        ok: false,
-        errorMessage:
-          "Please enter a valid non-negative buyout penalty to include from your team, or leave it blank.",
-      };
+    const n = Number(penaltyFrom);
+    if (!Number.isFinite(n) || n < 0) {
+      return { ok: false, errorMessage: "Please enter a valid non-negative buyout penalty to include from your team, or leave it blank." };
     }
-    if (numericFrom > maxPenaltyFrom) {
-      return {
-        ok: false,
-        errorMessage: `You can only include up to $${maxPenaltyFrom} of your current buyout penalties in this trade.`,
-      };
+    if (n > maxPenaltyFrom) {
+      return { ok: false, errorMessage: `You can only include up to $${maxPenaltyFrom} of your current buyout penalties in this trade.` };
     }
-    penaltyFromAmount = numericFrom;
+    penaltyFromAmount = n;
   }
 
   if (penaltyTo !== undefined && penaltyTo !== "") {
-    const numericTo = Number(penaltyTo);
-    if (isNaN(numericTo) || numericTo < 0) {
-      return {
-        ok: false,
-        errorMessage:
-          "Please enter a valid non-negative buyout penalty you are requesting from the other team, or leave it blank.",
-      };
+    const n = Number(penaltyTo);
+    if (!Number.isFinite(n) || n < 0) {
+      return { ok: false, errorMessage: "Please enter a valid non-negative buyout penalty you are requesting from the other team, or leave it blank." };
     }
-    if (numericTo > maxPenaltyTo) {
-      return {
-        ok: false,
-        errorMessage: `${toTeam} currently only has $${maxPenaltyTo} in buyout penalties.`,
-      };
+    if (n > maxPenaltyTo) {
+      return { ok: false, errorMessage: `${toTeam} currently only has $${maxPenaltyTo} in buyout penalties.` };
     }
-    penaltyToAmount = numericTo;
+    penaltyToAmount = n;
   }
 
+  // Retention validation: keys may be id tokens or names.
   const validatedRetentionFrom = {};
   const validatedRetentionTo = {};
 
   // Retention on players YOU send out
-  for (const [playerName, raw] of Object.entries(retentionFrom || {})) {
+  for (const [tokenKey, raw] of Object.entries(retentionFrom || {})) {
     if (raw === "" || raw == null) continue;
 
     const amount = Number(raw);
-    if (isNaN(amount) || amount < 0) {
-      return {
-        ok: false,
-        errorMessage: `Invalid retention amount for ${playerName}. Please enter a non-negative number.`,
-      };
+    if (!Number.isFinite(amount) || amount < 0) {
+      return { ok: false, errorMessage: `Invalid retention amount for ${tokenKey}. Please enter a non-negative number.` };
     }
 
-    if (!offeredNorm.has(norm(playerName))) {
-      return {
-        ok: false,
-        errorMessage: `You can only retain salary on players you are trading away. ${playerName} is not in your offered players.`,
-      };
+    const isInOffered = (offeredPlayers || []).some((t) => tokenEqualsToken(t, tokenKey));
+    if (!isInOffered) {
+      return { ok: false, errorMessage: `You can only retain salary on players you are trading away. ${tokenKey} is not in your offered players.` };
     }
 
-    const fromPlayerObj = (fromTeamObj.roster || []).find(
-      (p) => norm(p?.name) === norm(playerName)
-    );
+    const fromPlayerObj = (fromTeamObj.roster || []).find((p) => tokenMatchesRosterPlayer(tokenKey, p));
     if (!fromPlayerObj) {
-      return {
-        ok: false,
-        errorMessage: `Could not find ${playerName} on your roster for retention calculation.`,
-      };
+      return { ok: false, errorMessage: `Could not find ${tokenKey} on your roster for retention calculation.` };
     }
 
     const maxRetain = Math.ceil((Number(fromPlayerObj.salary) || 0) * 0.5);
     if (amount > maxRetain) {
-      return {
-        ok: false,
-        errorMessage: `You can retain at most 50% of ${playerName}'s salary ($${maxRetain}).`,
-      };
+      return { ok: false, errorMessage: `You can retain at most 50% of ${fromPlayerObj.name}'s salary ($${maxRetain}).` };
     }
 
-    if (amount > 0) validatedRetentionFrom[playerName] = amount;
+    // Store using best token (prefer id token when possible)
+    if (amount > 0) {
+      const bestKey = rosterPlayerToBestToken(fromPlayerObj);
+      validatedRetentionFrom[bestKey] = amount;
+    }
   }
 
   // Retention you REQUEST from the other team (on players you receive)
-  for (const [playerName, raw] of Object.entries(retentionTo || {})) {
+  for (const [tokenKey, raw] of Object.entries(retentionTo || {})) {
     if (raw === "" || raw == null) continue;
 
     const amount = Number(raw);
-    if (isNaN(amount) || amount < 0) {
-      return {
-        ok: false,
-        errorMessage: `Invalid requested retention amount for ${playerName}. Please enter a non-negative number.`,
-      };
+    if (!Number.isFinite(amount) || amount < 0) {
+      return { ok: false, errorMessage: `Invalid requested retention amount for ${tokenKey}. Please enter a non-negative number.` };
     }
 
-    if (!requestedNorm.has(norm(playerName))) {
-      return {
-        ok: false,
-        errorMessage: `You can only request retention on players you are receiving. ${playerName} is not in your requested players.`,
-      };
+    const isInRequested = (requestedPlayers || []).some((t) => tokenEqualsToken(t, tokenKey));
+    if (!isInRequested) {
+      return { ok: false, errorMessage: `You can only request retention on players you are receiving. ${tokenKey} is not in your requested players.` };
     }
 
-    const toPlayerObj = (toTeamObj.roster || []).find(
-      (p) => norm(p?.name) === norm(playerName)
-    );
+    const toPlayerObj = (toTeamObj.roster || []).find((p) => tokenMatchesRosterPlayer(tokenKey, p));
     if (!toPlayerObj) {
-      return {
-        ok: false,
-        errorMessage: `Could not find ${playerName} on the other roster for retention calculation.`,
-      };
+      return { ok: false, errorMessage: `Could not find ${tokenKey} on the other roster for retention calculation.` };
     }
 
     const maxRetain = Math.ceil((Number(toPlayerObj.salary) || 0) * 0.5);
     if (amount > maxRetain) {
-      return {
-        ok: false,
-        errorMessage: `${toTeam} can retain at most 50% of ${playerName}'s salary ($${maxRetain}).`,
-      };
+      return { ok: false, errorMessage: `${toTeam} can retain at most 50% of ${toPlayerObj.name}'s salary ($${maxRetain}).` };
     }
 
-    if (amount > 0) validatedRetentionTo[playerName] = amount;
+    if (amount > 0) {
+      const bestKey = rosterPlayerToBestToken(toPlayerObj);
+      validatedRetentionTo[bestKey] = amount;
+    }
   }
 
+  // Retention spot cap checks
   const existingRetentionSpotsFrom = countRetentionSpots(fromTeamObj);
   const newRetentionPlayersFrom = new Set(Object.keys(validatedRetentionFrom));
-  const totalRetentionSpotsFrom = existingRetentionSpotsFrom + newRetentionPlayersFrom.size;
-  if (totalRetentionSpotsFrom > maxRetentionSpots) {
+  if (existingRetentionSpotsFrom + newRetentionPlayersFrom.size > maxRetentionSpots) {
     return {
       ok: false,
       errorMessage:
@@ -908,8 +989,7 @@ export function validateTradeDraft({
 
   const existingRetentionSpotsTo = countRetentionSpots(toTeamObj);
   const newRetentionPlayersTo = new Set(Object.keys(validatedRetentionTo));
-  const totalRetentionSpotsTo = existingRetentionSpotsTo + newRetentionPlayersTo.size;
-  if (totalRetentionSpotsTo > maxRetentionSpots) {
+  if (existingRetentionSpotsTo + newRetentionPlayersTo.size > maxRetentionSpots) {
     return {
       ok: false,
       errorMessage:
@@ -918,38 +998,15 @@ export function validateTradeDraft({
     };
   }
 
- 
+  // Conflict check: no overlap with ANY other pending trade
+  const draftTokens = [...(offeredPlayers || []), ...(requestedPlayers || [])];
 
-    const conflictingTrade = (existingProposals || []).find((tr) => {
+  const conflictingTrade = (existingProposals || []).find((tr) => {
     if (tr?.status !== "pending") return false;
 
-    const trOffered = tr.offeredPlayers || [];
-    const trRequested = tr.requestedPlayers || [];
-
-    const offeredConflictFrom =
-      tr.fromTeam === fromTeam &&
-      trOffered.some((p) => offeredNorm.has(norm(p)));
-
-    const requestedConflictFrom =
-      tr.toTeam === fromTeam &&
-      trRequested.some((p) => offeredNorm.has(norm(p)));
-
-    const offeredConflictTo =
-      tr.fromTeam === toTeam &&
-      trOffered.some((p) => requestedNorm.has(norm(p)));
-
-    const requestedConflictTo =
-      tr.toTeam === toTeam &&
-      trRequested.some((p) => requestedNorm.has(norm(p)));
-
-    return (
-      offeredConflictFrom ||
-      requestedConflictFrom ||
-      offeredConflictTo ||
-      requestedConflictTo
-    );
+    const otherTokens = [...(tr.offeredPlayers || []), ...(tr.requestedPlayers || [])];
+    return otherTokens.some((ot) => draftTokens.some((dt) => tokenEqualsToken(dt, ot)));
   });
-
 
   if (conflictingTrade) {
     return {
@@ -960,12 +1017,16 @@ export function validateTradeDraft({
     };
   }
 
-  return { ok: true, penaltyFromAmount, penaltyToAmount, validatedRetentionFrom, validatedRetentionTo };
+  return {
+    ok: true,
+    penaltyFromAmount,
+    penaltyToAmount,
+    validatedRetentionFrom,
+    validatedRetentionTo,
+  };
 }
 
-// --------------------------------------
-//   Accepting a trade by ID (full flow)
-// --------------------------------------
+// Accepting a trade by ID (full flow)
 export function acceptTradeById({
   tradeId,
   teams,
@@ -1005,7 +1066,6 @@ export function acceptTradeById({
   const toTeam = (teams || []).find((t) => t.name === trade.toTeam);
   if (!fromTeam || !toTeam) return { ok: false, error: "One of the teams in this trade no longer exists." };
 
-  // ✅ applyTradeToTeams now returns sorted rosters, so acceptTradeById doesn't need to sort
   const applyResult = applyTradeToTeams({ fromTeam, toTeam, trade }) || {};
   const { updatedFromTeam, updatedToTeam } = applyResult;
 
@@ -1039,22 +1099,22 @@ export function acceptTradeById({
     tr.id === trade.id ? { ...tr, status: "accepted" } : tr
   );
 
-  const offeredDetails = (trade.offeredPlayers || []).map((name) => {
-    const p = (fromTeam?.roster || []).find((pl) => pl.name === name) || null;
+  const offeredDetails = (trade.offeredPlayers || []).map((token) => {
+    const p = (fromTeam?.roster || []).find((pl) => tokenMatchesRosterPlayer(token, pl)) || null;
     const baseSalary = p ? Number(p.salary) || 0 : 0;
-    const retainedAmount = Number(trade.retentionFrom?.[name] || 0) || 0;
+    const retainedAmount = p ? (getRetentionForPlayer(p, trade.retentionFrom) || 0) : 0;
     const newSalary = Math.max(0, baseSalary - retainedAmount);
 
-    return { name, fromTeam: trade.fromTeam, toTeam: trade.toTeam, baseSalary, retainedAmount, newSalary };
+    return { token, name: p?.name || token, fromTeam: trade.fromTeam, toTeam: trade.toTeam, baseSalary, retainedAmount, newSalary };
   });
 
-  const requestedDetails = (trade.requestedPlayers || []).map((name) => {
-    const p = (toTeam?.roster || []).find((pl) => pl.name === name) || null;
+  const requestedDetails = (trade.requestedPlayers || []).map((token) => {
+    const p = (toTeam?.roster || []).find((pl) => tokenMatchesRosterPlayer(token, pl)) || null;
     const baseSalary = p ? Number(p.salary) || 0 : 0;
-    const retainedAmount = Number(trade.retentionTo?.[name] || 0) || 0;
+    const retainedAmount = p ? (getRetentionForPlayer(p, trade.retentionTo) || 0) : 0;
     const newSalary = Math.max(0, baseSalary - retainedAmount);
 
-    return { name, fromTeam: trade.toTeam, toTeam: trade.fromTeam, baseSalary, retainedAmount, newSalary };
+    return { token, name: p?.name || token, fromTeam: trade.toTeam, toTeam: trade.fromTeam, baseSalary, retainedAmount, newSalary };
   });
 
   const logEntries = [
@@ -1091,9 +1151,7 @@ export function acceptTradeById({
   return { ok: true, teams: updatedTeams, tradeProposals: updatedTrades, logEntries, warnings: warningIssues };
 }
 
-// -------------------------------
-//   Trade rejection / cancellation
-// -------------------------------
+// Trade rejection / cancellation
 export function rejectTradeById(tradeProposals, leagueLog, tradeId, now = Date.now()) {
   const trades = tradeProposals || [];
   const log = leagueLog || [];
@@ -1120,16 +1178,9 @@ export function rejectTradeById(tradeProposals, leagueLog, tradeId, now = Date.n
   return { nextTradeProposals, nextLeagueLog: [logEntry, ...log] };
 }
 
-export function cancelTradeById(
-  tradeProposals,
-  leagueLog,
-  tradeId,
-  options = {},
-  now = Date.now()
-) {
+export function cancelTradeById(tradeProposals, leagueLog, tradeId, options = {}, now = Date.now()) {
   const trades = tradeProposals || [];
   const log = leagueLog || [];
-
   const { autoCancelled = false, reason = null, cancelledBy = null } = options || {};
 
   const target = trades.find((tr) => tr.id === tradeId);
@@ -1162,9 +1213,7 @@ export function expirePendingTrades(tradeProposals, leagueLog, now = Date.now())
   const log = leagueLog || [];
 
   const expired = trades.filter((tr) => tr.status === "pending" && isTradeExpired(tr, now));
-  if (expired.length === 0) {
-    return { nextTradeProposals: trades, nextLeagueLog: log };
-  }
+  if (expired.length === 0) return { nextTradeProposals: trades, nextLeagueLog: log };
 
   const nextTradeProposals = trades.map((tr) =>
     tr.status === "pending" && isTradeExpired(tr, now)
@@ -1185,16 +1234,10 @@ export function expirePendingTrades(tradeProposals, leagueLog, now = Date.now())
   return { nextTradeProposals, nextLeagueLog: [...newLogs, ...log] };
 }
 
-export function cancelTradesForPlayer(
-  tradeProposals,
-  leagueLog,
-  teamName,
-  playerName,
-  options = {}
-) {
-  const { reason = "playerRemoved", autoCancelled = true } = options;
+export function cancelTradesForPlayer(tradeProposals, leagueLog, teamName, playerToken, options = {}) {
+  const { reason = "playerRemoved", autoCancelled = true } = options || {};
+  const affected = getPendingTradesWithPlayer(tradeProposals, teamName, playerToken);
 
-  const affected = getPendingTradesWithPlayer(tradeProposals, teamName, playerName);
   if (!affected.length) {
     return { nextTradeProposals: tradeProposals, nextLeagueLog: leagueLog, affectedTrades: [] };
   }
@@ -1203,14 +1246,9 @@ export function cancelTradesForPlayer(
   let nextLog = leagueLog;
 
   for (const tr of affected) {
-    const { nextTradeProposals, nextLeagueLog } = cancelTradeById(
-      nextTrades,
-      nextLog,
-      tr.id,
-      { autoCancelled, reason }
-    );
-    nextTrades = nextTradeProposals;
-    nextLog = nextLeagueLog;
+    const res = cancelTradeById(nextTrades, nextLog, tr.id, { autoCancelled, reason });
+    nextTrades = res.nextTradeProposals;
+    nextLog = res.nextLeagueLog;
   }
 
   return { nextTradeProposals: nextTrades, nextLeagueLog: nextLog, affectedTrades: affected };
@@ -1222,10 +1260,14 @@ export function cancelTradesForPlayer(
 const normalizeName = (s) => String(s || "").trim().toLowerCase();
 const normalizeTeam = (s) => String(s || "").trim().toLowerCase();
 
+const isIdAuctionKey = (key) => /^id:\d+$/i.test(String(key || "").trim());
+
+const getBidFirstTs = (b) => Number(b?.firstTimestamp ?? b?.timestamp ?? 0) || 0;
+
 export function resolveAuctions({
   teams,
   freeAgents,
-  capLimit,
+  capLimit, // not used to block winners (grace period is allowed)
   maxRosterSize,
   minForwards,
   minDefensemen,
@@ -1240,209 +1282,201 @@ export function resolveAuctions({
     buyouts: [...(t.buyouts || [])],
   }));
 
-    const activeBids = (bids || []).filter((b) => {
-  if (b?.resolved) return false;
-  const key = String(b?.auctionKey || b?.player || "").trim();
-  const team = String(b?.team || "").trim();
-  const amt = Number(b?.amount) || 0;
-  return Boolean(b?.id && key && team && amt > 0);
-});
-
-if (activeBids.length === 0) {
-  const nextFreeAgents = (bids || []).filter((b) => {
+  // Active bids: ID-only auctions only
+  const activeBids = (bids || []).filter((b) => {
     if (b?.resolved) return false;
-    const key = String(b?.auctionKey || b?.player || "").trim();
+    const key = String(b?.auctionKey || "").trim();
+    if (!isIdAuctionKey(key)) return false;
     const team = String(b?.team || "").trim();
     const amt = Number(b?.amount) || 0;
-    return Boolean(b?.id && key && team && amt > 0);
+    const pid = Number(b?.playerId);
+    return Boolean(b?.id && team && amt > 0 && Number.isFinite(pid) && pid > 0);
   });
 
-  return { nextTeams: originalTeams, nextFreeAgents, newLogs: [] };
-}
+  // If nothing active, still clean out any junk legacy rows (optional)
+  if (activeBids.length === 0) {
+    const nextFreeAgents = (bids || []).filter((b) => {
+      if (b?.resolved) return false;
+      const key = String(b?.auctionKey || "").trim();
+      if (!isIdAuctionKey(key)) return false;
+      const team = String(b?.team || "").trim();
+      const amt = Number(b?.amount) || 0;
+      const pid = Number(b?.playerId);
+      return Boolean(b?.id && team && amt > 0 && Number.isFinite(pid) && pid > 0);
+    });
+    return { nextTeams: originalTeams, nextFreeAgents, newLogs: [] };
+  }
 
-
-
+  // Group bids by auctionKey
   const bidsByPlayer = new Map();
-
- for (const bid of activeBids) {
-const key = String(bid?.auctionKey || bid?.player || "").trim().toLowerCase();
-
-  if (!key) continue;
-  if (!bidsByPlayer.has(key)) bidsByPlayer.set(key, []);
-  bidsByPlayer.get(key).push(bid);
-}
-
+  for (const bid of activeBids) {
+    const key = String(bid?.auctionKey || "").trim().toLowerCase();
+    if (!key) continue;
+    if (!bidsByPlayer.has(key)) bidsByPlayer.set(key, []);
+    bidsByPlayer.get(key).push(bid);
+  }
 
   const resolvedBidIds = new Set();
   const newLogs = [];
 
   for (const [, playerBids] of bidsByPlayer.entries()) {
+    // Sort by amount DESC; tie-break by earliest firstTimestamp
     const sorted = [...playerBids].sort((a, b) => {
-  const aAmt = Number(a.amount) || 0;
-  const bAmt = Number(b.amount) || 0;
-  if (bAmt !== aAmt) return bAmt - aAmt;
+      const aAmt = Number(a?.amount) || 0;
+      const bAmt = Number(b?.amount) || 0;
+      if (bAmt !== aAmt) return bAmt - aAmt;
+      return getBidFirstTs(a) - getBidFirstTs(b);
+    });
 
-  // Tie-break: who bid first for this auction
-  const aTs = Number(a.firstTimestamp ?? a.timestamp ?? 0) || 0;
-  const bTs = Number(b.firstTimestamp ?? b.timestamp ?? 0) || 0;
-  return aTs - bTs;
-});
+    if (sorted.length === 0) continue;
 
-if (sorted.length === 0) continue;
+    const winningTeamKeyFor = (bid) => normalizeTeam(bid?.team);
 
-// --- helpers scoped to this auction ---
-const winningTeamKeyFor = (bid) => normalizeTeam(bid?.team);
+    // Hard block: player already on ANY roster (prefer ID; fallback to name label)
+    const isRosteredSomewhere = (bid) => {
+      const pid = Number(bid?.playerId);
+      const nameKey = normalizeName(bid?.playerName || bid?.player);
 
+      return (nextTeams || []).some((t) =>
+        (t.roster || []).some((p) => {
+          const rosterPid = Number(p?.playerId);
+          if (Number.isFinite(pid) && pid > 0 && Number.isFinite(rosterPid) && rosterPid > 0) {
+            return rosterPid === pid;
+          }
+          // legacy fallback only
+          return nameKey && normalizeName(p?.name) === nameKey;
+        })
+      );
+    };
 
-// Is player already on ANY roster? (hard block at resolution time)
+    // Anti-bluff pricing
+    const computePricePaid = (candidateWinner, allBidsForPlayer) => {
+      const winningKey = normalizeTeam(candidateWinner?.team);
 
-const isRosteredSomewhere = (playerName) => {
-  const key = normalizeName(playerName);
-  if (!key) return false;
-  return (nextTeams || []).some((t) =>
-    (t.roster || []).some((p) => normalizeName(p?.name) === key)
-  );
-};
+      const distinctTeams = new Set(
+        (allBidsForPlayer || []).map((b) => normalizeTeam(b?.team)).filter(Boolean)
+      ).size;
 
-// Compute anti-bluff price for a given “candidate winner”
-const computePricePaid = (candidateWinner, allBidsForPlayer) => {
-  const winningTeamName = candidateWinner?.team;
-  const winningKey = normalizeTeam(winningTeamName);
+      let pricePaid = Number(candidateWinner?.amount) || 0;
+      if (distinctTeams <= 1) return pricePaid;
 
-const distinctTeams = new Set(
-  allBidsForPlayer.map((b) => normalizeTeam(b?.team)).filter(Boolean)
-).size;
+      const otherBids = (allBidsForPlayer || []).filter(
+        (b) => normalizeTeam(b?.team) !== winningKey
+      );
 
-  // default: pay current amount
-  let pricePaid = Number(candidateWinner.amount) || 0;
+      const othersHighest = otherBids.reduce((max, b) => {
+        const amt = Number(b?.amount) || 0;
+        return amt > max ? amt : max;
+      }, 0);
 
-  if (distinctTeams <= 1) {
-    return pricePaid;
-  }
+      const winnerMinRaw = Number(candidateWinner?.minAmount ?? candidateWinner?.amount);
+      const winnerMin =
+        Number.isFinite(winnerMinRaw) && winnerMinRaw > 0
+          ? winnerMinRaw
+          : Number(candidateWinner?.amount) || 0;
 
-  const otherBids = allBidsForPlayer.filter(
-  (b) => normalizeTeam(b?.team) !== winningKey
-);
+      if (winnerMin > othersHighest) return winnerMin;
 
-  const othersHighest = otherBids.reduce((max, b) => {
-    const amt = Number(b.amount) || 0;
-    return amt > max ? amt : max;
-  }, 0);
+      if (winnerMin === othersHighest) {
+        const winnerTs = getBidFirstTs(candidateWinner);
 
-  const winnerMinRaw = Number(candidateWinner.minAmount ?? candidateWinner.amount);
-  const winnerMin =
-    Number.isFinite(winnerMinRaw) && winnerMinRaw > 0
-      ? winnerMinRaw
-      : Number(candidateWinner.amount) || 0;
+        let bestOtherTs = Infinity;
+        for (const b of otherBids) {
+          const amt = Number(b?.amount) || 0;
+          if (amt !== othersHighest) continue;
+          const ts = getBidFirstTs(b);
+          if (ts < bestOtherTs) bestOtherTs = ts;
+        }
 
-  if (winnerMin > othersHighest) {
-    return winnerMin;
-  }
+        if (winnerTs && bestOtherTs !== Infinity && winnerTs < bestOtherTs) return winnerMin;
+        return Number(candidateWinner?.amount) || 0;
+      }
 
-  if (winnerMin === othersHighest) {
-    const winnerTs =
-      Number(candidateWinner.firstTimestamp ?? candidateWinner.timestamp ?? 0) || 0;
+      return Number(candidateWinner?.amount) || 0;
+    };
 
-    let bestOtherTs = Infinity;
-    for (const b of otherBids) {
-      const amt = Number(b.amount) || 0;
-      if (amt !== othersHighest) continue;
-      const ts = Number(b.firstTimestamp ?? b.timestamp ?? 0) || 0;
-      if (ts < bestOtherTs) bestOtherTs = ts;
+    // Choose winner: highest bid, tie earliest; do NOT block for temporary illegality
+    let winningBid = null;
+    let finalPricePaid = 0;
+
+    for (const candidate of sorted) {
+      if (isRosteredSomewhere(candidate)) continue;
+
+      const teamKey = winningTeamKeyFor(candidate);
+      const teamIdx = nextTeams.findIndex((t) => normalizeTeam(t?.name) === teamKey);
+      if (teamIdx === -1) continue;
+
+      const pricePaid = computePricePaid(candidate, playerBids);
+      if (!(Number(pricePaid) > 0)) continue;
+
+      winningBid = candidate;
+      finalPricePaid = Number(pricePaid) || 0;
+      break;
     }
 
-    if (winnerTs && bestOtherTs !== Infinity && winnerTs < bestOtherTs) {
-      return winnerMin;
+    if (!winningBid) continue;
+
+    // Mark all bids in this auction for deletion
+    for (const b of playerBids) {
+      if (b?.id) resolvedBidIds.add(b.id);
     }
 
-    return Number(candidateWinner.amount) || 0;
+    const winningTeamName = String(winningBid?.team || "").trim();
+    const winningTeamKey = normalizeTeam(winningTeamName);
+
+    const teamIdx = nextTeams.findIndex((t) => normalizeTeam(t?.name) === winningTeamKey);
+    if (teamIdx === -1) continue;
+
+    const team = nextTeams[teamIdx];
+    const position = winningBid?.position || "F";
+
+    const pid = Number(winningBid?.playerId);
+    const nameLabel =
+      String(winningBid?.playerName || winningBid?.player || "").trim() ||
+      (Number.isFinite(pid) && pid > 0 ? `id:${pid}` : "Unknown");
+
+    const newPlayer = {
+      playerId: Number.isFinite(pid) && pid > 0 ? Math.trunc(pid) : null, // ✅ identity
+      name: nameLabel, // ✅ display
+      salary: Number(finalPricePaid) || 0,
+      position,
+      buyoutLockedUntil: (typeof now === "number" ? now : now.getTime()) + BUYOUT_LOCK_MS,
+    };
+
+    const candidateTeam = {
+      ...team,
+      roster: sortRosterStandard([...(team.roster || []), newPlayer]),
+    };
+
+    nextTeams = nextTeams.map((t, idx) => (idx === teamIdx ? candidateTeam : t));
+
+    newLogs.push({
+      type: "faSigned",
+      id: (typeof now === "number" ? now : now.getTime()) + Math.random(),
+      team: winningTeamName,
+      playerId: newPlayer.playerId,
+      player: nameLabel,
+      amount: Number(finalPricePaid) || 0,
+      position,
+      timestamp: typeof now === "number" ? now : now.getTime(),
+    });
   }
 
-  return Number(candidateWinner.amount) || 0;
-};
+  // Delete all bids resolved this rollover + drop junk rows
+  const nextFreeAgents = (bids || []).filter((b) => {
+    if (b?.resolved) return false;
+    if (resolvedBidIds.has(b?.id)) return false;
 
-// Winner is ALWAYS the top bid (tie-break: earliest firstTimestamp),
-// even if it makes the roster illegal. (Grace period handled by league rules.)
-let winningBid = null;
-let finalPricePaid = 0;
+    const key = String(b?.auctionKey || "").trim();
+    if (!isIdAuctionKey(key)) return false;
 
-for (const candidate of sorted) {
-  const playerName = candidate?.player;
-  if (!playerName) continue;
+    const team = String(b?.team || "").trim();
+    const amt = Number(b?.amount) || 0;
+    const pid = Number(b?.playerId);
+    return Boolean(b?.id && team && amt > 0 && Number.isFinite(pid) && pid > 0);
+  });
 
-  // Hard-block rostered players at resolution time
-  if (isRosteredSomewhere(playerName)) continue;
-
-  const teamKey = winningTeamKeyFor(candidate);
-  const teamIdx = nextTeams.findIndex(
-    (t) => String(t?.name || "").trim().toLowerCase() === teamKey
-  );
-  if (teamIdx === -1) continue;
-
-  const pricePaid = computePricePaid(candidate, playerBids);
-  if (!(pricePaid > 0)) continue;
-
-  winningBid = candidate;
-  finalPricePaid = Number(pricePaid) || 0;
-  break;
-}
-
-
-const playerName = winningBid.player;
-const winningTeamName = winningBid.team;
-const winningTeamKey = normalizeTeam(winningTeamName);
-
-const teamIdx = nextTeams.findIndex(
-  (t) => String(t?.name || "").trim().toLowerCase() === winningTeamKey
-);
-if (teamIdx === -1) continue;
-
-const team = nextTeams[teamIdx];
-const position = winningBid.position || "F";
-
-const newPlayer = {
-  name: playerName,
-  salary: Number(finalPricePaid) || 0,
-  position,
-  buyoutLockedUntil: now + BUYOUT_LOCK_MS,
-};
-
-const candidateTeam = {
-  ...team,
-  roster: sortRosterStandard([...(team.roster || []), newPlayer]),
-};
-
-nextTeams = nextTeams.map((t, idx) => (idx === teamIdx ? candidateTeam : t));
-
-newLogs.push({
-  type: "faSigned",
-  id: now + Math.random(),
-  team: winningTeamName,
-  player: playerName,
-  amount: Number(finalPricePaid) || 0,
-  position,
-  timestamp: now,
-});
-
-  }
-
-// ✅ Delete all bids for auctions that were resolved this rollover
-// Also drop any already-resolved bids to keep storage clean.
-const nextFreeAgents = (bids || []).filter((b) => {
-  if (b?.resolved) return false;
-  if (resolvedBidIds.has(b?.id)) return false;
-
-  const key = String(b?.auctionKey || b?.player || "").trim();
-  const team = String(b?.team || "").trim();
-  const amt = Number(b?.amount) || 0;
-
-  return Boolean(b?.id && key && team && amt > 0);
-});
-
-
-return { nextTeams, nextFreeAgents, newLogs };
-
-
+  return { nextTeams, nextFreeAgents, newLogs };
 }
 
 export function removeAuctionBidById(freeAgents, bidId) {
@@ -1468,21 +1502,14 @@ function normalizeTeamName(s) {
 
 function getMyActiveBidForAuctionBids(auctionBids, teamName) {
   const t = normalizeTeamName(teamName);
-  return (
-    (auctionBids || []).find(
-      (b) => !b?.resolved && normalizeTeamName(b?.team) === t
-    ) || null
-  );
+  return (auctionBids || []).find((b) => !b?.resolved && normalizeTeamName(b?.team) === t) || null;
 }
 
 function getAuctionStartedByKeyFromBids(auctionBids) {
   const bids = auctionBids || [];
-
-  // Preferred: explicit starter field (your new data has this)
   const raw = bids.find((b) => b?.auctionStartedBy)?.auctionStartedBy;
   if (raw) return normalizeTeamName(raw);
 
-  // Fallback for older data: assume first bid team started it
   const firstTeam = bids[0]?.team;
   return normalizeTeamName(firstTeam);
 }
@@ -1494,12 +1521,7 @@ function getAuctionStartedByKeyFromBids(auctionBids) {
  * - edit limits (starter 2, others 1)
  * - 75 minute cooldown between edits
  */
-export function computeBidUiStateForAuction({
-  auctionBids,
-  myTeamName,
-  nowMs,
-  inputValue,
-}) {
+export function computeBidUiStateForAuction({ auctionBids, myTeamName, nowMs, inputValue }) {
   const myBid = getMyActiveBidForAuctionBids(auctionBids, myTeamName);
   const hasMyBid = !!myBid;
 
@@ -1510,14 +1532,11 @@ export function computeBidUiStateForAuction({
   const editsUsed = Number(myBid?.editCount || 0);
 
   const lastEditAt = Number(myBid?.lastEditAt || myBid?.timestamp || 0) || 0;
-  const cooldownLeftMs = lastEditAt
-    ? Math.max(0, BID_EDIT_COOLDOWN_MS - (nowMs - lastEditAt))
-    : 0;
+  const cooldownLeftMs = lastEditAt ? Math.max(0, BID_EDIT_COOLDOWN_MS - (nowMs - lastEditAt)) : 0;
 
   const amount = Number(String(inputValue ?? "").trim());
 
-  // Rule: joining existing auction (no prior bid yet) must be >= $2.
-  // Editing your existing bid can be $1+.
+  // joining existing auction must be >= 2; editing your own bid can be >= 1
   const minRequired = hasMyBid ? 1 : 2;
 
   const invalidAmount = !Number.isFinite(amount) || amount <= 0;
@@ -1526,8 +1545,7 @@ export function computeBidUiStateForAuction({
   const editLimitReached = hasMyBid && editsUsed >= maxEdits;
   const cooldownActive = hasMyBid && cooldownLeftMs > 0;
 
-  const disabled =
-    invalidAmount || belowMin || editLimitReached || cooldownActive;
+  const disabled = invalidAmount || belowMin || editLimitReached || cooldownActive;
 
   let reason = "";
   if (invalidAmount) reason = "Enter a valid bid amount.";
@@ -1550,7 +1568,6 @@ export function computeBidUiStateForAuction({
   };
 }
 
-
 export function placeFreeAgentBid({
   teams,
   freeAgents,
@@ -1562,6 +1579,7 @@ export function placeFreeAgentBid({
   maxRosterSize,
   minForwards,
   minDefensemen,
+  playerId,
   now = Date.now(),
 }) {
   const allTeams = teams || [];
@@ -1570,20 +1588,37 @@ export function placeFreeAgentBid({
   const team = allTeams.find((t) => t.name === biddingTeamName);
   if (!team) return { ok: false, errorMessage: "Your team could not be found." };
 
-  const trimmedName = (playerName || "").trim();
-  if (!trimmedName) return { ok: false, errorMessage: "Please enter a player name to bid on." };
+  const trimmedName = String(playerName || "").trim();
 
-  const auctionKey = normalizeName(trimmedName);
+  // Phase 2A: ID-only auctions. No free-text.
+  const pidNum = Number(playerId);
+  const hasPid = Number.isFinite(pidNum) && pidNum > 0;
 
-  // Block bidding on rostered players
-  const isOnRoster = allTeams.some((t) =>
-    (t.roster || []).some((p) => normalizeName(p?.name) === auctionKey)
-  );
-  if (isOnRoster) {
+  if (!hasPid) {
     return {
       ok: false,
-      errorMessage: `${trimmedName} is already on a roster and cannot be put up for auction.`,
+      errorMessage:
+        "Select a player from the search results (player ID required). Free-text auctions are disabled.",
     };
+  }
+
+  // Identity is ID-only. Name is display-only.
+  const auctionKey = `id:${Math.trunc(pidNum)}`;
+  const displayName = trimmedName || auctionKey;
+
+  // Block starting/bidding on a player already rostered anywhere
+  const isOnRoster = allTeams.some((t) =>
+    (t.roster || []).some((p) => {
+      const rosterPid = Number(p?.playerId);
+      if (Number.isFinite(rosterPid) && rosterPid > 0) return rosterPid === pidNum;
+      // legacy fallback only
+      if (trimmedName) return normalizeName(p?.name) === normalizeName(trimmedName);
+      return false;
+    })
+  );
+
+  if (isOnRoster) {
+    return { ok: false, errorMessage: `${displayName} is already on a roster and cannot be put up for auction.` };
   }
 
   const amount = Number(rawAmount);
@@ -1594,14 +1629,13 @@ export function placeFreeAgentBid({
   // Find if auction already exists (active)
   const existingActive = bids.find((fa) => {
     if (fa?.resolved) return false;
-    const key = String(fa?.auctionKey || normalizeName(fa?.player)).trim().toLowerCase();
-    return key === auctionKey;
+    return String(fa?.auctionKey || "").trim().toLowerCase() === auctionKey.toLowerCase();
   });
 
   const hasActiveAuction = !!existingActive;
   const createdNewAuction = !hasActiveAuction;
 
-  // Auction cutoff logic (your existing rule)
+  // Auction cutoff logic
   const baseDate = typeof now === "number" ? new Date(now) : now;
   const nextSunday = getNextSundayDeadline(baseDate);
   const newAuctionCutoff = getNewAuctionCutoff(nextSunday);
@@ -1632,16 +1666,13 @@ export function placeFreeAgentBid({
   // Find this team's existing ACTIVE bid for this auction (if any)
   const existingTeamBid = bids.find((b) => {
     if (b?.resolved) return false;
-    const sameAuction =
-      String(b?.auctionKey || normalizeName(b?.player)).trim().toLowerCase() === auctionKey;
+    const sameAuction = String(b?.auctionKey || "").trim().toLowerCase() === auctionKey.toLowerCase();
     const sameTeam = normalizeTeam(b?.team) === normalizeTeam(biddingTeamName);
     return sameAuction && sameTeam;
   });
 
   const isEdit = !!existingTeamBid;
 
-  // Determine starter team for this auction
-  // We store it on bids so it survives reload.
   const auctionStartedBy =
     existingTeamBid?.auctionStartedBy ||
     existingActive?.auctionStartedBy ||
@@ -1649,22 +1680,14 @@ export function placeFreeAgentBid({
 
   const isStarterTeam = normalizeTeam(biddingTeamName) === normalizeTeam(auctionStartedBy);
 
-  // -----------------------------
   // NEW RULE 1: Non-starter first bids must be >= $2
-  // -----------------------------
   if (hasActiveAuction && !existingTeamBid) {
     if (amount < 2) {
-      return {
-        ok: false,
-        errorMessage:
-          "Minimum bid is $2 when joining an existing auction (non-starter bid).",
-      };
+      return { ok: false, errorMessage: "Minimum bid is $2 when joining an existing auction (non-starter bid)." };
     }
   }
 
-  // -----------------------------
   // NEW RULE 2 + 3: Edit limits + cooldown
-  // -----------------------------
   if (isEdit) {
     const maxEdits = isStarterTeam ? 2 : 1;
 
@@ -1682,45 +1705,32 @@ export function placeFreeAgentBid({
     if (lastEditAt && timestamp - lastEditAt < BID_EDIT_COOLDOWN_MS) {
       const msLeft = BID_EDIT_COOLDOWN_MS - (timestamp - lastEditAt);
       const minsLeft = Math.ceil(msLeft / 60000);
-      return {
-        ok: false,
-        errorMessage: `Cooldown active. You can edit this bid again in about ${minsLeft} minute(s).`,
-      };
+      return { ok: false, errorMessage: `Cooldown active. You can edit this bid again in about ${minsLeft} minute(s).` };
     }
   }
 
-  // Preserve tie-break + lowest bid
-  const firstTimestamp =
-    Number(existingTeamBid?.firstTimestamp ?? existingTeamBid?.timestamp ?? timestamp) || timestamp;
-
-  const prevMin =
-    Number(existingTeamBid?.minAmount ?? existingTeamBid?.amount ?? amount) || amount;
-
+  // Preserve tie-break + lowest bid (for anti-bluff logic)
+  const firstTimestamp = Number(existingTeamBid?.firstTimestamp ?? existingTeamBid?.timestamp ?? timestamp) || timestamp;
+  const prevMin = Number(existingTeamBid?.minAmount ?? existingTeamBid?.amount ?? amount) || amount;
   const minAmount = Math.min(prevMin, amount);
 
-  const nextEditCount = isEdit ? (Number(existingTeamBid?.editCount || 0) + 1) : 0;
+  const nextEditCount = isEdit ? Number(existingTeamBid?.editCount || 0) + 1 : 0;
 
-  // If auction already exists, preserve the “canonical” position from existing entries
-  const existingEntry =
-    existingActive ||
-    bids.find((f) => {
-      const fKey = String(f?.auctionKey || normalizeName(f?.player)).trim().toLowerCase();
-      return fKey === auctionKey;
-    });
-
-  const finalPosition = existingEntry?.position || position || "F";
+  // Preserve “canonical” position from existing entries
+  const finalPosition = existingActive?.position || position || "F";
 
   const newEntry = {
     id: `bid-${timestamp}-${Math.random().toString(36).slice(2)}`,
-    auctionKey, // canonical key
-    player: trimmedName,
+    auctionKey,
+    playerId: Math.trunc(pidNum), // ✅ identity
+    player: displayName, // ✅ display label (legacy field)
+    playerName: displayName, // ✅ explicit display label
     team: biddingTeamName,
 
-    amount,       // current/max willingness to pay
-    minAmount,    // lowest bid they've placed in this auction
+    amount, // current/max willingness to pay
+    minAmount, // lowest amount they've bid in this auction
     firstTimestamp, // when they first bid in this auction
 
-    // NEW: starter metadata + edit controls
     auctionStartedBy: auctionStartedBy || normalizeTeam(biddingTeamName),
     auctionStartedAt: Number(existingActive?.auctionStartedAt || timestamp) || timestamp,
     editCount: nextEditCount,
@@ -1729,23 +1739,19 @@ export function placeFreeAgentBid({
     position: finalPosition,
     assigned: false,
     resolved: false,
-    timestamp, // last updated (UI/debug)
+    timestamp,
   };
 
   // Enforce: one ACTIVE bid per team per auction (replace if exists)
   const nextFreeAgents = (() => {
     const next = [];
-
     for (const b of bids) {
-      const sameAuction =
-        String(b?.auctionKey || normalizeName(b?.player)).trim().toLowerCase() === auctionKey;
+      const sameAuction = String(b?.auctionKey || "").trim().toLowerCase() === auctionKey.toLowerCase();
       const sameTeam = normalizeTeam(b?.team) === normalizeTeam(biddingTeamName);
       const active = !b?.resolved;
-
       if (active && sameAuction && sameTeam) continue;
       next.push(b);
     }
-
     next.push(newEntry);
     return next;
   })();
@@ -1754,7 +1760,8 @@ export function placeFreeAgentBid({
     ? {
         type: "faAuctionStarted",
         id: timestamp + Math.random(),
-        player: trimmedName,
+        playerId: Math.trunc(pidNum),
+        player: displayName,
         position: finalPosition,
         startedBy: biddingTeamName,
         timestamp,

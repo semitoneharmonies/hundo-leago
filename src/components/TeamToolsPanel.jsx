@@ -10,6 +10,14 @@ import {
   computeBidUiStateForAuction,
 } from "../leagueUtils";
 
+/**
+ * Optional playerApi shape (safe if undefined):
+ * playerApi = {
+ *   byId: { [id]: { id, name, position, ... } } OR Map(id -> player)
+ *   byName: { [lowerName]: { id, name, ... } } OR Map(lowerName -> player)
+ * }
+ */
+
 function TeamToolsPanel({
   currentUser,
   selectedTeam,
@@ -32,11 +40,22 @@ function TeamToolsPanel({
   onPlaceBid,
   onResolveAuctions,
   onCommissionerRemoveBid,
+
+  // NEW (optional): player lookup helpers for ID-ready UI
+  playerApi,
 }) {
   // --- Auction state (for starting new auctions) ---
   const [bidPlayerName, setBidPlayerName] = useState("");
   const [bidPosition, setBidPosition] = useState("F");
   const [bidAmount, setBidAmount] = useState("");
+  // Phase 2A: player search dropdown (start auction)
+  const [playerSearchQuery, setPlayerSearchQuery] = useState("");
+  const [playerSearchResults, setPlayerSearchResults] = useState([]);
+  const [playerSearchOpen, setPlayerSearchOpen] = useState(false);
+  const [playerSearchLoading, setPlayerSearchLoading] = useState(false);
+    const [selectedAuctionPlayer, setSelectedAuctionPlayer] = useState(null); 
+  // shape: { id, fullName, position, teamAbbrev }
+
 
   // Per-player inline inputs for live auctions (blind bidding)
   const [liveBidInputs, setLiveBidInputs] = useState({});
@@ -50,6 +69,39 @@ function TeamToolsPanel({
     const id = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+  // Phase 2A: fetch player search results (debounced)
+  useEffect(() => {
+    const q = String(playerSearchQuery || "").trim();
+
+    // nothing typed -> clear dropdown
+    if (!q) {
+      setPlayerSearchResults([]);
+      setPlayerSearchLoading(false);
+      setPlayerSearchOpen(false);
+      return;
+    }
+
+    // only run if App.jsx provided the real API
+    if (!playerApi || typeof playerApi.searchPlayers !== "function") {
+      return;
+    }
+
+    setPlayerSearchLoading(true);
+
+    const t = setTimeout(async () => {
+      try {
+        const results = await playerApi.searchPlayers(q, 12);
+        setPlayerSearchResults(Array.isArray(results) ? results : []);
+        setPlayerSearchOpen(true);
+      } catch (e) {
+        setPlayerSearchResults([]);
+      } finally {
+        setPlayerSearchLoading(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(t);
+  }, [playerSearchQuery, playerApi]);
 
   // ✅ early return comes *after* hooks
   if (!currentUser) return null;
@@ -62,46 +114,285 @@ function TeamToolsPanel({
   const nextSunday = getNextSundayDeadline(nowDate);
   const auctionCutoff = getNewAuctionCutoff(nextSunday);
   const timeRemainingMs = Math.max(0, nextSunday.getTime() - nowMs);
+  // ✅ Phase 2A: gate starting auctions to dropdown selection + valid amount
+const canStartAuction =
+  Number.isFinite(Number(selectedAuctionPlayer?.id)) &&
+  Number(selectedAuctionPlayer?.id) > 0 &&
+  String(selectedAuctionPlayer?.fullName || "").trim().length > 0 &&
+  Number(bidAmount) > 0;
+
+
+  // -----------------------------
+  // ID-ready helpers (safe today)
+  // -----------------------------
+  const normalizeName = (s) => String(s || "").trim().toLowerCase();
+
+  // Phase 2A: normalize NHL player id from various shapes
+const normalizeNhlId = (raw) => {
+  if (raw == null) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+
+  const stripped = s.toLowerCase().startsWith("id:") ? s.slice(3).trim() : s;
+  const n = Number(stripped);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.trunc(n);
+};
+
+// Phase 2A: ensure dropdown player object is in the canonical shape we expect
+const normalizeSearchPlayer = (p) => {
+  if (!p) return null;
+
+  // Accept common backend keys without refactors:
+  // id | playerId | nhlId | nhlPlayerId
+  const pid =
+    normalizeNhlId(p.id) ??
+    normalizeNhlId(p.playerId) ??
+    normalizeNhlId(p.nhlId) ??
+    normalizeNhlId(p.nhlPlayerId);
+
+  if (!pid) return null;
+
+  const fullName =
+    String(p.fullName || p.name || p.playerName || "").trim();
+
+  const position =
+    String(p.position || p.pos || p.primaryPosition || "").trim();
+
+  const teamAbbrev =
+    String(p.teamAbbrev || p.team || p.teamCode || "").trim();
+
+  return {
+    id: pid, // ✅ ALWAYS numeric NHL id
+    fullName,
+    position,
+    teamAbbrev,
+  };
+};
+
+  const mapGet = (maybeMap, key) => {
+    if (!maybeMap || !key) return null;
+    try {
+      if (typeof maybeMap.get === "function") return maybeMap.get(key) || null;
+      return maybeMap[key] || null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  // If given "Connor McDavid" -> returns player object if playerApi.byName exists
+  const lookupPlayerByName = (name) => {
+    const key = normalizeName(name);
+    return mapGet(playerApi?.byName, key);
+  };
+
+// If given an id -> returns player object if playerApi.byId exists
+const lookupPlayerById = (id) => {
+  const pid = normalizeNhlId(id);
+  if (!pid) return null;
+
+  const byId = playerApi?.byId;
+  if (!byId) return null;
+
+  // Support Map and plain object with either numeric or string keys
+  if (typeof byId.get === "function") {
+    return byId.get(pid) || byId.get(String(pid)) || null;
+  }
+
+  return byId[pid] || byId[String(pid)] || null;
+};
+
+
+
+  // If someone gives us "either name or id", try both safely.
+ const lookupPlayerAny = (ref) => {
+  const raw = String(ref || "").trim();
+  if (!raw) return null;
+
+  const byId = lookupPlayerById(raw);
+  if (byId) return byId;
+
+  const byName = lookupPlayerByName(raw);
+  if (byName) return byName;
+
+  return null;
+};
+
+
+const looksLikeOnlyAnId = (val) => {
+  const s = String(val || "").trim().toLowerCase();
+  if (!s) return false;
+  if (s.startsWith("id:")) return true;
+  return /^[0-9]+$/.test(s);
+};
+
+// Use this everywhere we display a player string
+const getPlayerDisplayName = (ref) => {
+  if (!ref) return "";
+  const raw = String(ref).trim();
+
+  // If the ref is an ID, try DB lookup first.
+  const p = lookupPlayerAny(raw);
+  const nm = String(p?.fullName || p?.name || "").trim();
+  if (nm) return nm;
+
+  // Never show IDs in the UI.
+  if (looksLikeOnlyAnId(raw)) return "Unknown player";
+
+  // If it's not an ID (already a readable name), show it.
+  return raw;
+};
+
+// Live-auction title: prefer DB name, else fall back to bid-provided readable name, else never show ID.
+const getAuctionDisplayName = (auction) => {
+  const pid =
+    normalizeNhlId(auction?.playerId) ||
+    normalizeNhlId(auction?.auctionKey) ||
+    normalizeNhlId(auction?.key) ||
+    null;
+
+  // 1) DB lookup by id (best)
+  if (pid) {
+    const p = lookupPlayerById(pid);
+    const nm = String(p?.fullName || p?.name || "").trim();
+    if (nm) return nm;
+  }
+
+  // 2) Fall back to a readable name stored on any bid (playerName or player),
+  // but ONLY if it isn't an id/id:...
+  const bids = Array.isArray(auction?.bids) ? auction.bids : [];
+  const candidate = bids
+    .map((b) => b?.playerName || b?.player)
+    .map((x) => String(x || "").trim())
+    .find((x) => x && !looksLikeOnlyAnId(x));
+
+  if (candidate) return candidate;
+
+  // 3) Never show an ID in UI
+  return "Unknown player";
+};
+
+const getBidDisplayName = (bid) => {
+  if (!bid) return "Unknown player";
+
+  const pid =
+    normalizeNhlId(bid?.playerId) ||
+    normalizeNhlId(bid?.auctionKey) ||
+    normalizeNhlId(bid?.player) ||
+    null;
+
+  // 1) DB lookup by id
+  if (pid) {
+    const p = lookupPlayerById(pid);
+    const nm = String(p?.fullName || p?.name || "").trim();
+    if (nm) return nm;
+  }
+
+  // 2) fall back to stored readable name fields (only if not an ID)
+  const candidate = [bid?.playerName, bid?.player]
+    .map((x) => String(x || "").trim())
+    .find((x) => x && !looksLikeOnlyAnId(x));
+
+  if (candidate) return candidate;
+
+  return "Unknown player";
+};
+
+
+  // Try to resolve a playerId from a name (only possible if playerApi.byName exists)
+  const resolvePlayerIdFromName = (name) => {
+    const p = lookupPlayerByName(name);
+    const id = p?.id ?? p?.playerId ?? null;
+    return id != null ? String(id) : null;
+  };
+
+  // Find a player object in a roster (works whether roster stores {name} or {playerId})
+  const findRosterPlayer = (teamObj, playerRef) => {
+    const roster = Array.isArray(teamObj?.roster) ? teamObj.roster : [];
+    const refStr = String(playerRef || "").trim();
+    if (!refStr) return null;
+
+    // If refStr matches a known id, compare ids
+    const pById = lookupPlayerById(refStr);
+    const refId = pById ? String(pById.id ?? pById.playerId ?? refStr) : null;
+
+    if (refId) {
+      const hit = roster.find((pl) => {
+        const pid = pl?.playerId ?? pl?.id ?? null;
+        return pid != null && String(pid) === refId;
+      });
+      if (hit) return hit;
+    }
+
+    // Otherwise compare by name (case-insensitive)
+    const refNameKey = normalizeName(refStr);
+    return (
+      roster.find((pl) => normalizeName(pl?.name) === refNameKey) || null
+    );
+  };
+
+  // 🔒 Helper: is this player already on any roster?
+  const isPlayerRostered = (playerNameOrId) => {
+    if (!teams || !teams.length) return false;
+    const raw = String(playerNameOrId || "").trim();
+    if (!raw) return false;
+
+    // If we can resolve an id, check by id first
+    const resolvedId =
+      lookupPlayerById(raw)?.id ||
+      lookupPlayerById(raw)?.playerId ||
+      resolvePlayerIdFromName(raw);
+
+    if (resolvedId) {
+      const idStr = String(resolvedId);
+      return teams.some((t) =>
+        (t.roster || []).some((p) => {
+          const pid = p?.playerId ?? p?.id ?? null;
+          return pid != null && String(pid) === idStr;
+        })
+      );
+    }
+
+    // Fallback: check by name
+    const key = normalizeName(raw);
+    return teams.some((t) =>
+      (t.roster || []).some((p) => normalizeName(p?.name) === key)
+    );
+  };
 
   const bids = freeAgents || [];
   const activeBids = bids.filter((b) => !b.resolved);
   const myBids = isManager
-  ? bids.filter((b) => b.team === myTeamName && !b.resolved)
-  : [];
-
+    ? bids.filter((b) => b.team === myTeamName && !b.resolved)
+    : [];
 
   // Group active bids by player (for live auctions list)
-  const activeAuctionsByPlayer = (() => {
-    const byKey = new Map(); // key = lower(playerName)
-    for (const b of activeBids) {
-      const playerName = b.player || "";
-      if (!playerName) continue;
-const key = String(b.auctionKey || playerName).trim().toLowerCase();
-      if (!byKey.has(key)) {
-        byKey.set(key, {
-          key,
-          playerName,
-          position: b.position || "F",
-          bids: [],
-        });
-      }
-      byKey.get(key).bids.push(b);
+  // Group active bids by auctionKey (ID-only) for live auctions list
+const activeAuctionsByPlayer = (() => {
+  const byKey = new Map();
+
+  for (const b of activeBids) {
+    // Canonical: auctionKey ("id:123")
+    const rawKey = String(b?.auctionKey || "").trim();
+    if (!rawKey) continue;
+
+    const key = rawKey.toLowerCase(); // "id:123"
+    const pid = normalizeNhlId(rawKey) ?? normalizeNhlId(b?.playerId);
+
+    if (!byKey.has(key)) {
+      byKey.set(key, {
+        key,              // "id:123"
+        auctionKey: key,  // same
+        playerId: pid,    // numeric NHL id
+        position: b.position || "F",
+        bids: [],
+      });
     }
-    return Array.from(byKey.values());
-  })();
+    byKey.get(key).bids.push(b);
+  }
 
-  // 🔒 Helper: is this player already on any roster?
- const normalizeName = (s) => String(s || "").trim().toLowerCase();
-
-const isPlayerRostered = (playerName) => {
-  if (!teams || !teams.length) return false;
-  const key = normalizeName(playerName);
-  if (!key) return false;
-
-  return teams.some((t) =>
-    (t.roster || []).some((p) => normalizeName(p?.name) === key)
-  );
-};
+  return Array.from(byKey.values());
+})();
 
 
   const handleLiveBidInputChange = (playerKey, value) => {
@@ -112,47 +403,58 @@ const isPlayerRostered = (playerName) => {
   };
 
   // 🔒 Strengthened: no inline bids after Sunday deadline
-  const handleLiveBidSubmit = (auction) => {
-    const playerKey = auction.key;
-    const rawAmount = (liveBidInputs[playerKey] || "").trim();
+const handleLiveBidSubmit = (auction) => {
+  const playerKey = auction.key; // "id:123"
+  const rawAmount = (liveBidInputs[playerKey] || "").trim();
 
-    if (!rawAmount) {
-      window.alert("Enter a bid amount for this player.");
-      return;
-    }
+  if (!rawAmount) {
+    window.alert("Enter a bid amount for this player.");
+    return;
+  }
 
-    // No bids after Sunday 4:00 PM
-    if (nowMs > nextSunday.getTime()) {
-      window.alert(
-        "Auction window is closed. Bids after the Sunday 4:00 PM deadline do not count."
-      );
-      return;
-    }
-if (typeof onPlaceBid !== "function") {
-  window.alert("Auction error: onPlaceBid is not wired (not a function).");
-  return;
-}
+  if (nowMs > nextSunday.getTime()) {
+    window.alert(
+      "Auction window is closed. Bids after the Sunday 4:00 PM deadline do not count."
+    );
+    return;
+  }
 
-    onPlaceBid({
-  playerName: auction.playerName, // keep display name
-  position: auction.position,
-  amount: rawAmount,
-});
+  if (typeof onPlaceBid !== "function") {
+    window.alert("Auction error: onPlaceBid is not wired (not a function).");
+    return;
+  }
 
+  const pid =
+    normalizeNhlId(auction?.playerId) ||
+    normalizeNhlId(auction?.auctionKey) ||
+    normalizeNhlId(auction?.key) ||
+    null;
 
-    // Clear just this player's inline input
-    setLiveBidInputs((prev) => ({
-      ...prev,
-      [playerKey]: "",
-    }));
-  };
+  if (!pid) {
+    window.alert("Auction error: missing playerId for this auction.");
+    return;
+  }
+
+  const p = lookupPlayerById(pid);
+  const displayName = String(p?.name || "").trim(); // optional (for UX/log text only)
+
+  onPlaceBid({
+    playerId: String(pid),
+    playerName: displayName, // ok if blank; leagueUtils will fallback safely
+    position: auction.position,
+    amount: rawAmount,
+  });
+
+  setLiveBidInputs((prev) => ({
+    ...prev,
+    [playerKey]: "",
+  }));
+};
+
 
   // --- Trade draft helpers ---
-
   const activeDraftFromThisManager =
-    isManager &&
-    tradeDraft &&
-    tradeDraft.fromTeam === currentUser.teamName;
+    isManager && tradeDraft && tradeDraft.fromTeam === currentUser.teamName;
 
   const canSubmitTrade =
     activeDraftFromThisManager &&
@@ -164,14 +466,11 @@ if (typeof onPlaceBid !== "function") {
   const updateDraftField = (field, value) => {
     setTradeDraft((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        [field]: value,
-      };
+      return { ...prev, [field]: value };
     });
   };
 
-  const updateRetention = (which, playerName, value) => {
+  const updateRetention = (which, playerRef, value) => {
     setTradeDraft((prev) => {
       if (!prev) return prev;
       const key = which === "from" ? "retentionFrom" : "retentionTo";
@@ -179,24 +478,20 @@ if (typeof onPlaceBid !== "function") {
         ...prev,
         [key]: {
           ...(prev[key] || {}),
-          [playerName]: value,
+          [playerRef]: value,
         },
       };
     });
   };
 
   // --- Pending trades visible to this user ---
-
   const pendingTradesForUser = (tradeProposals || []).filter((tr) => {
     if (!tr || tr.status !== "pending") return false;
 
     if (currentUser.role === "commissioner") return true;
 
     if (currentUser.role === "manager") {
-      return (
-        tr.fromTeam === currentUser.teamName ||
-        tr.toTeam === currentUser.teamName
-      );
+      return tr.fromTeam === currentUser.teamName || tr.toTeam === currentUser.teamName;
     }
 
     return false;
@@ -204,26 +499,19 @@ if (typeof onPlaceBid !== "function") {
 
   const canAcceptOrReject = (tr) =>
     currentUser.role === "commissioner" ||
-    (currentUser.role === "manager" &&
-      tr.toTeam === currentUser.teamName);
+    (currentUser.role === "manager" && tr.toTeam === currentUser.teamName);
 
   const canCancel = (tr) =>
     currentUser.role === "commissioner" ||
-    (currentUser.role === "manager" &&
-      tr.fromTeam === currentUser.teamName);
+    (currentUser.role === "manager" && tr.fromTeam === currentUser.teamName);
 
   const canCounter = (tr) => canAcceptOrReject(tr);
 
   // --- CapFriendly-style preview for current draft ---
-
   let preview = null;
   if (activeDraftFromThisManager && tradeDraft && teams?.length) {
-    const fromTeamObj = teams.find(
-      (t) => t.name === tradeDraft.fromTeam
-    );
-    const toTeamObj = teams.find(
-      (t) => t.name === tradeDraft.toTeam
-    );
+    const fromTeamObj = teams.find((t) => t.name === tradeDraft.fromTeam);
+    const toTeamObj = teams.find((t) => t.name === tradeDraft.toTeam);
 
     if (fromTeamObj && toTeamObj) {
       preview = buildTradeImpactPreview({
@@ -250,8 +538,6 @@ if (typeof onPlaceBid !== "function") {
   // --- Retention spot validation (max 3 per team) ---
   const MAX_RETENTION_SPOTS = 3;
   let retentionIssues = [];
-  let fromRetentionAfter = null;
-  let toRetentionAfter = null;
 
   if (activeDraftFromThisManager && tradeDraft && teams?.length) {
     const fromTeamObj = teams.find((t) => t.name === tradeDraft.fromTeam);
@@ -261,26 +547,24 @@ if (typeof onPlaceBid !== "function") {
       const currentFromRetention = countRetentionSpots(fromTeamObj);
       const currentToRetention = countRetentionSpots(toTeamObj);
 
-      // Each non-zero entry in retentionFrom is a new retention slot
-      const newFromRetention = Object.entries(
-        tradeDraft.retentionFrom || {}
-      ).filter(([name, value]) => {
-        const amount = Number(value);
-        if (!tradeDraft.offeredPlayers?.includes(name)) return false;
-        return amount > 0;
-      }).length;
+      const newFromRetention = Object.entries(tradeDraft.retentionFrom || {}).filter(
+        ([ref, value]) => {
+          const amount = Number(value);
+          if (!tradeDraft.offeredPlayers?.includes(ref)) return false;
+          return amount > 0;
+        }
+      ).length;
 
-      // Each non-zero entry in retentionTo is a new retention slot
-      const newToRetention = Object.entries(
-        tradeDraft.retentionTo || {}
-      ).filter(([name, value]) => {
-        const amount = Number(value);
-        if (!tradeDraft.requestedPlayers?.includes(name)) return false;
-        return amount > 0;
-      }).length;
+      const newToRetention = Object.entries(tradeDraft.retentionTo || {}).filter(
+        ([ref, value]) => {
+          const amount = Number(value);
+          if (!tradeDraft.requestedPlayers?.includes(ref)) return false;
+          return amount > 0;
+        }
+      ).length;
 
-      fromRetentionAfter = currentFromRetention + newFromRetention;
-      toRetentionAfter = currentToRetention + newToRetention;
+      const fromRetentionAfter = currentFromRetention + newFromRetention;
+      const toRetentionAfter = currentToRetention + newToRetention;
 
       if (fromRetentionAfter > MAX_RETENTION_SPOTS) {
         retentionIssues.push(
@@ -295,46 +579,39 @@ if (typeof onPlaceBid !== "function") {
     }
   }
 
-  // Combine normal preview issues + retention-limit issues
   const allIssues = [...previewIssues, ...retentionIssues];
   const tradeBlockedByRetention = retentionIssues.length > 0;
 
   const capColor = (capAfter, capBefore) => {
     const diff = capAfter - capBefore;
-    if (diff > 0) return "#f97373"; // red
-    if (diff < 0) return "#bbf7d0"; // green
+    if (diff > 0) return "#f97373";
+    if (diff < 0) return "#bbf7d0";
     return "#e5e7eb";
   };
 
-  const rosterColor = (sizeAfter) =>
-    sizeAfter > maxRosterSize ? "#f97373" : "#e5e7eb";
+  const rosterColor = (sizeAfter) => (sizeAfter > maxRosterSize ? "#f97373" : "#e5e7eb");
 
   const posColor = (posAfter) => {
-    if (posAfter.F < minForwards || posAfter.D < minDefensemen) {
-      return "#facc15"; // yellow
-    }
+    if (posAfter.F < minForwards || posAfter.D < minDefensemen) return "#facc15";
     return "#e5e7eb";
   };
+
   const pillStyle = {
-  display: "inline-block",
-  padding: "2px 8px",
-  borderRadius: "999px",
-  border: "1px solid #334155",
-  background: "#0b1220",
-  color: "#e2e8f0",
-  fontSize: "0.75rem",
-  marginRight: "6px",
-  marginTop: "4px",
-  whiteSpace: "nowrap",
-};
+    display: "inline-block",
+    padding: "2px 8px",
+    borderRadius: "999px",
+    border: "1px solid #334155",
+    background: "#0b1220",
+    color: "#e2e8f0",
+    fontSize: "0.75rem",
+    marginRight: "6px",
+    marginTop: "4px",
+    whiteSpace: "nowrap",
+  };
 
-
-  // Final “can submit” check: must have players selected
-  // AND must not break retention limits.
   const canSubmitThisTrade = canSubmitTrade && !tradeBlockedByRetention;
 
   // --- Render ---
-
   return (
     <div
       style={{
@@ -356,495 +633,408 @@ if (typeof onPlaceBid !== "function") {
       <hr style={{ margin: "12px 0", borderColor: "#334155" }} />
 
       {/* ---------- Trade Builder (current draft) ---------- */}
-<h3 style={{ marginTop: 0 }}>Trade builder</h3>
+      <h3 style={{ marginTop: 0 }}>Trade builder</h3>
 
-{isManager ? (
-  <>
-    {activeDraftFromThisManager && tradeDraft ? (
-      <div
-        style={{
-          marginBottom: "12px",
-          padding: "8px",
-          borderRadius: "6px",
-          background: "#020617",
-          border: "1px solid #1f2937",
-          fontSize: "0.85rem",
-        }}
-      >
-        {/*
-          --- Helpers used ONLY inside this block ---
-          (Keeping them here so you don't have to hunt around your file)
-        */}
-        {(() => {
-          const getTeamByName = (name) =>
-            (teams || []).find((t) => t.name === name);
+      {isManager ? (
+        <>
+          {activeDraftFromThisManager && tradeDraft ? (
+            <div
+              style={{
+                marginBottom: "12px",
+                padding: "8px",
+                borderRadius: "6px",
+                background: "#020617",
+                border: "1px solid #1f2937",
+                fontSize: "0.85rem",
+              }}
+            >
+              {(() => {
+                const getTeamByName = (name) => (teams || []).find((t) => t.name === name);
 
-          const getMaxBuyoutForTeam = (teamName) => {
-            const t = getTeamByName(teamName);
-            return totalBuyoutPenalty(t);
-          };
+                const getMaxBuyoutForTeam = (teamName) => {
+                  const t = getTeamByName(teamName);
+                  return totalBuyoutPenalty(t);
+                };
 
-          const getPlayerSalary = (teamName, playerName) => {
-            const t = getTeamByName(teamName);
-            const p = (t?.roster || []).find((pl) => pl.name === playerName);
-            return Number(p?.salary) || 0;
-          };
+                const getPlayerSalary = (teamName, playerRef) => {
+                  const t = getTeamByName(teamName);
+                  const p = findRosterPlayer(t, playerRef);
+                  return Number(p?.salary) || 0;
+                };
 
-          const getMaxRetentionForPlayer = (teamName, playerName) => {
-            const s = getPlayerSalary(teamName, playerName);
-            return Math.ceil(s * 0.5);
-          };
+                const getMaxRetentionForPlayer = (teamName, playerRef) => {
+                  const s = getPlayerSalary(teamName, playerRef);
+                  return Math.ceil(s * 0.5);
+                };
 
-          const maxPenaltyFrom = getMaxBuyoutForTeam(tradeDraft.fromTeam);
-          const maxPenaltyTo = getMaxBuyoutForTeam(tradeDraft.toTeam);
+                const maxPenaltyFrom = getMaxBuyoutForTeam(tradeDraft.fromTeam);
+                const maxPenaltyTo = getMaxBuyoutForTeam(tradeDraft.toTeam);
 
-          return (
-            <>
-              <div style={{ marginBottom: "4px", color: "#a5b4fc" }}>
-                Building trade from <strong>{tradeDraft.fromTeam}</strong> to{" "}
-                <strong>{tradeDraft.toTeam}</strong>
-              </div>
+                return (
+                  <>
+                    <div style={{ marginBottom: "4px", color: "#a5b4fc" }}>
+                      Building trade from <strong>{tradeDraft.fromTeam}</strong> to{" "}
+                      <strong>{tradeDraft.toTeam}</strong>
+                    </div>
 
-              {/* Players summary */}
-              <div style={{ marginBottom: "4px" }}>
-                <strong>Requested players (from {tradeDraft.toTeam}):</strong>{" "}
-                {tradeDraft.requestedPlayers && tradeDraft.requestedPlayers.length > 0
-                  ? tradeDraft.requestedPlayers.join(", ")
-                  : "none yet"}
-              </div>
-
-              <div style={{ marginBottom: "6px" }}>
-                <strong>Offered players (from {tradeDraft.fromTeam}):</strong>{" "}
-                {tradeDraft.offeredPlayers && tradeDraft.offeredPlayers.length > 0
-                  ? tradeDraft.offeredPlayers.join(", ")
-                  : "none yet"}
-              </div>
-
-              {/* Buyout penalty fields */}
-              <div
-                style={{
-                  marginTop: "6px",
-                  marginBottom: "6px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
-                }}
-              >
-                <label style={{ fontSize: "0.8rem" }}>
-                  <strong>Include your buyout penalty</strong> in this trade (sent
-                  from {tradeDraft.fromTeam} to {tradeDraft.toTeam}){" "}
-                  <span style={{ color: "#94a3b8" }}>
-                    (max ${maxPenaltyFrom})
-                  </span>
-                  :
-                  <br />
-                  <input
-                    type="number"
-                    min="0"
-                    max={maxPenaltyFrom}
-                    value={tradeDraft.penaltyFrom ?? ""}
-                    onChange={(e) => updateDraftField("penaltyFrom", e.target.value)}
-                    style={{
-                      marginTop: "2px",
-                      width: "80px",
-                      fontSize: "0.8rem",
-                    }}
-                  />{" "}
-                  $
-                </label>
-
-                <label style={{ fontSize: "0.8rem" }}>
-                  <strong>Request their buyout penalty</strong> (sent from{" "}
-                  {tradeDraft.toTeam} to {tradeDraft.fromTeam}){" "}
-                  <span style={{ color: "#94a3b8" }}>
-                    (max ${maxPenaltyTo})
-                  </span>
-                  :
-                  <br />
-                  <input
-                    type="number"
-                    min="0"
-                    max={maxPenaltyTo}
-                    value={tradeDraft.penaltyTo ?? ""}
-                    onChange={(e) => updateDraftField("penaltyTo", e.target.value)}
-                    style={{
-                      marginTop: "2px",
-                      width: "80px",
-                      fontSize: "0.8rem",
-                    }}
-                  />{" "}
-                  $
-                </label>
-              </div>
-
-              {/* Salary retention fields */}
-              {(tradeDraft.offeredPlayers?.length > 0 ||
-                tradeDraft.requestedPlayers?.length > 0) && (
-                <div
-                  style={{
-                    marginTop: "6px",
-                    marginBottom: "6px",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  <div style={{ marginBottom: "4px", fontWeight: "bold" }}>
-                    Salary retention (max 50% of salary, per player)
-                  </div>
-
-                  {/* Retention on offered players (you retain) */}
-                  {tradeDraft.offeredPlayers?.length > 0 && (
                     <div style={{ marginBottom: "4px" }}>
-                      <div style={{ marginBottom: "2px" }}>
-                        You retain on players you are sending:
-                      </div>
-
-                      {tradeDraft.offeredPlayers.map((name) => {
-                        const maxRet = getMaxRetentionForPlayer(
-                          tradeDraft.fromTeam,
-                          name
-                        );
-
-                        return (
-                          <div
-                            key={name}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              marginBottom: "2px",
-                            }}
-                          >
-                            <span style={{ minWidth: "110px", fontSize: "0.8rem" }}>
-                              {name}
-                            </span>
-
-                            <input
-                              type="number"
-                              min="0"
-                              max={maxRet}
-                              value={(tradeDraft.retentionFrom || {})[name] ?? ""}
-                              onChange={(e) =>
-                                updateRetention("from", name, e.target.value)
-                              }
-                              style={{ width: "80px", fontSize: "0.8rem" }}
-                            />{" "}
-                            $
-
-                            <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>
-                              (max ${maxRet})
-                            </span>
-                          </div>
-                        );
-                      })}
+                      <strong>Requested players (from {tradeDraft.toTeam}):</strong>{" "}
+                      {tradeDraft.requestedPlayers && tradeDraft.requestedPlayers.length > 0
+                        ? tradeDraft.requestedPlayers.map(getPlayerDisplayName).join(", ")
+                        : "none yet"}
                     </div>
-                  )}
 
-                  {/* Retention you request from the other team */}
-                  {tradeDraft.requestedPlayers?.length > 0 && (
-                    <div>
-                      <div style={{ marginBottom: "2px" }}>
-                        Ask the other team to retain on players you receive:
-                      </div>
-
-                      {tradeDraft.requestedPlayers.map((name) => {
-                        const maxRet = getMaxRetentionForPlayer(
-                          tradeDraft.toTeam,
-                          name
-                        );
-
-                        return (
-                          <div
-                            key={name}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              marginBottom: "2px",
-                            }}
-                          >
-                            <span style={{ minWidth: "110px", fontSize: "0.8rem" }}>
-                              {name}
-                            </span>
-
-                            <input
-                              type="number"
-                              min="0"
-                              max={maxRet}
-                              value={(tradeDraft.retentionTo || {})[name] ?? ""}
-                              onChange={(e) =>
-                                updateRetention("to", name, e.target.value)
-                              }
-                              style={{ width: "80px", fontSize: "0.8rem" }}
-                            />{" "}
-                            $
-
-                            <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>
-                              (max ${maxRet})
-                            </span>
-                          </div>
-                        );
-                      })}
+                    <div style={{ marginBottom: "6px" }}>
+                      <strong>Offered players (from {tradeDraft.fromTeam}):</strong>{" "}
+                      {tradeDraft.offeredPlayers && tradeDraft.offeredPlayers.length > 0
+                        ? tradeDraft.offeredPlayers.map(getPlayerDisplayName).join(", ")
+                        : "none yet"}
                     </div>
-                  )}
-                </div>
-              )}
 
-              {/* Trade validity summary + CapFriendly-style preview box */}
-              {fromPreview && toPreview && (
-                <div
-                  style={{
-                    marginTop: "8px",
-                    padding: "8px",
-                    borderRadius: "6px",
-                    background: "#020617",
-                    border: "1px solid #1f2937",
-                  }}
-                >
-                  {/* Validity summary */}
-                  <div style={{ fontSize: "0.8rem", marginBottom: "4px" }}>
-                    {allIssues.length === 0 ? (
-                      <span style={{ color: "#4ade80" }}>
-                        ✔ Both teams remain legal if this trade is accepted.
-                      </span>
-                    ) : (
-                      <span style={{ color: "#facc15" }}>
-                        ⚠ This trade would cause roster/cap or retention issues for
-                        at least one team.
-                      </span>
-                    )}
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: "0.8rem",
-                      marginBottom: "4px",
-                      color: "#a5b4fc",
-                    }}
-                  >
-                    Trade impact preview
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      fontSize: "0.8rem",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {/* From team preview */}
-<div style={{ flex: 1, minWidth: "160px" }}>
-  <div style={{ fontWeight: 800, marginBottom: "4px", fontSize: "1.05rem" }}>
-    {tradeDraft.fromTeam}
-  </div>
-
-  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "6px" }}>
-    Receiving:
-    {tradeDraft.requestedPlayers?.length ? (
-      <span style={{ marginLeft: "6px" }}>
-        {tradeDraft.requestedPlayers.map((name) => (
-          <span key={`recv-from-${name}`} style={pillStyle}>
-            {name}
-          </span>
-        ))}
-      </span>
-    ) : (
-      <span style={{ marginLeft: "6px" }}>—</span>
-    )}
-  </div>
-
-  <div>
-    Cap:{" "}
-    <span>
-      ${fromPreview.capBefore} →{" "}
-      <span style={{ color: capColor(fromPreview.capAfter, fromPreview.capBefore) }}>
-        ${fromPreview.capAfter}
-      </span>{" "}
-      ({fromPreview.capDiff >= 0 ? "+" : ""}
-      {fromPreview.capDiff})
-    </span>
-  </div>
-
-  <div>
-    Roster:{" "}
-    <span style={{ color: rosterColor(fromPreview.sizeAfter) }}>
-      {fromPreview.sizeBefore} → {fromPreview.sizeAfter}
-    </span>
-  </div>
-
-  <div>
-    <span style={{ color: posColor(fromPreview.posAfter) }}>
-      F: {fromPreview.posBefore.F} → {fromPreview.posAfter.F}, D:{" "}
-      {fromPreview.posBefore.D} → {fromPreview.posAfter.D}
-    </span>
-  </div>
-
-  <div>
-    Buyouts: ${fromPreview.penaltiesBefore} → ${fromPreview.penaltiesAfter}
-  </div>
-
-  <div>
-    Retentions: {fromPreview.retentionBefore} → {fromPreview.retentionAfter}
-  </div>
-</div>
-
-
-                    {/* To team preview */}
-<div style={{ flex: 1, minWidth: "160px" }}>
-  <div style={{ fontWeight: 800, marginBottom: "4px", fontSize: "1.05rem" }}>
-    {tradeDraft.toTeam}
-  </div>
-
-  <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "6px" }}>
-    Receiving:
-    {tradeDraft.offeredPlayers?.length ? (
-      <span style={{ marginLeft: "6px" }}>
-        {tradeDraft.offeredPlayers.map((name) => (
-          <span key={`recv-to-${name}`} style={pillStyle}>
-            {name}
-          </span>
-        ))}
-      </span>
-    ) : (
-      <span style={{ marginLeft: "6px" }}>—</span>
-    )}
-  </div>
-
-  <div>
-    Cap:{" "}
-    <span>
-      ${toPreview.capBefore} →{" "}
-      <span style={{ color: capColor(toPreview.capAfter, toPreview.capBefore) }}>
-        ${toPreview.capAfter}
-      </span>{" "}
-      ({toPreview.capDiff >= 0 ? "+" : ""}
-      {toPreview.capDiff})
-    </span>
-  </div>
-
-  <div>
-    Roster:{" "}
-    <span style={{ color: rosterColor(toPreview.sizeAfter) }}>
-      {toPreview.sizeBefore} → {toPreview.sizeAfter}
-    </span>
-  </div>
-
-  <div>
-    <span style={{ color: posColor(toPreview.posAfter) }}>
-      F: {toPreview.posBefore.F} → {toPreview.posAfter.F}, D:{" "}
-      {toPreview.posBefore.D} → {toPreview.posAfter.D}
-    </span>
-  </div>
-
-  <div>
-    Buyouts: ${toPreview.penaltiesBefore} → ${toPreview.penaltiesAfter}
-  </div>
-
-  <div>
-    Retentions: {toPreview.retentionBefore} → {toPreview.retentionAfter}
-  </div>
-</div>
-                  </div>
-
-                  {allIssues.length > 0 && (
                     <div
                       style={{
                         marginTop: "6px",
-                        fontSize: "0.75rem",
-                        color: "#facc15",
+                        marginBottom: "6px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
                       }}
                     >
-                      <div style={{ fontWeight: "bold" }}>Issues if accepted:</div>
-                      <ul style={{ margin: 0, paddingLeft: "16px" }}>
-                        {allIssues.map((msg, idx) => (
-                          <li key={idx}>{msg}</li>
-                        ))}
-                      </ul>
+                      <label style={{ fontSize: "0.8rem" }}>
+                        <strong>Include your buyout penalty</strong> in this trade (sent from{" "}
+                        {tradeDraft.fromTeam} to {tradeDraft.toTeam}){" "}
+                        <span style={{ color: "#94a3b8" }}>(max ${maxPenaltyFrom})</span>:
+                        <br />
+                        <input
+                          type="number"
+                          min="0"
+                          max={maxPenaltyFrom}
+                          value={tradeDraft.penaltyFrom ?? ""}
+                          onChange={(e) => updateDraftField("penaltyFrom", e.target.value)}
+                          style={{ marginTop: "2px", width: "80px", fontSize: "0.8rem" }}
+                        />{" "}
+                        $
+                      </label>
+
+                      <label style={{ fontSize: "0.8rem" }}>
+                        <strong>Request their buyout penalty</strong> (sent from {tradeDraft.toTeam} to{" "}
+                        {tradeDraft.fromTeam}){" "}
+                        <span style={{ color: "#94a3b8" }}>(max ${maxPenaltyTo})</span>:
+                        <br />
+                        <input
+                          type="number"
+                          min="0"
+                          max={maxPenaltyTo}
+                          value={tradeDraft.penaltyTo ?? ""}
+                          onChange={(e) => updateDraftField("penaltyTo", e.target.value)}
+                          style={{ marginTop: "2px", width: "80px", fontSize: "0.8rem" }}
+                        />{" "}
+                        $
+                      </label>
                     </div>
-                  )}
-                </div>
-              )}
 
-              {/* Trade buttons */}
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "8px",
-                  marginTop: "8px",
-                }}
-              >
-                <button
-                  onClick={handleClearTradeDraft}
-                  style={{
-                    padding: "4px 8px",
-                    fontSize: "0.8rem",
-                    backgroundColor: "#374151",
-                    color: "#e5e7eb",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Clear this trade
-                </button>
+                    {(tradeDraft.offeredPlayers?.length > 0 || tradeDraft.requestedPlayers?.length > 0) && (
+                      <div style={{ marginTop: "6px", marginBottom: "6px", fontSize: "0.8rem" }}>
+                        <div style={{ marginBottom: "4px", fontWeight: "bold" }}>
+                          Salary retention (max 50% of salary, per player)
+                        </div>
 
-                <button
-                  onClick={() => onSubmitTradeDraft(tradeDraft)}
-                  disabled={!canSubmitThisTrade}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: "0.8rem",
-                    backgroundColor: canSubmitThisTrade ? "#16a34a" : "#4b5563",
-                    color: "#e5e7eb",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: canSubmitThisTrade ? "pointer" : "not-allowed",
-                  }}
-                >
-                  Submit trade offer
-                </button>
-              </div>
+                        {tradeDraft.offeredPlayers?.length > 0 && (
+                          <div style={{ marginBottom: "4px" }}>
+                            <div style={{ marginBottom: "2px" }}>
+                              You retain on players you are sending:
+                            </div>
 
-              {!canSubmitTrade && (
-                <div
-                  style={{
-                    marginTop: "4px",
-                    fontSize: "0.75rem",
-                    color: "#9ca3af",
-                  }}
-                >
-                  Pick at least one requested player on the other team and at least
-                  one offered player on your team to enable submission.
-                </div>
-              )}
+                            {tradeDraft.offeredPlayers.map((ref) => {
+                              const maxRet = getMaxRetentionForPlayer(tradeDraft.fromTeam, ref);
+                              return (
+                                <div
+                                  key={ref}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    marginBottom: "2px",
+                                  }}
+                                >
+                                  <span style={{ minWidth: "110px", fontSize: "0.8rem" }}>
+                                    {getPlayerDisplayName(ref)}
+                                  </span>
 
-              <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "#9ca3af" }}>
-                Use <em>Request</em> beside players on the other team, and{" "}
-                <em>Offer</em> beside players on your own roster.
-              </div>
-            </>
-          );
-        })()}
-      </div>
-    ) : (
-      <p style={{ fontSize: "0.9rem", color: "#9ca3af" }}>
-        To start a trade, view another team&apos;s roster and click <em>Request</em>{" "}
-        beside any player you want. Then switch back to your own team and use{" "}
-        <em>Offer</em> on your players.
-      </p>
-    )}
-  </>
-) : (
-  <p style={{ fontSize: "0.9rem", color: "#9ca3af" }}>
-    Log in as a manager to build trade offers.
-  </p>
-)}
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={maxRet}
+                                    value={(tradeDraft.retentionFrom || {})[ref] ?? ""}
+                                    onChange={(e) => updateRetention("from", ref, e.target.value)}
+                                    style={{ width: "80px", fontSize: "0.8rem" }}
+                                  />{" "}
+                                  $
 
-<hr style={{ margin: "12px 0", borderColor: "#334155" }} />
+                                  <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>
+                                    (max ${maxRet})
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
 
+                        {tradeDraft.requestedPlayers?.length > 0 && (
+                          <div>
+                            <div style={{ marginBottom: "2px" }}>
+                              Ask the other team to retain on players you receive:
+                            </div>
 
-      {/* ---------- Pending Trades (grouped view) ---------- */}
+                            {tradeDraft.requestedPlayers.map((ref) => {
+                              const maxRet = getMaxRetentionForPlayer(tradeDraft.toTeam, ref);
+                              return (
+                                <div
+                                  key={ref}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    marginBottom: "2px",
+                                  }}
+                                >
+                                  <span style={{ minWidth: "110px", fontSize: "0.8rem" }}>
+                                    {getPlayerDisplayName(ref)}
+                                  </span>
+
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={maxRet}
+                                    value={(tradeDraft.retentionTo || {})[ref] ?? ""}
+                                    onChange={(e) => updateRetention("to", ref, e.target.value)}
+                                    style={{ width: "80px", fontSize: "0.8rem" }}
+                                  />{" "}
+                                  $
+
+                                  <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>
+                                    (max ${maxRet})
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {fromPreview && toPreview && (
+                      <div
+                        style={{
+                          marginTop: "8px",
+                          padding: "8px",
+                          borderRadius: "6px",
+                          background: "#020617",
+                          border: "1px solid #1f2937",
+                        }}
+                      >
+                        <div style={{ fontSize: "0.8rem", marginBottom: "4px" }}>
+                          {allIssues.length === 0 ? (
+                            <span style={{ color: "#4ade80" }}>
+                              ✔ Both teams remain legal if this trade is accepted.
+                            </span>
+                          ) : (
+                            <span style={{ color: "#facc15" }}>
+                              ⚠ This trade would cause roster/cap or retention issues for at least one team.
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: "0.8rem", marginBottom: "4px", color: "#a5b4fc" }}>
+                          Trade impact preview
+                        </div>
+
+                        <div style={{ display: "flex", gap: "12px", fontSize: "0.8rem", flexWrap: "wrap" }}>
+                          <div style={{ flex: 1, minWidth: "160px" }}>
+                            <div style={{ fontWeight: 800, marginBottom: "4px", fontSize: "1.05rem" }}>
+                              {tradeDraft.fromTeam}
+                            </div>
+
+                            <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "6px" }}>
+                              Receiving:
+                              {tradeDraft.requestedPlayers?.length ? (
+                                <span style={{ marginLeft: "6px" }}>
+                                  {tradeDraft.requestedPlayers.map((ref) => (
+                                    <span key={`recv-from-${ref}`} style={pillStyle}>
+                                      {getPlayerDisplayName(ref)}
+                                    </span>
+                                  ))}
+                                </span>
+                              ) : (
+                                <span style={{ marginLeft: "6px" }}>—</span>
+                              )}
+                            </div>
+
+                            <div>
+                              Cap:{" "}
+                              <span>
+                                ${fromPreview.capBefore} →{" "}
+                                <span style={{ color: capColor(fromPreview.capAfter, fromPreview.capBefore) }}>
+                                  ${fromPreview.capAfter}
+                                </span>{" "}
+                                ({fromPreview.capDiff >= 0 ? "+" : ""}
+                                {fromPreview.capDiff})
+                              </span>
+                            </div>
+
+                            <div>
+                              Roster:{" "}
+                              <span style={{ color: rosterColor(fromPreview.sizeAfter) }}>
+                                {fromPreview.sizeBefore} → {fromPreview.sizeAfter}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span style={{ color: posColor(fromPreview.posAfter) }}>
+                                F: {fromPreview.posBefore.F} → {fromPreview.posAfter.F}, D:{" "}
+                                {fromPreview.posBefore.D} → {fromPreview.posAfter.D}
+                              </span>
+                            </div>
+
+                            <div>
+                              Buyouts: ${fromPreview.penaltiesBefore} → ${fromPreview.penaltiesAfter}
+                            </div>
+
+                            <div>
+                              Retentions: {fromPreview.retentionBefore} → {fromPreview.retentionAfter}
+                            </div>
+                          </div>
+
+                          <div style={{ flex: 1, minWidth: "160px" }}>
+                            <div style={{ fontWeight: 800, marginBottom: "4px", fontSize: "1.05rem" }}>
+                              {tradeDraft.toTeam}
+                            </div>
+
+                            <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "6px" }}>
+                              Receiving:
+                              {tradeDraft.offeredPlayers?.length ? (
+                                <span style={{ marginLeft: "6px" }}>
+                                  {tradeDraft.offeredPlayers.map((ref) => (
+                                    <span key={`recv-to-${ref}`} style={pillStyle}>
+                                      {getPlayerDisplayName(ref)}
+                                    </span>
+                                  ))}
+                                </span>
+                              ) : (
+                                <span style={{ marginLeft: "6px" }}>—</span>
+                              )}
+                            </div>
+
+                            <div>
+                              Cap:{" "}
+                              <span>
+                                ${toPreview.capBefore} →{" "}
+                                <span style={{ color: capColor(toPreview.capAfter, toPreview.capBefore) }}>
+                                  ${toPreview.capAfter}
+                                </span>{" "}
+                                ({toPreview.capDiff >= 0 ? "+" : ""}
+                                {toPreview.capDiff})
+                              </span>
+                            </div>
+
+                            <div>
+                              Roster:{" "}
+                              <span style={{ color: rosterColor(toPreview.sizeAfter) }}>
+                                {toPreview.sizeBefore} → {toPreview.sizeAfter}
+                              </span>
+                            </div>
+
+                            <div>
+                              <span style={{ color: posColor(toPreview.posAfter) }}>
+                                F: {toPreview.posBefore.F} → {toPreview.posAfter.F}, D:{" "}
+                                {toPreview.posBefore.D} → {toPreview.posAfter.D}
+                              </span>
+                            </div>
+
+                            <div>
+                              Buyouts: ${toPreview.penaltiesBefore} → ${toPreview.penaltiesAfter}
+                            </div>
+
+                            <div>
+                              Retentions: {toPreview.retentionBefore} → {toPreview.retentionAfter}
+                            </div>
+                          </div>
+                        </div>
+
+                        {allIssues.length > 0 && (
+                          <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "#facc15" }}>
+                            <div style={{ fontWeight: "bold" }}>Issues if accepted:</div>
+                            <ul style={{ margin: 0, paddingLeft: "16px" }}>
+                              {allIssues.map((msg, idx) => (
+                                <li key={idx}>{msg}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
+                      <button
+                        onClick={handleClearTradeDraft}
+                        style={{
+                          padding: "4px 8px",
+                          fontSize: "0.8rem",
+                          backgroundColor: "#374151",
+                          color: "#e5e7eb",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Clear this trade
+                      </button>
+
+                      <button
+                        onClick={() => onSubmitTradeDraft(tradeDraft)}
+                        disabled={!canSubmitThisTrade}
+                        style={{
+                          padding: "4px 10px",
+                          fontSize: "0.8rem",
+                          backgroundColor: canSubmitThisTrade ? "#16a34a" : "#4b5563",
+                          color: "#e5e7eb",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: canSubmitThisTrade ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        Submit trade offer
+                      </button>
+                    </div>
+
+                    {!canSubmitTrade && (
+                      <div style={{ marginTop: "4px", fontSize: "0.75rem", color: "#9ca3af" }}>
+                        Pick at least one requested player on the other team and at least one offered player on your team to enable submission.
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "#9ca3af" }}>
+                      Use <em>Request</em> beside players on the other team, and <em>Offer</em> beside players on your own roster.
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            <p style={{ fontSize: "0.9rem", color: "#9ca3af" }}>
+              To start a trade, view another team&apos;s roster and click <em>Request</em> beside any player you want. Then switch back to your own team and use <em>Offer</em> on your players.
+            </p>
+          )}
+        </>
+      ) : (
+        <p style={{ fontSize: "0.9rem", color: "#9ca3af" }}>
+          Log in as a manager to build trade offers.
+        </p>
+      )}
+
+      <hr style={{ margin: "12px 0", borderColor: "#334155" }} />
+
+      {/* ---------- Pending Trades ---------- */}
       <h3 style={{ marginTop: 0 }}>Pending trades</h3>
 
       {pendingTradesForUser.length === 0 && (
@@ -852,31 +1042,20 @@ if (typeof onPlaceBid !== "function") {
       )}
 
       {pendingTradesForUser.map((tr) => {
-        const youAreFrom =
-          currentUser.role === "manager" &&
-          tr.fromTeam === currentUser.teamName;
-        const youAreTo =
-          currentUser.role === "manager" &&
-          tr.toTeam === currentUser.teamName;
+        const youAreFrom = currentUser.role === "manager" && tr.fromTeam === currentUser.teamName;
+        const youAreTo = currentUser.role === "manager" && tr.toTeam === currentUser.teamName;
 
         const offeredList = tr.offeredPlayers || [];
         const requestedList = tr.requestedPlayers || [];
 
-        // Buyout penalty summary
         const hasPenaltyFrom = tr.penaltyFrom && tr.penaltyFrom > 0;
         const hasPenaltyTo = tr.penaltyTo && tr.penaltyTo > 0;
         const hasAnyPenalty = hasPenaltyFrom || hasPenaltyTo;
 
-        // Salary retention summaries (maps: { playerName: amount })
-        const retentionFromEntries = Object.entries(
-          tr.retentionFrom || {}
-        ).filter(([, val]) => Number(val) > 0);
-        const retentionToEntries = Object.entries(
-          tr.retentionTo || {}
-        ).filter(([, val]) => Number(val) > 0);
+        const retentionFromEntries = Object.entries(tr.retentionFrom || {}).filter(([, val]) => Number(val) > 0);
+        const retentionToEntries = Object.entries(tr.retentionTo || {}).filter(([, val]) => Number(val) > 0);
 
-        const hasAnyRetention =
-          retentionFromEntries.length > 0 || retentionToEntries.length > 0;
+        const hasAnyRetention = retentionFromEntries.length > 0 || retentionToEntries.length > 0;
 
         return (
           <div
@@ -895,77 +1074,34 @@ if (typeof onPlaceBid !== "function") {
               </strong>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-              }}
-            >
-              {/* Outgoing from fromTeam */}
-              <div
-                style={{
-                  minWidth: "150px",
-                  flex: 1,
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: "bold",
-                    marginBottom: "2px",
-                  }}
-                >
-                  {tr.fromTeam} sends:
-                </div>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div style={{ minWidth: "150px", flex: 1 }}>
+                <div style={{ fontWeight: "bold", marginBottom: "2px" }}>{tr.fromTeam} sends:</div>
                 {offeredList.length === 0 ? (
                   <div>nothing</div>
                 ) : (
-                  <ul
-                    style={{
-                      margin: 0,
-                      paddingLeft: "16px",
-                    }}
-                  >
-                    {offeredList.map((name) => (
-                      <li key={name}>{name}</li>
+                  <ul style={{ margin: 0, paddingLeft: "16px" }}>
+                    {offeredList.map((ref) => (
+                      <li key={ref}>{getPlayerDisplayName(ref)}</li>
                     ))}
                   </ul>
                 )}
               </div>
 
-              {/* Incoming to fromTeam */}
-              <div
-                style={{
-                  minWidth: "150px",
-                  flex: 1,
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: "bold",
-                    marginBottom: "2px",
-                  }}
-                >
-                  {tr.toTeam} sends:
-                </div>
+              <div style={{ minWidth: "150px", flex: 1 }}>
+                <div style={{ fontWeight: "bold", marginBottom: "2px" }}>{tr.toTeam} sends:</div>
                 {requestedList.length === 0 ? (
                   <div>nothing</div>
                 ) : (
-                  <ul
-                    style={{
-                      margin: 0,
-                      paddingLeft: "16px",
-                    }}
-                  >
-                    {requestedList.map((name) => (
-                      <li key={name}>{name}</li>
+                  <ul style={{ margin: 0, paddingLeft: "16px" }}>
+                    {requestedList.map((ref) => (
+                      <li key={ref}>{getPlayerDisplayName(ref)}</li>
                     ))}
                   </ul>
                 )}
               </div>
             </div>
 
-            {/* Extra: buyout penalty + salary retention details */}
             {(hasAnyPenalty || hasAnyRetention) && (
               <div
                 style={{
@@ -986,11 +1122,7 @@ if (typeof onPlaceBid !== "function") {
                         {hasPenaltyTo && " · "}
                       </span>
                     )}
-                    {hasPenaltyTo && (
-                      <span>
-                        {tr.toTeam} sends ${tr.penaltyTo}
-                      </span>
-                    )}
+                    {hasPenaltyTo && <span>{tr.toTeam} sends ${tr.penaltyTo}</span>}
                   </div>
                 )}
 
@@ -1001,19 +1133,12 @@ if (typeof onPlaceBid !== "function") {
                       {retentionFromEntries.length > 0 && (
                         <div>
                           <span>{tr.fromTeam} retains on:</span>
-                          <ul
-                            style={{
-                              margin: "2px 0 0 16px",
-                              paddingLeft: 0,
-                            }}
-                          >
-                            {retentionFromEntries.map(
-                              ([playerName, amt]) => (
-                                <li key={`from-${playerName}`}>
-                                  {playerName}: ${amt}
-                                </li>
-                              )
-                            )}
+                          <ul style={{ margin: "2px 0 0 16px", paddingLeft: 0 }}>
+                            {retentionFromEntries.map(([ref, amt]) => (
+                              <li key={`from-${ref}`}>
+                                {getPlayerDisplayName(ref)}: ${amt}
+                              </li>
+                            ))}
                           </ul>
                         </div>
                       )}
@@ -1021,19 +1146,12 @@ if (typeof onPlaceBid !== "function") {
                       {retentionToEntries.length > 0 && (
                         <div style={{ marginTop: "2px" }}>
                           <span>{tr.toTeam} retains on:</span>
-                          <ul
-                            style={{
-                              margin: "2px 0 0 16px",
-                              paddingLeft: 0,
-                            }}
-                          >
-                            {retentionToEntries.map(
-                              ([playerName, amt]) => (
-                                <li key={`to-${playerName}`}>
-                                  {playerName}: ${amt}
-                                </li>
-                              )
-                            )}
+                          <ul style={{ margin: "2px 0 0 16px", paddingLeft: 0 }}>
+                            {retentionToEntries.map(([ref, amt]) => (
+                              <li key={`to-${ref}`}>
+                                {getPlayerDisplayName(ref)}: ${amt}
+                              </li>
+                            ))}
                           </ul>
                         </div>
                       )}
@@ -1043,14 +1161,7 @@ if (typeof onPlaceBid !== "function") {
               </div>
             )}
 
-            <div
-              style={{
-                marginTop: "8px",
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
-              }}
-            >
+            <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {canAcceptOrReject(tr) && (
                 <>
                   <button
@@ -1120,17 +1231,9 @@ if (typeof onPlaceBid !== "function") {
             </div>
 
             {(youAreFrom || youAreTo) && (
-              <div
-                style={{
-                  marginTop: "4px",
-                  fontSize: "0.75rem",
-                  color: "#9ca3af",
-                }}
-              >
+              <div style={{ marginTop: "4px", fontSize: "0.75rem", color: "#9ca3af" }}>
                 {youAreTo && "You are the receiving team for this trade."}
-                {youAreFrom &&
-                  !youAreTo &&
-                  "You are the offering team for this trade."}
+                {youAreFrom && !youAreTo && "You are the offering team for this trade."}
               </div>
             )}
           </div>
@@ -1144,9 +1247,7 @@ if (typeof onPlaceBid !== "function") {
 
       {isManager && (
         <p style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
-          To add a player to your trade block, use the{" "}
-          <em>Add to trade block</em> button next to their name on your
-          roster.
+          To add a player to your trade block, use the <em>Add to trade block</em> button next to their name on your roster.
         </p>
       )}
 
@@ -1157,19 +1258,11 @@ if (typeof onPlaceBid !== "function") {
       )}
 
       {tradeBlock && tradeBlock.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
-            fontSize: "0.85rem",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.85rem" }}>
           {tradeBlock.map((entry) => {
             const canRemove =
               currentUser.role === "commissioner" ||
-              (currentUser.role === "manager" &&
-                currentUser.teamName === entry.team);
+              (currentUser.role === "manager" && currentUser.teamName === entry.team);
 
             return (
               <div
@@ -1190,25 +1283,19 @@ if (typeof onPlaceBid !== "function") {
                   }}
                 >
                   <span>
-                    <strong>{entry.team}</strong> – {entry.player}
+                    <strong>{entry.team}</strong> – {getPlayerDisplayName(entry.player)}
                   </span>
+
                   {canRemove && (
                     <button
                       onClick={() => {
-  if (typeof onRemoveTradeBlockEntry !== "function") {
-    console.error(
-      "[TRADE BLOCK] onRemoveTradeBlockEntry is not wired:",
-      onRemoveTradeBlockEntry
-    );
-    window.alert("Trade block remove is not wired (check App.jsx props).");
-    return;
-  }
-
-  console.log("[TRADE BLOCK] remove clicked", entry);
-  onRemoveTradeBlockEntry(entry);
-}}
-
-
+                        if (typeof onRemoveTradeBlockEntry !== "function") {
+                          console.error("[TRADE BLOCK] onRemoveTradeBlockEntry is not wired:", onRemoveTradeBlockEntry);
+                          window.alert("Trade block remove is not wired (check App.jsx props).");
+                          return;
+                        }
+                        onRemoveTradeBlockEntry(entry);
+                      }}
                       style={{
                         padding: "2px 6px",
                         fontSize: "0.75rem",
@@ -1223,6 +1310,7 @@ if (typeof onPlaceBid !== "function") {
                     </button>
                   )}
                 </div>
+
                 {entry.needs && (
                   <div style={{ color: "#9ca3af" }}>
                     <strong>Notes:</strong> {entry.needs}
@@ -1235,41 +1323,22 @@ if (typeof onPlaceBid !== "function") {
       )}
 
       {/* ---------- Free Agent Auctions ---------- */}
-      <hr
-        style={{
-          border: "none",
-          borderTop: "1px solid #334155",
-          margin: "16px 0",
-        }}
-      />
+      <hr style={{ border: "none", borderTop: "1px solid #334155", margin: "16px 0" }} />
 
       <h3 style={{ marginTop: 0 }}>Free Agent Auctions</h3>
-     <div
-  style={{
-    fontSize: "0.8rem",
-    color: "#9ca3af",
-    marginTop: 0,
-    marginBottom: "6px",
-  }}
->
-  <div>Time remaining:</div>
 
-  <div
-    className={`auction-countdown ${
-      timeRemainingMs < 24 * 60 * 60 * 1000 ? "urgent" : ""
-    } ${
-      timeRemainingMs < 60 * 60 * 1000 ? "critical" : ""
-    }`}
-  >
-    <div className="label">
-      {timeRemainingMs < 60 * 60 * 1000
-        ? "FINAL HOUR"
-        : "Auction rollover in"}
-    </div>
-    <div className="time">{formatCountdown(timeRemainingMs)}</div>
-  </div>
-</div>
+      <div style={{ fontSize: "0.8rem", color: "#9ca3af", marginTop: 0, marginBottom: "6px" }}>
+        <div>Time remaining:</div>
 
+        <div
+          className={`auction-countdown ${timeRemainingMs < 24 * 60 * 60 * 1000 ? "urgent" : ""} ${
+            timeRemainingMs < 60 * 60 * 1000 ? "critical" : ""
+          }`}
+        >
+          <div className="label">{timeRemainingMs < 60 * 60 * 1000 ? "FINAL HOUR" : "Auction rollover in"}</div>
+          <div className="time">{formatCountdown(timeRemainingMs)}</div>
+        </div>
+      </div>
 
       {/* Manager: start a new auction */}
       {isManager ? (
@@ -1283,21 +1352,118 @@ if (typeof onPlaceBid !== "function") {
             border: "1px solid #1f2937",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "8px",
-              marginBottom: "6px",
-            }}
-          >
-            <input
-              type="text"
-              placeholder="Player name"
-              value={bidPlayerName}
-              onChange={(e) => setBidPlayerName(e.target.value)}
-              style={{ flex: "1 1 140px" }}
-            />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "6px" }}>
+                        <div style={{ position: "relative", flex: "1 1 140px" }}>
+              <input
+                type="text"
+                placeholder="Search player (mcdavid, crosby...)"
+                value={playerSearchQuery}
+                onChange={(e) => {
+  const v = e.target.value;
+
+ setPlayerSearchQuery(v);
+setPlayerSearchOpen(true);
+
+if (
+  selectedAuctionPlayer &&
+  v.trim() !== String(selectedAuctionPlayer.fullName || "").trim()
+) {
+  setSelectedAuctionPlayer(null);
+  setBidPlayerName(""); // keep bidPlayerName derived from selection only
+}
+
+  setPlayerSearchOpen(true);
+
+  // 🔒 If they type after selecting, selection is no longer trusted
+  if (selectedAuctionPlayer && v.trim() !== String(selectedAuctionPlayer.fullName || "").trim()) {
+    setSelectedAuctionPlayer(null);
+  }
+}}
+
+                onFocus={() => {
+                  if (playerSearchResults.length > 0) setPlayerSearchOpen(true);
+                }}
+                onBlur={() => {
+                  // small delay so click can register
+                  setTimeout(() => setPlayerSearchOpen(false), 150);
+                }}
+                style={{ width: "100%" }}
+              />
+
+              {playerSearchOpen &&
+                (playerSearchLoading || playerSearchResults.length > 0) && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      marginTop: 4,
+                      background: "#020617",
+                      border: "1px solid #1f2937",
+                      borderRadius: 6,
+                      zIndex: 50,
+                      maxHeight: 260,
+                      overflowY: "auto",
+                    }}
+                  >
+                    {playerSearchLoading && (
+                      <div style={{ padding: "8px", fontSize: "0.85rem", color: "#9ca3af" }}>
+                        Searching…
+                      </div>
+                    )}
+
+                    {!playerSearchLoading &&
+                      playerSearchResults.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onMouseDown={(evt) => evt.preventDefault()} // prevents blur killing the click
+                          onClick={() => {
+  const norm = normalizeSearchPlayer(p);
+
+  // TEMP DEBUG (remove after verification)
+  console.log("[AUCTION] dropdown raw player:", p);
+  console.log("[AUCTION] dropdown normalized:", norm);
+
+  if (!norm?.id) {
+    window.alert("That player result is missing a valid NHL playerId. Try another search result.");
+    return;
+  }
+
+  setSelectedAuctionPlayer(norm);       // ✅ store canonical shape
+  setBidPlayerName(norm.fullName);      // keep existing auction storage
+  setPlayerSearchQuery(norm.fullName);  // show selection
+  setPlayerSearchOpen(false);
+
+  // Optional: auto-set position
+  if (norm.position === "D") setBidPosition("D");
+}}
+
+
+                          style={{
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "8px 10px",
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#e5e7eb",
+                          }}
+                        >
+                          <div style={{ fontWeight: 700 }}>
+                            {p.fullName}
+                            <span style={{ fontWeight: 400, color: "#94a3b8" }}>
+                              {" "}
+                              · {p.position || "?"} · {p.teamAbbrev || "?"}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                )}
+            </div>
+
             <select
               value={bidPosition}
               onChange={(e) => setBidPosition(e.target.value)}
@@ -1315,140 +1481,120 @@ if (typeof onPlaceBid !== "function") {
               style={{ width: "90px" }}
             />
           </div>
-         <button
+
+          <button
+  disabled={!canStartAuction}
   onClick={() => {
-  try {
-    console.log("[AUCTION] Start/place bid clicked", {
-      bidPlayerName,
-      bidPosition,
-      bidAmount,
-      nowMs,
-      nextSunday: nextSunday?.toISOString?.(),
-      auctionCutoff: auctionCutoff?.toISOString?.(),
-      hasOnPlaceBid: typeof onPlaceBid,
-    });
+    if (!canStartAuction) return;
 
-    const trimmedName = bidPlayerName.trim();
+    try {
+      const trimmedName = bidPlayerName.trim();
+      if (!trimmedName || !bidAmount) {
+        window.alert("Enter a player name and bid amount.");
+        return;
+      }
 
-    if (!trimmedName || !bidAmount) {
-      window.alert("Enter a player name and bid amount.");
-      return;
+      // 🔒 Phase 2A: only allow auctions for players picked from dropdown
+      if (!selectedAuctionPlayer || !selectedAuctionPlayer.id) {
+        window.alert("Pick a player from the dropdown list (you can’t auction custom names).");
+        return;
+      }
+
+      if (typeof onPlaceBid !== "function") {
+        window.alert("Auction error: onPlaceBid is not wired (not a function).");
+        console.error("[AUCTION] onPlaceBid is not a function:", onPlaceBid);
+        return;
+      }
+
+      const auctionKey = `id:${String(selectedAuctionPlayer.id).trim()}`.toLowerCase();
+const isExistingAuction = activeAuctionsByPlayer.some((a) => a.key === auctionKey);
+
+
+
+      if (nowMs > nextSunday.getTime()) {
+        window.alert("Auction window is closed. Bids after the Sunday 4:00 PM deadline do not count.");
+        return;
+      }
+
+      if (!isExistingAuction && nowMs > auctionCutoff.getTime()) {
+        window.alert(
+          "Too late to start a new auction for this week. You can start new auctions again after this Sunday’s deadline."
+        );
+        return;
+      }
+
+if (!isExistingAuction && isPlayerRostered(selectedAuctionPlayer.id || selectedAuctionPlayer.fullName)) {
+        window.alert(
+          "This player is already on a roster. You cannot start a free-agent auction for rostered players."
+        );
+        return;
+      }
+
+     onPlaceBid({
+  playerId: String(selectedAuctionPlayer.id),
+  playerName: selectedAuctionPlayer.fullName,
+  position: bidPosition,
+  amount: bidAmount,
+});
+
+
+      setBidPlayerName("");
+      setBidAmount("");
+      setPlayerSearchQuery("");
+      setSelectedAuctionPlayer(null);
+      setPlayerSearchResults([]);
+      setPlayerSearchOpen(false);
+    } catch (err) {
+      console.error("[AUCTION] Start/place bid crashed:", err);
+      window.alert("Auction crashed — check console for [AUCTION] error.");
     }
-
-    if (typeof onPlaceBid !== "function") {
-      window.alert("Auction error: onPlaceBid is not wired (not a function).");
-      console.error("[AUCTION] onPlaceBid is not a function:", onPlaceBid);
-      return;
-    }
-
-    // ✅ define once, use everywhere
-const lowerName = normalizeName(trimmedName);
-
-    // Existing auction?
-    const isExistingAuction = activeAuctionsByPlayer.some(
-      (a) => a.key === lowerName
-    );
-
-    // ⛔ No bids after Sunday deadline
-    if (nowMs > nextSunday.getTime()) {
-      window.alert(
-        "Auction window is closed. Bids after the Sunday 4:00 PM deadline do not count."
-      );
-      return;
-    }
-
-    // ⛔ Too late to START a new auction
-    if (!isExistingAuction && nowMs > auctionCutoff.getTime()) {
-      window.alert(
-        "Too late to start a new auction for this week. You can start new auctions again after this Sunday’s deadline."
-      );
-      return;
-    }
-
-    // ✅ Case-insensitive roster check
-if (!isExistingAuction && isPlayerRostered(trimmedName)) {
-  window.alert(
-    "This player is already on a roster. You cannot start a free-agent auction for rostered players."
-  );
-  return;
-}
-
-
-    onPlaceBid({
-      playerName: trimmedName, // keep original casing for display
-      position: bidPosition,
-      amount: bidAmount,
-    });
-
-    setBidPlayerName("");
-    setBidAmount("");
-  } catch (err) {
-    console.error("[AUCTION] Start/place bid crashed:", err);
-    window.alert("Auction crashed — check console for [AUCTION] error.");
-  }
-}}
-
+  }}
   style={{
     padding: "4px 10px",
     fontSize: "0.85rem",
-    backgroundColor: "#16a34a",
+    backgroundColor: canStartAuction ? "#16a34a" : "#4b5563",
     color: "#e5e7eb",
     border: "none",
     borderRadius: "4px",
-    cursor: "pointer",
+    cursor: canStartAuction ? "pointer" : "not-allowed",
+    opacity: canStartAuction ? 1 : 0.8,
   }}
 >
-  Start / place bid
-</button>
 
+            Start / place bid
+          </button>
         </div>
       ) : (
-        <p style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-          Log in as a manager to place free-agent bids.
-        </p>
+        <p style={{ fontSize: "0.85rem", color: "#6b7280" }}>Log in as a manager to place free-agent bids.</p>
       )}
 
       {/* Live auctions grouped by player (blind bidding) */}
       <div style={{ marginTop: "8px" }}>
-        <h4 style={{ margin: "0 0 4px 0", fontSize: "0.95rem" }}>
-          Live auctions
-        </h4>
+        <h4 style={{ margin: "0 0 4px 0", fontSize: "0.95rem" }}>Live auctions</h4>
+
         {activeAuctionsByPlayer.length === 0 ? (
-          <p style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
-            No live auctions at the moment.
-          </p>
+          <p style={{ fontSize: "0.85rem", color: "#9ca3af" }}>No live auctions at the moment.</p>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-              fontSize: "0.85rem",
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.85rem" }}>
             {activeAuctionsByPlayer.map((auction) => {
               const bidCount = auction.bids.length;
-              const hasMyBid =
-                isManager &&
-                auction.bids.some((b) => b.team === myTeamName);
+              const hasMyBid = isManager && auction.bids.some((b) => b.team === myTeamName);
 
               const playerKey = auction.key;
               const inputValue = liveBidInputs[playerKey] || "";
 
-              // Sorted bids for commissioner view (highest first)
               const sortedBids = [...auction.bids].sort((a, b) => {
                 const aAmt = Number(a.amount) || 0;
                 const bAmt = Number(b.amount) || 0;
                 if (bAmt !== aAmt) return bAmt - aAmt;
                 const aTs = Number(a.firstTimestamp ?? a.timestamp ?? 0) || 0;
-const bTs = Number(b.firstTimestamp ?? b.timestamp ?? 0) || 0;
-return aTs - bTs;
-
+                const bTs = Number(b.firstTimestamp ?? b.timestamp ?? 0) || 0;
+                return aTs - bTs;
               });
 
               return (
                 <div
-key={playerKey}
+                  key={playerKey}
                   style={{
                     padding: "6px 8px",
                     borderRadius: "6px",
@@ -1456,127 +1602,85 @@ key={playerKey}
                     border: "1px solid #1f2937",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
                     <div>
                       <div>
                         <strong>
-                          {auction.playerName} ({auction.position})
+{getAuctionDisplayName(auction)} ({auction.position})
                         </strong>
                       </div>
-                      <div
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "#9ca3af",
-                        }}
-                      >
-                        {bidCount === 0
-                          ? "No bids placed yet."
-                          : bidCount === 1
-                          ? "1 bid placed."
-                          : `${bidCount} bids placed.`}
-                        {hasMyBid && (
-                          <span style={{ color: "#4ade80" }}>
-                            {" "}
-                            • You have a bid.
-                          </span>
-                        )}
+                      <div style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
+                        {bidCount === 0 ? "No bids placed yet." : bidCount === 1 ? "1 bid placed." : `${bidCount} bids placed.`}
+                        {hasMyBid && <span style={{ color: "#4ade80" }}> • You have a bid.</span>}
                       </div>
                     </div>
 
-                    {/* Inline bid input for managers */}
-{isManager && (
-  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-    {(() => {
-      const ui = computeBidUiStateForAuction({
-  auctionBids: auction.bids,
-  myTeamName,
-  nowMs,
-  inputValue,
-});
+                    {isManager && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        {(() => {
+                          const ui = computeBidUiStateForAuction({
+                            auctionBids: auction.bids,
+                            myTeamName,
+                            nowMs,
+                            inputValue,
+                          });
 
+                          return (
+                            <>
+                              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                <input
+                                  type="number"
+                                  min={ui.minRequired}
+                                  placeholder={`Bid $ (min ${ui.minRequired})`}
+                                  value={inputValue}
+                                  onChange={(e) => handleLiveBidInputChange(playerKey, e.target.value)}
+                                  style={{ width: "120px", fontSize: "0.8rem" }}
+                                />
 
-      return (
-        <>
-          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-            <input
-              type="number"
-              min={ui.minRequired}
-              placeholder={`Bid $ (min ${ui.minRequired})`}
-              value={inputValue}
-              onChange={(e) =>
-                handleLiveBidInputChange(playerKey, e.target.value)
-              }
-              style={{
-                width: "120px",
-                fontSize: "0.8rem",
-              }}
-            />
+                                <button
+                                  onClick={() => {
+                                    if (ui.disabled) return;
+                                    handleLiveBidSubmit(auction);
+                                  }}
+                                  disabled={ui.disabled}
+                                  title={ui.reason || ""}
+                                  style={{
+                                    padding: "3px 8px",
+                                    fontSize: "0.8rem",
+                                    backgroundColor: ui.disabled ? "#4b5563" : "#0ea5e9",
+                                    color: "#e5e7eb",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: ui.disabled ? "not-allowed" : "pointer",
+                                    whiteSpace: "nowrap",
+                                    opacity: ui.disabled ? 0.75 : 1,
+                                  }}
+                                >
+                                  Place bid
+                                </button>
+                              </div>
 
-            <button
-              onClick={() => {
-                if (ui.disabled) return;
-                handleLiveBidSubmit(auction);
-              }}
-              disabled={ui.disabled}
-              title={ui.reason || ""}
-              style={{
-                padding: "3px 8px",
-                fontSize: "0.8rem",
-                backgroundColor: ui.disabled ? "#4b5563" : "#0ea5e9",
-                color: "#e5e7eb",
-                border: "none",
-                borderRadius: "4px",
-                cursor: ui.disabled ? "not-allowed" : "pointer",
-                whiteSpace: "nowrap",
-                opacity: ui.disabled ? 0.75 : 1,
-              }}
-            >
-              Place bid
-            </button>
-          </div>
-
-          {/* small status line */}
-          <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>
-            {ui.reason
-              ? ui.reason
-              : `Edits used: ${ui.editsUsed}/${ui.maxEdits}`}
-          </div>
-        </>
-      );
-    })()}
-  </div>
-)}
-
-
-                  {/* Commissioner optional per-bid details */}
-                                   {isCommissioner && showBidAmounts && sortedBids.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: "4px",
-                        fontSize: "0.75rem",
-                        color: "#e5e7eb",
-                      }}
-                    >
-                      <div style={{ marginBottom: "2px", color: "#fbbf24" }}>
-                        Bid details:
+                              <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>
+                                {ui.reason ? ui.reason : `Edits used: ${ui.editsUsed}/${ui.maxEdits}`}
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
-                      <ul style={{ margin: 0, paddingLeft: "16px" }}>
-                        {sortedBids.map((b) => (
-                          <li key={b.id}>
-                            {b.team}: ${b.amount} (
-                            {new Date(b.timestamp).toLocaleString()})
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                    )}
+
+                    {isCommissioner && showBidAmounts && sortedBids.length > 0 && (
+                      <div style={{ marginTop: "4px", fontSize: "0.75rem", color: "#e5e7eb" }}>
+                        <div style={{ marginBottom: "2px", color: "#fbbf24" }}>Bid details:</div>
+                        <ul style={{ margin: 0, paddingLeft: "16px" }}>
+                          {sortedBids.map((b) => (
+                            <li key={b.id}>
+                              {b.team}: ${b.amount} ({new Date(b.timestamp).toLocaleString()})
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -1585,33 +1689,10 @@ key={playerKey}
         )}
       </div>
 
-      {/* Commissioner-only controls */}
       {isCommissioner && (
-        <div
-          style={{
-            marginTop: "10px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-            alignItems: "center",
-          }}
-        >
-          <label
-            style={{
-              fontSize: "0.8rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              color: "#e5e7eb",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={showBidAmounts}
-              onChange={(e) =>
-                setShowBidAmounts(e.target.checked)
-              }
-            />
+        <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+          <label style={{ fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px", color: "#e5e7eb" }}>
+            <input type="checkbox" checked={showBidAmounts} onChange={(e) => setShowBidAmounts(e.target.checked)} />
             Show bid amounts (commissioner only)
           </label>
 
@@ -1632,25 +1713,14 @@ key={playerKey}
         </div>
       )}
 
-      {/* Manager: my bids summary */}
       {isManager && (
         <div style={{ marginTop: "12px" }}>
-          <h4 style={{ margin: "0 0 4px 0", fontSize: "0.95rem" }}>
-            Your active bids
-          </h4>
+          <h4 style={{ margin: "0 0 4px 0", fontSize: "0.95rem" }}>Your active bids</h4>
+
           {myBids.length === 0 ? (
-            <p style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
-              You have no bids yet.
-            </p>
+            <p style={{ fontSize: "0.85rem", color: "#9ca3af" }}>You have no bids yet.</p>
           ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-                fontSize: "0.85rem",
-              }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.85rem" }}>
               {myBids.map((b) => (
                 <div
                   key={b.id}
@@ -1665,38 +1735,10 @@ key={playerKey}
                   }}
                 >
                   <span>
-                    {b.player} ({b.position}) — ${b.amount}
-                    {b.resolved && b.winningTeam === myTeamName && (
-                      <span
-                        style={{ color: "#4ade80", marginLeft: "6px" }}
-                      >
-                        (won)
-                      </span>
-                    )}
-                    {b.resolved &&
-                      b.winningTeam &&
-                      b.winningTeam !== myTeamName && (
-                        <span
-                          style={{ color: "#f97373", marginLeft: "6px" }}
-                        >
-                          (lost)
-                        </span>
-                      )}
-                    {b.resolved && !b.winningTeam && (
-                      <span
-                        style={{ color: "#fbbf24", marginLeft: "6px" }}
-                      >
-                        (no valid winner)
-                      </span>
-                    )}
+{getBidDisplayName(b)} ({b.position}) — ${b.amount}
                   </span>
-                  <span
-                    style={{
-                      color: "#6b7280",
-                      fontSize: "0.7rem",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+
+                  <span style={{ color: "#6b7280", fontSize: "0.7rem", whiteSpace: "nowrap" }}>
                     {new Date(b.timestamp).toLocaleString()}
                   </span>
                 </div>

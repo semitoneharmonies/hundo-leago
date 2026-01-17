@@ -32,6 +32,11 @@ const API_URL =
   import.meta.env.VITE_SOCKET_URL ||
   "https://hundo-leago-backend.onrender.com";
 
+// Phase 2A: Players endpoint (derived from API_URL by default)
+const PLAYERS_API_URL =
+  import.meta.env.VITE_PLAYERS_API_URL ||
+  API_URL.replace(/\/api\/league\/?$/, "/api/players");
+
 // League rules
 const CAP_LIMIT = 100;
 const MAX_ROSTER_SIZE = 15;
@@ -109,6 +114,9 @@ const showFreezeBanner = (msg = "League is frozen. Changes are disabled.") => {
     freezeBannerTimerRef.current = null;
   }, 8000);
 };
+// ✅ Phase 2A safety: block manager writes if league contains legacy name-only players/bids
+const [integrityLock, setIntegrityLock] = useState(false);
+const [integrityMsg, setIntegrityMsg] = useState("");
 
   // --- Random quote (UI only) ---
   const [dailyQuote, setDailyQuote] = useState(null);
@@ -143,6 +151,245 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
 const saveTimerRef = useRef(null);
 const lastSavedJsonRef = useRef("");
 const autoCancelLockRef = useRef(false);
+
+// ===============================
+// Phase 2A: Player lookup cache (frontend)
+// ===============================
+const playersByIdRef = useRef(new Map());
+const playersByNameRef = useRef(new Map()); // ✅ NEW: normalized fullName/name -> player object
+const [playersTick, setPlayersTick] = useState(0);
+
+
+const normalizeKey = (s) => String(s || "").trim().toLowerCase();
+
+const upsertPlayers = (arr) => {
+  if (!Array.isArray(arr) || arr.length === 0) return;
+  let changed = false;
+
+  // local helper (kept inside for minimal scope)
+  const normalizeNhlId = (raw) => {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+
+    const stripped = s.toLowerCase().startsWith("id:") ? s.slice(3).trim() : s;
+    const n = Number(stripped);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.trunc(n);
+  };
+
+  const normalizePlayerShape = (p) => {
+    if (!p) return null;
+
+    // Accept common backend keys:
+    // id | playerId | nhlId | nhlPlayerId
+    const pid =
+      normalizeNhlId(p.id) ??
+      normalizeNhlId(p.playerId) ??
+      normalizeNhlId(p.nhlId) ??
+      normalizeNhlId(p.nhlPlayerId);
+
+    if (!pid) return null;
+
+    const fullName = String(p.fullName || p.name || p.playerName || "").trim();
+
+    // Keep original fields, but force canonical keys
+    return {
+      ...p,
+      id: pid,            // ✅ canonical numeric id
+      fullName,           // ✅ canonical name
+    };
+  };
+
+  for (const raw of arr) {
+    const p = normalizePlayerShape(raw);
+    if (!p) continue;
+
+    const id = p.id;
+
+    const prev = playersByIdRef.current.get(id);
+
+    // crude “did it change” check; good enough for now
+    const nextStr = JSON.stringify(p);
+    const prevStr = prev ? JSON.stringify(prev) : "";
+    if (nextStr !== prevStr) {
+      playersByIdRef.current.set(id, p);
+      changed = true;
+    }
+
+    // name cache (for mapping legacy string players -> IDs)
+    const fullNameKey = normalizeKey(p?.fullName || p?.name);
+    if (fullNameKey) {
+      playersByNameRef.current.set(fullNameKey, p);
+    }
+  }
+
+  if (changed) setPlayersTick((x) => x + 1);
+};
+
+
+
+const getPlayerById = (id) => {
+  const pid = Number(id);
+  if (!Number.isFinite(pid)) return null;
+  return playersByIdRef.current.get(pid) || null;
+};
+
+const getPlayerNameById = (id) => {
+  const p = getPlayerById(id);
+  return p?.fullName || p?.name || "";
+};
+
+// Fetch one player by ID (cached)
+const fetchPlayerById = async (id) => {
+  const pid = Number(id);
+  if (!Number.isFinite(pid)) return null;
+
+  const cached = getPlayerById(pid);
+  if (cached) return cached;
+
+  const res = await fetch(`${PLAYERS_API_URL}/${pid}`);
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const p = data?.player || null;
+  if (p) upsertPlayers([p]);
+  return p || null;
+};
+
+// Search players by name (cached)
+const searchPlayers = async (query, limit = 25) => {
+  const q = String(query || "").trim();
+  if (!q) return [];
+
+  const url = `${PLAYERS_API_URL}?query=${encodeURIComponent(q)}&limit=${encodeURIComponent(
+    limit
+  )}`;
+
+  const res = await fetch(url);
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  const rawArr = Array.isArray(data?.players) ? data.players : [];
+
+  // push into caches (normalizes ids + names)
+  upsertPlayers(rawArr);
+
+  // return normalized shape from the id cache when possible
+  const out = [];
+  for (const raw of rawArr) {
+    const tryId =
+      normalizePlayerIdStrict(raw?.id) ??
+      normalizePlayerIdStrict(raw?.playerId) ??
+      normalizePlayerIdStrict(raw?.nhlId) ??
+      normalizePlayerIdStrict(raw?.nhlPlayerId);
+
+    if (tryId) {
+      const cached = getPlayerById(tryId);
+      if (cached) {
+        out.push(cached);
+        continue;
+      }
+    }
+
+    // fallback: return something usable even if caching failed
+    out.push(raw);
+  }
+
+  return out;
+};
+
+
+const getPlayerByName = (name) => {
+  const key = normalizeKey(name);
+  return playersByNameRef.current.get(key) || null;
+};
+// ===============================
+// Phase 2A: Prefetch names for all rostered players (so UI shows DB names)
+// ===============================
+const prefetchLockRef = useRef({ running: false, lastKey: "" });
+
+useEffect(() => {
+  if (!hasLoaded) return;
+
+  // Normalize any id-ish value into a positive int
+  const normId = (raw) => {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    const stripped = s.toLowerCase().startsWith("id:") ? s.slice(3).trim() : s;
+    const n = Number(stripped);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.trunc(n);
+  };
+
+  // Collect all playerIds we currently need names for (rosters + active auctions)
+  const ids = new Set();
+
+  for (const t of (Array.isArray(teams) ? teams : [])) {
+    for (const p of (Array.isArray(t?.roster) ? t.roster : [])) {
+      const pid = normId(p?.playerId ?? p?.id);
+      if (pid) ids.add(pid);
+    }
+  }
+
+  for (const b of (Array.isArray(freeAgents) ? freeAgents : [])) {
+    if (b?.resolved) continue;
+    const pid = normId(b?.playerId);
+    if (pid) ids.add(pid);
+  }
+
+  // Only fetch what we don’t already have cached
+  const missing = Array.from(ids).filter((pid) => !playersByIdRef.current.has(pid));
+  if (missing.length === 0) return;
+
+  // Avoid re-running the same prefetch batch repeatedly
+  missing.sort((a, b) => a - b);
+  const key = missing.join(",");
+  if (prefetchLockRef.current.lastKey === key) return;
+  prefetchLockRef.current.lastKey = key;
+
+  if (prefetchLockRef.current.running) return;
+  prefetchLockRef.current.running = true;
+
+  (async () => {
+    try {
+      // Don’t hammer the endpoint—cap per pass
+      const batch = missing.slice(0, 120);
+
+      for (const pid of batch) {
+        // fetchPlayerById() will upsert into cache + bump playersTick
+        // so the UI re-renders and TeamRosterPanel starts showing DB names
+        // eslint-disable-next-line no-await-in-loop
+        await fetchPlayerById(pid);
+      }
+    } catch (e) {
+      console.warn("[PLAYERS] prefetch failed:", e);
+    } finally {
+      prefetchLockRef.current.running = false;
+    }
+  })();
+}, [hasLoaded, teams, freeAgents]); // <- important deps
+
+const playerApi = {
+  // ✅ what CommissionerPanel expects
+  byId: playersByIdRef.current,      // Map(id -> player)
+  byName: playersByNameRef.current,  // Map(lowerName -> player)
+
+  // cache reads
+  getPlayerById,
+  getPlayerNameById,
+  getPlayerByName,
+
+  // network
+  fetchPlayerById,
+  searchPlayers,
+
+  // debug / rerender tick
+  _playersTick: playersTick,
+};
+
+
 
 // ------------------------------------
 // Random quote: pick once per full page load
@@ -195,6 +442,17 @@ useEffect(() => {
  *  - null/undefined => no-op
  *  - { teams?, tradeProposals?, freeAgents?, leagueLog?, tradeBlock?, settings? }
  */
+const MAX_LEAGUE_LOG = 50;
+
+function trimLeagueLogNewestFirst(log) {
+  const arr = Array.isArray(log) ? log : [];
+  if (arr.length <= MAX_LEAGUE_LOG) return arr;
+
+  // Your log is stored newest-first (you prepend entries).
+  // Oldest entries are at the end, so keep the first 50.
+  return arr.slice(0, MAX_LEAGUE_LOG);
+}
+
 const commitLeagueUpdate = (reason, updater) => {
   // Local freeze gate (fast UX)
   if (typeof guardWriteIfFrozen === "function" && guardWriteIfFrozen()) {
@@ -205,15 +463,23 @@ const commitLeagueUpdate = (reason, updater) => {
   const prev = leagueStateRef.current;
   const patch = updater?.(prev);
 
-  if (!patch) {
+    // Hard-cap leagueLog to 50 by deleting the oldest entries
+  // (Only trims when the updater is actually changing leagueLog)
+  let cappedPatch = patch;
+  if (cappedPatch && Object.prototype.hasOwnProperty.call(cappedPatch, "leagueLog")) {
+    cappedPatch = { ...cappedPatch, leagueLog: trimLeagueLogNewestFirst(cappedPatch.leagueLog) };
+  }
+
+  if (!cappedPatch) {
     console.warn("[COMMIT] no-op:", reason);
     return false;
   }
 
-  const next = {
+    const next = {
     ...prev,
-    ...patch,
+    ...cappedPatch,
   };
+
 
   // Phase 0 shape safety: don’t allow accidental wipes / malformed writes
   if (!leagueStateLooksValid(next)) {
@@ -222,12 +488,13 @@ const commitLeagueUpdate = (reason, updater) => {
   }
 
   // Apply only the keys that changed
-  if (patch.teams) setTeams(patch.teams);
-  if (patch.tradeProposals) setTradeProposals(patch.tradeProposals);
-  if (patch.freeAgents) setFreeAgents(patch.freeAgents);
-  if (patch.leagueLog) setLeagueLog(patch.leagueLog);
-  if (patch.tradeBlock) setTradeBlock(patch.tradeBlock);
-  if (patch.settings) setLeagueSettings(patch.settings);
+    if (cappedPatch.teams) setTeams(cappedPatch.teams);
+  if (cappedPatch.tradeProposals) setTradeProposals(cappedPatch.tradeProposals);
+  if (cappedPatch.freeAgents) setFreeAgents(cappedPatch.freeAgents);
+  if (cappedPatch.leagueLog) setLeagueLog(cappedPatch.leagueLog);
+  if (cappedPatch.tradeBlock) setTradeBlock(cappedPatch.tradeBlock);
+  if (cappedPatch.settings) setLeagueSettings(cappedPatch.settings);
+
 
   return true;
 };
@@ -281,7 +548,39 @@ const [unreadCount, setUnreadCount] = useState(0);
 const [lastSeenTs, setLastSeenTs] = useState(0);
 const illegalFlagRef = useRef(false);
 
+const detectLegacyIdIssues = (state) => {
+  const issues = [];
 
+  const teamsArr = Array.isArray(state?.teams) ? state.teams : [];
+  const freeArr = Array.isArray(state?.freeAgents) ? state.freeAgents : [];
+
+  // roster: require playerId
+  for (const t of teamsArr) {
+    for (const p of (t?.roster || [])) {
+      const pid = Number(p?.playerId);
+      if (!Number.isFinite(pid) || pid <= 0) {
+        issues.push(`Roster player missing playerId: "${p?.name || "Unknown"}" on ${t?.name || "Unknown Team"}`);
+      }
+    }
+  }
+
+  // auctions: require playerId AND auctionKey="id:###"
+  for (const b of freeArr) {
+    if (b?.resolved) continue;
+    const pid = Number(b?.playerId);
+    const key = String(b?.auctionKey || "").trim().toLowerCase();
+
+    if (!Number.isFinite(pid) || pid <= 0) {
+      issues.push(`Auction bid missing playerId: "${b?.player || "Unknown"}" (${b?.team || "Unknown Team"})`);
+      continue;
+    }
+    if (!key.startsWith("id:")) {
+      issues.push(`Auction bid has non-id auctionKey for playerId ${pid}: "${b?.auctionKey || ""}"`);
+    }
+  }
+
+  return issues;
+};
  const socketRef = useRef(null);
 
 useEffect(() => {
@@ -341,6 +640,18 @@ useEffect(() => {
           tradeBlock: loadedState.tradeBlock,
           settings: loadedState.settings,
         });
+                const legacyIssues = detectLegacyIdIssues(loadedState);
+        if (legacyIssues.length > 0) {
+          setIntegrityLock(true);
+          setIntegrityMsg(
+            "⚠️ Player ID migration required. Managers cannot make changes right now."
+          );
+          console.warn("[INTEGRITY] legacy issues:", legacyIssues);
+        } else {
+          setIntegrityLock(false);
+          setIntegrityMsg("");
+        }
+
       })
       .catch((err) => console.error("[WS] reload failed:", err));
   });
@@ -407,6 +718,18 @@ setSelectedTeamName((prev) => {
   settings: loadedState.settings,
 });
 
+      // ✅ Phase 2A: detect legacy name-only players/bids and block manager writes
+      const legacyIssues = detectLegacyIdIssues(loadedState);
+      if (legacyIssues.length > 0) {
+        setIntegrityLock(true);
+        setIntegrityMsg(
+          "League contains legacy players/bids without playerId. Managers cannot make changes until commissioner migrates/fixes this."
+        );
+        console.warn("[INTEGRITY] legacy issues:", legacyIssues);
+      } else {
+        setIntegrityLock(false);
+        setIntegrityMsg("");
+      }
 
       setHasLoaded(true);
     })
@@ -543,6 +866,10 @@ useEffect(() => {
   if (isManager && isFrozen) {
     return;
   }
+    if (isManager && integrityLock) {
+    return;
+  }
+
 
   const ok = await saveLeagueToBackend(stateToSave);
 
@@ -709,17 +1036,26 @@ const markAllNotificationsRead = () => {
 const isManagerFrozen =
   leagueSettings?.frozen === true && currentUser?.role === "manager";
 
-const guardWriteIfFrozen = () => {
-  if (!isManagerFrozen) return false; // not blocked
-  showFreezeBanner("League is frozen. Changes are disabled.");
-  return true; // blocked
-};
-const normalizeKey = (s) => String(s || "").trim().toLowerCase();
+const isManagerIntegrityLocked =
+  integrityLock === true && currentUser?.role === "manager";
 
-const rosterHasPlayer = (teamObj, playerName) => {
-  const key = normalizeKey(playerName);
-  return (teamObj?.roster || []).some((p) => normalizeKey(p?.name) === key);
+const guardWriteIfFrozen = () => {
+  if (isManagerFrozen) {
+    showFreezeBanner("League is frozen. Changes are disabled.");
+    return true;
+  }
+
+  if (isManagerIntegrityLocked) {
+    showFreezeBanner(integrityMsg || "Data migration in progress. Changes are disabled.");
+    return true;
+  }
+
+  return false;
 };
+
+
+const rosterHasPlayer = (teamObj, token) => rosterHasPlayerToken(teamObj, token);
+
 
 // Decide reason for missing player:
 // - if we can see a buyout log entry for that team+player at/after trade.createdAt -> playerBoughtOut
@@ -727,18 +1063,28 @@ const rosterHasPlayer = (teamObj, playerName) => {
 const getRemovalReasonForTrade = ({ trade, teamName, playerName, leagueLog }) => {
   const createdAt = Number(trade?.createdAt || 0) || 0;
   const tKey = normalizeKey(teamName);
-  const pKey = normalizeKey(playerName);
+
+  const wantPid = getPlayerIdFromToken(playerName);
+  const wantNameKey = normalizeKey(playerName);
 
   const buyoutHit = (leagueLog || []).some((e) => {
     if (e?.type !== "buyout") return false;
     if (normalizeKey(e?.team) !== tKey) return false;
-    if (normalizeKey(e?.player) !== pKey) return false;
+
     const ts = Number(e?.timestamp || 0) || 0;
-    return ts >= createdAt;
+    if (ts < createdAt) return false;
+
+    // Compare by id if possible
+    const ePid = getPlayerIdFromToken(e?.player);
+    if (wantPid && ePid) return wantPid === ePid;
+
+    // Fallback compare by normalized name
+    return wantNameKey && normalizeKey(e?.player) === wantNameKey;
   });
 
   return buyoutHit ? "playerBoughtOut" : "playerRemoved";
 };
+
 // ------------------------------------
 // Session 0D: auto-cancel broken pending trades (global safety net)
 // Catches ANY player removal path (including commissioner edits that bypass handlers)
@@ -844,38 +1190,42 @@ const handleUpdateTeamRoster = (teamName, newRoster) => {
 ;
 
   // Buyout handler: remove player from roster, add penalty entry, log it
-const handleBuyout = (teamName, playerName) => {
+const handleBuyout = (teamName, playerToken) => {
   commitLeagueUpdate("buyout", (prev) => {
     const prevTeams = Array.isArray(prev.teams) ? prev.teams : [];
     const prevTrades = Array.isArray(prev.tradeProposals) ? prev.tradeProposals : [];
     const prevLog = Array.isArray(prev.leagueLog) ? prev.leagueLog : [];
 
-    // Find team + player to compute penalty
     const team = prevTeams.find((t) => t?.name === teamName);
     if (!team) return null;
 
-    const player = (team.roster || []).find((p) => p?.name === playerName);
+    // Find player by id or name (for salary + display)
+    const player = findRosterPlayerByToken(team, playerToken);
     if (!player) return null;
 
     const penalty = calculateBuyout(Number(player.salary) || 0);
 
-    // ✅ Session 0D: cancel any pending trades involving this player (because of buyout)
+    // Use a stable “log token”: prefer id ref if available, else name
+    const pid = normalizePlayerIdStrict(player?.playerId) || getPlayerIdFromToken(playerToken);
+    const logPlayer = pid ? `id:${pid}` : String(player?.name || playerToken || "").trim();
+
+    // Cancel trades using the SAME token that trades contain (supports both worlds)
     const cancelResult = cancelTradesForPlayer(
       prevTrades,
       prevLog,
       teamName,
-      playerName,
+      logPlayer,
       { reason: "playerBoughtOut", autoCancelled: true }
     );
 
     const nextTeams = prevTeams.map((t) => {
       if (t.name !== teamName) return t;
 
-      const newRoster = (t.roster || []).filter((p) => p.name !== playerName);
+      const newRoster = removeRosterPlayerByToken(t, playerToken);
 
       const buyouts = [
         ...(t.buyouts || []),
-        { player: playerName, penalty },
+        { player: logPlayer, penalty },
       ];
 
       return { ...t, roster: newRoster, buyouts };
@@ -886,12 +1236,11 @@ const handleBuyout = (teamName, playerName) => {
       type: "buyout",
       id: now + Math.random(),
       team: teamName,
-      player: playerName,
+      player: logPlayer,
       penalty,
       timestamp: now,
     };
 
-    // cancelResult.nextLeagueLog already includes the tradeCancelled logs (if any)
     return {
       teams: nextTeams,
       tradeProposals: cancelResult.nextTradeProposals,
@@ -902,9 +1251,10 @@ const handleBuyout = (teamName, playerName) => {
 
 
 
+
  // Commissioner removes a player altogether (no penalty)
 // Session 0D: removing a player cancels affected pending trades
-const handleCommissionerRemovePlayer = (teamName, playerName) => {
+const handleCommissionerRemovePlayer = (teamName, playerToken) => {
   if (!currentUser || currentUser.role !== "commissioner") return;
 
   commitLeagueUpdate("commRemovePlayer", (prev) => {
@@ -912,24 +1262,32 @@ const handleCommissionerRemovePlayer = (teamName, playerName) => {
     const prevTrades = Array.isArray(prev?.tradeProposals) ? prev.tradeProposals : [];
     const prevLog = Array.isArray(prev?.leagueLog) ? prev.leagueLog : [];
 
-    if (!teamName || !playerName) return null;
+    if (!teamName || !playerToken) return null;
+
+    const team = prevTeams.find((t) => t?.name === teamName);
+    if (!team) return null;
+
+    const player = findRosterPlayerByToken(team, playerToken);
+    if (!player) return null;
+
+    const pid = normalizePlayerIdStrict(player?.playerId) || getPlayerIdFromToken(playerToken);
+    const logPlayer = pid ? `id:${pid}` : String(player?.name || playerToken || "").trim();
 
     // 1) Remove player from roster
     const nextTeams = prevTeams.map((t) => {
       if (t?.name !== teamName) return t;
-
-      const nextRoster = (t.roster || []).filter((p) => p?.name !== playerName);
+      const nextRoster = removeRosterPlayerByToken(t, playerToken);
       return { ...t, roster: nextRoster };
     });
 
     const now = Date.now();
 
-    // 2) Cancel any pending trades involving this player (Session 0D)
+    // 2) Cancel affected pending trades (token-aware)
     const cancelRes = cancelTradesForPlayer(
       prevTrades,
       prevLog,
       teamName,
-      playerName,
+      logPlayer,
       {
         reason: "playerRemoved",
         autoCancelled: true,
@@ -945,7 +1303,7 @@ const handleCommissionerRemovePlayer = (teamName, playerName) => {
       id: now + Math.random(),
       type: "commRemovePlayer",
       team: teamName,
-      player: playerName,
+      player: logPlayer,
       timestamp: now,
     };
 
@@ -956,6 +1314,7 @@ const handleCommissionerRemovePlayer = (teamName, playerName) => {
     };
   });
 };
+
 
 
 // Remove exactly ONE matching log entry (by id when possible, fallback to signature)
@@ -1061,7 +1420,6 @@ const handleManagerProfileImageChange = (event) => {
 };
 
 
-   // --- Trade submission from draft (from TeamRosterPanel / TeamToolsPanel) ---
  // --- Trade submission from draft (from TeamRosterPanel / TeamToolsPanel) ---
 const handleSubmitTradeDraft = (draft) => {
   if (!draft) return;
@@ -1109,32 +1467,32 @@ const handleSubmitTradeDraft = (draft) => {
     });
 
     // Build per-player details for logging (based on current rosters)
-    const offeredDetails = (newTrade.offeredPlayers || []).map((name) => {
-      const p =
-        (fromTeamObj?.roster || []).find((pl) => pl.name === name) || null;
-      const baseSalary = p ? Number(p.salary) || 0 : 0;
-      const retainedAmount = Number(newTrade.retentionFrom?.[name] || 0) || 0;
-      const newSalary = Math.max(0, baseSalary - retainedAmount);
+    // Build per-player details for logging (based on current rosters)
+const offeredDetails = (newTrade.offeredPlayers || []).map((name) => {
+  const p = findRosterPlayerByToken(fromTeamObj, name);
+  const baseSalary = p ? Number(p.salary) || 0 : 0; // ✅ define baseSalary
+  const retainedAmount = Number(newTrade.retentionFrom?.[name] || 0) || 0;
+  const newSalary = Math.max(0, baseSalary - retainedAmount);
 
-      return {
-        name,
-        fromTeam: newTrade.fromTeam,
-        toTeam: newTrade.toTeam,
-        baseSalary,
-        retainedAmount,
-        newSalary,
-      };
-    });
+  return {
+    name: getDisplayNameFromToken(name),
+    fromTeam: newTrade.fromTeam,
+    toTeam: newTrade.toTeam,
+    baseSalary,
+    retainedAmount,
+    newSalary,
+  };
+});
+
 
     const requestedDetails = (newTrade.requestedPlayers || []).map((name) => {
-      const p =
-        (toTeamObj?.roster || []).find((pl) => pl.name === name) || null;
+      const p = findRosterPlayerByToken(toTeamObj, name);
       const baseSalary = p ? Number(p.salary) || 0 : 0;
       const retainedAmount = Number(newTrade.retentionTo?.[name] || 0) || 0;
       const newSalary = Math.max(0, baseSalary - retainedAmount);
 
       return {
-        name,
+        name: getDisplayNameFromToken(name),
         fromTeam: newTrade.toTeam,
         toTeam: newTrade.fromTeam,
         baseSalary,
@@ -1385,17 +1743,117 @@ const handleCounterTrade = (trade) => {
 
   setTradeDraft(newDraft);
 };
+
+// Phase 2A: normalize playerId inputs (strict ID-first)
+// Accepts: 8475798, "8475798", "id:8475798" (from legacy/accidental formats)
+// Rejects: null/undefined/"undefined"/non-numeric
+const normalizePlayerIdStrict = (raw) => {
+  if (raw == null) return null;
+
+  // If someone accidentally passes "id:####", strip it.
+  const s = String(raw).trim();
+
+  if (!s) return null;
+
+  const stripped = s.toLowerCase().startsWith("id:")
+    ? s.slice(3).trim()
+    : s;
+
+  const n = Number(stripped);
+
+  if (!Number.isFinite(n) || n <= 0) return null;
+  // NHL ids are ints; force int-ish (still safe if API ever returns numeric strings)
+  return Math.trunc(n);
+};
+
+// ------------------------------
+// Phase 2: Player ref helpers (name OR id:####)
+// ------------------------------
+const isIdRef = (token) => String(token || "").trim().toLowerCase().startsWith("id:");
+
+const normalizePlayerRef = (token) => {
+  const s = String(token || "").trim();
+  if (!s) return "";
+  // keep canonical formatting for id refs
+  const pid = normalizePlayerIdStrict(s);
+  if (pid) return `id:${pid}`;
+  return s;
+};
+
+const getPlayerIdFromToken = (token) => normalizePlayerIdStrict(token);
+
+const getDisplayNameFromToken = (token) => {
+  const pid = getPlayerIdFromToken(token);
+  if (pid) return getPlayerNameById(pid) || `id:${pid}`;
+  return String(token || "").trim();
+};
+
+// Find a roster player by token (prefers id match, falls back to name match)
+const findRosterPlayerByToken = (teamObj, token) => {
+  const roster = Array.isArray(teamObj?.roster) ? teamObj.roster : [];
+  const pid = getPlayerIdFromToken(token);
+
+  if (pid) {
+    const hit = roster.find((p) => normalizePlayerIdStrict(p?.playerId) === pid);
+    if (hit) return hit;
+  }
+
+  const key = normalizeKey(token);
+  if (!key) return null;
+
+  return roster.find((p) => normalizeKey(p?.name) === key) || null;
+};
+
+// Remove a roster player by token (id match if possible, else name)
+const removeRosterPlayerByToken = (teamObj, token) => {
+  const roster = Array.isArray(teamObj?.roster) ? teamObj.roster : [];
+  const pid = getPlayerIdFromToken(token);
+
+  if (pid) {
+    return roster.filter((p) => normalizePlayerIdStrict(p?.playerId) !== pid);
+  }
+
+  const key = normalizeKey(token);
+  if (!key) return roster;
+
+  return roster.filter((p) => normalizeKey(p?.name) !== key);
+};
+
+// rosterHasPlayer, but token-aware (supports id:#### or name)
+const rosterHasPlayerToken = (teamObj, token) => {
+  return Boolean(findRosterPlayerByToken(teamObj, token));
+};
+
 // --- Auction handlers ---
 
 
 // Manager places a free-agent bid
-const handlePlaceBid = ({ playerName, position, amount }) => {
+const handlePlaceBid = ({ playerId, playerName, position, amount }) => {
   if (!currentUser || currentUser.role !== "manager") {
     window.alert("Only logged-in managers can place bids.");
     return;
   }
 
+  // TEMP DEBUG (remove after verification)
+  if (import.meta.env.DEV) {
+    console.log("[BID] handlePlaceBid received:", {
+      playerId,
+      playerIdType: typeof playerId,
+      playerName,
+      position,
+      amount,
+    });
+  }
+
   const biddingTeamName = currentUser.teamName;
+
+  // ✅ Strict: normalize to numeric NHL id, or reject
+  const pid = normalizePlayerIdStrict(playerId);
+
+  if (!pid) {
+    window.alert("Player ID required (invalid selection). Try selecting the player again.");
+    return;
+  }
 
   let errorToShow = null;
 
@@ -1408,6 +1866,7 @@ const handlePlaceBid = ({ playerName, position, amount }) => {
       teams: prevTeams,
       freeAgents: prevFreeAgents,
       biddingTeamName,
+      playerId: String(pid), // ✅ ALWAYS numeric string now
       playerName,
       position,
       rawAmount: amount,
@@ -1435,22 +1894,19 @@ const handlePlaceBid = ({ playerName, position, amount }) => {
       patch.leagueLog = [result.logEntry, ...prevLog];
     }
 
-    // OPTIONAL: if you want managers to see cap warnings (this is non-meta and useful)
-    if (result.warningMessage) {
-      // You can decide if you want to surface this or not
-      // errorToShow = result.warningMessage; // (or handle separately)
-    }
-
     return patch;
   });
-if (ok) {
-  playSound("/sounds/VGplacebid-crop.wav", { volume: 0.5 });
-}
+
+  if (ok) {
+    playSound("/sounds/VGplacebid-crop.wav", { volume: 0.5 });
+  }
 
   if (!ok && errorToShow) {
     window.alert(errorToShow);
   }
 };
+
+
 
 
 
@@ -1680,6 +2136,7 @@ return (
           leagueSettings={leagueSettings}
           commitLeagueUpdate={commitLeagueUpdate}
          onCleanupDeleteLogs={handleCommissionerCleanupDeleteLogs}
+         playerApi={playerApi}
 
         />
       </div>
@@ -1718,6 +2175,7 @@ return (
             onManagerProfileImageChange={handleManagerProfileImageChange}
             onSubmitTradeDraft={handleSubmitTradeDraft}
             onAddToTradeBlock={handleAddTradeBlockEntry}
+            playerApi={playerApi}
           />
 
           <TeamToolsPanel
@@ -1742,6 +2200,7 @@ return (
             onResolveAuctions={handleResolveAuctions}
             onCommissionerRemoveBid={handleCommissionerRemoveBid}
             onRemoveTradeBlockEntry={handleRemoveTradeBlockEntry}
+            playerApi={playerApi}
           />
         </div>
       </div>
@@ -1754,6 +2213,8 @@ return (
           setHistoryFilter={setHistoryFilter}
             currentUser={currentUser}
   onDeleteLogEntry={handleCommissionerDeleteLogEntry}
+    playerApi={playerApi}
+
         />
       </div>
     </div>
