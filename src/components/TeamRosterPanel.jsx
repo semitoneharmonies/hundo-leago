@@ -14,6 +14,74 @@ import {
 const MAX_IR = 4;
 const MAX_RETENTION_SPOTS = 3;
 
+// Colors (kept close to your current palette)
+const BASE_BG = "#020617"; // current dark blue background
+const BORDER = "#1f2937";
+const TEXT = "#e5e7eb";
+const MUTED = "#9ca3af";
+
+const POS_COLORS = {
+  F: { solid: "#22c55e", tint: "rgba(34,197,94,0.22)" }, // green
+  D: { solid: "#a855f7", tint: "rgba(168,85,247,0.22)" }, // purple
+  G: { solid: "#60a5fa", tint: "rgba(96,165,250,0.22)" }, // blue (fallback)
+};
+
+const HealthIcon = ({ size = 14 }) => {
+  const s = size;
+  const bar = Math.max(2, Math.round(s / 4));
+
+  return (
+    <span
+      style={{
+        width: s + 8,
+        height: s + 8,
+        borderRadius: "50%",
+        background: "#dc2626", // red-600
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.45)",
+      }}
+    >
+      <span
+        style={{
+          position: "relative",
+          width: s,
+          height: s,
+        }}
+      >
+        {/* vertical bar */}
+        <span
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: 0,
+            transform: "translateX(-50%)",
+            width: bar,
+            height: "100%",
+            background: "#ffffff",
+            borderRadius: 2,
+          }}
+        />
+        {/* horizontal bar */}
+        <span
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: 0,
+            transform: "translateY(-50%)",
+            width: "100%",
+            height: bar,
+            background: "#ffffff",
+            borderRadius: 2,
+          }}
+        />
+      </span>
+    </span>
+  );
+};
+
+
 function TeamRosterPanel({
   team,
   capLimit,
@@ -47,7 +115,7 @@ function TeamRosterPanel({
   }
 
   // -----------------------
-  // Phase 2: identity helpers
+  // ID helpers
   // -----------------------
   const normalizeNhlId = (raw) => {
     if (raw == null) return null;
@@ -59,18 +127,17 @@ function TeamRosterPanel({
     return Math.trunc(n);
   };
 
-  // Canonical “player ref” used throughout the app during migration:
+  const getPlayerId = (p) => normalizeNhlId(p?.playerId ?? p?.id);
+
+  // Canonical “player ref” used for storage/actions:
   // - preferred: "id:<pid>"
   // - fallback: "<name>"
   const getPlayerRef = (p) => {
     if (!p) return "";
-    const pid = normalizeNhlId(p.playerId ?? p.id);
+    const pid = getPlayerId(p);
     if (pid) return `id:${pid}`;
-    const nm = String(p.name || "").trim();
-    return nm;
+    return String(p?.name || "").trim();
   };
-
-  const getPlayerId = (p) => normalizeNhlId(p?.playerId ?? p?.id);
 
   const mapGet = (maybeMap, key) => {
     if (!maybeMap || key == null) return null;
@@ -81,127 +148,138 @@ function TeamRosterPanel({
       return null;
     }
   };
-    const lookupPlayerById = (pid) => {
-  const n = normalizeNhlId(pid);
-  if (!n) return null;
 
-  const kNum = n;
-  const kStr = String(n);
+  const lookupPlayerById = (pid) => {
+    const n = normalizeNhlId(pid);
+    if (!n) return null;
 
-  // try many real-world key variants (Map or object)
-  const candidates = [
-    kNum,
-    kStr,
-    `id:${kStr}`,
-    `ID:${kStr}`,
-    `player:${kStr}`,
-    `playerId:${kStr}`,
-    `pid:${kStr}`,
-    `nhl:${kStr}`,
-    `NHL:${kStr}`,
-  ];
+    const kNum = n;
+    const kStr = String(n);
 
-  const byId = playerApi?.byId;
-  if (!byId) return null;
+    const candidates = [
+      kNum,
+      kStr,
+      `id:${kStr}`,
+      `ID:${kStr}`,
+      `player:${kStr}`,
+      `playerId:${kStr}`,
+      `pid:${kStr}`,
+      `nhl:${kStr}`,
+      `NHL:${kStr}`,
+    ];
 
-  // Map support
-  if (typeof byId.get === "function") {
-    for (const k of candidates) {
-      const v = byId.get(k);
-      if (v) return v;
+    const byId = playerApi?.byId;
+    if (!byId) return null;
 
-      // also try lowercase string keys
-      if (typeof k === "string") {
-        const v2 = byId.get(k.toLowerCase());
-        if (v2) return v2;
+    if (typeof byId.get === "function") {
+      for (const k of candidates) {
+        const v = byId.get(k);
+        if (v) return v;
+        if (typeof k === "string") {
+          const v2 = byId.get(k.toLowerCase());
+          if (v2) return v2;
+        }
       }
+      return null;
     }
-    return null;
-  }
 
-  // object support
-  for (const k of candidates) {
-    const kk = String(k);
-    if (byId[kk]) return byId[kk];
-    const lower = kk.toLowerCase();
-    if (byId[lower]) return byId[lower];
-  }
+    for (const k of candidates) {
+      const kk = String(k);
+      if (byId[kk]) return byId[kk];
+      const lower = kk.toLowerCase();
+      if (byId[lower]) return byId[lower];
+    }
 
-  // numeric key fallback
-  return byId[kNum] || null;
-};
-
+    return byId[kNum] || null;
+  };
 
   const getPlayerDisplayName = (p) => {
     if (!p) return "";
     const pid = getPlayerId(p);
 
-    // preferred helper
+    // Preferred helper
     if (pid && playerApi?.getPlayerNameById) {
       const nm = String(playerApi.getPlayerNameById(pid) || "").trim();
       if (nm) return nm;
     }
 
-    // fallback: byId lookup
+    // Fallback: byId lookup
     if (pid) {
       const obj = lookupPlayerById(pid);
       const nm = String(obj?.name || obj?.fullName || "").trim();
       if (nm) return nm;
     }
 
-    // legacy fallback
+    // Legacy fallback
     return String(p?.name || "").trim();
   };
 
+  // -----------------------
+  // Age helper (needs birthDate on the player object)
+  // -----------------------
+  const computeAge = (birthDateStr) => {
+    const s = String(birthDateStr || "").trim();
+    if (!s) return null;
 
-  // Normalize a name for lookup keys (handles extra spaces/case)
-  const normalizeNameKey = (s) => {
-    return String(s || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, " ");
+    // Expecting YYYY-MM-DD
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (!m) return null;
+
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
+
+    const now = new Date();
+    let age = now.getFullYear() - y;
+
+    const nowMonth = now.getMonth() + 1; // 1-12
+    const nowDay = now.getDate();
+
+    if (nowMonth < mo || (nowMonth === mo && nowDay < d)) age -= 1;
+    if (age < 0 || age > 60) return null; // sanity guard
+    return age;
   };
 
-  // A looser key (drops common punctuation) for name caches that normalize differently
-  const looseNameKey = (s) => {
-    return normalizeNameKey(s).replace(/[.'’\-]/g, "");
+  const getPlayerAge = (p) => {
+    const pid = getPlayerId(p);
+    if (!pid) return null;
+
+    const obj = lookupPlayerById(pid);
+    const birthDate = obj?.birthDate || obj?.birthdate || obj?.birth_date || null;
+    return computeAge(birthDate);
   };
 
-  // Display any stored token (buyouts/tradeblock/etc) as a canonical DB name when possible.
-  // Supports:
-  //   - "id:####"
-  //   - "####"
-  //   - legacy name strings (tries multiple name-key strategies)
-  // Never shows IDs in the UI.
+  // -----------------------
+  // Token label resolver (buyouts/retention)
+  // -----------------------
+  const normalizeNameKey = (s) =>
+    String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+  const looseNameKey = (s) => normalizeNameKey(s).replace(/[.'’\-]/g, "");
+
   const resolvePlayerTokenLabel = (token) => {
     const raw = String(token || "").trim();
     if (!raw) return "";
 
-    // ----- ID path -----
-    const pid = normalizeNhlId(raw); // handles "id:####" or "####"
+    const pid = normalizeNhlId(raw);
     if (pid) {
-      // preferred: provided helper
       if (playerApi?.getPlayerNameById) {
         const nm = String(playerApi.getPlayerNameById(pid) || "").trim();
         if (nm) return nm;
       }
-
-      // fallback: byId map/object
       const obj = lookupPlayerById(pid);
       const nm = String(obj?.name || obj?.fullName || "").trim();
       if (nm) return nm;
-
-      // If we can't resolve the ID, DO NOT leak it in UI
       return "Unknown player";
     }
 
-    // ----- Name path -----
-    // Try multiple lookup strategies (exact -> normalized -> loose)
+    // name path
     const exact = raw;
     const norm = normalizeNameKey(raw);
     const loose = looseNameKey(raw);
 
-    // 1) if you have a getPlayerByName helper, try it a few ways
     if (typeof playerApi?.getPlayerByName === "function") {
       const hit =
         playerApi.getPlayerByName(exact) ||
@@ -210,26 +288,19 @@ function TeamRosterPanel({
       if (hit) return String(hit.fullName || hit.name || raw).trim();
     }
 
-    // 2) if you maintain a byName map/object, try keys there
     const byName =
       mapGet(playerApi?.byName, exact) ||
       mapGet(playerApi?.byName, norm) ||
       mapGet(playerApi?.byName, loose);
 
-if (byName) {
-  const label = String(byName.fullName || byName.name || "").trim();
-  // Only replace if it actually adds information
-  if (label && label.toLowerCase() !== raw.toLowerCase()) {
-    return label;
-  }
-}
+    if (byName) {
+      const label = String(byName.fullName || byName.name || "").trim();
+      if (label && label.toLowerCase() !== raw.toLowerCase()) return label;
+    }
 
-    // Fallback: show what was stored (legacy string)
     return raw;
   };
 
-
-  // Match a roster row against a ref (id:<pid>) or legacy name
   const playerMatchesRef = (p, ref) => {
     if (!p) return false;
     const token = String(ref || "").trim();
@@ -239,7 +310,6 @@ if (byName) {
     const pid = getPlayerId(p);
     if (tokenId && pid) return tokenId === pid;
 
-    // fallback: name compare
     const a = String(p.name || "").trim().toLowerCase();
     const b = token.toLowerCase();
     return a && b && a === b;
@@ -252,7 +322,6 @@ if (byName) {
   const activeRoster = fullRoster.filter((p) => !p.onIR);
   const irPlayers = fullRoster.filter((p) => p.onIR);
 
-  // ACTIVE TEAM (used for size + positional rules)
   const activeTeam = { ...team, roster: activeRoster };
 
   // -----------------------
@@ -324,7 +393,7 @@ if (byName) {
   };
 
   // -----------------------
-  // IR handlers (ID-first)
+  // IR handlers
   // -----------------------
   const moveToIR = (playerRef) => {
     if (!canEditThisTeam) return;
@@ -349,7 +418,7 @@ if (byName) {
   };
 
   // -----------------------
-  // Trade helpers (ID-ready refs)
+  // Trade helpers
   // -----------------------
   const isPlayerRequested = (p) => {
     if (!tradeDraft || !isManagerViewingOtherTeam) return false;
@@ -413,7 +482,7 @@ if (byName) {
   };
 
   // -----------------------
-  // Keys (stable)
+  // Stable keys
   // -----------------------
   const getRowKey = (p, index, suffix = "") => {
     const pid = getPlayerId(p);
@@ -422,6 +491,188 @@ if (byName) {
     const pos = String(p?.position || "");
     const sal = String(p?.salary ?? "");
     return `legacy:${nm}:${pos}:${sal}:${index}${suffix}`;
+  };
+
+  const getPos = (p) => {
+    const raw = String(p?.position || "").toUpperCase().trim();
+    if (raw === "D") return "D";
+    if (raw === "G") return "G";
+    return "F";
+  };
+
+  const formatSalary = (n) => {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return "-";
+    return `$${x}`;
+  };
+
+  const ActionButton = ({ title, onClick, disabled, children, subtle }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      style={{
+        ...iconBtnStyle,
+        ...(subtle ? iconBtnSubtleStyle : {}),
+        ...(disabled ? iconBtnDisabledStyle : {}),
+      }}
+    >
+      {children}
+    </button>
+  );
+
+  const renderRosterRow = (p, index, { isIR }) => {
+    const displayName = getPlayerDisplayName(p);
+    const playerRef = getPlayerRef(p);
+
+    const pos = getPos(p);
+    const posColor = POS_COLORS[pos] || POS_COLORS.F;
+
+    const requested = isPlayerRequested(p);
+    const offered = isPlayerOffered(p);
+
+    const locked = isBuyoutLocked(p);
+    const daysLeft = locked ? getBuyoutLockDaysLeft(p) : 0;
+
+    const penalty = calculateBuyout(p.salary);
+    const newCap = capUsed - (Number(p.salary) || 0) + penalty;
+
+    const age = getPlayerAge(p);
+
+    // subtle green/purple tint on the RIGHT side
+    const bg = `linear-gradient(90deg, ${BASE_BG} 0%, ${BASE_BG} 65%, ${posColor.tint} 100%)`;
+
+    return (
+      <div
+        key={getRowKey(p, index, isIR ? ":ir" : "")}
+        draggable={!isIR && canEditThisTeam}
+        onDragStart={!isIR ? (e) => handleDragStart(e, index) : undefined}
+        onDragOver={!isIR ? (e) => handleDragOver(e, index) : undefined}
+        onDrop={!isIR ? (e) => handleDrop(e, index) : undefined}
+        style={{
+          ...playerRowStyle,
+          background: bg,
+          ...(dragOverIndex === index && !isIR ? { outline: "2px solid #0ea5e9" } : {}),
+          ...(requested || offered ? { boxShadow: "0 0 0 1px rgba(34,197,94,0.35) inset" } : {}),
+        }}
+      >
+        {/* POS PILL */}
+        <div
+          style={{
+            ...posPillStyle,
+            background: posColor.solid,
+            justifySelf: "center",
+          }}
+          title={pos === "F" ? "Forward" : pos === "D" ? "Defense" : "Goalie"}
+        >
+          {pos}
+        </div>
+
+        {/* NAME */}
+        <div style={nameCellStyle} title={displayName}>
+          {displayName}
+        </div>
+
+        {/* AGE */}
+        <div style={ageCellStyle} title={age == null ? "Age unavailable" : `Age: ${age}`}>
+          {age == null ? "—" : age}
+        </div>
+
+        {/* SALARY */}
+        <div style={salaryCellStyle}>{formatSalary(p.salary)}</div>
+
+        {/* STATS (reserved space for later) */}
+        <div style={statsCellStyle} />
+
+
+        {/* ACTIONS */}
+        <div style={actionsCellStyle}>
+          {!isIR && canEditThisTeam && (
+            <div
+              style={{ position: "relative", display: "inline-block" }}
+              onMouseEnter={() => setHoveredBuyoutRef(playerRef)}
+              onMouseLeave={() => setHoveredBuyoutRef(null)}
+            >
+              <ActionButton
+                title={locked ? `Buyout locked (${daysLeft}d)` : "Buyout"}
+                onClick={() => {
+                  if (locked) return;
+                  onBuyout(team.name, playerRef);
+                }}
+                disabled={locked}
+              >
+                💲
+              </ActionButton>
+
+              {hoveredBuyoutRef === playerRef && (
+                <div style={tooltipStyle}>
+                  Penalty: ${penalty}
+                  <br />
+                  New cap: ${newCap}
+                </div>
+              )}
+            </div>
+          )}
+
+          {canEditThisTeam && !isIR && (
+  <ActionButton title="Move to IR" onClick={() => moveToIR(playerRef)} subtle>
+    <HealthIcon />
+  </ActionButton>
+)}
+
+
+          {canEditThisTeam && isIR && (
+            <ActionButton title="Return from IR" onClick={() => returnFromIR(playerRef)} subtle>
+              ↩
+            </ActionButton>
+          )}
+
+          {canEditThisTeam && !isIR && onAddToTradeBlock && (
+            <ActionButton
+              title="Add to Trade Block"
+              onClick={() =>
+                onAddToTradeBlock({
+                  team: team.name,
+                  player: playerRef,
+                  needs: "",
+                })
+              }
+              subtle
+            >
+              📌
+            </ActionButton>
+          )}
+
+          {isManagerViewingOtherTeam && !isIR && (
+            <ActionButton
+              title={requested ? "Unrequest player" : "Request player"}
+              onClick={() => toggleRequestPlayer(p)}
+            >
+              {requested ? "✖" : "↔️"}
+            </ActionButton>
+          )}
+
+          {isManagerViewingOwnTeam && activeDraftFromThisManager && !isIR && (
+            <ActionButton
+              title={offered ? "Remove offer" : "Offer player"}
+              onClick={() => toggleOfferPlayer(p)}
+            >
+              {offered ? "✖" : "↔️"}
+            </ActionButton>
+          )}
+
+          {currentUser?.role === "commissioner" && !isIR && (
+            <ActionButton
+              title="Remove player (commissioner)"
+              onClick={() => onCommissionerRemovePlayer(team.name, playerRef)}
+              subtle
+            >
+              🗑
+            </ActionButton>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // -----------------------
@@ -440,16 +691,7 @@ if (byName) {
       />
 
       {/* Cap summary */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "10px",
-          marginBottom: "12px",
-          fontSize: "0.9rem",
-          color: "#e5e7eb",
-        }}
-      >
+      <div style={capSummaryStyle}>
         <div>
           <strong>Cap Used:</strong> ${capUsed}
         </div>
@@ -463,8 +705,7 @@ if (byName) {
           <strong>Buyout Penalties:</strong> ${totalBuyoutPenalty(team)}
         </div>
         <div>
-          <strong>Retention spots used:</strong> {retentionSpotsUsed} /{" "}
-          {MAX_RETENTION_SPOTS}
+          <strong>Retention spots used:</strong> {retentionSpotsUsed} / {MAX_RETENTION_SPOTS}
         </div>
       </div>
 
@@ -475,157 +716,30 @@ if (byName) {
       )}
 
       {/* ACTIVE ROSTER */}
-      <Section title="Roster">
-        {activeRoster.map((p, index) => {
-          const displayName = getPlayerDisplayName(p);
-          const playerRef = getPlayerRef(p);
+<Section title="Roster">
+  {/* Column headers */}
+  <RosterColumnHeader />
 
-          const requested = isPlayerRequested(p);
-          const offered = isPlayerOffered(p);
 
-          const penalty = calculateBuyout(p.salary);
-          const newCap = capUsed - (Number(p.salary) || 0) + penalty;
+  {activeRoster.map((p, index) => renderRosterRow(p, index, { isIR: false }))}
+</Section>
 
-          const locked = isBuyoutLocked(p);
-          const daysLeft = locked ? getBuyoutLockDaysLeft(p) : 0;
-
-          return (
-            <div
-              key={getRowKey(p, index)}
-              draggable={canEditThisTeam}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDrop={(e) => handleDrop(e, index)}
-              style={{
-                ...rowStyle,
-                ...(dragOverIndex === index ? { outline: "2px solid #0ea5e9" } : {}),
-                ...(requested || offered ? { background: "#083329" } : {}),
-              }}
-            >
-              <div>
-                <div>{displayName}</div>
-                <div style={subText}>
-                  {p.position} • ${p.salary}
-                  {getPlayerId(p) ? (
-                    <span style={{ marginLeft: 6, color: "#94a3b8" }}>
-                      ({playerRef})
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 6 }}>
-                {canEditThisTeam && (
-                  <div
-                    style={{ position: "relative", display: "inline-block" }}
-                    onMouseEnter={() => setHoveredBuyoutRef(playerRef)}
-                    onMouseLeave={() => setHoveredBuyoutRef(null)}
-                  >
-                    <button
-                      onClick={() => {
-                        if (locked) return;
-                        // ID-first: pass ref (id:<pid>) when available
-                        onBuyout(team.name, playerRef);
-                      }}
-                      disabled={locked}
-                      style={
-                        locked
-                          ? {
-                              backgroundColor: "#1e40af",
-                              opacity: 0.55,
-                              cursor: "not-allowed",
-                            }
-                          : undefined
-                      }
-                      title={locked ? `Buyout locked: ${daysLeft} day(s) left` : undefined}
-                    >
-                      {locked ? `Buyout (${daysLeft}d)` : "Buyout"}
-                    </button>
-
-                    {hoveredBuyoutRef === playerRef && (
-                      <div style={tooltipStyle}>
-                        Penalty: ${penalty}
-                        <br />
-                        New cap: ${newCap}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {canEditThisTeam && <button onClick={() => moveToIR(playerRef)}>IR</button>}
-
-                {canEditThisTeam && onAddToTradeBlock && (
-                  <button
-                    onClick={() =>
-                      onAddToTradeBlock({
-                        team: team.name,
-                        player: playerRef, // ✅ store ref (id:<pid>) when possible
-                        needs: "",
-                      })
-                    }
-                    title="Adds this player to your Trade Block list"
-                  >
-                    Trade Block
-                  </button>
-                )}
-
-                {isManagerViewingOtherTeam && (
-                  <button onClick={() => toggleRequestPlayer(p)}>
-                    {requested ? "Unrequest" : "Request"}
-                  </button>
-                )}
-
-                {isManagerViewingOwnTeam && activeDraftFromThisManager && (
-                  <button onClick={() => toggleOfferPlayer(p)}>
-                    {offered ? "Remove offer" : "Offer"}
-                  </button>
-                )}
-
-                {currentUser?.role === "commissioner" && (
-                  <button
-                    onClick={() => onCommissionerRemovePlayer(team.name, playerRef)}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </Section>
 
       {/* IR */}
-      <Section title={`Injured Reserve (${irPlayers.length}/${MAX_IR})`}>
-        {irPlayers.map((p, index) => {
-          const displayName = getPlayerDisplayName(p);
-          const playerRef = getPlayerRef(p);
+<Section title={`Injured Reserve (${irPlayers.length}/${MAX_IR})`}>
+  {/* Column headers */}
+  <RosterColumnHeader />
 
-          return (
-            <div key={getRowKey(p, index, ":ir")} style={rowStyle}>
-              <div>
-                {displayName}
-                <div style={subText}>
-                  {p.position} • ${p.salary}
-                  {getPlayerId(p) ? (
-                    <span style={{ marginLeft: 6, color: "#94a3b8" }}>
-                      ({playerRef})
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-              {canEditThisTeam && (
-                <button onClick={() => returnFromIR(playerRef)}>Return</button>
-              )}
-            </div>
-          );
-        })}
-      </Section>
+
+  {irPlayers.map((p, index) => renderRosterRow(p, index, { isIR: true }))}
+</Section>
+
 
       {/* Buyouts */}
       <Section title="Buyouts">
         {normalBuyouts.map((b, i) => (
-          <div key={i} style={rowStyle}>
-<span>{resolvePlayerTokenLabel(b?.player || "")}</span>
+          <div key={i} style={simpleRowStyle}>
+            <span>{resolvePlayerTokenLabel(b?.player || "")}</span>
             <span>${Number(b?.penalty) || 0}</span>
           </div>
         ))}
@@ -634,47 +748,153 @@ if (byName) {
       {/* Retention */}
       <Section title="Retained Salary">
         {retainedBuyouts.map((b, i) => (
-          <div key={i} style={rowStyle}>
-<span>{resolvePlayerTokenLabel(b?.player || "")}</span>
+          <div key={i} style={simpleRowStyle}>
+            <span>{resolvePlayerTokenLabel(b?.player || "")}</span>
             <span>${Number(b?.penalty) || 0}</span>
           </div>
         ))}
-        <div style={subText}>
-          Spots used: {retentionSpotsUsed}/{MAX_RETENTION_SPOTS}
-        </div>
+        <div style={subText}>Spots used: {retentionSpotsUsed}/{MAX_RETENTION_SPOTS}</div>
       </Section>
     </div>
   );
 }
 
 /* ------------------ */
-/* Small UI helpers   */
+/* Styles             */
 /* ------------------ */
 
 const panelStyle = {
   padding: "12px 14px",
-  borderRadius: "8px",
-  background: "#020617",
-  border: "1px solid #1f2937",
-  color: "#e5e7eb",
+  borderRadius: "10px",
+  background: BASE_BG,
+  border: `1px solid ${BORDER}`,
+  color: TEXT,
 };
 
-const rowStyle = {
+const capSummaryStyle = {
   display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: "4px 8px",
-  borderRadius: "4px",
-  border: "1px solid #1f2937",
-  marginBottom: 4,
+  flexWrap: "wrap",
+  gap: "10px",
+  marginBottom: "12px",
+  fontSize: "0.9rem",
+  color: TEXT,
 };
 
-const subText = { fontSize: "0.8rem", color: "#9ca3af" };
+
+// Shared grid so header lines up perfectly with rows
+// Shared grid so header lines up perfectly with rows
+const rosterGridTemplateColumns = "28px 1fr 44px 72px 120px 160px";
+
+const playerRowStyle = {
+  display: "grid",
+  // pill | name | age | salary | (reserved stats area) | actions
+  gridTemplateColumns: rosterGridTemplateColumns,
+  alignItems: "center",
+  gap: 10,
+  padding: "6px 10px",
+  borderRadius: 8,
+  border: `1px solid ${BORDER}`,
+  marginBottom: 6,
+};
+
+const rosterHeaderRowStyle = {
+  display: "grid",
+  gridTemplateColumns: rosterGridTemplateColumns,
+  alignItems: "center",
+  gap: 10,
+  padding: "4px 10px",
+  marginBottom: 6,
+  color: "#94a3b8",
+  fontSize: "0.72rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+};
+
+const headerRight = { justifySelf: "end" };
+const headerCenter = { justifySelf: "center" };
+
+
+const posPillStyle = {
+  width: 24,
+  height: 24,
+  borderRadius: "999px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#0b1020",
+  fontWeight: 900,
+  fontSize: "0.8rem",
+  boxShadow: "0 6px 14px rgba(0,0,0,0.35)",
+  userSelect: "none",
+};
+
+const nameCellStyle = {
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  fontSize: "0.98rem",
+  fontWeight: 800,
+  letterSpacing: "0.2px",
+  fontFamily:
+    'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif',
+};
+
+
+const ageCellStyle = {
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+  color: "#cbd5e1",
+};
+
+const salaryCellStyle = {
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+  color: "#e2e8f0",
+};
+
+const statsCellStyle = {
+  height: 1, // intentionally empty spacer column for future stats
+};
+
+const actionsCellStyle = {
+  display: "flex",
+  justifyContent: "flex-end",
+  gap: 6,
+  alignItems: "center",
+};
+
+const iconBtnStyle = {
+  width: 32,
+  height: 28,
+  borderRadius: 8,
+  border: `1px solid ${BORDER}`,
+  background: "#0b1224",
+  color: TEXT,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "0.9rem",
+  lineHeight: 1,
+};
+
+const iconBtnSubtleStyle = {
+  background: "#071022",
+  opacity: 0.95,
+};
+
+const iconBtnDisabledStyle = {
+  opacity: 0.45,
+  cursor: "not-allowed",
+};
+
+const subText = { fontSize: "0.8rem", color: MUTED };
 
 const illegalStyle = {
   marginBottom: 10,
   padding: "6px 8px",
-  borderRadius: 6,
+  borderRadius: 8,
   background: "#450a0a",
   border: "1px solid #b91c1c",
   color: "#fecaca",
@@ -685,16 +905,38 @@ const tooltipStyle = {
   left: "100%",
   top: "50%",
   transform: "translate(8px, -50%)",
-  background: "#020617",
+  background: BASE_BG,
   border: "1px solid #4b5563",
   padding: "6px 8px",
   fontSize: "0.75rem",
   zIndex: 50,
   whiteSpace: "nowrap",
   pointerEvents: "none",
-  borderRadius: 6,
-  boxShadow: "0 8px 20px rgba(0,0,0,0.45)",
+  borderRadius: 8,
+  boxShadow: "0 10px 24px rgba(0,0,0,0.55)",
 };
+
+const simpleRowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "6px 10px",
+  borderRadius: 8,
+  border: `1px solid ${BORDER}`,
+  marginBottom: 6,
+  background: BASE_BG,
+};
+
+const RosterColumnHeader = () => (
+  <div style={rosterHeaderRowStyle}>
+    <div style={headerCenter}>POS</div>
+    <div>NAME</div>
+    <div style={headerRight}>AGE</div>
+    <div style={headerRight}>SALARY</div>
+    <div style={headerCenter}>STATS</div>
+    <div style={headerRight}>ACTIONS</div>
+  </div>
+);
 
 const Section = ({ title, children }) => {
   const childArray = React.Children.toArray(children);
@@ -704,7 +946,7 @@ const Section = ({ title, children }) => {
     <div style={{ marginTop: 16 }}>
       <h3 style={{ marginBottom: 8 }}>{title}</h3>
       {isEmpty ? (
-        <p style={{ color: "#9ca3af", fontSize: "0.85rem" }}>None</p>
+        <p style={{ color: MUTED, fontSize: "0.85rem" }}>None</p>
       ) : (
         childArray
       )}
@@ -729,13 +971,12 @@ const Header = ({
         style={{ width: 60, height: 60, borderRadius: "50%" }}
       />
     ) : (
-      <div
-        style={{ width: 60, height: 60, borderRadius: "50%", background: "#111827" }}
-      />
+      <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#111827" }} />
     )}
+
     <div style={{ flex: 1 }}>
       <h2 style={{ margin: 0 }}>{team.name}</h2>
-      <div style={subText}>
+      <div style={{ fontSize: "0.8rem", color: MUTED }}>
         Active roster: {rosterSize}/{maxRosterSize} • F {F} / D {D}
       </div>
     </div>
@@ -746,11 +987,13 @@ const Header = ({
           padding: "6px 10px",
           fontSize: "0.8rem",
           backgroundColor: "#1d4ed8",
-          color: "#e5e7eb",
-          borderRadius: "4px",
+          color: TEXT,
+          borderRadius: 8,
           cursor: "pointer",
           display: "inline-block",
+          border: `1px solid ${BORDER}`,
         }}
+        title="Change team logo"
       >
         <input type="file" hidden accept="image/*" onChange={onManagerProfileImageChange} />
         Change logo
