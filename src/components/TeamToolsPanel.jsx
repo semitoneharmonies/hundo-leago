@@ -17,7 +17,30 @@ import {
  *   byName: { [lowerName]: { id, name, ... } } OR Map(lowerName -> player)
  * }
  */
+// EXACT roster-position pill (shared look)
+const ROSTER_POS_COLORS = {
+  F: "#22c55e", // green
+  D: "#a855f7", // purple
+};
 
+const rosterPosPill = (pos) => {
+  const color = ROSTER_POS_COLORS[pos === "D" ? "D" : "F"];
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 24,
+    height: 24,
+    borderRadius: "50%",
+    backgroundColor: color,
+    color: "#020617", // dark text like roster
+    fontWeight: 900,
+    fontSize: "0.75rem",
+    lineHeight: 1,
+    flexShrink: 0,
+  };
+};
 function TeamToolsPanel({
   currentUser,
   selectedTeam,
@@ -138,6 +161,8 @@ const normalizeNhlId = (raw) => {
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.trunc(n);
 };
+
+
 
 // Phase 2A: ensure dropdown player object is in the canonical shape we expect
 const normalizeSearchPlayer = (p) => {
@@ -610,6 +635,14 @@ const handleLiveBidSubmit = (auction) => {
   };
 
   const canSubmitThisTrade = canSubmitTrade && !tradeBlockedByRetention;
+
+
+// Try to match the roster-name feel (bold, slightly larger, crisp)
+const auctionNameStyle = {
+  fontWeight: 800,
+  fontSize: "0.95rem",
+  color: "#e5e7eb",
+};
 
   // --- Render ---
   return (
@@ -1596,7 +1629,7 @@ if (!isExistingAuction && isPlayerRostered(selectedAuctionPlayer.id || selectedA
                 <div
                   key={playerKey}
                   style={{
-                    padding: "6px 8px",
+                    padding: "8px 10px",
                     borderRadius: "6px",
                     background: "#020617",
                     border: "1px solid #1f2937",
@@ -1605,9 +1638,13 @@ if (!isExistingAuction && isPlayerRostered(selectedAuctionPlayer.id || selectedA
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
                     <div>
                       <div>
-                        <strong>
-{getAuctionDisplayName(auction)} ({auction.position})
-                        </strong>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+<span style={rosterPosPill(auction.position)}>
+  {auction.position}
+</span>
+  <span style={auctionNameStyle}>{getAuctionDisplayName(auction)}</span>
+</div>
+
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
                         {bidCount === 0 ? "No bids placed yet." : bidCount === 1 ? "1 bid placed." : `${bidCount} bids placed.`}
@@ -1734,9 +1771,16 @@ if (!isExistingAuction && isPlayerRostered(selectedAuctionPlayer.id || selectedA
                     alignItems: "center",
                   }}
                 >
-                  <span>
-{getBidDisplayName(b)} ({b.position}) — ${b.amount}
-                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+<span style={rosterPosPill(b.position)}>
+  {b.position}
+</span>
+  <span style={auctionNameStyle}>{getBidDisplayName(b)}</span>
+  <span style={{ color: "#9ca3af", fontWeight: 700 }}>
+    — ${b.amount}
+  </span>
+</span>
+
 
                   <span style={{ color: "#6b7280", fontSize: "0.7rem", whiteSpace: "nowrap" }}>
                     {new Date(b.timestamp).toLocaleString()}

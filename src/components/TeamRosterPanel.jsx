@@ -964,42 +964,69 @@ const Header = ({
   D,
 }) => (
   <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-    {team.profilePic ? (
-      <img
-        src={team.profilePic}
-        alt=""
-        style={{ width: 60, height: 60, borderRadius: "50%" }}
-      />
-    ) : (
-      <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#111827" }} />
-    )}
+    {/* LOGO (clickable if manager) */}
+    <label
+      title={isManagerViewingOwnTeam ? "Click to change team logo" : ""}
+      style={{
+        width: 60,
+        height: 60,
+        borderRadius: "50%",
+        overflow: "hidden",
+        cursor: isManagerViewingOwnTeam ? "pointer" : "default",
+        display: "inline-block",
+        boxShadow: isManagerViewingOwnTeam
+          ? "0 0 0 2px rgba(59,130,246,0.25)"
+          : "none",
+        transition: "transform 0.12s ease, box-shadow 0.12s ease",
+      }}
+      onMouseEnter={(e) => {
+        if (!isManagerViewingOwnTeam) return;
+        e.currentTarget.style.transform = "scale(1.04)";
+        e.currentTarget.style.boxShadow =
+          "0 0 0 2px rgba(59,130,246,0.4), 0 0 16px rgba(59,130,246,0.4)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "scale(1)";
+        e.currentTarget.style.boxShadow = isManagerViewingOwnTeam
+          ? "0 0 0 2px rgba(59,130,246,0.25)"
+          : "none";
+      }}
+    >
+      {team.profilePic ? (
+        <img
+          src={team.profilePic}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            background: "#111827",
+          }}
+        />
+      )}
 
+      {isManagerViewingOwnTeam && (
+        <input
+          type="file"
+          hidden
+          accept="image/*"
+          onChange={onManagerProfileImageChange}
+        />
+      )}
+    </label>
+
+    {/* TEAM INFO */}
     <div style={{ flex: 1 }}>
       <h2 style={{ margin: 0 }}>{team.name}</h2>
       <div style={{ fontSize: "0.8rem", color: MUTED }}>
         Active roster: {rosterSize}/{maxRosterSize} • F {F} / D {D}
       </div>
     </div>
-
-    {isManagerViewingOwnTeam && (
-      <label
-        style={{
-          padding: "6px 10px",
-          fontSize: "0.8rem",
-          backgroundColor: "#1d4ed8",
-          color: TEXT,
-          borderRadius: 8,
-          cursor: "pointer",
-          display: "inline-block",
-          border: `1px solid ${BORDER}`,
-        }}
-        title="Change team logo"
-      >
-        <input type="file" hidden accept="image/*" onChange={onManagerProfileImageChange} />
-        Change logo
-      </label>
-    )}
   </div>
 );
+
 
 export default TeamRosterPanel;

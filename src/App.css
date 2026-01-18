@@ -1,30 +1,218 @@
+/* ================================
+   Hundo Leago — App.css (full rewrite)
+   ================================ */
+
+/* ---------- Base / safety ---------- */
+html,
 body {
+  height: 100%;
+  min-height: 100%;
   margin: 0;
-  background-color: #0f172a;
-  font-family: Arial, sans-serif;
+  overflow-x: hidden; /* prevents accidental horizontal scroll */
 }
 
+body {
+  font-family: Arial, sans-serif;
+  background: #020617;
+  color: #e5e7eb;
+  overflow-y: auto;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ---------- App canvas + cloudy background ---------- */
+/* .page is your main app wrapper */
 .page {
   min-height: 100vh;
-  padding: 40px 0;
-  display: flex;
-  justify-content: center;
+  width: 100%;
+  position: relative;
+  isolation: isolate;
+
+  /* space around content */
+  padding: 18px 18px 40px;
+
+  /* slightly more colourful “cloudy” field */
+  background:
+    radial-gradient(900px 700px at 10% 18%, rgba(59, 130, 246, 0.32), transparent 62%),
+    radial-gradient(820px 640px at 88% 20%, rgba(168, 85, 247, 0.28), transparent 60%),
+    radial-gradient(760px 760px at 32% 90%, rgba(34, 197, 94, 0.20), transparent 64%),
+    radial-gradient(980px 760px at 78% 84%, rgba(249, 115, 22, 0.16), transparent 68%),
+    linear-gradient(180deg, #020617 0%, #020617 100%);
+
+  /* important for sticky: don't clip */
+  overflow: visible;
 }
 
+/* grain */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+
+  opacity: 0.10; /* a bit stronger so the texture reads */
+
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* vignette */
+.page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+
+  background: radial-gradient(
+    120% 95% at 50% 38%,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.35) 65%,
+    rgba(0, 0, 0, 0.62) 100%
+  );
+}
+
+/* ensure content sits above the background layers */
+.page > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Layout wrapper ---------- */
+/* Kill the old “centered card container” behavior completely */
 .container {
-  width: 95%;
-  max-width: 1200px;
-  background: #1e293b;
-  border-radius: 16px;
-  padding: 30px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
-  color: white;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible; /* important for sticky */
 }
 
+/* ---------- Sticky Top Bar ---------- */
+/* NOTE: sticky fails if ANY ancestor has overflow:hidden/auto/scroll or transform.
+   We’ve kept .page/.container overflow visible above. */
+/* ---------- Sticky Top Bar (fixed) ---------- */
+/* ---------- Sticky Top Bar ---------- */
+/* Sticky can fail if an ancestor has overflow != visible or transform.
+   We already set .page and .container to overflow: visible. */
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+
+  position: sticky;
+  top: 0;
+  z-index: 5000;
+  position: -webkit-sticky; /* harmless fallback */
+
+  /* IMPORTANT: no negative margins */
+  margin: 0 0 14px;
+  padding: 12px 18px;
+
+  /* readable over the cloudy background */
+  background: rgba(2, 6, 23, 0.84);
+  backdrop-filter: blur(10px);
+
+  /* kill that lighter blue border look */
+  border: 1px solid rgba(148, 163, 184, 0.06);
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+
+  /* needed so ::before positions correctly */
+  position: sticky;
+}
+
+/* Extend background to screen edges while keeping .page padding */
+.topBar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -9999px;
+  right: -9999px;
+  background: rgba(2, 6, 23, 0.84);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+  z-index: -1;
+}
+
+/* prevent left cluster shrinking */
+.topBar > :first-child {
+  flex-shrink: 0;
+}
+
+/* let login form shrink nicely */
+.topBar form,
+.topBar .loginForm {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+/* Mobile: wrap, but DO NOT negative-margin the bar */
+@media (max-width: 820px) {
+  .topBar {
+    flex-wrap: wrap;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+  }
+}
+
+
+/* ---------- Grid layout (logged in OR logged out stays full width) ---------- */
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  width: 100%;
+}
+
+.mainGrid > * {
+  min-width: 0;
+}
+
+/* stack on small screens */
+@media (max-width: 820px) {
+  .mainGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ---------- Panels (left / right) ---------- */
+.left,
+.right {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.08);
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 48px rgba(59, 130, 246, 0.10);
+
+  backdrop-filter: blur(7px);
+
+  border-radius: 14px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ---------- Typography / links ---------- */
 h1 {
   text-align: center;
   color: #ff4d4f;
-  margin-bottom: 30px;
+  margin: 0 0 22px;
 }
 
 h2 {
@@ -37,191 +225,128 @@ a {
   text-decoration: none;
   font-weight: bold;
 }
-
 a:hover {
   text-decoration: underline;
 }
 
-input {
-  padding: 8px;
-  margin: 5px 5px 5px 0;
-  border-radius: 6px;
-  border: none;
+/* ---------- Fancy inputs (TopBar + Auction + generally nicer) ---------- */
+/* Base styling for inputs/selects */
+input,
+select {
+  color: #e5e7eb;
+
+  /* dark inner fill */
+  background:
+    linear-gradient(rgba(10, 16, 36, 0.92), rgba(2, 6, 23, 0.92)) padding-box,
+    /* colourful border */
+    linear-gradient(
+      90deg,
+      rgba(59, 130, 246, 0.75),
+      rgba(168, 85, 247, 0.70),
+      rgba(34, 197, 94, 0.60)
+    ) border-box;
+
+  border: 1px solid transparent;
+  border-radius: 10px;
+
+  padding: 8px 10px;
+  min-height: 36px;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 6px 14px rgba(0, 0, 0, 0.25);
+
+  outline: none;
 }
 
+/* kill the “grey select dropdown” list look where browsers allow it */
+select option {
+  background-color: #0b1226;
+  color: #e5e7eb;
+}
+
+/* focus glow */
+input:focus,
+select:focus {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 3px rgba(59, 130, 246, 0.18),
+    0 10px 18px rgba(0, 0, 0, 0.30);
+}
+
+/* placeholders */
+input::placeholder {
+  color: rgba(226, 232, 240, 0.55);
+}
+
+/* Make TopBar controls consistent */
+.topBar input,
+.topBar select {
+  max-width: 260px;
+}
+
+@media (min-width: 821px) {
+  .topBar input {
+    max-width: 180px;
+  }
+}
+
+/* ---------- Buttons ---------- */
 button {
   padding: 8px 12px;
-  border-radius: 6px;
-  border: none;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
   cursor: pointer;
-  margin: 5px 5px 5px 0;
-  background: #334155;
+  margin: 0;
+  background: rgba(37, 99, 235, 0.92);
   color: white;
+  font-weight: 700;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+  transition: transform 0.08s ease, filter 0.15s ease;
 }
 
 button:hover {
-  background: #475569;
+  filter: brightness(1.05);
 }
 
+button:active {
+  transform: translateY(1px);
+}
+
+/* ---------- Lists ---------- */
 ul {
   padding-left: 20px;
 }
-
 li {
   margin-bottom: 6px;
 }
 
-/* ---------- Layout columns ---------- */
-.columns {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-/* ---------- Top bar layout ---------- */
-.topBar {
-  flex-wrap: nowrap;          /* desktop: single row */
-}
-
-/* Prevent left side from shrinking */
-.topBar > :first-child {
-  flex-shrink: 0;
-}
-
-/* Let login form shrink instead of wrapping */
-.topBar form,
-.topBar .loginForm {
-  flex-shrink: 1;
-  min-width: 0;
-}
-
-/* Mobile: allow wrapping */
-@media (max-width: 820px) {
-  .topBar {
-    flex-wrap: wrap;
-  }
-}
-@media (min-width: 821px) {
-  .topBar input {
-    max-width: 160px;
-  }
-}
-
-/* each column will take equal space, but never smaller than 280px */
-.columns > .left,
-.columns > .right {
-  flex: 1 1 50%;
-  min-width: 280px;
-}
-
-/* Make sure the container stays centered and comfortable on very wide screens */
-.page {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;   /* horizontal centering */
-  align-items: flex-start;   /* align top */
-  padding: 40px 0;           /* optional vertical spacing */
-}
-
-.container {
-  width: 95%;
-  max-width: 1200px;
-  background: #1e293b;
-  border-radius: 16px;
-  padding: 30px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
-  color: white;
-}
-
-
-/* Small screens: stack columns vertically */
-@media (max-width: 880px) {
-  .columns {
-    flex-direction: column;
-  }
-
-  .columns > .left,
-  .columns > .right {
-    min-width: auto;
-  }
-
-  /* Make input fields and buttons full width on small screens */
-  .columns input,
-  .columns button {
-    width: 100%;
-    margin-bottom: 8px;
-  }
-
-  /* Make roster items stack nicely */
-  .roster-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .roster-item button {
-    margin-top: 6px;
-    width: 100%;
-  }
-}
-
-.left, .right {
-  background: #1e293b; /* matches container background or slightly darker */
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.4);
-}
-
-input {
-  width: calc(100% - 10px); /* full width minus margin */
-  box-sizing: border-box;
-}
-
-button {
-  background: #2563eb; /* nicer blue */
-  color: white;
-  font-weight: bold;
-  transition: background 0.2s;
-}
-
-button:hover {
-  background: #1d4ed8;
-}
-
-h2 {
-  margin-bottom: 15px;
-}
-
-ul {
-  margin-top: 10px;
-  padding-left: 15px;
-}
-
-li {
-  margin-bottom: 10px;
-}
-
+/* ---------- Roster / items (keep your existing vibe) ---------- */
 .roster-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: #1e293b; /* matches column background */
+
+  padding: 6px 10px;
+  border-bottom: 1px solid #334155;
   border-radius: 8px;
-  margin-bottom: 8px;
-  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+  margin-bottom: 6px;
+
+  background: rgba(30, 41, 59, 0.88);
 }
 
+/* Buyout button */
 .buyout-button {
-  background-color: #ff4d4f; /* bright red */
-  color: white;
+  background-color: #ff4d4f;
+  border-color: rgba(255, 77, 79, 0.4);
 }
-
 .buyout-button:hover {
-  background-color: #ff6b6b; /* slightly lighter red on hover */
+  background-color: #ff6b6b;
 }
 
+/* Free agent cards */
 .free-agent-item {
-  background-color: #334155; /* dark blue card */
+  background-color: #334155;
   padding: 10px 12px;
   border-radius: 10px;
   margin-bottom: 8px;
@@ -231,142 +356,37 @@ li {
 }
 
 .free-agent-item.assigned {
-  background-color: #16a34a; /* green for assigned */
+  background-color: #16a34a;
   color: white;
 }
 
-.free-agent-item button {
-  background-color: #ff4d4f; /* red for actions inside the card */
-  color: white;
-  border: none;
-  padding: 5px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.free-agent-item button:hover {
-  background-color: #ff6b6b;
-}
-
-/* Team roster items */
-.roster-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 10px;
-  border-bottom: 1px solid #334155;
-  border-radius: 6px;
-  margin-bottom: 6px;
-  background: #1e293b;
-}
-
-.roster-item button {
-  background: #475569;
-  padding: 4px 8px;
-  font-size: 0.9rem;
-}
-
-.roster-item button:hover {
-  background: #64748b;
-}
-
+/* Selected team pill */
 .selected-team {
-  background-color: #334155;  /* dark blue-gray highlight */
-  color: #60a5fa;             /* bright blue text */
+  background-color: #334155;
+  color: #60a5fa;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-/* Drag & drop visuals */
+/* Drag visuals */
 .roster-row[draggable="true"] {
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-
 .roster-row.drag-over {
-  box-shadow: 0 6px 18px rgba(96,165,250,0.12);
+  box-shadow: 0 6px 18px rgba(96, 165, 250, 0.12);
   transform: translateY(-4px);
   border-color: #60a5fa;
 }
 
-/* Better defaults for mobile */
-html {
-  -webkit-text-size-adjust: 100%;
-}
-
-.page {
-  min-height: 100vh;
-}
-
-@media (max-width: 820px) {
-  .container {
-    padding: 8px; /* mobile only */
-  }
-
-  .mainGrid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  h1, h2, h3 {
-    margin-top: 8px;
-    margin-bottom: 8px;
-  }
-}
-
-
-/* Your main 2-column layout */
-.mainGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  align-items: start;
-}
-.mainGrid > * {
-  min-width: 0; /* IMPORTANT: allows columns to shrink instead of overflowing */
-}
-
-
-/* Make form elements behave nicely on phones */
-input,
-select,
-button {
-  font-size: 16px; /* prevents iOS “zoom on focus” */
-  max-width: 100%;
-}
-
-/* Mobile layout */
-@media (max-width: 820px) {
-  .container {
-    padding: 8px;
-  }
-
-  .mainGrid {
-    grid-template-columns: 1fr; /* stack panels */
-    gap: 12px;
-  }
-
-  /* reduce some whitespace globally */
-  h1, h2, h3 {
-    margin-top: 8px;
-    margin-bottom: 8px;
-  }
-}
-
-/* If a panel contains something wide, let it scroll instead of forcing zoom */
-.panelScrollX {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
+/* Auction countdown (keep yours) */
 .auction-countdown {
   margin-top: 8px;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: linear-gradient(180deg, #020617, #020617);
   border: 1px solid #1e293b;
   text-align: center;
 }
-
 .auction-countdown .label {
   font-size: 0.75rem;
   color: #94a3b8;
@@ -374,31 +394,24 @@ button {
   margin-bottom: 4px;
   text-transform: uppercase;
 }
-
 .auction-countdown .time {
   font-size: 1.35rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #e5e7eb;
   font-variant-numeric: tabular-nums;
 }
-
-/* < 24 hours */
 .auction-countdown.urgent {
   border-color: #f59e0b;
   background: linear-gradient(180deg, #020617, #1c1403);
 }
-
 .auction-countdown.urgent .time {
   color: #fbbf24;
 }
-
-/* < 1 hour */
 .auction-countdown.critical {
   border-color: #ef4444;
   background: linear-gradient(180deg, #020617, #2a0606);
   animation: pulse 1.5s infinite;
 }
-
 .auction-countdown.critical .time {
   color: #f87171;
 }
