@@ -304,6 +304,39 @@ const getPlayerByName = (name) => {
   const key = normalizeKey(name);
   return playersByNameRef.current.get(key) || null;
 };
+
+// ===============================
+// Phase 2A: Preload full player DB once (fast, professional name resolution)
+// ===============================
+useEffect(() => {
+  let cancelled = false;
+
+  (async () => {
+    try {
+      // Try fetching the full list. Many backends return all players with no query.
+      const res = await fetch(`${PLAYERS_API_URL}?limit=100000`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const arr = Array.isArray(data?.players) ? data.players : [];
+
+      if (cancelled) return;
+
+      if (arr.length > 0) {
+        upsertPlayers(arr);
+        setPlayersReady(true); // ✅ ready immediately after preload
+      }
+    } catch (e) {
+      console.warn("[PLAYERS] preload failed:", e);
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
 // ===============================
 // Phase 2A: Prefetch names for all rostered players (so UI shows DB names)
 // ===============================
@@ -311,6 +344,7 @@ const prefetchLockRef = useRef({ running: false, lastKey: "" });
 
 useEffect(() => {
   if (!hasLoaded) return;
+if (playersReady) return;
 
   // Normalize any id-ish value into a positive int
   const normId = (raw) => {
