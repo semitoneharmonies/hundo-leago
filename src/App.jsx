@@ -308,34 +308,34 @@ const getPlayerByName = (name) => {
 // Phase 2A: Preload full player DB once (fast, professional name resolution)
 // ===============================
 useEffect(() => {
-  if (!hasLoaded) return;          // ✅ wait until league + PLAYERS_API_URL are known-good
-  if (playersReady) return;        // ✅ don't refetch if already ready
+  if (!hasLoaded) return;
+  if (playersReady) return;
 
   let cancelled = false;
 
   (async () => {
     try {
-      const res = await fetch(`${PLAYERS_API_URL}?limit=100000`);
-      if (!res.ok) {
-        console.warn("[PLAYERS] preload HTTP", res.status);
-        return;
-      }
+      const url = `${PLAYERS_API_URL}?limit=100000`;
+      console.log("[PLAYERS] preload url =", url);
+
+      const res = await fetch(url);
+      console.log("[PLAYERS] preload status =", res.status);
+
+      if (!res.ok) return;
 
       const data = await res.json();
       const arr = Array.isArray(data?.players) ? data.players : [];
+      console.log("[PLAYERS] preload count =", arr.length);
 
       if (cancelled) return;
 
-      if (arr.length > 0) {
+      // Important: mark ready ONLY if we actually loaded a real DB
+      if (arr.length > 1000) {
         upsertPlayers(arr);
-
-        // ✅ force one re-render so components see the new Map contents
-        setPlayersTick((x) => x + 1);
-
         setPlayersReady(true);
-        console.log("[PLAYERS] preload ok:", arr.length);
+        setPlayersTick((x) => x + 1);
       } else {
-        console.warn("[PLAYERS] preload returned 0 players");
+        console.warn("[PLAYERS] preload too small, leaving playersReady=false");
       }
     } catch (e) {
       console.warn("[PLAYERS] preload failed:", e);
