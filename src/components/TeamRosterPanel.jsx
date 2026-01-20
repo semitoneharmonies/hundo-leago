@@ -198,8 +198,7 @@ function TeamRosterPanel({
 
   const legacy = String(p?.name || "").trim();
 
-  // ✅ Until players are ready, show legacy to avoid “swapping”
-  if (!playerApi?.playersReady) return legacy;
+
 
   const pid = getPlayerId(p);
 
