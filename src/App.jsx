@@ -304,18 +304,22 @@ const getPlayerByName = (name) => {
   const key = normalizeKey(name);
   return playersByNameRef.current.get(key) || null;
 };
-
 // ===============================
 // Phase 2A: Preload full player DB once (fast, professional name resolution)
 // ===============================
 useEffect(() => {
+  if (!hasLoaded) return;          // ✅ wait until league + PLAYERS_API_URL are known-good
+  if (playersReady) return;        // ✅ don't refetch if already ready
+
   let cancelled = false;
 
   (async () => {
     try {
-      // Try fetching the full list. Many backends return all players with no query.
       const res = await fetch(`${PLAYERS_API_URL}?limit=100000`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.warn("[PLAYERS] preload HTTP", res.status);
+        return;
+      }
 
       const data = await res.json();
       const arr = Array.isArray(data?.players) ? data.players : [];
@@ -324,7 +328,14 @@ useEffect(() => {
 
       if (arr.length > 0) {
         upsertPlayers(arr);
-        setPlayersReady(true); // ✅ ready immediately after preload
+
+        // ✅ force one re-render so components see the new Map contents
+        setPlayersTick((x) => x + 1);
+
+        setPlayersReady(true);
+        console.log("[PLAYERS] preload ok:", arr.length);
+      } else {
+        console.warn("[PLAYERS] preload returned 0 players");
       }
     } catch (e) {
       console.warn("[PLAYERS] preload failed:", e);
@@ -334,8 +345,8 @@ useEffect(() => {
   return () => {
     cancelled = true;
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+}, [hasLoaded, playersReady, PLAYERS_API_URL]);
+
 
 // ===============================
 // Phase 2A: Prefetch names for all rostered players (so UI shows DB names)
@@ -1824,9 +1835,10 @@ const getPlayerIdFromToken = (token) => normalizePlayerIdStrict(token);
 
 const getDisplayNameFromToken = (token) => {
   const pid = getPlayerIdFromToken(token);
-  if (pid) return getPlayerNameById(pid) || `id:${pid}`;
+  if (pid) return getPlayerNameById(pid) || "Unknown player";
   return String(token || "").trim();
 };
+
 
 // Find a roster player by token (prefers id match, falls back to name match)
 const findRosterPlayerByToken = (teamObj, token) => {
