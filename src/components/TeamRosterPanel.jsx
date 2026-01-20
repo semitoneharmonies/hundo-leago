@@ -193,12 +193,17 @@ function TeamRosterPanel({
     return byId[kNum] || null;
   };
 
-  const getPlayerDisplayName = (p) => {
+const getPlayerDisplayName = (p) => {
   if (!p) return "";
 
   const legacy = String(p?.name || "").trim();
 
-
+  // ✅ KEY CHANGE:
+  // While the player DB is still loading, always show legacy names.
+  // This prevents the “one-by-one” trickle effect.
+  if (!playerApi?.playersReady) {
+    return legacy;
+  }
 
   const pid = getPlayerId(p);
 
@@ -217,6 +222,7 @@ function TeamRosterPanel({
 
   return legacy;
 };
+
 
 
   // -----------------------
@@ -255,6 +261,22 @@ function TeamRosterPanel({
     const birthDate = obj?.birthDate || obj?.birthdate || obj?.birth_date || null;
     return computeAge(birthDate);
   };
+
+  const getPlayerTeamAbbrev = (p) => {
+  const pid = getPlayerId(p);
+  if (!pid) return "—";
+
+  const obj = lookupPlayerById(pid);
+  const raw =
+    obj?.teamAbbrev ||
+    obj?.team_abbrev ||
+    obj?.team ||
+    obj?.teamAbbreviation ||
+    "";
+
+  const s = String(raw || "").trim().toUpperCase();
+  return s || "—";
+};
 
   // -----------------------
   // Token label resolver (buyouts/retention)
@@ -541,6 +563,8 @@ function TeamRosterPanel({
 
     const penalty = calculateBuyout(p.salary);
     const newCap = capUsed - (Number(p.salary) || 0) + penalty;
+    const nhlTeam = getPlayerTeamAbbrev(p);
+
 
     const age = getPlayerAge(p);
 
@@ -557,8 +581,13 @@ function TeamRosterPanel({
         style={{
           ...playerRowStyle,
           background: bg,
+          ...(isIR
+  ? { border: "1px solid rgba(239, 68, 68, 0.55)" } // subtle red
+  : {}),
+
           ...(dragOverIndex === index && !isIR ? { outline: "2px solid #0ea5e9" } : {}),
           ...(requested || offered ? { boxShadow: "0 0 0 1px rgba(34,197,94,0.35) inset" } : {}),
+          
         }}
       >
         {/* POS PILL */}
@@ -577,6 +606,12 @@ function TeamRosterPanel({
         <div style={nameCellStyle} title={displayName}>
           {displayName}
         </div>
+
+        {/* NHL TEAM */}
+<div style={nhlTeamCellStyle} title={nhlTeam === "—" ? "Team unavailable" : nhlTeam}>
+  {nhlTeam}
+</div>
+
 
         {/* AGE */}
         <div style={ageCellStyle} title={age == null ? "Age unavailable" : `Age: ${age}`}>
@@ -788,7 +823,8 @@ const capSummaryStyle = {
 
 // Shared grid so header lines up perfectly with rows
 // Shared grid so header lines up perfectly with rows
-const rosterGridTemplateColumns = "28px 1fr 44px 72px 120px 160px";
+// pill | name | NHL team | age | salary | stats | actions
+const rosterGridTemplateColumns = "28px 1fr 56px 44px 72px 120px 160px";
 
 const playerRowStyle = {
   display: "grid",
@@ -843,6 +879,15 @@ const nameCellStyle = {
   letterSpacing: "0.2px",
   fontFamily:
     'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif',
+};
+
+const nhlTeamCellStyle = {
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+  color: "#cbd5e1",
+  fontWeight: 800,
+  letterSpacing: "0.06em",
+  fontSize: "0.82rem",
 };
 
 
@@ -936,6 +981,7 @@ const RosterColumnHeader = () => (
   <div style={rosterHeaderRowStyle}>
     <div style={headerCenter}>POS</div>
     <div>NAME</div>
+    <div style={headerRight}>TEAM</div>
     <div style={headerRight}>AGE</div>
     <div style={headerRight}>SALARY</div>
     <div style={headerCenter}>STATS</div>

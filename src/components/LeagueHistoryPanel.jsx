@@ -37,7 +37,8 @@ const resolvePlayerTokenLabel = (token, playerApi) => {
       byId?.[String(pid)];
     const nm = obj?.fullName || obj?.name;
     if (nm) return String(nm).trim();
-    return raw;
+return "Unknown player"; // never leak id:#### in UI
+
   }
 
   return raw;
