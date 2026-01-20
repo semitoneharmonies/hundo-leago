@@ -37,6 +37,11 @@ const PLAYERS_API_URL =
   import.meta.env.VITE_PLAYERS_API_URL ||
   API_URL.replace(/\/api\/league\/?$/, "/api/players");
 
+  // Phase 2: Stats endpoint (derived from API_URL by default)
+const STATS_API_URL =
+  import.meta.env.VITE_STATS_API_URL ||
+  API_URL.replace(/\/api\/league\/?$/, "/api/stats");
+
 // League rules
 const CAP_LIMIT = 100;
 const MAX_ROSTER_SIZE = 15;
@@ -440,6 +445,65 @@ const playerApi = {
   _playersTick: playersTick,
 };
 
+// ===============================
+// Phase 2: Stats (read-only)
+// ===============================
+const [statsReady, setStatsReady] = useState(false);
+const [statsByPlayerId, setStatsByPlayerId] = useState({});
+const [statsMeta, setStatsMeta] = useState({
+  seasonId: null,
+  gameTypeId: null,
+  lastUpdatedAt: null,
+});
+
+useEffect(() => {
+  // Don’t block initial league load; stats are optional sugar
+  if (!hasLoaded) return;
+
+  let cancelled = false;
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(STATS_API_URL, { method: "GET" });
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (cancelled) return;
+
+      const by = data?.byPlayerId && typeof data.byPlayerId === "object" ? data.byPlayerId : null;
+
+      if (data?.ok && by) {
+        setStatsReady(true);
+        setStatsByPlayerId(by);
+        setStatsMeta({
+          seasonId: data?.seasonId ?? null,
+          gameTypeId: data?.gameTypeId ?? null,
+          lastUpdatedAt: data?.lastUpdatedAt ?? null,
+        });
+      } else {
+        // Cache not ready yet (or endpoint returned ready:false style)
+        setStatsReady(false);
+        setStatsByPlayerId({});
+        setStatsMeta({ seasonId: null, gameTypeId: null, lastUpdatedAt: null });
+      }
+    } catch (e) {
+      // Silent failure: stats should never break the app
+      if (cancelled) return;
+      setStatsReady(false);
+    }
+  };
+
+  fetchStats();
+
+  // Light polling so UI eventually updates without refresh (cron is 4x/day)
+  const id = setInterval(fetchStats, 15 * 60 * 1000);
+
+  return () => {
+    cancelled = true;
+    clearInterval(id);
+  };
+}, [hasLoaded, STATS_API_URL]);
 
 
 // ------------------------------------
@@ -2228,6 +2292,10 @@ return (
             onSubmitTradeDraft={handleSubmitTradeDraft}
             onAddToTradeBlock={handleAddTradeBlockEntry}
             playerApi={playerApi}
+            statsReady={statsReady}
+statsByPlayerId={statsByPlayerId}
+statsMeta={statsMeta}
+
           />
 
           <TeamToolsPanel

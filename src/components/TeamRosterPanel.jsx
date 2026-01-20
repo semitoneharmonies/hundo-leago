@@ -98,6 +98,10 @@ function TeamRosterPanel({
   onManagerProfileImageChange,
   onAddToTradeBlock,
   playerApi, // optional: lookup helpers
+    statsReady,
+  statsByPlayerId,
+  statsMeta,
+
 }) {
   // -----------------------
   // Local UI state
@@ -621,8 +625,33 @@ const getPlayerDisplayName = (p) => {
         {/* SALARY */}
         <div style={salaryCellStyle}>{formatSalary(p.salary)}</div>
 
-        {/* STATS (reserved space for later) */}
-        <div style={statsCellStyle} />
+        {/* STATS (G / A / P) */}
+<div style={statsCellStyle} title={statsReady ? "Goals / Assists / Points" : "Stats loading..."}>
+  {(() => {
+    const pid = getPlayerId(p);
+    if (!statsReady || !pid) return <span style={{ color: MUTED }}>—</span>;
+
+    const s = statsByPlayerId?.[String(pid)] || statsByPlayerId?.[pid] || null;
+    if (!s) return <span style={{ color: MUTED }}>—</span>;
+
+    const g = Number(s.goals ?? 0);
+    const a = Number(s.assists ?? 0);
+    const pts = Number(s.points ?? 0);
+    const gp = Number(s.gamesPlayed ?? 0);
+
+
+    return (
+  <div style={{ display: "flex", justifyContent: "center", gap: 10, fontVariantNumeric: "tabular-nums" }}>
+    <span title="Games Played"><strong>{gp}</strong>GP</span>
+    <span title="Goals"><strong>{g}</strong>G</span>
+    <span title="Assists"><strong>{a}</strong>A</span>
+    <span title="Points"><strong>{pts}</strong>P</span>
+  </div>
+);
+
+  })()}
+</div>
+
 
 
         {/* ACTIONS */}
@@ -824,7 +853,8 @@ const capSummaryStyle = {
 // Shared grid so header lines up perfectly with rows
 // Shared grid so header lines up perfectly with rows
 // pill | name | NHL team | age | salary | stats | actions
-const rosterGridTemplateColumns = "28px 1fr 56px 44px 72px 120px 160px";
+// POS | NAME | TEAM | AGE | SALARY | STATS | ACTIONS
+const rosterGridTemplateColumns = "28px 1.6fr 48px 38px 64px 1.2fr 160px";
 
 const playerRowStyle = {
   display: "grid",
@@ -904,8 +934,12 @@ const salaryCellStyle = {
 };
 
 const statsCellStyle = {
-  height: 1, // intentionally empty spacer column for future stats
+  textAlign: "center",
+  color: "#cbd5e1",
+  fontSize: "0.82rem",
+  minHeight: 1,
 };
+
 
 const actionsCellStyle = {
   display: "flex",
