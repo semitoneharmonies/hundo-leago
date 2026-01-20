@@ -158,7 +158,7 @@ const autoCancelLockRef = useRef(false);
 const playersByIdRef = useRef(new Map());
 const playersByNameRef = useRef(new Map()); // ✅ NEW: normalized fullName/name -> player object
 const [playersTick, setPlayersTick] = useState(0);
-
+const [playersReady, setPlayersReady] = useState(false);
 
 const normalizeKey = (s) => String(s || "").trim().toLowerCase();
 
@@ -341,7 +341,11 @@ useEffect(() => {
 
   // Only fetch what we don’t already have cached
   const missing = Array.from(ids).filter((pid) => !playersByIdRef.current.has(pid));
-  if (missing.length === 0) return;
+if (missing.length === 0) {
+  if (!playersReady) setPlayersReady(true); // ✅ NEW
+  return;
+}
+
 
   // Avoid re-running the same prefetch batch repeatedly
   missing.sort((a, b) => a - b);
@@ -353,39 +357,41 @@ useEffect(() => {
   prefetchLockRef.current.running = true;
 
   (async () => {
-    try {
-      // Don’t hammer the endpoint—cap per pass
-      const batch = missing.slice(0, 120);
+  try {
+    // Don’t hammer the endpoint—cap per pass
+    const batch = missing.slice(0, 120);
 
-      for (const pid of batch) {
-        // fetchPlayerById() will upsert into cache + bump playersTick
-        // so the UI re-renders and TeamRosterPanel starts showing DB names
-        // eslint-disable-next-line no-await-in-loop
-        await fetchPlayerById(pid);
-      }
-    } catch (e) {
-      console.warn("[PLAYERS] prefetch failed:", e);
-    } finally {
-      prefetchLockRef.current.running = false;
+    for (const pid of batch) {
+      // eslint-disable-next-line no-await-in-loop
+      await fetchPlayerById(pid);
     }
-  })();
-}, [hasLoaded, teams, freeAgents]); // <- important deps
+
+    // ✅ NEW: if we now have all ids needed for roster + active bids, mark ready
+    const stillMissing = Array.from(ids).some(
+      (pid) => !playersByIdRef.current.has(pid)
+    );
+    if (!stillMissing) setPlayersReady(true);
+  } catch (e) {
+    console.warn("[PLAYERS] prefetch failed:", e);
+  } finally {
+    prefetchLockRef.current.running = false;
+  }
+})();
+
+}, [hasLoaded, teams, freeAgents, playersReady]);
 
 const playerApi = {
-  // ✅ what CommissionerPanel expects
-  byId: playersByIdRef.current,      // Map(id -> player)
-  byName: playersByNameRef.current,  // Map(lowerName -> player)
+  byId: playersByIdRef.current,
+  byName: playersByNameRef.current,
 
-  // cache reads
   getPlayerById,
   getPlayerNameById,
   getPlayerByName,
 
-  // network
   fetchPlayerById,
   searchPlayers,
 
-  // debug / rerender tick
+  playersReady,          // ✅ NEW
   _playersTick: playersTick,
 };
 

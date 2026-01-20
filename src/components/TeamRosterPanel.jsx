@@ -194,25 +194,31 @@ function TeamRosterPanel({
   };
 
   const getPlayerDisplayName = (p) => {
-    if (!p) return "";
-    const pid = getPlayerId(p);
+  if (!p) return "";
 
-    // Preferred helper
-    if (pid && playerApi?.getPlayerNameById) {
-      const nm = String(playerApi.getPlayerNameById(pid) || "").trim();
-      if (nm) return nm;
-    }
+  const legacy = String(p?.name || "").trim();
 
-    // Fallback: byId lookup
-    if (pid) {
-      const obj = lookupPlayerById(pid);
-      const nm = String(obj?.name || obj?.fullName || "").trim();
-      if (nm) return nm;
-    }
+  // ✅ Until players are ready, show legacy to avoid “swapping”
+  if (!playerApi?.playersReady) return legacy;
 
-    // Legacy fallback
-    return String(p?.name || "").trim();
-  };
+  const pid = getPlayerId(p);
+
+  // Preferred helper
+  if (pid && playerApi?.getPlayerNameById) {
+    const nm = String(playerApi.getPlayerNameById(pid) || "").trim();
+    if (nm) return nm;
+  }
+
+  // Fallback: byId lookup
+  if (pid) {
+    const obj = lookupPlayerById(pid);
+    const nm = String(obj?.name || obj?.fullName || "").trim();
+    if (nm) return nm;
+  }
+
+  return legacy;
+};
+
 
   // -----------------------
   // Age helper (needs birthDate on the player object)

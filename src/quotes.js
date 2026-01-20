@@ -55,7 +55,7 @@ export const HOCKEY_QUOTES = [
   { text: "I am score", author: "Evgeni Malkin" },
     { text: "We can't lose on Bobblehead Night!", author: "Keith Yandle" },
   { text: "How would you like a job where, every time you make a mistake, a big red light goes on and 18,000 people boo?", author: "Jaques Plante" },
-  { text: "90% of the game is half mental", author: "Tyler Sequin" },
+  { text: "90% of the game is half mental", author: "Tyler Seguin" },
     { text: "They say that nobody is perfect. Then they tell you practice makes perfect. I wish they'd make up their minds", author: "Wilt Chamberlain" },
   { text: "Come after me, I'm a man! I'm 40!", author: "Mike Gundy" },
   { text: "We have a great bunch of outside shooters. Unfortunately, all our games are played indoors", author: "Weldon Drew" },
@@ -66,6 +66,12 @@ export const HOCKEY_QUOTES = [
   { text: "Baseball, basketball, weiner dog, short shorts, cigarette. Surfboard, ping pong, rugby ball, weiner dog, skiing down on the beach. Sports!", author: "Viagra Boys"},
 { text: "Will Smith don't gotta cuss in raps to sell records, well I do, so fuck him and fuck you too !!", author: "eminem"},
 { text: "I heard it through the grapevine", author: "Marvin Gaye"},
+{text: "Chel?", author: "Crust Nost"},
+{text: "Starting on left D, looks like he just woke up and combed his hair with a pork chop, Quinn Hughes!", author: "Chris Tanev"},
+{text: "scared love don't make none", author: "slug"},
+{text: "i am sofa king we todd ed", author: "mf doom"},
+{text: "i wish paul maurice was my dad", author: "unknown"},
+{text: "what's your second favourite song?", author: "not graeme, ever"},
 
 
 ];
