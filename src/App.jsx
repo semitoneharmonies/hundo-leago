@@ -33,9 +33,11 @@ const API_URL =
   "https://hundo-leago-backend.onrender.com";
 
 // Phase 2A: Players endpoint (derived from API_URL by default)
-const PLAYERS_API_URL =
-  import.meta.env.VITE_PLAYERS_API_URL ||
-  API_URL.replace(/\/api\/league\/?$/, "/api/players");
+const PLAYERS_API_URL = API_URL.replace(
+  /\/api\/league\/?$/,
+  "/api/players?limit=5000"
+);
+
 
 // League rules
 const CAP_LIMIT = 100;
