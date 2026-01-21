@@ -774,22 +774,107 @@ const handleStatsSortChange = (e) => {
 
       return (
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-          {/* Group 1: GP/G/A/P */}
-          <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
-            <span>{gp != null ? `${gp}GP` : "—"}</span>
-            <span>{hasG ? `${gNum}G` : "—"}</span>
-            <span>{hasA ? `${aNum}A` : "—"}</span>
-            <span>{safePts != null ? `${safePts}P` : "—"}</span>
-          </div>
+          {/* Group 1: GP / G / A / P (number emphasized) */}
+<div style={{ display: "flex", gap: 14, minWidth: 0 }}>
+  {[
+    { v: gp, l: "GP" },
+    { v: hasG ? gNum : null, l: "G" },
+    { v: hasA ? aNum : null, l: "A" },
+    { v: safePts, l: "P" },
+  ].map((x, i) => (
+    <span
+      key={i}
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        gap: 2,
+      }}
+    >
+      <span
+        style={{
+          fontSize: "1rem",
+          fontWeight: 800,
+          color: "#e5e7eb",
+        }}
+      >
+        {x.v != null ? x.v : "—"}
+      </span>
+      <span
+        style={{
+          fontSize: "0.7rem",
+          fontWeight: 700,
+          color: "#94a3b8",
+          letterSpacing: "0.04em",
+        }}
+      >
+        {x.l}
+      </span>
+    </span>
+  ))}
+</div>
+
 
           {/* Group gap */}
           <div style={{ opacity: 0.35 }}>•</div>
 
-          {/* Group 2: FP / FP/G (bold) */}
-          <div style={{ display: "flex", gap: 14 }}>
-            <span style={{ fontWeight: 800 }}>{`${fmtFP(fp)} FP`}</span>
-            <span style={{ fontWeight: 800 }}>{`${fmtFPG(fpg)} FP/G`}</span>
-          </div>
+          {/* Group 2: FP / FP/G (number emphasized + FP/G color-coded) */}
+<div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
+  {/* FP */}
+  <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+    <span
+      style={{
+        fontSize: "1rem",
+        fontWeight: 900,
+        color: "#e5e7eb",
+      }}
+    >
+      {fmtFP(fp)}
+    </span>
+    <span
+      style={{
+        fontSize: "0.7rem",
+        fontWeight: 800,
+        color: "#94a3b8",
+        letterSpacing: "0.04em",
+      }}
+    >
+      FP
+    </span>
+  </span>
+
+  {/* FP/G */}
+  {(() => {
+    const fpgNum = Number(fpg);
+    const has = Number.isFinite(fpgNum);
+
+    // Baseline: 1.00 FP/G is “neutral”. Above = green, below = red.
+    const color = !has ? "#e5e7eb" : fpgNum >= 1 ? "#86efac" : "#fca5a5";
+
+    return (
+      <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+        <span
+          style={{
+            fontSize: "1rem",
+            fontWeight: 900,
+            color,
+          }}
+        >
+          {fmtFPG(fpg)}
+        </span>
+        <span
+          style={{
+            fontSize: "0.7rem",
+            fontWeight: 800,
+            color: "#94a3b8",
+            letterSpacing: "0.04em",
+          }}
+        >
+          FP/G
+        </span>
+      </span>
+    );
+  })()}
+</div>
         </div>
       );
     }
@@ -1067,12 +1152,21 @@ const nameCellStyle = {
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
-  fontSize: "0.98rem",
+
+  // ⬆️ slightly bigger, not heavier
+  fontSize: "1.05rem",
   fontWeight: 800,
-  letterSpacing: "0.2px",
+
+  // subtle readability polish
+  letterSpacing: "0.15px",
+
+  // very soft glow to lift off the row
+  textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+
   fontFamily:
     'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif',
 };
+
 
 const nhlTeamCellStyle = {
   textAlign: "right",
