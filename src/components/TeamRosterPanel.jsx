@@ -98,6 +98,8 @@ function TeamRosterPanel({
   onManagerProfileImageChange,
   onAddToTradeBlock,
   playerApi, // optional: lookup helpers
+    statsByPlayerId,   // ✅ NEW
+  statsReady,        // ✅ NEW
 }) {
   // -----------------------
   // Local UI state
@@ -621,8 +623,65 @@ const getPlayerDisplayName = (p) => {
         {/* SALARY */}
         <div style={salaryCellStyle}>{formatSalary(p.salary)}</div>
 
-        {/* STATS (reserved space for later) */}
-        <div style={statsCellStyle} />
+       {/* STATS */}
+{/* STATS */}
+<div style={statsCellStyle}>
+  {(() => {
+    const pid = getPlayerId(p);
+    if (!pid) return "—";
+
+    const s = statsByPlayerId?.[String(pid)] || statsByPlayerId?.[pid] || null;
+
+    // ✅ Show stats if we have them, even if statsReady is still false
+    if (s) {
+      // Common key fallbacks (defensive)
+      const gp = Number(
+        s?.gp ??
+          s?.games ??
+          s?.gamesPlayed ??
+          s?.games_played ??
+          s?.GP ??
+          0
+      );
+
+      const g = Number(s?.g ?? s?.goals ?? s?.G ?? 0);
+      const a = Number(s?.a ?? s?.assists ?? s?.A ?? 0);
+
+      // Points (prefer provided, otherwise compute G+A)
+      const ptsRaw = s?.pts ?? s?.points ?? s?.p ?? s?.P ?? null;
+      const pts =
+        ptsRaw == null ? (Number.isFinite(g) && Number.isFinite(a) ? g + a : null) : Number(ptsRaw);
+
+      // Fantasy Points (FP) = (G * 1.25) + (A * 1.0)
+      const fp = (Number.isFinite(g) ? g : 0) * 1.25 + (Number.isFinite(a) ? a : 0) * 1.0;
+
+      // Fantasy Points Per Game
+      const fpg = Number.isFinite(gp) && gp > 0 ? fp / gp : null;
+
+      const gpStr = Number.isFinite(gp) && gp > 0 ? `${gp}GP` : null;
+      const gStr = Number.isFinite(g) ? `${g}G` : null;
+      const aStr = Number.isFinite(a) ? `${a}A` : null;
+      const pStr = pts != null && Number.isFinite(pts) ? `${pts}P` : null;
+
+      // Match screenshot: FP with 1 decimal, FP/G with 2 decimals
+      const fpStr = Number.isFinite(fp) ? `${fp.toFixed(1)} FP` : null;
+      const fpgStr = Number.isFinite(fpg) ? `${fpg.toFixed(2)} FP/G` : null;
+
+      // Build a compact single-line string like:
+      // "43GP 24G 46A 70P 76.5 FP 1.77 FP/G"
+      const parts = [gpStr, gStr, aStr, pStr, fpStr, fpgStr].filter(Boolean);
+
+      return parts.length ? parts.join(" ") : "✓";
+    }
+
+    // No stats yet
+    if (!statsReady) return "…";
+    return "—";
+  })()}
+</div>
+
+
+
 
 
         {/* ACTIONS */}
@@ -824,7 +883,7 @@ const capSummaryStyle = {
 // Shared grid so header lines up perfectly with rows
 // Shared grid so header lines up perfectly with rows
 // pill | name | NHL team | age | salary | stats | actions
-const rosterGridTemplateColumns = "28px 1fr 56px 44px 72px 120px 160px";
+const rosterGridTemplateColumns = "28px 1fr 56px 44px 72px 240px 160px";
 
 const playerRowStyle = {
   display: "grid",
@@ -904,8 +963,12 @@ const salaryCellStyle = {
 };
 
 const statsCellStyle = {
-  height: 1, // intentionally empty spacer column for future stats
+  textAlign: "center",
+  fontVariantNumeric: "tabular-nums",
+  color: "#cbd5e1",
+  fontSize: "0.85rem",
 };
+
 
 const actionsCellStyle = {
   display: "flex",

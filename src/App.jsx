@@ -37,6 +37,8 @@ const PLAYERS_API_URL = API_URL.replace(
   /\/api\/league\/?$/,
   "/api/players?limit=5000"
 );
+// Phase X: Stats endpoint (derived from API_URL)
+const STATS_API_URL = API_URL.replace(/\/api\/league\/?$/, "/api/stats");
 
 
 // League rules
@@ -229,6 +231,8 @@ const upsertPlayers = (arr) => {
   if (changed) setPlayersTick((x) => x + 1);
 };
 
+const [statsByPlayerId, setStatsByPlayerId] = useState({});
+const [statsReady, setStatsReady] = useState(false);
 
 
 const getPlayerById = (id) => {
@@ -349,6 +353,44 @@ useEffect(() => {
   };
 }, [hasLoaded, playersReady, PLAYERS_API_URL]);
 
+useEffect(() => {
+  if (!hasLoaded) return;
+
+  let cancelled = false;
+
+  const fetchStats = async () => {
+    try {
+      console.log("[STATS] fetching:", STATS_API_URL);
+      const res = await fetch(STATS_API_URL);
+      console.log("[STATS] status:", res.status);
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (cancelled) return;
+
+      const ready = Boolean(data?.ready);
+      const by = data?.byPlayerId && typeof data.byPlayerId === "object" ? data.byPlayerId : {};
+
+      setStatsReady(ready);
+      setStatsByPlayerId(by);
+
+      console.log("[STATS] ready =", ready, "count =", Object.keys(by).length);
+    } catch (e) {
+      console.warn("[STATS] fetch failed:", e);
+    }
+  };
+
+  fetchStats();
+
+  // optional: re-pull occasionally (keeps things fresh without spamming)
+  const t = setInterval(fetchStats, 5 * 60 * 1000);
+
+  return () => {
+    cancelled = true;
+    clearInterval(t);
+  };
+}, [hasLoaded, STATS_API_URL]);
 
 // ===============================
 // Phase 2A: Prefetch names for all rostered players (so UI shows DB names)
@@ -2230,6 +2272,8 @@ return (
             onSubmitTradeDraft={handleSubmitTradeDraft}
             onAddToTradeBlock={handleAddTradeBlockEntry}
             playerApi={playerApi}
+             statsByPlayerId={statsByPlayerId}
+  statsReady={statsReady}
           />
 
           <TeamToolsPanel
