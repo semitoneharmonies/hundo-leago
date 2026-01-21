@@ -22,6 +22,9 @@ import {
   removeAuctionBidById,
   isTeamIllegal,
 } from "./leagueUtils";
+import { Routes, Route } from "react-router-dom";
+import FreeAgentsPage from "./pages/FreeAgentsPage";
+
 
 // Backend endpoint (Netlify env var first, fallback hard-coded)
 const API_URL =
@@ -2171,11 +2174,11 @@ if (nextUser.role === "manager") {
 
   };
 
-
 return (
   <div className="page">
     <div className="container">
-            <TopBar
+      {/* TopBar shows on ALL pages */}
+      <TopBar
         currentUser={currentUser}
         loginTeamName={loginTeamName}
         loginPassword={loginPassword}
@@ -2189,140 +2192,170 @@ return (
         handleLogout={handleLogout}
         setSelectedTeamName={setSelectedTeamName}
         notifications={notifications}
-  unreadCount={unreadCount}
-  onMarkAllNotificationsRead={markAllNotificationsRead}
-  freezeBanner={freezeBanner}
-
+        unreadCount={unreadCount}
+        onMarkAllNotificationsRead={markAllNotificationsRead}
+        freezeBanner={freezeBanner}
       />
-      
-      {dailyQuote && (
-        <div
-          style={{
-            marginTop: "10px",
-            marginBottom: "12px",
-            padding: "10px 14px",
-            borderRadius: "8px",
-            border: "1px solid #1e293b",
-            background: "#020617",
-            color: "#cbd5e1",
-            fontStyle: "italic",
-            textAlign: "center",
-          }}
-        >
-          “{dailyQuote.text}”
-          <div
-            style={{
-              marginTop: "6px",
-              fontStyle: "normal",
-              fontSize: "0.85rem",
-              color: "#94a3b8",
-            }}
-          >
-            — {dailyQuote.author}
-          </div>
-        </div>
-      )}
 
-      {/* FULL WIDTH: Commissioner Panel (NOT inside the grid) */}
-      <div style={{ marginTop: "12px", marginBottom: "12px" }}>
-        <CommissionerPanel
-          currentUser={currentUser}
-          apiUrl={API_URL}
-          teams={teams}
-          tradeProposals={tradeProposals}
-          freeAgents={freeAgents}
-          leagueLog={leagueLog}
-          tradeBlock={tradeBlock}
-          onResolveAuctions={handleResolveAuctions}
-          onCommissionerRemoveBid={handleCommissionerRemoveBid}
-          leagueSettings={leagueSettings}
-          commitLeagueUpdate={commitLeagueUpdate}
-         onCleanupDeleteLogs={handleCommissionerCleanupDeleteLogs}
-         playerApi={playerApi}
+      <Routes>
+        {/* HOME */}
+        <Route
+          path="/"
+          element={
+            <>
+              {dailyQuote && (
+                <div
+                  style={{
+                    marginTop: "10px",
+                    marginBottom: "12px",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    border: "1px solid #1e293b",
+                    background: "#020617",
+                    color: "#cbd5e1",
+                    fontStyle: "italic",
+                    textAlign: "center",
+                  }}
+                >
+                  “{dailyQuote.text}”
+                  <div
+                    style={{
+                      marginTop: "6px",
+                      fontStyle: "normal",
+                      fontSize: "0.85rem",
+                      color: "#94a3b8",
+                    }}
+                  >
+                    — {dailyQuote.author}
+                  </div>
+                </div>
+              )}
 
+
+              {/* FULL WIDTH: Commissioner Panel */}
+              <div style={{ marginTop: "12px", marginBottom: "12px" }}>
+                <CommissionerPanel
+                  currentUser={currentUser}
+                  apiUrl={API_URL}
+                  teams={teams}
+                  tradeProposals={tradeProposals}
+                  freeAgents={freeAgents}
+                  leagueLog={leagueLog}
+                  tradeBlock={tradeBlock}
+                  onResolveAuctions={handleResolveAuctions}
+                  onCommissionerRemoveBid={handleCommissionerRemoveBid}
+                  leagueSettings={leagueSettings}
+                  commitLeagueUpdate={commitLeagueUpdate}
+                  onCleanupDeleteLogs={handleCommissionerCleanupDeleteLogs}
+                  playerApi={playerApi}
+                />
+              </div>
+
+              {/* MAIN LAYOUT */}
+              <div
+                style={{
+                  background: "#020617",
+                  border: "1px solid #1e293b",
+                  borderRadius: "8px",
+                  padding: "12px 16px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1fr",
+                    gap: "16px",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <TeamRosterPanel
+                    team={selectedTeam}
+                    teams={teams}
+                    capLimit={CAP_LIMIT}
+                    maxRosterSize={MAX_ROSTER_SIZE}
+                    minForwards={MIN_FORWARDS}
+                    minDefensemen={MIN_DEFENSEMEN}
+                    currentUser={currentUser}
+                    tradeDraft={tradeDraft}
+                    setTradeDraft={setTradeDraft}
+                    canManageTeam={canManageTeam}
+                    onUpdateTeamRoster={handleUpdateTeamRoster}
+                    onBuyout={handleBuyout}
+                    onCommissionerRemovePlayer={handleCommissionerRemovePlayer}
+                    onManagerProfileImageChange={handleManagerProfileImageChange}
+                    onSubmitTradeDraft={handleSubmitTradeDraft}
+                    onAddToTradeBlock={handleAddTradeBlockEntry}
+                    playerApi={playerApi}
+                    statsByPlayerId={statsByPlayerId}
+                    statsReady={statsReady}
+                  />
+
+                  <TeamToolsPanel
+                    currentUser={currentUser}
+                    selectedTeam={selectedTeam}
+                    teams={teams}
+                    capLimit={CAP_LIMIT}
+                    maxRosterSize={MAX_ROSTER_SIZE}
+                    minForwards={MIN_FORWARDS}
+                    minDefensemen={MIN_DEFENSEMEN}
+                    tradeDraft={tradeDraft}
+                    setTradeDraft={setTradeDraft}
+                    tradeProposals={tradeProposals}
+                    onSubmitTradeDraft={handleSubmitTradeDraft}
+                    onAcceptTrade={handleAcceptTrade}
+                    onRejectTrade={handleRejectTrade}
+                    onCancelTrade={handleCancelTrade}
+                    onCounterTrade={handleCounterTrade}
+                    tradeBlock={tradeBlock}
+                    freeAgents={freeAgents}
+                    onPlaceBid={handlePlaceBid}
+                    onResolveAuctions={handleResolveAuctions}
+                    onCommissionerRemoveBid={handleCommissionerRemoveBid}
+                    onRemoveTradeBlockEntry={handleRemoveTradeBlockEntry}
+                    playerApi={playerApi}
+                  />
+                </div>
+              </div>
+
+              {/* FULL WIDTH: League history */}
+              <LeagueHistoryPanel
+                leagueLog={leagueLog}
+                historyFilter={historyFilter}
+                setHistoryFilter={setHistoryFilter}
+                currentUser={currentUser}
+                onDeleteLogEntry={handleCommissionerDeleteLogEntry}
+                playerApi={playerApi}
+              />
+            </>
+          }
         />
-      </div>
 
-      {/* MAIN LAYOUT: 2 columns */}
-      <div
-        style={{
-          background: "#020617",
-          border: "1px solid #1e293b",
-          borderRadius: "8px",
-          padding: "12px 16px",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "2fr 1fr",
-            gap: "16px",
-            alignItems: "flex-start",
-          }}
-        >
-          <TeamRosterPanel
-            team={selectedTeam}
-            teams={teams}
-            capLimit={CAP_LIMIT}
-            maxRosterSize={MAX_ROSTER_SIZE}
-            minForwards={MIN_FORWARDS}
-            minDefensemen={MIN_DEFENSEMEN}
-            currentUser={currentUser}
-            tradeDraft={tradeDraft}
-            setTradeDraft={setTradeDraft}
-            canManageTeam={canManageTeam}
-            onUpdateTeamRoster={handleUpdateTeamRoster}
-            onBuyout={handleBuyout}
-            onCommissionerRemovePlayer={handleCommissionerRemovePlayer}
-            onManagerProfileImageChange={handleManagerProfileImageChange}
-            onSubmitTradeDraft={handleSubmitTradeDraft}
-            onAddToTradeBlock={handleAddTradeBlockEntry}
-            playerApi={playerApi}
-             statsByPlayerId={statsByPlayerId}
-  statsReady={statsReady}
-          />
-
-          <TeamToolsPanel
-            currentUser={currentUser}
-            selectedTeam={selectedTeam}
-            teams={teams}
-            capLimit={CAP_LIMIT}
-            maxRosterSize={MAX_ROSTER_SIZE}
-            minForwards={MIN_FORWARDS}
-            minDefensemen={MIN_DEFENSEMEN}
-            tradeDraft={tradeDraft}
-            setTradeDraft={setTradeDraft}
-            tradeProposals={tradeProposals}
-            onSubmitTradeDraft={handleSubmitTradeDraft}
-            onAcceptTrade={handleAcceptTrade}
-            onRejectTrade={handleRejectTrade}
-            onCancelTrade={handleCancelTrade}
-            onCounterTrade={handleCounterTrade}
-            tradeBlock={tradeBlock}
-            freeAgents={freeAgents}
-            onPlaceBid={handlePlaceBid}
-            onResolveAuctions={handleResolveAuctions}
-            onCommissionerRemoveBid={handleCommissionerRemoveBid}
-            onRemoveTradeBlockEntry={handleRemoveTradeBlockEntry}
-            playerApi={playerApi}
-          />
-        </div>
-      </div>
+  {/* FREE AGENTS */}
+<Route
+  path="/free-agents"
+  element={
+    <FreeAgentsPage
+      currentUser={currentUser}
+      teams={teams}
+      capLimit={CAP_LIMIT}
+      maxRosterSize={MAX_ROSTER_SIZE}
+      minForwards={MIN_FORWARDS}
+      minDefensemen={MIN_DEFENSEMEN}
+      freeAgents={freeAgents}
+      onPlaceBid={handlePlaceBid}
+      playerApi={playerApi}
+      statsByPlayerId={statsByPlayerId}
+      statsReady={statsReady}
+    />
+  }
+/>
 
 
-        {/* FULL WIDTH: League history */}
-        <LeagueHistoryPanel
-          leagueLog={leagueLog}
-          historyFilter={historyFilter}
-          setHistoryFilter={setHistoryFilter}
-            currentUser={currentUser}
-  onDeleteLogEntry={handleCommissionerDeleteLogEntry}
-    playerApi={playerApi}
-
-        />
-      </div>
+      </Routes>
     </div>
-  );
+  </div>
+);
+
 }
 
 export default App;

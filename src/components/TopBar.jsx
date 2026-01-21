@@ -1,5 +1,6 @@
 // src/components/TopBar.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import LeagueRulesDropdown from "./LeagueRulesDropdown";
 
 function TopBar({
@@ -62,60 +63,92 @@ function TopBar({
       }}
     >
       <div
-        className="topBar"
+  className="topBar"
+  style={{
+    display: "flex",
+    flexWrap: "nowrap",           // ✅ do not wrap
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+overflow: "hidden",
+           // ✅ prevents accidental overflow from breaking layout
+  }}
+>
+
+        {/* Left: Title + League Rules + Free Agents */}
+<div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flexWrap: "nowrap",
+    minWidth: 0,
+    flexShrink: 0,
+  }}
+>
+  <div
+    style={{
+      fontSize: "1.75rem",
+      fontWeight: 900,
+      letterSpacing: "0.5px",
+      color: "#f97316",
+      textShadow: "0 0 8px rgba(249,115,22,0.4)",
+      fontFamily: "'Oswald', sans-serif",
+      whiteSpace: "nowrap",
+    }}
+  >
+    HUNDO LEAGO
+  </div>
+
+  {/* League Rules button + dropdown */}
+  {currentUser && (
+    <div ref={rulesRef} style={{ position: "relative" }}>
+      <button
+        onClick={() => {
+          setRulesOpen((prev) => !prev);
+          setNotifOpen(false);
+        }}
+        title="League Rules"
         style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
+          padding: "6px 10px",
+          borderRadius: "8px",
+          border: "1px solid #334155",
+          background: "#0b1220",
+          color: "#e5e7eb",
+          cursor: "pointer",
+          whiteSpace: "nowrap",
         }}
       >
-        {/* Left: Title + League Rules */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div
-            style={{
-              fontSize: "1.75rem",
-              fontWeight: 900,
-              letterSpacing: "0.5px",
-              color: "#f97316",
-              textShadow: "0 0 8px rgba(249,115,22,0.4)",
-              fontFamily: "'Oswald', sans-serif",
-              whiteSpace: "nowrap",
-            }}
-          >
-            HUNDO LEAGO
-          </div>
+        League Rules
+      </button>
 
-          {/* League Rules button + dropdown (always visible) */}
-          {currentUser && (
-  <div ref={rulesRef} style={{ position: "relative" }}>
-    <button
-      onClick={() => {
-        setRulesOpen((prev) => !prev);
-        setNotifOpen(false);
-      }}
-      title="League Rules"
+      {rulesOpen && <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />}
+    </div>
+  )}
+
+  {/* Free Agents link */}
+  {currentUser && (
+    <Link
+      to="/free-agents"
+      title="Free Agents"
       style={{
+        display: "inline-flex",
+        alignItems: "center",
         padding: "6px 10px",
         borderRadius: "8px",
         border: "1px solid #334155",
         background: "#0b1220",
         color: "#e5e7eb",
-        cursor: "pointer",
+        textDecoration: "none",
         whiteSpace: "nowrap",
+        fontSize: "0.9rem",
       }}
     >
-      League Rules
-    </button>
+      Free Agents
+    </Link>
+  )}
+</div>
 
-    {rulesOpen && (
-      <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
-    )}
-  </div>
-)}
-
-        </div>
 
         {/* Middle: Selected team logo + View Team selector */}
         <div
@@ -127,7 +160,8 @@ function TopBar({
             padding: "6px 12px",
             borderRadius: "8px",
             border: "1px solid #1e293b",
-            flexShrink: 0,
+            flex: "0 0 auto",
+
           }}
         >
           {selectedTeam?.profilePic ? (
@@ -201,7 +235,7 @@ function TopBar({
         </div>
 
         {/* Right: Login / Logout + Notifications */}
-        <div style={{ minWidth: "260px" }}>
+<div style={{ flexShrink: 0 }}>
           {!currentUser ? (
             <form
               onSubmit={(e) => {
@@ -210,7 +244,7 @@ function TopBar({
               }}
               style={{
                 display: "flex",
-                flexWrap: "wrap",
+                flexWrap: "nowrap",
                 gap: "6px",
                 alignItems: "center",
                 justifyContent: "flex-end",
