@@ -369,13 +369,19 @@ useEffect(() => {
       const data = await res.json();
       if (cancelled) return;
 
-      const ready = Boolean(data?.ready);
-      const by = data?.byPlayerId && typeof data.byPlayerId === "object" ? data.byPlayerId : {};
+      const by =
+  data?.byPlayerId && typeof data.byPlayerId === "object" ? data.byPlayerId : {};
 
-      setStatsReady(ready);
-      setStatsByPlayerId(by);
+const count = Object.keys(by).length;
 
-      console.log("[STATS] ready =", ready, "count =", Object.keys(by).length);
+// ✅ “Ready” means: fetch succeeded AND we actually have stats
+const ready = res.ok && count > 0;
+
+setStatsByPlayerId(by);
+setStatsReady(ready);
+
+console.log("[STATS] ready =", ready, "count =", count);
+
     } catch (e) {
       console.warn("[STATS] fetch failed:", e);
     }

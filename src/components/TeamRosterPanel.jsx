@@ -632,53 +632,71 @@ const getPlayerDisplayName = (p) => {
 
     const s = statsByPlayerId?.[String(pid)] || statsByPlayerId?.[pid] || null;
 
-    // ✅ Show stats if we have them, even if statsReady is still false
+    // If we have stats for this player, show them (even if statsReady is false)
     if (s) {
-      // Common key fallbacks (defensive)
-      const gp = Number(
-        s?.gp ??
-          s?.games ??
-          s?.gamesPlayed ??
-          s?.games_played ??
-          s?.GP ??
-          0
-      );
+      const gp =
+        s?.gp ?? s?.gamesPlayed ?? s?.games ?? null;
 
-      const g = Number(s?.g ?? s?.goals ?? s?.G ?? 0);
-      const a = Number(s?.a ?? s?.assists ?? s?.A ?? 0);
+      const g =
+        s?.goals ?? s?.g ?? null;
 
-      // Points (prefer provided, otherwise compute G+A)
-      const ptsRaw = s?.pts ?? s?.points ?? s?.p ?? s?.P ?? null;
+      const a =
+        s?.assists ?? s?.a ?? null;
+
       const pts =
-        ptsRaw == null ? (Number.isFinite(g) && Number.isFinite(a) ? g + a : null) : Number(ptsRaw);
+        s?.pts ?? s?.points ?? s?.p ?? null;
 
-      // Fantasy Points (FP) = (G * 1.25) + (A * 1.0)
-      const fp = (Number.isFinite(g) ? g : 0) * 1.25 + (Number.isFinite(a) ? a : 0) * 1.0;
+      const gpNum = Number(gp);
+      const gNum = Number(g);
+      const aNum = Number(a);
 
-      // Fantasy Points Per Game
-      const fpg = Number.isFinite(gp) && gp > 0 ? fp / gp : null;
+      const hasG = Number.isFinite(gNum);
+      const hasA = Number.isFinite(aNum);
+      const hasGP = Number.isFinite(gpNum) && gpNum > 0;
 
-      const gpStr = Number.isFinite(gp) && gp > 0 ? `${gp}GP` : null;
-      const gStr = Number.isFinite(g) ? `${g}G` : null;
-      const aStr = Number.isFinite(a) ? `${a}A` : null;
-      const pStr = pts != null && Number.isFinite(pts) ? `${pts}P` : null;
+      // Fantasy Points: (Goals x 1.25) + (Assists x 1)
+      const fp = (hasG ? gNum * 1.25 : 0) + (hasA ? aNum : 0);
 
-      // Match screenshot: FP with 1 decimal, FP/G with 2 decimals
-      const fpStr = Number.isFinite(fp) ? `${fp.toFixed(1)} FP` : null;
-      const fpgStr = Number.isFinite(fpg) ? `${fpg.toFixed(2)} FP/G` : null;
+      // FP/G = FP / GP
+      const fpg = hasGP ? fp / gpNum : null;
 
-      // Build a compact single-line string like:
-      // "43GP 24G 46A 70P 76.5 FP 1.77 FP/G"
-      const parts = [gpStr, gStr, aStr, pStr, fpStr, fpgStr].filter(Boolean);
+      const fmtFP = (x) => {
+        if (!Number.isFinite(x)) return "—";
+        // show no decimals if integer, else 2 decimals
+        const isInt = Math.abs(x - Math.round(x)) < 1e-9;
+        return isInt ? String(Math.round(x)) : x.toFixed(2);
+      };
 
-      return parts.length ? parts.join(" ") : "✓";
+      const fmtFPG = (x) => {
+        if (!Number.isFinite(x)) return "—";
+        return x.toFixed(2);
+      };
+
+      const safePts =
+        pts != null && Number.isFinite(Number(pts))
+          ? Number(pts)
+          : (hasG || hasA ? (hasG ? gNum : 0) + (hasA ? aNum : 0) : null);
+
+      // Build the same “one-line” style you had before
+      const parts = [];
+
+      if (gp != null) parts.push(`${gp}GP`);
+      if (hasG) parts.push(`${gNum}G`);
+      if (hasA) parts.push(`${aNum}A`);
+      if (safePts != null) parts.push(`${safePts}P`);
+
+      parts.push(`${fmtFP(fp)} FP`);
+      parts.push(`${fmtFPG(fpg)} FP/G`);
+
+      return parts.join("  ");
     }
 
-    // No stats yet
+    // No stats for this player yet
     if (!statsReady) return "…";
     return "—";
   })()}
 </div>
+
 
 
 
