@@ -107,6 +107,10 @@ function TeamRosterPanel({
   const [hoveredBuyoutRef, setHoveredBuyoutRef] = useState(null);
   const [dragFromIndex, setDragFromIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+// ✅ Sorting (local UI only; safe)
+const [sortKey, setSortKey] = useState("salary"); // default
+const [sortDir, setSortDir] = useState("desc");   // default
+const [statsSortKey, setStatsSortKey] = useState("fp"); // fp | fpg | gp | g | a | p
 
   if (!team) {
     return (
@@ -550,6 +554,107 @@ const getPlayerDisplayName = (p) => {
     </button>
   );
 
+  const posRank = (p) => {
+  const pos = getPos(p);
+  if (pos === "F") return 0;
+  if (pos === "D") return 1;
+  return 2; // G last
+};
+
+const getStatsNums = (p) => {
+  const pid = getPlayerId(p);
+  if (!pid) return null;
+  const s = statsByPlayerId?.[String(pid)] || statsByPlayerId?.[pid] || null;
+  if (!s) return null;
+
+  const gp = Number(s?.gp ?? s?.gamesPlayed ?? s?.games ?? NaN);
+  const g = Number(s?.goals ?? s?.g ?? NaN);
+  const a = Number(s?.assists ?? s?.a ?? NaN);
+  const ptsRaw = s?.pts ?? s?.points ?? s?.p ?? null;
+  const pts = Number(ptsRaw);
+
+  const hasG = Number.isFinite(g);
+  const hasA = Number.isFinite(a);
+  const hasGP = Number.isFinite(gp) && gp > 0;
+
+  const fp = (hasG ? g * 1.25 : 0) + (hasA ? a : 0);
+  const fpg = hasGP ? fp / gp : NaN;
+
+  return {
+    gp: Number.isFinite(gp) ? gp : NaN,
+    g: Number.isFinite(g) ? g : NaN,
+    a: Number.isFinite(a) ? a : NaN,
+    p: Number.isFinite(pts) ? pts : (hasG || hasA ? (hasG ? g : 0) + (hasA ? a : 0) : NaN),
+    fp: Number.isFinite(fp) ? fp : NaN,
+    fpg: Number.isFinite(fpg) ? fpg : NaN,
+  };
+};
+
+const getSortValue = (p, key) => {
+  if (key === "salary") return Number(p?.salary ?? NaN);
+  if (key === "age") return Number(getPlayerAge(p) ?? NaN);
+
+  const st = getStatsNums(p);
+  if (!st) return NaN;
+
+  if (key === "gp") return st.gp;
+  if (key === "g") return st.g;
+  if (key === "a") return st.a;
+  if (key === "p") return st.p;
+  if (key === "fp") return st.fp;
+  if (key === "fpg") return st.fpg;
+
+  return NaN;
+};
+
+const sortRoster = (arr) => {
+  const dirMul = sortDir === "asc" ? 1 : -1;
+
+  return [...arr].sort((p1, p2) => {
+    // ✅ Always keep position grouping: F → D → G
+    const pr = posRank(p1) - posRank(p2);
+    if (pr !== 0) return pr;
+
+    const v1 = getSortValue(p1, sortKey);
+    const v2 = getSortValue(p2, sortKey);
+
+    const aBad = !Number.isFinite(v1);
+    const bBad = !Number.isFinite(v2);
+    if (aBad && bBad) return 0;
+    if (aBad) return 1; // NaNs last
+    if (bBad) return -1;
+
+    if (v1 === v2) return 0;
+    return v1 < v2 ? -1 * dirMul : 1 * dirMul;
+  });
+};
+
+const onClickSort = (key) => {
+  // Only managers get clickable sorting (you can loosen this later if you want)
+  if (!(currentUser?.role === "manager")) return;
+
+  setSortKey((prevKey) => {
+    if (prevKey === key) {
+      setSortDir((prevDir) => (prevDir === "asc" ? "desc" : "asc"));
+      return prevKey;
+    }
+    setSortDir("desc"); // default direction when switching columns
+    return key;
+  });
+};
+
+const handleStatsSortChange = (e) => {
+  if (currentUser?.role !== "manager") return;
+
+  const key = String(e.target.value || "fp");
+  setStatsSortKey(key);
+
+  // make dropdown selection actually drive sorting
+  setSortKey(key);
+  setSortDir("desc"); // default when changing stat metric
+};
+
+
   const renderRosterRow = (p, index, { isIR }) => {
     const displayName = getPlayerDisplayName(p);
     const playerRef = getPlayerRef(p);
@@ -623,7 +728,6 @@ const getPlayerDisplayName = (p) => {
         {/* SALARY */}
         <div style={salaryCellStyle}>{formatSalary(p.salary)}</div>
 
-       {/* STATS */}
 {/* STATS */}
 <div style={statsCellStyle}>
   {(() => {
@@ -632,19 +736,11 @@ const getPlayerDisplayName = (p) => {
 
     const s = statsByPlayerId?.[String(pid)] || statsByPlayerId?.[pid] || null;
 
-    // If we have stats for this player, show them (even if statsReady is false)
     if (s) {
-      const gp =
-        s?.gp ?? s?.gamesPlayed ?? s?.games ?? null;
-
-      const g =
-        s?.goals ?? s?.g ?? null;
-
-      const a =
-        s?.assists ?? s?.a ?? null;
-
-      const pts =
-        s?.pts ?? s?.points ?? s?.p ?? null;
+      const gp = s?.gp ?? s?.gamesPlayed ?? s?.games ?? null;
+      const g = s?.goals ?? s?.g ?? null;
+      const a = s?.assists ?? s?.a ?? null;
+      const pts = s?.pts ?? s?.points ?? s?.p ?? null;
 
       const gpNum = Number(gp);
       const gNum = Number(g);
@@ -662,7 +758,6 @@ const getPlayerDisplayName = (p) => {
 
       const fmtFP = (x) => {
         if (!Number.isFinite(x)) return "—";
-        // show no decimals if integer, else 2 decimals
         const isInt = Math.abs(x - Math.round(x)) < 1e-9;
         return isInt ? String(Math.round(x)) : x.toFixed(2);
       };
@@ -677,28 +772,32 @@ const getPlayerDisplayName = (p) => {
           ? Number(pts)
           : (hasG || hasA ? (hasG ? gNum : 0) + (hasA ? aNum : 0) : null);
 
-      // Build the same “one-line” style you had before
-      const parts = [];
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          {/* Group 1: GP/G/A/P */}
+          <div style={{ display: "flex", gap: 10, minWidth: 0 }}>
+            <span>{gp != null ? `${gp}GP` : "—"}</span>
+            <span>{hasG ? `${gNum}G` : "—"}</span>
+            <span>{hasA ? `${aNum}A` : "—"}</span>
+            <span>{safePts != null ? `${safePts}P` : "—"}</span>
+          </div>
 
-      if (gp != null) parts.push(`${gp}GP`);
-      if (hasG) parts.push(`${gNum}G`);
-      if (hasA) parts.push(`${aNum}A`);
-      if (safePts != null) parts.push(`${safePts}P`);
+          {/* Group gap */}
+          <div style={{ opacity: 0.35 }}>•</div>
 
-      parts.push(`${fmtFP(fp)} FP`);
-      parts.push(`${fmtFPG(fpg)} FP/G`);
-
-      return parts.join("  ");
+          {/* Group 2: FP / FP/G (bold) */}
+          <div style={{ display: "flex", gap: 14 }}>
+            <span style={{ fontWeight: 800 }}>{`${fmtFP(fp)} FP`}</span>
+            <span style={{ fontWeight: 800 }}>{`${fmtFPG(fpg)} FP/G`}</span>
+          </div>
+        </div>
+      );
     }
 
-    // No stats for this player yet
     if (!statsReady) return "…";
     return "—";
   })()}
 </div>
-
-
-
 
 
 
@@ -835,20 +934,35 @@ const getPlayerDisplayName = (p) => {
       {/* ACTIVE ROSTER */}
 <Section title="Roster">
   {/* Column headers */}
-  <RosterColumnHeader />
+<RosterColumnHeader
+  canSort={currentUser?.role === "manager"}
+  sortKey={sortKey}
+  sortDir={sortDir}
+  onClickSort={onClickSort}
+  statsSortKey={statsSortKey}
+  onStatsSortChange={handleStatsSortChange}
+/>
 
 
-  {activeRoster.map((p, index) => renderRosterRow(p, index, { isIR: false }))}
+
+{sortRoster(activeRoster).map((p, index) => renderRosterRow(p, index, { isIR: false }))}
 </Section>
 
 
       {/* IR */}
 <Section title={`Injured Reserve (${irPlayers.length}/${MAX_IR})`}>
   {/* Column headers */}
-  <RosterColumnHeader />
+<RosterColumnHeader
+  canSort={currentUser?.role === "manager"}
+  sortKey={sortKey}
+  sortDir={sortDir}
+  onClickSort={onClickSort}
+  statsSortKey={statsSortKey}
+  onStatsSortChange={handleStatsSortChange}
+/>
 
 
-  {irPlayers.map((p, index) => renderRosterRow(p, index, { isIR: true }))}
+{sortRoster(irPlayers).map((p, index) => renderRosterRow(p, index, { isIR: true }))}
 </Section>
 
 
@@ -899,16 +1013,18 @@ const capSummaryStyle = {
 
 
 // Shared grid so header lines up perfectly with rows
-// Shared grid so header lines up perfectly with rows
 // pill | name | NHL team | age | salary | stats | actions
-const rosterGridTemplateColumns = "28px 1fr 56px 44px 72px 240px 160px";
+const rosterGridTemplateColumns =
+  "28px minmax(220px, 1.4fr) 50px 42px 90px minmax(420px, 3fr) 132px";
+
+
 
 const playerRowStyle = {
   display: "grid",
   // pill | name | age | salary | (reserved stats area) | actions
   gridTemplateColumns: rosterGridTemplateColumns,
   alignItems: "center",
-  gap: 10,
+  gap: 16,
   padding: "6px 10px",
   borderRadius: 8,
   border: `1px solid ${BORDER}`,
@@ -919,7 +1035,7 @@ const rosterHeaderRowStyle = {
   display: "grid",
   gridTemplateColumns: rosterGridTemplateColumns,
   alignItems: "center",
-  gap: 10,
+  gap: 16,
   padding: "4px 10px",
   marginBottom: 6,
   color: "#94a3b8",
@@ -964,28 +1080,41 @@ const nhlTeamCellStyle = {
   color: "#cbd5e1",
   fontWeight: 800,
   letterSpacing: "0.06em",
-  fontSize: "0.82rem",
+  fontSize: "0.78rem", // slightly smaller
 };
-
 
 const ageCellStyle = {
   textAlign: "right",
   fontVariantNumeric: "tabular-nums",
   color: "#cbd5e1",
+  fontSize: "0.9rem",
 };
 
 const salaryCellStyle = {
   textAlign: "right",
   fontVariantNumeric: "tabular-nums",
   color: "#e2e8f0",
+  fontSize: "0.9rem",
+  fontWeight: 800, // bold
 };
 
+
+
 const statsCellStyle = {
-  textAlign: "center",
+  textAlign: "left",
   fontVariantNumeric: "tabular-nums",
   color: "#cbd5e1",
-  fontSize: "0.85rem",
+  fontSize: "0.9rem",
+  lineHeight: 1.2,
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+
+  // ✅ THIS IS THE KEY
+  paddingLeft: 100,
 };
+
+
 
 
 const actionsCellStyle = {
@@ -1058,17 +1187,108 @@ const simpleRowStyle = {
   background: BASE_BG,
 };
 
-const RosterColumnHeader = () => (
+const SortHeader = ({ label, sortId, align = "right", onClick, active, dir }) => {
+  const clickable = typeof onClick === "function";
+  const justifySelf = align === "center" ? "center" : align === "left" ? "start" : "end";
+
+  return (
+    <div
+      onClick={clickable ? () => onClick(sortId) : undefined}
+      style={{
+        justifySelf,
+        cursor: clickable ? "pointer" : "default",
+        userSelect: "none",
+        display: "flex",
+        gap: 6,
+        alignItems: "center",
+        justifyContent: justifySelf === "end" ? "flex-end" : justifySelf === "center" ? "center" : "flex-start",
+        opacity: clickable ? 1 : 0.9,
+      }}
+      title={clickable ? "Click to sort" : ""}
+    >
+      <span>{label}</span>
+      {active ? <span style={{ opacity: 0.9 }}>{dir === "asc" ? "▲" : "▼"}</span> : null}
+    </div>
+  );
+};
+
+const RosterColumnHeader = ({
+  canSort,
+  sortKey,
+  sortDir,
+  onClickSort,
+  statsSortKey,
+  onStatsSortChange,
+}) => (
   <div style={rosterHeaderRowStyle}>
     <div style={headerCenter}>POS</div>
     <div>NAME</div>
     <div style={headerRight}>TEAM</div>
-    <div style={headerRight}>AGE</div>
-    <div style={headerRight}>SALARY</div>
-    <div style={headerCenter}>STATS</div>
+
+    <SortHeader
+      label="AGE"
+      sortId="age"
+      align="right"
+      onClick={canSort ? onClickSort : null}
+      active={sortKey === "age"}
+      dir={sortDir}
+    />
+
+    <SortHeader
+      label="SALARY"
+      sortId="salary"
+      align="right"
+      onClick={canSort ? onClickSort : null}
+      active={sortKey === "salary"}
+      dir={sortDir}
+    />
+
+    {/* ✅ Stats dropdown + arrow if active */}
+    <div
+      style={{
+        justifySelf: "center",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+      title={canSort ? "Sort by selected stat" : ""}
+    >
+      <span>STATS</span>
+
+      <select
+        value={statsSortKey}
+        onChange={onStatsSortChange}
+        disabled={!canSort}
+        style={{
+          background: "#0b1224",
+          border: `1px solid ${BORDER}`,
+          color: TEXT,
+          borderRadius: 8,
+          padding: "2px 8px",
+          fontSize: "0.75rem",
+          outline: "none",
+          cursor: canSort ? "pointer" : "not-allowed",
+        }}
+      >
+        <option value="fp">FP</option>
+        <option value="fpg">FP/G</option>
+        <option value="gp">GP</option>
+        <option value="g">G</option>
+        <option value="a">A</option>
+        <option value="p">P</option>
+      </select>
+
+      {/* show arrow only when current sort is the selected stat */}
+      {sortKey === statsSortKey ? (
+        <span style={{ opacity: 0.9 }}>{sortDir === "asc" ? "▲" : "▼"}</span>
+      ) : null}
+    </div>
+
     <div style={headerRight}>ACTIONS</div>
   </div>
 );
+
+
 
 const Section = ({ title, children }) => {
   const childArray = React.Children.toArray(children);
