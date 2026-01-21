@@ -13,12 +13,24 @@ const TEXT = "#e5e7eb";
 const MUTED = "#9ca3af";
 const PANEL_BG = "#020617";
 
+const INPUT_STYLE = {
+    appearance: "none",
+  color: TEXT,
+  borderRadius: 8,
+  padding: "8px 10px",
+};
+
+const SELECT_STYLE = {
+  ...INPUT_STYLE,
+  cursor: "pointer",
+};
 // Position pill colors (same spirit as roster panel)
 const POS_COLORS = {
   F: { solid: "#22c55e", tint: "rgba(34,197,94,0.22)" },  // green
   D: { solid: "#a855f7", tint: "rgba(168,85,247,0.22)" }, // purple
   G: { solid: "#38bdf8", tint: "rgba(56,189,248,0.22)" }, // light blue
 };
+
 
 const normalizePosGroup = (posRaw) => {
   const p = String(posRaw || "").toUpperCase().trim();
@@ -615,31 +627,6 @@ const handleLiveBidSubmit = (auction) => {
         )}
       </div>
 
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ color: MUTED, fontSize: "0.9rem", whiteSpace: "nowrap" }}>
-          Filter:
-        </div>
-        <select
-          value={posFilter}
-          onChange={(e) => {
-            setPosFilter(e.target.value);
-            setVisibleCount(50);
-          }}
-          style={{
-            background: "#0b1220",
-            color: TEXT,
-            border: "1px solid #334155",
-            borderRadius: 8,
-            padding: "6px 10px",
-            cursor: "pointer",
-          }}
-        >
-          <option value="ALL">All Positions</option>
-          <option value="F">Forwards</option>
-          <option value="D">Defense</option>
-          <option value="G">Goalies</option>
-        </select>
-      </div>
     </div>
 
     {/* Two-column layout */}
@@ -654,6 +641,40 @@ const handleLiveBidSubmit = (auction) => {
     >
       {/* LEFT: List */}
       <div>
+        <div
+  style={{
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  }}
+>
+  <div style={{ color: MUTED, fontSize: "0.9rem", whiteSpace: "nowrap" }}>
+    Filter:
+  </div>
+  <select
+    value={posFilter}
+    onChange={(e) => {
+      setPosFilter(e.target.value);
+      setVisibleCount(50);
+    }}
+    style={{
+      background: "#0b1220",
+      color: TEXT,
+      border: "1px solid #334155",
+      borderRadius: 8,
+      padding: "6px 10px",
+      cursor: "pointer",
+    }}
+  >
+    <option value="ALL">All Positions</option>
+    <option value="F">Forwards</option>
+    <option value="D">Defense</option>
+    <option value="G">Goalies</option>
+  </select>
+</div>
+
         {/* Header row */}
         <div
           style={{
@@ -664,7 +685,7 @@ const handleLiveBidSubmit = (auction) => {
             background: "#0b1220",
             display: "grid",
             gridTemplateColumns:
-              "44px 60px 260px 70px 60px 80px 80px 80px 90px 90px",
+  "44px 60px 260px 70px 60px 80px 80px 80px 80px 90px 90px",
             gap: 10,
             alignItems: "center",
           }}
@@ -688,6 +709,7 @@ const handleLiveBidSubmit = (auction) => {
           <SortHeader label="GP" k="gp" align="right" />
           <SortHeader label="G" k="g" align="right" />
           <SortHeader label="A" k="a" align="right" />
+          <SortHeader label="P" k="p" align="right" />
           <SortHeader label="FP" k="fp" align="right" />
           <SortHeader label="FP/G" k="fpg" align="right" />
         </div>
@@ -725,7 +747,7 @@ const handleLiveBidSubmit = (auction) => {
                     position: "relative",
                     display: "grid",
                     gridTemplateColumns:
-                      "44px 60px 260px 70px 60px 80px 80px 80px 90px 90px",
+  "44px 60px 260px 70px 60px 80px 80px 80px 80px 90px 90px",
                     gap: 10,
                     alignItems: "center",
                   }}
@@ -812,6 +834,10 @@ const handleLiveBidSubmit = (auction) => {
                   <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
                     {r.assists}
                   </div>
+{/* Points (P) */}
+<div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+  {r.points}
+</div>
 
                   {/* FP */}
                   <div style={{ color: TEXT, textAlign: "right", fontWeight: 900 }}>
@@ -830,7 +856,7 @@ const handleLiveBidSubmit = (auction) => {
                     {r.fpg.toFixed(2)}
                     <span style={{ color: MUTED, fontWeight: 700, fontSize: "0.78rem" }}>
                       {" "}
-                      FP/G
+                      
                     </span>
                   </div>
                 </div>
@@ -878,29 +904,30 @@ const handleLiveBidSubmit = (auction) => {
             marginBottom: 12,
           }}
         >
-          <div style={{ color: TEXT, fontWeight: 900, marginBottom: 6 }}>
-            {myTeam ? myTeam.name : "Your Team"}
-          </div>
+          <div style={{ color: TEXT, fontWeight: 900, marginBottom: 8, fontSize: "1.05rem" }}>
+  {myTeam ? myTeam.name : "Your Team"}
+</div>
+
 
           <div
             style={{
               color: MUTED,
-              fontSize: "0.9rem",
+              fontSize: "1.0rem",
               display: "flex",
               flexDirection: "column",
               gap: 4,
             }}
           >
             <div>
-              <strong style={{ color: TEXT }}>{myCounts.rosterSize}</strong> /{" "}
+              <strong style={{ color: TEXT, fontWeight: 900 }}>{myCounts.rosterSize}</strong> /{" "}
               {maxRosterSize} rostered · F:{" "}
-              <strong style={{ color: TEXT }}>{myCounts.F}</strong> · D:{" "}
-              <strong style={{ color: TEXT }}>{myCounts.D}</strong>
+              <strong style={{ color: TEXT, fontWeight: 900 }}>{myCounts.F}</strong> · D:{" "}
+              <strong style={{ color: TEXT, fontWeight: 900 }}>{myCounts.D}</strong>
             </div>
             <div>
               Cap Used:{" "}
-              <strong style={{ color: TEXT }}>${myCounts.capUsed}</strong> · Cap
-              Space: <strong style={{ color: TEXT }}>${capSpace}</strong>
+              <strong style={{ color: TEXT, fontWeight: 900 }}>${myCounts.capUsed}</strong> · Cap
+              Space: <strong style={{ color: TEXT, fontWeight: 900 }}>${capSpace}</strong>
             </div>
           </div>
         </div>
@@ -942,7 +969,7 @@ const handleLiveBidSubmit = (auction) => {
       <div style={{ position: "relative", flex: "1 1 180px" }}>
         <input
           type="text"
-          placeholder="Search player (mcdavid, crosby...)"
+          placeholder="Search player"
           value={playerSearchQuery}
           onChange={(e) => {
             const v = e.target.value;
@@ -961,14 +988,8 @@ const handleLiveBidSubmit = (auction) => {
             if (playerSearchResults.length > 0) setPlayerSearchOpen(true);
           }}
           onBlur={() => setTimeout(() => setPlayerSearchOpen(false), 150)}
-          style={{
-            width: "100%",
-            background: "#0b1220",
-            color: TEXT,
-            border: "1px solid #334155",
-            borderRadius: 8,
-            padding: "8px 10px",
-          }}
+          style={{ width: "100%"}}
+
         />
 
         {playerSearchOpen && (playerSearchLoading || playerSearchResults.length > 0) && (
@@ -1040,15 +1061,8 @@ const handleLiveBidSubmit = (auction) => {
       <select
         value={bidPosition}
         onChange={(e) => setBidPosition(e.target.value)}
-        style={{
-          width: 72,
-          background: "#0b1220",
-          color: TEXT,
-          border: "1px solid #334155",
-          borderRadius: 8,
-          padding: "8px 10px",
-          cursor: "pointer",
-        }}
+        style={{ width: 72}}
+
       >
         <option value="F">F</option>
         <option value="D">D</option>
@@ -1060,14 +1074,8 @@ const handleLiveBidSubmit = (auction) => {
         placeholder="Bid $"
         value={bidAmount}
         onChange={(e) => setBidAmount(e.target.value)}
-        style={{
-          width: 90,
-          background: "#0b1220",
-          color: TEXT,
-          border: "1px solid #334155",
-          borderRadius: 8,
-          padding: "8px 10px",
-        }}
+        style={{ width: 90 }}
+
       />
     </div>
 
@@ -1178,14 +1186,8 @@ const handleLiveBidSubmit = (auction) => {
                     placeholder={`Bid $ (min ${ui.minRequired})`}
                     value={inputValue}
                     onChange={(e) => handleLiveBidInputChange(playerKey, e.target.value)}
-                    style={{
-                      width: 140,
-                      background: "#0b1220",
-                      color: TEXT,
-                      border: "1px solid #334155",
-                      borderRadius: 8,
-                      padding: "8px 10px",
-                    }}
+                    style={{ width: 140 }}
+
                   />
                   <button
                     onClick={() => {
