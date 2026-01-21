@@ -537,6 +537,13 @@ const getPlayerDisplayName = (p) => {
     return `$${x}`;
   };
 
+  const computeFantasyPoints = (goals, assists) => {
+  const g = Number(goals ?? 0);
+  const a = Number(assists ?? 0);
+  const fp = g * 1.25 + a;
+  return Math.round(fp * 10) / 10; // 1 decimal
+};
+
   const ActionButton = ({ title, onClick, disabled, children, subtle }) => (
     <button
       onClick={onClick}
@@ -638,16 +645,40 @@ const getPlayerDisplayName = (p) => {
     const a = Number(s.assists ?? 0);
     const pts = Number(s.points ?? 0);
     const gp = Number(s.gamesPlayed ?? 0);
+const fp = computeFantasyPoints(g, a);
+const fpg = gp > 0 ? fp / gp : 0;
+const fpgRounded = Math.round(fpg * 100) / 100; // 2 decimals
 
 
-    return (
-  <div style={{ display: "flex", justifyContent: "center", gap: 10, fontVariantNumeric: "tabular-nums" }}>
+
+
+return (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      gap: 10,
+      fontVariantNumeric: "tabular-nums",
+    }}
+  >
     <span title="Games Played"><strong>{gp}</strong>GP</span>
     <span title="Goals"><strong>{g}</strong>G</span>
     <span title="Assists"><strong>{a}</strong>A</span>
     <span title="Points"><strong>{pts}</strong>P</span>
+
+    {/* spacer */}
+    <div style={{ width: 20 }} />
+
+    <span title="Fantasy Points (G×1.25 + A)" style={{ fontWeight: 800 }}>
+      {fp} FP
+    </span>
+    <span title="Fantasy Points per Game" style={{ fontWeight: 900 }}>
+  {fpgRounded.toFixed(2)} FP/G
+</span>
+
   </div>
 );
+
 
   })()}
 </div>
@@ -854,14 +885,14 @@ const capSummaryStyle = {
 // Shared grid so header lines up perfectly with rows
 // pill | name | NHL team | age | salary | stats | actions
 // POS | NAME | TEAM | AGE | SALARY | STATS | ACTIONS
-const rosterGridTemplateColumns = "28px 1.6fr 48px 38px 64px 1.2fr 160px";
+const rosterGridTemplateColumns = "28px 1.15fr 44px 34px 58px 2.05fr 160px";
 
 const playerRowStyle = {
   display: "grid",
   // pill | name | age | salary | (reserved stats area) | actions
   gridTemplateColumns: rosterGridTemplateColumns,
   alignItems: "center",
-  gap: 10,
+  gap: 8,
   padding: "6px 10px",
   borderRadius: 8,
   border: `1px solid ${BORDER}`,
@@ -872,7 +903,7 @@ const rosterHeaderRowStyle = {
   display: "grid",
   gridTemplateColumns: rosterGridTemplateColumns,
   alignItems: "center",
-  gap: 10,
+  gap: 8,
   padding: "4px 10px",
   marginBottom: 6,
   color: "#94a3b8",
