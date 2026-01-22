@@ -643,17 +643,6 @@ const onClickSort = (key) => {
   });
 };
 
-const handleStatsSortChange = (e) => {
-  if (currentUser?.role !== "manager") return;
-
-  const key = String(e.target.value || "fp");
-  setStatsSortKey(key);
-
-  // make dropdown selection actually drive sorting
-  setSortKey(key);
-  setSortDir("desc"); // default when changing stat metric
-};
-
 
   const renderRosterRow = (p, index, { isIR }) => {
     const displayName = getPlayerDisplayName(p);
@@ -727,162 +716,66 @@ const handleStatsSortChange = (e) => {
 
         {/* SALARY */}
         <div style={salaryCellStyle}>{formatSalary(p.salary)}</div>
+<div /> {/* spacer */}
 
-{/* STATS */}
-<div style={statsCellStyle}>
-  {(() => {
-    const pid = getPlayerId(p);
-    if (!pid) return "—";
+{/* STATS (6 columns) */}
+{(() => {
+  const st = getStatsNums(p);
 
-    const s = statsByPlayerId?.[String(pid)] || statsByPlayerId?.[pid] || null;
+  // loading / missing states
+  const missing = !st;
+  const showLoading = !statsReady && !st;
 
-    if (s) {
-      const gp = s?.gp ?? s?.gamesPlayed ?? s?.games ?? null;
-      const g = s?.goals ?? s?.g ?? null;
-      const a = s?.assists ?? s?.a ?? null;
-      const pts = s?.pts ?? s?.points ?? s?.p ?? null;
+  const fmtInt = (x) => (Number.isFinite(x) ? String(Math.trunc(x)) : "—");
+  const fmtFP = (x) => {
+    if (!Number.isFinite(x)) return "—";
+    const isInt = Math.abs(x - Math.round(x)) < 1e-9;
+    return isInt ? String(Math.round(x)) : x.toFixed(2);
+  };
+  const fmtFPG = (x) => (Number.isFinite(x) ? x.toFixed(2) : "—");
 
-      const gpNum = Number(gp);
-      const gNum = Number(g);
-      const aNum = Number(a);
+  const gp = st?.gp;
+  const g = st?.g;
+  const a = st?.a;
+  const pts = st?.p;
+  const fp = st?.fp;
+  const fpg = st?.fpg;
 
-      const hasG = Number.isFinite(gNum);
-      const hasA = Number.isFinite(aNum);
-      const hasGP = Number.isFinite(gpNum) && gpNum > 0;
+  const fpgNum = Number(fpg);
+  const fpgColor =
+    !Number.isFinite(fpgNum) ? "#cbd5e1" : fpgNum >= 1 ? "#86efac" : "#fca5a5";
 
-      // Fantasy Points: (Goals x 1.25) + (Assists x 1)
-      const fp = (hasG ? gNum * 1.25 : 0) + (hasA ? aNum : 0);
+  // If stats are still loading, show "…" in all stat cells (looks consistent)
+  const cell = (val, kind = "int") => {
+    if (showLoading) return <div style={statCellMuted}>…</div>;
+    if (missing) return <div style={statCellMuted}>—</div>;
 
-      // FP/G = FP / GP
-      const fpg = hasGP ? fp / gpNum : null;
+    const out =
+      kind === "fp" ? fmtFP(val) : kind === "fpg" ? fmtFPG(val) : fmtInt(val);
 
-      const fmtFP = (x) => {
-        if (!Number.isFinite(x)) return "—";
-        const isInt = Math.abs(x - Math.round(x)) < 1e-9;
-        return isInt ? String(Math.round(x)) : x.toFixed(2);
-      };
+    return <div style={statCellStyle}>{out}</div>;
+  };
 
-      const fmtFPG = (x) => {
-        if (!Number.isFinite(x)) return "—";
-        return x.toFixed(2);
-      };
-
-      const safePts =
-        pts != null && Number.isFinite(Number(pts))
-          ? Number(pts)
-          : (hasG || hasA ? (hasG ? gNum : 0) + (hasA ? aNum : 0) : null);
-
-      return (
-        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-          {/* Group 1: GP / G / A / P (number emphasized) */}
-<div style={{ display: "flex", gap: 14, minWidth: 0 }}>
-  {[
-    { v: gp, l: "GP" },
-    { v: hasG ? gNum : null, l: "G" },
-    { v: hasA ? aNum : null, l: "A" },
-    { v: safePts, l: "P" },
-  ].map((x, i) => (
-    <span
-      key={i}
-      style={{
-        display: "inline-flex",
-        alignItems: "baseline",
-        gap: 2,
-      }}
-    >
-      <span
+  return (
+    <>
+      {cell(gp, "int")}
+      {cell(g, "int")}
+      {cell(a, "int")}
+      {cell(pts, "int")}
+      {cell(fp, "fp")}
+      {/* FPG with color */}
+      <div
         style={{
-          fontSize: "1rem",
-          fontWeight: 800,
-          color: "#e5e7eb",
+          ...statCellStyle,
+          color: fpgColor,
+          fontWeight: 900,
         }}
       >
-        {x.v != null ? x.v : "—"}
-      </span>
-      <span
-        style={{
-          fontSize: "0.7rem",
-          fontWeight: 700,
-          color: "#94a3b8",
-          letterSpacing: "0.04em",
-        }}
-      >
-        {x.l}
-      </span>
-    </span>
-  ))}
-</div>
-
-
-          {/* Group gap */}
-          <div style={{ opacity: 0.35 }}>•</div>
-
-          {/* Group 2: FP / FP/G (number emphasized + FP/G color-coded) */}
-<div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
-  {/* FP */}
-  <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
-    <span
-      style={{
-        fontSize: "1rem",
-        fontWeight: 900,
-        color: "#e5e7eb",
-      }}
-    >
-      {fmtFP(fp)}
-    </span>
-    <span
-      style={{
-        fontSize: "0.7rem",
-        fontWeight: 800,
-        color: "#94a3b8",
-        letterSpacing: "0.04em",
-      }}
-    >
-      FP
-    </span>
-  </span>
-
-  {/* FP/G */}
-  {(() => {
-    const fpgNum = Number(fpg);
-    const has = Number.isFinite(fpgNum);
-
-    // Baseline: 1.00 FP/G is “neutral”. Above = green, below = red.
-    const color = !has ? "#e5e7eb" : fpgNum >= 1 ? "#86efac" : "#fca5a5";
-
-    return (
-      <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
-        <span
-          style={{
-            fontSize: "1rem",
-            fontWeight: 900,
-            color,
-          }}
-        >
-          {fmtFPG(fpg)}
-        </span>
-        <span
-          style={{
-            fontSize: "0.7rem",
-            fontWeight: 800,
-            color: "#94a3b8",
-            letterSpacing: "0.04em",
-          }}
-        >
-          FP/G
-        </span>
-      </span>
-    );
-  })()}
-</div>
-        </div>
-      );
-    }
-
-    if (!statsReady) return "…";
-    return "—";
-  })()}
-</div>
+        {showLoading ? "…" : missing ? "—" : fmtFPG(fpg)}
+      </div>
+    </>
+  );
+})()}
 
 
 
@@ -1024,8 +917,6 @@ const handleStatsSortChange = (e) => {
   sortKey={sortKey}
   sortDir={sortDir}
   onClickSort={onClickSort}
-  statsSortKey={statsSortKey}
-  onStatsSortChange={handleStatsSortChange}
 />
 
 
@@ -1042,8 +933,6 @@ const handleStatsSortChange = (e) => {
   sortKey={sortKey}
   sortDir={sortDir}
   onClickSort={onClickSort}
-  statsSortKey={statsSortKey}
-  onStatsSortChange={handleStatsSortChange}
 />
 
 
@@ -1097,10 +986,10 @@ const capSummaryStyle = {
 };
 
 
-// Shared grid so header lines up perfectly with rows
-// pill | name | NHL team | age | salary | stats | actions
+// pill | name | team | age | salary | GP | G | A | P | FP | FPG | actions
 const rosterGridTemplateColumns =
-  "28px minmax(220px, 1.4fr) 50px 42px 90px minmax(420px, 3fr) 132px";
+  "28px minmax(200px, 1.4fr) 54px 42px 90px 24px 46px 40px 40px 44px 56px 64px 132px";
+
 
 
 
@@ -1194,19 +1083,20 @@ const salaryCellStyle = {
 
 
 
-const statsCellStyle = {
-  textAlign: "left",
+const statCellStyle = {
+  textAlign: "right",
   fontVariantNumeric: "tabular-nums",
   color: "#cbd5e1",
   fontSize: "0.9rem",
-  lineHeight: 1.2,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-
-  // ✅ THIS IS THE KEY
-  paddingLeft: 100,
+  fontWeight: 800,
 };
+
+const statCellMuted = {
+  ...statCellStyle,
+  color: "#94a3b8",
+  fontWeight: 700,
+};
+
 
 
 
@@ -1311,9 +1201,7 @@ const RosterColumnHeader = ({
   sortKey,
   sortDir,
   onClickSort,
-  statsSortKey,
-  onStatsSortChange,
-}) => (
+  }) => (
   <div style={rosterHeaderRowStyle}>
     <div style={headerCenter}>POS</div>
     <div>NAME</div>
@@ -1336,47 +1224,62 @@ const RosterColumnHeader = ({
       active={sortKey === "salary"}
       dir={sortDir}
     />
+<div /> {/* spacer */}
 
-    {/* ✅ Stats dropdown + arrow if active */}
-    <div
-      style={{
-        justifySelf: "center",
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-      }}
-      title={canSort ? "Sort by selected stat" : ""}
-    >
-      <span>STATS</span>
+    <SortHeader
+  label="GP"
+  sortId="gp"
+  align="right"
+  onClick={canSort ? onClickSort : null}
+  active={sortKey === "gp"}
+  dir={sortDir}
+/>
 
-      <select
-        value={statsSortKey}
-        onChange={onStatsSortChange}
-        disabled={!canSort}
-        style={{
-          background: "#0b1224",
-          border: `1px solid ${BORDER}`,
-          color: TEXT,
-          borderRadius: 8,
-          padding: "2px 8px",
-          fontSize: "0.75rem",
-          outline: "none",
-          cursor: canSort ? "pointer" : "not-allowed",
-        }}
-      >
-        <option value="fp">FP</option>
-        <option value="fpg">FP/G</option>
-        <option value="gp">GP</option>
-        <option value="g">G</option>
-        <option value="a">A</option>
-        <option value="p">P</option>
-      </select>
+<SortHeader
+  label="G"
+  sortId="g"
+  align="right"
+  onClick={canSort ? onClickSort : null}
+  active={sortKey === "g"}
+  dir={sortDir}
+/>
 
-      {/* show arrow only when current sort is the selected stat */}
-      {sortKey === statsSortKey ? (
-        <span style={{ opacity: 0.9 }}>{sortDir === "asc" ? "▲" : "▼"}</span>
-      ) : null}
-    </div>
+<SortHeader
+  label="A"
+  sortId="a"
+  align="right"
+  onClick={canSort ? onClickSort : null}
+  active={sortKey === "a"}
+  dir={sortDir}
+/>
+
+<SortHeader
+  label="P"
+  sortId="p"
+  align="right"
+  onClick={canSort ? onClickSort : null}
+  active={sortKey === "p"}
+  dir={sortDir}
+/>
+
+<SortHeader
+  label="FP"
+  sortId="fp"
+  align="right"
+  onClick={canSort ? onClickSort : null}
+  active={sortKey === "fp"}
+  dir={sortDir}
+/>
+
+<SortHeader
+  label="FPG"
+  sortId="fpg"
+  align="right"
+  onClick={canSort ? onClickSort : null}
+  active={sortKey === "fpg"}
+  dir={sortDir}
+/>
+
 
     <div style={headerRight}>ACTIONS</div>
   </div>
