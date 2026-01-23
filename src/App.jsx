@@ -2275,6 +2275,8 @@ return (
       playerApi={playerApi}
       statsByPlayerId={statsByPlayerId}
       statsReady={statsReady}
+      selectedTeamName={selectedTeamName}
+setSelectedTeamName={setSelectedTeamName}
     />
 
     {/* ✅ MOBILE ONLY: Team Tools goes UNDER roster */}

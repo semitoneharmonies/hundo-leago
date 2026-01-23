@@ -1,5 +1,5 @@
 // src/components/TeamRosterPanel.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   totalCap,
   totalBuyoutPenalty,
@@ -84,6 +84,9 @@ const HealthIcon = ({ size = 14 }) => {
 
 function TeamRosterPanel({
   team,
+  teams,                 // ✅ NEW
+  selectedTeamName,      // ✅ NEW (optional but nice)
+  setSelectedTeamName,
   capLimit,
   maxRosterSize,
   minForwards,
@@ -110,6 +113,19 @@ function TeamRosterPanel({
 // ✅ Sorting (local UI only; safe)
 const [sortKey, setSortKey] = useState("salary"); // default
 const [sortDir, setSortDir] = useState("desc");   // default
+  const [teamPickerOpen, setTeamPickerOpen] = useState(false);
+  const teamPickerRef = useRef(null);
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!teamPickerRef.current) return;
+      if (teamPickerRef.current.contains(e.target)) return;
+      setTeamPickerOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
 const [statsSortKey, setStatsSortKey] = useState("fp"); // fp | fpg | gp | g | a | p
 
   if (!team) {
@@ -1060,8 +1076,13 @@ const renderActions = (p, { isIR }) => {
   // -----------------------
   return (
     <div style={panelStyle}>
-      <Header
+            <Header
         team={team}
+        teams={teams}
+        teamPickerOpen={teamPickerOpen}
+        setTeamPickerOpen={setTeamPickerOpen}
+        teamPickerRef={teamPickerRef}
+        setSelectedTeamName={setSelectedTeamName}
         isManagerViewingOwnTeam={isManagerViewingOwnTeam}
         onManagerProfileImageChange={onManagerProfileImageChange}
         rosterSize={rosterSize}
@@ -1069,6 +1090,7 @@ const renderActions = (p, { isIR }) => {
         F={F}
         D={D}
       />
+
 
       {/* Cap summary */}
       <div style={capSummaryStyle}>
@@ -1768,6 +1790,11 @@ const Section = ({ title, children }) => {
 
 const Header = ({
   team,
+  teams,
+  teamPickerOpen,
+  setTeamPickerOpen,
+  teamPickerRef,
+  setSelectedTeamName,
   isManagerViewingOwnTeam,
   onManagerProfileImageChange,
   rosterSize,
@@ -1775,6 +1802,7 @@ const Header = ({
   F,
   D,
 }) => (
+
   <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
     {/* LOGO (clickable if manager) */}
     <label
@@ -1830,13 +1858,100 @@ const Header = ({
       )}
     </label>
 
-    {/* TEAM INFO */}
-    <div style={{ flex: 1 }}>
-      <h2 style={{ margin: 0 }}>{team.name}</h2>
-      <div style={{ fontSize: "0.8rem", color: MUTED }}>
+        {/* TEAM INFO */}
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div
+        ref={teamPickerRef}
+        style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}
+      >
+        <button
+          onClick={() => setTeamPickerOpen((v) => !v)}
+          title="Click to view another team"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            margin: 0,
+            color: TEXT,
+            cursor: "pointer",
+            fontSize: "1.4rem",
+            fontWeight: 900,
+            maxWidth: "100%",
+          }}
+        >
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: "min(520px, 60vw)",
+              display: "inline-block",
+            }}
+          >
+            {team.name}
+          </span>
+          <span style={{ opacity: 0.75, fontSize: "0.95rem" }}>
+            {teamPickerOpen ? "▲" : "▼"}
+          </span>
+        </button>
+
+        {teamPickerOpen && (
+          <div
+            style={{
+              position: "absolute",
+              top: "110%",
+              left: 0,
+              minWidth: 220,
+              maxHeight: 320,
+              overflowY: "auto",
+              background: BASE_BG,
+              border: `1px solid ${BORDER}`,
+              borderRadius: 10,
+              padding: 6,
+              boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
+              zIndex: 80,
+            }}
+          >
+            {(Array.isArray(teams) ? teams : []).map((t) => {
+              const active = t.name === team.name;
+              return (
+                <button
+                  key={t.name}
+                  onClick={() => {
+                    setTeamPickerOpen(false);
+                    if (typeof setSelectedTeamName === "function") {
+                      setSelectedTeamName(t.name);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    border: "1px solid transparent",
+                    background: active ? "#0b1220" : "transparent",
+                    color: active ? "#e5e7eb" : "#cbd5e1",
+                    cursor: "pointer",
+                    fontWeight: active ? 900 : 700,
+                  }}
+                  title={active ? "Currently viewing" : `View ${t.name}`}
+                >
+                  {t.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div style={{ fontSize: "0.8rem", color: MUTED, marginTop: 2 }}>
         Active roster: {rosterSize}/{maxRosterSize} • F {F} / D {D}
       </div>
     </div>
+
   </div>
 );
 

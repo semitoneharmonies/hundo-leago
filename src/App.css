@@ -467,4 +467,246 @@ li {
     font-size: inherit;
   }
 }
+/* ===========================
+   TopBar layout + sizing (FINAL)
+   =========================== */
+
+/* Base bar (NOT sticky) */
+.topBar {
+  position: relative !important;
+  top: auto !important;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  overflow: visible !important;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Left cluster: brand + nav */
+.topbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+/* Nav buttons beside the title */
+.topbarNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+/* Right cluster pushed far right */
+.topbarRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+/* User pill + bell together */
+.topbarUser {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ===== Brand styling ===== */
+.topbarBrand {
+  font-family: "Oswald", Arial, sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #f97316;
+  text-shadow: 0 0 10px rgba(249, 115, 22, 0.55);
+  white-space: nowrap;
+  line-height: 1;
+
+  /* 2x bigger on desktop */
+  font-size: 2.7rem !important;
+}
+
+/* Buttons sizing (league rules, free agents, logout) */
+.topbarNav button,
+.topbarNav a,
+.topbarLogout {
+  padding: 5px 9px !important;
+  font-size: 0.82rem !important;
+  border-radius: 10px !important;
+}
+
+/* Username pill */
+.topbarUser span {
+  font-size: 0.74rem !important;
+  padding: 2px 6px !important;
+}
+
+/* Bell button tighter */
+.topbarUser button {
+  padding: 5px 8px !important;
+}
+
+/* Logged-out login form (desktop defaults) */
+.topbarAuth {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.topbarAuth select,
+.topbarAuth input {
+  min-width: 0;
+  width: 160px;
+}
+
+/* ===========================
+   Mobile (logged IN): 2 rows grid
+   =========================== */
+@media (max-width: 720px) {
+  .topBar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand user"
+      "nav   logout";
+    gap: 8px 10px;
+    align-items: center;
+    overflow: visible !important;
+  }
+
+  /* Let children become grid items */
+  .topbarLeft,
+  .topbarRight {
+    display: contents;
+  }
+
+  .topbarBrand {
+    grid-area: brand;
+    font-size: 1.25rem !important;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .topbarUser {
+    grid-area: user;
+    justify-self: end;
+    min-width: 0;
+  }
+
+  .topbarUser span {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  .topbarNav {
+    grid-area: nav;
+    justify-self: start;
+  }
+
+  .topbarLogout {
+    grid-area: logout;
+    justify-self: end;
+    white-space: nowrap;
+  }
+}
+
+/* ===========================
+   Mobile (logged OUT): brand row + login row (NO overlap)
+   =========================== */
+@media (max-width: 720px) {
+  /* Logged-out: allow the right side to become a full-width second row */
+  .topbarRight.loggedOut {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  /* Make the form sit under the brand */
+  .topbarAuth.stacked {
+    width: 100%;
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Make inputs wrap instead of squeezing/overlapping */
+  .topbarAuth.stacked select,
+  .topbarAuth.stacked input {
+    flex: 1 1 140px;
+    min-width: 0;
+    width: auto;
+  }
+
+  .topbarAuth.stacked button {
+    flex: 0 0 auto;
+    padding: 5px 9px !important;
+    font-size: 0.82rem !important;
+    white-space: nowrap;
+  }
+}
+/* ===========================
+   Mobile (logged OUT): brand row + auth row
+   =========================== */
+@media (max-width: 720px) {
+  .topBar.loggedOut {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "brand"
+      "auth";
+    gap: 8px;
+    align-items: start;
+  }
+
+  /* IMPORTANT: do NOT use display:contents when logged out */
+  .topBar.loggedOut .topbarLeft,
+  .topBar.loggedOut .topbarRight {
+    display: block !important;
+  }
+
+  .topBar.loggedOut .topbarLeft {
+    grid-area: brand;
+  }
+
+  .topBar.loggedOut .topbarRight {
+    grid-area: auth;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .topBar.loggedOut .topbarAuth.stacked {
+    width: 100%;
+    margin-top: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .topBar.loggedOut .topbarAuth.stacked select,
+  .topBar.loggedOut .topbarAuth.stacked input {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .topBar.loggedOut .topbarAuth.stacked button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+
+
 
