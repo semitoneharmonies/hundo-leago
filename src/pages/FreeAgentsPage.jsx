@@ -455,32 +455,40 @@ if (rosteredNames.has(normName(fullName))) continue;
     setVisibleCount(50); // when you re-sort, snap back to top 50
   };
 
-  const SortHeader = ({ label, k, align = "left", width }) => {
-    const active = sortKey === k;
-    const arrow = active ? (sortDir === "asc" ? " ▲" : " ▼") : "";
-    return (
-      <div
-        onClick={() => toggleSort(k)}
-        title="Click to sort"
-        style={{
-          cursor: "pointer",
-          userSelect: "none",
-          color: active ? TEXT : MUTED,
-          fontWeight: active ? 800 : 700,
-          fontSize: "0.78rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          display: "flex",
-          justifyContent: align === "right" ? "flex-end" : "flex-start",
-          width: width || "auto",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {label}
-        {arrow}
-      </div>
-    );
-  };
+  const SortHeader = ({ label, k, align = "left", width, showArrow = true }) => {
+  const active = sortKey === k;
+  const arrow = showArrow && active ? (sortDir === "asc" ? " ▲" : " ▼") : "";
+
+  return (
+    <div
+      onClick={() => toggleSort(k)}
+      title="Click to sort"
+      style={{
+        cursor: "pointer",
+        userSelect: "none",
+
+        color: active ? TEXT : MUTED,
+        fontWeight: active ? 900 : 800,
+        fontSize: "0.78rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+
+        display: "flex",
+        justifyContent: align === "right" ? "flex-end" : "flex-start",
+        width: width || "auto",
+        whiteSpace: "nowrap",
+
+        // ✅ Active sort highlight (no width shift)
+        boxShadow: active ? "inset 0 -2px 0 #0ea5e9" : "inset 0 -2px 0 transparent",
+        paddingBottom: 2, // tiny breathing room above underline
+      }}
+    >
+      {label}
+      {arrow}
+    </div>
+  );
+};
+
 
   // -----------------------------
 // Auction derived values (STEP 3)
@@ -612,42 +620,106 @@ const handleLiveBidSubmit = (auction) => {
       </div>
 
       {/* Header row */}
-      <div
-        style={{
-          marginTop: 6,
-          padding: "0 10px 6px",
-          border: "none",
-          background: "transparent",
-          display: "grid",
-          gridTemplateColumns:
-            "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
-          gap: 10,
-          alignItems: "center",
-        }}
-      >
-        <SortHeader label="Pos" k="posGroup" />
-        <SortHeader label="Name" k="name" />
-        <SortHeader label="Team" k="team" />
-        <SortHeader label="Age" k="age" align="right" />
-        <SortHeader label="GP" k="gp" align="right" />
-        <SortHeader label="G" k="g" align="right" />
-        <SortHeader label="A" k="a" align="right" />
-        <SortHeader label="P" k="p" align="right" />
-        <SortHeader label="FP" k="fp" align="right" />
-        <SortHeader label="FP/G" k="fpg" align="right" />
-        <div
-          style={{
-            color: MUTED,
-            fontWeight: 800,
-            fontSize: "0.78rem",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            textAlign: "right",
-          }}
-        >
-          Bid
-        </div>
-      </div>
+{isMobile ? (
+  // MOBILE: only show headers that match the bottom stats line grid
+  <div
+  style={{
+    marginTop: 6,
+    padding: "0 10px 6px",
+    border: "none",
+    background: "transparent",
+    display: "grid",
+    gridTemplateColumns: "46px 1fr", // pill | content
+    gap: 8,
+    alignItems: "start", // match rows
+  }}
+>
+  {/* LEFT spacer to align with the pos pill column */}
+  <div style={{ paddingTop: 2 }} />
+
+  {/* right column headers */}
+ <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "28px 22px 22px 18px 18px 18px 8px 30px 40px",
+    gap: 5, // slightly tighter (Team↔Age closer)
+    alignItems: "baseline",
+    color: MUTED,
+    fontWeight: 800,
+    fontSize: "0.68rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    whiteSpace: "nowrap",
+  }}
+>
+  <SortHeader label="Team" k="team" align="left" width="34px" showArrow={false}/>
+  <SortHeader label="Age" k="age" align="right" width="22px" showArrow={false}/>
+
+  {/* add a little "group gap" before stats */}
+  <div style={{ paddingLeft: 6 }}>
+    <SortHeader label="GP" k="gp" align="right" width="22px" showArrow={false}/>
+  </div>
+
+  <SortHeader label="G" k="g" align="right" width="18px" showArrow={false}/>
+  <SortHeader label="A" k="a" align="right" width="18px" showArrow={false}/>
+  <SortHeader label="P" k="p" align="right" width="18px" showArrow={false}/>
+
+<div
+  style={{
+    textAlign: "center",
+    color: "#334155", // darker, subtler than the old line
+    fontSize: "0.9rem",
+    lineHeight: 1,
+  }}
+>
+  •
+</div>
+
+<SortHeader label="FP" k="fp" align="right" width="30px"showArrow={false} />
+
+  <SortHeader label="FPG" k="fpg" align="right" width="34px" showArrow={false}/>
+</div>
+</div>
+
+) : (
+  // DESKTOP: keep your existing full header grid
+  <div
+    style={{
+      marginTop: 6,
+      padding: "0 10px 6px",
+      border: "none",
+      background: "transparent",
+      display: "grid",
+      gridTemplateColumns:
+        "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
+      gap: 10,
+      alignItems: "center",
+    }}
+  >
+    <SortHeader label="Pos" k="posGroup" />
+    <SortHeader label="Name" k="name" />
+    <SortHeader label="Team" k="team" />
+    <SortHeader label="Age" k="age" align="right" />
+    <SortHeader label="GP" k="gp" align="right" />
+    <SortHeader label="G" k="g" align="right" />
+    <SortHeader label="A" k="a" align="right" />
+    <SortHeader label="P" k="p" align="right" />
+    <SortHeader label="FP" k="fp" align="right" />
+    <SortHeader label="FP/G" k="fpg" align="right" />
+    <div
+      style={{
+        color: MUTED,
+        fontWeight: 800,
+        fontSize: "0.78rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        textAlign: "right",
+      }}
+    >
+      Bid
+    </div>
+  </div>
+)}
 
       {/* Rows */}
       <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -677,119 +749,255 @@ const handleLiveBidSubmit = (auction) => {
                 }}
               />
 
-              <div
-                style={{
-                  position: "relative",
-                  display: "grid",
-                  gridTemplateColumns:
-                    "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                {/* Pos pill */}
-                <div>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: 28,
-                      height: 28,
-                      borderRadius: 999,
-                      border: `1px solid ${pc.solid}`,
-                      background: pc.tint,
-                      color: TEXT,
-                      fontWeight: 900,
-                      fontSize: "0.85rem",
-                    }}
-                  >
-                    {r.posGroup}
-                  </span>
-                </div>
+              <div style={{ position: "relative" }}>
+  {isMobile ? (
+    // -------------------------
+    // MOBILE ROW (new layout)
+    // -------------------------
+    <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "46px 1fr", // pill | content (button now lives in top row)
+    gap: 8,
+    alignItems: "start",
+  }}
+>
+  {/* Left column: centered pos pill */}
+  <div style={{ display: "flex", justifyContent: "center", paddingTop: 2 }}>
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 26,
+        height: 26,
+        borderRadius: 999,
+        border: `1px solid ${pc.solid}`,
+        background: pc.tint,
+        color: TEXT,
+        fontWeight: 900,
+        fontSize: "0.82rem",
+      }}
+    >
+      {r.posGroup}
+    </span>
+  </div>
 
-                {/* Name */}
-                <div
-                  style={{
-                    color: TEXT,
-                    fontWeight: 800,
-                    fontSize: "1.02rem",
-                    letterSpacing: "0.1px",
-                    lineHeight: 1.1,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                  title={r.fullName}
-                >
-                  {r.fullName}
-                </div>
+  {/* Right: two sub-rows */}
+  <div style={{ minWidth: 0 }}>
+    {/* Top sub-row: name + small bid button */}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        marginBottom: 6,
+      }}
+    >
+      <div
+        style={{
+          color: TEXT,
+          fontWeight: 900,
+          fontSize: "1.00rem",
+          lineHeight: 1.1,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          minWidth: 0,
+          flex: 1,
+        }}
+        title={r.fullName}
+      >
+        {r.fullName}
+      </div>
 
-                {/* Team */}
-                <div style={{ color: TEXT, fontWeight: 800, fontSize: "0.92rem" }}>
-                  {r.teamAbbrev}
-                </div>
+      <button
+        onClick={() => {
+          setAuctionPrefill({
+            playerId: r.playerId,
+            fullName: r.fullName,
+            posGroup: r.posGroup,
+          });
+        }}
+        title="Start auction for this player"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 9,
+          border: "1px solid #334155",
+          background: "#0b1220",
+          color: "#fde68a",
+          cursor: "pointer",
+          fontWeight: 900,
+          flex: "0 0 auto",
+        }}
+      >
+        $
+      </button>
+    </div>
 
-                {/* Age */}
-                <div style={{ color: MUTED, textAlign: "right", fontWeight: 700 }}>
-                  {r.age ?? "—"}
-                </div>
+    {/* Bottom sub-row: tighter stats (no wrapping) */}
+   <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "28px 22px 22px 18px 18px 18px 8px 30px 40px",
+    gap: 6,
+    alignItems: "baseline",
+    color: MUTED,
+    fontSize: "0.72rem",
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  }}
+>
+  <div style={{ textAlign: "left" }}>{r.teamAbbrev}</div>
+  <div style={{ textAlign: "right" }}>{r.age ?? "—"}</div>
+  <div style={{ textAlign: "right" }}>{r.gamesPlayed}</div>
+  <div style={{ textAlign: "right" }}>{r.goals}</div>
+  <div style={{ textAlign: "right" }}>{r.assists}</div>
+  <div style={{ textAlign: "right" }}>{r.points}</div>
 
-                {/* GP/G/A/P */}
-                <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
-                  {r.gamesPlayed}
-                </div>
-                <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
-                  {r.goals}
-                </div>
-                <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
-                  {r.assists}
-                </div>
-                <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
-                  {r.points}
-                </div>
+  {/* dot column */}
+  <div style={{ textAlign: "center", opacity: 0.65 }}>•</div>
 
-                {/* FP */}
-                <div style={{ color: TEXT, textAlign: "right", fontWeight: 900 }}>
-                  {r.fp.toFixed(2).replace(/\.00$/, "")}
-                </div>
+  <div style={{ textAlign: "right" }}>
+    {r.fp.toFixed(1).replace(/\.0$/, "")}
+  </div>
 
-                {/* FP/G */}
-                <div
-                  style={{
-                    textAlign: "right",
-                    fontWeight: 900,
-                    color: r.fpg >= 1.2 ? "#86efac" : r.fpg >= 0.9 ? "#e5e7eb" : "#fca5a5",
-                  }}
-                >
-                  {r.fpg.toFixed(2)}
-                </div>
+  <div
+    style={{
+      textAlign: "right",
+      fontWeight: 900,
+      color: r.fpg >= 1.2 ? "#86efac" : r.fpg >= 0.9 ? MUTED : "#fca5a5",
+    }}
+  >
+    {r.fpg.toFixed(2)}
+  </div>
+</div>
 
-                {/* Start auction button */}
-                <button
-                  onClick={() => {
-                    setAuctionPrefill({
-                      playerId: r.playerId,
-                      fullName: r.fullName,
-                      posGroup: r.posGroup,
-                    });
-                  }}
-                  title="Start auction for this player"
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 10,
-                    border: "1px solid #334155",
-                    background: "#0b1220",
-                    color: "#fde68a",
-                    cursor: "pointer",
-                    fontWeight: 900,
-                    justifySelf: "end",
-                  }}
-                >
-                  $
-                </button>
-              </div>
+
+  </div>
+</div>
+
+  ) : (
+    // -------------------------
+    // DESKTOP ROW (unchanged)
+    // -------------------------
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns:
+          "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
+        gap: 10,
+        alignItems: "center",
+      }}
+    >
+      {/* Pos pill */}
+      <div>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 28,
+            height: 28,
+            borderRadius: 999,
+            border: `1px solid ${pc.solid}`,
+            background: pc.tint,
+            color: TEXT,
+            fontWeight: 900,
+            fontSize: "0.85rem",
+          }}
+        >
+          {r.posGroup}
+        </span>
+      </div>
+
+      {/* Name */}
+      <div
+        style={{
+          color: TEXT,
+          fontWeight: 800,
+          fontSize: "1.02rem",
+          letterSpacing: "0.1px",
+          lineHeight: 1.1,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+        title={r.fullName}
+      >
+        {r.fullName}
+      </div>
+
+      {/* Team */}
+      <div style={{ color: TEXT, fontWeight: 800, fontSize: "0.92rem" }}>
+        {r.teamAbbrev}
+      </div>
+
+      {/* Age */}
+      <div style={{ color: MUTED, textAlign: "right", fontWeight: 700 }}>
+        {r.age ?? "—"}
+      </div>
+
+      {/* GP/G/A/P */}
+      <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+        {r.gamesPlayed}
+      </div>
+      <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+        {r.goals}
+      </div>
+      <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+        {r.assists}
+      </div>
+      <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+        {r.points}
+      </div>
+
+      {/* FP */}
+      <div style={{ color: TEXT, textAlign: "right", fontWeight: 900 }}>
+        {r.fp.toFixed(2).replace(/\.00$/, "")}
+      </div>
+
+      {/* FP/G */}
+      <div
+        style={{
+          textAlign: "right",
+          fontWeight: 900,
+          color: r.fpg >= 1.2 ? "#86efac" : r.fpg >= 0.9 ? "#e5e7eb" : "#fca5a5",
+        }}
+      >
+        {r.fpg.toFixed(2)}
+      </div>
+
+      {/* Start auction button */}
+      <button
+        onClick={() => {
+          setAuctionPrefill({
+            playerId: r.playerId,
+            fullName: r.fullName,
+            posGroup: r.posGroup,
+          });
+        }}
+        title="Start auction for this player"
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 10,
+          border: "1px solid #334155",
+          background: "#0b1220",
+          color: "#fde68a",
+          cursor: "pointer",
+          fontWeight: 900,
+          justifySelf: "end",
+        }}
+      >
+        $
+      </button>
+    </div>
+  )}
+</div>
+
             </div>
           );
         })}
