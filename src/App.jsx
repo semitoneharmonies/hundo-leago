@@ -2252,80 +2252,99 @@ return (
               </div>
 
               {/* MAIN LAYOUT */}
-              <div
-                style={{
-                  background: "#020617",
-                  border: "1px solid #1e293b",
-                  borderRadius: "8px",
-                  padding: "12px 16px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr",
-                    gap: "16px",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <TeamRosterPanel
-                    team={selectedTeam}
-                    teams={teams}
-                    capLimit={CAP_LIMIT}
-                    maxRosterSize={MAX_ROSTER_SIZE}
-                    minForwards={MIN_FORWARDS}
-                    minDefensemen={MIN_DEFENSEMEN}
-                    currentUser={currentUser}
-                    tradeDraft={tradeDraft}
-                    setTradeDraft={setTradeDraft}
-                    canManageTeam={canManageTeam}
-                    onUpdateTeamRoster={handleUpdateTeamRoster}
-                    onBuyout={handleBuyout}
-                    onCommissionerRemovePlayer={handleCommissionerRemovePlayer}
-                    onManagerProfileImageChange={handleManagerProfileImageChange}
-                    onSubmitTradeDraft={handleSubmitTradeDraft}
-                    onAddToTradeBlock={handleAddTradeBlockEntry}
-                    playerApi={playerApi}
-                    statsByPlayerId={statsByPlayerId}
-                    statsReady={statsReady}
-                  />
+<div className="mainGrid">
+  {/* LEFT column */}
+  <div className="left">
+    <TeamRosterPanel
+      team={selectedTeam}
+      teams={teams}
+      capLimit={CAP_LIMIT}
+      maxRosterSize={MAX_ROSTER_SIZE}
+      minForwards={MIN_FORWARDS}
+      minDefensemen={MIN_DEFENSEMEN}
+      currentUser={currentUser}
+      tradeDraft={tradeDraft}
+      setTradeDraft={setTradeDraft}
+      canManageTeam={canManageTeam}
+      onUpdateTeamRoster={handleUpdateTeamRoster}
+      onBuyout={handleBuyout}
+      onCommissionerRemovePlayer={handleCommissionerRemovePlayer}
+      onManagerProfileImageChange={handleManagerProfileImageChange}
+      onSubmitTradeDraft={handleSubmitTradeDraft}
+      onAddToTradeBlock={handleAddTradeBlockEntry}
+      playerApi={playerApi}
+      statsByPlayerId={statsByPlayerId}
+      statsReady={statsReady}
+    />
 
-                  <TeamToolsPanel
-                    currentUser={currentUser}
-                    selectedTeam={selectedTeam}
-                    teams={teams}
-                    capLimit={CAP_LIMIT}
-                    maxRosterSize={MAX_ROSTER_SIZE}
-                    minForwards={MIN_FORWARDS}
-                    minDefensemen={MIN_DEFENSEMEN}
-                    tradeDraft={tradeDraft}
-                    setTradeDraft={setTradeDraft}
-                    tradeProposals={tradeProposals}
-                    onSubmitTradeDraft={handleSubmitTradeDraft}
-                    onAcceptTrade={handleAcceptTrade}
-                    onRejectTrade={handleRejectTrade}
-                    onCancelTrade={handleCancelTrade}
-                    onCounterTrade={handleCounterTrade}
-                    tradeBlock={tradeBlock}
-                    freeAgents={freeAgents}
-                    onPlaceBid={handlePlaceBid}
-                    onResolveAuctions={handleResolveAuctions}
-                    onCommissionerRemoveBid={handleCommissionerRemoveBid}
-                    onRemoveTradeBlockEntry={handleRemoveTradeBlockEntry}
-                    playerApi={playerApi}
-                  />
-                </div>
-              </div>
+    {/* ✅ MOBILE ONLY: Team Tools goes UNDER roster */}
+    <div className="mobileOnly" style={{ marginTop: 12 }}>
+      <TeamToolsPanel
+        currentUser={currentUser}
+        selectedTeam={selectedTeam}
+        teams={teams}
+        capLimit={CAP_LIMIT}
+        maxRosterSize={MAX_ROSTER_SIZE}
+        minForwards={MIN_FORWARDS}
+        minDefensemen={MIN_DEFENSEMEN}
+        tradeDraft={tradeDraft}
+        setTradeDraft={setTradeDraft}
+        tradeProposals={tradeProposals}
+        onSubmitTradeDraft={handleSubmitTradeDraft}
+        onAcceptTrade={handleAcceptTrade}
+        onRejectTrade={handleRejectTrade}
+        onCancelTrade={handleCancelTrade}
+        onCounterTrade={handleCounterTrade}
+        tradeBlock={tradeBlock}
+        freeAgents={freeAgents}
+        onPlaceBid={handlePlaceBid}
+        onResolveAuctions={handleResolveAuctions}
+        onCommissionerRemoveBid={handleCommissionerRemoveBid}
+        onRemoveTradeBlockEntry={handleRemoveTradeBlockEntry}
+        playerApi={playerApi}
+      />
+    </div>
+  </div>
 
-              {/* FULL WIDTH: League history */}
-              <LeagueHistoryPanel
-                leagueLog={leagueLog}
-                historyFilter={historyFilter}
-                setHistoryFilter={setHistoryFilter}
-                currentUser={currentUser}
-                onDeleteLogEntry={handleCommissionerDeleteLogEntry}
-                playerApi={playerApi}
-              />
+  {/* RIGHT column (desktop only) */}
+  <div className="right desktopOnly">
+    <TeamToolsPanel
+      currentUser={currentUser}
+      selectedTeam={selectedTeam}
+      teams={teams}
+      capLimit={CAP_LIMIT}
+      maxRosterSize={MAX_ROSTER_SIZE}
+      minForwards={MIN_FORWARDS}
+      minDefensemen={MIN_DEFENSEMEN}
+      tradeDraft={tradeDraft}
+      setTradeDraft={setTradeDraft}
+      tradeProposals={tradeProposals}
+      onSubmitTradeDraft={handleSubmitTradeDraft}
+      onAcceptTrade={handleAcceptTrade}
+      onRejectTrade={handleRejectTrade}
+      onCancelTrade={handleCancelTrade}
+      onCounterTrade={handleCounterTrade}
+      tradeBlock={tradeBlock}
+      freeAgents={freeAgents}
+      onPlaceBid={handlePlaceBid}
+      onResolveAuctions={handleResolveAuctions}
+      onCommissionerRemoveBid={handleCommissionerRemoveBid}
+      onRemoveTradeBlockEntry={handleRemoveTradeBlockEntry}
+      playerApi={playerApi}
+    />
+  </div>
+</div>
+
+{/* FULL WIDTH: League history */}
+<LeagueHistoryPanel
+  leagueLog={leagueLog}
+  historyFilter={historyFilter}
+  setHistoryFilter={setHistoryFilter}
+  currentUser={currentUser}
+  onDeleteLogEntry={handleCommissionerDeleteLogEntry}
+  playerApi={playerApi}
+/>
+
             </>
           }
         />

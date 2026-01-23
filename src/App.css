@@ -421,3 +421,50 @@ li {
   50% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.35); }
   100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
 }
+
+/* Roster: show ONE row layout at a time (inline styles exist, so use !important) */
+.rosterMobileOnly {
+  display: none !important; /* overrides inline display:grid */
+}
+
+/* Switch to mobile layout */
+@media (max-width: 700px) {
+  .rosterDesktopOnly {
+    display: none !important; /* overrides inline display:grid */
+  }
+
+  .rosterMobileOnly {
+    display: grid !important; /* keep your mobile grid layout */
+  }
+}
+
+/* Show/hide helpers */
+.desktopOnly { display: block; }
+.mobileOnly  { display: none; }
+
+/* Mobile layout: move Team Tools under roster */
+@media (max-width: 700px) {
+  .desktopOnly { display: none; }
+  .mobileOnly  { display: block; }
+}
+
+/* Mobile roster cards: shrink all text EXCEPT the name */
+@media (max-width: 700px) {
+  /* Keep name readable */
+  .rosterMobileOnly .mobilePlayerName {
+    font-size: 1rem;      /* keep the name as-is (or bump slightly) */
+    line-height: 1.15;
+  }
+
+  /* Make everything under it smaller */
+  .rosterMobileOnly .mobilePlayerMeta {
+    font-size: 0.78rem;   /* smaller meta */
+    line-height: 1.05;
+  }
+
+  /* The mini stat numbers and labels inside the meta row */
+  .rosterMobileOnly .mobilePlayerMeta span {
+    font-size: inherit;
+  }
+}
+

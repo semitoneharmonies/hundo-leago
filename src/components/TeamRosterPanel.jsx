@@ -539,20 +539,21 @@ const getPlayerDisplayName = (p) => {
     return `$${x}`;
   };
 
-  const ActionButton = ({ title, onClick, disabled, children, subtle }) => (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      style={{
-        ...iconBtnStyle,
-        ...(subtle ? iconBtnSubtleStyle : {}),
-        ...(disabled ? iconBtnDisabledStyle : {}),
-      }}
-    >
-      {children}
-    </button>
-  );
+  const ActionButton = ({ title, onClick, disabled, children, subtle, size = "desktop" }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    title={title}
+    style={{
+      ...(size === "mobile" ? iconBtnStyleMobile : iconBtnStyle),
+      ...(subtle ? iconBtnSubtleStyle : {}),
+      ...(disabled ? iconBtnDisabledStyle : {}),
+    }}
+  >
+    {children}
+  </button>
+);
+
 
   const posRank = (p) => {
   const pos = getPos(p);
@@ -643,6 +644,105 @@ const onClickSort = (key) => {
   });
 };
 
+const renderActions = (p, { isIR }) => {
+  const playerRef = getPlayerRef(p);
+  const requested = isPlayerRequested(p);
+  const offered = isPlayerOffered(p);
+
+  const locked = isBuyoutLocked(p);
+  const daysLeft = locked ? getBuyoutLockDaysLeft(p) : 0;
+
+  const penalty = calculateBuyout(p.salary);
+  const newCap = capUsed - (Number(p.salary) || 0) + penalty;
+
+  return (
+    <div style={actionsCellStyle}>
+      {!isIR && canEditThisTeam && (
+        <div
+          style={{ position: "relative", display: "inline-block" }}
+          onMouseEnter={() => setHoveredBuyoutRef(playerRef)}
+          onMouseLeave={() => setHoveredBuyoutRef(null)}
+        >
+          <ActionButton
+            title={locked ? `Buyout locked (${daysLeft}d)` : "Buyout"}
+            onClick={() => {
+              if (locked) return;
+              onBuyout(team.name, playerRef);
+            }}
+            disabled={locked}
+          >
+            💲
+          </ActionButton>
+
+          {hoveredBuyoutRef === playerRef && (
+            <div style={tooltipStyle}>
+              Penalty: ${penalty}
+              <br />
+              New cap: ${newCap}
+            </div>
+          )}
+        </div>
+      )}
+
+      {canEditThisTeam && !isIR && (
+        <ActionButton title="Move to IR" onClick={() => moveToIR(playerRef)} subtle>
+          <HealthIcon />
+        </ActionButton>
+      )}
+
+      {canEditThisTeam && isIR && (
+        <ActionButton title="Return from IR" onClick={() => returnFromIR(playerRef)} subtle>
+          ↩
+        </ActionButton>
+      )}
+
+      {canEditThisTeam && !isIR && onAddToTradeBlock && (
+        <ActionButton
+          title="Add to Trade Block"
+          onClick={() =>
+            onAddToTradeBlock({
+              team: team.name,
+              player: playerRef,
+              needs: "",
+            })
+          }
+          subtle
+        >
+          📌
+        </ActionButton>
+      )}
+
+      {isManagerViewingOtherTeam && !isIR && (
+        <ActionButton
+          title={requested ? "Unrequest player" : "Request player"}
+          onClick={() => toggleRequestPlayer(p)}
+        >
+          {requested ? "✖" : "↔️"}
+        </ActionButton>
+      )}
+
+      {isManagerViewingOwnTeam && activeDraftFromThisManager && !isIR && (
+        <ActionButton
+          title={offered ? "Remove offer" : "Offer player"}
+          onClick={() => toggleOfferPlayer(p)}
+        >
+          {offered ? "✖" : "↔️"}
+        </ActionButton>
+      )}
+
+      {currentUser?.role === "commissioner" && !isIR && (
+        <ActionButton
+          title="Remove player (commissioner)"
+          onClick={() => onCommissionerRemovePlayer(team.name, playerRef)}
+          subtle
+        >
+          🗑
+        </ActionButton>
+      )}
+    </div>
+  );
+};
+
 
   const renderRosterRow = (p, index, { isIR }) => {
     const displayName = getPlayerDisplayName(p);
@@ -668,205 +768,291 @@ const onClickSort = (key) => {
     const bg = `linear-gradient(90deg, ${BASE_BG} 0%, ${BASE_BG} 65%, ${posColor.tint} 100%)`;
 
     return (
+  <div key={getRowKey(p, index, isIR ? ":ir" : "")}>
+    {/* =======================
+        DESKTOP ROW (unchanged)
+        ======================= */}
+    <div
+      className="rosterDesktopOnly"
+      draggable={!isIR && canEditThisTeam}
+      onDragStart={!isIR ? (e) => handleDragStart(e, index) : undefined}
+      onDragOver={!isIR ? (e) => handleDragOver(e, index) : undefined}
+      onDrop={!isIR ? (e) => handleDrop(e, index) : undefined}
+      style={{
+        ...playerRowStyle,
+        background: bg,
+        ...(isIR ? { border: "1px solid rgba(239, 68, 68, 0.55)" } : {}),
+        ...(dragOverIndex === index && !isIR ? { outline: "2px solid #0ea5e9" } : {}),
+        ...(requested || offered ? { boxShadow: "0 0 0 1px rgba(34,197,94,0.35) inset" } : {}),
+      }}
+    >
+      {/* POS PILL */}
       <div
-        key={getRowKey(p, index, isIR ? ":ir" : "")}
-        draggable={!isIR && canEditThisTeam}
-        onDragStart={!isIR ? (e) => handleDragStart(e, index) : undefined}
-        onDragOver={!isIR ? (e) => handleDragOver(e, index) : undefined}
-        onDrop={!isIR ? (e) => handleDrop(e, index) : undefined}
         style={{
-          ...playerRowStyle,
-          background: bg,
-          ...(isIR
-  ? { border: "1px solid rgba(239, 68, 68, 0.55)" } // subtle red
-  : {}),
-
-          ...(dragOverIndex === index && !isIR ? { outline: "2px solid #0ea5e9" } : {}),
-          ...(requested || offered ? { boxShadow: "0 0 0 1px rgba(34,197,94,0.35) inset" } : {}),
-          
+          ...posPillStyle,
+          background: posColor.solid,
+          justifySelf: "center",
         }}
+        title={pos === "F" ? "Forward" : pos === "D" ? "Defense" : "Goalie"}
       >
-        {/* POS PILL */}
-        <div
-          style={{
-            ...posPillStyle,
-            background: posColor.solid,
-            justifySelf: "center",
-          }}
-          title={pos === "F" ? "Forward" : pos === "D" ? "Defense" : "Goalie"}
-        >
-          {pos}
-        </div>
+        {pos}
+      </div>
 
-        {/* NAME */}
-        <div style={nameCellStyle} title={displayName}>
-          {displayName}
-        </div>
+      {/* NAME */}
+      <div style={nameCellStyle} title={displayName}>
+        {displayName}
+      </div>
 
-        {/* NHL TEAM */}
-<div style={nhlTeamCellStyle} title={nhlTeam === "—" ? "Team unavailable" : nhlTeam}>
-  {nhlTeam}
+      {/* NHL TEAM */}
+      <div style={nhlTeamCellStyle} title={nhlTeam === "—" ? "Team unavailable" : nhlTeam}>
+        {nhlTeam}
+      </div>
+
+      {/* AGE */}
+      <div style={ageCellStyle} title={age == null ? "Age unavailable" : `Age: ${age}`}>
+        {age == null ? "—" : age}
+      </div>
+
+      {/* SALARY */}
+      <div style={salaryCellStyle}>{formatSalary(p.salary)}</div>
+
+      <div /> {/* spacer */}
+
+      {/* STATS (6 columns) */}
+      {(() => {
+        const st = getStatsNums(p);
+
+        const missing = !st;
+        const showLoading = !statsReady && !st;
+
+        const fmtInt = (x) => (Number.isFinite(x) ? String(Math.trunc(x)) : "—");
+        const fmtFP = (x) => {
+          if (!Number.isFinite(x)) return "—";
+          const isInt = Math.abs(x - Math.round(x)) < 1e-9;
+          return isInt ? String(Math.round(x)) : x.toFixed(2);
+        };
+        const fmtFPG = (x) => (Number.isFinite(x) ? x.toFixed(2) : "—");
+
+        const gp = st?.gp;
+        const g = st?.g;
+        const a = st?.a;
+        const pts = st?.p;
+        const fp = st?.fp;
+        const fpg = st?.fpg;
+
+        const fpgNum = Number(fpg);
+        const fpgColor =
+          !Number.isFinite(fpgNum) ? "#cbd5e1" : fpgNum >= 1 ? "#86efac" : "#fca5a5";
+
+        const cell = (val, kind = "int") => {
+          if (showLoading) return <div style={statCellMuted}>…</div>;
+          if (missing) return <div style={statCellMuted}>—</div>;
+
+          const out =
+            kind === "fp" ? fmtFP(val) : kind === "fpg" ? fmtFPG(val) : fmtInt(val);
+
+          return <div style={statCellStyle}>{out}</div>;
+        };
+
+        return (
+          <>
+            {cell(gp, "int")}
+            {cell(g, "int")}
+            {cell(a, "int")}
+            {cell(pts, "int")}
+            {cell(fp, "fp")}
+            <div style={{ ...statCellStyle, color: fpgColor, fontWeight: 900 }}>
+              {showLoading ? "…" : missing ? "—" : fmtFPG(fpg)}
+            </div>
+          </>
+        );
+      })()}
+
+      {/* ACTIONS (desktop) */}
+      {renderActions(p, { isIR })}
+    </div>
+
+    {/* =======================
+        MOBILE ROW (new)
+        ======================= */}
+    <div
+      className="rosterMobileOnly"
+      style={{
+        ...mobileRowOuterStyle,
+        background: bg,
+        ...(isIR ? { border: "1px solid rgba(239, 68, 68, 0.55)" } : {}),
+        ...(requested || offered ? { boxShadow: "0 0 0 1px rgba(34,197,94,0.35) inset" } : {}),
+      }}
+    >
+      {/* POS */}
+      <div style={mobilePosWrapStyle}>
+        <div style={{ ...posPillStyle, background: posColor.solid }}>{pos}</div>
+      </div>
+
+      {/* RIGHT SIDE */}
+      <div style={mobileRightStyle}>
+        {/* TOP ROW: name + actions */}
+        <div style={mobileTopRowStyle}>
+          <div className="mobilePlayerName" style={mobileNameStyle} title={displayName}>
+  {displayName}
 </div>
 
 
-        {/* AGE */}
-        <div style={ageCellStyle} title={age == null ? "Age unavailable" : `Age: ${age}`}>
-          {age == null ? "—" : age}
-        </div>
+          <div style={actionsCellStyleMobile}>
+            {/* Reuse renderActions but with mobile-sized buttons */}
+            {/* We'll inline the same logic as renderActions but size="mobile" */}
 
-        {/* SALARY */}
-        <div style={salaryCellStyle}>{formatSalary(p.salary)}</div>
-<div /> {/* spacer */}
-
-{/* STATS (6 columns) */}
-{(() => {
-  const st = getStatsNums(p);
-
-  // loading / missing states
-  const missing = !st;
-  const showLoading = !statsReady && !st;
-
-  const fmtInt = (x) => (Number.isFinite(x) ? String(Math.trunc(x)) : "—");
-  const fmtFP = (x) => {
-    if (!Number.isFinite(x)) return "—";
-    const isInt = Math.abs(x - Math.round(x)) < 1e-9;
-    return isInt ? String(Math.round(x)) : x.toFixed(2);
-  };
-  const fmtFPG = (x) => (Number.isFinite(x) ? x.toFixed(2) : "—");
-
-  const gp = st?.gp;
-  const g = st?.g;
-  const a = st?.a;
-  const pts = st?.p;
-  const fp = st?.fp;
-  const fpg = st?.fpg;
-
-  const fpgNum = Number(fpg);
-  const fpgColor =
-    !Number.isFinite(fpgNum) ? "#cbd5e1" : fpgNum >= 1 ? "#86efac" : "#fca5a5";
-
-  // If stats are still loading, show "…" in all stat cells (looks consistent)
-  const cell = (val, kind = "int") => {
-    if (showLoading) return <div style={statCellMuted}>…</div>;
-    if (missing) return <div style={statCellMuted}>—</div>;
-
-    const out =
-      kind === "fp" ? fmtFP(val) : kind === "fpg" ? fmtFPG(val) : fmtInt(val);
-
-    return <div style={statCellStyle}>{out}</div>;
-  };
-
-  return (
-    <>
-      {cell(gp, "int")}
-      {cell(g, "int")}
-      {cell(a, "int")}
-      {cell(pts, "int")}
-      {cell(fp, "fp")}
-      {/* FPG with color */}
-      <div
-        style={{
-          ...statCellStyle,
-          color: fpgColor,
-          fontWeight: 900,
-        }}
-      >
-        {showLoading ? "…" : missing ? "—" : fmtFPG(fpg)}
-      </div>
-    </>
-  );
-})()}
-
-
-
-        {/* ACTIONS */}
-        <div style={actionsCellStyle}>
-          {!isIR && canEditThisTeam && (
-            <div
-              style={{ position: "relative", display: "inline-block" }}
-              onMouseEnter={() => setHoveredBuyoutRef(playerRef)}
-              onMouseLeave={() => setHoveredBuyoutRef(null)}
-            >
-              <ActionButton
-                title={locked ? `Buyout locked (${daysLeft}d)` : "Buyout"}
-                onClick={() => {
-                  if (locked) return;
-                  onBuyout(team.name, playerRef);
-                }}
-                disabled={locked}
+            {!isIR && canEditThisTeam && (
+              <div
+                style={{ position: "relative", display: "inline-block" }}
+                onMouseEnter={() => setHoveredBuyoutRef(playerRef)}
+                onMouseLeave={() => setHoveredBuyoutRef(null)}
               >
-                💲
+                <ActionButton
+                  size="mobile"
+                  title={locked ? `Buyout locked (${daysLeft}d)` : "Buyout"}
+                  onClick={() => {
+                    if (locked) return;
+                    onBuyout(team.name, playerRef);
+                  }}
+                  disabled={locked}
+                >
+                  💲
+                </ActionButton>
+
+                {hoveredBuyoutRef === playerRef && (
+                  <div style={tooltipStyle}>
+                    Penalty: ${penalty}
+                    <br />
+                    New cap: ${newCap}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {canEditThisTeam && !isIR && (
+              <ActionButton size="mobile" title="Move to IR" onClick={() => moveToIR(playerRef)} subtle>
+                <HealthIcon />
               </ActionButton>
+            )}
 
-              {hoveredBuyoutRef === playerRef && (
-                <div style={tooltipStyle}>
-                  Penalty: ${penalty}
-                  <br />
-                  New cap: ${newCap}
-                </div>
-              )}
-            </div>
-          )}
+            {canEditThisTeam && isIR && (
+              <ActionButton size="mobile" title="Return from IR" onClick={() => returnFromIR(playerRef)} subtle>
+                ↩
+              </ActionButton>
+            )}
 
-          {canEditThisTeam && !isIR && (
-  <ActionButton title="Move to IR" onClick={() => moveToIR(playerRef)} subtle>
-    <HealthIcon />
-  </ActionButton>
-)}
+            {canEditThisTeam && !isIR && onAddToTradeBlock && (
+              <ActionButton
+                size="mobile"
+                title="Add to Trade Block"
+                onClick={() =>
+                  onAddToTradeBlock({
+                    team: team.name,
+                    player: playerRef,
+                    needs: "",
+                  })
+                }
+                subtle
+              >
+                📌
+              </ActionButton>
+            )}
 
+            {isManagerViewingOtherTeam && !isIR && (
+              <ActionButton
+                size="mobile"
+                title={requested ? "Unrequest player" : "Request player"}
+                onClick={() => toggleRequestPlayer(p)}
+              >
+                {requested ? "✖" : "↔️"}
+              </ActionButton>
+            )}
 
-          {canEditThisTeam && isIR && (
-            <ActionButton title="Return from IR" onClick={() => returnFromIR(playerRef)} subtle>
-              ↩
-            </ActionButton>
-          )}
+            {isManagerViewingOwnTeam && activeDraftFromThisManager && !isIR && (
+              <ActionButton
+                size="mobile"
+                title={offered ? "Remove offer" : "Offer player"}
+                onClick={() => toggleOfferPlayer(p)}
+              >
+                {offered ? "✖" : "↔️"}
+              </ActionButton>
+            )}
 
-          {canEditThisTeam && !isIR && onAddToTradeBlock && (
-            <ActionButton
-              title="Add to Trade Block"
-              onClick={() =>
-                onAddToTradeBlock({
-                  team: team.name,
-                  player: playerRef,
-                  needs: "",
-                })
-              }
-              subtle
-            >
-              📌
-            </ActionButton>
-          )}
-
-          {isManagerViewingOtherTeam && !isIR && (
-            <ActionButton
-              title={requested ? "Unrequest player" : "Request player"}
-              onClick={() => toggleRequestPlayer(p)}
-            >
-              {requested ? "✖" : "↔️"}
-            </ActionButton>
-          )}
-
-          {isManagerViewingOwnTeam && activeDraftFromThisManager && !isIR && (
-            <ActionButton
-              title={offered ? "Remove offer" : "Offer player"}
-              onClick={() => toggleOfferPlayer(p)}
-            >
-              {offered ? "✖" : "↔️"}
-            </ActionButton>
-          )}
-
-          {currentUser?.role === "commissioner" && !isIR && (
-            <ActionButton
-              title="Remove player (commissioner)"
-              onClick={() => onCommissionerRemovePlayer(team.name, playerRef)}
-              subtle
-            >
-              🗑
-            </ActionButton>
-          )}
+            {currentUser?.role === "commissioner" && !isIR && (
+              <ActionButton
+                size="mobile"
+                title="Remove player (commissioner)"
+                onClick={() => onCommissionerRemovePlayer(team.name, playerRef)}
+                subtle
+              >
+                🗑
+              </ActionButton>
+            )}
+          </div>
         </div>
+
+        {/* BOTTOM ROW: salary | team | age | stats (single row, no wrap) */}
+<div style={mobileBottomRowStyle}>
+  <span style={mobileSalaryStyle}>{formatSalary(p.salary)}</span>
+
+<span style={mobileMetaStyle}>{nhlTeam}</span>
+
+<span style={mobileMetaStyle}>
+  {age == null ? "—" : age}
+</span>
+
+  <div style={mobileStatsRowStyle}>
+    {(() => {
+      const st = getStatsNums(p);
+      if (!st && !statsReady) return <span style={mobileMiniLabelStyle}>…</span>;
+      if (!st) return <span style={mobileMiniLabelStyle}>—</span>;
+
+      const fpgNum = Number(st.fpg);
+      const fpgColor =
+        !Number.isFinite(fpgNum) ? "#e5e7eb" : fpgNum >= 1 ? "#86efac" : "#fca5a5";
+
+      const Mini = ({ v, color }) => (
+  <span style={{ ...mobileMiniNumStyle, ...(color ? { color } : {}) }}>
+    {v == null ? "—" : String(v)}
+  </span>
+);
+
+
+      const fmtFP = (x) => {
+        if (!Number.isFinite(x)) return "—";
+        const isInt = Math.abs(x - Math.round(x)) < 1e-9;
+        return isInt ? String(Math.round(x)) : x.toFixed(2);
+      };
+      const fmtFPG = (x) => (Number.isFinite(x) ? x.toFixed(2) : "—");
+
+      return (
+        <>
+          <div style={mobileStatsGrid}>
+  <span style={mobileMiniNumStyle}>{st.gp}</span>
+  <span style={mobileMiniNumStyle}>{st.g}</span>
+  <span style={mobileMiniNumStyle}>{st.a}</span>
+  <span style={mobileMiniNumStyle}>{st.p}</span>
+
+  <span /> {/* spacer */}
+
+  <span style={mobileMiniNumStyle}>{fmtFP(st.fp)}</span>
+  <span style={{ ...mobileMiniNumStyle, color: fpgColor }}>
+    {fmtFPG(st.fpg)}
+  </span>
+</div>
+
+        </>
+      );
+    })()}
+  </div>
+</div>
+
       </div>
-    );
+    </div>
+  </div>
+);
+
   };
 
   // -----------------------
@@ -911,18 +1097,23 @@ const onClickSort = (key) => {
 
       {/* ACTIVE ROSTER */}
 <Section title="Roster">
-  {/* Column headers */}
-<RosterColumnHeader
-  canSort={currentUser?.role === "manager"}
-  sortKey={sortKey}
-  sortDir={sortDir}
-  onClickSort={onClickSort}
-/>
+  <RosterColumnHeader
+    canSort={currentUser?.role === "manager"}
+    sortKey={sortKey}
+    sortDir={sortDir}
+    onClickSort={onClickSort}
+  />
 
+  <MobileRosterColumnHeader
+    canSort={currentUser?.role === "manager"}
+    sortKey={sortKey}
+    sortDir={sortDir}
+    onClickSort={onClickSort}
+  />
 
-
-{sortRoster(activeRoster).map((p, index) => renderRosterRow(p, index, { isIR: false }))}
+  {sortRoster(activeRoster).map((p, index) => renderRosterRow(p, index, { isIR: false }))}
 </Section>
+
 
 
       {/* IR */}
@@ -934,7 +1125,12 @@ const onClickSort = (key) => {
   sortDir={sortDir}
   onClickSort={onClickSort}
 />
-
+ <MobileRosterColumnHeader
+    canSort={currentUser?.role === "manager"}
+    sortKey={sortKey}
+    sortDir={sortDir}
+    onClickSort={onClickSort}
+  />
 
 {sortRoster(irPlayers).map((p, index) => renderRosterRow(p, index, { isIR: true }))}
 </Section>
@@ -983,6 +1179,172 @@ const capSummaryStyle = {
   marginBottom: "12px",
   fontSize: "0.9rem",
   color: TEXT,
+};
+
+const mobileRowOuterStyle = {
+  display: "grid",
+  gridTemplateColumns: "28px 1fr",
+  alignItems: "center",
+  gap: 10,
+  padding: "8px 10px",
+  borderRadius: 10,
+  border: `1px solid ${BORDER}`,
+  marginBottom: 8,
+};
+
+const mobilePosWrapStyle = {
+  justifySelf: "center",
+  alignSelf: "center",
+};
+
+const mobileRightStyle = {
+  minWidth: 0,
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+};
+
+const mobileTopRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  minWidth: 0,
+};
+
+const mobileNameStyle = {
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  fontSize: "1.0rem",
+  fontWeight: 900,
+  flex: 1,
+};
+
+const mobileActionsWrapStyle = {
+  display: "flex",
+  gap: 6,
+  alignItems: "center",
+  flexShrink: 0,
+};
+
+const mobileBottomRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "auto auto auto 1fr", // salary | team | age | stats
+  alignItems: "center",
+  columnGap: 10,
+  color: "#cbd5e1",
+  fontVariantNumeric: "tabular-nums",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+};
+
+const mobileStatsRowStyle = {
+  minWidth: 0,
+  display: "flex",
+  justifyContent: "flex-end",
+  alignItems: "baseline",
+  gap: 8,
+  flexWrap: "nowrap",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+};
+
+
+const mobileMetaPillStyle = {
+  display: "inline-flex",
+  alignItems: "baseline",
+  gap: 6,
+  flexWrap: "wrap",
+};
+
+const mobileSalaryStyle = {
+  fontWeight: 600,
+  fontSize: "0.82rem",
+  color: "#e5e7eb",
+  fontVariantNumeric: "tabular-nums",
+};
+
+const mobileMetaStyle = {
+  fontSize: "0.72rem",
+  fontWeight: 500,
+  color: "#94a3b8",          // muted slate
+  letterSpacing: "0.03em",
+  fontVariantNumeric: "tabular-nums",
+};
+
+const mobileMiniStatStyle = {
+  display: "inline-flex",
+  alignItems: "baseline",
+  gap: 2,
+};
+
+const mobileMiniNumStyle = {
+  fontSize: "0.78rem",
+  fontWeight: 500,            // ⬅️ no longer bold
+  color: "#e5e7eb",
+  lineHeight: 1.1,
+  fontVariantNumeric: "tabular-nums",
+};
+
+
+const mobileMiniLabelStyle = {
+  fontSize: "0.55rem",
+  fontWeight: 800,
+  color: "#94a3b8",
+  letterSpacing: "0.05em",
+};
+
+const mobileHeaderRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "auto auto auto 1fr", // SAL | TEAM | AGE | STATS
+  alignItems: "center",
+  columnGap: 10,
+  marginBottom: 8,
+
+  /* IMPORTANT: indent so SAL lines up with the row content (not the POS pill column) */
+  padding: "0 6px 0 44px", // 28px (pos col) + ~10px gap + a bit of breathing room
+
+  color: "#94a3b8",
+  fontSize: "0.62rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.10em",
+  userSelect: "none",
+};
+
+
+const mobileHeaderStatsStyle = {
+  minWidth: 0,
+  display: "grid",
+  gridTemplateColumns: "auto auto auto auto auto 6px auto auto",
+  /*            GP   G    A    P    |  FP   FPG  */
+
+  alignItems: "baseline",
+  columnGap: 6,
+  justifyContent: "end",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+};
+
+
+const mobileHeaderChipStyle = (active) => ({
+  cursor: "pointer",
+  opacity: active ? 1 : 0.85,
+  fontWeight: active ? 900 : 800,
+});
+
+const mobileHeaderArrowStyle = {
+  marginLeft: 3,
+  opacity: 0.9,
+  fontWeight: 900,
+};
+
+const mobileStatsGrid = {
+  display: "grid",
+  gridTemplateColumns: "auto auto auto auto 6px auto auto", // GP G A P | FP FPG
+  alignItems: "baseline",
+  columnGap: 6,
+  justifyContent: "end",
 };
 
 
@@ -1108,6 +1470,13 @@ const actionsCellStyle = {
   alignItems: "center",
 };
 
+const actionsCellStyleMobile = {
+  display: "flex",
+  gap: 6,
+  alignItems: "center",
+  flexShrink: 0,
+};
+
 const iconBtnStyle = {
   width: 32,
   height: 28,
@@ -1122,6 +1491,14 @@ const iconBtnStyle = {
   fontSize: "0.9rem",
   lineHeight: 1,
 };
+
+const iconBtnStyleMobile = {
+  ...iconBtnStyle,
+  width: 30,
+  height: 26,
+  borderRadius: 8,
+};
+
 
 const iconBtnSubtleStyle = {
   background: "#071022",
@@ -1196,13 +1573,99 @@ const SortHeader = ({ label, sortId, align = "right", onClick, active, dir }) =>
   );
 };
 
+const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) => {
+  const Arrow = ({ active }) =>
+    active ? <span style={mobileHeaderArrowStyle}>{sortDir === "asc" ? "▲" : "▼"}</span> : null;
+
+  const click = (key) => {
+    if (!canSort) return;
+    onClickSort(key);
+  };
+
+  return (
+  <div className="rosterMobileOnly" style={mobileHeaderRowStyle}>
+      <div
+        style={mobileHeaderChipStyle(sortKey === "salary")}
+        onClick={() => click("salary")}
+        title={canSort ? "Sort by salary" : ""}
+      >
+        SAL<Arrow active={sortKey === "salary"} />
+      </div>
+
+      <div style={{ opacity: 0.9 }}>TEAM</div>
+
+      <div
+        style={mobileHeaderChipStyle(sortKey === "age")}
+        onClick={() => click("age")}
+        title={canSort ? "Sort by age" : ""}
+      >
+        AGE<Arrow active={sortKey === "age"} />
+      </div>
+
+      <div style={mobileStatsGrid}>
+  <span
+    style={mobileHeaderChipStyle(sortKey === "gp")}
+    onClick={() => click("gp")}
+    title={canSort ? "Sort by GP" : ""}
+  >
+    GP<Arrow active={sortKey === "gp"} />
+  </span>
+
+  <span
+    style={mobileHeaderChipStyle(sortKey === "g")}
+    onClick={() => click("g")}
+    title={canSort ? "Sort by G" : ""}
+  >
+    G<Arrow active={sortKey === "g"} />
+  </span>
+
+  <span
+    style={mobileHeaderChipStyle(sortKey === "a")}
+    onClick={() => click("a")}
+    title={canSort ? "Sort by A" : ""}
+  >
+    A<Arrow active={sortKey === "a"} />
+  </span>
+
+  <span
+    style={mobileHeaderChipStyle(sortKey === "p")}
+    onClick={() => click("p")}
+    title={canSort ? "Sort by P" : ""}
+  >
+    P<Arrow active={sortKey === "p"} />
+  </span>
+
+  <span /> {/* spacer column (the 6px) */}
+
+  <span
+    style={mobileHeaderChipStyle(sortKey === "fp")}
+    onClick={() => click("fp")}
+    title={canSort ? "Sort by FP" : ""}
+  >
+    FP<Arrow active={sortKey === "fp"} />
+  </span>
+
+  <span
+    style={mobileHeaderChipStyle(sortKey === "fpg")}
+    onClick={() => click("fpg")}
+    title={canSort ? "Sort by FPG" : ""}
+  >
+    FPG<Arrow active={sortKey === "fpg"} />
+  </span>
+</div>
+
+    </div>
+  );
+};
+
+
 const RosterColumnHeader = ({
   canSort,
   sortKey,
   sortDir,
   onClickSort,
   }) => (
-  <div style={rosterHeaderRowStyle}>
+<div className="rosterDesktopOnly" style={rosterHeaderRowStyle}>
     <div style={headerCenter}>POS</div>
     <div>NAME</div>
     <div style={headerRight}>TEAM</div>
