@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   getNextSundayDeadline,
   getNewAuctionCutoff,
-  formatCountdown,
+
   computeBidUiStateForAuction,
 } from "../leagueUtils";
 
@@ -116,7 +116,6 @@ const [auctionPrefill, setAuctionPrefill] = useState(null); // { playerId, fullN
 // --------------------
 // Auction panel state
 // --------------------
-const [bidPosition, setBidPosition] = useState("F");
 const [bidAmount, setBidAmount] = useState("");
 
 const [playerSearchQuery, setPlayerSearchQuery] = useState("");
@@ -134,6 +133,17 @@ const [nowMs, setNowMs] = useState(Date.now());
 useEffect(() => {
   const id = setInterval(() => setNowMs(Date.now()), 1000);
   return () => clearInterval(id);
+}, []);
+
+const [isMobile, setIsMobile] = useState(() => {
+  if (typeof window === "undefined") return false;
+  return window.innerWidth <= 820;
+});
+
+useEffect(() => {
+  const onResize = () => setIsMobile(window.innerWidth <= 820);
+  window.addEventListener("resize", onResize);
+  return () => window.removeEventListener("resize", onResize);
 }, []);
 
 const normalizeNhlId = (raw) => {
@@ -279,8 +289,7 @@ useEffect(() => {
   setPlayerSearchQuery(fullName || "");
   setPlayerSearchOpen(false);
 
-  if (position === "D") setBidPosition("D");
-  else setBidPosition("F");
+ 
 }, [auctionPrefill]); // intentionally only on prefill change
 
   const myTeam = useMemo(() => {
@@ -570,6 +579,660 @@ const handleLiveBidSubmit = (auction) => {
   setLiveBidInputs((prev) => ({ ...prev, [playerKey]: "" }));
 };
 
+  // ----------------------------------------
+  // Split columns so we can swap order on mobile
+  // ----------------------------------------
+  const LeftColumn = (
+    <div>
+      <div style={{ width: "100%", maxWidth: "100%", minWidth: 0 }}>
+      
+        <div style={{ color: MUTED, fontSize: "0.9rem", whiteSpace: "nowrap" }}>
+          Filter:
+        </div>
+        <select
+          value={posFilter}
+          onChange={(e) => {
+            setPosFilter(e.target.value);
+            setVisibleCount(50);
+          }}
+          style={{
+            background: "#0b1220",
+            color: TEXT,
+            border: "1px solid #334155",
+            borderRadius: 8,
+            padding: "6px 10px",
+            cursor: "pointer",
+          }}
+        >
+          <option value="ALL">All Positions</option>
+          <option value="F">Forwards</option>
+          <option value="D">Defense</option>
+          <option value="G">Goalies</option>
+        </select>
+      </div>
+
+      {/* Header row */}
+      <div
+        style={{
+          marginTop: 6,
+          padding: "0 10px 6px",
+          border: "none",
+          background: "transparent",
+          display: "grid",
+          gridTemplateColumns:
+            "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
+          gap: 10,
+          alignItems: "center",
+        }}
+      >
+        <SortHeader label="Pos" k="posGroup" />
+        <SortHeader label="Name" k="name" />
+        <SortHeader label="Team" k="team" />
+        <SortHeader label="Age" k="age" align="right" />
+        <SortHeader label="GP" k="gp" align="right" />
+        <SortHeader label="G" k="g" align="right" />
+        <SortHeader label="A" k="a" align="right" />
+        <SortHeader label="P" k="p" align="right" />
+        <SortHeader label="FP" k="fp" align="right" />
+        <SortHeader label="FP/G" k="fpg" align="right" />
+        <div
+          style={{
+            color: MUTED,
+            fontWeight: 800,
+            fontSize: "0.78rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            textAlign: "right",
+          }}
+        >
+          Bid
+        </div>
+      </div>
+
+      {/* Rows */}
+      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+        {visibleRows.map((r) => {
+          const pc = POS_COLORS[r.posGroup] || POS_COLORS.F;
+
+          return (
+            <div
+              key={r.playerId}
+              style={{
+                position: "relative",
+                border: `1px solid ${BORDER}`,
+                borderRadius: 10,
+                background: "#07162b",
+                padding: "10px 10px",
+                overflow: "hidden",
+              }}
+            >
+              {/* Yellow FA gradient strip (RIGHT side) */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "linear-gradient(270deg, rgba(250,204,21,0.22) 0%, rgba(250,204,21,0.10) 18%, rgba(2,6,23,0) 55%)",
+                  pointerEvents: "none",
+                }}
+              />
+
+              <div
+                style={{
+                  position: "relative",
+                  display: "grid",
+                  gridTemplateColumns:
+                    "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                {/* Pos pill */}
+                <div>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 28,
+                      height: 28,
+                      borderRadius: 999,
+                      border: `1px solid ${pc.solid}`,
+                      background: pc.tint,
+                      color: TEXT,
+                      fontWeight: 900,
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    {r.posGroup}
+                  </span>
+                </div>
+
+                {/* Name */}
+                <div
+                  style={{
+                    color: TEXT,
+                    fontWeight: 800,
+                    fontSize: "1.02rem",
+                    letterSpacing: "0.1px",
+                    lineHeight: 1.1,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                  title={r.fullName}
+                >
+                  {r.fullName}
+                </div>
+
+                {/* Team */}
+                <div style={{ color: TEXT, fontWeight: 800, fontSize: "0.92rem" }}>
+                  {r.teamAbbrev}
+                </div>
+
+                {/* Age */}
+                <div style={{ color: MUTED, textAlign: "right", fontWeight: 700 }}>
+                  {r.age ?? "—"}
+                </div>
+
+                {/* GP/G/A/P */}
+                <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+                  {r.gamesPlayed}
+                </div>
+                <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+                  {r.goals}
+                </div>
+                <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+                  {r.assists}
+                </div>
+                <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
+                  {r.points}
+                </div>
+
+                {/* FP */}
+                <div style={{ color: TEXT, textAlign: "right", fontWeight: 900 }}>
+                  {r.fp.toFixed(2).replace(/\.00$/, "")}
+                </div>
+
+                {/* FP/G */}
+                <div
+                  style={{
+                    textAlign: "right",
+                    fontWeight: 900,
+                    color: r.fpg >= 1.2 ? "#86efac" : r.fpg >= 0.9 ? "#e5e7eb" : "#fca5a5",
+                  }}
+                >
+                  {r.fpg.toFixed(2)}
+                </div>
+
+                {/* Start auction button */}
+                <button
+                  onClick={() => {
+                    setAuctionPrefill({
+                      playerId: r.playerId,
+                      fullName: r.fullName,
+                      posGroup: r.posGroup,
+                    });
+                  }}
+                  title="Start auction for this player"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    border: "1px solid #334155",
+                    background: "#0b1220",
+                    color: "#fde68a",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                    justifySelf: "end",
+                  }}
+                >
+                  $
+                </button>
+              </div>
+            </div>
+          );
+        })}
+
+        {statsReady && rows.length === 0 && (
+          <div style={{ color: MUTED, padding: "10px 2px" }}>
+            No free agents found (or stats not loaded yet).
+          </div>
+        )}
+      </div>
+
+      {/* Load more */}
+      {statsReady && remaining > 0 && (
+        <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}>
+          <button
+            onClick={() => setVisibleCount((c) => c + 50)}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "1px solid #334155",
+              background: "#0b1220",
+              color: TEXT,
+              cursor: "pointer",
+              fontWeight: 800,
+            }}
+          >
+            Show next 50 ({remaining} remaining)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  const RightColumn = (
+    
+  <div>
+    {/* Quick reference */}
+    <div style={{
+  border: "1px solid #1e293b",
+  borderRadius: 12,
+  background: "#07162b",
+  marginBottom: 12,
+  display: "grid",
+  gridTemplateColumns: isMobile ? "72px 1fr" : "88px 1fr",
+  overflow: "hidden",
+  width: "100%",
+  minWidth: 0,
+}}
+>{/* LEFT: avatar */}
+<div
+  style={{
+    background: "transparent",
+    padding: 0,
+    display: "flex",
+    alignItems: "stretch",
+    justifyContent: "stretch",
+  }}
+>
+  {myTeam?.profilePic ? (
+    <img
+      src={myTeam.profilePic}
+      alt=""
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "block",
+        objectFit: "cover",
+        borderRadius: "999px",
+        border: "2px solid #334155",
+      }}
+    />
+  ) : (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        borderRadius: "999px",
+        border: "2px solid #334155",
+        background: "transparent",
+      }}
+    />
+  )}
+</div>
+
+
+
+      {/* RIGHT: Team info */}
+      <div
+        style={{
+          padding: "12px 14px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}
+      >
+        <div
+          style={{
+            color: TEXT,
+            fontWeight: 900,
+            fontSize: "1.05rem",
+            lineHeight: 1.1,
+          }}
+        >
+          {myTeam ? myTeam.name : "Your Team"}
+        </div>
+
+        <div
+          style={{
+            color: MUTED,
+            fontSize: "0.95rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
+          <div>
+            <strong style={{ color: TEXT }}>{myCounts.rosterSize}</strong> / {maxRosterSize} rostered · F:{" "}
+            <strong style={{ color: TEXT }}>{myCounts.F}</strong> · D:{" "}
+            <strong style={{ color: TEXT }}>{myCounts.D}</strong>
+          </div>
+
+          <div>
+            Cap Used: <strong style={{ color: TEXT }}>${myCounts.capUsed}</strong> · Cap Space:{" "}
+            <strong style={{ color: TEXT }}>${capSpace}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Auction panel */}
+    <div
+      style={{
+        border: "1px solid #1e293b",
+        borderRadius: 12,
+        background: "#07162b",
+        padding: "12px 12px",
+      }}
+    >
+      <div style={{ color: TEXT, fontWeight: 900, marginBottom: 10 }}>
+        Start Auction
+      </div>
+
+
+      {/* Start auction */}
+      {isManager ? (
+        <div
+          style={{
+            padding: "10px",
+            borderRadius: 10,
+            border: "1px solid #1f2937",
+            background: "#020617",
+            marginBottom: 10,
+          }}
+        >
+          <div
+  style={{
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    flexWrap: "nowrap",
+  }}
+>
+  <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+    <input
+      type="text"
+      placeholder="Search player"
+      value={playerSearchQuery}
+      onChange={(e) => {
+        const v = e.target.value;
+        setPlayerSearchQuery(v);
+        setPlayerSearchOpen(true);
+
+        if (
+          selectedAuctionPlayer &&
+          v.trim() !== String(selectedAuctionPlayer.fullName || "").trim()
+        ) {
+          setSelectedAuctionPlayer(null);
+        }
+      }}
+      onFocus={() => {
+        if (playerSearchResults.length > 0) setPlayerSearchOpen(true);
+      }}
+      onBlur={() => setTimeout(() => setPlayerSearchOpen(false), 150)}
+      style={{ width: "100%", minWidth: 0 }}
+    />
+
+    {playerSearchOpen && (playerSearchLoading || playerSearchResults.length > 0) && (
+      <div
+        style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          marginTop: 4,
+          background: "#020617",
+          border: "1px solid #1f2937",
+          borderRadius: 8,
+          zIndex: 50,
+          maxHeight: 260,
+          overflowY: "auto",
+        }}
+      >
+        {playerSearchLoading && (
+          <div style={{ padding: 10, fontSize: "0.85rem", color: MUTED }}>
+            Searching…
+          </div>
+        )}
+
+        {!playerSearchLoading &&
+          playerSearchResults.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onMouseDown={(evt) => evt.preventDefault()}
+              onClick={() => {
+                const norm = normalizeSearchPlayer(p);
+                if (!norm?.id) {
+                  window.alert("That player result is missing a valid NHL playerId.");
+                  return;
+                }
+
+                setSelectedAuctionPlayer(norm);
+                setPlayerSearchQuery(norm.fullName);
+                setPlayerSearchOpen(false);
+              }}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "10px 10px",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: TEXT,
+              }}
+            >
+              <div style={{ fontWeight: 800 }}>
+                {p.fullName}
+                <span style={{ fontWeight: 500, color: MUTED }}>
+                  {" "}
+                  · {p.position || "?"} · {p.teamAbbrev || "?"}
+                </span>
+              </div>
+            </button>
+          ))}
+      </div>
+    )}
+  </div>
+
+  <input
+    type="number"
+    min="1"
+    placeholder="$"
+    value={bidAmount}
+    onChange={(e) => setBidAmount(e.target.value)}
+    style={{ width: 72, flex: "0 0 auto" }}
+  />
+
+  <button
+    disabled={!canStartAuction}
+    onClick={() => {
+      if (!canStartAuction) return;
+
+      if (!selectedAuctionPlayer?.id) {
+        window.alert("Pick a player from the dropdown list.");
+        return;
+      }
+
+      const auctionKey = `id:${String(selectedAuctionPlayer.id).trim()}`.toLowerCase();
+      const isExistingAuction = activeAuctionsByPlayer.some((a) => a.key === auctionKey);
+
+      if (!isExistingAuction && nowMs > auctionCutoff.getTime()) {
+        window.alert("Too late to start a new auction for this week.");
+        return;
+      }
+
+      onPlaceBid({
+        playerId: String(selectedAuctionPlayer.id),
+        playerName: selectedAuctionPlayer.fullName,
+        position: normalizePosGroup(selectedAuctionPlayer?.position) || "F",
+        amount: bidAmount,
+      });
+
+      setBidAmount("");
+      setPlayerSearchQuery("");
+      setSelectedAuctionPlayer(null);
+      setPlayerSearchResults([]);
+      setPlayerSearchOpen(false);
+    }}
+    style={{
+      flex: "0 0 auto",
+      padding: "8px 10px",
+      borderRadius: 10,
+      border: "none",
+      fontWeight: 900,
+      cursor: canStartAuction ? "pointer" : "not-allowed",
+      background: canStartAuction ? "#16a34a" : "#4b5563",
+      color: "#e5e7eb",
+      opacity: canStartAuction ? 1 : 0.85,
+      whiteSpace: "nowrap",
+    }}
+  >
+    Bid
+  </button>
+</div>
+
+        </div>
+      ) : (
+        <div style={{ color: MUTED, fontSize: "0.9rem" }}>
+          Log in as a manager to place free-agent bids.
+        </div>
+      )}
+     
+
+      {/* Live auctions */}
+      <div style={{ marginTop: 10 }}>
+        <div style={{ fontWeight: 900, color: TEXT, marginBottom: 6 }}>Live auctions</div>
+
+        {activeAuctionsByPlayer.length === 0 ? (
+          <div style={{ color: MUTED, fontSize: "0.9rem" }}>No live auctions at the moment.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {activeAuctionsByPlayer.map((auction) => {
+              const playerKey = auction.key;
+              const inputValue = liveBidInputs[playerKey] || "";
+
+              const ui = computeBidUiStateForAuction({
+                auctionBids: auction.bids,
+                myTeamName,
+                nowMs,
+                inputValue,
+              });
+
+              const bidCount = auction.bids.length;
+
+              return (
+                <div
+                  key={playerKey}
+                  style={{
+                    padding: 10,
+                    borderRadius: 10,
+                    border: "1px solid #1f2937",
+                    background: "#020617",
+                  }}
+                >
+                  <div style={{ fontWeight: 900, color: TEXT }}>
+                    {getAuctionDisplayName(auction)}
+                    <span style={{ color: MUTED, fontWeight: 700 }}> · {auction.position}</span>
+                  </div>
+                  <div style={{ color: MUTED, fontSize: "0.85rem", marginTop: 2 }}>
+                    {bidCount === 1 ? "1 bid" : `${bidCount} bids`}
+                  </div>
+
+                  {isManager && (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          type="number"
+                          min={ui.minRequired}
+                          placeholder={`Bid $ (min ${ui.minRequired})`}
+                          value={inputValue}
+                          onChange={(e) => handleLiveBidInputChange(playerKey, e.target.value)}
+                          style={{ width: 140 }}
+                        />
+                        <button
+                          onClick={() => {
+                            if (ui.disabled) return;
+                            handleLiveBidSubmit(auction);
+                          }}
+                          disabled={ui.disabled}
+                          title={ui.reason || ""}
+                          style={{
+                            padding: "8px 10px",
+                            borderRadius: 8,
+                            border: "none",
+                            fontWeight: 900,
+                            cursor: ui.disabled ? "not-allowed" : "pointer",
+                            background: ui.disabled ? "#4b5563" : "#0ea5e9",
+                            color: "#e5e7eb",
+                            opacity: ui.disabled ? 0.8 : 1,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Place bid
+                        </button>
+                      </div>
+
+                      <div style={{ marginTop: 4, fontSize: "0.78rem", color: MUTED }}>
+                        {ui.reason ? ui.reason : `Edits used: ${ui.editsUsed}/${ui.maxEdits}`}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Your active bids */}
+      {isManager && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontWeight: 900, color: TEXT, marginBottom: 6 }}>Your active bids</div>
+          {myBids.length === 0 ? (
+            <div style={{ color: MUTED, fontSize: "0.9rem" }}>You have no bids yet.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {myBids.map((b) => (
+                <div
+                  key={b.id}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 10,
+                    border: "1px solid #1f2937",
+                    background: "#020617",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ color: TEXT, fontWeight: 900 }}>
+                    {getBidDisplayName(b)}
+                    <span style={{ color: MUTED, fontWeight: 800 }}> · ${b.amount}</span>
+                  </div>
+                  <div style={{ color: MUTED, fontSize: "0.78rem", whiteSpace: "nowrap" }}>
+                    {new Date(b.timestamp).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {auctionPrefill && (
+        <div style={{ marginTop: 10, color: MUTED, fontSize: "0.9rem" }}>
+          Prefill: <strong style={{ color: TEXT }}>{auctionPrefill.fullName}</strong>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
   return (
   <div
     style={{
@@ -578,6 +1241,11 @@ const handleLiveBidSubmit = (auction) => {
       borderRadius: 8,
       padding: "14px 16px",
       marginTop: 12,
+      width: "100%",
+maxWidth: "100%",
+boxSizing: "border-box",
+minWidth: 0,
+
     }}
   >
     {/* Top row */}
@@ -629,708 +1297,32 @@ const handleLiveBidSubmit = (auction) => {
 
     </div>
 
-    {/* Two-column layout */}
-    <div
-      style={{
-        marginTop: 12,
-        display: "grid",
-        gridTemplateColumns: "2fr 1fr",
-        gap: 16,
-        alignItems: "start",
-      }}
-    >
-      {/* LEFT: List */}
-      <div>
-        <div
+   {/* Two-column layout */}
+<div
   style={{
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
-  }}
->
-  <div style={{ color: MUTED, fontSize: "0.9rem", whiteSpace: "nowrap" }}>
-    Filter:
-  </div>
-  <select
-    value={posFilter}
-    onChange={(e) => {
-      setPosFilter(e.target.value);
-      setVisibleCount(50);
-    }}
-    style={{
-      background: "#0b1220",
-      color: TEXT,
-      border: "1px solid #334155",
-      borderRadius: 8,
-      padding: "6px 10px",
-      cursor: "pointer",
-    }}
-  >
-    <option value="ALL">All Positions</option>
-    <option value="F">Forwards</option>
-    <option value="D">Defense</option>
-    <option value="G">Goalies</option>
-  </select>
-</div>
-
-        {/* Header row */}
-       <div
-  style={{
-    marginTop: 6,
-    padding: "0 10px 6px",
-    border: "none",
-    background: "transparent",
+    marginTop: 12,
     display: "grid",
-    gridTemplateColumns:
-      "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
-    gap: 10,
-    alignItems: "center",
+    gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr",
+    gap: isMobile ? 10 : 16,
+    alignItems: "start",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
   }}
 >
-
-          <SortHeader label="Pos" k="posGroup" />
-          <SortHeader label="Name" k="name" />
-          <SortHeader label="Team" k="team" />
-          <SortHeader label="Age" k="age" align="right" />
-          <SortHeader label="GP" k="gp" align="right" />
-          <SortHeader label="G" k="g" align="right" />
-          <SortHeader label="A" k="a" align="right" />
-          <SortHeader label="P" k="p" align="right" />
-          <SortHeader label="FP" k="fp" align="right" />
-          <SortHeader label="FP/G" k="fpg" align="right" />
-          <div
-  style={{
-    color: MUTED,
-    fontWeight: 800,
-    fontSize: "0.78rem",
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    textAlign: "right",
-  }}
->
-  Bid
-</div>
-
-        </div>
-
-        {/* Rows */}
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-          {visibleRows.map((r) => {
-            const pc = POS_COLORS[r.posGroup] || POS_COLORS.F;
-
-            return (
-              <div
-                key={r.playerId}
-                style={{
-                  position: "relative",
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 10,
-                  background: "#07162b",
-                  padding: "10px 10px",
-                  overflow: "hidden",
-                }}
-              >
-                {/* Yellow FA gradient strip (RIGHT side) */}
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background:
-                      "linear-gradient(270deg, rgba(250,204,21,0.22) 0%, rgba(250,204,21,0.10) 18%, rgba(2,6,23,0) 55%)",
-                    pointerEvents: "none",
-                  }}
-                />
-
-               <div
-  style={{
-    position: "relative",
-    display: "grid",
-    gridTemplateColumns:
-      "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
-    gap: 10,
-    alignItems: "center",
-  }}
->
-
-                  
-
-                  {/* Pos pill */}
-                  <div>
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: 28,
-                        height: 28,
-                        borderRadius: 999,
-                        border: `1px solid ${pc.solid}`,
-                        background: pc.tint,
-                        color: TEXT,
-                        fontWeight: 900,
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      {r.posGroup}
-                    </span>
-                  </div>
-
-                  {/* Name */}
-                  <div
-                    style={{
-                      color: TEXT,
-                      fontWeight: 800,
-                      fontSize: "1.02rem",
-                      letterSpacing: "0.1px",
-                      lineHeight: 1.1,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    title={r.fullName}
-                  >
-                    {r.fullName}
-                  </div>
-
-                  {/* Team */}
-                  <div style={{ color: TEXT, fontWeight: 800, fontSize: "0.92rem" }}>
-                    {r.teamAbbrev}
-                  </div>
-
-                  {/* Age */}
-                  <div style={{ color: MUTED, textAlign: "right", fontWeight: 700 }}>
-                    {r.age ?? "—"}
-                  </div>
-
-                  {/* GP/G/A */}
-                  <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
-                    {r.gamesPlayed}
-                  </div>
-                  <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
-                    {r.goals}
-                  </div>
-                  <div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
-                    {r.assists}
-                  </div>
-{/* Points (P) */}
-<div style={{ color: TEXT, textAlign: "right", fontWeight: 800 }}>
-  {r.points}
-</div>
-
-                  {/* FP */}
-                  <div style={{ color: TEXT, textAlign: "right", fontWeight: 900 }}>
-                    {r.fp.toFixed(2).replace(/\.00$/, "")}
-                  </div>
-
-                  {/* FP/G */}
-                  <div
-                    style={{
-                      textAlign: "right",
-                      fontWeight: 900,
-                      color:
-                        r.fpg >= 1.2 ? "#86efac" : r.fpg >= 0.9 ? "#e5e7eb" : "#fca5a5",
-                    }}
-                  >
-                    {r.fpg.toFixed(2)}
-                    <span style={{ color: MUTED, fontWeight: 700, fontSize: "0.78rem" }}>
-                      {" "}
-                      
-                    </span>
-                  </div>
-                  {/* Start auction button */}
-<button
-  onClick={() => {
-    setAuctionPrefill({
-      playerId: r.playerId,
-      fullName: r.fullName,
-      posGroup: r.posGroup,
-    });
-  }}
-  title="Start auction for this player"
-  style={{
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    border: "1px solid #334155",
-    background: "#0b1220",
-    color: "#fde68a",
-    cursor: "pointer",
-    fontWeight: 900,
-    justifySelf: "end",
-  }}
->
-  $
-</button>
-
-                </div>
-              </div>
-            );
-          })}
-
-          {statsReady && rows.length === 0 && (
-            <div style={{ color: MUTED, padding: "10px 2px" }}>
-              No free agents found (or stats not loaded yet).
-            </div>
-          )}
-        </div>
-
-        {/* Load more */}
-        {statsReady && remaining > 0 && (
-          <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}>
-            <button
-              onClick={() => setVisibleCount((c) => c + 50)}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 10,
-                border: "1px solid #334155",
-                background: "#0b1220",
-                color: TEXT,
-                cursor: "pointer",
-                fontWeight: 800,
-              }}
-            >
-              Show next 50 ({remaining} remaining)
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* RIGHT: Quick reference + Auction panel */}
-      <div>
-        {/* Quick reference */}
-        <div
-  style={{
-    border: "1px solid #1e293b",
-    borderRadius: 12,
-    background: "#07162b",
-    marginBottom: 12,
-    display: "grid",
-    gridTemplateColumns: "96px 1fr",
-    overflow: "hidden",
-  }}
->
-  <div
-  style={{
-    background: "#020617",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 10,
-  }}
->
-  {myTeam?.profilePic ? (
-    <img
-      src={myTeam.profilePic}
-      alt=""
-      style={{
-        width: "100%",
-        height: "100%",
-        borderRadius: "999px",
-        objectFit: "cover",
-        border: "2px solid #334155",
-      }}
-    />
-  ) : (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        borderRadius: "999px",
-        background: "#0b1220",
-        border: "2px solid #334155",
-      }}
-    />
-  )}
-</div>
-
-
-  {/* RIGHT: Team info */}
-  <div
-    style={{
-      padding: "12px 14px",
-      display: "flex",
-      flexDirection: "column",
-      gap: 6,
-    }}
-  >
-    <div
-      style={{
-        color: TEXT,
-        fontWeight: 900,
-        fontSize: "1.05rem",
-        lineHeight: 1.1,
-      }}
-    >
-      {myTeam ? myTeam.name : "Your Team"}
-    </div>
-
-    <div
-      style={{
-        color: MUTED,
-        fontSize: "0.95rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-      }}
-    >
-      <div>
-        <strong style={{ color: TEXT }}>{myCounts.rosterSize}</strong> /{" "}
-        {maxRosterSize} rostered · F:{" "}
-        <strong style={{ color: TEXT }}>{myCounts.F}</strong> · D:{" "}
-        <strong style={{ color: TEXT }}>{myCounts.D}</strong>
-      </div>
-
-      <div>
-        Cap Used:{" "}
-        <strong style={{ color: TEXT }}>${myCounts.capUsed}</strong> · Cap
-        Space:{" "}
-        <strong style={{ color: TEXT }}>${capSpace}</strong>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-        {/* Auction panel placeholder */}
-        <div
-          style={{
-            border: "1px solid #1e293b",
-            borderRadius: 12,
-            background: "#07162b",
-            padding: "12px 12px",
-          }}
-        >
-          <div style={{ color: TEXT, fontWeight: 900, marginBottom: 10 }}>
-            Start Auction
-          </div>
-
-          {/* Countdown */}
-<div style={{ fontSize: "0.8rem", color: MUTED, marginBottom: 10 }}>
-  <div style={{ marginBottom: 4 }}>Auction rollover in:</div>
-  <div style={{ fontWeight: 900, color: TEXT }}>
-    {formatCountdown(timeRemainingMs)}
-  </div>
-</div>
-
-{/* Start auction */}
-{isManager ? (
-  <div
-    style={{
-      padding: "10px",
-      borderRadius: 10,
-      border: "1px solid #1f2937",
-      background: "#020617",
-      marginBottom: 10,
-    }}
-  >
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {/* Search input + dropdown */}
-      <div style={{ position: "relative", flex: "1 1 180px" }}>
-        <input
-          type="text"
-          placeholder="Search player"
-          value={playerSearchQuery}
-          onChange={(e) => {
-            const v = e.target.value;
-            setPlayerSearchQuery(v);
-            setPlayerSearchOpen(true);
-
-            // if they type after selecting, selection is no longer trusted
-            if (
-              selectedAuctionPlayer &&
-              v.trim() !== String(selectedAuctionPlayer.fullName || "").trim()
-            ) {
-              setSelectedAuctionPlayer(null);
-            }
-          }}
-          onFocus={() => {
-            if (playerSearchResults.length > 0) setPlayerSearchOpen(true);
-          }}
-          onBlur={() => setTimeout(() => setPlayerSearchOpen(false), 150)}
-          style={{ width: "100%"}}
-
-        />
-
-        {playerSearchOpen && (playerSearchLoading || playerSearchResults.length > 0) && (
-          <div
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              right: 0,
-              marginTop: 4,
-              background: "#020617",
-              border: "1px solid #1f2937",
-              borderRadius: 8,
-              zIndex: 50,
-              maxHeight: 260,
-              overflowY: "auto",
-            }}
-          >
-            {playerSearchLoading && (
-              <div style={{ padding: 10, fontSize: "0.85rem", color: MUTED }}>
-                Searching…
-              </div>
-            )}
-
-            {!playerSearchLoading &&
-              playerSearchResults.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onMouseDown={(evt) => evt.preventDefault()}
-                  onClick={() => {
-                    const norm = normalizeSearchPlayer(p);
-                    if (!norm?.id) {
-                      window.alert("That player result is missing a valid NHL playerId.");
-                      return;
-                    }
-
-                    setSelectedAuctionPlayer(norm);
-                    setPlayerSearchQuery(norm.fullName);
-                    setPlayerSearchOpen(false);
-
-                    // optional: auto-set position
-                    if (String(norm.position).toUpperCase().includes("D")) setBidPosition("D");
-                    else setBidPosition("F");
-                  }}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "10px 10px",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    color: TEXT,
-                  }}
-                >
-                  <div style={{ fontWeight: 800 }}>
-                    {p.fullName}
-                    <span style={{ fontWeight: 500, color: MUTED }}>
-                      {" "}
-                      · {p.position || "?"} · {p.teamAbbrev || "?"}
-                    </span>
-                  </div>
-                </button>
-              ))}
-          </div>
-        )}
-      </div>
-
-      <select
-        value={bidPosition}
-        onChange={(e) => setBidPosition(e.target.value)}
-        style={{ width: 72}}
-
-      >
-        <option value="F">F</option>
-        <option value="D">D</option>
-      </select>
-
-      <input
-        type="number"
-        min="1"
-        placeholder="Bid $"
-        value={bidAmount}
-        onChange={(e) => setBidAmount(e.target.value)}
-        style={{ width: 90 }}
-
-      />
-    </div>
-
-    <button
-      disabled={!canStartAuction}
-      onClick={() => {
-        if (!canStartAuction) return;
-
-        if (!selectedAuctionPlayer?.id) {
-          window.alert("Pick a player from the dropdown list.");
-          return;
-        }
-
-        if (typeof onPlaceBid !== "function") {
-          window.alert("Auction error: onPlaceBid is not wired (not a function).");
-          return;
-        }
-
-        const auctionKey = `id:${String(selectedAuctionPlayer.id).trim()}`.toLowerCase();
-        const isExistingAuction = activeAuctionsByPlayer.some((a) => a.key === auctionKey);
-
-        // prevent starting late new auctions
-        if (!isExistingAuction && nowMs > auctionCutoff.getTime()) {
-          window.alert("Too late to start a new auction for this week.");
-          return;
-        }
-
-        onPlaceBid({
-          playerId: String(selectedAuctionPlayer.id),
-          playerName: selectedAuctionPlayer.fullName,
-          position: bidPosition,
-          amount: bidAmount,
-        });
-
-        setBidAmount("");
-        setPlayerSearchQuery("");
-        setSelectedAuctionPlayer(null);
-        setPlayerSearchResults([]);
-        setPlayerSearchOpen(false);
-      }}
-      style={{
-        marginTop: 10,
-        width: "100%",
-        padding: "10px 12px",
-        borderRadius: 10,
-        border: "none",
-        fontWeight: 900,
-        cursor: canStartAuction ? "pointer" : "not-allowed",
-        background: canStartAuction ? "#16a34a" : "#4b5563",
-        color: "#e5e7eb",
-        opacity: canStartAuction ? 1 : 0.85,
-      }}
-    >
-      Start / place bid
-    </button>
-  </div>
+  {isMobile ? (
+  <>
+    <div style={{ minWidth: 0 }}>{RightColumn}</div>
+    <div style={{ minWidth: 0 }}>{LeftColumn}</div>
+  </>
 ) : (
-  <div style={{ color: MUTED, fontSize: "0.9rem" }}>
-    Log in as a manager to place free-agent bids.
-  </div>
+  <>
+    <div style={{ minWidth: 0 }}>{LeftColumn}</div>
+    <div style={{ minWidth: 0 }}>{RightColumn}</div>
+  </>
 )}
 
-{/* Live auctions */}
-<div style={{ marginTop: 10 }}>
-  <div style={{ fontWeight: 900, color: TEXT, marginBottom: 6 }}>Live auctions</div>
-
-  {activeAuctionsByPlayer.length === 0 ? (
-    <div style={{ color: MUTED, fontSize: "0.9rem" }}>No live auctions at the moment.</div>
-  ) : (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {activeAuctionsByPlayer.map((auction) => {
-        const playerKey = auction.key;
-        const inputValue = liveBidInputs[playerKey] || "";
-
-        const ui = computeBidUiStateForAuction({
-          auctionBids: auction.bids,
-          myTeamName,
-          nowMs,
-          inputValue,
-        });
-
-        const bidCount = auction.bids.length;
-
-        return (
-          <div
-            key={playerKey}
-            style={{
-              padding: 10,
-              borderRadius: 10,
-              border: "1px solid #1f2937",
-              background: "#020617",
-            }}
-          >
-            <div style={{ fontWeight: 900, color: TEXT }}>
-              {getAuctionDisplayName(auction)}
-              <span style={{ color: MUTED, fontWeight: 700 }}> · {auction.position}</span>
-            </div>
-            <div style={{ color: MUTED, fontSize: "0.85rem", marginTop: 2 }}>
-              {bidCount === 1 ? "1 bid" : `${bidCount} bids`}
-            </div>
-
-            {isManager && (
-              <div style={{ marginTop: 8 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input
-                    type="number"
-                    min={ui.minRequired}
-                    placeholder={`Bid $ (min ${ui.minRequired})`}
-                    value={inputValue}
-                    onChange={(e) => handleLiveBidInputChange(playerKey, e.target.value)}
-                    style={{ width: 140 }}
-
-                  />
-                  <button
-                    onClick={() => {
-                      if (ui.disabled) return;
-                      handleLiveBidSubmit(auction);
-                    }}
-                    disabled={ui.disabled}
-                    title={ui.reason || ""}
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: 8,
-                      border: "none",
-                      fontWeight: 900,
-                      cursor: ui.disabled ? "not-allowed" : "pointer",
-                      background: ui.disabled ? "#4b5563" : "#0ea5e9",
-                      color: "#e5e7eb",
-                      opacity: ui.disabled ? 0.8 : 1,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Place bid
-                  </button>
-                </div>
-
-                <div style={{ marginTop: 4, fontSize: "0.78rem", color: MUTED }}>
-                  {ui.reason ? ui.reason : `Edits used: ${ui.editsUsed}/${ui.maxEdits}`}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  )}
 </div>
-
-{/* Your active bids */}
-{isManager && (
-  <div style={{ marginTop: 12 }}>
-    <div style={{ fontWeight: 900, color: TEXT, marginBottom: 6 }}>Your active bids</div>
-    {myBids.length === 0 ? (
-      <div style={{ color: MUTED, fontSize: "0.9rem" }}>You have no bids yet.</div>
-    ) : (
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {myBids.map((b) => (
-          <div
-            key={b.id}
-            style={{
-              padding: "8px 10px",
-              borderRadius: 10,
-              border: "1px solid #1f2937",
-              background: "#020617",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <div style={{ color: TEXT, fontWeight: 900 }}>
-              {getBidDisplayName(b)}
-              <span style={{ color: MUTED, fontWeight: 800 }}> · ${b.amount}</span>
-            </div>
-            <div style={{ color: MUTED, fontSize: "0.78rem", whiteSpace: "nowrap" }}>
-              {new Date(b.timestamp).toLocaleString()}
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-)}
-
-
-          {auctionPrefill && (
-            <div style={{ marginTop: 10, color: MUTED, fontSize: "0.9rem" }}>
-              Prefill: <strong style={{ color: TEXT }}>{auctionPrefill.fullName}</strong>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
-  </div>
-);
-
+  );
 }
