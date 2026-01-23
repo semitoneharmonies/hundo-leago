@@ -676,33 +676,21 @@ const handleLiveBidSubmit = (auction) => {
 </div>
 
         {/* Header row */}
-        <div
-          style={{
-            marginTop: 2,
-            padding: "8px 10px",
-            borderRadius: 10,
-            border: `1px solid ${BORDER}`,
-            background: "#0b1220",
-            display: "grid",
-            gridTemplateColumns:
-  "44px 60px 260px 70px 60px 80px 80px 80px 80px 90px 90px",
-            gap: 10,
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              color: MUTED,
-              fontWeight: 800,
-              fontSize: "0.78rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Bid
-          </div>
+       <div
+  style={{
+    marginTop: 6,
+    padding: "0 10px 6px",
+    border: "none",
+    background: "transparent",
+    display: "grid",
+    gridTemplateColumns:
+      "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
+    gap: 10,
+    alignItems: "center",
+  }}
+>
 
-          <SortHeader label="Pos" k="pos" />
+          <SortHeader label="Pos" k="posGroup" />
           <SortHeader label="Name" k="name" />
           <SortHeader label="Team" k="team" />
           <SortHeader label="Age" k="age" align="right" />
@@ -712,6 +700,19 @@ const handleLiveBidSubmit = (auction) => {
           <SortHeader label="P" k="p" align="right" />
           <SortHeader label="FP" k="fp" align="right" />
           <SortHeader label="FP/G" k="fpg" align="right" />
+          <div
+  style={{
+    color: MUTED,
+    fontWeight: 800,
+    fontSize: "0.78rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    textAlign: "right",
+  }}
+>
+  Bid
+</div>
+
         </div>
 
         {/* Rows */}
@@ -742,39 +743,18 @@ const handleLiveBidSubmit = (auction) => {
                   }}
                 />
 
-                <div
-                  style={{
-                    position: "relative",
-                    display: "grid",
-                    gridTemplateColumns:
-  "44px 60px 260px 70px 60px 80px 80px 80px 80px 90px 90px",
-                    gap: 10,
-                    alignItems: "center",
-                  }}
-                >
-                  {/* Start auction button */}
-                  <button
-                    onClick={() => {
-                      setAuctionPrefill({
-                        playerId: r.playerId,
-                        fullName: r.fullName,
-                        posGroup: r.posGroup,
-                      });
-                    }}
-                    title="Start auction for this player"
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 10,
-                      border: "1px solid #334155",
-                      background: "#0b1220",
-                      color: "#fde68a",
-                      cursor: "pointer",
-                      fontWeight: 900,
-                    }}
-                  >
-                    $
-                  </button>
+               <div
+  style={{
+    position: "relative",
+    display: "grid",
+    gridTemplateColumns:
+      "60px 260px 70px 60px 80px 80px 80px 80px 90px 90px 44px",
+    gap: 10,
+    alignItems: "center",
+  }}
+>
+
+                  
 
                   {/* Pos pill */}
                   <div>
@@ -859,6 +839,31 @@ const handleLiveBidSubmit = (auction) => {
                       
                     </span>
                   </div>
+                  {/* Start auction button */}
+<button
+  onClick={() => {
+    setAuctionPrefill({
+      playerId: r.playerId,
+      fullName: r.fullName,
+      posGroup: r.posGroup,
+    });
+  }}
+  title="Start auction for this player"
+  style={{
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    border: "1px solid #334155",
+    background: "#0b1220",
+    color: "#fde68a",
+    cursor: "pointer",
+    fontWeight: 900,
+    justifySelf: "end",
+  }}
+>
+  $
+</button>
+
                 </div>
               </div>
             );
@@ -896,41 +901,97 @@ const handleLiveBidSubmit = (auction) => {
       <div>
         {/* Quick reference */}
         <div
-          style={{
-            border: "1px solid #1e293b",
-            borderRadius: 12,
-            background: "#07162b",
-            padding: "12px 12px",
-            marginBottom: 12,
-          }}
-        >
-          <div style={{ color: TEXT, fontWeight: 900, marginBottom: 8, fontSize: "1.05rem" }}>
-  {myTeam ? myTeam.name : "Your Team"}
+  style={{
+    border: "1px solid #1e293b",
+    borderRadius: 12,
+    background: "#07162b",
+    marginBottom: 12,
+    display: "grid",
+    gridTemplateColumns: "96px 1fr",
+    overflow: "hidden",
+  }}
+>
+  <div
+  style={{
+    background: "#020617",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
+  }}
+>
+  {myTeam?.profilePic ? (
+    <img
+      src={myTeam.profilePic}
+      alt=""
+      style={{
+        width: "100%",
+        height: "100%",
+        borderRadius: "999px",
+        objectFit: "cover",
+        border: "2px solid #334155",
+      }}
+    />
+  ) : (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        borderRadius: "999px",
+        background: "#0b1220",
+        border: "2px solid #334155",
+      }}
+    />
+  )}
 </div>
 
 
-          <div
-            style={{
-              color: MUTED,
-              fontSize: "1.0rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-            }}
-          >
-            <div>
-              <strong style={{ color: TEXT, fontWeight: 900 }}>{myCounts.rosterSize}</strong> /{" "}
-              {maxRosterSize} rostered · F:{" "}
-              <strong style={{ color: TEXT, fontWeight: 900 }}>{myCounts.F}</strong> · D:{" "}
-              <strong style={{ color: TEXT, fontWeight: 900 }}>{myCounts.D}</strong>
-            </div>
-            <div>
-              Cap Used:{" "}
-              <strong style={{ color: TEXT, fontWeight: 900 }}>${myCounts.capUsed}</strong> · Cap
-              Space: <strong style={{ color: TEXT, fontWeight: 900 }}>${capSpace}</strong>
-            </div>
-          </div>
-        </div>
+  {/* RIGHT: Team info */}
+  <div
+    style={{
+      padding: "12px 14px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 6,
+    }}
+  >
+    <div
+      style={{
+        color: TEXT,
+        fontWeight: 900,
+        fontSize: "1.05rem",
+        lineHeight: 1.1,
+      }}
+    >
+      {myTeam ? myTeam.name : "Your Team"}
+    </div>
+
+    <div
+      style={{
+        color: MUTED,
+        fontSize: "0.95rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+      }}
+    >
+      <div>
+        <strong style={{ color: TEXT }}>{myCounts.rosterSize}</strong> /{" "}
+        {maxRosterSize} rostered · F:{" "}
+        <strong style={{ color: TEXT }}>{myCounts.F}</strong> · D:{" "}
+        <strong style={{ color: TEXT }}>{myCounts.D}</strong>
+      </div>
+
+      <div>
+        Cap Used:{" "}
+        <strong style={{ color: TEXT }}>${myCounts.capUsed}</strong> · Cap
+        Space:{" "}
+        <strong style={{ color: TEXT }}>${capSpace}</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
 
         {/* Auction panel placeholder */}
         <div
