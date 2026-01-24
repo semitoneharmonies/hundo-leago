@@ -1,0 +1,223 @@
+Session 0 — Lock the rules (no code)
+
+Goal: remove ambiguity so you don’t rewrite later.
+
+Decide + document (in a simple markdown note):
+
+“Active roster” = team.roster.filter(p => !p.onIR) (for now)
+
+Roster lock time: Monday 4:00pm PT
+
+Rollover time: Monday 1:00am PT (ends previous week, records winner)
+
+Illegal grace behavior (Option A):
+
+if illegal at 4pm → not locked; shows 0 FP in matchup
+
+once they become legal later → lock immediately using their current active roster
+
+then matchup score becomes eligible and includes earlier week points
+
+Output: a single “Matchups + Standings Rules” note you and future-you can reference.
+
+Session 1 — Add matchup state to backend (data model only)
+
+Goal: backend can store matchup weeks + locked rosters + results, even if scoring is still blank.
+
+Add to league-state JSON (new top-level key, minimal):
+
+matchups: {
+
+weekId (number or string like 2026-W05)
+
+weekStartAtMs (Monday 1am PT timestamp)
+
+pairs: [[teamAName, teamBName], ...]
+
+locksByTeam: { [teamName]: { lockedAtMs, rosterPlayerIds: [] , eligibleFromMs } }
+
+results: { [pairKey]: { aFP, bFP, winner: "A|B|TIE" } } (can be empty for now)
+
+standings: { [teamName]: { w, l, t, fpFor, fpAgainst } } (optional now; can come later)
+
+Also add a backend endpoint (or reuse existing league save) that guarantees:
+
+shape validation includes matchups if present
+
+safe defaults if missing
+
+Ship criteria:
+
+Nothing breaks
+
+/api/league read/write still works
+
+matchups persists across reload/deploy
+
+Session 2 — Generate and persist the weekly schedule (round robin)
+
+Goal: schedule exists in backend (source of truth), not computed-only in UI.
+
+Backend creates:
+
+A fixed season schedule for 6 teams using the round-robin “circle method”
+
+Store it once: matchups.schedule = [ {weekIndex, pairs}, ... ]
+
+Then at runtime you only store:
+
+matchups.currentWeekIndex
+
+matchups.currentWeekId
+
+matchups.currentPairs (derived from schedule)
+
+Ship criteria:
+
+Matchups page reads currentPairs from backend
+
+Week navigation (optional) uses schedule, but “current week” is canonical
+
+Session 3 — Implement roster locking with grace period (core logic)
+
+Goal: the “matchup roster snapshot” exists and is correct.
+
+Backend logic (most important session):
+
+A function: isTeamLegal(team, settings) (you already have this concept)
+
+A function: getActiveRosterPlayerIds(team) excludes IR
+
+A function: lockTeamForWeek(teamName, nowMs) writes:
+
+locksByTeam[teamName] = { lockedAtMs, eligibleFromMs: lockedAtMs, rosterPlayerIds }
+
+Rules:
+
+At Monday 4pm PT:
+
+if legal → lock immediately
+
+if illegal → do nothing (remains unlocked + ineligible)
+
+After 4pm PT, whenever league state changes (manager updates roster):
+
+if team is not locked yet and now legal → lock them immediately (Option A)
+
+Ship criteria:
+
+You can manually test by flipping a team legal/illegal and seeing locks appear
+
+Matchups page displays the locked roster list (even if scoring is still placeholders)
+
+Session 4 — Weekly scoring from locked roster using baseline delta
+
+Goal: compute “this week’s FP” correctly even though stats are cumulative.
+
+Because your stats cache is season-to-date totals, weekly scoring must be:
+
+weeklyFP(player) = currentSeasonFP(player) − baselineSeasonFP(player at week start)
+
+So backend needs:
+
+At Monday 1am PT (new week start): store baseline snapshot:
+
+matchups.baselineByPlayerId = { [playerId]: { goals, assists, points, gp, fp } }
+
+Then during the week:
+
+team weekly FP = sum over locked roster playerIds of currentFP - baselineFP
+
+Eligibility rule:
+
+If team not locked yet → show 0
+
+Once locked (even Tuesday) → use the same baseline, so Monday points count once they become eligible
+
+Ship criteria:
+
+Matchups page shows real weekly FP totals that reset weekly
+
+Grace period works exactly as you described
+
+Session 5 — Weekly rollover + results writing (Monday 1am PT)
+
+Goal: close last week, write winners, advance schedule, reset week.
+
+At Monday 1am PT:
+
+For each matchup pair, compute final eligible FP for both teams
+
+Determine winner/tie
+
+Write result record { weekId, a, b, aFP, bFP, outcome }
+
+Update standings counters (or store results for standings to aggregate later)
+
+Advance to next week:
+
+increment currentWeekIndex
+
+set new weekId/weekStartAtMs
+
+clear locksByTeam
+
+write new baseline snapshot
+
+Ship criteria:
+
+Rollover produces immutable week results
+
+Current week starts at 0 FP until stats move
+
+Works even if cron runs slightly late (idempotent checks)
+
+Session 6 — Standings page (read-only)
+
+Goal: standings is correct and boring.
+
+Standings table columns:
+
+Team
+
+W-L-T
+
+FP For
+
+FP Against
+
+Two implementation options:
+
+A (recommended): backend maintains standings as authoritative at rollover time
+
+B: backend stores all weekly results; standings page aggregates on read
+
+Ship criteria:
+
+Standings page is stable, no manager writes, no accidental resets
+
+Session 7 — Hardening + guardrails
+
+Goal: prevent “oops” bugs that ruin a season.
+
+Add:
+
+/api/health includes current weekId, lock status counts, last rollover time
+
+Rollover + baseline are idempotent (won’t double-advance if cron runs twice)
+
+A “commissioner-only” endpoint to re-run scoring for a week (read-only recalculation) if needed
+
+Backups/snapshots before rollover runs
+
+Suggested order to implement (what I’d do first)
+
+Session 1 (backend matchups state)
+
+Session 3 (locking + grace) — because it’s the spine
+
+Session 4 (weekly scoring via baseline)
+
+Session 5 (rollover + results)
+
+Session 6 (standings UI)
