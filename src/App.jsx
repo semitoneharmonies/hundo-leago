@@ -24,6 +24,7 @@ import {
 } from "./leagueUtils";
 import { Routes, Route } from "react-router-dom";
 import FreeAgentsPage from "./pages/FreeAgentsPage";
+import MatchupsPage from "./pages/MatchupsPage";
 
 
 // Backend endpoint (Netlify env var first, fallback hard-coded)
@@ -2370,6 +2371,19 @@ setSelectedTeamName={setSelectedTeamName}
     />
   }
 />
+<Route
+  path="/matchups"
+  element={
+    <MatchupsPage
+      currentUser={currentUser}
+      teams={teams ?? league?.teams ?? []}
+      playerApi={playerApi}
+      statsByPlayerId={statsByPlayerId}
+      statsReady={statsReady}
+    />
+  }
+/>
+
 
 
       </Routes>

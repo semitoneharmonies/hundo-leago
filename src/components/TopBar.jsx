@@ -104,6 +104,24 @@ function TopBar({
         >
           Free Agents
         </Link>
+   <Link
+  to="/matchups"
+  title="Matchups"
+  className="topbarBtn"
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    border: "1px solid #334155",
+    background: "#0b1220",
+    color: "#e5e7eb",
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+  }}
+>
+  Matchups
+</Link>
+
+
       </div>
     )}
   </div>
