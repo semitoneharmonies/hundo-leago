@@ -238,6 +238,47 @@ function isValidDbPlayerId(playerApi, pid) {
   return !!getPlayerFromById(playerApi?.byId, n);
 }
 
+// -----------------------------
+// Matchups schedule editor helpers
+// -----------------------------
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+// For <input type="datetime-local"> which uses local timezone
+function msToLocalInput(ms) {
+  if (ms == null) return "";
+  const d = new Date(Number(ms));
+  if (!Number.isFinite(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = pad2(d.getMonth() + 1);
+  const day = pad2(d.getDate());
+  const hh = pad2(d.getHours());
+  const mm = pad2(d.getMinutes());
+  return `${y}-${m}-${day}T${hh}:${mm}`;
+}
+
+function localInputToMs(s) {
+  const v = String(s || "").trim();
+  if (!v) return null;
+  const d = new Date(v); // local time
+  const ms = d.getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function fmtLocal(ms) {
+  if (ms == null) return "—";
+  const d = new Date(Number(ms));
+  if (!Number.isFinite(d.getTime())) return "—";
+  return d.toLocaleString();
+}
+
+// round ms to minute boundary (helps avoid “off by a few ms” ugliness)
+function roundToMinute(ms) {
+  if (!Number.isFinite(ms)) return ms;
+  return Math.round(ms / 60000) * 60000;
+}
+
 export default function CommissionerPanel({
   currentUser,
   apiUrl,
@@ -405,6 +446,84 @@ export default function CommissionerPanel({
   const [snapshotsLoading, setSnapshotsLoading] = useState(false);
   const [selectedSnapshotId, setSelectedSnapshotId] = useState("");
   const [newSnapshotName, setNewSnapshotName] = useState("");
+  // -----------------------------------------
+  // Matchups — schedule editor (Session 2.5)
+  // -----------------------------------------
+  const [schedLoading, setSchedLoading] = useState(false);
+  const [schedError, setSchedError] = useState("");
+  const [matchupsState, setMatchupsState] = useState(null); // raw matchups from /api/league
+
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState(0);
+
+  // local editable draft for the selected week
+  const [weekDraft, setWeekDraft] = useState({
+    weekStartLocal: "",
+    weekEndLocal: "",
+    lockLocal: "",
+  });
+
+  const loadMatchupsSchedule = async () => {
+    if (!apiBase) return;
+    setSchedLoading(true);
+    setSchedError("");
+    try {
+      const res = await fetch(`${apiBase}/api/league`);
+      const st = await res.json().catch(() => ({}));
+      const m = st?.matchups || null;
+
+      const weeks = Array.isArray(m?.scheduleWeeks) ? m.scheduleWeeks : [];
+      if (!weeks.length) {
+        setMatchupsState(m || { scheduleWeeks: [] });
+        setSchedError("No scheduleWeeks found yet. Generate the schedule on the backend first.");
+        return;
+      }
+
+      setMatchupsState(m);
+
+      // choose "next week" by default (or currentWeekIndex if that’s all you have)
+      const now = Date.now();
+      const firstFutureIdx = weeks.findIndex((w) => Number(w?.weekStartAtMs) > now);
+      const idx = firstFutureIdx >= 0 ? firstFutureIdx : Math.max(0, Number(m?.currentWeekIndex) || 0);
+
+      setSelectedWeekIndex(idx);
+    } catch (e) {
+      console.error("[MATCHUPS] load schedule failed:", e);
+      setSchedError(e?.message || "Failed to load schedule.");
+    } finally {
+      setSchedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMatchupsSchedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBase]);
+
+    const scheduleWeeks = useMemo(() => {
+    return Array.isArray(matchupsState?.scheduleWeeks) ? matchupsState.scheduleWeeks : [];
+  }, [matchupsState]);
+
+  const selectedWeek = useMemo(() => {
+    if (!scheduleWeeks.length) return null;
+    const idx = Math.max(0, Math.min(scheduleWeeks.length - 1, Number(selectedWeekIndex) || 0));
+    return scheduleWeeks[idx] || null;
+  }, [scheduleWeeks, selectedWeekIndex]);
+
+  const isSelectedWeekFuture = useMemo(() => {
+    if (!selectedWeek) return false;
+    return Number(selectedWeek.weekStartAtMs) > Date.now();
+  }, [selectedWeek]);
+
+  // When you change the selected week, re-init the draft inputs from that week
+  useEffect(() => {
+    if (!selectedWeek) return;
+
+    setWeekDraft({
+      weekStartLocal: msToLocalInput(selectedWeek.weekStartAtMs),
+      weekEndLocal: msToLocalInput(selectedWeek.weekEndAtMs),
+      lockLocal: msToLocalInput(selectedWeek.lockAtMs),
+    });
+  }, [selectedWeek?.weekId]); // key off weekId so it re-inits cleanly
 
   const loadSnapshots = async () => {
     if (!apiBase) return;
@@ -503,6 +622,87 @@ export default function CommissionerPanel({
     } catch (e) {
       console.error("[SNAPSHOTS] create failed:", e);
       setAdminMessage(`Snapshot create failed. ${e.message || ""}`.trim());
+    } finally {
+      setBusy(false);
+    }
+  };
+
+    const saveSelectedWeek = async () => {
+    if (!apiBase) return;
+    if (!selectedWeek) return;
+
+    if (!isSelectedWeekFuture) {
+      window.alert("Safety: only future weeks can be edited.");
+      return;
+    }
+
+    // Parse draft → ms
+    const startMsRaw = localInputToMs(weekDraft.weekStartLocal);
+    const endMsRaw = localInputToMs(weekDraft.weekEndLocal);
+    const lockMsRaw = localInputToMs(weekDraft.lockLocal);
+
+    if (!startMsRaw || !endMsRaw || !lockMsRaw) {
+      window.alert("Please fill Week start, Week end, and Roster lock.");
+      return;
+    }
+
+    const weekStartAtMs = roundToMinute(startMsRaw);
+    const weekEndAtMs = roundToMinute(endMsRaw);
+    const lockAtMs = roundToMinute(lockMsRaw);
+    const baselineAtMs = weekStartAtMs + 60 * 60 * 1000;
+
+
+    if (!(weekEndAtMs > weekStartAtMs)) {
+      window.alert("Week end must be after week start.");
+      return;
+    }
+
+    // Option A: rollover should equal NEXT week start (no overlap)
+    const nextWeek = scheduleWeeks[(Number(selectedWeekIndex) || 0) + 1] || null;
+    if (!nextWeek) {
+      window.alert("Cannot save: this is the last scheduled week (no next week for rollover alignment).");
+      return;
+    }
+
+    const rolloverAtMs = Number(nextWeek.weekStartAtMs);
+
+    const ok = window.confirm(
+      `Save changes to ${selectedWeek.weekId}?\n\n` +
+        `Start: ${fmtLocal(weekStartAtMs)}\n` +
+        `Lock: ${fmtLocal(lockAtMs)}\n` +
+        `End: ${fmtLocal(weekEndAtMs)}\n` +
+        `Rollover (Option A): ${fmtLocal(rolloverAtMs)}\n\n` +
+        `Note: rollover stays pinned to next week start to prevent overlap.`
+    );
+    if (!ok) return;
+
+    setBusy(true);
+    setAdminMessage("");
+    setSchedError("");
+
+    try {
+      const res = await fetch(`${apiBase}/api/matchups/schedule/updateWeek`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          meta: { actorRole: "commissioner" },
+          weekIndex: Number(selectedWeek.weekIndex ?? selectedWeekIndex),
+          weekStartAtMs,
+          weekEndAtMs,
+          lockAtMs,
+          rolloverAtMs,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+
+      setAdminMessage(`Saved: ${selectedWeek.weekId}`);
+      await loadMatchupsSchedule(); // reload schedule from server so UI matches source of truth
+    } catch (e) {
+      console.error("[MATCHUPS] save failed:", e);
+      setSchedError(e?.message || "Save failed.");
+      setAdminMessage(`Save failed: ${e?.message || "unknown error"}`);
     } finally {
       setBusy(false);
     }
@@ -1305,6 +1505,134 @@ export default function CommissionerPanel({
 
         <p style={{ ...smallLabel, marginTop: "8px" }}>Auto-weekly snapshots are a backend feature.</p>
       </div>
+
+            {/* Matchups Schedule Editor */}
+      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>
+        <h3 style={sectionTitle}>Matchups — Schedule Editor</h3>
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <button style={buttonStyle} onClick={loadMatchupsSchedule} disabled={busy || schedLoading}>
+            {schedLoading ? "Loading…" : "Refresh schedule"}
+          </button>
+
+          <div style={smallLabel}>
+            Weeks: <strong>{scheduleWeeks.length}</strong>
+          </div>
+        </div>
+
+        {schedError && (
+          <div style={{ marginTop: 10, color: "#f59e0b", fontSize: "0.9rem" }}>
+            {schedError}
+          </div>
+        )}
+
+        {!scheduleWeeks.length ? (
+          <div style={{ ...smallLabel, marginTop: 10 }}>
+            No schedule loaded yet. Generate it on the backend first.
+          </div>
+        ) : (
+          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 6, maxWidth: 520 }}>
+              <div style={smallLabel}>Select week (future edits only)</div>
+              <select
+                style={inputStyle}
+                value={selectedWeekIndex}
+                onChange={(e) => setSelectedWeekIndex(Number(e.target.value) || 0)}
+              >
+                {scheduleWeeks.map((w, i) => {
+                  const isFuture = Number(w?.weekStartAtMs) > Date.now();
+                  const label =
+                    `${w.weekId || `Week ${i + 1}`}` +
+                    ` • start ${fmtLocal(w.weekStartAtMs)}` +
+                    (isFuture ? "" : " (locked)");
+                  return (
+                    <option key={w.weekId || i} value={i}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+
+              {selectedWeek && (
+                <div style={{ marginTop: 6, ...smallLabel }}>
+                  Current:
+                  {" "}
+                  <strong>{selectedWeek.weekId}</strong>
+                  {" "}
+                  | Start {fmtLocal(selectedWeek.weekStartAtMs)}
+                  {" "}
+                  | End {fmtLocal(selectedWeek.weekEndAtMs)}
+                  {" "}
+                  | Lock {fmtLocal(selectedWeek.lockAtMs)}
+                  {" "}
+                  | Rollover {fmtLocal(selectedWeek.rolloverAtMs)}
+                </div>
+              )}
+
+              {!isSelectedWeekFuture && (
+                <div style={{ marginTop: 6, color: "#f59e0b", fontSize: "0.85rem" }}>
+                  Safety: past/current weeks are not editable in the UI.
+                </div>
+              )}
+            </div>
+
+            {/* Editable inputs */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, maxWidth: 520 }}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={smallLabel}>Week start (PT)</div>
+                <input
+                  style={inputStyle}
+                  type="datetime-local"
+                  value={weekDraft.weekStartLocal}
+                  onChange={(e) => setWeekDraft((d) => ({ ...d, weekStartLocal: e.target.value }))}
+                  disabled={busy || !isSelectedWeekFuture}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={smallLabel}>Roster lock (PT)</div>
+                <input
+                  style={inputStyle}
+                  type="datetime-local"
+                  value={weekDraft.lockLocal}
+                  onChange={(e) => setWeekDraft((d) => ({ ...d, lockLocal: e.target.value }))}
+                  disabled={busy || !isSelectedWeekFuture}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={smallLabel}>Week end (PT)</div>
+                <input
+                  style={inputStyle}
+                  type="datetime-local"
+                  value={weekDraft.weekEndLocal}
+                  onChange={(e) => setWeekDraft((d) => ({ ...d, weekEndLocal: e.target.value }))}
+                  disabled={busy || !isSelectedWeekFuture}
+                />
+              </div>
+
+              <div style={{ ...smallLabel, marginTop: 2 }}>
+                Option A rules:
+                {" "}
+                baseline = start + 1h,
+                {" "}
+                rollover = next week start (prevents overlap).
+              </div>
+
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  style={!isSelectedWeekFuture || busy ? disabledButton : buttonStyle}
+                  onClick={saveSelectedWeek}
+                  disabled={!isSelectedWeekFuture || busy}
+                >
+                  Save week
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
 
       {/* Phase 2: Player ID migration tool */}
       <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #1e293b" }}>

@@ -29,12 +29,20 @@ import MatchupsPage from "./pages/MatchupsPage";
 
 // Backend endpoint (Netlify env var first, fallback hard-coded)
 const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://hundo-leago-backend.onrender.com/api/league";
+  (import.meta.env.VITE_API_URL || "http://localhost:4000/api/league")
+    .trim()
+    .replace(/\/+$/, ""); // remove trailing /
+const API_BASE_URL =
+  API_URL
+    .replace(/\/api\/league\/?$/, "") // if it's the league endpoint, strip it
+    .replace(/\/+$/, "");             // re-strip trailing /
 
-  const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL ||
-  "https://hundo-leago-backend.onrender.com";
+    // Socket server root (NOT /api/league)
+const SOCKET_URL =
+  (import.meta.env.VITE_SOCKET_URL || API_BASE_URL)
+    .trim()
+    .replace(/\/+$/, "");
+
 
 // Phase 2A: Players endpoint (derived from API_URL by default)
 const PLAYERS_API_URL = API_URL.replace(/\/api\/league\/?$/, "/api/players");
@@ -2376,14 +2384,14 @@ setSelectedTeamName={setSelectedTeamName}
   element={
     <MatchupsPage
       currentUser={currentUser}
-      teams={teams ?? league?.teams ?? []}
+      teams={teams}
       playerApi={playerApi}
       statsByPlayerId={statsByPlayerId}
       statsReady={statsReady}
+      apiBaseUrl={API_BASE_URL}
     />
   }
 />
-
 
 
       </Routes>
