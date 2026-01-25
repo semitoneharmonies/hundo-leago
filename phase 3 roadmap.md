@@ -22,7 +22,7 @@ Unless overridden by the commissioner:
 
 Week start: Monday 00:00 PT
 
-Baseline snapshot: Monday 1:00 AM PT
+Baseline snapshot: Monday 00:00 AM PT
 
 Roster lock: Monday 4:00 PM PT
 
