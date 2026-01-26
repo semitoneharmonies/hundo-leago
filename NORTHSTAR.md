@@ -197,13 +197,12 @@ Phases describe **how the system evolves**, not what the product is.
 
 * Player identity system
 * Stat ingestion pipeline
-* Historical stat storage
 
 ### Phase 3 — Matchups & Standings
 
 * Weekly matchup engine
 * Lineup locks
-* Standings and rankings
+* Standings
 
 ### Phase 4 — Full Fantasy Polish
 
