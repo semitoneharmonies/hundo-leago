@@ -28,7 +28,7 @@ Roster lock: Monday 4:00 PM PT
 
 Week end: Sunday 23:59 PT
 
-Rollover: Monday 1:00 AM PT
+Rollover: Monday 00:00 AM PT
 
 All timing is derived from the week’s configured boundaries, not hard-coded weekdays.
 
