@@ -120,6 +120,20 @@ function TopBar({
 >
   Matchups
 </Link>
+<Link to="/standings"
+title="Standings"
+  className="topbarBtn"
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    border: "1px solid #334155",
+    background: "#0b1220",
+    color: "#e5e7eb",
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+  }}
+>
+ Standings</Link>
 
 
       </div>
