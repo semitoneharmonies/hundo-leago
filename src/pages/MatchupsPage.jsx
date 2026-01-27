@@ -39,6 +39,24 @@ function formatPT(ms) {
     hour12: true,
   }) + " PT";
 }
+function formatPTDate(ms) {
+  if (!Number.isFinite(ms)) return "—";
+  return new Date(ms).toLocaleDateString("en-US", {
+    timeZone: "America/Los_Angeles",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatPTTime(ms) {
+  if (!Number.isFinite(ms)) return "—";
+  return new Date(ms).toLocaleTimeString("en-US", {
+    timeZone: "America/Los_Angeles",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
 
 export default function MatchupsPage({
   currentUser,
@@ -58,6 +76,53 @@ export default function MatchupsPage({
   const [err, setErr] = useState("");
   const [currentWeekId, setCurrentWeekId] = useState(null);
   const [week, setWeek] = useState(null);
+    // Session 7: standings context (READ-ONLY)
+  const [standingsLoading, setStandingsLoading] = useState(false);
+  const [standingsErr, setStandingsErr] = useState("");
+  const [standings, setStandings] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+
+    const apiOk =
+      apiBaseUrlSafe &&
+      apiBaseUrlSafe !== "undefined" &&
+      apiBaseUrlSafe !== "null";
+
+    async function run() {
+      try {
+        setStandingsLoading(true);
+        setStandingsErr("");
+
+        const r = await fetch(`${apiBaseUrlSafe}/api/matchups/standings`);
+        const j = await r.json();
+
+        if (!alive) return;
+
+        if (!r.ok || !j?.ok) {
+          setStandings(null);
+          setStandingsErr(j?.error || "Standings unavailable.");
+          setStandingsLoading(false);
+          return;
+        }
+
+        setStandings(j);
+        setStandingsLoading(false);
+      } catch (e) {
+        if (!alive) return;
+        setStandings(null);
+        setStandingsErr(String(e?.message || e));
+        setStandingsLoading(false);
+      }
+    }
+
+    if (apiOk) run();
+
+    return () => {
+      alive = false;
+    };
+  }, [apiBaseUrlSafe]);
+
 
   useEffect(() => {
     let alive = true;
@@ -156,6 +221,24 @@ export default function MatchupsPage({
     return m;
   }, [teamsArr]);
 
+    // Session 7: standings lookup by team name (READ-ONLY)
+  const standingsByTeam = useMemo(() => {
+    const m = new Map();
+    const rows = Array.isArray(standings?.standings) ? standings.standings : [];
+    rows.forEach((row, idx) => {
+      const name = row?.teamName;
+      if (!name) return;
+      m.set(name, {
+        rank: idx + 1,
+        W: Number(row.W || 0),
+        L: Number(row.L || 0),
+        T: Number(row.T || 0),
+        PTS: Number(row.PTS || 0),
+      });
+    });
+    return m;
+  }, [standings]);
+
   // backend week pairs
   const pairs = Array.isArray(week?.pairs) ? week.pairs : [];
 
@@ -198,55 +281,85 @@ export default function MatchupsPage({
   const leftTotals = useMemo(() => teamTotals(leftPlayers), [leftPlayers]);
   const rightTotals = useMemo(() => teamTotals(rightPlayers), [rightPlayers]);
 
-  const renderTeamChip = (team) => {
+  const renderTeamChip = (team, side) => {
     const name = team?.name || "—";
     const pic = team?.profilePic || null;
     const players = getRosterPlayersNoIR(team);
     const totals = teamTotals(players);
 
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-        <div
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 999,
-            border: `1px solid ${BORDER}`,
-            overflow: "hidden",
-            background: "#0b1220",
-            flex: "0 0 auto",
-          }}
-          title={name}
-        >
-          {pic ? (
-            <img
-              src={pic}
-              alt=""
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-          ) : (
-            <div style={{ width: "100%", height: "100%" }} />
-          )}
-        </div>
+       const fpText = statsReady ? `${totals.fp.toFixed(1)} FP` : "— FP";
+    const isRight = side === "right";
 
-        <div style={{ minWidth: 0 }}>
-          <div className="muTeamName" style={{ color: TEXT, fontWeight: 800, lineHeight: 1.05 }}>
-            {name}
-          </div>
-
-          <div className="muTeamFp" style={{ color: MUTED, fontSize: 12, marginTop: 2 }}>
-            {statsReady ? `${totals.fp.toFixed(1)} FP` : "— FP"}
-          </div>
-        </div>
-
-        <div style={{ marginLeft: "auto", color: MUTED, fontSize: 12, flex: "0 0 auto" }} />
+    const Pic = (
+      <div
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 999,
+          border: `1px solid ${BORDER}`,
+          overflow: "hidden",
+          background: "#0b1220",
+          flex: "0 0 auto",
+        }}
+        title={name}
+      >
+        {pic ? (
+          <img
+            src={pic}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : null}
       </div>
     );
+
+    const Name = (
+      <div
+        style={{
+          color: TEXT,
+          fontWeight: 900,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          textAlign: isRight ? "left" : "right",
+        }}
+      >
+        {name}
+      </div>
+    );
+
+    const FP = (
+      <div
+        style={{
+          color: "#facc15",
+          fontWeight: 900,
+          fontSize: 14,
+          whiteSpace: "nowrap",
+          minWidth: 90,
+          textAlign: isRight ? "left" : "right",
+        }}
+      >
+        {fpText}
+      </div>
+    );
+
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 1fr auto",
+          alignItems: "center",
+          gap: 10,
+          minWidth: 0,
+        }}
+      >
+        {isRight ? FP : Pic}
+        {Name}
+        {isRight ? Pic : FP}
+      </div>
+    );
+
+
   };
 
   const rowBg = (pos, side) => {
@@ -400,38 +513,30 @@ export default function MatchupsPage({
 
       {/* Timing row (backend truth) */}
       <div style={{ ...panelStyle, padding: 12, marginBottom: 12 }}>
-        <div style={{ fontWeight: 900, color: TEXT, marginBottom: 8 }}>Week timing (PT)</div>
+        <div style={{ fontWeight: 900, color: TEXT, marginBottom: 8 }}>Week</div>
 
         {loading ? (
-          <div style={{ color: MUTED, fontSize: 13 }}>Loading…</div>
-        ) : week ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-            <div>
-              <div style={{ color: MUTED, fontSize: 11, fontWeight: 800 }}>Start</div>
-              <div style={{ color: TEXT, fontSize: 12, fontWeight: 900 }}>{formatPT(week.weekStartAtMs)}</div>
-            </div>
-            <div>
-              <div style={{ color: MUTED, fontSize: 11, fontWeight: 800 }}>Baseline</div>
-              <div style={{ color: TEXT, fontSize: 12, fontWeight: 900 }}>{formatPT(week.baselineAtMs)}</div>
-            </div>
-            <div>
-              <div style={{ color: MUTED, fontSize: 11, fontWeight: 800 }}>Lock</div>
-              <div style={{ color: TEXT, fontSize: 12, fontWeight: 900 }}>{formatPT(week.lockAtMs)}</div>
-            </div>
-            <div>
-              <div style={{ color: MUTED, fontSize: 11, fontWeight: 800 }}>End</div>
-              <div style={{ color: TEXT, fontSize: 12, fontWeight: 900 }}>{formatPT(week.weekEndAtMs)}</div>
-            </div>
-            <div>
-              <div style={{ color: MUTED, fontSize: 11, fontWeight: 800 }}>Rollover</div>
-              <div style={{ color: TEXT, fontSize: 12, fontWeight: 900 }}>{formatPT(week.rolloverAtMs)}</div>
-            </div>
-          </div>
-        ) : (
-          <div style={{ color: MUTED, fontSize: 13 }}>
-            {err ? `Error: ${err}` : "No current week returned from backend."}
-          </div>
-        )}
+  <div style={{ color: MUTED, fontSize: 13 }}>Loading…</div>
+) : week ? (
+  <div style={{ color: TEXT, fontSize: 14, fontWeight: 900 }}>
+    Week {String(week.weekId || "").includes("-W") ? String(week.weekId).split("-W")[1] : ""}:{" "}
+    {formatPTDate(week.weekStartAtMs)} – {formatPTDate(week.weekEndAtMs)}{" "}
+    <span style={{ color: MUTED, fontWeight: 900 }}>•</span>{" "}
+    Roster Lock:{" "}
+    <span style={{ color: "#facc15" }}>
+      {new Date(week.lockAtMs).toLocaleDateString("en-US", {
+        timeZone: "America/Los_Angeles",
+        weekday: "short",
+      })}{" "}
+      {formatPTTime(week.lockAtMs)} PT
+    </span>
+  </div>
+) : (
+  <div style={{ color: MUTED, fontSize: 13 }}>
+    {err ? `Error: ${err}` : "No current week returned from backend."}
+  </div>
+)}
+
       </div>
 
       {/* Main layout */}
@@ -461,6 +566,19 @@ export default function MatchupsPage({
                 const aTotals = teamTotals(getRosterPlayersNoIR(a));
                 const bTotals = teamTotals(getRosterPlayersNoIR(b));
                 const selected = idx === safePairIndex;
+                const aS = standingsByTeam.get(pair[0]) || null;
+                const bS = standingsByTeam.get(pair[1]) || null;
+
+                const aRank = aS ? `(${aS.rank})` : "";
+                const bRank = bS ? `(${bS.rank})` : "";
+
+                const aRec = aS ? `${aS.W}-${aS.L}-${aS.T}, ${aS.PTS} PTS` : "";
+                const bRec = bS ? `${bS.W}-${bS.L}-${bS.T}, ${bS.PTS} PTS` : "";
+
+                const aBetter =
+                  aS && bS ? (aS.rank < bS.rank) : false;
+                const bBetter =
+                  aS && bS ? (bS.rank < aS.rank) : false;
 
                 return (
                   <button
@@ -476,77 +594,116 @@ export default function MatchupsPage({
                       color: TEXT,
                     }}
                   >
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                        <div
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 999,
-                            overflow: "hidden",
-                            border: `1px solid ${BORDER}`,
-                            background: "#0b1220",
-                            flex: "0 0 auto",
-                          }}
-                        >
-                          {a?.profilePic ? (
-                            <img src={a.profilePic} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          ) : null}
-                        </div>
-                        <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 900 }}>
-                          {pair[0]}
-                        </div>
-                      </div>
+                    <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "1fr auto 1fr",
+    alignItems: "center",
+    gap: 10,
+  }}
+>
+  {/* LEFT: (pic) Team A */}
+  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+    <div
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: 999,
+        overflow: "hidden",
+        border: `1px solid ${BORDER}`,
+        background: "#0b1220",
+        flex: "0 0 auto",
+      }}
+    >
+      {a?.profilePic ? (
+        <img
+          src={a.profilePic}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : null}
+    </div>
 
-                      <div style={{ color: MUTED, fontWeight: 900, fontSize: 12, whiteSpace: "nowrap" }}>
-                        {statsReady ? `${aTotals.fp.toFixed(1)} FP` : "— FP"} <span style={{ opacity: 0.8 }}>vs</span>{" "}
-                        {statsReady ? `${bTotals.fp.toFixed(1)} FP` : "— FP"}
-                      </div>
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontWeight: 900, whiteSpace: "normal", lineHeight: 1.1 }}>
+        {pair[0]}
+      </div>
+    </div>
+  </div>
 
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, minWidth: 0 }}>
-                        <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 900 }}>
-                          {pair[1]}
-                        </div>
-                        <div
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 999,
-                            overflow: "hidden",
-                            border: `1px solid ${BORDER}`,
-                            background: "#0b1220",
-                            flex: "0 0 auto",
-                          }}
-                        >
-                          {b?.profilePic ? (
-                            <img src={b.profilePic} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
+  {/* MIDDLE: dash */}
+  <div style={{ color: MUTED, fontWeight: 900, fontSize: 12, whiteSpace: "nowrap" }}>
+    —
+  </div>
+
+  {/* RIGHT: Team B (pic) */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: 10,
+      minWidth: 0,
+    }}
+  >
+    <div style={{ minWidth: 0, textAlign: "right" }}>
+      <div style={{ fontWeight: 900, whiteSpace: "normal", lineHeight: 1.1 }}>
+        {pair[1]}
+      </div>
+    </div>
+
+    <div
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: 999,
+        overflow: "hidden",
+        border: `1px solid ${BORDER}`,
+        background: "#0b1220",
+        flex: "0 0 auto",
+      }}
+    >
+      {b?.profilePic ? (
+        <img
+          src={b.profilePic}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : null}
+    </div>
+  </div>
+</div>
+
                   </button>
                 );
               })}
             </div>
           )}
 
-          <div style={{ marginTop: 10, color: MUTED, fontSize: 11 }}>
-            Week + pairs come from backend now. This page is read-only.
-          </div>
+      
         </div>
 
         {/* RIGHT: combined breakdown panel with vertical divider */}
         <div style={{ ...panelStyle, padding: 12 }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
             <div style={{ color: TEXT, fontWeight: 900, fontSize: 16, minWidth: 0 }}>
-              {selectedPair ? (
-                <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
-                  {selectedPair[0]} vs {selectedPair[1]}
-                </span>
-              ) : (
-                "Matchup"
-              )}
-            </div>
+  {selectedPair ? (
+    <span
+      style={{
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        display: "block",
+      }}
+    >
+      Matchup
+    </span>
+  ) : (
+    "Matchup"
+  )}
+</div>
+
+
 
             <div style={{ color: MUTED, fontSize: 12, fontWeight: 800 }} />
           </div>
@@ -554,7 +711,7 @@ export default function MatchupsPage({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(280px, 1fr) 1px minmax(280px, 1fr)",
+              gridTemplateColumns: "minmax(0, 1fr) 1px minmax(0, 1fr)",
               gap: 0,
               border: `1px solid rgba(148,163,184,0.12)`,
               borderRadius: 14,
@@ -562,9 +719,9 @@ export default function MatchupsPage({
               background: "rgba(2,6,23,0.45)",
             }}
           >
-            <div style={{ padding: 10 }}>{renderTeamChip(leftTeam)}</div>
+<div style={{ padding: 10 }}>{renderTeamChip(leftTeam, "left")}</div>
             <div style={{ background: "rgba(148,163,184,0.18)" }} />
-            <div style={{ padding: 10 }}>{renderTeamChip(rightTeam)}</div>
+<div style={{ padding: 10 }}>{renderTeamChip(rightTeam, "right")}</div>
           </div>
 
           <div
@@ -579,7 +736,7 @@ export default function MatchupsPage({
            <div
   style={{
     display: "grid",
-    gridTemplateColumns: "minmax(280px, 1fr) 1px minmax(280px, 1fr)",
+gridTemplateColumns: "minmax(0, 1fr) 1px minmax(0, 1fr)",
     gap: 0,
   }}
 >
@@ -613,7 +770,7 @@ export default function MatchupsPage({
             <div
               style={{
                 display: "grid",
-gridTemplateColumns: "minmax(280px, 1fr) 1px minmax(280px, 1fr)",
+gridTemplateColumns: "minmax(0, 1fr) 1px minmax(0, 1fr)",
                 background: "rgba(2,6,23,0.55)",
                 borderTop: `1px solid rgba(148,163,184,0.12)`,
               }}

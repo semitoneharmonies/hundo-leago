@@ -25,6 +25,8 @@ import {
 import { Routes, Route } from "react-router-dom";
 import FreeAgentsPage from "./pages/FreeAgentsPage";
 import MatchupsPage from "./pages/MatchupsPage";
+import StandingsPage from "./pages/StandingsPage";
+
 
 
 // Backend endpoint (Netlify env var first, fallback hard-coded)
@@ -2379,6 +2381,8 @@ setSelectedTeamName={setSelectedTeamName}
     />
   }
 />
+<Route path="/standings" element={<StandingsPage />} />
+
 <Route
   path="/matchups"
   element={
