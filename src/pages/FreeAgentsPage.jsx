@@ -852,7 +852,7 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
             <input
               value={listSearch}
               onChange={(e) => setListSearch(e.target.value)}
-              placeholder="Name, NHL team, or owner"
+              placeholder="Dizzy, Django..."
               style={{
                 ...INPUT_STYLE,
                 width: "100%",
