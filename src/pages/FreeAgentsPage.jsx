@@ -49,7 +49,7 @@ const TEAM_COLORS = {
   "Imano Lizzo": "#a855f7", // purple
   "El Camino": "#38bdf8", // light blue
   "DeNiro Amigo": "#ef4444", // red
-  Champino: "#e879f9", // pink
+  "Champino": "#e879f9", // pink
 };
 const FREE_AGENT_COLOR = "#334155";
 
@@ -1782,8 +1782,7 @@ gap: 6,
                             style={{
                               ...INPUT_STYLE,
                               width: 140,
-                              background: "#0b1220",
-                              border: "1px solid #334155",
+                              
                             }}
                           />
                           <button

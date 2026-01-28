@@ -107,7 +107,7 @@ const LOGO_TOP = -15;
 >
 
         {/* LEFT cluster: Menu dropdown (only when logged in) */}
-        <div className="topbarLeft" style={{ minWidth: 120 }}>
+        <div className="topbarLeft topbarMenuSlot" style={{ minWidth: 120 }}>
           {currentUser && (
             <div className="topbarNav">
               <div ref={menuRef} style={{ position: "relative", zIndex: 5000 }}>
@@ -193,7 +193,9 @@ const LOGO_TOP = -15;
         </div>
 
       {/* CENTER: Floating logo link to home (does not affect bar height) */}
+{/* CENTER: Floating logo link to home (does not affect bar height) */}
 <div
+  className="topbarCenter"
   style={{
     flex: 1,
     position: "relative",
@@ -202,30 +204,32 @@ const LOGO_TOP = -15;
     justifyContent: "center",
     alignItems: "center",
     overflow: "visible",
-    pointerEvents: "none", // don't block menu/logout
+    pointerEvents: "none",
   }}
 >
   <Link
+    className="topbarLogoLink"
     to="/"
     title="Home"
     style={{
       position: "absolute",
       left: "50%",
-      top: LOGO_TOP, // ✅ anchor near top of bar
+      top: LOGO_TOP,
       transform: "translateX(-50%)",
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
       textDecoration: "none",
       zIndex: 9999,
-      pointerEvents: "auto", // logo remains clickable
+      pointerEvents: "auto",
     }}
   >
     <img
       src={topbarLogo}
       alt="Hundo Leago"
+      className="topbarLogo"
       style={{
-        height: LOGO_HEIGHT, // ✅ adjust freely
+        height: LOGO_HEIGHT,
         width: "auto",
         maxWidth: "70vw",
         objectFit: "contain",
@@ -235,6 +239,7 @@ const LOGO_TOP = -15;
     />
   </Link>
 </div>
+
 
 
         {/* RIGHT cluster: (login form) OR (user + notif + logout) */}
@@ -334,26 +339,80 @@ const LOGO_TOP = -15;
                   </button>
 
                   {notifOpen && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        right: 0,
-                        top: "110%",
-                        width: 320,
-                        background: "#020617",
-                        border: "1px solid #1e293b",
-                        borderRadius: 10,
-                        padding: 10,
-                        zIndex: 6000,
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-                      }}
-                    >
-                      {/* paste your existing notifications dropdown contents here */}
-                      <div style={{ color: "#9ca3af", fontSize: "0.9rem" }}>
-                        Notifications dropdown
-                      </div>
+  <div
+    style={{
+      position: "absolute",
+      right: 0,
+      top: "110%",
+      width: 320,
+      maxWidth: "85vw",
+      background: "#020617",
+      border: "1px solid #1e293b",
+      borderRadius: 10,
+      padding: 10,
+      zIndex: 6000,
+      boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+    }}
+  >
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ color: "#e5e7eb", fontWeight: 900 }}>Notifications</div>
+      <div style={{ color: "#64748b", fontSize: "0.82rem" }}>
+        {Array.isArray(notifications) ? notifications.length : 0}
+      </div>
+    </div>
+
+    <div style={{ height: 1, background: "#1e293b", margin: "10px 0" }} />
+
+    {!Array.isArray(notifications) || notifications.length === 0 ? (
+      <div style={{ color: "#9ca3af", fontSize: "0.9rem" }}>No notifications.</div>
+    ) : (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 320, overflowY: "auto" }}>
+        {notifications
+          .slice() // don’t mutate props
+          .reverse() // newest last -> newest first (remove if yours is already newest first)
+          .slice(0, 30) // cap for UI
+          .map((n, idx) => {
+            const title = String(n?.title || n?.type || "Update");
+            const msg = String(n?.message || n?.text || n?.detail || "");
+            const ts =
+              n?.createdAt || n?.timestamp
+                ? new Date(n.createdAt || n.timestamp).toLocaleString()
+                : "";
+
+            return (
+              <div
+                key={n?.id ?? `${title}-${idx}`}
+                style={{
+                  border: "1px solid #1f2937",
+                  background: "#0b1220",
+                  borderRadius: 10,
+                  padding: "10px 10px",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                  <div style={{ color: "#e5e7eb", fontWeight: 900, fontSize: "0.92rem" }}>
+                    {title}
+                  </div>
+                  {ts ? (
+                    <div style={{ color: "#64748b", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                      {ts}
                     </div>
-                  )}
+                  ) : null}
+                </div>
+
+                {msg ? (
+                  <div style={{ color: "#9ca3af", fontSize: "0.85rem", marginTop: 6, lineHeight: 1.25 }}>
+                    {msg}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+      </div>
+    )}
+  </div>
+)}
+
                 </div>
               </div>
 

@@ -23,6 +23,17 @@ const ROSTER_POS_COLORS = {
   D: "#a855f7", // purple
 };
 
+const TEAM_COLORS = {
+  "Pacino Amigo": "#f59e0b",   // amber
+  "Bottle O Draino": "#22c55e", // green
+  "Imano Lizzo": "#a855f7",     // purple
+  "El Camino": "#38bdf8",       // light blue
+  "DeNiro Amigo": "#ef4444",    // red
+  "Champino": "#e879f9",        // pink
+};
+
+const getTeamColor = (teamName) => TEAM_COLORS[teamName] || "#334155";
+
 const rosterPosPill = (pos) => {
   const color = ROSTER_POS_COLORS[pos === "D" ? "D" : "F"];
 
@@ -69,7 +80,6 @@ function TeamToolsPanel({
 }) {
   // --- Auction state (for starting new auctions) ---
   const [bidPlayerName, setBidPlayerName] = useState("");
-  const [bidPosition, setBidPosition] = useState("F");
   const [bidAmount, setBidAmount] = useState("");
   // Phase 2A: player search dropdown (start auction)
   const [playerSearchQuery, setPlayerSearchQuery] = useState("");
@@ -657,86 +667,103 @@ const auctionNameStyle = {
     >
       <h2 style={{ marginTop: 0 }}>Team Tools</h2>
 
-      {currentUser.role === "manager" && selectedTeam && (
-        <p style={{ color: "#94a3b8", marginTop: 0 }}>
-          You are managing <strong>{currentUser.teamName}</strong>.
-        </p>
-      )}
+    
 
-      <hr style={{ margin: "12px 0", borderColor: "#334155" }} />
+     {/* ===========================
+    Trades (ONE section)
+   =========================== */}
+<hr style={{ margin: "12px 0", borderColor: "#334155" }} />
 
-      {/* ---------- Trade Builder (current draft) ---------- */}
-      <h3 style={{ marginTop: 0 }}>Trade builder</h3>
+<div
+  style={{
+    padding: "12px",
+    borderRadius: "10px",
+    background: "#0b1220",
+    border: "1px solid #1f2937",
+  }}
+>
+  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, fontWeight:1200 }}>
+    <h3 style={{ margin: 0 }}>Trades</h3>
+    
+  </div>
 
-      {isManager ? (
-        <>
-          {activeDraftFromThisManager && tradeDraft ? (
-            <div
-              style={{
-                marginBottom: "12px",
-                padding: "8px",
-                borderRadius: "6px",
-                background: "#020617",
-                border: "1px solid #1f2937",
-                fontSize: "0.85rem",
-              }}
-            >
-              {(() => {
-                const getTeamByName = (name) => (teams || []).find((t) => t.name === name);
+  {/* ---------- Trade Builder (current draft) ---------- */}
+  <div style={{ marginTop: 10 }}>
+    <div style={{ fontWeight: 800, marginBottom: 6 }}>Trade builder</div>
 
-                const getMaxBuyoutForTeam = (teamName) => {
-                  const t = getTeamByName(teamName);
-                  return totalBuyoutPenalty(t);
-                };
+    {isManager ? (
+      <>
+        {activeDraftFromThisManager && tradeDraft ? (
+          <div
+            style={{
+              padding: "10px",
+              borderRadius: "10px",
+              background: "#020617",
+              border: "1px solid #1f2937",
+              fontSize: "0.85rem",
+            }}
+          >
+            {(() => {
+              const getTeamByName = (name) => (teams || []).find((t) => t.name === name);
 
-                const getPlayerSalary = (teamName, playerRef) => {
-                  const t = getTeamByName(teamName);
-                  const p = findRosterPlayer(t, playerRef);
-                  return Number(p?.salary) || 0;
-                };
+              const getMaxBuyoutForTeam = (teamName) => {
+                const t = getTeamByName(teamName);
+                return totalBuyoutPenalty(t);
+              };
 
-                const getMaxRetentionForPlayer = (teamName, playerRef) => {
-                  const s = getPlayerSalary(teamName, playerRef);
-                  return Math.ceil(s * 0.5);
-                };
+              const getPlayerSalary = (teamName, playerRef) => {
+                const t = getTeamByName(teamName);
+                const p = findRosterPlayer(t, playerRef);
+                return Number(p?.salary) || 0;
+              };
 
-                const maxPenaltyFrom = getMaxBuyoutForTeam(tradeDraft.fromTeam);
-                const maxPenaltyTo = getMaxBuyoutForTeam(tradeDraft.toTeam);
+              const getMaxRetentionForPlayer = (teamName, playerRef) => {
+                const s = getPlayerSalary(teamName, playerRef);
+                return Math.ceil(s * 0.5);
+              };
 
-                return (
-                  <>
-                    <div style={{ marginBottom: "4px", color: "#a5b4fc" }}>
-                      Building trade from <strong>{tradeDraft.fromTeam}</strong> to{" "}
-                      <strong>{tradeDraft.toTeam}</strong>
+              const maxPenaltyFrom = getMaxBuyoutForTeam(tradeDraft.fromTeam);
+              const maxPenaltyTo = getMaxBuyoutForTeam(tradeDraft.toTeam);
+
+              return (
+                <>
+                  <div style={{ marginBottom: 8, color: "#a5b4fc" }}>
+                    <strong>{tradeDraft.fromTeam}</strong> → <strong>{tradeDraft.toTeam}</strong>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <div>
+                      <span style={{ color: "#94a3b8" }}>Requested:</span>{" "}
+                      <strong>
+                        {tradeDraft.requestedPlayers?.length
+                          ? tradeDraft.requestedPlayers.map(getPlayerDisplayName).join(", ")
+                          : "—"}
+                      </strong>
                     </div>
 
-                    <div style={{ marginBottom: "4px" }}>
-                      <strong>Requested players (from {tradeDraft.toTeam}):</strong>{" "}
-                      {tradeDraft.requestedPlayers && tradeDraft.requestedPlayers.length > 0
-                        ? tradeDraft.requestedPlayers.map(getPlayerDisplayName).join(", ")
-                        : "none yet"}
+                    <div>
+                      <span style={{ color: "#94a3b8" }}>Offered:</span>{" "}
+                      <strong>
+                        {tradeDraft.offeredPlayers?.length
+                          ? tradeDraft.offeredPlayers.map(getPlayerDisplayName).join(", ")
+                          : "—"}
+                      </strong>
                     </div>
+                  </div>
 
-                    <div style={{ marginBottom: "6px" }}>
-                      <strong>Offered players (from {tradeDraft.fromTeam}):</strong>{" "}
-                      {tradeDraft.offeredPlayers && tradeDraft.offeredPlayers.length > 0
-                        ? tradeDraft.offeredPlayers.map(getPlayerDisplayName).join(", ")
-                        : "none yet"}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: "6px",
-                        marginBottom: "6px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "4px",
-                      }}
-                    >
+                  <div
+                    style={{
+                      marginTop: 10,
+                      paddingTop: 10,
+                      borderTop: "1px solid #111827",
+                      display: "grid",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <label style={{ fontSize: "0.8rem" }}>
-                        <strong>Include your buyout penalty</strong> in this trade (sent from{" "}
-                        {tradeDraft.fromTeam} to {tradeDraft.toTeam}){" "}
-                        <span style={{ color: "#94a3b8" }}>(max ${maxPenaltyFrom})</span>:
+                        <strong>Your buyout penalty</strong>{" "}
+                        <span style={{ color: "#94a3b8" }}>(max ${maxPenaltyFrom})</span>
                         <br />
                         <input
                           type="number"
@@ -744,15 +771,14 @@ const auctionNameStyle = {
                           max={maxPenaltyFrom}
                           value={tradeDraft.penaltyFrom ?? ""}
                           onChange={(e) => updateDraftField("penaltyFrom", e.target.value)}
-                          style={{ marginTop: "2px", width: "80px", fontSize: "0.8rem" }}
+                          style={{ marginTop: 4, width: 90, fontSize: "0.85rem" }}
                         />{" "}
                         $
                       </label>
 
                       <label style={{ fontSize: "0.8rem" }}>
-                        <strong>Request their buyout penalty</strong> (sent from {tradeDraft.toTeam} to{" "}
-                        {tradeDraft.fromTeam}){" "}
-                        <span style={{ color: "#94a3b8" }}>(max ${maxPenaltyTo})</span>:
+                        <strong>Their buyout penalty</strong>{" "}
+                        <span style={{ color: "#94a3b8" }}>(max ${maxPenaltyTo})</span>
                         <br />
                         <input
                           type="number"
@@ -760,53 +786,38 @@ const auctionNameStyle = {
                           max={maxPenaltyTo}
                           value={tradeDraft.penaltyTo ?? ""}
                           onChange={(e) => updateDraftField("penaltyTo", e.target.value)}
-                          style={{ marginTop: "2px", width: "80px", fontSize: "0.8rem" }}
+                          style={{ marginTop: 4, width: 90, fontSize: "0.85rem" }}
                         />{" "}
                         $
                       </label>
                     </div>
 
                     {(tradeDraft.offeredPlayers?.length > 0 || tradeDraft.requestedPlayers?.length > 0) && (
-                      <div style={{ marginTop: "6px", marginBottom: "6px", fontSize: "0.8rem" }}>
-                        <div style={{ marginBottom: "4px", fontWeight: "bold" }}>
-                          Salary retention (max 50% of salary, per player)
+                      <div style={{ fontSize: "0.8rem" }}>
+                        <div style={{ fontWeight: 800, marginBottom: 6 }}>
+                          Salary retention <span style={{ color: "#94a3b8" }}>(max 50%)</span>
                         </div>
 
                         {tradeDraft.offeredPlayers?.length > 0 && (
-                          <div style={{ marginBottom: "4px" }}>
-                            <div style={{ marginBottom: "2px" }}>
-                              You retain on players you are sending:
-                            </div>
-
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ color: "#94a3b8", marginBottom: 4 }}>You retain on:</div>
                             {tradeDraft.offeredPlayers.map((ref) => {
                               const maxRet = getMaxRetentionForPlayer(tradeDraft.fromTeam, ref);
                               return (
                                 <div
                                   key={ref}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "6px",
-                                    marginBottom: "2px",
-                                  }}
+                                  style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}
                                 >
-                                  <span style={{ minWidth: "110px", fontSize: "0.8rem" }}>
-                                    {getPlayerDisplayName(ref)}
-                                  </span>
-
+                                  <span style={{ minWidth: 140 }}>{getPlayerDisplayName(ref)}</span>
                                   <input
                                     type="number"
                                     min="0"
                                     max={maxRet}
                                     value={(tradeDraft.retentionFrom || {})[ref] ?? ""}
                                     onChange={(e) => updateRetention("from", ref, e.target.value)}
-                                    style={{ width: "80px", fontSize: "0.8rem" }}
-                                  />{" "}
-                                  $
-
-                                  <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>
-                                    (max ${maxRet})
-                                  </span>
+                                    style={{ width: 90, fontSize: "0.85rem" }}
+                                  />
+                                  <span style={{ color: "#94a3b8" }}>$ (max {maxRet})</span>
                                 </div>
                               );
                             })}
@@ -815,39 +826,24 @@ const auctionNameStyle = {
 
                         {tradeDraft.requestedPlayers?.length > 0 && (
                           <div>
-                            <div style={{ marginBottom: "2px" }}>
-                              Ask the other team to retain on players you receive:
-                            </div>
-
+                            <div style={{ color: "#94a3b8", marginBottom: 4 }}>Ask them to retain on:</div>
                             {tradeDraft.requestedPlayers.map((ref) => {
                               const maxRet = getMaxRetentionForPlayer(tradeDraft.toTeam, ref);
                               return (
                                 <div
                                   key={ref}
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "6px",
-                                    marginBottom: "2px",
-                                  }}
+                                  style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}
                                 >
-                                  <span style={{ minWidth: "110px", fontSize: "0.8rem" }}>
-                                    {getPlayerDisplayName(ref)}
-                                  </span>
-
+                                  <span style={{ minWidth: 140 }}>{getPlayerDisplayName(ref)}</span>
                                   <input
                                     type="number"
                                     min="0"
                                     max={maxRet}
                                     value={(tradeDraft.retentionTo || {})[ref] ?? ""}
                                     onChange={(e) => updateRetention("to", ref, e.target.value)}
-                                    style={{ width: "80px", fontSize: "0.8rem" }}
-                                  />{" "}
-                                  $
-
-                                  <span style={{ color: "#94a3b8", fontSize: "0.75rem" }}>
-                                    (max ${maxRet})
-                                  </span>
+                                    style={{ width: 90, fontSize: "0.85rem" }}
+                                  />
+                                  <span style={{ color: "#94a3b8" }}>$ (max {maxRet})</span>
                                 </div>
                               );
                             })}
@@ -855,8 +851,11 @@ const auctionNameStyle = {
                         )}
                       </div>
                     )}
+                  </div>
 
-                    {fromPreview && toPreview && (
+                  {fromPreview && toPreview && (
+                    <div style={{ marginTop: 10 }}>
+                      {/* keep your existing preview box exactly as-is */}
                       <div
                         style={{
                           marginTop: "8px",
@@ -868,13 +867,9 @@ const auctionNameStyle = {
                       >
                         <div style={{ fontSize: "0.8rem", marginBottom: "4px" }}>
                           {allIssues.length === 0 ? (
-                            <span style={{ color: "#4ade80" }}>
-                              ✔ Both teams remain legal if this trade is accepted.
-                            </span>
+                            <span style={{ color: "#4ade80" }}>✔ Both teams remain legal.</span>
                           ) : (
-                            <span style={{ color: "#facc15" }}>
-                              ⚠ This trade would cause roster/cap or retention issues for at least one team.
-                            </span>
+                            <span style={{ color: "#facc15" }}>⚠ Issues if accepted.</span>
                           )}
                         </div>
 
@@ -887,116 +882,58 @@ const auctionNameStyle = {
                             <div style={{ fontWeight: 800, marginBottom: "4px", fontSize: "1.05rem" }}>
                               {tradeDraft.fromTeam}
                             </div>
-
-                            <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "6px" }}>
-                              Receiving:
-                              {tradeDraft.requestedPlayers?.length ? (
-                                <span style={{ marginLeft: "6px" }}>
-                                  {tradeDraft.requestedPlayers.map((ref) => (
-                                    <span key={`recv-from-${ref}`} style={pillStyle}>
-                                      {getPlayerDisplayName(ref)}
-                                    </span>
-                                  ))}
-                                </span>
-                              ) : (
-                                <span style={{ marginLeft: "6px" }}>—</span>
-                              )}
-                            </div>
-
                             <div>
-                              Cap:{" "}
-                              <span>
-                                ${fromPreview.capBefore} →{" "}
-                                <span style={{ color: capColor(fromPreview.capAfter, fromPreview.capBefore) }}>
-                                  ${fromPreview.capAfter}
-                                </span>{" "}
-                                ({fromPreview.capDiff >= 0 ? "+" : ""}
-                                {fromPreview.capDiff})
+                              Cap: ${fromPreview.capBefore} →{" "}
+                              <span style={{ color: capColor(fromPreview.capAfter, fromPreview.capBefore) }}>
+                                ${fromPreview.capAfter}
                               </span>
                             </div>
-
                             <div>
                               Roster:{" "}
                               <span style={{ color: rosterColor(fromPreview.sizeAfter) }}>
                                 {fromPreview.sizeBefore} → {fromPreview.sizeAfter}
                               </span>
                             </div>
-
                             <div>
                               <span style={{ color: posColor(fromPreview.posAfter) }}>
                                 F: {fromPreview.posBefore.F} → {fromPreview.posAfter.F}, D:{" "}
                                 {fromPreview.posBefore.D} → {fromPreview.posAfter.D}
                               </span>
                             </div>
-
-                            <div>
-                              Buyouts: ${fromPreview.penaltiesBefore} → ${fromPreview.penaltiesAfter}
-                            </div>
-
-                            <div>
-                              Retentions: {fromPreview.retentionBefore} → {fromPreview.retentionAfter}
-                            </div>
+                            <div>Buyouts: ${fromPreview.penaltiesBefore} → ${fromPreview.penaltiesAfter}</div>
+                            <div>Retentions: {fromPreview.retentionBefore} → {fromPreview.retentionAfter}</div>
                           </div>
 
                           <div style={{ flex: 1, minWidth: "160px" }}>
                             <div style={{ fontWeight: 800, marginBottom: "4px", fontSize: "1.05rem" }}>
                               {tradeDraft.toTeam}
                             </div>
-
-                            <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "6px" }}>
-                              Receiving:
-                              {tradeDraft.offeredPlayers?.length ? (
-                                <span style={{ marginLeft: "6px" }}>
-                                  {tradeDraft.offeredPlayers.map((ref) => (
-                                    <span key={`recv-to-${ref}`} style={pillStyle}>
-                                      {getPlayerDisplayName(ref)}
-                                    </span>
-                                  ))}
-                                </span>
-                              ) : (
-                                <span style={{ marginLeft: "6px" }}>—</span>
-                              )}
-                            </div>
-
                             <div>
-                              Cap:{" "}
-                              <span>
-                                ${toPreview.capBefore} →{" "}
-                                <span style={{ color: capColor(toPreview.capAfter, toPreview.capBefore) }}>
-                                  ${toPreview.capAfter}
-                                </span>{" "}
-                                ({toPreview.capDiff >= 0 ? "+" : ""}
-                                {toPreview.capDiff})
+                              Cap: ${toPreview.capBefore} →{" "}
+                              <span style={{ color: capColor(toPreview.capAfter, toPreview.capBefore) }}>
+                                ${toPreview.capAfter}
                               </span>
                             </div>
-
                             <div>
                               Roster:{" "}
                               <span style={{ color: rosterColor(toPreview.sizeAfter) }}>
                                 {toPreview.sizeBefore} → {toPreview.sizeAfter}
                               </span>
                             </div>
-
                             <div>
                               <span style={{ color: posColor(toPreview.posAfter) }}>
                                 F: {toPreview.posBefore.F} → {toPreview.posAfter.F}, D:{" "}
                                 {toPreview.posBefore.D} → {toPreview.posAfter.D}
                               </span>
                             </div>
-
-                            <div>
-                              Buyouts: ${toPreview.penaltiesBefore} → ${toPreview.penaltiesAfter}
-                            </div>
-
-                            <div>
-                              Retentions: {toPreview.retentionBefore} → {toPreview.retentionAfter}
-                            </div>
+                            <div>Buyouts: ${toPreview.penaltiesBefore} → ${toPreview.penaltiesAfter}</div>
+                            <div>Retentions: {toPreview.retentionBefore} → {toPreview.retentionAfter}</div>
                           </div>
                         </div>
 
                         {allIssues.length > 0 && (
                           <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "#facc15" }}>
-                            <div style={{ fontWeight: "bold" }}>Issues if accepted:</div>
+                            <div style={{ fontWeight: "bold" }}>Issues:</div>
                             <ul style={{ margin: 0, paddingLeft: "16px" }}>
                               {allIssues.map((msg, idx) => (
                                 <li key={idx}>{msg}</li>
@@ -1005,355 +942,376 @@ const auctionNameStyle = {
                           </div>
                         )}
                       </div>
-                    )}
-
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
-                      <button
-                        onClick={handleClearTradeDraft}
-                        style={{
-                          padding: "4px 8px",
-                          fontSize: "0.8rem",
-                          backgroundColor: "#374151",
-                          color: "#e5e7eb",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Clear this trade
-                      </button>
-
-                      <button
-                        onClick={() => onSubmitTradeDraft(tradeDraft)}
-                        disabled={!canSubmitThisTrade}
-                        style={{
-                          padding: "4px 10px",
-                          fontSize: "0.8rem",
-                          backgroundColor: canSubmitThisTrade ? "#16a34a" : "#4b5563",
-                          color: "#e5e7eb",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: canSubmitThisTrade ? "pointer" : "not-allowed",
-                        }}
-                      >
-                        Submit trade offer
-                      </button>
                     </div>
+                  )}
 
-                    {!canSubmitTrade && (
-                      <div style={{ marginTop: "4px", fontSize: "0.75rem", color: "#9ca3af" }}>
-                        Pick at least one requested player on the other team and at least one offered player on your team to enable submission.
-                      </div>
-                    )}
-
-                    <div style={{ marginTop: "6px", fontSize: "0.75rem", color: "#9ca3af" }}>
-                      Use <em>Request</em> beside players on the other team, and <em>Offer</em> beside players on your own roster.
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          ) : (
-            <p style={{ fontSize: "0.9rem", color: "#9ca3af" }}>
-              To start a trade, view another team&apos;s roster and click <em>Request</em> beside any player you want. Then switch back to your own team and use <em>Offer</em> on your players.
-            </p>
-          )}
-        </>
-      ) : (
-        <p style={{ fontSize: "0.9rem", color: "#9ca3af" }}>
-          Log in as a manager to build trade offers.
-        </p>
-      )}
-
-      <hr style={{ margin: "12px 0", borderColor: "#334155" }} />
-
-      {/* ---------- Pending Trades ---------- */}
-      <h3 style={{ marginTop: 0 }}>Pending trades</h3>
-
-      {pendingTradesForUser.length === 0 && (
-        <p style={{ color: "#94a3b8" }}>No pending trades.</p>
-      )}
-
-      {pendingTradesForUser.map((tr) => {
-        const youAreFrom = currentUser.role === "manager" && tr.fromTeam === currentUser.teamName;
-        const youAreTo = currentUser.role === "manager" && tr.toTeam === currentUser.teamName;
-
-        const offeredList = tr.offeredPlayers || [];
-        const requestedList = tr.requestedPlayers || [];
-
-        const hasPenaltyFrom = tr.penaltyFrom && tr.penaltyFrom > 0;
-        const hasPenaltyTo = tr.penaltyTo && tr.penaltyTo > 0;
-        const hasAnyPenalty = hasPenaltyFrom || hasPenaltyTo;
-
-        const retentionFromEntries = Object.entries(tr.retentionFrom || {}).filter(([, val]) => Number(val) > 0);
-        const retentionToEntries = Object.entries(tr.retentionTo || {}).filter(([, val]) => Number(val) > 0);
-
-        const hasAnyRetention = retentionFromEntries.length > 0 || retentionToEntries.length > 0;
-
-        return (
-          <div
-            key={tr.id}
-            style={{
-              padding: "10px",
-              background: "#1e293b",
-              borderRadius: "6px",
-              marginBottom: "10px",
-              fontSize: "0.85rem",
-            }}
-          >
-            <div style={{ marginBottom: "4px" }}>
-              <strong>
-                {tr.fromTeam} → {tr.toTeam}
-              </strong>
-            </div>
-
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              <div style={{ minWidth: "150px", flex: 1 }}>
-                <div style={{ fontWeight: "bold", marginBottom: "2px" }}>{tr.fromTeam} sends:</div>
-                {offeredList.length === 0 ? (
-                  <div>nothing</div>
-                ) : (
-                  <ul style={{ margin: 0, paddingLeft: "16px" }}>
-                    {offeredList.map((ref) => (
-                      <li key={ref}>{getPlayerDisplayName(ref)}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div style={{ minWidth: "150px", flex: 1 }}>
-                <div style={{ fontWeight: "bold", marginBottom: "2px" }}>{tr.toTeam} sends:</div>
-                {requestedList.length === 0 ? (
-                  <div>nothing</div>
-                ) : (
-                  <ul style={{ margin: 0, paddingLeft: "16px" }}>
-                    {requestedList.map((ref) => (
-                      <li key={ref}>{getPlayerDisplayName(ref)}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-
-            {(hasAnyPenalty || hasAnyRetention) && (
-              <div
-                style={{
-                  marginTop: "6px",
-                  padding: "6px 8px",
-                  borderRadius: "4px",
-                  background: "#020617",
-                  border: "1px solid #1f2937",
-                  fontSize: "0.8rem",
-                }}
-              >
-                {hasAnyPenalty && (
-                  <div style={{ marginBottom: hasAnyRetention ? "4px" : 0 }}>
-                    <strong>Buyout penalty in trade:</strong>{" "}
-                    {hasPenaltyFrom && (
-                      <span>
-                        {tr.fromTeam} sends ${tr.penaltyFrom}
-                        {hasPenaltyTo && " · "}
-                      </span>
-                    )}
-                    {hasPenaltyTo && <span>{tr.toTeam} sends ${tr.penaltyTo}</span>}
-                  </div>
-                )}
-
-                {hasAnyRetention && (
-                  <div>
-                    <strong>Salary retention:</strong>
-                    <div style={{ marginTop: "2px" }}>
-                      {retentionFromEntries.length > 0 && (
-                        <div>
-                          <span>{tr.fromTeam} retains on:</span>
-                          <ul style={{ margin: "2px 0 0 16px", paddingLeft: 0 }}>
-                            {retentionFromEntries.map(([ref, amt]) => (
-                              <li key={`from-${ref}`}>
-                                {getPlayerDisplayName(ref)}: ${amt}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {retentionToEntries.length > 0 && (
-                        <div style={{ marginTop: "2px" }}>
-                          <span>{tr.toTeam} retains on:</span>
-                          <ul style={{ margin: "2px 0 0 16px", paddingLeft: 0 }}>
-                            {retentionToEntries.map(([ref, amt]) => (
-                              <li key={`to-${ref}`}>
-                                {getPlayerDisplayName(ref)}: ${amt}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {canAcceptOrReject(tr) && (
-                <>
-                  <button
-                    onClick={() => onAcceptTrade(tr.id)}
-                    style={{
-                      padding: "3px 8px",
-                      fontSize: "0.8rem",
-                      borderRadius: "4px",
-                      border: "none",
-                      cursor: "pointer",
-                      backgroundColor: "#16a34a",
-                      color: "#e5e7eb",
-                    }}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => onRejectTrade(tr.id)}
-                    style={{
-                      padding: "3px 8px",
-                      fontSize: "0.8rem",
-                      borderRadius: "4px",
-                      border: "none",
-                      cursor: "pointer",
-                      backgroundColor: "#b91c1c",
-                      color: "#e5e7eb",
-                    }}
-                  >
-                    Reject
-                  </button>
-                </>
-              )}
-
-              {canCancel(tr) && (
-                <button
-                  onClick={() => onCancelTrade(tr.id)}
-                  style={{
-                    padding: "3px 8px",
-                    fontSize: "0.8rem",
-                    borderRadius: "4px",
-                    border: "none",
-                    cursor: "pointer",
-                    backgroundColor: "#6b7280",
-                    color: "#e5e7eb",
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
-
-              {canCounter(tr) && (
-                <button
-                  onClick={() => onCounterTrade && onCounterTrade(tr)}
-                  style={{
-                    padding: "3px 8px",
-                    fontSize: "0.8rem",
-                    borderRadius: "4px",
-                    border: "none",
-                    cursor: "pointer",
-                    backgroundColor: "#0ea5e9",
-                    color: "#e5e7eb",
-                  }}
-                >
-                  Counter offer
-                </button>
-              )}
-            </div>
-
-            {(youAreFrom || youAreTo) && (
-              <div style={{ marginTop: "4px", fontSize: "0.75rem", color: "#9ca3af" }}>
-                {youAreTo && "You are the receiving team for this trade."}
-                {youAreFrom && !youAreTo && "You are the offering team for this trade."}
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      <hr style={{ margin: "12px 0", borderColor: "#334155" }} />
-
-      {/* ---------- Trade Block ---------- */}
-      <h3 style={{ marginTop: 0 }}>Trade block</h3>
-
-      {isManager && (
-        <p style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
-          To add a player to your trade block, use the <em>Add to trade block</em> button next to their name on your roster.
-        </p>
-      )}
-
-      {(!tradeBlock || tradeBlock.length === 0) && (
-        <p style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
-          No players listed on the trade block yet.
-        </p>
-      )}
-
-      {tradeBlock && tradeBlock.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.85rem" }}>
-          {tradeBlock.map((entry) => {
-            const canRemove =
-              currentUser.role === "commissioner" ||
-              (currentUser.role === "manager" && currentUser.teamName === entry.team);
-
-            return (
-              <div
-                key={entry.id}
-                style={{
-                  padding: "6px 8px",
-                  borderRadius: "6px",
-                  background: "#020617",
-                  border: "1px solid #1f2937",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "2px",
-                  }}
-                >
-                  <span>
-                    <strong>{entry.team}</strong> – {getPlayerDisplayName(entry.player)}
-                  </span>
-
-                  {canRemove && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
                     <button
-                      onClick={() => {
-                        if (typeof onRemoveTradeBlockEntry !== "function") {
-                          console.error("[TRADE BLOCK] onRemoveTradeBlockEntry is not wired:", onRemoveTradeBlockEntry);
-                          window.alert("Trade block remove is not wired (check App.jsx props).");
-                          return;
-                        }
-                        onRemoveTradeBlockEntry(entry);
-                      }}
+                      onClick={handleClearTradeDraft}
                       style={{
-                        padding: "2px 6px",
-                        fontSize: "0.75rem",
-                        borderRadius: "4px",
-                        border: "none",
-                        cursor: "pointer",
-                        backgroundColor: "#6b7280",
+                        padding: "5px 10px",
+                        fontSize: "0.85rem",
+                        backgroundColor: "#374151",
                         color: "#e5e7eb",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: "pointer",
                       }}
                     >
-                      Remove
+                      Clear
                     </button>
+
+                    <button
+                      onClick={() => onSubmitTradeDraft(tradeDraft)}
+                      disabled={!canSubmitThisTrade}
+                      style={{
+                        padding: "5px 12px",
+                        fontSize: "0.85rem",
+                        backgroundColor: canSubmitThisTrade ? "#16a34a" : "#4b5563",
+                        color: "#e5e7eb",
+                        border: "none",
+                        borderRadius: "8px",
+                        cursor: canSubmitThisTrade ? "pointer" : "not-allowed",
+                        opacity: canSubmitThisTrade ? 1 : 0.8,
+                      }}
+                    >
+                      Submit offer
+                    </button>
+                  </div>
+
+                  {!canSubmitTrade && (
+                    <div style={{ marginTop: 6, fontSize: "0.78rem", color: "#9ca3af" }}>
+                      Add at least 1 requested player and 1 offered player.
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 6, fontSize: "0.78rem", color: "#9ca3af" }}>
+                    Use <em>Request</em> on another roster, then <em>Offer</em> on your roster.
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        ) : (
+          <div style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
+            Use <em>Request</em> on another roster, then <em>Offer</em> on your roster.
+          </div>
+        )}
+      </>
+    ) : (
+      <div style={{ fontSize: "0.85rem", color: "#9ca3af" }}>Log in as a manager to build trade offers.</div>
+    )}
+  </div>
+
+  {/* ---------- Pending Trades (same section, no divider) ---------- */}
+  <div style={{ marginTop: 14 }}>
+    <div style={{ fontWeight: 800, marginBottom: 6 }}>Pending</div>
+
+    {pendingTradesForUser.length === 0 ? (
+      <div style={{ color: "#94a3b8", fontSize: "0.85rem" }}>No pending trades.</div>
+    ) : (
+      pendingTradesForUser.map((tr) => {
+        const youAreFrom = currentUser.role === "manager" && tr.fromTeam === currentUser.teamName;
+        const youAreTo = currentUser.role === "manager" && tr.toTeam === currentUser.teamName;
+const offeredList = tr.offeredPlayers || []; // fromTeam sends
+const requestedList = tr.requestedPlayers || []; // toTeam sends
+
+const penaltyFromAmt = Number(tr.penaltyFrom) || 0;
+const penaltyToAmt = Number(tr.penaltyTo) || 0;
+
+const hasPenaltyFrom = penaltyFromAmt > 0;
+const hasPenaltyTo = penaltyToAmt > 0;
+
+// retention maps (ONLY players with >0 retained)
+const rFrom = Object.fromEntries(
+  Object.entries(tr.retentionFrom || {}).filter(([, v]) => Number(v) > 0)
+);
+const rTo = Object.fromEntries(
+  Object.entries(tr.retentionTo || {}).filter(([, v]) => Number(v) > 0)
+);
+
+const leftTeam = tr.fromTeam;
+const rightTeam = tr.toTeam;
+
+const leftColor = getTeamColor(leftTeam);
+const rightColor = getTeamColor(rightTeam);
+
+const sideBox = (teamColor) => ({
+  flex: 1,
+  minWidth: 170,
+  borderRadius: 12,
+  border: "1px solid #1f2937",
+  background: `linear-gradient(
+    180deg,
+    ${teamColor}55 0%,
+    ${teamColor}22 35%,
+    rgba(2,6,23,0) 80%
+  )`,
+  padding: "10px 10px 8px",
+});
+
+const itemRow = {
+  display: "flex",
+  alignItems: "baseline",
+  justifyContent: "space-between",
+  gap: 10,
+  padding: "6px 8px",
+  borderRadius: 10,
+  border: "1px solid #1f2937",
+  background: "#020617",
+};
+
+const subLine = {
+  color: "#94a3b8",
+  fontSize: "0.78rem",
+  marginTop: 6,
+};
+
+return (
+  <div
+    key={tr.id}
+    style={{
+      padding: 10,
+      background: "#0b1220",
+      borderRadius: 12,
+      border: "1px solid #1f2937",
+      marginBottom: 10,
+      fontSize: "0.85rem",
+      boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+    }}
+  >
+    {/* Header */}
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+      <div style={{ fontWeight: 900 }}>
+        {leftTeam} <span style={{ color: "#94a3b8" }}>↔</span> {rightTeam}
+      </div>
+      <div style={{ color: "#94a3b8", fontSize: "0.78rem" }}>Pending</div>
+    </div>
+
+    {/* Two columns */}
+    <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+      {/* LEFT: fromTeam receives what toTeam sends = requestedList */}
+      <div style={sideBox(leftColor)}>
+        <div style={{ fontWeight: 900, marginBottom: 6 }}>
+          {leftTeam} <span style={{ color: "#94a3b8" }}>receives</span>
+        </div>
+
+        {requestedList.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {requestedList.map((ref) => {
+              const nm = getPlayerDisplayName(ref);
+              const retained = Number(rTo[ref] || 0); // retention by right team on what it sends
+              return (
+                <div key={`L-${ref}`} style={itemRow}>
+                  <span style={{ fontWeight: 800 }}>{nm}</span>
+                  {retained > 0 && (
+                    <span style={{ color: "#fbbf24", fontWeight: 900, whiteSpace: "nowrap" }}>
+                      ${retained} retained
+                    </span>
                   )}
                 </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ color: "#94a3b8" }}>—</div>
+        )}
 
-                {entry.needs && (
-                  <div style={{ color: "#9ca3af" }}>
-                    <strong>Notes:</strong> {entry.needs}
-                  </div>
+        {hasPenaltyTo && (
+          <div style={subLine}>
+            + {rightTeam} buyout: <strong style={{ color: "#e5e7eb" }}>${penaltyToAmt}</strong>
+          </div>
+        )}
+      </div>
+
+      {/* RIGHT: toTeam receives what fromTeam sends = offeredList */}
+      <div style={sideBox(rightColor)}>
+        <div style={{ fontWeight: 900, marginBottom: 6 }}>
+          {rightTeam} <span style={{ color: "#94a3b8" }}>receives</span>
+        </div>
+
+        {offeredList.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {offeredList.map((ref) => {
+              const nm = getPlayerDisplayName(ref);
+              const retained = Number(rFrom[ref] || 0); // retention by left team on what it sends
+              return (
+                <div key={`R-${ref}`} style={itemRow}>
+                  <span style={{ fontWeight: 800 }}>{nm}</span>
+                  {retained > 0 && (
+                    <span style={{ color: "#fbbf24", fontWeight: 900, whiteSpace: "nowrap" }}>
+                      ${retained} retained
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ color: "#94a3b8" }}>—</div>
+        )}
+
+        {hasPenaltyFrom && (
+          <div style={subLine}>
+            + {leftTeam} buyout: <strong style={{ color: "#e5e7eb" }}>${penaltyFromAmt}</strong>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Actions */}
+    <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8 }}>
+      {canAcceptOrReject(tr) && (
+        <>
+          <button
+            onClick={() => onAcceptTrade(tr.id)}
+            style={{
+              padding: "4px 10px",
+              fontSize: "0.85rem",
+              borderRadius: 10,
+              border: "none",
+              cursor: "pointer",
+              backgroundColor: "#16a34a",
+              color: "#e5e7eb",
+              fontWeight: 800,
+            }}
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => onRejectTrade(tr.id)}
+            style={{
+              padding: "4px 10px",
+              fontSize: "0.85rem",
+              borderRadius: 10,
+              border: "none",
+              cursor: "pointer",
+              backgroundColor: "#b91c1c",
+              color: "#e5e7eb",
+              fontWeight: 800,
+            }}
+          >
+            Reject
+          </button>
+        </>
+      )}
+
+      {canCancel(tr) && (
+        <button
+          onClick={() => onCancelTrade(tr.id)}
+          style={{
+            padding: "4px 10px",
+            fontSize: "0.85rem",
+            borderRadius: 10,
+            border: "none",
+            cursor: "pointer",
+            backgroundColor: "#334155",
+            color: "#e5e7eb",
+            fontWeight: 800,
+          }}
+        >
+          Cancel
+        </button>
+      )}
+
+      {canCounter(tr) && (
+        <button
+          onClick={() => onCounterTrade && onCounterTrade(tr)}
+          style={{
+            padding: "4px 10px",
+            fontSize: "0.85rem",
+            borderRadius: 10,
+            border: "none",
+            cursor: "pointer",
+            backgroundColor: "#0ea5e9",
+            color: "#e5e7eb",
+            fontWeight: 800,
+          }}
+        >
+          Counter
+        </button>
+      )}
+    </div>
+
+    {(youAreFrom || youAreTo) && (
+      <div style={{ marginTop: 6, fontSize: "0.78rem", color: "#9ca3af" }}>
+        {youAreTo ? "You can accept/reject this offer." : "Waiting on the other team."}
+      </div>
+    )}
+  </div>
+);
+
+
+      })
+    )}
+  </div>
+
+  {/* ---------- Trade Block (same section, no divider) ---------- */}
+  <div style={{ marginTop: 14 }}>
+    <div style={{ fontWeight: 800, marginBottom: 6 }}>Trade block</div>
+
+    {(!tradeBlock || tradeBlock.length === 0) ? (
+      <div style={{ fontSize: "0.85rem", color: "#9ca3af" }}>No players on the trade block yet.</div>
+    ) : (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: "0.85rem" }}>
+        {tradeBlock.map((entry) => {
+          const canRemove =
+            currentUser.role === "commissioner" ||
+            (currentUser.role === "manager" && currentUser.teamName === entry.team);
+
+          return (
+            <div
+              key={entry.id}
+              style={{
+                padding: "8px 10px",
+                borderRadius: 10,
+                background: "#020617",
+                border: "1px solid #1f2937",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <span>
+                  <strong>{entry.team}</strong> — {getPlayerDisplayName(entry.player)}
+                </span>
+
+                {canRemove && (
+                  <button
+                    onClick={() => onRemoveTradeBlockEntry(entry)}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: "0.8rem",
+                      borderRadius: 8,
+                      border: "none",
+                      cursor: "pointer",
+                      backgroundColor: "#6b7280",
+                      color: "#e5e7eb",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Remove
+                  </button>
                 )}
               </div>
-            );
-          })}
-        </div>
-      )}
+
+              {entry.needs && (
+                <div style={{ marginTop: 4, color: "#9ca3af" }}>
+                  <strong>Notes:</strong> {entry.needs}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    )}
+
+    {isManager && (
+      <div style={{ marginTop: 6, fontSize: "0.78rem", color: "#9ca3af" }}>
+        Add players using <em>Add to trade block</em> on your roster.
+      </div>
+    )}
+  </div>
+</div>
+
 
       {/* ---------- Free Agent Auctions ---------- */}
       <hr style={{ border: "none", borderTop: "1px solid #334155", margin: "16px 0" }} />
@@ -1389,7 +1347,7 @@ const auctionNameStyle = {
                         <div style={{ position: "relative", flex: "1 1 140px" }}>
               <input
                 type="text"
-                placeholder="Search player (mcdavid, crosby...)"
+                placeholder="Search player"
                 value={playerSearchQuery}
                 onChange={(e) => {
   const v = e.target.value;
@@ -1497,14 +1455,7 @@ if (
                 )}
             </div>
 
-            <select
-              value={bidPosition}
-              onChange={(e) => setBidPosition(e.target.value)}
-              style={{ width: "80px" }}
-            >
-              <option value="F">F</option>
-              <option value="D">D</option>
-            </select>
+            
             <input
               type="number"
               min="1"
@@ -1566,7 +1517,7 @@ if (!isExistingAuction && isPlayerRostered(selectedAuctionPlayer.id || selectedA
      onPlaceBid({
   playerId: String(selectedAuctionPlayer.id),
   playerName: selectedAuctionPlayer.fullName,
-  position: bidPosition,
+  
   amount: bidAmount,
 });
 

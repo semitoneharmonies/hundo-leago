@@ -533,6 +533,25 @@ li {
   /* 2x bigger on desktop */
   font-size: 2.7rem !important;
 }
+/* Logo glow animation */
+.topbarLogo {
+  filter:
+    drop-shadow(0 0 6px rgba(249, 115, 22, 0.35))
+    drop-shadow(0 0 14px rgba(249, 115, 22, 0.25));
+  transition:
+    filter 220ms ease,
+    transform 220ms ease;
+}
+
+/* Hover glow */
+.topbarLogo:hover {
+  filter:
+    drop-shadow(0 0 10px rgba(249, 115, 22, 0.7))
+    drop-shadow(0 0 26px rgba(249, 115, 22, 0.55))
+    drop-shadow(0 0 44px rgba(249, 115, 22, 0.35));
+  transform: translateY(-1px);
+}
+
 
 /* Buttons sizing (league rules, free agents, logout) */
 .topbarNav button,
@@ -570,40 +589,80 @@ li {
 }
 
 /* ===========================
-   Mobile (logged IN): 2 rows grid
+   Mobile (logged IN): logo row + controls row
+   Desired:
+     image
+     menu - pill - bell - logout
    =========================== */
 @media (max-width: 720px) {
-  .topBar {
+  .topBar:not(.loggedOut) {
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr auto;
     grid-template-areas:
-      "brand user"
-      "nav   logout";
+      "logo  logo"
+      "menu  right";
     gap: 8px 10px;
     align-items: center;
+    height: auto !important;
     overflow: visible !important;
   }
 
-  /* Let children become grid items */
-  .topbarLeft,
-  .topbarRight {
-    display: contents;
+  /* Place the logo in the top row */
+  .topBar:not(.loggedOut) .topbarCenter {
+    grid-area: logo;
+    height: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+    pointer-events: auto; /* safe on mobile */
   }
 
-  .topbarBrand {
-    grid-area: brand;
-    font-size: 1.25rem !important;
+  /* IMPORTANT: turn OFF the floating absolute logo on mobile */
+  .topBar:not(.loggedOut) .topbarLogoLink {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    z-index: auto !important;
+  }
+
+  .topBar:not(.loggedOut) .topbarCenter img {
+    height: 56px !important; /* tweak mobile logo size here */
+    max-width: 92vw !important;
+    width: auto !important;
+    display: block;
+    object-fit: contain;
+  }
+
+  /* Bottom row left: menu */
+  .topBar:not(.loggedOut) .topbarLeft {
+    grid-area: menu;
+    display: flex !important;
+    justify-content: flex-start;
+    align-items: center;
     min-width: 0;
-    white-space: nowrap;
   }
 
-  .topbarUser {
-    grid-area: user;
-    justify-self: end;
+  /* Bottom row right: pill + bell + logout (ONE ROW, no overlap) */
+  .topBar:not(.loggedOut) .topbarRight {
+    grid-area: right;
+    display: flex !important;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-left: 0 !important;
     min-width: 0;
+    flex-wrap: nowrap;
   }
 
-  .topbarUser span {
+  /* Ensure the pill can shrink instead of pushing over logout */
+  .topBar:not(.loggedOut) .topbarUser {
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+
+  .topBar:not(.loggedOut) .topbarUser span {
     max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -611,17 +670,14 @@ li {
     display: inline-block;
   }
 
-  .topbarNav {
-    grid-area: nav;
-    justify-self: start;
-  }
-
-  .topbarLogout {
-    grid-area: logout;
-    justify-self: end;
+  /* Logout should NEVER wrap under the bell */
+  .topBar:not(.loggedOut) .topbarLogout {
+    flex: 0 0 auto;
     white-space: nowrap;
   }
 }
+
+
 
 /* ===========================
    Mobile (logged OUT): brand row + login row (NO overlap)

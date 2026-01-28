@@ -7,6 +7,7 @@ import {
   countPositions,
   isTeamIllegal,
   countRetentionSpots,
+  totalRetainedSalary, 
   isBuyoutLocked,
   getBuyoutLockDaysLeft,
 } from "../leagueUtils";
@@ -25,6 +26,21 @@ const POS_COLORS = {
   D: { solid: "#a855f7", tint: "rgba(168,85,247,0.22)" }, // purple
   G: { solid: "#60a5fa", tint: "rgba(96,165,250,0.22)" }, // blue (fallback)
 };
+
+const TEAM_COLORS = {
+  "Pacino Amigo": "#f59e0b", // amber
+  "Bottle O Draino": "#22c55e", // green
+  "Imano Lizzo": "#a855f7", // purple
+  "El Camino": "#38bdf8", // light blue
+  "DeNiro Amigo": "#ef4444", // red
+  "Champino": "#e879f9", // pink
+};
+
+const getTeamColor = (teamName) => {
+  const key = String(teamName || "").trim();
+  return TEAM_COLORS[key] || "#60a5fa"; // fallback blue
+};
+
 
 const HealthIcon = ({ size = 14 }) => {
   const s = size;
@@ -1109,7 +1125,12 @@ const renderActions = (p, { isIR }) => {
         <div>
           <strong>Retention spots used:</strong> {retentionSpotsUsed} / {MAX_RETENTION_SPOTS}
         </div>
+        <div>
+  <strong>Retained Salary:</strong> ${totalRetainedSalary(team)}
+</div>
       </div>
+      
+
 
       {rosterIllegal && (
         <div style={illegalStyle}>
@@ -1787,7 +1808,6 @@ const Section = ({ title, children }) => {
     </div>
   );
 };
-
 const Header = ({
   team,
   teams,
@@ -1801,159 +1821,167 @@ const Header = ({
   maxRosterSize,
   F,
   D,
-}) => (
+}) => {
+  const teamColor = getTeamColor(team?.name);
 
-  <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-    {/* LOGO (clickable if manager) */}
-    <label
-      title={isManagerViewingOwnTeam ? "Click to change team logo" : ""}
-      style={{
-        width: 60,
-        height: 60,
-        borderRadius: "50%",
-        overflow: "hidden",
-        cursor: isManagerViewingOwnTeam ? "pointer" : "default",
-        display: "inline-block",
-        boxShadow: isManagerViewingOwnTeam
-          ? "0 0 0 2px rgba(59,130,246,0.25)"
-          : "none",
-        transition: "transform 0.12s ease, box-shadow 0.12s ease",
-      }}
-      onMouseEnter={(e) => {
-        if (!isManagerViewingOwnTeam) return;
-        e.currentTarget.style.transform = "scale(1.04)";
-        e.currentTarget.style.boxShadow =
-          "0 0 0 2px rgba(59,130,246,0.4), 0 0 16px rgba(59,130,246,0.4)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "scale(1)";
-        e.currentTarget.style.boxShadow = isManagerViewingOwnTeam
-          ? "0 0 0 2px rgba(59,130,246,0.25)"
-          : "none";
-      }}
-    >
-      {team.profilePic ? (
-        <img
-          src={team.profilePic}
-          alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      ) : (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            background: "#111827",
-          }}
-        />
-      )}
+  return (
+    <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+      {/* LOGO (clickable if manager) */}
+      <label
+        title={isManagerViewingOwnTeam ? "Click to change team logo" : ""}
+        style={{
+          width: 60,
+          height: 60,
+          borderRadius: "50%",
+          overflow: "hidden",
+          cursor: isManagerViewingOwnTeam ? "pointer" : "default",
+          display: "inline-block",
 
-      {isManagerViewingOwnTeam && (
-        <input
-          type="file"
-          hidden
-          accept="image/*"
-          onChange={onManagerProfileImageChange}
-        />
-      )}
-    </label>
+          // team identity ring
+          border: `3px solid ${teamColor}`,
 
-        {/* TEAM INFO */}
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div
-        ref={teamPickerRef}
-        style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}
+          // subtle depth
+          boxShadow: isManagerViewingOwnTeam
+            ? `0 0 0 2px ${teamColor}55, 0 0 16px ${teamColor}22`
+            : `0 0 0 2px ${teamColor}66`,
+
+          transition: "transform 0.12s ease, box-shadow 0.12s ease",
+        }}
+        onMouseEnter={(e) => {
+          if (!isManagerViewingOwnTeam) return;
+          e.currentTarget.style.transform = "scale(1.04)";
+          e.currentTarget.style.boxShadow = `0 0 0 3px ${teamColor}55, 0 0 18px ${teamColor}55`;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = isManagerViewingOwnTeam
+            ? `0 0 0 2px ${teamColor}40`
+            : `0 0 0 1px ${teamColor}30`;
+        }}
       >
-        <button
-          onClick={() => setTeamPickerOpen((v) => !v)}
-          title="Click to view another team"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            background: "transparent",
-            border: "none",
-            padding: 0,
-            margin: 0,
-            color: TEXT,
-            cursor: "pointer",
-            fontSize: "1.4rem",
-            fontWeight: 900,
-            maxWidth: "100%",
-          }}
-        >
-          <span
-            style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              maxWidth: "min(520px, 60vw)",
-              display: "inline-block",
-            }}
-          >
-            {team.name}
-          </span>
-          <span style={{ opacity: 0.75, fontSize: "0.95rem" }}>
-            {teamPickerOpen ? "▲" : "▼"}
-          </span>
-        </button>
-
-        {teamPickerOpen && (
+        {team.profilePic ? (
+          <img
+            src={team.profilePic}
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : (
           <div
             style={{
-              position: "absolute",
-              top: "110%",
-              left: 0,
-              minWidth: 220,
-              maxHeight: 320,
-              overflowY: "auto",
-              background: BASE_BG,
-              border: `1px solid ${BORDER}`,
-              borderRadius: 10,
-              padding: 6,
-              boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
-              zIndex: 80,
+              width: "100%",
+              height: "100%",
+              background: "#111827",
+            }}
+          />
+        )}
+
+        {isManagerViewingOwnTeam && (
+          <input
+            type="file"
+            hidden
+            accept="image/*"
+            onChange={onManagerProfileImageChange}
+          />
+        )}
+      </label>
+
+      {/* TEAM INFO */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          ref={teamPickerRef}
+          style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}
+        >
+          <button
+            onClick={() => setTeamPickerOpen((v) => !v)}
+            title="Click to view another team"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              margin: 0,
+              color: TEXT,
+              cursor: "pointer",
+              fontSize: "1.4rem",
+              fontWeight: 900,
+              maxWidth: "100%",
             }}
           >
-            {(Array.isArray(teams) ? teams : []).map((t) => {
-              const active = t.name === team.name;
-              return (
-                <button
-                  key={t.name}
-                  onClick={() => {
-                    setTeamPickerOpen(false);
-                    if (typeof setSelectedTeamName === "function") {
-                      setSelectedTeamName(t.name);
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    border: "1px solid transparent",
-                    background: active ? "#0b1220" : "transparent",
-                    color: active ? "#e5e7eb" : "#cbd5e1",
-                    cursor: "pointer",
-                    fontWeight: active ? 900 : 700,
-                  }}
-                  title={active ? "Currently viewing" : `View ${t.name}`}
-                >
-                  {t.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "min(520px, 60vw)",
+                display: "inline-block",
+              }}
+            >
+              {team.name}
+            </span>
+            <span style={{ opacity: 0.75, fontSize: "0.95rem" }}>
+              {teamPickerOpen ? "▲" : "▼"}
+            </span>
+          </button>
 
-      <div style={{ fontSize: "0.8rem", color: MUTED, marginTop: 2 }}>
-        Active roster: {rosterSize}/{maxRosterSize} • F {F} / D {D}
+          {teamPickerOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: "110%",
+                left: 0,
+                minWidth: 220,
+                maxHeight: 320,
+                overflowY: "auto",
+                background: BASE_BG,
+                border: `1px solid ${BORDER}`,
+                borderRadius: 10,
+                padding: 6,
+                boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
+                zIndex: 80,
+              }}
+            >
+              {(Array.isArray(teams) ? teams : []).map((t) => {
+                const active = t.name === team.name;
+                return (
+                  <button
+                    key={t.name}
+                    onClick={() => {
+                      setTeamPickerOpen(false);
+                      if (typeof setSelectedTeamName === "function") {
+                        setSelectedTeamName(t.name);
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "1px solid transparent",
+                      background: active ? "#0b1220" : "transparent",
+                      color: active ? "#e5e7eb" : "#cbd5e1",
+                      cursor: "pointer",
+                      fontWeight: active ? 900 : 700,
+                    }}
+                    title={active ? "Currently viewing" : `View ${t.name}`}
+                  >
+                    {t.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div style={{ fontSize: "0.8rem", color: MUTED, marginTop: 2 }}>
+          Active roster: {rosterSize}/{maxRosterSize} • F {F} / D {D}
+        </div>
       </div>
     </div>
+  );
+};
 
-  </div>
-);
 
 
 export default TeamRosterPanel;
