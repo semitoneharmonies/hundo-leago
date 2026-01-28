@@ -102,7 +102,7 @@ function TopBar({
             whiteSpace: "nowrap",
           }}
         >
-          Free Agents
+          Players
         </Link>
    <Link
   to="/matchups"
