@@ -5,7 +5,11 @@ import {
   getNextSundayDeadline,
   getNewAuctionCutoff,
   computeBidUiStateForAuction,
+  totalCap,
+  totalBuyoutPenalty,
+  totalRetainedSalary,
 } from "../leagueUtils";
+
 
 /* =========================================================
    Theme (match your roster styling vibe)
@@ -232,22 +236,33 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
     return (Array.isArray(teams) ? teams : []).find((t) => t.name === myTeamName) || null;
   }, [isManager, teams, myTeamName]);
 
+  // NOTE: TeamRosterPanel cap math counts IR + buyouts + retained salary.
+  // So we reuse the same leagueUtils helpers here to match exactly.
   const myRoster = Array.isArray(myTeam?.roster) ? myTeam.roster : [];
 
   const myCounts = useMemo(() => {
     let F = 0,
       D = 0;
+
+    // Keep your existing position counts based on roster entries
     for (const p of myRoster) {
       const g = normalizePosGroup(p?.position);
       if (g === "D") D += 1;
       else if (g === "G") F += 1; // (if you treat G separately later, adjust)
       else F += 1;
     }
-    const capUsed = myRoster.reduce((sum, p) => sum + (Number(p?.salary) || 0), 0);
+
+    // ✅ Match TeamRosterPanel: totalCap(team) includes IR + retention/buyouts internally (per your leagueUtils)
+    const capUsed = myTeam ? totalCap(myTeam) : 0;
+
     return { F, D, rosterSize: myRoster.length, capUsed };
-  }, [myRoster]);
+  }, [myRoster, myTeam]);
+
+  const capUsedTotal = Number(myCounts.capUsed || 0);
 
   const capSpace = Math.max(0, (Number(capLimit) || 0) - (myCounts.capUsed || 0));
+
+
 
   /* =========================================================
      Player lookup helpers (for auctions + row building)
@@ -1479,7 +1494,7 @@ gap: 6,
             </div>
 
             <div>
-              Cap Used: <strong style={{ color: TEXT }}>${myCounts.capUsed}</strong> · Cap Space:{" "}
+              Cap Used: <strong style={{ color: TEXT }}>${capUsedTotal}</strong> · Cap Space:{" "}
               <strong style={{ color: TEXT }}>${capSpace}</strong>
             </div>
           </div>
