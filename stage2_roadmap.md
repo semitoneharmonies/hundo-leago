@@ -181,6 +181,65 @@ Picks are tradeable assets
 
 Draft feels like a league moment
 
+Phase 5.5 — Annual Free Agent Draft System
+
+Goal:
+Establish contracts and rosters for the upcoming season through a structured, high-stakes pre-season event.
+
+Why this phase exists
+Blind in-season auctions only work if contracts are established deliberately.
+This phase creates the annual contract reset moment that defines each season’s competitive landscape.
+
+Scope
+
+Free Agent Draft page (pre-season only)
+
+Player eligibility rules (age 20+)
+
+Private Player Card submission per team:
+
+player
+
+salary
+
+term
+
+Editable until Free Agent Draft start
+
+Simultaneous lock and system-wide evaluation
+
+Automatic assignment for uncontested players
+
+Live (non-blind) tie-breaker auctions
+
+Open (non-blind) auctions to complete rosters
+
+Archive Free Agent Draft results as read-only once complete
+
+Explicit Non-Scope
+
+In-season free agent logic
+
+Blind auction changes
+
+Video generation (optional future enhancement)
+
+Success Criteria
+
+Contracts are reproducible and auditable
+
+No commissioner intervention required
+
+Managers feel the Free Agent Draft is:
+
+fair
+
+tense
+
+memorable
+
+System cleanly transitions into the regular season
+
 Phase 6 — League Identity & Transparency
 
 Goal: Make the league feel real
