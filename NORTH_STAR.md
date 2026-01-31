@@ -1,260 +1,214 @@
-Hundo Leago — North Star
-Purpose (What this app is)
+Hundo Leago — North Star (Revised)
+Overview
 
-Hundo Leago is a fantasy hockey league website designed to support leagues with a custom, salary-cap–driven rule set. It combines salary-cap management, blind auctions, trades, and (eventually) scoring and matchups into a single platform that makes the league possible within the structure it defines.
+Hundo Leago is a contract-driven fantasy hockey platform focused on realism, league integrity, and long-term decision-making.
 
-Long-Term Vision (Where this ends up)
+Product development is divided into Stages (product truth) and Phases (engineering execution).
+Stages are respected boundaries; leagues do not partially transition between them.
 
-By the start of the 2026–27 NHL season, Hundo Leago will function as a stand-alone fantasy league platform, rather than a third-party cap tracker, auction host, and trade tool.
+Stage 1 — Cap & League Management Platform (Live)
 
-Final Vision Includes
-Player & Stats System
+Status: Active
 
-Centralized player database
+Definition
 
-Daily stat updates
+Hundo Leago operates as a companion platform alongside a third-party fantasy provider.
+It is the source of truth for all league rules, contracts, and roster legality.
 
-Commissioner-configurable scoring
+Responsibilities
 
-Which stats are tracked
+Salary cap enforcement
 
-How much each stat is worth
+Multi-year contracts
 
-Player stats only count for the period in which a player is on a team’s active lineup
+Blind free-agent auctions
 
-Competition Structure
+Trades (including retention)
 
-Weekly head-to-head matchups
+Buyouts
 
-League standings
+Commissioner tools
+
+League history & audit trail
+
+Explicit Non-Responsibilities
+
+Scoring
+
+Matchups
+
+Standings
+
+Drafts
 
 Playoffs
 
-Roster, Contracts & Player States (Future Seasons)
+Primary Goal
 
-Hundo Leago supports multiple player states, each with explicit rules and cap implications.
+Run a full live season without:
 
-Active Roster
+data loss
 
-15 active players
+exploits
 
-Must fit under the salary cap
+commissioner intervention
 
-Only active players accumulate weekly stats
+Design Priorities
 
-Players earning more than $5 must always remain active
+Stability over features
 
-Inactive Roster
+Explicit rules over flexibility
 
-Up to 6 inactive players
+No mid-season rule changes
 
-Players retain their salary, but do not count against the cap
+No unexpected resets
 
-Used for weekly matchup management
+Stage 2 — Standalone Fantasy Platform (26/27 Season)
 
-Players may be moved between active and inactive before lineup lock
+Status: In Development
 
-Players earning more than $5 cannot be made inactive
+Stage 2 begins with a full league reset.
 
-Injured Reserve (IR)
+Definition
 
-For injured players only
+Hundo Leago runs an entire fantasy season end-to-end with no external dependencies.
 
-IR players do not count against the salary cap
+Core Systems
+League Setup (Pre-Season Only)
 
-IR functionality exists in both operating modes
+Commissioner defines league rules before the season starts.
+Once the season begins, these settings are locked.
 
-Prospects
+Includes:
 
-Prospects are unsigned players
+Roster size
 
-Do not count toward roster size or salary cap
+Salary cap
 
-No limit on number of prospects per team
+Contract year cap
 
-Acquired through the end-of-season entry draft
+Contract model:
 
-May remain unsigned for up to 2 seasons
+Flat
 
-If unsigned after 2 seasons, the prospect becomes a free agent
+Escalator
 
-When signed, prospects receive an Entry Level Contract (ELC):
+Front/Back-load (with constraints)
 
-$1 salary
+Scoring weights
 
-3-year duration
+Optional rule toggles
 
-Contracts & Cap Structure
+Contracts & Cap
 
-Multi-year contracts (1–3 years)
+1–3 year contracts
 
-Cap on total contract years held by a team
+League-wide cap on total contract years
 
-Buyouts with fixed penalties
+Salary retention rules
 
-Salary retention rules enforced on trades
+Buyouts with penalties and decay
 
-Draft & League Lifecycle
+Optional performance bonuses
 
-End-of-season entry draft
+Rosters & Lineups
 
-3 rounds per draft (1st, 2nd, 3rd round picks)
+Active roster
 
-Draft picks are tradable
+Inactive roster (salary-limited)
 
-Lottery for non-playoff teams, weighted by finish
+Weekly lineup management
 
-Lottery and draft run directly through the site
+Roster locks at Monday 4:00 PM PT
 
-Platform & UX
+Late lock risk (optional)
 
-Secure login
+Scoring & Matchups
 
-Mobile support
+Daily stat ingestion
 
-Operating Modes (Important)
-Mode A — Cap Tracker Mode (Current Season)
+Weekly head-to-head matchups
 
-Used for the current test season.
+Standings
 
-Purpose
+Playoffs
 
-Track salary-cap compliance
+Entry Draft
 
-Host blind auctions
+Annual 3-round entry draft
 
-Host trades and buyouts
+Draft order determined by standings + lottery
 
-Provide commissioner tools
+Picks tradeable up to 5 seasons out
 
-Maintain league activity history
+Drafted players held as rights
 
-Scoring and matchups are handled externally (e.g. Fantrax).
+Optional ELC signing
 
-Priority
+Optional League Systems (Pre-Season Toggle)
 
-Stability
+Performance bonuses
 
-Simplicity
+Retained salary decay
 
-Reliability
+Buyout decay
 
-Mode B — Full Fantasy Mode (Future Seasons)
+Fatigue
 
-Used starting with the 2026–27 season, following a full league reset.
+Late lock risk
 
-Purpose
+Hot / cold streaks
 
-Full fantasy league experience
+Rivalries
 
-Internal scoring, matchups, standings, drafts, and playoffs
+UX & Identity
 
-Weekly lineup management using active/inactive rosters
+CapFriendly-style league overview
 
-Automation by default, with commissioner override tools
+Team branding (logo + stripe system)
 
-Core League Rules (Stable)
+Clear commissioner vs manager permissions
 
-Salary cap limit: 100
+Primary Goal
 
-Max active roster size: 15
+Run a complete fantasy season entirely inside Hundo Leago without emergency intervention.
 
-Inactive roster size: 6
+Design Priorities
 
-Minimum forwards: 8
+Correctness over convenience
 
-Minimum defensemen: 4
+Automation by default
 
-Buyout penalty: 25%
+Commissioner power with transparency
 
-Trades allowed: anytime
+Fun emerges from rules, not chaos
 
-Auctions resolve: Sunday (time TBD)
+Stage 3 — Platform Expansion (Future)
 
-Lineups lock: Monday, 4:00 PM PT
+Deferred until Stage 2 proves stable
 
-If a rule changes, it should be updated here.
+Includes:
 
-Definitions (Canonical Meanings)
+Multi-league support
 
-Roster: All players owned by a team (active, inactive, IR, prospects)
+Admin UI
 
-Active Lineup: Players accumulating points in a given week
+League creation & onboarding
 
-Week: Monday 00:00 PT → Sunday 23:59 PT
+Monetization
 
-Lineup Lock: Time after which lineup changes do not affect that week’s scoring
+Community features
 
-Data & Source of Truth
+Mobile app
 
-The backend is the single source of truth
+Guiding Principles (Unchanged, Reinforced)
 
-The frontend reflects backend state
+Active seasons are sacred
 
-League state must persist across restarts
+Rules are chosen once, then enforced
 
-League data may reset only at season boundaries
+Product stages are explicit
 
-Non-Goals (For Now)
+Risky work happens behind flags
 
-No multi-league support
-
-No public sign-ups
-
-No monetization
-
-No playoffs until Full Fantasy Mode
-
-No mobile app until core fantasy features are stable
-
-Roadmap (High Level)
-
-Phase 0: Cap tracker, auctions, trades (current)
-
-Phase 1: Persistent database & cleanup
-
-Phase 2: Player database & stat ingestion
-
-Phase 3: Matchups, lineup locks, standings
-
-Phase 4: Playoffs, secure authentication, mobile support
-
-Guiding Principles
-
-Stability over features during active seasons
-
-Risky features are developed behind flags or in staging
-
-Rules are explicit and documented
-
-Production leagues should never reset unexpectedly
-
-Long-Term Expansion (Future Vision)
-
-Beyond the initial single-league implementation, Hundo Leago may evolve into a multi-league platform.
-
-This will only be considered after:
-
-Full Fantasy Mode is stable
-
-Core features are proven in real league use
-
-Reliability, performance, and usability meet production standards
-
-Why this works
-
-Your weekly matchup logic is now crystal clear
-
-Cap strategy becomes interesting without breaking realism
-
-Prospects + ELCs create long-term planning and dynasty feel
-
-Nothing here conflicts with your current Phase 0 build
-
-If you want, next we can:
-
-Turn this into a rules page UI spec
-
-Map these concepts directly to backend data models
-
-Define illegal states (e.g. cap violations, invalid lineup swaps)
+No silent behavior changes
