@@ -1,0 +1,1303 @@
+# Hundo Leago - Deployment
+
+## Document Status
+
+`APPROVED`
+
+This technical specification defines:
+
+* how frontend and backend changes move from focused work through staging to production;
+* branch, CI, build, publish, database, maintenance, health, smoke, and rollback gates;
+* safe coordination between Netlify, Render, SQLite, API compatibility, Socket.IO, jobs, email, and backups;
+* release evidence, authority, failure handling, and emergency deployment boundaries;
+* technical deployment decisions delegated to and resolved by Codex from the approved project requirements.
+
+Grae delegated the deployment decisions and approved adoption of the resulting design on 2026-07-18.
+
+---
+
+## Technical Purpose
+
+Hundo Leago uses:
+
+```text
+Frontend: React + Vite on Netlify
+Backend:  Node.js + Express + Socket.IO on Render
+Storage:  SQLite on one Render persistent disk
+```
+
+The frontend and backend live in separate repositories and may need to change together.
+
+A successful build is not enough to prove a safe release. A deployment must also preserve:
+
+* frontend/backend contract compatibility;
+* SQLite schema and data compatibility;
+* one authoritative store;
+* exact environment isolation;
+* secure cookies, CORS, CSRF, and Socket.IO;
+* scheduled-job and outbox idempotency;
+* backup and recovery;
+* production authority.
+
+This document defines that controlled path.
+
+---
+
+## Out of Scope
+
+This specification does not:
+
+* deploy either repository;
+* merge, commit, or push a branch;
+* create Netlify or Render resources;
+* change an environment variable or secret;
+* migrate, reset, restore, reseed, or overwrite production data;
+* grant production authority;
+* replace the Release Checklist or Manual QA Checklist;
+* replace feature-specific implementation plans;
+* make a code rollback equivalent to a database rollback.
+
+Every real deployment still requires a contained release plan and the applicable checklist.
+
+---
+
+# Part 1 - Authority and Required Documents
+
+## Required Reading
+
+```text
+AGENTS.md
+../hundo-leago-backend/AGENTS.md
+docs/README.md
+docs/01-project/CURRENT_STATE.md
+docs/01-project/PROJECT_SCOPE.md
+docs/01-project/OPERATING_MODE.md
+docs/04-technical-specs/ARCHITECTURE.md
+docs/04-technical-specs/API_CONTRACTS.md
+docs/04-technical-specs/SECURITY.md
+docs/04-technical-specs/SQLITE_MIGRATION.md
+docs/04-technical-specs/FRONTEND_STRUCTURE.md
+docs/04-technical-specs/ENVIRONMENT_SETUP.md
+docs/07-testing/TESTING_STRATEGY.md
+docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md
+docs/08-operations/BACKUP_AND_RESTORE.md
+```
+
+The approved `MANUAL_QA_CHECKLIST.md` and `RELEASE_CHECKLIST.md` become mandatory execution records when their roadmap gates are reached.
+
+Environment Setup owns environment topology and configuration names. SQLite Migration owns schema and JSON-to-SQLite cutover. Backup and Restore owns recovery artifacts. API Contracts owns compatibility. This document owns release movement and ordering.
+
+---
+
+## Operating Mode
+
+Reviewed mode:
+
+```text
+OFFSEASON_RESET
+```
+
+Local and staging deployment work may be planned and performed when requested.
+
+Production changes require explicit production authority even while the league is in an off-season reset.
+
+---
+
+## Production Authority
+
+Grae provides the explicit approval to deploy production.
+
+The operator may prepare:
+
+* a release candidate;
+* staging deployments;
+* test evidence;
+* a release record;
+* exact production commands;
+* rollback commands.
+
+Preparation is not production authority.
+
+The operator stops before the first production-changing action unless Grae has explicitly authorized that release.
+
+---
+
+# Part 2 - Reviewed Current State
+
+## Repositories and Branches
+
+```text
+Frontend and docs repository: hundo-leago
+Current docs branch:          docs/summer-2026-foundation
+
+Backend repository:           hundo-leago-backend
+Current refactor branch:      stage2
+
+Target production branch:     main in each repository
+Target staging branch:        staging in each repository
+```
+
+`stage2` and `docs/summer-2026-foundation` are work branches. They do not deploy production merely because their changes are ready locally.
+
+---
+
+## Current Package Commands
+
+Reviewed frontend commands:
+
+```powershell
+npm run dev
+npm run build
+npm run lint
+npm run preview
+```
+
+Reviewed backend commands:
+
+```powershell
+npm start
+npm run dev
+npm test
+npm run test:characterization
+npm run check
+```
+
+The approved Testing Strategy adds focused frontend, backend, and browser commands as implementation proceeds.
+
+---
+
+## Current Configuration Gaps
+
+At review time, the copied repository manifests did not include:
+
+```text
+.node-version
+netlify.toml
+render.yaml
+```
+
+The approved Environment Setup requires Node `24.14.1` and explicit deployment configuration.
+
+Those files are introduced through focused implementation plans. This document does not create them.
+
+---
+
+# Part 3 - Deployment Environments
+
+## Environment Mapping
+
+| Environment | Frontend | Backend | Data | Deployment source |
+| --- | --- | --- | --- | --- |
+| Local | Vite dev server | Local Node process | Disposable local data | Current focused branch |
+| Test | Test runner or Playwright server | Test child process | Unique temporary data | Checked-out commit |
+| Staging | Dedicated Netlify staging site | Dedicated Render staging service | Staging-only disk and SQLite | `staging` |
+| Production | Dedicated Netlify production site | Dedicated Render production service | Production-only disk and SQLite | `main` |
+
+Staging and production share no mutable resource or secret.
+
+---
+
+## Deployment Context Policy
+
+Netlify:
+
+* production site uses `main`;
+* staging site uses `staging`;
+* deploy previews may build focused branches;
+* preview origins receive no backend access automatically.
+
+Render:
+
+* production service is linked to backend `main`;
+* staging service is linked to backend `staging`;
+* the production service remains one instance while SQLite and its disk are authoritative;
+* each service has its own persistent disk and environment group or variables.
+
+---
+
+# Part 4 - Build and Publish Policy
+
+## Reproducible Inputs
+
+Every release identifies:
+
+```text
+frontend commit SHA
+frontend lockfile SHA-256
+backend commit SHA
+backend lockfile SHA-256
+Node version
+build commands
+schema version
+migration checksum-set ID
+frontend environment identity
+backend environment identity
+```
+
+Uncommitted files are not deployment inputs.
+
+An unrelated dirty working tree blocks creation of a release commit until its scope is separated.
+
+---
+
+## Dependency Installation
+
+Hosted builds and CI use:
+
+```powershell
+npm ci
+```
+
+`npm install` is not a release command.
+
+A changed lockfile is reviewed, tested, and recorded.
+
+---
+
+## Frontend Build
+
+Target Netlify build:
+
+```powershell
+npm ci
+npm run build
+```
+
+Publish directory:
+
+```text
+dist
+```
+
+Required pre-publish checks:
+
+```powershell
+npm run lint
+npm test
+npm run build
+```
+
+When the focused Playwright gate applies:
+
+```powershell
+npm run test:e2e
+```
+
+The production build requires the approved `VITE_` configuration and embeds no secret.
+
+---
+
+## Backend Build and Start
+
+Target Render build:
+
+```powershell
+npm ci
+npm run check
+npm test
+```
+
+Target start:
+
+```powershell
+npm start
+```
+
+The build phase does not:
+
+* open the persistent SQLite database;
+* run a migration;
+* import JSON;
+* create a backup;
+* execute scheduled jobs;
+* send email;
+* change league data.
+
+Render persistent disks are runtime-only, so disk operations belong to the controlled runtime maintenance procedure.
+
+---
+
+## Infrastructure Configuration
+
+Target committed safe configuration:
+
+```text
+hundo-leago/netlify.toml
+hundo-leago/.node-version
+hundo-leago-backend/render.yaml
+hundo-leago-backend/.node-version
+```
+
+`netlify.toml` owns:
+
+* build and publish paths;
+* SPA redirects;
+* safe security headers;
+* non-secret context configuration.
+
+`render.yaml` may own:
+
+* service runtime;
+* build and start commands;
+* health-check path;
+* disk mount declaration;
+* secret placeholders;
+* safe non-secret environment names.
+
+The existing Render service is not placed under Blueprint control until a staging comparison proves that applying the Blueprint will not replace, detach, resize, or misconfigure the production disk or service.
+
+Secret values remain in managed provider configuration.
+
+---
+
+# Part 5 - Continuous Integration
+
+## Pull-Request Gate
+
+Affected repositories must pass the Testing Strategy gate before merge.
+
+Frontend gate:
+
+```text
+clean install
+lint
+unit/component tests
+production build
+focused browser tests when applicable
+documentation checks when docs change
+```
+
+Backend gate:
+
+```text
+clean install
+syntax check
+unit tests
+characterization tests when compatibility behavior is touched
+repository/service/contract/integration tests when applicable
+migration and recovery tests when applicable
+documentation checks when docs change
+```
+
+Required checks may not be bypassed with a successful manual click-through.
+
+---
+
+## Staging Auto-Deployment
+
+Target staging behavior:
+
+* Render deploys the `staging` branch only after CI checks pass;
+* Netlify builds and publishes the dedicated staging site's `staging` branch;
+* a failed build does not replace the last successful staging release;
+* staging smoke begins only after both expected commit SHAs are live.
+
+If either repository is intentionally unchanged, the release record identifies the existing compatible staging commit.
+
+---
+
+## Production Manual Publication
+
+Production is not published automatically from an ordinary merge.
+
+Approved controls:
+
+* Render production auto-deploy is `Off`;
+* Render deploys one explicitly selected backend commit SHA;
+* Netlify production auto-publishing is locked during release preparation;
+* Netlify builds the production branch, then an operator publishes the exact approved deploy;
+* production is unlocked only when the release policy deliberately permits later publishing.
+
+This prevents an unrelated later commit from replacing a selected release or rollback.
+
+---
+
+# Part 6 - Release Types
+
+## D0 - Documentation Only
+
+Applies when only documentation changes and no hosted build input, environment, or runtime behavior changes.
+
+Requirements:
+
+* documentation validation;
+* repository review;
+* normal merge process.
+
+No Netlify or Render deployment is required.
+
+---
+
+## D1 - Frontend Only
+
+Applies when:
+
+* backend contract is unchanged or already supports the new frontend;
+* no backend environment or schema change exists.
+
+Order:
+
+1. verify against current and target backend;
+2. stage frontend;
+3. run frontend and browser gates;
+4. publish frontend;
+5. run read-only smoke.
+
+---
+
+## D2 - Backend Only, No Schema Change
+
+Applies when:
+
+* frontend remains compatible;
+* SQLite schema and data format are unchanged.
+
+Order:
+
+1. stage backend;
+2. run contract and integration gates;
+3. create the required fresh backup;
+4. deploy backend;
+5. verify readiness and compatibility;
+6. run read-only smoke.
+
+---
+
+## D3 - Additive API or Schema Change
+
+Preferred cross-repository release shape:
+
+```text
+expand backend/schema -> deploy compatible backend -> deploy frontend
+-> observe -> retire old contract in a later release
+```
+
+The expansion must remain compatible with the currently published frontend.
+
+Schema cleanup, column removal, endpoint removal, or changed response meaning does not occur in the same release.
+
+---
+
+## D4 - Data Migration or Authority Change
+
+Applies to:
+
+* JSON-to-SQLite cutover;
+* destructive or transforming schema migration;
+* bulk import;
+* season reset;
+* authority transfer between stores.
+
+This release requires:
+
+* explicit maintenance window;
+* current verified backup;
+* staging rehearsal;
+* deterministic migration plan and report;
+* separate production authority;
+* write freeze and paused jobs;
+* first-write rollback boundary;
+* post-migration backup.
+
+The exact JSON-to-SQLite sequence remains owned by `SQLITE_MIGRATION.md`.
+
+---
+
+## D5 - Emergency Code Release
+
+An emergency release repairs a current production incident with the smallest verified change.
+
+It still requires:
+
+* incident ID;
+* exact commits and diff;
+* focused automated test;
+* staging or equivalent isolated reproduction when technically possible;
+* current backup when data risk exists;
+* explicit production authority;
+* smoke and rollback evidence.
+
+Emergency does not authorize:
+
+* unrelated cleanup;
+* hidden data repair;
+* skipped identity or league-isolation checks;
+* destructive Git commands;
+* an unverified database restore.
+
+---
+
+# Part 7 - Compatibility and Release Ordering
+
+## Backend Expansion First
+
+When both repositories change, the normal order is:
+
+1. additive database migration when required and compatible;
+2. backward-compatible backend expansion;
+3. frontend cutover;
+4. observation period;
+5. backend compatibility retirement in a later focused release.
+
+The old frontend must remain usable after step 2.
+
+The new frontend must be able to report a clear compatibility error rather than corrupt state if it reaches an unexpected backend.
+
+---
+
+## API Compatibility
+
+Before a target endpoint replaces a compatibility endpoint:
+
+* current behavior is characterized;
+* target contract tests pass;
+* frontend uses the target endpoint;
+* Socket.IO invalidation refetches the target resource;
+* staging has compatibility fallback disabled;
+* no remaining caller uses the old write;
+* rollback ordering is recorded.
+
+`POST /api/league` remains until every ordinary broad-write caller is gone.
+
+---
+
+## Build Compatibility
+
+The frontend and backend expose safe build identifiers.
+
+The release record defines:
+
+```text
+minimum supported frontend build
+maximum tested frontend build
+minimum supported backend build
+maximum tested backend build
+API contract version
+schema version
+```
+
+Normal requests do not fail solely because build IDs differ when the contract is compatible.
+
+---
+
+## Long-Lived Browsers
+
+Netlify publishing is atomic, but an already open browser may continue running an older JavaScript bundle.
+
+Therefore:
+
+* backend expansion remains compatible with at least the immediately previous published frontend;
+* removed capabilities return stable errors;
+* the frontend refetches after Socket.IO reconnect;
+* unrecoverable build skew shows a reload prompt;
+* a stale page cannot bypass server authorization or version checks.
+
+---
+
+# Part 8 - Database and Migration Deployment
+
+## No Automatic Migration
+
+The backend never applies SQLite migrations:
+
+* during `npm ci`;
+* during the Render build;
+* during ordinary startup;
+* during an HTTP read;
+* from a Netlify build;
+* from a scheduled feature job.
+
+Startup fails closed when the database migration ledger is incompatible.
+
+---
+
+## Migration Execution
+
+Production migration uses the approved runtime database path under an exclusive maintenance window.
+
+The migration command:
+
+```powershell
+npm run db:migrate -- --database <approved-database-path>
+```
+
+must:
+
+* validate `APP_ENV` and database identity;
+* verify the exact pending migration set and checksums;
+* require explicit production confirmation;
+* acquire the approved SQLite write lock;
+* run deterministically without a network call;
+* commit each approved migration according to SQLite Migration;
+* stop on any error;
+* produce an access-controlled report.
+
+The production work plan supplies the real path through managed configuration. It is not pasted into public logs or documentation.
+
+---
+
+## Persistent-Disk Constraint
+
+The Render disk:
+
+* is accessible only to the attached service at runtime;
+* is unavailable during build and pre-deploy commands;
+* is unavailable to a separate one-off job;
+* prevents multiple service instances;
+* causes a brief service interruption during deploy replacement.
+
+The deployment plan must account for that interruption.
+
+Migration is not moved into a pre-deploy command to make the release appear automatic.
+
+---
+
+## First-Write Boundary
+
+Before the first authoritative SQLite write after JSON cutover, rollback may reactivate the verified original authority under the SQLite Migration plan.
+
+After the first authoritative SQLite write:
+
+* do not switch back to stale JSON;
+* do not dual write;
+* use a forward correction or verified database restore;
+* reconcile external effects explicitly.
+
+The release record states when this boundary was crossed.
+
+---
+
+## Destructive Schema Changes
+
+Destructive cleanup is delayed until:
+
+* every deployed application version ignores the old field or table;
+* the immediately previous backend can safely run without it or is no longer an approved rollback;
+* the retention window has passed;
+* a verified backup exists;
+* staging rehearsal passes;
+* a separate release is approved.
+
+Expand and contract are never collapsed into one production deployment.
+
+---
+
+# Part 9 - Pre-Deployment Release Record
+
+## Release Identity
+
+Each release receives:
+
+```text
+HL-YYYYMMDD-N
+```
+
+where `N` is a sequence for that UTC date.
+
+The release ID is not derived from a league or team name.
+
+---
+
+## Required Record
+
+The release record contains:
+
+```text
+releaseId
+releaseType
+requestedBy
+approvedBy
+operator
+frontend commit and deploy ID
+backend commit and deploy ID
+Node version
+lockfile hashes
+environment identities
+schema version and migration checksum-set ID
+API contract version
+database ID suffix
+backup ID
+staging evidence
+automated test evidence
+manual QA evidence
+open known risks
+maintenance window
+deployment order
+smoke commands
+rollback commands
+first-write boundary
+startedAt
+completedAt
+outcome
+```
+
+Secret values and raw production data are excluded.
+
+---
+
+## Preflight
+
+Production preflight proves:
+
+* both worktrees and release commits are understood;
+* no unrelated change is included;
+* required CI checks passed on exact commits;
+* staging runs the intended commits;
+* staging environment identity is not production;
+* production environment-name inventory is complete;
+* Node, lockfiles, build commands, and start command match the plan;
+* API and schema compatibility are documented;
+* latest backup is verified and within the required RPO;
+* staging restore drill is current;
+* disk space is sufficient;
+* jobs, outbox, email, and statistics state are understood;
+* exact CORS, cookie, CSRF, and Socket.IO checks are prepared;
+* rollback is valid for the release type;
+* Grae's production approval is recorded.
+
+---
+
+# Part 10 - Staging Deployment Procedure
+
+## Procedure
+
+1. Record frontend and backend source commits.
+2. Confirm both repositories pass CI.
+3. Merge or promote the focused backend commit to `staging`.
+4. Wait for the Render staging deploy after CI.
+5. Verify backend build ID, environment identity, schema compatibility, liveness, and readiness.
+6. Run any approved staging migration explicitly.
+7. Merge or promote the focused frontend commit to `staging`.
+8. Wait for the Netlify staging deployment.
+9. Verify frontend build ID and configured backend origin.
+10. Run the Backend Endpoint Checklist for affected endpoints.
+11. Run deployed CORS, cookie, CSRF, Socket.IO, and two-league isolation tests.
+12. Run affected Playwright workflows.
+13. Run provider, email, job, and backup scenarios when applicable.
+14. Complete focused manual QA.
+15. Record deploy IDs, commands, results, and defects.
+
+Staging failure is fixed in a focused branch and redeployed. It is not accepted as a production exception without explicit risk review.
+
+---
+
+# Part 11 - Production Deployment Procedure
+
+## Phase A - Prepare
+
+1. Create the release record.
+2. Identify the release type.
+3. Confirm exact frontend and backend commits.
+4. Confirm staging evidence and required checklists.
+5. Confirm production configuration by variable name and version, not secret value.
+6. Confirm schema and API compatibility.
+7. Confirm the rollback path and first-write boundary.
+8. Verify the current encrypted offsite backup.
+9. Create a fresh pre-deploy backup when required.
+10. Lock Netlify auto-publishing.
+11. Confirm Render production auto-deploy is off.
+12. Obtain explicit production authority.
+
+---
+
+## Phase B - Enter Maintenance When Required
+
+Maintenance is required for:
+
+* JSON-to-SQLite cutover;
+* schema or data migration requiring exclusive access;
+* environment or disk changes;
+* restore;
+* bulk correction;
+* any release that cannot preserve write compatibility.
+
+Procedure:
+
+1. announce the approved window;
+2. enable Render maintenance mode;
+3. place application writes in maintenance state;
+4. pause jobs, auction resolution, email, and outbox dispatch;
+5. verify no in-flight mutation remains;
+6. create or reconfirm the pre-change backup;
+7. record the maintenance start.
+
+Netlify may show a release-specific maintenance page, but the backend remains authoritative for blocking writes.
+
+---
+
+## Phase C - Database Step
+
+When the release has no database change, record:
+
+```text
+No database migration required.
+```
+
+When it has a migration:
+
+1. run migration plan;
+2. compare planned IDs and checksums with the release record;
+3. run the approved migration;
+4. verify ledger, integrity, foreign keys, identity, and reconciliation;
+5. retain the report;
+6. stop on any discrepancy.
+
+Initial JSON-to-SQLite cutover follows its longer approved sequence instead.
+
+---
+
+## Phase D - Backend
+
+1. Trigger Render deployment of the exact approved backend commit.
+2. Confirm the intended commit and build log.
+3. Confirm the expected Node version and `npm ci`.
+4. Wait for the disk-backed service restart.
+5. Verify minimal liveness.
+6. Verify readiness, environment identity, build ID, schema version, and scheduler state.
+7. Keep writes and jobs closed until the smoke gate.
+8. Verify the old published frontend remains contract-compatible.
+
+Do not proceed to the frontend when backend readiness or compatibility fails.
+
+---
+
+## Phase E - Frontend
+
+1. Identify the exact successful Netlify deploy for the approved frontend commit.
+2. Confirm build environment and public configuration.
+3. Confirm no secret-like value appears in built assets or build logs.
+4. Publish that atomic deploy.
+5. Confirm the production domain serves the expected deploy ID.
+6. Confirm the frontend targets the approved backend origin.
+7. Confirm SPA navigation and static assets.
+
+---
+
+## Phase F - Smoke and Reopen
+
+While writes remain closed:
+
+* load frontend assets;
+* verify public liveness and readiness;
+* verify approved public metadata and public roster;
+* verify authenticated session bootstrap;
+* verify one representative authorized read per affected feature;
+* verify two-league denial;
+* verify Socket.IO authentication and room scope;
+* verify no private path, secret, or active bid is exposed;
+* verify read-only requests do not change domain state.
+
+Then:
+
+1. enable outbox and email deliberately;
+2. resume scheduled jobs with occurrence reconciliation;
+3. reopen writes;
+4. record the first authoritative post-release write;
+5. cross the first-write boundary only when accepted;
+6. disable maintenance mode;
+7. monitor errors, latency, jobs, backups, email, and Socket.IO;
+8. create and verify a post-migration backup when applicable;
+9. complete the release record.
+
+---
+
+# Part 12 - Health and Smoke Contracts
+
+## Public Health
+
+```text
+GET /api/v1/health/live
+GET /api/v1/health/ready
+```
+
+Public health contains no:
+
+* filesystem path;
+* database filename;
+* secret;
+* private league state;
+* raw error stack.
+
+Readiness checks the ability to serve safely, including database and schema compatibility.
+
+---
+
+## Authenticated Operations Health
+
+```text
+GET /api/v1/operations/health
+```
+
+The platform administrator verifies safe operational values:
+
+```text
+environment
+frontend and backend build IDs
+schema version
+database identity suffix
+scheduler state
+last verified backup
+last valid statistics refresh
+outbox health
+```
+
+---
+
+## Production Smoke Is Read-Only
+
+Automated production smoke does not:
+
+* create an account;
+* change a roster;
+* place a bid;
+* propose a trade;
+* execute a job;
+* send a real email;
+* create or restore a backup;
+* reset or repair data;
+* add fake activity.
+
+An authorized real-user action after launch is separate evidence.
+
+---
+
+# Part 13 - Rollback
+
+## Rollback Decision
+
+Rollback begins when:
+
+* backend readiness fails;
+* error rate or latency crosses the approved threshold;
+* authentication, authorization, or league isolation fails;
+* data reconciliation differs;
+* a migration checksum is unexpected;
+* jobs, auctions, matchups, email, or outbox duplicate;
+* the frontend cannot use the backend;
+* private information is exposed;
+* the release cannot be made safe within the approved window.
+
+---
+
+## Frontend Rollback
+
+Netlify rollback publishes the previously verified atomic deploy.
+
+Procedure:
+
+1. keep publishing locked;
+2. select the exact prior deploy ID from the release record;
+3. publish it;
+4. verify its backend compatibility;
+5. run read-only smoke;
+6. record the rollback.
+
+A later Git-triggered deploy must not overwrite the rollback automatically.
+
+---
+
+## Backend Rollback
+
+Render rollback selects the exact prior successful deploy or commit.
+
+Before rollback, verify that the prior backend can safely use:
+
+* the current environment configuration;
+* the current SQLite schema;
+* the current data;
+* the current frontend.
+
+The persistent disk is not rolled back with backend code.
+
+If schema or data is incompatible, use:
+
+* a forward corrective release; or
+* the approved Backup and Restore procedure.
+
+Do not blindly roll back code against a changed database.
+
+---
+
+## Configuration Rollback
+
+Configuration changes have their own before/after record.
+
+Code rollback is not assumed to restore:
+
+* current provider settings;
+* domain or DNS changes;
+* disk configuration;
+* environment-group linkage;
+* secret rotation;
+* CORS origins;
+* email mode.
+
+Restore configuration deliberately and redeploy or restart only as documented.
+
+---
+
+## Database Rollback
+
+Database rollback follows:
+
+* SQLite Migration before the first-write boundary; or
+* Backup and Restore after the first-write boundary.
+
+Never:
+
+* copy a live WAL database file casually;
+* restore a disk snapshot as the normal SQLite recovery;
+* reactivate stale JSON after new SQLite writes;
+* reverse a committed migration with improvised SQL;
+* erase the current failed state before preserving evidence.
+
+---
+
+# Part 14 - Socket.IO, Jobs, Email, and External Effects
+
+## Socket.IO
+
+Deployment may disconnect clients.
+
+The client must:
+
+* reconnect with the current session;
+* reauthorize room membership;
+* refetch authoritative HTTP data;
+* clean up old listeners;
+* show a reload prompt on unrecoverable build skew.
+
+No feature depends on uninterrupted Socket.IO delivery for correctness.
+
+---
+
+## Graceful Shutdown
+
+On `SIGTERM`, the backend:
+
+1. stops accepting new connections;
+2. marks readiness false;
+3. stops scheduling new work;
+4. allows in-flight HTTP mutations to finish within the approved timeout;
+5. releases or expires job leases safely;
+6. flushes committed operational logs;
+7. closes Socket.IO and SQLite;
+8. exits.
+
+Forced termination must not produce a partially committed transaction.
+
+---
+
+## Scheduled Jobs
+
+After deploy:
+
+* durable occurrence IDs remain unchanged;
+* a restarted scheduler does not repeat completed work;
+* stale leases are recovered deliberately;
+* missed occurrences are evaluated once;
+* auction and matchup jobs do not resolve twice;
+* schedule enablement matches the environment.
+
+---
+
+## Email and Outbox
+
+During a maintenance release:
+
+* dispatch pauses before data migration;
+* committed outbox records remain durable;
+* restart resumes eligible records idempotently;
+* no account or league email is generated merely by deployment;
+* staging never sends unrestricted production email.
+
+Provider delivery evidence is used when a retry outcome is ambiguous.
+
+---
+
+# Part 15 - Security and Secret Changes
+
+## Secret Rotation
+
+Secret rotation is a release operation when it affects runtime behavior.
+
+The plan defines:
+
+* old and new version identifiers;
+* dual-read window when required;
+* activation order;
+* session or token revocation;
+* backup-key retention;
+* rollback limitations.
+
+Secret values never appear in the release record.
+
+---
+
+## Browser Security
+
+Staging and production deployment verification proves:
+
+* exact credentialed CORS;
+* expected Origin rejection;
+* secure session-cookie attributes;
+* CSRF enforcement;
+* security headers and CSP;
+* no sensitive data in URLs;
+* no private caching;
+* no debug routes in production.
+
+---
+
+# Part 16 - Monitoring
+
+## Release Watch
+
+Minimum monitored signals:
+
+* HTTP error rate and latency;
+* process restarts;
+* readiness;
+* SQLite busy and transaction failures;
+* disk use;
+* failed login and rate-limit anomalies;
+* Socket.IO connections and authorization failures;
+* scheduled job delay, overlap, and failure;
+* outbox backlog and email failures;
+* NHL refresh status;
+* backup age and failures.
+
+---
+
+## Observation Window
+
+A production release remains under active observation for at least:
+
+```text
+60 minutes
+```
+
+and through the next affected scheduled-job boundary when the release changes jobs, auctions, matchups, rollover, or backups.
+
+The release may be technically complete while its extended job observation remains an owned follow-up.
+
+---
+
+# Part 17 - Failed Deployments
+
+## Build Failure
+
+When a build fails:
+
+* do not retry with changed commands without a new reviewed plan;
+* preserve logs;
+* determine whether source, lockfile, runtime, configuration, or provider state caused it;
+* fix on a focused branch;
+* rerun CI and staging.
+
+---
+
+## Partial Cross-Repository Release
+
+If backend succeeds but frontend fails:
+
+* keep the backward-compatible backend;
+* do not remove old endpoints;
+* repair and republish the frontend or roll back the backend if schema-compatible.
+
+If frontend publishes but backend fails:
+
+* immediately republish the previous frontend unless the new frontend safely handles the old backend;
+* keep writes closed when behavior is uncertain.
+
+---
+
+## Stop Conditions
+
+Deployment stops when:
+
+* production authority is missing;
+* exact commits or deploy IDs are ambiguous;
+* required CI or staging evidence is missing;
+* staging and production resource isolation cannot be proved;
+* the latest backup is outside the required RPO;
+* restore rehearsal is missing for a data-risking release;
+* migration checksums differ;
+* schema compatibility is unknown;
+* unrelated changes are included;
+* secret-like data appears in source, logs, or browser assets;
+* maintenance cannot block writes;
+* job or outbox duplication cannot be prevented;
+* rollback is invalid and no forward-recovery plan exists;
+* production smoke would require disposable writes.
+
+The operator reports the blocker. They do not weaken the gate.
+
+---
+
+# Part 18 - Completion Criteria
+
+A deployment is complete when:
+
+* exact frontend and backend commits and deploy IDs are recorded;
+* the expected Node, lockfiles, configuration identities, API, and schema are live;
+* required migrations and reconciliation pass;
+* frontend and backend compatibility passes;
+* CORS, cookies, CSRF, Socket.IO, and league isolation pass;
+* read-only production smoke passes;
+* jobs, outbox, email, NHL refresh, disk, and backups are healthy;
+* maintenance is disabled only after the reopen gate;
+* the first-write boundary is recorded when applicable;
+* rollback remains documented;
+* the observation window has an owner;
+* no unexplained data change occurred;
+* the release record is complete.
+
+---
+
+# External Platform References
+
+Current provider behavior must be re-checked at release time:
+
+* [Render deploys](https://render.com/docs/deploys)
+* [Render health checks](https://render.com/docs/health-checks)
+* [Render maintenance mode](https://render.com/docs/maintenance-mode)
+* [Render rollbacks](https://render.com/docs/rollbacks)
+* [Render persistent disks](https://render.com/docs/disks)
+* [Netlify deploy overview and contexts](https://docs.netlify.com/deploy/deploy-overview/)
+* [Netlify deploy management, locks, and rollbacks](https://docs.netlify.com/deploy/manage-deploys/manage-deploys-overview/)
+
+Provider capability does not override Hundo Leago's release authority or database safeguards.
+
+---
+
+# Verification
+
+Documentation verification:
+
+```powershell
+Get-Content docs/04-technical-specs/DEPLOYMENT.md
+Select-String -Path docs/04-technical-specs/DEPLOYMENT.md -Pattern '^`APPROVED`$','Production Manual Publication','No Automatic Migration','First-Write Boundary','Production Deployment Procedure','Backend Rollback'
+```
+
+Future release-candidate verification:
+
+```powershell
+# Frontend repository
+npm ci
+npm run lint
+npm test
+npm run build
+
+# Backend repository
+npm ci
+npm run check
+npm test
+```
+
+Expected:
+
+* checks run against the exact recorded commits;
+* staging uses separate resources;
+* no production mutation occurs without explicit authority;
+* documentation-only creation of this specification deploys nothing.

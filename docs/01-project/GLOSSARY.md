@@ -319,7 +319,8 @@ Examples include:
 * roster limits;
 * scoring weights;
 * matchup schedule;
-* contract-year limits;
+* permitted contract lengths;
+* salary and bid precision;
 * enabled rule options.
 
 League settings must not silently change during an active season.
@@ -387,17 +388,32 @@ The approved data model will determine the exact relationship.
 
 A league-specific asset giving a team controlled rights to a player without necessarily placing that player on the active roster.
 
-Player rights may apply to drafted prospects or other approved categories.
+Drafted-prospect rights are tradeable assets.
 
-The exact rules must be defined before implementation.
+When prospect rights are traded, the receiving team holds the player in its prospect roster rather than converting the player into a normal roster player.
 
 ## Prospect
 
-A player treated under the league’s approved prospect rules.
+A player drafted into a Hundo Leago prospect roster, or acquired by trading for prospect rights from a team that already held the player as a prospect.
 
 A prospect is not simply any young player.
 
-Prospect eligibility, roster treatment, rights, salary, and contract rules must be defined in the roster or draft specification.
+Prospect-roster slots are unlimited.
+
+A prospect:
+
+* has no fantasy salary before signing;
+* does not count against the cap;
+* does not collect matchup points;
+* may be traded as a player-rights asset.
+
+The approved fantasy ELC is `$3` over three years for `$1 AAV`.
+
+A real-life entry-level-contract signing is the intended trigger for the manager’s fantasy signing option. Automatic detection and enforcement of that trigger are deferred to a future update.
+
+A signed prospect may remain in the Prospect category with the ELC salary excluded from the cap. Once moved to Active or Bench, the player may not return to Prospects.
+
+Declining the fantasy ELC or voluntarily releasing unsigned rights makes the rights unowned. The player may re-enter the Entry Draft only when drafted in the immediately preceding year.
 
 ---
 
@@ -407,7 +423,7 @@ Prospect eligibility, roster treatment, rights, salary, and contract rules must 
 
 All players and player rights currently connected to a team under the approved league rules.
 
-Depending on the approved roster model, the roster may include:
+The Season 2 roster may include:
 
 * active players;
 * inactive players;
@@ -417,34 +433,37 @@ Depending on the approved roster model, the roster may include:
 
 ## Active Roster
 
-Players occupying active roster positions.
+Players occupying one of the team’s 18 active roster slots.
 
-The active roster may determine:
+The active roster contains:
 
-* roster legality;
-* positional minimums;
-* matchup eligibility;
-* salary treatment.
+* 12 forward slots;
+* 6 defence slots;
+* no goalie slots.
 
-The exact scoring relationship must be defined in the Matchups specification.
+Empty active slots are permitted.
+
+Only active-roster players are eligible to collect matchup points. Their average annual values count against the salary cap.
 
 ## Active Lineup
 
-The players eligible to accumulate fantasy points for a particular matchup period.
+The legal, locked active-roster players eligible to accumulate fantasy points for a particular matchup period.
 
-The active lineup may be the same as the active roster or may be a selected subset, depending on the approved rules.
-
-The terms must not be treated as interchangeable unless the product specification explicitly says they are.
+For Season 2, the active lineup is derived from the active roster. Benched, injured-reserve, and prospect players are not part of the active lineup.
 
 ## Inactive Roster
 
-An approved roster category for players owned by a team but not currently occupying an active roster position.
+A four-slot roster category for owned forwards or defence players not occupying active roster positions.
 
-This category is not considered implemented until its limits, salary treatment, movement rules, and matchup effects are approved.
+A player may be benched only when the player’s average annual value is `$4.00` or less.
+
+Benched players keep their contracts but their salaries do not count against the cap and they do not collect matchup points.
+
+Inactive roster and bench refer to the same Season 2 roster category unless a future approved rule deliberately separates them.
 
 ## Injured Reserve
 
-A roster category for players meeting the approved injured-reserve eligibility rules.
+A four-slot roster category for players meeting the approved injured-reserve eligibility rules.
 
 Injured reserve may be abbreviated as:
 
@@ -452,7 +471,11 @@ Injured reserve may be abbreviated as:
 IR
 ```
 
-The exact eligibility and salary treatment belong in the Roster specification.
+Injured-reserve player salary does not count against the cap.
+
+Initial eligibility is selected manually for a player unavailable through injury or illness. Imported NHL eligibility, automatic rechecks, and automatic warnings are future updates.
+
+Movement between Bench and Injured Reserve passes through Active.
 
 ## Roster Assignment
 
@@ -475,27 +498,39 @@ Whether a team’s roster satisfies all applicable league requirements.
 Requirements may include:
 
 * maximum roster size;
-* positional minimums;
+* forward and defence slot limits;
+* the prohibition on goalies;
+* bench size and salary eligibility;
 * salary cap;
 * contract rules;
 * injured-reserve rules;
 * lineup requirements.
 
-## Positional Minimum
+## Position Slot Limit
 
-The minimum number of players from a position group required for a legal roster or lineup.
+The maximum number of active roster slots available to one position group.
+
+Hundo Leago permits up to 12 active forwards and up to 6 active defence players. Empty slots are permitted, but the position groups are not interchangeable.
 
 ## Position Group
 
 The Hundo Leago category used for roster and scoring rules.
 
-Current general position groups include:
+Hundo Leago position groups are:
 
 * forward;
-* defence;
-* goalie.
+* defence.
 
-Exact source positions may be normalized into these groups.
+Source positions normalize as follows:
+
+```text
+C, LW, RW → F
+LD, RD → D
+```
+
+Hundo Leago has no forward-and-defence dual-position players.
+
+Hundo Leago does not roster goalies.
 
 ---
 
@@ -510,7 +545,8 @@ A contract may include:
 * league ID;
 * team ID;
 * player ID;
-* salary;
+* original total contract value;
+* average annual value;
 * original term;
 * remaining years;
 * start season;
@@ -520,13 +556,47 @@ A contract may include:
 
 ## Salary
 
-The cap amount assigned to a player contract.
+The financial value assigned to a player contract.
 
 Salary is not the player’s real NHL salary.
+
+When cap treatment is discussed, player salary means the contract’s average annual value.
+
+## Total Contract Value
+
+The complete value of a contract across all contract years.
+
+For a two-year or three-year contract, total contract value and auction bids must be whole numbers.
+
+A one-year contract value may contain up to two decimal places.
+
+Normal non-ELC contracts require at least `$1 AAV` per contract year, producing minimum total values of `$1`, `$2`, and `$3` for one-, two-, and three-year terms.
+
+There is no separate monetary maximum contract value.
+
+## Average Annual Value
+
+The per-year contract value used by roster, cap, retention, trade, and buyout rules.
+
+Average annual value may be abbreviated as:
+
+```text
+AAV
+```
+
+It is calculated as:
+
+```text
+total contract value ÷ contract years
+```
+
+The result is rounded to the nearest hundredth.
 
 ## Salary Cap
 
 The maximum approved cap amount a team may carry under the league rules.
+
+The original Hundo Leago league’s Season 2 salary cap is `$100`.
 
 ## Cap Hit
 
@@ -550,52 +620,75 @@ Any record that contributes to a team’s cap total.
 
 Examples may include:
 
-* player salaries;
+* active-player average annual values;
 * retained salary;
-* buyout penalties;
-* other approved penalties.
+* buyout penalties.
+
+Benched, injured-reserve, unsigned-prospect, and signed-ELC Prospect players do not contribute player salary to cap usage.
 
 ## Contract Term
 
 The number of league seasons covered by a contract.
 
+Normal contracts have a term of one, two, or three years.
+
+Contracts may not be extended.
+
 ## Remaining Contract Years
 
-The number of league seasons left on a contract, including or excluding the active season according to the approved contract specification.
+The number of league seasons left on a contract, including the current season.
 
-The exact counting rule must be explicitly documented.
+A contract with one year remaining expires after the current season.
 
-## Contract-Year Limit
-
-A league restriction on the total contract years a team may hold.
-
-The precise formula and applicability must be defined in the Contract specification.
+There is no team-wide limit on total contract years held.
 
 ## Expiring Contract
 
 A contract reaching the end of its approved term.
 
-An expiring contract does not automatically determine the player’s future status until the approved expiration process runs.
+Expiration is processed during the end-of-season league rollover.
+
+The player is immediately removed from the roster and becomes a free agent. The former team has no exclusive re-signing opportunity.
 
 ## Retained Salary
 
-A cap obligation kept by a former team as part of a trade.
+A per-year average-annual-value cap obligation created when a team trading away a player retains part of the contract.
 
-The player may belong to a new team while the former team continues carrying an approved portion of the salary.
+The player may belong to a new team while the team currently responsible for the retention carries the retained AAV in every remaining contract year.
+
+The receiving team holds the player contract at:
+
+```text
+original AAV − retained AAV
+```
+
+Multiple former teams may hold retention after successive trades. Cumulative retention may not exceed 50% of the player’s original AAV.
+
+Existing retained salary is not affected by a later buyout and continues for the original remaining term.
+
+The whole retention obligation may later be traded to another team without changing its amount or remaining schedule.
 
 ## Retention Slot
 
 A league-limited record representing one retained-salary obligation.
 
+Each team may use no more than three retention slots.
+
 ## Buyout
 
-A transaction ending a player’s contract or ownership while creating the approved buyout consequences.
+A transaction eliminating a player’s contract, releasing the player to free agency, and creating the approved annual cap penalties.
+
+An auction signing cannot be bought out for 14 days. The lock follows the player after a trade.
 
 ## Buyout Penalty
 
-The cap obligation created by a buyout.
+The annual cap obligation created by a buyout.
 
-The calculation and duration must be defined in the approved league and contract rules.
+The penalty is 25% of the contract’s average annual value, rounded to the nearest hundredth, in each remaining contract year.
+
+The calculation uses the full underlying AAV even when another team holds retained salary.
+
+The whole buyout-penalty obligation may be traded to another team without changing its annual amount or remaining schedule.
 
 ---
 
@@ -632,7 +725,7 @@ A bid may include:
 
 * team;
 * player;
-* salary;
+* total contract value;
 * contract term;
 * submission time;
 * edit history;
@@ -648,15 +741,38 @@ Auction resolution must be protected against duplicate processing.
 
 An approved exchange of league assets between teams.
 
-Trade assets may include only those explicitly supported by the product specification.
+Approved trade assets include:
+
+* active, benched, or injured-reserve roster players and their contracts;
+* prospects or player rights;
+* draft picks;
+* retained-salary obligations;
+* buyout-penalty obligations;
+* Future Considerations.
 
 ## Trade Proposal
 
 A pending trade offered by one team to another.
 
+A trade proposal expires seven days after creation and may not be accepted after the league trade deadline.
+
+Proposals do not reserve assets. The same asset may appear in multiple pending proposals, and acceptance revalidates current ownership and eligibility.
+
+## Trade Deadline
+
+The league-specific date and time after which trades may not be completed.
+
+The commissioner sets the trade deadline during league creation. Trading reopens at the start of the entry draft.
+
 ## Salary Retention
 
-A trade condition in which one team continues to carry part of a player’s cap obligation after the player is transferred.
+A trade condition in which one team continues to carry an approved amount of the player’s average annual value in every remaining contract year after the player is transferred.
+
+## Future Considerations
+
+A stable league-scoped trade obligation recording that one team owes future consideration to another team.
+
+It has no immediate cap, roster, contract, draft-pick, or matchup effect. Its fulfillment or commissioner resolution must be explicit and logged.
 
 ## Draft Pick
 
@@ -672,7 +788,7 @@ A draft pick should identify:
 
 ## Activity Record
 
-A durable record explaining an important league action.
+A durable record explaining a league transaction or other important league action.
 
 An activity record may include:
 
@@ -683,6 +799,8 @@ An activity record may include:
 * timestamp;
 * affected records;
 * relevant before-and-after information.
+
+Matchup and standings information is excluded from league activity history.
 
 ## Audit Trail
 
@@ -704,6 +822,8 @@ A persisted scoring window with explicit boundaries.
 
 A matchup week is not merely a calculated calendar label.
 
+For the original league’s Season 2 baseline, the scoring window begins Monday at `12:00 AM Pacific`, includes a normal baseline at `1:00 AM`, locks eligible rosters at `4:00 PM`, and ends at the following Monday `12:00 AM` exclusive. The user-facing end label is Sunday at `11:59 PM Pacific`.
+
 It may include:
 
 * week ID;
@@ -713,6 +833,24 @@ It may include:
 * end time;
 * rollover time;
 * team pairings.
+
+The first regular-season matchup week is the first full Monday-through-Sunday scoring week contained in the NHL regular season.
+
+## Hundo Leago Playoffs
+
+The fantasy league playoffs, which take place during the final four fantasy scoring weeks of the NHL regular season.
+
+The current format has three rounds:
+
+```text
+Round 1: 1 week
+Round 2: 1 week
+Final:   2 weeks
+```
+
+The Final uses the final two fantasy scoring weeks of the NHL regular season.
+
+Real NHL playoff games are outside the current Hundo Leago scoring season.
 
 ## Week ID
 
@@ -728,7 +866,7 @@ The exact format may change, but references should use the stored identifier rat
 
 ## Week Start
 
-The time when the matchup scoring window begins.
+The time when the matchup scoring window begins. The original league’s approved week start is Monday at `12:00 AM Pacific`.
 
 ## Baseline
 
@@ -736,7 +874,11 @@ A stored snapshot of cumulative player statistics used as the starting point for
 
 ## Baseline Time
 
-The time at which the baseline should be captured.
+The time at which a scoring baseline is captured. The original league’s approved normal baseline time is Monday at `1:00 AM Pacific`.
+
+A legal team may use the normal matchup baseline.
+
+If a team is illegal at the normal Monday `4:00 PM Pacific` roster lock, that team receives a team-specific locked roster and baseline only when its roster becomes legal. Points earned before the team-specific baseline do not count.
 
 ## Baseline Delta
 
@@ -754,13 +896,15 @@ The event that records which players are eligible to score for a team during a m
 
 ## Lock Time
 
-The scheduled time when eligible teams should lock.
+The scheduled time when eligible teams should lock. The original league’s approved lock time is Monday at `4:00 PM Pacific`.
 
 ## Locked Roster
 
 The persisted roster snapshot used to determine matchup eligibility.
 
 A locked roster must not silently change when the team later changes its normal roster.
+
+Later normal-roster adjustments, including adjustments that make the normal roster illegal, do not affect the current matchup or the locked players’ fantasy-point earnings.
 
 ## Legal Team
 
@@ -770,15 +914,29 @@ A team whose roster satisfies the approved requirements at the relevant validati
 
 A team whose roster does not satisfy the approved requirements.
 
-The Matchups specification defines how illegality affects locking and scoring.
+If a team is illegal when it must create its normal matchup lock, it does not collect matchup points until it becomes legal and receives a late lock and team-specific baseline.
+
+Illegality that begins after a legal matchup roster is locked does not affect the current matchup.
+
+Transactions may still complete when they create an illegal roster, but the system must warn the user and log the result.
 
 ## Late Lock
 
-A lock occurring after the scheduled lock time because a previously illegal team later became legal, when this behaviour is approved.
+A team-specific scoring lock and baseline recorded when a previously illegal team becomes legal after the normal matchup baseline.
+
+Only points earned after the team-specific baseline count for that matchup week.
 
 ## Fantasy Point
 
 A scoring value calculated from player statistics according to the approved scoring rules.
+
+The original league’s approved Season 2 formula is:
+
+```text
+FP = goals × 1.25 + assists × 1.00
+```
+
+Goals and assists are the only scoring categories, and forwards and defence players use the same values.
 
 Fantasy point may be abbreviated as:
 
@@ -796,6 +954,14 @@ Fantasy points per game may be abbreviated as:
 FPG
 ```
 
+The approved formula is:
+
+```text
+FPG = cumulative FP ÷ games played
+```
+
+FPG is zero when games played is zero and is displayed to the nearest hundredth.
+
 ## Matchup Result
 
 The finalized outcome of a matchup.
@@ -808,6 +974,8 @@ A result may include:
 * tie;
 * finalized time;
 * source matchup week.
+
+The team with higher final FP wins, the team with lower final FP loses, and equal final totals rounded to the nearest hundredth produce a regular-season tie.
 
 ## Finalization
 
@@ -824,6 +992,8 @@ For example, an idempotent rollover must not advance two weeks merely because th
 ## Rollover
 
 The process that closes a matchup week and advances league state to the next week.
+
+The original league’s approved rollover time is Monday at `12:00 AM Pacific`.
 
 Rollover may include:
 
@@ -848,6 +1018,10 @@ Standings may include:
 * fantasy points against;
 * point differential.
 
+The approved standings-points values are two for a win, one for a tie, and zero for a loss.
+
+The approved order is standings points, fantasy-point differential, then fantasy points for, all descending. Teams still equal remain tied and use team name only for deterministic display order.
+
 ## Read-Only Standings
 
 Standings that normal users may retrieve but may not directly edit.
@@ -860,15 +1034,41 @@ Corrections must occur through approved result or commissioner-recovery processe
 
 ## Entry Draft
 
-The league process used to allocate eligible newly drafted or prospect players.
+The four-round linear league process used to allocate eligible newly drafted or prospect players.
+
+The Entry Draft is not part of the initial Season 2 launch but must be implemented during the season before the first Entry Draft is used.
+
+The playoff champion selects last, the losing finalist selects second-last, and the remaining initial order uses reverse official regular-season standings before approved lottery movement.
+
+## Free Agent Draft
+
+A planned future pre-season process for assigning eligible free agents and creating their contracts at the beginning of the season.
+
+It is distinct from the Entry Draft and in-season free-agent auctions.
 
 ## Draft Order
 
 The ordered sequence in which teams hold draft selections.
 
+The same order is used in each of the four Entry Draft rounds.
+
 ## Draft Lottery
 
-The approved method used to determine some or all draft-order positions.
+The two-draw weighted process used to determine the first two Entry Draft positions among active non-finalists.
+
+The playoff champion remains last and the losing finalist remains second-last.
+
+For `N` lottery teams, weights descend linearly from `N` for the worst-ranked team to `1` for the best-ranked team. Winners are drawn without replacement. Undrawn teams retain reverse-standings order, and the completed order applies to all four rounds.
+
+## Entry Draft Eligibility
+
+The rule determining which players may be selected in one Hundo Leago Entry Draft.
+
+The normal pool contains F or D players selected in the most recently completed real NHL Entry Draft. Goalies are excluded.
+
+An unowned player whose Hundo Leago prospect rights were released may re-enter only when selected in the immediately preceding Hundo Leago Entry Draft.
+
+Every eligible player requires a stable canonical player ID and cannot already be owned or under an active Hundo Leago contract in that league.
 
 ## Drafted-Player Rights
 
@@ -876,7 +1076,13 @@ The rights held by a team after selecting a player, before or instead of immedia
 
 ## Entry-Level Contract
 
-A contract type that may apply to drafted players under approved league rules.
+The approved fantasy contract available for an eligible prospect:
+
+```text
+Total contract value: $3
+Contract length: 3 years
+Average annual value: $1
+```
 
 Entry-level contract may be abbreviated as:
 
@@ -884,7 +1090,7 @@ Entry-level contract may be abbreviated as:
 ELC
 ```
 
-No ELC rules are considered implemented until formally approved.
+Automatic detection and enforcement based on a player signing a real-life ELC are deferred to a future update.
 
 ---
 

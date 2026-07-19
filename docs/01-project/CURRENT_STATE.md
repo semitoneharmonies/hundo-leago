@@ -245,6 +245,16 @@ Roster functionality includes:
 
 The roster interface is functional, although it requires changes for accounts, multiple leagues, expanded roster groups, and the 2026–27 contract system.
 
+The current implementation does not yet represent the approved Season 2 roster model of:
+
+* 18 active slots divided into 12 forward and 6 defence slots;
+* four bench or inactive slots with a maximum `$4.00 AAV` per benched player;
+* four injured-reserve slots;
+* unlimited eligible prospect slots;
+* no goalies;
+* C, LW, and RW normalized to F and LD and RD normalized to D;
+* cap usage based only on active-player AAV, retained salary, and buyout penalties.
+
 ### Salary cap
 
 The backend calculates and enforces the current salary-cap rules.
@@ -268,12 +278,18 @@ The full Season 2 contract system is not yet complete.
 
 Future work must add or formalize:
 
-* contract duration;
+* one-to-three-year contract duration;
+* total contract value and average annual value;
 * remaining contract years;
-* contract-year limits;
+* remaining years that include the current season;
+* the absence of a team-wide total contract-year limit;
+* the prohibition on contract extensions;
 * carried-over contracts;
-* new contract creation;
-* expiring contracts;
+* auction contract creation from total value and bid term;
+* the approved `$3` over three years fantasy ELC at `$1 AAV`;
+* future automatic detection and enforcement of real-life ELC signing;
+* contract expiration during end-of-season rollover before the next Entry Draft;
+* immediate roster removal and free-agency conversion at expiration;
 * contract history;
 * league-specific contract rules.
 
@@ -316,19 +332,41 @@ The current trade system must be adapted for:
 
 * authenticated users;
 * multiple leagues;
-* contract terms;
+* transfer of existing average annual value and remaining contract years;
+* retained average annual value for the remaining contract term;
+* multiple retention records up to 50% cumulative original AAV;
+* three retention slots per team;
 * draft picks;
 * player rights;
+* prospect-status preservation when prospect rights are traded;
+* a commissioner-configured trade deadline;
+* reopening trading at the start of the entry draft;
 * SQLite transactions;
 * stricter permission validation.
+
+### Entry Draft
+
+The current application does not contain the approved Entry Draft workflow.
+
+The Entry Draft is not required for the initial Season 2 launch. It is planned for development during the season and must be complete before the first Season 2 Entry Draft is used.
+
+The later implementation must include the approved four-round linear draft, lottery, current plus three future draft classes, live selections, private queues, automatic timeout selections, immutable completed picks, traded-pick clock resets, and league-scoped history.
+
+The approved lottery uses every active non-finalist, two weighted draws without replacement, linear reverse-standings weights, fixed finalist positions, and one immutable order across all four rounds.
+
+The approved normal eligibility pool contains F or D players selected in the most recently completed NHL Entry Draft, plus the approved immediately-prior Hundo Leago rights-release re-entry. Goalies are excluded.
 
 ### Buyouts
 
 The current application supports player buyouts and buyout penalties.
 
-Current buyout calculations have been used successfully.
+Current buyout calculations have been used successfully, but they do not yet prove compliance with the approved Season 2 rule.
 
-The exact future rules, including any penalty decay or contract interaction, must be defined in the approved contract and league-rule specifications.
+Season 2 buyouts must eliminate the contract, release the player to free agency, and charge 25% of full underlying average annual value in each remaining contract year without penalty decay.
+
+Existing retention obligations must continue unchanged after a buyout.
+
+Auction signings must have a 14-day buyout lock that follows the player after a trade. Buying out a player must cancel pending trades involving that player.
 
 ### Commissioner tools
 
@@ -394,7 +432,7 @@ GET /api/players/debug
 POST /api/players/reload
 ```
 
-The complete endpoint definitions will be maintained separately in:
+The complete compatibility inventory and approved Season 2 target endpoint definitions are maintained in:
 
 `docs/04-technical-specs/API_CONTRACTS.md`
 
@@ -404,7 +442,7 @@ The complete endpoint definitions will be maintained separately in:
 
 The backend imports and caches player statistics.
 
-The current fantasy-point formula is:
+The current implementation uses the approved Season 2 fantasy-point formula:
 
 ```text
 FP = goals × 1.25 + assists
@@ -486,7 +524,7 @@ GET /api/matchups/standings
 
 Additional debug, preview, reset, and commissioner endpoints also exist.
 
-The exact endpoint inventory will be documented in `API_CONTRACTS.md`.
+The complete current compatibility inventory and approved target endpoint catalogue are documented in `API_CONTRACTS.md`.
 
 ### Matchup limitations
 
@@ -499,6 +537,8 @@ It still requires:
 * complete lock testing;
 * illegal-roster testing;
 * late-legal-roster testing;
+* team-specific baseline creation when an illegal roster becomes legal;
+* exclusion of points earned while a roster is illegal;
 * rollover testing;
 * failure-recovery testing;
 * commissioner correction testing;
@@ -530,6 +570,8 @@ The standings system calculates values based on finalized matchup results, inclu
 * fantasy points for;
 * fantasy points against;
 * point differential.
+
+The current `2/1/0` standings-points calculation and the current sorting sequence—standings points, fantasy-point differential, fantasy points for, then team name for deterministic display—match the approved Scoring Rules.
 
 The frontend contains a standings page with:
 
@@ -668,6 +710,30 @@ The current refactor must be completed before or alongside the introduction of a
 
 The refactor must not silently change feature behaviour.
 
+The approved Architecture, Data Model, API Contracts, Backend Refactor, SQLite Migration, Security, Frontend Structure, Environment Setup, Deployment, and Backup and Restore specifications now define the target modular-monolith, SQLite, transaction, identity, league-isolation, history, job, API, compatibility, extraction, migration, authentication, application-security, frontend, hosting-environment, release, and recovery boundaries.
+
+The API review identified 34 current route registrations, including six conditional matchup-debug routes. Most remain coupled to `server.js`. The approved Backend Refactor defines a 14-stage sequence from the Step 0 safety harness through the Step 13 completion gate, with focused verification gates throughout.
+
+The SQLite Migration specification selects Node 24.14.1 and exact `better-sqlite3` 12.11.2, deterministic copied-JSON import, explicit reset manifests, verified backups, a maintenance-window cutover, and no dual-write period. The Security specification selects Node `scrypt`, opaque server-side sessions, session-bound CSRF, exact credentialed CORS, durable rate limits, backend-derived authorization, and separate append-only security audit.
+
+The approved Active Roadmap now defines nine dependency-ordered milestones from the canonical foundation through initial launch, required in-season completion, and deferred work. The approved Active Work Plan identifies only backend-refactor work item `BR-00`, the Baseline and Safety Harness, as ready to start.
+
+`BR-00` is limited to the backend `stage2` branch. It adds Node built-in characterization tests, synthetic temporary fixtures, exact endpoint-inventory proof, read-only file-hash proof, and league-store characterization. It does not move feature code, add SQLite, implement authentication, change frontend behavior, or authorize deployment.
+
+The approved Testing Strategy now defines backend, frontend, browser, security, database, migration, job, recovery, staging, release, and production-smoke evidence. The approved Frontend Structure selects TanStack Query for server state, one shared HTTP client, one Socket.IO lifecycle, URL-derived stable league context, feature modules, and an incremental `FE-00` through `FE-11` extraction from the current large `App.jsx`.
+
+The approved Environment Setup defines isolated local, test, staging, and production resources, exact frontend and backend configuration contracts, Node `24.14.1`, a one-instance Render SQLite topology, fail-closed environment identity, and separate Netlify, Render, disk, database, secret, user, email, and backup boundaries.
+
+The approved Backup and Restore specification selects application-consistent SQLite backup, verified AES-256-GCM-encrypted offsite artifacts, hourly in-season and daily off-season protection, platform-administrator restore execution, post-restore session and token revocation, job and outbox reconciliation, and mandatory staging drills.
+
+The approved Deployment specification selects CI-gated staging, manual production publication of exact commits, compatibility-first backend and frontend ordering, explicit migrations, read-only production smoke, release records, first-write rollback boundaries, and separate code, configuration, and database recovery.
+
+The approved Backend Endpoint Checklist tracks all 34 current route registrations and all 124 approved target routes with permanent IDs and evidence gates for characterization, contract tests, frontend connection, staging, production verification, and compatibility retirement.
+
+The approved Manual QA Checklist defines repeatable release-candidate acceptance across desktop, mobile, keyboard, accessibility, roles, two leagues, feature workflows, failures, reconnect, recovery, defect handling, and retest. The approved Release Checklist defines hard go/no-go gates from exact source commits through production authorization, read-only smoke, monitoring, rollback, and closeout.
+
+These specifications and checklists are approved design, not evidence that the target implementation, migration, authentication system, environment infrastructure, deployment pipeline, recovery tooling, endpoint catalogue, QA run, release approval, or refactor sequence is already complete.
+
 ---
 
 ## Current Local Development State
@@ -708,6 +774,8 @@ Before resuming backend coding, the branch state and its difference from `main` 
 
 The project does not yet have enough automated test coverage to safely verify all core league behaviour.
 
+The approved Testing Strategy now defines the required tools, layers, fixtures, gates, and evidence. The approved Backend Endpoint Checklist provides the exact route-level tracking structure, and the approved Manual QA and Release checklists provide staging acceptance and production go/no-go records. Their test foundations, endpoint evidence, QA runs, and release evidence have not yet all been completed.
+
 Current verification has relied heavily on:
 
 * manual browser testing;
@@ -743,6 +811,8 @@ Read-only endpoints must remain read-only.
 
 A fully documented and isolated staging environment is not yet established.
 
+Its target topology and configuration are now documented in `docs/04-technical-specs/ENVIRONMENT_SETUP.md`. No staging Netlify site, Render service, persistent disk, database, secret set, or backup namespace was created by approving that design.
+
 Current development has used:
 
 * local frontend and backend servers;
@@ -773,7 +843,7 @@ The following require attention before the 2026–27 launch:
 6. Existing features are not yet scoped by league.
 7. Automated tests are limited.
 8. Staging is not yet established.
-9. Backup and restoration procedures are not fully documented or rehearsed.
+9. Backup and restoration are documented but not yet implemented or rehearsed.
 10. Matchups and standings have not completed a full real season.
 11. Off-season scoring makes realistic matchup testing difficult without simulation tools.
 12. Some frontend cap displays may disagree.
@@ -781,7 +851,7 @@ The following require attention before the 2026–27 launch:
 14. The frontend README still contains the default Vite template text.
 15. The old `STATUS.md` no longer accurately describes the application.
 16. The old Phase 3 roadmap mixes behavioural rules with completed engineering steps.
-17. Production and development workflows are not yet documented for the three-person team.
+17. The production deployment procedure is documented, but the broader three-person development workflow and role handoffs are not yet documented.
 
 ---
 
@@ -799,6 +869,8 @@ The current priority order is:
 8. Harden auctions and trades.
 9. fully test matchups and standings.
 10. Establish staging, backups, release procedures, and launch testing.
+
+Architecture, Data Model, API Contracts, Backend Refactor, SQLite Migration, Security, Frontend Structure, Environment Setup, Deployment, Testing Strategy, Backend Endpoint Checklist, Manual QA Checklist, Release Checklist, Backup and Restore, Active Roadmap, and Active Work Plan are now approved. The next coding step, when Grae requests execution, remains backend-refactor work item `BR-00`: Baseline and Safety Harness.
 
 The active schedule will be maintained in:
 

@@ -279,8 +279,18 @@ The roster system must support the approved 2026–27 roster model.
 At minimum, it must handle:
 
 * player ownership;
-* active roster assignments;
-* injured-reserve assignments;
+* 18 active-roster slots divided into 12 forward and 6 defence slots;
+* permitted empty active-roster slots;
+* four bench or inactive-roster slots;
+* the $4 maximum average annual value for a benched player;
+* four injured-reserve slots;
+* unlimited prospect-roster slots;
+* prospect eligibility based on the entry draft or a trade of existing prospect rights;
+* signed prospects remaining in the Prospect category with ELC salary excluded from the cap;
+* manual ELC decline and voluntary prospect-right release;
+* Entry Draft re-entry only for released rights drafted in the immediately preceding year;
+* the absence of goalies;
+* position normalization of C, LW, and RW to F and LD and RD to D;
 * roster-size limits;
 * positional requirements;
 * roster legality;
@@ -289,7 +299,7 @@ At minimum, it must handle:
 * player identifiers;
 * league isolation.
 
-Any additional categories such as inactive players, prospects, or player rights must be explicitly approved in the roster specification before implementation.
+The Roster specification must define movement, eligibility, signing, correction, and display workflows without changing these approved category rules.
 
 ---
 
@@ -299,18 +309,31 @@ The Season 2 contract system must support the minimum approved contract model.
 
 This is expected to include:
 
-* player salary;
-* contract length;
+* total contract value;
+* one-to-three-year contract length;
+* average annual value rounded to the nearest hundredth;
 * remaining contract years;
 * contract ownership by team and league;
 * contract creation;
 * contract expiration;
-* contract updates through approved transactions;
+* prohibition of contract extensions;
+* no team-wide total contract-year limit;
+* auction contract creation;
+* contract transfer without restarting or extending the contract;
+* a $3, three-year fantasy entry-level contract with $1 AAV for signed prospects;
+* a `$1 AAV` minimum per contract year for normal non-ELC contracts;
+* no separate monetary maximum contract value;
 * retained salary;
 * buyout consequences;
 * contract history or activity records.
 
-The exact contract-year cap, renewal process, free-agent signing process, and penalty rules must be finalized in:
+The Contract specification must implement the approved rules that remaining years include the current season and expiration occurs during end-of-season rollover before the next Entry Draft. Expiration removes the player from the roster and returns the player to free agency without exclusive re-signing rights.
+
+Automatic detection and enforcement of real-life prospect ELC signings is deferred to a future update.
+
+Automatic imported NHL injured-reserve eligibility, automatic rechecks, and automatic warnings are also deferred. Initial injured-reserve placement uses the approved manual workflow.
+
+Detailed free-agent signing workflows must be finalized in:
 
 `docs/03-product-specs/CONTRACTS.md`
 
@@ -322,13 +345,20 @@ Speculative contract types must not be implemented until approved.
 
 The backend must consistently calculate:
 
-* team salary;
+* the $100 salary cap;
+* active-player average annual value;
 * retained salary;
 * buyout penalties;
 * remaining cap;
 * roster size;
 * positional legality;
 * other approved restrictions.
+
+Benched, injured-reserve, and prospect players do not contribute player salary to cap usage.
+
+Transactions may complete when they create an illegal roster, but the user must receive a warning and the result must be logged.
+
+A team that is illegal at the normal Monday `4:00 PM Pacific` roster lock does not collect matchup points until the roster becomes legal. The backend must then record a team-specific locked roster and scoring baseline so earlier points are excluded. After a legal matchup roster is locked, later normal-roster adjustments do not affect the current matchup, even when the normal roster becomes illegal.
 
 All frontend cap displays must use the same authoritative backend calculations.
 
@@ -353,7 +383,7 @@ Launch-critical auction behaviour includes:
 * deterministic tie handling;
 * scheduled resolution;
 * winning-player assignment;
-* contract creation or attachment;
+* contract creation by dividing the winning total contract value across the one-to-three-year bid term;
 * activity logging;
 * protection against duplicate processing.
 
@@ -361,7 +391,7 @@ The exact business rules belong in:
 
 `docs/03-product-specs/AUCTIONS.md`
 
-A more elaborate annual free-agent draft system is not automatically required for the initial launch unless it is added to the active roadmap.
+A pre-season Free Agent Draft is planned for a future update and is not required for the initial launch.
 
 ---
 
@@ -376,12 +406,18 @@ Launch-critical functionality includes:
 * trade expiration;
 * ownership validation;
 * roster and contract validation;
-* salary retention where approved;
+* contract transfer with unchanged average annual value and remaining years;
+* average-annual-value salary retention for every remaining contract year;
+* multiple retention records up to a cumulative 50% of original AAV and three retention slots per team;
+* roster players, prospects or player rights, and draft picks as tradeable assets;
+* a commissioner-configured trade deadline set during league creation;
+* reopening of trading at the start of the entry draft;
+* seven-day proposal expiration;
 * automatic cancellation when required;
 * activity logging;
 * duplicate-processing protection.
 
-Draft picks or player rights may be traded only after their data model and rules are approved.
+Draft picks and player rights require stable identifiers and an approved data model before implementation.
 
 ---
 
@@ -391,13 +427,17 @@ The buyout system must continue to support:
 
 * approved penalty calculations;
 * player release;
-* contract consequences;
-* retained or continuing cap consequences;
+* elimination of the bought-out contract;
+* release of the player to free agency;
+* an annual cap penalty of 25% of average annual value in each remaining contract year;
+* a 14-day buyout lock for auction signings that follows the player after a trade;
+* preservation of existing retained-salary obligations after a buyout;
+* automatic cancellation of pending trades involving the bought-out player;
 * transaction history;
 * league-specific state;
 * authenticated permissions.
 
-Any proposed penalty-decay system is deferred until explicitly approved.
+Buyout penalties do not decay during the remaining contract term.
 
 ---
 
@@ -509,6 +549,8 @@ A commissioner tool must not silently bypass league rules without recording the 
 
 Important write operations must produce understandable activity records.
 
+Matchup and standings operations are excluded from league activity history. Their schedules, locks, baselines, results, corrections, rollovers, and standings calculations must use separate matchup, result, correction, or operational records where persistence is required.
+
 The activity system should include:
 
 * actor;
@@ -596,7 +638,17 @@ These items still require planning and cannot be forgotten.
 
 ## 1. Playoffs
 
-The platform must support playoffs before the real league reaches its playoff period.
+The platform must support Hundo Leago playoffs before the final four fantasy scoring weeks of the NHL regular season.
+
+The approved calendar is:
+
+```text
+Round 1: 1 week
+Round 2: 1 week
+Final:   2 weeks using the final two weeks of the NHL regular season
+```
+
+Real NHL playoff games do not affect the current Hundo Leago format.
 
 Playoff work may include:
 
@@ -615,7 +667,9 @@ Playoff development during the active season must be isolated and thoroughly tes
 
 ## 2. Entry Draft
 
-The platform must eventually support the league’s approved entry-draft process.
+The platform must support the league’s approved Entry Draft process before the first Season 2 Entry Draft is used.
+
+The Entry Draft is not required for the initial Season 2 launch. It may be developed during the season, but it must be complete and verified before the Entry Draft takes place.
 
 Before the draft is needed, the system may require:
 
@@ -626,11 +680,36 @@ Before the draft is needed, the system may require:
 * player rights;
 * drafted-player records;
 * commissioner-entered draft results;
-* entry-level contract decisions.
+* unlimited team prospect rosters;
+* preservation of prospect status when prospect rights are traded;
+* a $3, three-year fantasy entry-level contract with $1 AAV;
+* future manager signing decisions triggered by the player signing a real-life entry-level contract.
 
-A complete live online draft room is not automatically required.
+Automatic enforcement of the prospect-signing trigger is not required for the initial implementation and must not be added without an approved future work plan.
 
-A commissioner-managed or imported draft process may satisfy the initial version if it is approved and documented.
+The completed Entry Draft system must include:
+
+* the approved lottery;
+* four linear rounds;
+* the current draft and following three draft classes;
+* live manager and commissioner selections;
+* a five-minute pick clock;
+* automatic best-player-available timeout selections with no skipped picks;
+* persistent private queues;
+* immutable completed selections;
+* on-clock trade resets;
+* approved in-app notifications and limited League Activity events.
+
+The approved lottery:
+
+* includes every active non-finalist;
+* uses linear weights based on reverse official regular-season standings;
+* draws first and second overall without replacement;
+* leaves undrawn teams in their original order;
+* fixes the losing finalist second-last and champion last;
+* applies the result to all four rounds.
+
+The approved normal eligibility pool contains F or D players selected in the most recently completed NHL Entry Draft. It also includes the approved immediately-prior Hundo Leago rights-release re-entry. Goalies and otherwise ineligible older prospects are excluded.
 
 ---
 
@@ -642,6 +721,8 @@ Before the end of the 2026–27 season, the system must support:
 * historical results;
 * contract-year advancement;
 * expiring contracts;
+* contract expiration during end-of-season rollover before the next Entry Draft;
+* immediate roster removal and free-agency conversion for expired players;
 * retained obligations;
 * draft-order inputs;
 * season-end snapshots;

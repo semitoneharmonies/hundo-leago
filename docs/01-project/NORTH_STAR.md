@@ -200,16 +200,29 @@ Each league manages its own player ownership and roster state.
 
 The platform supports:
 
-* active roster assignments;
-* inactive or reserve assignments when enabled;
-* injured-reserve assignments;
-* prospect or player-rights records when applicable;
+* an 18-slot active roster divided into 12 forward and 6 defence slots, with empty slots permitted;
+* a four-slot bench or inactive roster for players with an average annual value of no more than $4;
+* four injured-reserve slots;
+* an unlimited prospect roster for drafted players and prospect rights acquired through trades;
+* no goalie position;
 * player salaries;
-* multi-year contracts;
-* contract-year limits;
+* one-to-three-year contracts with no extensions;
+* no team-wide total contract-year limit;
 * retained salary;
 * buyout consequences;
 * roster and cap legality.
+
+The original league’s salary cap is $100.
+
+Only active-player average annual value, retained salary, and buyout penalties affect the salary cap.
+
+Prospects use an approved $3, three-year fantasy entry-level contract when signed. A signed player may remain in Prospects with the ELC salary excluded from the cap; once moved to Active or Bench, the player may not return to Prospects. Automatic enforcement of real-life ELC signing is deferred to a future update.
+
+Normal non-ELC contracts require at least $1 AAV per contract year. There is no separate monetary maximum, and three years is the maximum term.
+
+Remaining contract years include the current season. Expiration is processed during end-of-season rollover before the next Entry Draft, immediately removing the player from the roster and returning the player to free agency without exclusive re-signing rights.
+
+Transactions may create a temporarily illegal roster with a warning. A team that is illegal at the Monday `4:00 PM Pacific` roster lock does not collect matchup points until it becomes legal and receives a team-specific locked roster and scoring baseline. Once a legal matchup roster is locked, later normal-roster adjustments—including adjustments that make the normal roster illegal—do not affect that matchup or the locked players’ fantasy-point earnings.
 
 Exact formulas, limits, eligibility rules, and timing requirements belong in the approved league and feature specifications.
 
@@ -219,7 +232,7 @@ Hundo Leago supports structured methods of assigning unsigned players.
 
 These may include:
 
-* a pre-season free-agent allocation or draft process;
+* a future pre-season Free Agent Draft;
 * blind in-season free-agent auctions;
 * follow-up or tie-breaking auctions;
 * commissioner recovery controls.
@@ -230,16 +243,22 @@ The approved auction specification determines the exact bidding, timing, tie-bre
 
 Managers can propose and complete trades involving approved league assets.
 
-Depending on the league rules, these may include:
+Approved tradeable asset types include:
 
 * players;
 * contracts;
 * retained salary;
 * draft picks;
 * player rights;
-* other explicitly supported assets.
+* prospects held through drafted-player rights.
 
 Trades must be validated against ownership, roster, contract, and league-specific rules.
+
+Player contracts transfer with their existing average annual value and remaining years.
+
+Multiple former teams may retain salary after successive trades, subject to a cumulative maximum of 50% of the player’s original AAV and three retention slots per team. Existing retention is not affected by a later buyout.
+
+The commissioner sets the trade deadline during league creation. Trading reopens at the start of the entry draft.
 
 ### Scoring, matchups, and standings
 
@@ -260,23 +279,34 @@ Weekly processing must be testable without waiting for real calendar weeks to pa
 
 ### Entry draft
 
-The platform supports an annual entry draft system.
+The platform will support an annual Entry Draft system.
 
-This may include:
+The Entry Draft is not required for the initial Season 2 launch. It may be developed during the season but must be complete before the first Season 2 Entry Draft is used.
+
+The approved system includes:
 
 * draft order;
-* lottery results;
-* future draft picks;
+* a lottery;
+* four linear rounds;
+* the current draft and following three draft classes;
 * traded picks;
 * drafted-player rights;
+* five-minute pick clocks;
+* automatic best-player-available timeout selections with no skipped picks;
+* persistent private queues;
+* immutable completed selections;
 * entry-level contract decisions;
-* commissioner-entered or system-managed draft results.
+* commissioner and system-managed draft results.
+
+The two weighted lottery draws include every active non-finalist, with linear weights favouring lower-ranked teams. The champion remains last, the losing finalist remains second-last, and the resulting order applies to all four rounds.
+
+Normal eligibility is limited to F or D players selected in the most recently completed NHL Entry Draft, plus the approved immediately-prior Hundo Leago rights-release re-entry. Goalies and older undrafted Hundo prospects are excluded.
 
 The precise draft process is defined in its approved product specification.
 
 ### History and transparency
 
-Important league actions should produce a durable and understandable record.
+Every league transaction must produce a durable and understandable history record.
 
 This includes actions involving:
 
@@ -286,9 +316,10 @@ This includes actions involving:
 * trades;
 * buyouts;
 * commissioner overrides;
-* matchup corrections;
 * draft assets;
 * league configuration.
+
+Matchup and standings information, including corrections, does not appear in league activity history. The matchup and standings systems preserve their required result and correction records separately.
 
 Hundo Leago should make it possible to understand what happened, when it happened, and why the league state changed.
 

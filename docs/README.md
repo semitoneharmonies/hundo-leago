@@ -223,7 +223,7 @@ docs/02-rules/
 
 These documents define rules shared across several features.
 
-Planned documents include:
+The approved League Rules, Scoring Rules, and Permissions documents exist:
 
 ```text
 docs/02-rules/LEAGUE_RULES.md
@@ -233,35 +233,55 @@ docs/02-rules/PERMISSIONS.md
 
 ## League Rules
 
-Will define shared rules such as:
+The approved document defines shared rules such as:
 
 * salary cap;
-* roster limits;
-* positional minimums;
+* active, bench or inactive, injured-reserve, and prospect rosters;
+* forward and defence slot limits;
+* contract length and value precision;
 * injured reserve;
 * retention limits;
 * buyout rules;
+* illegal-roster matchup treatment;
+* tradeable asset types;
 * transaction timing;
 * season-wide restrictions.
 
 Read when a task affects multiple league features.
 
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with the relevant product and technical specifications.
+
 ## Scoring Rules
 
-Will define:
+The approved document defines:
 
 * fantasy-point formulas;
 * standings points;
 * matchup ties;
 * position treatment;
 * result calculations;
-* standings sorting.
+* standings sorting;
+* scoring corrections and failure behaviour.
 
 Read for statistics, matchups, standings, and playoff work.
 
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with League Rules and the relevant product and technical specifications.
+
 ## Permissions
 
-Will define:
+The approved document defines:
 
 * platform-administrator authority;
 * commissioner authority;
@@ -270,6 +290,14 @@ Will define:
 * backend authorization requirements.
 
 Read for accounts, leagues, teams, commissioner tools, and every write endpoint.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with the relevant product and technical specifications.
 
 ---
 
@@ -283,7 +311,7 @@ docs/03-product-specs/
 
 Product specifications define **what a feature must do** from the user and league perspective.
 
-Planned specifications include:
+The Leagues and Teams, User Accounts, Rosters, Contracts, Auctions, Trades, Matchups, Standings, Entry Draft, and Commissioner Tools specifications are approved. Product-specification paths include:
 
 ```text
 docs/03-product-specs/LEAGUES_AND_TEAMS.md
@@ -315,6 +343,192 @@ A product specification should define:
 
 Product specifications should not unnecessarily dictate JavaScript function names or exact file organization.
 
+## Leagues and Teams
+
+The approved specification defines:
+
+* league creation and lifecycle;
+* commissioner assignment;
+* team creation and administration;
+* manager assignment and transfer;
+* public roster access;
+* league settings and setup;
+* user-interface, validation, activity, and testing requirements.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with the related rule and technical specifications.
+
+## User Accounts
+
+The approved specification defines:
+
+* self-service and platform-administrator account creation;
+* sign-in, sign-out, and single-session behaviour;
+* password change and password reset;
+* account deactivation and reactivation;
+* account identity, privacy, validation, audit, and testing requirements;
+* approved account security and failure behaviour.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with Permissions and the related technical specifications.
+
+## Rosters
+
+The approved specification defines:
+
+* active, bench, injured-reserve, and prospect roster categories;
+* roster ownership, position normalization, movement, legality, and cap interaction;
+* prospect signing and injured-reserve workflows;
+* the separation between normal rosters and matchup snapshots;
+* public display, commissioner corrections, activity, validation, and testing;
+* approved product workflows and future-update boundaries.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with League Rules, Contracts, and the related technical specifications.
+
+## Contracts
+
+The approved specification defines:
+
+* contract value, term, AAV, creation, transfer, and expiration;
+* fantasy ELC creation;
+* retained-salary records and cap treatment;
+* buyout locks, penalties, and player release;
+* rollover, public display, commissioner corrections, activity, validation, and testing;
+* approved product workflows and future-update boundaries.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with League Rules, Rosters, and the related technical specifications.
+
+## Auctions
+
+The approved specification defines:
+
+* player eligibility and weekly and seasonal auction timing;
+* bid value, term, edit, blind visibility, ranking, and anti-bluff pricing;
+* deterministic contract creation and roster assignment;
+* commissioner controls, recovery, activity, validation, and testing;
+* resolved-bid visibility through League Activity.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with League Rules, Permissions, Contracts, and the related technical specifications.
+
+## Trades
+
+The approved specification defines:
+
+* tradeable assets, simultaneous proposals, expiry, and deadline behaviour;
+* player, prospect, draft-pick, contract, retention, buyout-penalty, and Future Considerations transfer;
+* acceptance, automatic cancellation, commissioner reversal, and correction;
+* visibility, activity, validation, and testing;
+* approved counter, trade-block, and two-team workflows.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with League Rules, Permissions, Contracts, Rosters, and the related technical specifications.
+
+## Matchups
+
+The approved specification defines:
+
+* NHL-calendar-derived regular-season schedule generation and matchup-week states;
+* the approved one-week, one-week, and two-week Hundo Leago playoff calendar;
+* scoring baselines, roster locks, late legality, and snapshot immutability;
+* live scoring, source-data freshness, finalization, and rollover;
+* result corrections, commissioner recovery, visibility, failure handling, and testing.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with League Rules, Scoring Rules, Rosters, and the related technical specifications.
+
+## Standings
+
+The approved specification defines:
+
+* authoritative finalized-result inputs and approved calculations;
+* official ordering, tied-team ranks, and visual presentation;
+* current and historical seasons, byes, incomplete results, and team history;
+* read-only derivation, explicit rebuilds, correction propagation, failure handling, and testing;
+* low-noise in-app notifications for completion, corrections, and commissioner-actionable failures.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with Matchups, Scoring Rules, and the related technical specifications.
+
+## Entry Draft
+
+The approved specification defines:
+
+* inherited prospect-right, fantasy ELC, traded-pick, and trading-window rules;
+* playoff-finalist placement, two weighted lottery draws, four linear rounds, and four draft classes;
+* most-recent NHL Entry Draft eligibility, prior-rights re-entry, and the exclusion of goalies;
+* live setup, timing, selections, automatic timeout picks, private queues, and completion;
+* immutable completed selections, traded-pick clock resets, activity, notifications, validation, and testing;
+* deferred development during the season before the first Season 2 Entry Draft.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation may begin during the season under the approved deferred schedule and must be complete before the first Season 2 Entry Draft is used.
+
+## Commissioner Tools
+
+The approved specification defines:
+
+* inherited league-scoped commissioner and platform-administrator authority;
+* approved feature-specific commissioner actions;
+* workspace, preview, confirmation, correction, freeze, health, recovery, backup, and restoration workflows;
+* activity, notification, safety, validation, and testing requirements;
+* explicit read-only boundaries and actor attribution.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with Permissions and the applicable feature specifications.
+
 ---
 
 # Technical Specifications
@@ -327,12 +541,13 @@ docs/04-technical-specs/
 
 Technical specifications define **how the system is built or changed**.
 
-Planned specifications include:
+Technical-specification paths include:
 
 ```text
 docs/04-technical-specs/ARCHITECTURE.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md
+docs/04-technical-specs/SECURITY.md
 docs/04-technical-specs/BACKEND_REFACTOR.md
 docs/04-technical-specs/SQLITE_MIGRATION.md
 docs/04-technical-specs/FRONTEND_STRUCTURE.md
@@ -342,67 +557,185 @@ docs/04-technical-specs/ENVIRONMENT_SETUP.md
 
 ## Architecture
 
-Will describe:
+The approved specification defines:
 
 * frontend and backend responsibilities;
-* repository boundaries;
-* data flow;
-* Socket.IO;
-* persistence;
-* hosting;
-* external data dependencies.
+* separate-repository and modular-monolith boundaries;
+* frontend HTTP, server-state, and Socket.IO responsibilities;
+* backend routes, services, domain, repositories, jobs, and adapter layers;
+* SQLite authority, transactions, legacy JSON, and migration sequencing;
+* external data, environments, hosting, observability, backup, and recovery;
+* approved technical boundaries delegated to and resolved by Codex.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with the approved Data Model and later specialized technical specifications.
 
 ## Data Model
 
-Will define:
+The approved specification defines:
 
-* database entities;
-* fields;
-* relationships;
-* stable identifiers;
-* league isolation;
-* season relationships;
-* constraints.
+* global ID, league, season, time, money, FP, version, status, and JSON conventions;
+* accounts, leagues, memberships, teams, players, ownership, rosters, and contracts;
+* auctions, trades, Entry Draft, statistics, matchups, standings, activity, and notifications;
+* reliability, idempotency, jobs, outbox, constraints, indexing, deletion, and migration verification;
+* approved technical decisions delegated to and resolved by Codex.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with Architecture, SQLite Migration, and the applicable feature specifications.
 
 ## API Contracts
 
-Will define each important endpoint’s:
+The approved specification defines:
 
-* method;
-* path;
-* purpose;
-* authentication;
-* authorization;
-* request;
-* response;
-* errors;
-* read-only or write behaviour;
-* affected state.
+* the complete 34-endpoint compatibility inventory reviewed on the backend `stage2` branch;
+* the `/api/v1` target namespace and league-scoped resource paths;
+* success, error, validation, time, money, pagination, caching, concurrency, and idempotency conventions;
+* secure session-derived authorization and cross-league isolation;
+* target endpoint families for every approved Season 2 feature;
+* Socket.IO invalidation, compatibility migration, retirement, and contract-test requirements;
+* approved technical decisions delegated to and resolved by Codex.
 
-Read-only endpoints must remain read-only.
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must preserve the documented compatibility behavior during extraction and follow the target contract when each feature moves to `/api/v1`.
+
+## Security
+
+The approved specification defines:
+
+* Node `scrypt` password storage, exact password-input handling, and credential verification;
+* opaque backend-managed sessions, secure cookies, expiry, replacement, revocation, and Socket.IO authentication;
+* one-time verification, setup, reset, and reactivation tokens;
+* exact credentialed CORS, Origin enforcement, CSRF, browser headers, and Content Security Policy;
+* durable authentication rate limits and anti-enumeration behaviour;
+* backend-derived authorization, league isolation, validation, injection defence, secrets, email, audit, and logging controls;
+* staged implementation and comprehensive security tests;
+* approved technical decisions delegated to and resolved by Codex.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with User Accounts, Permissions, API Contracts, Data Model, and SQLite Migration. Writing the specification did not enable authentication or change production state.
 
 ## Backend Refactor
 
-Will define:
+The approved specification defines:
 
-* current backend organization;
-* target folder structure;
-* behaviour-preservation requirements;
-* extraction sequence;
-* verification after each step;
-* completion criteria.
+* the observed backend structure and current risk boundaries;
+* the modular-monolith folder and dependency structure;
+* bootstrap, route, service, domain, repository, job, adapter, event, configuration, and logging responsibilities;
+* the Node built-in test foundation and read-only file-hash proof;
+* a 14-stage sequence from the Step 0 safety harness through the Step 13 completion gate;
+* focused treatment of the current Socket.IO compatibility defect;
+* exact verification, rollback, stop conditions, and completion criteria;
+* approved technical decisions delegated to and resolved by Codex.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+The numbered sequence must be executed one small, verified work-plan step at a time. It does not authorize SQLite migration or production deployment.
 
 ## SQLite Migration
 
-Will define:
+The approved specification defines:
 
-* target schema;
-* JSON migration;
-* backup;
-* rollback;
-* migration reports;
-* verification;
-* production safeguards.
+* the pinned Node and SQLite driver foundation;
+* database paths, WAL, durability, foreign-key, strict-table, and process rules;
+* immutable ordered migrations and checksum validation;
+* copied-JSON inventory, deterministic transformation, reset manifests, and stable ID mapping;
+* reconciliation reports, integrity checks, transaction boundaries, and repository behaviour;
+* database-safe backup, verified restore, staging, production cutover, and first-write rollback boundaries;
+* a small staged implementation sequence with no dual-write period;
+* approved technical decisions delegated to and resolved by Codex.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+This specification does not itself authorize a production migration or reset. Implementation must proceed through the active work plan and current operating-mode safeguards.
+
+## Frontend Structure
+
+The approved specification defines:
+
+* the target React and Vite application, provider, route, layout, shared, and feature structure;
+* JavaScript and JSX continuity without a launch-blocking TypeScript migration;
+* TanStack Query server-state ownership and URL-derived league context;
+* one shared credentialed HTTP client and one authenticated Socket.IO lifecycle;
+* session bootstrap, in-memory CSRF, query-key isolation, versions, and idempotency;
+* forms, errors, local-storage boundaries, CSS Modules, accessibility, responsive behavior, and testing;
+* an incremental `FE-00` through `FE-11` migration from the current large `App.jsx`;
+* approved technical decisions delegated to and resolved by Codex.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must preserve frontend/backend deployment compatibility and must not treat frontend state as identity, permission, or league truth.
+
+## Environment Setup
+
+The approved specification defines:
+
+* four explicit environment classes: local, automated test, staging, and production;
+* separate Netlify, Render, disk, SQLite, secret, user, email, job, and backup resources;
+* Node `24.14.1`, exact backend SQLite-driver compatibility, and reproducible package installation;
+* authoritative frontend and backend environment-variable contracts;
+* fail-closed configuration, filesystem, and database-environment identity checks;
+* exact origin, cookie, preview, debug-route, scheduled-job, email, and NHL-adapter boundaries;
+* local, staging, and future production setup sequences without changing live configuration.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Implementation must follow it together with Security, SQLite Migration, Frontend Structure, Backup and Restore, and Deployment. Writing it did not create staging or change Netlify, Render, secrets, disks, databases, or production.
+
+## Deployment
+
+The approved specification defines:
+
+* manual production publication of exact approved frontend and backend commits;
+* staging deployment after CI, with separate Netlify, Render, disk, database, and secret resources;
+* reproducible frontend and backend builds using Node `24.14.1`, lockfiles, and `npm ci`;
+* compatibility-first backend expansion, frontend cutover, observation, and later contract retirement;
+* explicit maintenance and migration procedures with no automatic migration during build or startup;
+* release records, read-only production smoke, first-write boundaries, monitoring, and rollback;
+* Netlify atomic publication and Render code rollback without falsely treating either as a database rollback.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Writing it did not publish Netlify or Render, change configuration, run a migration, or grant production authority.
 
 ---
 
@@ -414,7 +747,7 @@ Directory:
 docs/05-roadmap/
 ```
 
-Planned active files:
+Current roadmap files:
 
 ```text
 docs/05-roadmap/ACTIVE_ROADMAP.md
@@ -429,9 +762,24 @@ docs/05-roadmap/archive/
 
 ## Active Roadmap
 
-Defines the current sequence of milestones and priorities.
+The approved active roadmap defines:
 
-It does not define every feature rule or implementation detail.
+* the dependency order from the backend safety harness through launch;
+* milestone gates for refactor, SQLite, security, multi-league conversion, league features, staging, migration, and release;
+* launch-critical, in-season, optional, and deferred boundaries;
+* just-in-time documentation requirements;
+* the rule that only one contained work-plan step is active at a time.
+
+The file is marked:
+
+```text
+APPROVED
+ACTIVE
+```
+
+Its current next implementation item is backend-refactor work item `BR-00`, the Baseline and Safety Harness.
+
+The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
 ## Future Backlog
 
@@ -467,6 +815,26 @@ Completed plans belong in:
 docs/06-work-plans/archive/
 ```
 
+The approved active work plan is:
+
+```text
+BR-00 - Backend Refactor Step 0: Baseline and Safety Harness
+Status: READY TO START
+```
+
+It defines:
+
+* the exact backend repository and branch;
+* the only modified and added paths;
+* temporary synthetic fixtures;
+* the 34/6/28 endpoint-manifest proof;
+* child-process startup against explicit temporary paths;
+* read-only endpoint file-hash proof;
+* league-store save, backup, restore, queue, and failure characterization;
+* focused verification, risks, rollback, stop conditions, and completion evidence.
+
+Writing the plan does not begin coding. Execution starts only when Grae requests it.
+
 A work plan is used for a contained current task such as:
 
 * completing one backend-refactor step;
@@ -497,7 +865,7 @@ Directory:
 docs/07-testing/
 ```
 
-Planned documents include:
+Testing-document paths include:
 
 ```text
 docs/07-testing/TESTING_STRATEGY.md
@@ -507,6 +875,83 @@ docs/07-testing/RELEASE_CHECKLIST.md
 ```
 
 Testing documents define how approved behaviour is verified.
+
+## Testing Strategy
+
+The approved strategy defines:
+
+* Node's built-in backend test foundation;
+* Vitest and Testing Library frontend tests;
+* Playwright critical browser workflows;
+* synthetic fixtures, fixed time, randomness, money, concurrency, and two-league isolation;
+* characterization, domain, repository, service, contract, component, browser, security, job, migration, and recovery layers;
+* local, work-plan, staging, release, and read-only production-smoke gates;
+* coverage, flaky-test, evidence, and artifact policies.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+## Backend Endpoint Checklist
+
+The approved active checklist defines:
+
+* all 34 current compatibility route registrations, including the six conditional debug routes;
+* all 124 approved `/api/v1` target endpoints;
+* permanent compatibility and target endpoint IDs;
+* characterization, contract, frontend, staging, production, and retirement statuses;
+* authentication, permission, two-league isolation, validation, concurrency, transaction, read-only, privacy, outbox, and Socket.IO proof;
+* the evidence required before an endpoint can advance.
+
+The file is marked:
+
+```text
+APPROVED
+ACTIVE
+```
+
+## Manual QA Checklist
+
+The approved active checklist defines:
+
+* focused, milestone, release, and in-season manual-QA levels;
+* exact run, build, environment, browser/device, fixture, result, defect, and artifact records;
+* a synthetic two-league staging fixture with overlapping names and player pools;
+* launch-critical account, league, roster, contract, auction, trade, matchup, standings, commissioner, activity, notification, and recovery workflows;
+* desktop, Firefox, mobile Chromium, WebKit/iOS, physical-mobile, zoom, keyboard, and screen-reader spot checks;
+* failure, concurrency, reconnect, provider, job, backup/restore, retest, and exit gates.
+
+The file is marked:
+
+```text
+APPROVED
+ACTIVE
+```
+
+Manual QA is release evidence, not production authority.
+
+## Release Checklist
+
+The approved active template defines:
+
+* `D0` through `D5` release-type applicability;
+* source, documentation, automated-test, endpoint, manual-QA, security, environment, database, backup, staging, deployment, and rollback gates;
+* release records, hard blockers, defect disposition, and exact go/no-go states;
+* separate production, reset, migration, restore, secret, disk, and domain authority;
+* read-only production smoke, controlled reopening, first-write tracking, monitoring, rollback, and closeout;
+* Grae's explicit production-approval boundary.
+
+The file is marked:
+
+```text
+APPROVED
+ACTIVE
+NOT EVALUATED
+```
+
+Approval of the template does not mark a release ready.
 
 Read when:
 
@@ -528,7 +973,7 @@ Directory:
 docs/08-operations/
 ```
 
-Planned documents include:
+Operations document paths include:
 
 ```text
 docs/08-operations/PRODUCTION_RUNBOOK.md
@@ -538,6 +983,26 @@ docs/08-operations/INCIDENT_RECOVERY.md
 ```
 
 Operations documents cover running the real application.
+
+## Backup and Restore
+
+The approved specification defines:
+
+* application-consistent SQLite backups through the database driver;
+* verified, compressed, AES-256-GCM-encrypted offsite artifacts and an external catalog;
+* hourly, daily, pre-change, season-end, incident, and migration retention classes;
+* recovery-point and recovery-time targets;
+* commissioner backup requests and platform-administrator-only restore execution;
+* maintenance, candidate verification, atomic activation, session and token revocation, job and outbox reconciliation, and reopening gates;
+* mandatory staging restore drills and explicit data-loss reconciliation.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Render disk snapshots remain secondary protection. The primary recovery artifact is the verified application-created encrypted offsite backup.
 
 Read for:
 
@@ -795,6 +1260,40 @@ docs/01-project/OPERATING_MODE.md
 docs/01-project/GLOSSARY.md
 ```
 
-Other document paths listed in this index are planned and will be created as the documentation foundation develops.
+Document status is recorded below. Paths without an approved file remain planned until they are created through the documentation workflow.
+
+The following rule documents also exist:
+
+```text
+docs/02-rules/LEAGUE_RULES.md       — APPROVED
+docs/02-rules/SCORING_RULES.md      — APPROVED
+docs/02-rules/PERMISSIONS.md        — APPROVED
+docs/03-product-specs/LEAGUES_AND_TEAMS.md — APPROVED
+docs/03-product-specs/USER_ACCOUNTS.md — APPROVED
+docs/03-product-specs/ROSTERS.md — APPROVED
+docs/03-product-specs/CONTRACTS.md — APPROVED
+docs/03-product-specs/AUCTIONS.md — APPROVED
+docs/03-product-specs/TRADES.md — APPROVED
+docs/03-product-specs/MATCHUPS.md — APPROVED
+docs/03-product-specs/STANDINGS.md — APPROVED
+docs/03-product-specs/ENTRY_DRAFT.md — APPROVED
+docs/03-product-specs/COMMISSIONER_TOOLS.md — APPROVED
+docs/04-technical-specs/ARCHITECTURE.md — APPROVED
+docs/04-technical-specs/DATA_MODEL.md — APPROVED
+docs/04-technical-specs/API_CONTRACTS.md — APPROVED
+docs/04-technical-specs/BACKEND_REFACTOR.md — APPROVED
+docs/04-technical-specs/SQLITE_MIGRATION.md — APPROVED
+docs/04-technical-specs/SECURITY.md — APPROVED
+docs/04-technical-specs/FRONTEND_STRUCTURE.md — APPROVED
+docs/04-technical-specs/ENVIRONMENT_SETUP.md — APPROVED
+docs/04-technical-specs/DEPLOYMENT.md — APPROVED
+docs/05-roadmap/ACTIVE_ROADMAP.md — APPROVED / ACTIVE
+docs/06-work-plans/ACTIVE_WORK_PLAN.md — APPROVED / READY TO START
+docs/07-testing/TESTING_STRATEGY.md — APPROVED
+docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md — APPROVED / ACTIVE
+docs/07-testing/MANUAL_QA_CHECKLIST.md — APPROVED / ACTIVE
+docs/07-testing/RELEASE_CHECKLIST.md — APPROVED / ACTIVE / NOT EVALUATED
+docs/08-operations/BACKUP_AND_RESTORE.md — APPROVED
+```
 
 Do not assume a planned document exists without checking the repository.
