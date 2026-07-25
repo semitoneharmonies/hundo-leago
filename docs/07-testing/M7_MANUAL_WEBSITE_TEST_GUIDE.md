@@ -203,9 +203,12 @@ change returns an audit activity identifier.
 
 ### Tour 8 - Trades, Matchup Evidence, Audit, and Reconnect
 
-1. Open Trades and inspect the seeded pending, completed, declined, and
-   invalid-cap scenarios. The completed trade must show its real transferred
-   assets; the invalid-cap acceptance preview must remain blocked by cap.
+1. Open Trades and inspect the seeded pending, accepted, rejected, and
+   invalid-cap scenarios. The accepted trade must show its real transferred
+   assets. The invalid-cap acceptance preview must show
+   `SALARY_CAP_EXCEEDED`, the projected over-cap amount, and the approved
+   general-illegality warning before any explicit confirmation. Do not accept
+   this seeded trade during smoke testing.
 2. Open League activity and confirm trade events plus the commissioner add,
    move, contract, and remove actions from Tour 7 are visible with their
    recorded reasons.

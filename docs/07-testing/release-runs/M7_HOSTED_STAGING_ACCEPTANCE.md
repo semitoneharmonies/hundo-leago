@@ -2,12 +2,12 @@
 
 ## Status
 
-`MANUAL ACCEPTANCE FAILED / BLOCKED`
+`M7-10 REMEDIATION PASSED / USER RETEST READY`
 
 Production remains `NO-GO`. This record does not authorize a production
 reset, migration, deploy, traffic change, job activation, or merge to `main`.
 
-## Exact Candidate
+## Original M7-09 Candidate
 
 ```text
 Release ID:          HL-20260724-1
@@ -218,7 +218,7 @@ Restored schema version:
 The clean restore used a new path and did not replace the live staging
 database.
 
-## Provider Evidence
+## Original M7-09 Provider Evidence
 
 The hosted verifier intentionally did not trigger an NHL refresh. Operations
 health reported a last-valid 2026-27 statistics refresh. Provider failure
@@ -241,13 +241,79 @@ Email remains capture-only. Scheduled jobs remain disabled.
 Rollback must select only one of these staging identities. Code rollback does
 not roll back or restore SQLite state.
 
+## M7-10 Remediation Retest
+
+The staging-only remediation was published and retested on `2026-07-25`.
+
+```text
+Frontend application commit: 84bb957ff75c351e2c55238bacb982f8dcf8b46b
+Frontend Netlify deploy:      6a64b810e7798072d13f104e
+Backend commit:               0e97b056a3946bcbaeb782d23d849bb2b508a125
+Backend Render deploy:        dep-d9ib71l8nd3s739k1v60
+Fixture build:                m7-release-qa-fixture-v6
+```
+
+Local publication gates passed:
+
+* backend provider-contract focus: `32/32`;
+* complete backend: `962/962`;
+* complete frontend: `106/106`;
+* frontend lint, production build, and browser-authority verification.
+
+The explicit staging import ran only while writes were closed. SportsDataIO
+Discovery Lab returned `3,154` catalog players and `1,091` mapped 2025-26
+regular-season statistics rows. The adapter derives provider season
+`2026REG`, rejects non-regular-season totals, and exposes no subscription key.
+After reopening writes, provider health retained the successful import and a
+real Connor McDavid detail page displayed 82 games, 48 goals, 90 assists, and
+138 points with a visible last-season label.
+
+The accepted M7-09 failures and untested authority cases were retested:
+
+* league-scoped player details show ownership, contract, and statistics;
+* current matchups show player lists plus G, A, PTS, and FP values;
+* a Render staging restart preserved the selected matchup route and all 20
+  table rows without a manual refresh;
+* direct protected commissioner URLs deny the Alpha manager;
+* the Beta commissioner cannot address the Alpha league; and
+* the platform administrator can inspect both deliberately different fixture
+  leagues.
+
+The commissioner smoke added a real imported free agent to Alpha Foxes,
+moved the player through Bench, Active, Injured Reserve, Prospect, and back to
+Bench, corrected total salary and term, then removed the player. Every apply
+followed a read-only preview, returned an activity identifier, updated the cap
+projection, and appeared in League Activity. The exceptional IR and Prospect
+warnings required confirmation. The player returned to free agency and Alpha
+Foxes returned to its fixture cap.
+
+The seeded trade view restored three pending, one accepted, and one rejected
+record. The invalid-cap acceptance preview displayed
+`SALARY_CAP_EXCEEDED`, projected usage of `$102.00` against the `$100.00`
+limit, and the approved general-illegality warning. The trade was not accepted
+during smoke testing. This matches `TRADES.md`, which allows completion only
+after explicit warning confirmation; the manual guide now tests the warning
+instead of incorrectly requiring a hard block.
+
+The final staging-only reset:
+
+* created and verified backup
+  `backup-v1-14c101189ceadd0de55d7cffd6b0727ddb2e43af820968804b525f9756fe4215`;
+* invalidated all fixture sessions;
+* restored six Alpha and six Beta teams;
+* restored Fixture Player 19 to Alpha Owls Bench and Beta Vipers Bench;
+* restored all five seeded trade states and populated matchup statistics; and
+* preserved the `3,154`-player catalog and `1,091`-player successful import.
+
+The final Render staging runtime has writes open and scheduled jobs disabled.
+The final Netlify staging deploy is healthy. No production service, data,
+configuration, branch, job, provider, or traffic setting was changed.
+
 ## Remaining Gates
 
-* resolve or explicitly defer the failed and untested Grae manual hosted
-  browser-acceptance gates recorded above;
+* Grae's independent browser retest and staging acceptance;
 * staging offsite object-storage upload and encrypted clean restore after the
-  staging-only provider target is reviewed;
-* a focused live NHL provider smoke if Grae chooses to authorize it.
+  staging-only provider target is reviewed; and
+* separate explicit production authorization and release execution.
 
-Production remains blocked pending Grae's separate staging acceptance and
-separate explicit production authorization.
+Production remains blocked pending those separate gates.

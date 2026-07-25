@@ -1447,13 +1447,27 @@ across 19 files, frontend lint, and the production build. M7-07 is complete
 locally.
 
 The actual read-only candidate inspection correctly blocks the non-staging
-frontend branch, both dirty worktrees, and absent exact candidate input without
+frontend branch, dirty worktrees, and absent exact candidate input without
 mutation or authority. Encrypted private-object backup, wrong-key failure,
 clean-path restore, provider-failure containment, disabled scheduler, protected
-hashes, and clean teardown pass locally. Hosted staging, real providers,
-physical mobile QA, candidate freeze, commit/push, deployment, and production
-remain unverified or unauthorized. M7 remains active; M7-07 is complete
-locally. No M4, M5, M6, or M7 work is deployed or enabled in production.
+hashes, and clean teardown pass locally. M7-08 froze and published only the
+staging branches. M7-09 deployed the isolated Netlify and Render staging
+resources and recorded the original hosted browser failures.
+
+M7-10 completed staging remediation on `2026-07-25`. The dedicated staging
+application now has a SportsDataIO Discovery Lab catalog of `3,154` players
+and `1,091` mapped 2025-26 regular-season statistics rows, deterministic
+distinct Alpha/Beta six-team fixtures, complete controlled account states,
+seeded trade scenarios, staging-only reset with verified backup, league-scoped
+commissioner roster and contract tools, cap previews, activity audit evidence,
+player details, matchup player statistics, and reconnect recovery. The final
+backend passes `962/962`; the final frontend passes `106/106`, lint, build, and
+browser-authority verification. Focused hosted retesting passed and the final
+reset preserved provider data while restoring all fixture state. The staging
+site is ready for Grae's independent retest.
+
+Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
+is deployed or enabled in production.
 
 The active schedule will be maintained in:
 

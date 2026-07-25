@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE — STAGING ONLY`
+`COMPLETE — STAGING ONLY`
 
 ## Work Plan ID
 
@@ -95,11 +95,11 @@ missing, malformed, or too short. The administrator-only operations-health
 response reports whether the last successful SportsDataIO import is stale; it
 never returns the key.
 
-## Current Local Implementation Evidence
+## Implementation and Verification Evidence
 
-The following is verified local implementation evidence only. It is not yet a
-staging deployment record and does not change the blocked manual-acceptance
-outcome.
+The implementation, deployment, provider import, and focused hosted retest are
+complete on the dedicated staging resources. This is staging evidence only and
+does not authorize a production action.
 
 * `SPORTSDATAIO_NHL_API_KEY` is the only required secret. Configure it only
   on Render service `hundo-leago-backend-staging`; no frontend, Git, chat,
@@ -112,7 +112,7 @@ outcome.
   Active/Bench/IR/Prospect rosters, Alpha/Beta commissioner accounts,
   no-membership/pending/deactivated accounts, player totals, snapshot locks,
   and player rows for matchup displays. Its trade evidence includes pending,
-  accepted, declined, simultaneous-asset, and explicitly synthetic
+  accepted, rejected, simultaneous-asset, and explicitly synthetic
   invalid-cap-preview states.
 * The platform-administrator-only reset creates and verifies a pre-reset
   backup, rechecks exact staging environment/database identity and authority,
@@ -132,11 +132,54 @@ outcome.
   player scope, action result, correction metadata, reason, and timestamp
   without exposing unsafe internal snapshots.
 
-The complete backend suite passes `960/960` on the approved Node `24.14.1`.
-The latest focused frontend reset-receipt, commissioner, activity, and account
-tests pass `25/25`; complete frontend tests, lint, build, and browser-authority
-verification are rerun as the final local gate before publication. Hosted
-evidence remains required before this plan can complete.
+The final backend suite passes `962/962` on the approved Node `24.14.1`.
+The final frontend suite passes `106/106`; lint, production build, and the
+browser-authority verifier also pass. The provider-contract correction passes
+its focused `32/32` gate.
+
+## Hosted Completion Evidence
+
+The dedicated staging application is live at
+`https://hundoleago-staging.netlify.app` with:
+
+* frontend application commit
+  `84bb957ff75c351e2c55238bacb982f8dcf8b46b` and Netlify deploy
+  `6a64b810e7798072d13f104e`;
+* backend commit `0e97b056a3946bcbaeb782d23d849bb2b508a125`
+  and Render deploy `dep-d9ib71l8nd3s739k1v60`;
+* `LEAGUE_WRITE_MODE=open` and scheduled jobs disabled on the dedicated
+  staging service; and
+* no production deployment, configuration, data, job, or branch change.
+
+The explicit closed-mode SportsDataIO import succeeded with `3,154` catalog
+players and `1,091` mapped 2025-26 regular-season statistics rows. The final
+open-mode provider-health view reports
+`sportsdataio-discovery-lab`, import enabled, the same catalog count, and the
+same successful import. A real Connor McDavid player-detail page displayed 82
+games, 48 goals, 90 assists, and 138 points with the required last-season
+label.
+
+Hosted commissioner testing previewed and applied add, Active/Bench/IR/Prospect
+moves, salary/term correction, and removal against Alpha Foxes. Cap totals,
+exception warnings, and League Activity entries matched after every command;
+the imported player ended as a free agent and Alpha Foxes returned to its
+fixture cap. Alpha manager authority was denied, and the Beta commissioner
+could not address the Alpha league.
+
+The post-reset fixture contains six distinct Alpha teams and six distinct Beta
+teams. Fixture Player 19 is Bench on Alpha Owls but Bench on Beta Vipers.
+Three pending, one accepted, and one rejected trade are restored. The
+invalid-cap preview reports `SALARY_CAP_EXCEEDED` and the approved general
+illegality warning; it was not accepted. Matchup player lists and per-player
+statistics are populated. After a staging backend restart, the selected
+matchup route remained stable and its 20 table rows remained populated without
+a manual refresh.
+
+The final administrator reset created verified backup
+`backup-v1-14c101189ceadd0de55d7cffd6b0727ddb2e43af820968804b525f9756fe4215`,
+invalidated fixture sessions, restored fixture
+`m7-release-qa-fixture-v6`, and preserved all `3,154` provider catalog players
+plus the successful `1,091`-player import record.
 
 ## Scope
 
