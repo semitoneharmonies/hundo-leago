@@ -65,7 +65,7 @@ This plan does not authorize:
 Release ID:              HL-20260724-1
 Frontend repository:     E:\hundo-leago
 Frontend branch:         staging
-Frontend commit:         928d76e88b729aef03300999b98206b693e4b118
+Frontend commit:         3d2cc5989badd9432c312410d4306d07d6c400ce
 Backend repository:      E:\hundo-leago-backend
 Backend branch:          staging
 Backend commit:          d6eea77a0ab0b8c82a9bcd347d5ee0da76f0bd4a
