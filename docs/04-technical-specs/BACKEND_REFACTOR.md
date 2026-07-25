@@ -93,10 +93,10 @@ This permits major documented work outside production. It does not make protecte
 
 ## Repository and Branch
 
-The refactor occurs in:
+The canonical backend workspace is:
 
 ```text
-C:\Users\graem\Desktop\hundo-leago-backend
+E:\hundo-leago-backend
 ```
 
 The reviewed local branch is:
@@ -108,8 +108,8 @@ stage2
 Before every step:
 
 ```powershell
-git -C C:\Users\graem\Desktop\hundo-leago-backend status --short
-git -C C:\Users\graem\Desktop\hundo-leago-backend branch --show-current
+git -C E:\hundo-leago-backend status --short
+git -C E:\hundo-leago-backend branch --show-current
 ```
 
 If Git requires a safe-directory override in a sandboxed environment, use a command-scoped `-c safe.directory=...` option. Do not modify the user’s global Git configuration merely to inspect the repository.

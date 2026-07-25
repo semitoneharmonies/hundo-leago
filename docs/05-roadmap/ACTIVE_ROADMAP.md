@@ -218,13 +218,13 @@ Approved self-service user sign-up is part of User Accounts. It does not grant l
 | ID | Milestone | Status | Primary gate |
 | --- | --- | --- | --- |
 | M0 | Canonical foundation and approved design | `COMPLETE` | Active roadmap and work plan exist |
-| M1 | Backend safety harness and behavior-preserving refactor | `READY` | Backend Refactor Step 13 passes |
-| M2 | SQLite foundation, migration tooling, and repository conversion | `BLOCKED` | Verified staging SQLite database and restore |
-| M3 | Secure accounts, permissions, leagues, teams, and memberships | `BLOCKED` | Two-league identity and authorization tests pass |
-| M4 | Players, rosters, contracts, cap, retention, and buyouts | `BLOCKED` | Approved roster and cap invariants pass |
-| M5 | Auctions, trades, activity, and notifications | `BLOCKED` | Transaction and concurrency suites pass |
-| M6 | Matchups, statistics, standings, and commissioner recovery | `BLOCKED` | Accelerated season and correction tests pass |
-| M7 | Frontend completion, staging release candidate, migration, and launch | `BLOCKED` | Launch checklist and explicit production authority |
+| M1 | Backend safety harness and behavior-preserving refactor | `COMPLETE` | Backend Refactor Step 13 passes |
+| M2 | SQLite foundation, migration tooling, and repository conversion | `COMPLETE` | Verified staging SQLite database and restore |
+| M3 | Secure accounts, permissions, leagues, teams, and memberships | `COMPLETE` | Two-league identity and authorization tests pass |
+| M4 | Players, rosters, contracts, cap, retention, and buyouts | `COMPLETE` | Approved roster and cap invariants pass |
+| M5 | Auctions, trades, activity, and notifications | `COMPLETE` | Transaction and concurrency suites pass |
+| M6 | Matchups, statistics, standings, and commissioner recovery | `COMPLETE` | Accelerated season and correction tests pass |
+| M7 | Frontend completion, staging release candidate, migration, and launch | `ACTIVE` | Launch checklist and explicit production authority |
 | M8 | Required in-season completion | `DEFERRED` | Delivered before each league-calendar deadline |
 | M9 | Optional and future backlog | `DEFERRED` | Explicit scope promotion by Grae |
 
@@ -287,7 +287,12 @@ docs/07-testing/MANUAL_QA_CHECKLIST.md
 docs/07-testing/RELEASE_CHECKLIST.md
 ```
 
-The completed documentation queue does not alter the next implementation item: M1 Step 0 remains the backend safety harness until its active work plan is formally advanced.
+The documentation queue is complete. M1 work items `BR-00` through
+`BR-13`, M2 work items `M2-01` through `M2-14`, and the external M2
+staging gate are complete. M3-01 through M3-21 and the M3 completion
+gate are complete locally. The final backend passed `546/546`, the
+frontend passed `57/57`, lint and build passed, and the ordinary-Chrome
+connected-browser gate passed.
 
 ---
 
@@ -295,7 +300,7 @@ The completed documentation queue does not alter the next implementation item: M
 
 ## Status
 
-`READY`
+`COMPLETE`
 
 ## Objective
 
@@ -326,14 +331,33 @@ BR-12  Remove feature code from root
 BR-13  Refactor completion gate
 ```
 
-The Active Work Plan initially authorizes planning for `BR-00` only.
+Current sequence state:
+
+```text
+BR-00  COMPLETE
+BR-01  COMPLETE
+BR-02  COMPLETE
+BR-03  COMPLETE
+BR-04  COMPLETE
+BR-05  COMPLETE
+BR-06  COMPLETE
+BR-07  COMPLETE
+BR-08  COMPLETE
+BR-09  COMPLETE
+BR-10  COMPLETE
+BR-11  COMPLETE
+BR-12  COMPLETE
+BR-13  COMPLETE
+```
+
+The Active Work Plan records M1 completion and authorizes no further implementation.
 
 After each step:
 
 * evidence is recorded;
 * the current work plan is closed or advanced;
 * the worktree is reviewed;
-* the next step remains inactive until requested.
+* the next step remains inactive until a separate work plan is approved.
 
 ---
 
@@ -360,7 +384,7 @@ M1 is complete only when:
 
 ## Status
 
-`BLOCKED BY M1`
+`COMPLETE`
 
 ## Objective
 
@@ -370,7 +394,7 @@ Introduce the approved SQLite runtime and replace JSON repository adapters witho
 
 ## Sequence
 
-1. Pin Node `24.14.1` and exact `better-sqlite3` `12.11.2`.
+1. Pin Node `24.14.1` and exact `better-sqlite3` `12.11.1`.
 2. Add the central connection factory and required PRAGMAs.
 3. Add immutable migration files, checksums, and schema compatibility checks.
 4. Implement the approved strict relational schema.
@@ -408,11 +432,35 @@ M2 is complete when:
 
 ---
 
+## Completion Evidence
+
+M2 completed on 2026-07-19 at backend commit
+`734c52f865e1407dcd21fcc9ffa891ca4c022fb2`.
+
+The exact commit passed a clean Render build and was deployed only to the
+dedicated staging service and disk. Two clean current-data imports on
+that disk produced identical `6,099`-row databases, zero rejects, zero
+quarantine entries, identical semantic evidence, successful independent
+verification, and byte-identical online backups, activation candidates,
+rollback candidates, and canonical reports.
+
+The post-gate audit confirmed a protected, network-isolated staging
+environment, distinct staging and production disks, independent
+staging secrets, disabled jobs, healthy JSON application authority, and
+unchanged production service, disk, data, and authority. No production
+migration or cutover occurred.
+
+Detailed evidence is archived at:
+
+`docs/06-work-plans/archive/M2-GATE_EXTERNAL_STAGING_ISOLATION_VERIFICATION.md`
+
+---
+
 # Part 7 - Milestone M3: Identity and Multi-League Core
 
 ## Status
 
-`BLOCKED BY M2`
+`COMPLETE`
 
 ## Objective
 
@@ -422,7 +470,7 @@ Make the backend authoritative for identity, league access, team control, and pl
 
 ## Feature Order
 
-1. Remove shipped hard-coded frontend credentials and browser identity authority.
+1. Remove shipped hard-coded frontend credentials and browser identity authority. `M3-01 COMPLETE`
 2. Add users, credentials, account-action tokens, sessions, and Security Audit.
 3. Add `scrypt` password storage and test-only account creation.
 4. Add session cookies, expiry, replacement, revocation, CORS, Origin, and CSRF.
@@ -430,12 +478,75 @@ Make the backend authoritative for identity, league access, team control, and pl
 6. Add sign-in, sign-out, password change, password reset, deactivation, and reactivation.
 7. Add durable authentication rate limits and generic public responses.
 8. Add one-time first-platform-administrator bootstrap.
-9. Add administrative league creation.
+9. Add administrative league creation. `M3-10 COMPLETE`
 10. Add memberships, commissioner assignment, teams, and manager assignments.
+    `M3-11 INITIAL COMMISSIONER, M3-14 TEAM AUTHORITY, M3-15 INVITATIONS, M3-16 TEAM READ/CREATE, M3-17 MANAGER ASSIGNMENT, AND M3-18 TEAM PROFILE COMPLETE`
 11. Add backend authorization policies and league-scoped repositories.
+    `M3-12 COMPLETE`
 12. Add authenticated league-scoped Socket.IO rooms.
-13. Add the account and league-selection frontend.
+    `M3-13 USER/LEAGUE AND M3-14 TEAM ROOMS COMPLETE`
+13. Compose the local target runtime, then add the account and league-selection
+    frontend. `M3-19 AND M3-20 COMPLETE`
 14. Add provider-backed account email and required notifications.
+    `M3-21 COMPLETE`
+
+Work-plan progress: `M3-01` through `M3-04` are complete locally.
+`M3-04` passed `17/17` focused, `47/47` combined security, `136/136`
+cumulative foundation, and `309/309` complete backend tests. Grae
+approved stable versioned HMAC-SHA-256 CSRF derivation from each opaque
+random session token on 2026-07-20. `M3-05` is complete with `5/5`
+focused, `39/39` combined security, `143/143` cumulative foundation,
+and `316/316` complete backend tests passing. `M3-06` is complete with
+`8/8` focused, `62/62` combined security, `151/151` cumulative
+foundation, and `324/324` complete backend tests passing. On 2026-07-20
+Grae approved M3-07 option 1, and `M3-07` is complete locally. Atomic
+pending registration, encrypted durable action-link delivery, resend,
+single-use activation, initial session creation, and isolated target HTTP
+contracts passed `18/18` focused, `80/80` combined M3 account/security,
+`169/169` cumulative foundation, and `342/342` complete backend tests under
+Node `24.14.1`. `M3-08` is complete: its focused regression passed
+`50/50`, combined M3 account/security passed `116/116`, cumulative
+foundation passed `205/205`, and the complete backend passed `378/378`
+under Node `24.14.1`. `M3-09` is complete: `14/14` focused,
+`130/130` combined M3 account/security/migration/bootstrap, `219/219`
+cumulative foundation, and `392/392` complete backend tests passed under
+Node `24.14.1`. `M3-10` is complete: `18/18` focused, `148/148`
+combined M3 account/security/bootstrap/administration, `237/237` cumulative
+foundation, and `410/410` complete backend tests passed under Node `24.14.1`.
+`M3-11` initial commissioner proposal, acceptance, and active membership is
+complete: `16/16` focused, `164/164` combined M3, `253/253` cumulative
+foundation, and `426/426` complete backend tests passed under Node `24.14.1`.
+`M3-12` league-scoped authorization and authenticated read-only league
+visibility is complete: `10/10` focused, `174/174` combined M3, `263/263`
+cumulative foundation, and `436/436` complete backend tests passed under Node
+`24.14.1`. `M3-13` authenticated user and league Socket.IO rooms is complete:
+`15/15` focused, `190/190` combined M3, `279/279` cumulative foundation, and
+`452/452` complete backend tests passed under Node `24.14.1`. `M3-14`
+team-scoped manager authorization and authenticated team Socket.IO rooms is
+complete: `7/7` focused, `197/197` combined M3, `286/286` cumulative
+foundation, and `459/459` complete backend tests passed under Node `24.14.1`.
+`M3-15` Option 1 is complete: `17/17` focused, `214/214` combined M3,
+`303/303` cumulative foundation, and `476/476` complete backend tests passed
+under Node `24.14.1`. `M3-16` authenticated team reads and commissioner-only
+Setup team creation is complete: `9/9` focused, `223/223` combined M3,
+`312/312` cumulative foundation, and `485/485` complete backend tests passed
+under Node `24.14.1`. `M3-17` active-member manager assignment, transfer, and
+removal is complete: `11/11` focused, `234/234` combined M3, `323/323`
+cumulative foundation, and `496/496` complete backend tests passed under Node
+`24.14.1`. `M3-18` team-profile representation, safe logo storage, and
+versioned mutation is complete: `16/16` focused, `250/250` combined M3,
+`339/339` cumulative foundation, and `512/512` complete backend tests passed
+under Node `24.14.1`. `M3-19` local target-runtime composition and API
+integration is complete: `21/21` focused, `271/271` combined M3, `360/360`
+cumulative foundation, and `533/533` complete backend tests passed under Node
+`24.14.1`. `M3-20` account and league-selection frontend integration is
+complete: frontend tests passed `57/57`, the complete backend passed `533/533`,
+lint and build passed, and ordinary Chrome passed the real-mobile, keyboard,
+credential-clearing, history, action-link, and authority-free request gates.
+`M3-21` provider-backed account email and required notifications is complete:
+its focused provider, rendering, and job suite passed `12/12`, the complete
+backend passed `546/546`, and no live provider request occurred. The M3
+completion gate passed. Later milestone feature-order items remain inactive.
 
 The Frontend Structure specification must exist before step 13.
 
@@ -458,13 +569,16 @@ M3 requires:
 * Socket.IO events isolated by authorized league room;
 * Security Audit remaining separate from League Activity.
 
+Gate result: `COMPLETE` on 2026-07-21. Detailed evidence is archived at
+`docs/06-work-plans/archive/M3-GATE_SECURE_ACCOUNTS_PERMISSIONS_LEAGUES_TEAMS_AND_MEMBERSHIPS.md`.
+
 ---
 
 # Part 8 - Milestone M4: League Assets and Cap System
 
 ## Status
 
-`BLOCKED BY M3`
+`COMPLETE`
 
 ## Objective
 
@@ -474,18 +588,18 @@ Implement the authoritative player, roster, contract, retention, buyout, and sal
 
 ## Feature Order
 
-1. Global players and provider IDs.
-2. League-specific position corrections and ownership.
-3. Active, bench, injured-reserve, and prospect roster categories.
-4. Roster movements and legality.
-5. Contracts and contract-year schedules.
-6. Fantasy ELC signing and decline.
-7. Retained salary and yearly obligations.
-8. Buyout locks, contract elimination, player release, and yearly penalties.
-9. Authoritative cap calculation.
-10. Public roster projection with only approved fields.
-11. Commissioner roster and contract corrections.
-12. Frontend roster, contract, and cap integration.
+1. Global players and provider IDs. `M4-01 COMPLETE`
+2. League-specific position corrections and ownership. `M4-02 COMPLETE`
+3. Active, bench, injured-reserve, and prospect roster categories. `M4-03 COMPLETE`
+4. Roster movements and legality. `M4-04 COMPLETE`
+5. Contracts and contract-year schedules. `M4-05 COMPLETE`
+6. Fantasy ELC signing and decline. `M4-06 COMPLETE`
+7. Retained salary and yearly obligations. `M4-07 COMPLETE`
+8. Buyout locks, contract elimination, player release, and yearly penalties. `M4-08 COMPLETE`
+9. Authoritative cap calculation. `M4-09 COMPLETE`
+10. Public roster projection with only approved fields. `M4-10 COMPLETE`
+11. Commissioner roster and contract corrections. `M4-11 COMPLETE`
+12. Frontend roster, contract, and cap integration. `M4-12 COMPLETE`
 
 ---
 
@@ -509,13 +623,16 @@ Tests prove:
 * public roster reads do not write or expose private data;
 * every record and operation remains league-scoped.
 
+Gate result: `COMPLETE` on `2026-07-21`. Detailed evidence is archived in
+`docs/06-work-plans/archive/M4-GATE_LEAGUE_ASSETS_AND_CAP_SYSTEM.md`.
+
 ---
 
 # Part 9 - Milestone M5: Transactions and History
 
 ## Status
 
-`BLOCKED BY M4`
+`COMPLETE`
 
 ## Objective
 
@@ -525,17 +642,17 @@ Implement auctions and trades as atomic league-scoped transactions using the app
 
 ## Feature Order
 
-1. Auction creation window and player eligibility.
-2. Sealed bids, edits, cooldowns, and own-bid display.
-3. Durable auction-resolution job and anti-bluff contract pricing.
-4. Winning ownership, contract, roster placement, warning, activity, and outbox transaction.
-5. Trade proposals, participants, and independent simultaneous offers.
-6. Players, prospects, draft picks, player rights, retention, buyout penalties, and Future Considerations assets.
-7. Acceptance, decline, cancellation, expiry, and trade-deadline behavior.
-8. Atomic execution with unchanged transferred contract terms.
-9. League Activity and notifications.
-10. Commissioner correction and approved reversal behavior.
-11. Frontend auction, trade, activity, and notification integration.
+1. Auction creation window and player eligibility. `M5-01 COMPLETE`
+2. Sealed bids, edits, cooldowns, and own-bid display. `M5-02 COMPLETE`
+3. Durable auction-resolution job and anti-bluff contract pricing. `M5-03 COMPLETE`
+4. Winning ownership, contract, roster placement, warning, activity, and outbox transaction. `M5-04 COMPLETE`
+5. Trade proposals, participants, and independent simultaneous offers. `M5-05 COMPLETE`
+6. Players, prospects, draft picks, player rights, retention, buyout penalties, and Future Considerations assets. `M5-06 COMPLETE`
+7. Acceptance, decline, cancellation, expiry, and trade-deadline behavior. `M5-07 COMPLETE`
+8. Atomic execution with unchanged transferred contract terms. `M5-08 COMPLETE`
+9. League Activity and notifications. `M5-09 COMPLETE`
+10. Commissioner correction and approved reversal behavior. `M5-10 COMPLETE`
+11. Frontend auction, trade, activity, and notification integration. `M5-11 COMPLETE`
 
 ---
 
@@ -556,13 +673,16 @@ Tests prove:
 * outbox retry does not duplicate the transaction;
 * League Activity contains approved transactions but no matchup or standings events.
 
+Gate result: `COMPLETE` on `2026-07-21`. Detailed evidence is archived in
+`docs/06-work-plans/archive/M5-GATE_TRANSACTIONS_AND_HISTORY.md`.
+
 ---
 
 # Part 10 - Milestone M6: Season Competition
 
 ## Status
 
-`BLOCKED BY M4 AND M5`
+`COMPLETE`
 
 ## Objective
 
@@ -572,18 +692,18 @@ Complete launch-critical statistics, matchup, standings, and commissioner-recove
 
 ## Feature Order
 
-1. Provider-backed player-stat refresh and last-valid-cache protection.
-2. League and season matchup schedule generation.
-3. Matchup-week state machine and Monday `4:00 PM Pacific` lock.
-4. Team-specific locked lineups and scoring baselines.
-5. Illegal-at-lock and late-legality handling.
-6. Live player result calculation from baseline.
-7. Result finalization and correction.
-8. Read-only standings from finalized authoritative results.
-9. Durable scheduled-job occurrences, leases, and recovery.
-10. Commissioner matchup and standings recovery tools.
-11. Accelerated clock and complete-season simulation.
-12. Frontend matchup, standings, health, and commissioner integration.
+1. Provider-backed player-stat refresh and last-valid-cache protection. `M6-01 COMPLETE`
+2. League and season matchup schedule generation. `M6-02 COMPLETE`
+3. Matchup-week state machine and Monday `4:00 PM Pacific` lock. `M6-03 COMPLETE`
+4. Team-specific locked lineups and scoring baselines. `M6-04 COMPLETE`
+5. Illegal-at-lock and late-legality handling. `M6-05 COMPLETE`
+6. Live player result calculation from baseline. `M6-06 COMPLETE`
+7. Result finalization and correction. `M6-07 COMPLETE`
+8. Read-only standings from finalized authoritative results. `M6-08 COMPLETE`
+9. Durable scheduled-job occurrences, leases, and recovery. `M6-09 COMPLETE`
+10. Commissioner matchup and standings recovery tools. `M6-10 COMPLETE`
+11. Accelerated clock and complete-season simulation. `M6-11 COMPLETE`
+12. Frontend matchup, standings, health, and commissioner integration. `M6-12 COMPLETE`
 
 Normal-roster changes after lock do not change the current matchup snapshot.
 
@@ -608,13 +728,16 @@ Tests prove:
 * commissioner corrections are explicit and attributable;
 * an accelerated regular season completes without waiting for real weeks.
 
+Gate result: `COMPLETE` on `2026-07-22`. Detailed evidence is archived in
+`docs/06-work-plans/archive/M6-GATE_SEASON_COMPETITION.md`.
+
 ---
 
 # Part 11 - Milestone M7: Release Candidate and Launch
 
 ## Status
 
-`BLOCKED BY M3 THROUGH M6`
+`ACTIVE`
 
 ## Objective
 
@@ -843,22 +966,88 @@ Each implementation step:
 
 # Part 15 - Current Next Action
 
-The next implementation action is:
+The current next action is:
 
 ```text
-Milestone: M1 - Backend Safety and Refactor
-Work item: BR-00 - Baseline and Safety Harness
-Repository: C:\Users\graem\Desktop\hundo-leago-backend
-Branch: stage2
+Milestone: M7 - Release Candidate and Launch
+Action: execute M7-08 exact candidate freeze and staging-branch publication; do not deploy or change hosted configuration or data in this step
+Implementation status: M7-01 through M7-07 COMPLETE LOCALLY; M7-08 ACTIVE; HOSTED STAGING, PROVIDERS, PHYSICAL QA, DEPLOYMENT, AND PRODUCTION OPEN
+Repositories: E:\hundo-leago and E:\hundo-leago-backend
+Branches: m3-01-browser-authority and staging
 ```
 
-The exact scope is defined in:
+The governing designs are defined in:
 
 ```text
-docs/06-work-plans/ACTIVE_WORK_PLAN.md
+docs/03-product-specs/USER_ACCOUNTS.md
+docs/03-product-specs/LEAGUES_AND_TEAMS.md
+docs/04-technical-specs/DATA_MODEL.md
+docs/04-technical-specs/API_CONTRACTS.md
+docs/04-technical-specs/SECURITY.md
 ```
 
-No feature code, SQLite dependency, production data, frontend behavior, or deployment changes are included in `BR-00`.
+M2-01 through M2-14 and the external staging gate are complete. M3-01
+is complete locally: the focused security verifier, full lint, build,
+isolated connected-browser visual and interaction checks, GET-only
+network evidence, anonymous reload, Socket.IO invalidation, backend
+suite, and protected hashes all passed. M3-02 is also complete locally:
+its focused suite passed `15/15`, its cumulative foundation suite passed
+`104/104`, and the complete backend suite passed `276/276`. M3-03 is
+also complete locally: its focused suite passed `15/15`, its combined
+security suite passed `30/30`, its cumulative foundation suite passed
+`119/119`, and the complete backend suite passed `292/292`. M3-04 is
+also complete locally: its focused suite passed `17/17`, combined
+security passed `47/47`, cumulative foundation passed `136/136`, and
+the complete backend suite passed `309/309`. Grae approved stable
+versioned HMAC-SHA-256 CSRF derivation from each opaque random session
+token. M3-05 is complete with `5/5` focused, `39/39` combined security,
+`143/143` cumulative foundation, and `316/316` complete backend tests
+passing. M3-06 is complete with `8/8` focused, `62/62` combined
+security, `151/151` cumulative foundation, and `324/324` complete
+backend tests passing. M3-07 is complete with `18/18` focused, `80/80`
+combined M3 account/security, `169/169` cumulative foundation, and
+`342/342` complete backend tests passing under Node `24.14.1`. M3-08 is
+complete with `50/50` focused regression, `116/116` combined M3
+account/security, `205/205` cumulative foundation, and `378/378` complete
+backend tests passing. M3-09 is complete with `14/14` focused, `130/130`
+combined M3, `219/219` cumulative foundation, and `392/392` complete
+backend tests passing under Node `24.14.1`. The Active Work Plan now records
+the M3-10 platform-administrator authorization and administrative league
+creation boundary. M3-10 is complete with `18/18` focused, `148/148`
+combined M3, `237/237` cumulative foundation, and `410/410` complete
+backend tests passing. M3-11 is complete with `16/16` focused, `164/164`
+combined M3, `253/253` cumulative foundation, and `426/426` complete backend
+tests passing. M3-12 is complete with `10/10` focused, `174/174` combined M3,
+`263/263` cumulative foundation, and `436/436` complete backend tests passing.
+M3-13 is complete with `15/15` focused, `190/190` combined M3, `279/279`
+cumulative foundation, and `452/452` complete backend tests passing. The
+M3-14 is complete with `7/7` focused, `197/197` combined M3, `286/286`
+cumulative foundation, and `459/459` complete backend tests passing. The
+M3-15 is complete with `17/17` focused, `214/214` combined M3, `303/303`
+cumulative foundation, and `476/476` complete backend tests passing. M3-16 is
+complete with `9/9` focused, `223/223` combined M3, `312/312` cumulative
+foundation, and `485/485` complete backend tests passing. M3-17 is complete
+with `11/11` focused, `234/234` combined M3, `323/323` cumulative foundation,
+and `496/496` complete backend tests passing. M3-18 is complete with `16/16`
+focused, `250/250` combined M3, `339/339` cumulative foundation, and `512/512`
+complete backend tests passing. M3-19 is complete with `21/21` focused,
+`271/271` combined M3, `360/360` cumulative foundation, and `533/533` complete
+backend tests passing. M3-20 is complete with `57/57` frontend tests,
+`533/533` backend tests, lint, build, and the connected ordinary-Chrome gate
+passing. M3-21 is complete with `12/12` focused provider/rendering/job tests
+and `546/546` complete backend tests. The M3 completion gate passed with
+`57/57` frontend tests, lint, build, and the connected ordinary-Chrome gate.
+M4-01 and M4-02 are complete locally. M4-02 passed `7/7` focused tests,
+`39/39` combined M4/M2/M3 compatibility tests, and `560/560` complete backend
+tests across 140 suites under Node `24.14.1`. M3 through M6 and their
+milestone gates are now complete locally. M7-01 through M7-07 are complete
+locally with the deterministic two-league fixture, integrated loopback
+rehearsal, recovery checks, `893/893` backend tests, `95/95` frontend tests,
+lint, build, syntax, and rendered local evidence recorded. M7-08 now owns
+exact source freeze, complete rerun of required local gates, separate
+frontend/backend candidate commits, and publication of only the staging
+branches. Hosted staging remains the next separate step.
+Production cutover remains separately authorized.
 
 ---
 
@@ -879,13 +1068,15 @@ The launch roadmap is complete only when:
 
 ```powershell
 Get-Content docs/05-roadmap/ACTIVE_ROADMAP.md
-Select-String -Path docs/05-roadmap/ACTIVE_ROADMAP.md -Pattern '^`APPROVED`$','^`ACTIVE`$','BR-00','M7 Gate'
+Select-String -Path docs/05-roadmap/ACTIVE_ROADMAP.md -Pattern '^`APPROVED`$','^`ACTIVE`$','M2','M3','COMPLETE','M4','READY','M7 Gate'
 ```
 
 Expected result:
 
 * document status is `APPROVED`;
 * roadmap status is `ACTIVE`;
-* exactly one next implementation item is named;
+* M1 and M2 are complete, including the external staging gate;
+* M3 through M6 and their milestone gates are complete locally;
+* M7-01 through M7-07 are complete locally and M7-08 is active;
 * launch requires staging, backup, recovery, testing, and explicit production authority;
 * deferred work remains outside the launch path.

@@ -791,24 +791,27 @@ Work plan: BR-00
 Branch: stage2
 Starting Git status: clean
 Objective: Add an isolated baseline and safety harness before feature extraction.
+Exact files changed: package.json; test/characterization/endpointManifest.test.js; test/characterization/leagueStore.test.js; test/characterization/readOnlyEndpoints.test.js; test/characterization/serverStartup.test.js; test/fixtures/minimal/league-state.json; test/fixtures/minimal/players.json; test/fixtures/minimal/stats-cache.json; test/helpers/createFixtureRuntime.js; test/helpers/fakePublisher.js; test/helpers/findAvailablePort.js; test/helpers/fixedClock.js; test/helpers/hashTree.js; test/helpers/httpRequest.js; test/helpers/readEndpointManifest.js; test/helpers/startCompatibilityServer.js.
 Behavior changed: No backend feature, API, persistence, frontend, production, or deployment behavior changed.
 Behavior intentionally preserved: All 34 current route registrations, including six conditional matchup-debug routes; current startup behavior; current GET response behavior; current JSON league-store behavior.
 Tests added: 16 focused characterization tests plus reusable temporary-runtime helpers and three handcrafted fixtures.
 Commands run: npm.cmd run test:characterization; npm.cmd test; npm.cmd run check; git diff --check; git status --short; SHA-256 comparison; Node-process comparison.
 Results: 16/16 focused tests passed; 24/24 complete test-run entries passed; syntax passed; whitespace passed; endpoint inventory passed at 34/6/28.
+Post-commit verification: On 2026-07-18, npm.cmd run test:characterization passed 16/16; npm.cmd test passed 24/24; npm.cmd run check passed; git diff --check passed; protected repository JSON hashes were unchanged; stage2 was clean and synchronized with origin/stage2.
 Fixture runtime root: A new hundo-leago-br00-* directory under the operating-system temporary root for each test; every runtime was removed during teardown.
 Pre/post repository hashes: league-state.json, league.json, league_dump.json, league_with_meta.json, and players.json were identical before and after testing.
 Child process cleanup: All BR-00 child servers terminated; only the three Node processes present before testing remained.
 Known test not run: None.
 Discovered current defects: Player routes retain the empty array and Map supplied before loadPlayersFromDisk reassigns the populated cache, so the known synthetic player detail currently returns 404. This behavior is characterized and was not fixed.
 Implementation mismatch: On Windows with Node 24.11.1, node --test test/characterization treats the directory as a module path and fails. The working script uses the quoted *.test.js pattern.
-Git note: The repository-wide league-state.json ignore rule also matches the synthetic fixture. The fixture exists and is used by the suite; a later focused commit must force-add that one fixture without changing .gitignore.
+Git note: The repository-wide league-state.json ignore rule also matches the synthetic fixture. The fixture was intentionally force-added in the focused BR-00 commit without changing .gitignore.
+Commit: aa0718d80daf1f0f2456044bef03f89ed77cfeb0 (Add BR-00 backend safety harness).
 Rollback: Remove only test/ and restore only the prior package.json scripts.
-Ending Git status: package.json modified and test/ added; no file is staged.
+Ending Git status: clean; stage2 synchronized with origin/stage2.
 Next proposed work item: BR-01
 ```
 
-BR-00 is complete locally but has not been committed, pushed, merged, or deployed.
+BR-00 is complete, committed, and present on `origin/stage2`. It has not been merged to production `main` or deployed.
 
 ---
 

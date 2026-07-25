@@ -141,7 +141,7 @@ function normalizeNameKey(s) {
     .replace(/\s+/g, " ");
 }
 function looseNameKey(s) {
-  return normalizeNameKey(s).replace(/[.'’\-]/g, "");
+  return normalizeNameKey(s).replace(/[.'’-]/g, "");
 }
 
 function mapGetAny(maybeMap, keys) {
@@ -222,16 +222,6 @@ function normalizeAllRosterNamesFromDb({ teams, playerApi }) {
   return { nextTeams, changed };
 }
 
-function hasAnyMeaningfulRosterInput(row) {
-  const q = String(row?.query || "").trim();
-  const pid = Number(row?.playerId);
-  const salary = safeNumber(row?.salary, 0);
-  const pos = String(row?.position || "").trim();
-  // If they typed a query, picked a playerId, changed salary above 0, or have a position set.
-  // (position defaults to "F" in our UI; so salary/query/playerId do most of the detection)
-  return !!q || (Number.isFinite(pid) && pid > 0) || salary > 0 || (pos === "F" || pos === "D");
-}
-
 function isValidDbPlayerId(playerApi, pid) {
   const n = Number(pid);
   if (!Number.isFinite(n) || n <= 0) return false;
@@ -281,13 +271,12 @@ function roundToMinute(ms) {
 
 export default function CommissionerPanel({
   currentUser,
+  hasAuthenticatedBackendSession,
   apiUrl,
 
   teams,
   tradeProposals,
   freeAgents,
-  leagueLog,
-  tradeBlock,
 
   onResolveAuctions,
   onCommissionerRemoveBid,
@@ -298,7 +287,9 @@ export default function CommissionerPanel({
 
   playerApi,
 }) {
-  const isCommish = currentUser?.role === "commissioner";
+  const isCommish =
+    hasAuthenticatedBackendSession &&
+    currentUser?.role === "commissioner";
 
   // -----------------------------------------
   // Styles
@@ -523,9 +514,10 @@ export default function CommissionerPanel({
       weekEndLocal: msToLocalInput(selectedWeek.weekEndAtMs),
       lockLocal: msToLocalInput(selectedWeek.lockAtMs),
     });
-  }, [selectedWeek?.weekId]); // key off weekId so it re-inits cleanly
+  }, [selectedWeek]);
 
   const loadSnapshots = async () => {
+    if (!hasAuthenticatedBackendSession || !isCommish) return;
     if (!apiBase) return;
     setSnapshotsLoading(true);
     try {
@@ -548,6 +540,7 @@ export default function CommissionerPanel({
   }, [apiBase]);
 
   const restoreSnapshot = async (snapshotId) => {
+    if (!hasAuthenticatedBackendSession || !isCommish) return;
     if (!apiBase || !snapshotId) return;
     if (!window.confirm(`Restore snapshot "${snapshotId}"? This overwrites the league state.`)) return;
 
@@ -587,6 +580,7 @@ export default function CommissionerPanel({
   };
 
   const createSnapshot = async () => {
+    if (!hasAuthenticatedBackendSession || !isCommish) return;
     if (!apiBase) return;
     const name = (newSnapshotName || "").trim();
 
@@ -628,6 +622,7 @@ export default function CommissionerPanel({
   };
 
     const saveSelectedWeek = async () => {
+    if (!hasAuthenticatedBackendSession || !isCommish) return;
     if (!apiBase) return;
     if (!selectedWeek) return;
 
@@ -649,9 +644,6 @@ export default function CommissionerPanel({
     const weekStartAtMs = roundToMinute(startMsRaw);
     const weekEndAtMs = roundToMinute(endMsRaw);
     const lockAtMs = roundToMinute(lockMsRaw);
-    const baselineAtMs = weekStartAtMs + 60 * 60 * 1000;
-
-
     if (!(weekEndAtMs > weekStartAtMs)) {
       window.alert("Week end must be after week start.");
       return;
@@ -685,7 +677,6 @@ export default function CommissionerPanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          meta: { actorRole: "commissioner" },
           weekIndex: Number(selectedWeek.weekIndex ?? selectedWeekIndex),
           weekStartAtMs,
           weekEndAtMs,
@@ -1162,6 +1153,7 @@ export default function CommissionerPanel({
   // Strict validation + Apply gating
   // -----------------------------
   const validation = useMemo(() => {
+    void playerApiTick;
     const problems = [];
 
     // Roster: any "filled" row must have a valid DB playerId that exists in playerApi.byId
@@ -1310,7 +1302,7 @@ export default function CommissionerPanel({
       })
       .filter(Boolean);
 
-        const ok = window.confirm(
+    window.confirm(
       `Apply edits to ${editTeamName}?\n\n` +
         `Roster: ${cleanedRoster.length} players\n` +
         `Buyouts: ${cleanedBuyouts.length} rows\n` +

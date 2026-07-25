@@ -412,6 +412,7 @@ Fields include:
 * `status`;
 * regular-season start and end;
 * fantasy playoff start and end;
+* nullable Free Agent Draft completion timestamp controlling seasonal auction reopening;
 * `created_at`;
 * `updated_at`;
 * `version`.
@@ -454,6 +455,38 @@ Platform-administrator authority remains separate from league membership.
 * version.
 
 Team names are case-insensitively unique inside one league.
+
+For target team-profile writes, colours use canonical lowercase six-digit
+sRGB hex strings in the form `#rrggbb`. Both colour fields are null together
+while a newly created team profile is incomplete, or both contain canonical
+values. The colours do not need to differ and have no league-uniqueness or
+contrast constraint.
+
+`teams.logo_reference` is null or a backend-generated stable UUID that refers
+to a current `team_logo_objects` row. Raw bytes, data URLs, client filenames,
+filesystem paths, and third-party URLs are never stored in `teams`.
+
+`team_logo_objects` stores:
+
+* a backend-generated stable UUID object key;
+* league and team IDs with a same-league team foreign key;
+* one allowlisted media type: PNG, JPEG, or WebP;
+* decoded byte length, width, and height;
+* lowercase SHA-256 content digest;
+* the inspected binary content as a SQLite BLOB;
+* creation timestamp.
+
+Target logo objects contain at most `524288` decoded bytes, have dimensions
+from `1` through `2048` pixels on each axis, and are static raster content.
+Animated PNG or WebP, GIF, SVG, HTML, and unrecognized content are rejected.
+
+Profile mutation inserts a replacement object, updates the team reference,
+deletes the former object, changes the team version, and writes required audit
+and idempotency evidence in one immediate SQLite transaction. A failed write
+therefore leaves neither an orphan replacement nor a missing current object.
+Existing pre-target non-null logo references remain migration-compatible but
+are not accepted as new target writes and do not resolve through the target
+logo-object reader.
 
 `team_manager_assignments` stores assignment history with:
 
@@ -528,6 +561,13 @@ A unique constraint on league and player prevents two teams in the same league f
 
 No ownership row means the player is unowned in that league, subject to feature-specific eligibility.
 
+An auction winner is normally assigned to the first available finite Active
+slot for the player's effective F/D position. If every such slot is occupied,
+the approved atomic auction completion may persist one explicitly unplaced
+Active row with `slot_number = NULL` and
+`acquired_transaction_type = auction_resolution`. No other acquisition type or
+roster category may use this null-slot representation.
+
 ---
 
 ## Slots
@@ -541,6 +581,10 @@ Slot constraints are:
 * Bench: slots 1 through 4;
 * Injured Reserve: slots 1 through 4;
 * Prospect: no slot number.
+
+An explicitly unplaced auction winner is surfaced separately by roster
+projections and makes structural roster legality false; it is not presented as
+occupying a finite slot.
 
 Unique team/category/position/slot constraints prevent two players from occupying one finite slot.
 
@@ -562,6 +606,11 @@ Empty roster slots require no placeholder player records.
 * buyout;
 * contract expiration;
 * commissioner correction.
+
+`ownership_id` is a stable historical reference, not a foreign key to the
+current-state `player_ownerships` table. A confirmed release removes the current
+ownership row while every prior event retains the released ownership ID. League,
+season, player, team, and actor relationships remain foreign-key constrained.
 
 Matchup scoring eligibility does not read current ownership after lock; it reads persisted matchup lock rows.
 
@@ -602,6 +651,12 @@ Fields include:
 * version.
 
 Original value, term, start season, and AAV do not change after creation.
+
+Original total value and rounded AAV are related but independently preserved.
+AAV is calculated from integer cents as original total divided by original term
+and rounded to the nearest cent. Therefore a three-year `$10.00` contract stores
+`1000` original-total cents and `333` AAV cents; the one-cent multiplication
+difference is an approved rounding consequence and does not rewrite the total.
 
 A trade changes the current owning team without restarting or extending the contract.
 
@@ -701,6 +756,8 @@ Fields include:
 * auction, league, season, team, and submitting user;
 * total value cents;
 * term years;
+* lowest valid offered AAV cents, preserved across later edits for anti-bluff
+  resolution pricing;
 * first-submission timestamp;
 * last-edit timestamp;
 * edit count;
@@ -708,9 +765,18 @@ Fields include:
 * idempotency reference;
 * version.
 
-One team has at most one current bid per auction.
+One team has at most one current bid per auction. Bid edits preserve the stable
+bid ID and first-submission timestamp. Commissioner replacements do not consume
+the manager edit count.
 
 Active bid values and terms remain stored but are returned only to the bid owner through authorized queries. Commissioner access does not reveal competing values.
+
+The original `auction_started` or `bid_submitted` event preserves the submitting
+actor, membership, authority category, and occurrence time used to revalidate
+historical submission authority during resolution. Later membership or manager-
+assignment termination does not invalidate authority that was valid when the
+bid was first submitted; missing, mismatched, or corrupt evidence makes that bid
+ineligible.
 
 ---
 
@@ -719,15 +785,35 @@ Active bid values and terms remain stored but are returned only to the bid owner
 `auction_resolutions` records:
 
 * scheduled occurrence;
+* explicit winner, no-winner, player-unavailable, or season-closed outcome;
 * winning team and bid;
-* anti-bluff price inputs and final contract value;
+* anti-bluff price inputs, winning term, final contract value, and final AAV;
 * created contract and ownership;
+* durable general-illegality flag and warning evidence;
 * resolution timestamp;
 * automatic or commissioner-triggered actor;
 * idempotency key;
 * status.
 
-The full resolution saves atomically.
+M5-04 saves the full resolution as one immediate, league-scoped transaction.
+The transaction re-reads the auction, season, player availability, current
+bids, and historical submission authority before consuming the M5-03
+deterministic decision. A winner creates one rounded-AAV contract, the required
+contract years, one ownership and Active assignment, legality evidence, auction
+and ownership history, one authenticated League Activity signing, and one
+metadata-only outbox invalidation. No-winner and automatic cancellation create
+the authoritative resolution, auction history, terminal auction/bid states,
+and invalidation without a contract, ownership, or signing activity row.
+
+One-, two-, and three-year winning terms reuse matching future league seasons
+when present. Otherwise the same transaction creates only the next one or two
+required `planned` seasons with no dates and does not change the league's
+current season or activate a future season.
+
+The scheduled occurrence and auction each remain unique. An exact replay
+returns the already-persisted successful outcome without duplicating any row or
+publication. Any later failure, including activity or outbox persistence,
+rolls the entire completion back.
 
 ---
 
@@ -752,13 +838,59 @@ Fields include:
 * league and season;
 * proposing and receiving teams;
 * proposing user;
+* creating membership and manager-or-commissioner authority;
 * status;
 * created and expires timestamps;
+* persisted effective acceptance deadline;
 * responded and completed timestamps;
 * commissioner-completion reference;
+* proposal model version;
 * version.
 
 Proposals do not reserve assets.
+
+The completed `M5-05` foundation keeps proposal evaluation and authenticated
+league-member history reads SELECT-only. It derives current proposing-manager
+or league-commissioner authority from active membership and assignment records,
+opens trading from the current season's ready, active, or completed Entry Draft
+start, and treats the configured league trade deadline as closed at the exact
+stored instant. A generated preview identity is explicitly non-persisted and
+does not create a `trades`, `trade_assets`, or `trade_events` row.
+
+The completed `M5-06` typed-asset step persists the pending proposal, at least
+one valid owned asset from each team, immutable proposal display snapshots, the
+effective acceptance-deadline snapshot, the creation event, and the completed
+idempotency result atomically. Legacy imported rows remain model version 1 with
+unknown creating membership, authority, and effective-deadline evidence; every
+new target proposal is complete model version 2. Proposal creation still
+reserves or transfers nothing.
+
+The completed `M5-07` lifecycle step uses the existing `trades`,
+`trade_events`, `idempotency_requests`, and durable `job_runs` records without
+a schema migration. Receiver rejection, proposer cancellation, explicit
+commissioner action, and exact-deadline expiry are pending-only terminal
+transitions with append-only evidence. The expiry job uses one stable occurrence
+per proposal and effective deadline; authenticated reads never expire or repair
+a proposal.
+
+Acceptance preflight is also SELECT-only. It re-reads current actor authority,
+proposal version and deadline, every persisted typed asset, current contract and
+ownership evidence, current-season cap obligations, roster counts and finite
+slots, and retention limits. It returns both proposal-time and current snapshots,
+resulting team previews, and one approved general-illegality flag without
+changing any row.
+
+The completed `M5-08` execution step repeats those checks inside one immediate
+transaction. It moves the proposal directly from storage `proposed` to
+`completed`; transfers rostered ownership and its active contract, prospect
+rights and any fantasy ELC, unused draft-pick ownership, whole retention and
+buyout obligations, and existing Future Considerations without changing their
+underlying terms; creates approved requested-retention schedules and new Future
+Considerations; appends typed history; and automatically cancels other pending
+proposals made stale by the transferred asset identities. A generally illegal
+normal roster may persist a null finite slot only when its acquisition source
+is `trade_execution`; the ownership remains explicit and requires a later
+normal roster move. Exact idempotent replay changes no row.
 
 ---
 
@@ -772,6 +904,7 @@ Each row identifies:
 * asset type;
 * exactly one typed asset reference or approved requested retention instruction;
 * immutable proposal snapshot metadata needed for display;
+* asset model version;
 * sequence.
 
 Approved asset types include:
@@ -783,13 +916,19 @@ Approved asset types include:
 * buyout obligation;
 * Future Considerations.
 
-Database checks and service validation ensure exactly one valid asset reference and same-league ownership.
+Database checks and service validation ensure exactly one valid asset reference
+or explicit Future Considerations instruction and same-league ownership. New
+model-version-2 assets require a non-empty valid JSON snapshot. A requested-
+retention row links the exact included outgoing contract and amount; the amount
+does not consume a retention slot until acceptance. Existing whole obligations
+and new requested instructions remain distinct asset identities.
 
 ---
 
 ## Trade Completion
 
-Acceptance revalidates every asset and saves:
+The completed `M5-08` work revalidates every asset inside one immediate
+transaction and saves:
 
 * transfers;
 * contract ownership;
@@ -798,9 +937,26 @@ Acceptance revalidates every asset and saves:
 * Future Considerations;
 * proposal status;
 * automatic cancellation of conflicting proposals;
-* activity and notifications.
+* typed completion and automatic-cancellation history.
 
 All changes occur in one transaction.
+
+The completed `M5-09` work adds approved League Activity and transactional
+outbox records to successful auction and trade transaction boundaries,
+composes authenticated read-only activity and notification queries plus
+explicit notification-read commands, and publishes league invalidations after
+commit through a bounded retry-safe worker.
+Auction and trade status remains the in-app notification surface for those
+features; no separate email, push, or trade-notification row is required.
+
+The active `M5-10` work uses completed model-version-2 trade snapshots and
+append-only execution history to preview exact post-trade recoverability. A
+safe commissioner reversal returns every transferred asset and category,
+removes only obligations created by that trade, restores transferred
+obligation responsibility, and appends reversal, correction-index, activity,
+and outbox evidence atomically. An unsafe reversal transfers nothing; an
+explicit separate command may mark the trade `correction_required` and index
+the recovery need without providing arbitrary row editing.
 
 ---
 
@@ -1135,6 +1291,18 @@ Reusing a key for a different request is an error.
 `job_runs` stores one logical scheduled occurrence and its attempts.
 
 A unique occurrence key and lease fields prevent duplicate processing after restart or deployment overlap.
+
+For target auction resolution, the occurrence is scoped by league, job type,
+auction, and due instant. A worker may reclaim an expired or failed lease while
+preserving the stable run row and incrementing its attempt count. A succeeded
+occurrence is replay-safe after restart. Stored success metadata contains only
+the auction ID and coarse completion outcome; failures store only a sanitized
+error code.
+
+M5-03 permits the resolution coordinator to write only this `job_runs` state.
+It may mark success only after an injected atomic completion service confirms a
+completed `resolved`, `no_winner`, or `cancelled` outcome. The coordinator is
+not scheduled or started by the target runtime in M5-03.
 
 ---
 

@@ -14,7 +14,7 @@ This technical specification defines:
 * authorization, league isolation, audit, logging, secrets, and bootstrap controls;
 * technical decisions delegated to and resolved by Codex from the approved project requirements.
 
-Grae delegated the security decisions and approved adoption of the resulting design on 2026-07-18.
+Grae delegated the security decisions and approved adoption of the resulting design on 2026-07-18. The final transactional-email provider boundary was selected and recorded on 2026-07-21.
 
 ---
 
@@ -41,7 +41,6 @@ Security controls supplement approved product behavior. They must not create new
 
 This specification does not:
 
-* select the final transactional-email provider;
 * define visual page layout;
 * make commissioner tools into platform-administrator tools;
 * permit administrators to view passwords, password hashes, session tokens, or active auction bids;
@@ -51,7 +50,7 @@ This specification does not:
 * replace infrastructure access controls owned by Deployment and Operations;
 * introduce social login, passkeys, or multi-factor authentication in the initial release.
 
-Email-provider, deployment, environment, incident-response, and backup details must follow their specialized documents when written.
+Email-provider configuration, deployment, environment, incident-response, and backup details follow their specialized documents.
 
 ---
 
@@ -489,7 +488,7 @@ Each token:
 
 * contains 32 cryptographically random bytes;
 * is base64url encoded for delivery;
-* is stored only as a SHA-256 digest;
+* is stored in `account_action_tokens` only as a SHA-256 digest;
 * has a stable token-record ID;
 * has one explicit purpose;
 * has an expiry;
@@ -538,6 +537,74 @@ Fragments are not sent in the initial HTTP request. The frontend:
 Action pages set a no-referrer policy and must not load third-party analytics, support widgets, images, or scripts that could observe page context.
 
 The token must not be placed in a query string, server access log, analytics event, error report, or browser storage.
+
+---
+
+## Encrypted Delivery Envelope
+
+Grae approved the durable-delivery design on 2026-07-20. A raw
+account-action token may be retained after its creating transaction only
+inside the matching `outbox_events.payload_json` as a short-lived
+AES-256-GCM encrypted delivery envelope.
+
+The exception is narrow:
+
+* `account_action_tokens` continues to store only the SHA-256 digest;
+* the envelope uses a dedicated `ACTION_TOKEN_DELIVERY_KEY`, independent
+  from every rate-limit, audit, session, provider, and backup secret;
+* the key decodes to exactly 32 bytes and has an explicit positive version;
+* every encryption uses a new 96-bit nonce and the full 128-bit
+  authentication tag;
+* authenticated associated data binds the envelope to its outbox event,
+  user, action-token record, purpose, canonical frontend origin, envelope
+  version, and key version;
+* the plaintext contains only the raw token, not an email address,
+  password, session credential, or complete URL;
+* only the internal email-delivery worker may decrypt it, and it constructs
+  the fragment link from `PUBLIC_FRONTEND_ORIGIN` after decryption;
+* logs, public errors, audit, account history, provider metadata, and dead
+  letters never contain plaintext token material or the encryption key;
+* successful delivery and terminal discard replace `payload_json` with a
+  non-secret cleared tombstone in the same state transition;
+* retryable failure retains ciphertext only until the bounded retry policy
+  reaches success, expiry, or terminal discard;
+* key rotation retains only the minimum old key versions needed for the
+  bounded lifetime of still-pending envelopes and removes them after that
+  window is proven empty.
+
+Malformed, unauthenticated, wrongly bound, expired, or unavailable-key
+envelopes are discarded without attempting provider delivery.
+
+---
+
+## Transactional Email Provider Boundary
+
+Resend is the selected transactional-email provider.
+
+The backend uses the provider's HTTPS email endpoint directly through an
+injectable adapter. Provider-mode requirements are:
+
+* a separately generated send-only API key for each enabled environment;
+* one validated sender identity and optional reply-to address;
+* the stable durable outbox event ID in the provider `Idempotency-Key` header;
+* no provider SDK or browser credential;
+* a bounded request timeout and safe retry classification;
+* no password, cookie, CSRF value, audit metadata, role, membership, or
+  authority claim in provider metadata; and
+* no provider response body, API key, or decrypted action token in logs or
+  public errors.
+
+The application outbox remains authoritative even though the provider also
+deduplicates an idempotency key for its documented retention window. Network,
+timeout, rate-limit, concurrent-idempotency, and provider `5xx` failures are
+retryable. Invalid credentials, invalid sender/domain, invalid payload, and
+incompatible idempotency reuse are terminal.
+
+Provider acceptance means only that the message was accepted for processing;
+it is not evidence of inbox delivery. Local and test use capture or disabled
+mode. Staging sandbox mode forces the recipient to Resend's non-delivering
+`delivered@resend.dev` test address. Production send mode uses the verified
+account address.
 
 ---
 
@@ -596,7 +663,16 @@ Requests without an Origin are permitted only for explicitly approved non-browse
 
 ## Authenticated CSRF Token
 
-Each session has an independent 32-byte random CSRF token. SQLite stores its SHA-256 digest.
+Each session starts with an opaque 32-byte random session token. The
+backend uses HMAC-SHA-256 with a fixed versioned CSRF purpose label and
+that session token as key material to derive a separate stable 32-byte
+CSRF token. SQLite stores the CSRF token's SHA-256 digest.
+
+This approved domain separation means the backend can reconstruct the
+same session-bound CSRF token from the HttpOnly session cookie during a
+safe bootstrap request. It does not store a recoverable raw CSRF value,
+does not turn the bootstrap `GET` into a write, and does not invalidate
+another tab merely because one tab reloads.
 
 The raw CSRF token is returned only in the safe authenticated session-bootstrap response, never in a cookie. The frontend holds it only in memory and sends:
 
@@ -916,7 +992,15 @@ Operational scripts:
 * refuse symlink or traversal surprises where protected files are involved;
 * never expose a production reset or restore operation as a general public endpoint.
 
-Uploaded team logos, when implemented, use generated object keys and content inspection rather than client filenames as filesystem paths.
+Uploaded team logos use backend-generated UUID object keys and SQLite BLOB
+storage rather than client filenames or filesystem paths. The JSON contract
+accepts no filename, path, URL, data-URL prefix, or storage key. It decodes at
+most `524288` canonical base64 bytes, matches the declared type against PNG,
+JPEG, or WebP signatures, inspects dimensions from `1` through `2048` pixels,
+and rejects animated PNG/WebP, GIF, SVG, HTML, malformed, mismatched, and
+unrecognized content. Logo responses set the inspected allowlisted
+`Content-Type`, exact `Content-Length`, `X-Content-Type-Options: nosniff`, and
+`Cache-Control: private, no-store` and never reflect upload metadata.
 
 ---
 
@@ -963,7 +1047,10 @@ NHL provider credential
 internal operations credential
 ```
 
-Sessions, CSRF tokens, and account-action tokens are random per record and do not depend on a global signing secret.
+Session and account-action tokens are random per record and do not
+depend on a global signing secret. A session's CSRF token is
+cryptographically domain-separated from that random session token and
+also does not depend on a global signing secret.
 
 Local, staging, and production use different values.
 
@@ -1489,7 +1576,8 @@ The security design is approved with:
 * opaque 32-byte session tokens with digest-only SQLite storage;
 * one active session, seven-day absolute expiry, and twelve-hour idle expiry;
 * `__Host-hl_session` production cookies and deployment-accurate `SameSite`;
-* session-bound CSRF tokens, exact credentialed CORS, and Origin checks;
+* stable session-bound HMAC-SHA-256 CSRF derivation, digest integrity,
+  exact credentialed CORS, and Origin checks;
 * digest-only, purpose-bound one-time account-action tokens;
 * 24-hour verification, 72-hour setup, and 30-minute reset and reactivation links;
 * durable network-and-account authentication rate limits;

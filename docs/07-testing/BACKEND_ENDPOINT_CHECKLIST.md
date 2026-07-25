@@ -382,6 +382,7 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-048` | `POST /api/v1/leagues/:leagueId/teams` | Commissioner, non-live-season restriction, stable identity | `PLANNED` |
 | `T-049` | `GET /api/v1/leagues/:leagueId/teams/:teamId` | Safe member projection, team belongs to league | `PLANNED` |
 | `T-050` | `PATCH /api/v1/leagues/:leagueId/teams/:teamId` | Manager field allowlist versus commissioner fields, `If-Match` | `PLANNED` |
+| `T-125` | `GET /api/v1/leagues/:leagueId/teams/:teamId/logo` | Member-only exact-team BLOB read, inspected media, no-store, strictly read-only | `PLANNED` |
 | `T-051` | `POST /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner, one active assignment, user membership constraints | `PLANNED` |
 | `T-052` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner, no unauthorized team control remains | `PLANNED` |
 | `T-053` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId` | Commissioner request plus admin approval, no live-season deletion, backup | `PLANNED` |
@@ -708,7 +709,7 @@ C-024 through C-029 = 6 conditional debug routes
 Target catalogue:
 
 ```text
-T-001 through T-124 = 124 approved target routes
+T-001 through T-125 = 125 approved target routes
 ```
 
 Count changes require a matching API Contracts review.
@@ -743,7 +744,7 @@ Documentation verification:
 
 ```powershell
 Get-Content docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md
-Select-String -Path docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md -Pattern '^`APPROVED`$','C-034','T-124','GET and HEAD Safety','Compatibility Retirement','Count Verification'
+Select-String -Path docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md -Pattern '^`APPROVED`$','C-034','T-125','GET and HEAD Safety','Compatibility Retirement','Count Verification'
 ```
 
 Future compatibility manifest verification:

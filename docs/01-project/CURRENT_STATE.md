@@ -14,7 +14,7 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-07-14**
+Last reviewed: **2026-07-23**
 
 ---
 
@@ -142,7 +142,7 @@ Development work should occur on separate branches and be verified before it is 
 * secure multi-user authentication;
 * full league isolation through database relationships;
 * automated test coverage sufficient for releases;
-* a dedicated staging environment.
+* a complete frontend-and-backend staging release-candidate environment.
 
 ---
 
@@ -686,39 +686,209 @@ Public self-service league creation is outside the current release scope.
 
 The backend was originally concentrated in a large `server.js` file.
 
-A behaviour-preserving refactor is currently in progress on the local backend branch:
+A behaviour-preserving refactor and the M2 SQLite foundation are
+complete on the backend branch:
 
 ```text
-stage2
+staging
 ```
 
-Completed or partially completed extractions include:
+The completed structure includes explicit boundaries under:
+
+```text
+src/bootstrap/
+src/config/
+src/domain/
+src/application/services/
+src/infrastructure/
+src/jobs/
+src/operations/
+src/transport/http/routes/
+src/validators/
+```
+
+The two imported root compatibility route adapters and the root league-store adapter remain intentionally temporary:
 
 ```text
 routes/healthRoutes.js
 routes/leagueReadRoutes.js
-routes/playersReadRoutes.js
+leagueStore.js
 ```
 
-The extracted routes were tested locally against their existing endpoints.
+Backend-refactor work item `BR-00`, the Baseline and Safety Harness, is complete in backend commit:
 
-The refactor is not complete.
+```text
+aa0718d Add BR-00 backend safety harness
+```
 
-Significant routing, services, scheduled jobs, validation, and data-access responsibilities remain inside or closely coupled to `server.js`.
+The committed harness adds Node built-in characterization tests, handcrafted fixtures, isolated operating-system temporary runtimes, exact endpoint-inventory proof, read-only tree-hash proof, current league-store characterization, and bounded child-server cleanup.
 
-The current refactor must be completed before or alongside the introduction of a clean repository/data-access layer.
+Post-commit verification on 2026-07-18 passed 16 of 16 focused characterization tests and 24 of 24 complete Node test entries. The endpoint inventory remained 34 total, six conditional matchup-debug routes, and 28 non-debug routes. Syntax, whitespace, protected repository JSON hash, and child-process cleanup checks also passed.
 
-The refactor must not silently change feature behaviour.
+The refactor and M2 foundation are committed and pushed to
+`origin/staging` at
+`734c52f865e1407dcd21fcc9ffa891ca4c022fb2`. That exact commit is
+deployed only to the dedicated Render staging service. It is not merged
+to or deployed from production `main`.
+
+Root `server.js` is now a 50-line lifecycle entrypoint. Route definitions, services, pure domain calculations, JSON repositories, scheduled jobs, external adapters, configuration, operations, validators, Socket.IO compatibility publishing, and feature composition have explicit module boundaries.
+
+The refactor preserves current compatibility behavior. It does not claim that current behavior already satisfies the approved Season 2 target rules or security model.
 
 The approved Architecture, Data Model, API Contracts, Backend Refactor, SQLite Migration, Security, Frontend Structure, Environment Setup, Deployment, and Backup and Restore specifications now define the target modular-monolith, SQLite, transaction, identity, league-isolation, history, job, API, compatibility, extraction, migration, authentication, application-security, frontend, hosting-environment, release, and recovery boundaries.
 
-The API review identified 34 current route registrations, including six conditional matchup-debug routes. Most remain coupled to `server.js`. The approved Backend Refactor defines a 14-stage sequence from the Step 0 safety harness through the Step 13 completion gate, with focused verification gates throughout.
+The API review identified 34 current route registrations, including six conditional matchup-debug routes. All route definitions now have explicit route-module ownership, and root `server.js` owns none. The approved 14-stage Backend Refactor sequence from the Step 0 safety harness through the Step 13 completion gate is complete locally.
 
-The SQLite Migration specification selects Node 24.14.1 and exact `better-sqlite3` 12.11.2, deterministic copied-JSON import, explicit reset manifests, verified backups, a maintenance-window cutover, and no dual-write period. The Security specification selects Node `scrypt`, opaque server-side sessions, session-bound CSRF, exact credentialed CORS, durable rate limits, backend-derived authorization, and separate append-only security audit.
+The SQLite Migration specification selects Node 24.14.1 and exact `better-sqlite3` 12.11.1, deterministic copied-JSON import, explicit reset manifests, verified backups, a maintenance-window cutover, and no dual-write period. The Security specification selects Node `scrypt`, opaque server-side sessions, session-bound CSRF, exact credentialed CORS, durable rate limits, backend-derived authorization, and separate append-only security audit.
 
-The approved Active Roadmap now defines nine dependency-ordered milestones from the canonical foundation through initial launch, required in-season completion, and deferred work. The approved Active Work Plan identifies only backend-refactor work item `BR-00`, the Baseline and Safety Harness, as ready to start.
+The approved Active Roadmap defines dependency-ordered milestones from
+the canonical foundation through initial launch, required in-season
+completion, and deferred work. Milestone M1 is complete: `BR-00`
+through `BR-13` passed their gates. Milestone M2 is also complete:
+`M2-01` through `M2-14` and the external staging gate passed. Milestone
+M3 is complete locally. `M3-01` is complete on the focused frontend
+branch. The shipped credential list, browser password comparison,
+local-storage identity, browser actor claims, old login UI, and
+unguarded compatibility writes were removed or made fail-closed. The
+focused verifier, repository-wide lint, production build, isolated
+connected-browser visual and interaction checks, GET-only network
+timeline, anonymous reload, Socket.IO invalidation, complete backend
+suite, and protected-hash gates all passed. `M3-02` is also complete
+locally. It added validated security configuration, an injectable UTC
+clock, Node-crypto randomness, immutable bootstrap composition, and
+secret-redacted structured logging foundations. Its focused suite
+passed `15/15`, the cumulative foundation suite passed `104/104`, and
+the complete backend suite passed `276/276`. `M3-03` is also complete
+locally. It added the exact password policy, bounded asynchronous Node
+`scrypt`, safe user and isolated credential repositories, atomic
+credential replacement, and authority-free test-account creation. Its
+focused suite passed `15/15`, the combined security suite passed
+`30/30`, the cumulative foundation suite passed `119/119`, and the
+complete backend suite passed `292/292`. `M3-04` is also complete
+locally. It added opaque independent session and CSRF secrets,
+digest-only session persistence, one-active-session replacement,
+absolute and idle expiry, bounded activity refresh, revocation, and
+safe local and deployed cookie transport. Its focused suite passed
+`17/17`, the combined security suite passed `47/47`, the cumulative
+foundation suite passed `136/136`, and the complete backend suite
+passed `309/309`. On 2026-07-20 Grae approved stable versioned
+HMAC-SHA-256 CSRF derivation from each opaque random session token so
+reloads and multiple tabs work without recoverable CSRF storage or a
+bootstrap write. `M3-05` is complete locally. Exact origin
+configuration, stable derived CSRF bootstrap, constant-time unsafe
+verification, credentialed CORS, bounded preflight, JSON and Fetch
+Metadata enforcement, and API security headers passed `5/5` focused,
+`39/39` combined security, `143/143` cumulative foundation, and
+`316/316` complete backend tests. `M3-06` is complete locally.
+Purpose-bound opaque tokens, digest-only single-use transitions,
+append-only Security Audit, keyed privacy digests, and durable
+authentication rate limits passed `8/8` focused, `62/62` combined
+security, `151/151` cumulative foundation, and `324/324` complete
+backend tests. On 2026-07-20 Grae approved M3-07 option 1, and M3-07 is now
+complete locally. Atomic pending registration, 24-hour email verification,
+AES-256-GCM encrypted action-link outbox delivery, retry and interrupted
+claim recovery, terminal payload clearing, resend replacement, automatic
+initial session creation, target HTTP envelopes, exact request security,
+and generic public behavior passed `18/18` focused, `80/80` combined M3
+account/security, `169/169` cumulative foundation, and `342/342` complete
+backend tests under Node `24.14.1`. The initial migration, package lock,
+protected JSON, compatibility route inventory, and runtime registration
+remain unchanged. `M3-08` is complete locally. Credential authentication,
+sign-in, sign-out, read-only session bootstrap, password change and reset,
+self-deactivation and reactivation, encrypted reset/reactivation delivery,
+notifications, atomic rollback, replay, expiry, concurrency, and isolated
+HTTP contracts passed `50/50` focused regression, `116/116` combined M3
+account/security, `205/205` cumulative foundation, and `378/378` complete
+backend tests under Node `24.14.1`. `M3-09` is complete locally. Its
+one-time first-platform-administrator command, pending credential setup,
+forward-only migration `0002`, encrypted 72-hour setup delivery, permanent
+self-refusal, password completion, rollback, replay, expiry, concurrency,
+and isolated HTTP contracts passed `14/14` focused, `130/130` combined M3
+account/security/migration/bootstrap, `219/219` cumulative foundation, and
+`392/392` complete backend tests under Node `24.14.1`. `M3-10` is complete
+locally. Backend-derived platform-administrator authorization, atomic
+administrative league creation, planned current season, fixed settings,
+League Activity, Security Audit, scoped idempotency, exact replay, conflicts,
+simultaneous submissions, rollback, and isolated HTTP contracts passed
+`18/18` focused, `148/148` combined M3, `237/237` cumulative foundation,
+and `410/410` complete backend tests under Node `24.14.1`. `M3-11` initial
+commissioner proposal, acceptance, and active membership is complete. Its
+policy, specialized SQLite repository, atomic proposal/read/accept/decline
+service, notification and dual-audit evidence, idempotency, eligibility and
+ownership revalidation, rollback seams, simultaneous terminal action, and
+isolated HTTP contracts passed `16/16` focused, `164/164` combined M3,
+`253/253` cumulative foundation, and `426/426` complete backend tests under
+Node `24.14.1`. `M3-12` league-scoped authorization and authenticated
+read-only league visibility is complete. Its SELECT-only repository,
+backend-derived active-member and current-commissioner authority, two-league
+safe projections, full database immutability checks, and isolated GET HTTP
+contracts passed `10/10` focused, `174/174` combined M3, `263/263` cumulative
+foundation, and `436/436` complete backend tests under Node `24.14.1`.
+`M3-13` authenticated user and league Socket.IO rooms is complete. Its
+read-only session resolution, exact Origin and cookie authentication,
+backend-derived user and league rooms, current-state reauthorization, safe
+disconnection, full-database immutability checks, and metadata-only
+invalidation boundary passed `15/15` focused, `190/190` combined M3,
+`279/279` cumulative foundation, and `452/452` complete backend tests under
+Node `24.14.1`. `M3-14` team-scoped manager authorization and authenticated
+team Socket.IO rooms is complete. Its SELECT-only authority repository, exact
+current-manager checks, multi-team support, team-room reauthorization, and
+full-database immutability checks passed `7/7` focused, `197/197` combined M3,
+`286/286` cumulative foundation, and `459/459` complete backend tests under
+Node `24.14.1`. `M3-15` Option 1 is complete locally. Its immutable schema
+migration, explicit `create_team` and `manage_team` invitation intent,
+commissioner-authorized creation, invited-user safe read, atomic acceptance,
+decline without authority, notification, League Activity, Security Audit,
+idempotency, and isolated HTTP contracts passed `17/17` focused, `214/214`
+combined M3, `303/303` cumulative foundation, and `476/476` complete backend
+tests. `M3-16` authenticated team reads and commissioner-only Setup team
+creation is complete locally. SELECT-only member reads and atomic direct team
+creation passed `9/9` focused, `223/223` combined M3, `312/312` cumulative
+foundation, and `485/485` complete backend tests. `M3-17` active-member team
+manager assignment, transfer, acceptance, decline, and removal is complete
+locally. Its additive transfer-intent migration, atomic service, and isolated
+HTTP boundary passed `11/11` focused, `234/234` combined M3, `323/323`
+cumulative foundation, and `496/496` complete backend tests. `M3-18` team
+profile representation, safe logo storage, and versioned mutation is complete
+locally. Its additive logo-object migration, dependency-free raster policy,
+atomic service, safe team representation, binary read, and isolated HTTP
+boundary passed `16/16` focused, `250/250` combined M3, `339/339` cumulative
+foundation, and `512/512` complete backend tests. `M3-19` local target-runtime
+composition and API integration is complete locally. Its exact 36-endpoint
+dispatcher, explicit SQLite ownership, full account/league/team composition,
+authenticated Socket.IO attachment, integrated workflows, and failure-safe
+resource lifecycle passed `21/21` focused, `271/271` combined M3, `360/360`
+cumulative foundation, and `533/533` complete backend tests. `M3-20` account
+and league-selection frontend integration is complete with `57/57` frontend
+tests, `533/533` backend tests, lint, build, and the connected ordinary-Chrome
+gate passing. `M3-21` provider-backed account email and required notifications
+is complete with `12/12` focused provider/rendering/job tests and `546/546`
+complete backend tests. The M3 completion gate passed.
+Nothing was deployed, merged, or changed in production.
 
-`BR-00` is limited to the backend `stage2` branch. It adds Node built-in characterization tests, synthetic temporary fixtures, exact endpoint-inventory proof, read-only file-hash proof, and league-store characterization. It does not move feature code, add SQLite, implement authentication, change frontend behavior, or authorize deployment.
+`BR-01` extracted current compatibility configuration and process lifecycle. `BR-02` extracted player JSON access, normalization, indexing, search, reload, and compatibility routing. The stale player-cache reference defect is corrected: startup and reload now update the route-visible service cache. BR-02 verification passed 42 of 42 characterization tests and 50 of 50 complete Node test entries while preserving player source hashes and the 34/6/28 route inventory.
+
+`BR-03` moved statistics cache access, refresh orchestration, provider access, lock handling, atomic cache replacement, refresh token compatibility checks, and statistics routes behind repository, service, NHL adapter, and router boundaries. Verification passed 57 of 57 characterization tests and 65 of 65 complete Node test entries. Failed refreshes preserved the last valid cache, statistics refresh never changed league state, the route inventory remained 34/6/28, and no live NHL request occurred.
+
+`BR-04` extracted snapshot and backup listing, creation, and restore operations behind dedicated operation, repository, and compatibility-router boundaries. Verification passed 72 of 72 characterization tests and 80 of 80 complete Node test entries while preserving protected JSON hashes and the 34/6/28 route inventory. Current traversal, path disclosure, public exposure, body-supplied role, and write-queue defects remain documented and blocked pending the approved Security or later focused reliability work.
+
+`BR-05` extracted Pacific-time schedule construction, round-robin pairing, weekly scoring, standings calculation, current-week/status reads, and matchup read routing. Verification passed 86 of 86 characterization tests and 94 of 94 complete Node test entries, including spring/fall daylight-saving fixtures, scoring baselines, standings sorting, complete matchup-read tree hashes, protected JSON hashes, and the 34/6/28 route inventory.
+
+`BR-06` extracted schedule generation, one-week updates, shift-from behavior, and compatibility commissioner-role checks. Verification passed 98 of 98 characterization tests and 106 of 106 complete Node test entries. Current odd-team rejection, future-only editing, non-production force behavior, overlap validation, save-before-event ordering, protected JSON hashes, the 34/6/28 route inventory, and current response contracts were preserved.
+
+`BR-07` extracted roster-lock, baseline-capture, weekly-finalization, and rollover jobs into fixed-clock, awaited, overlap-guarded definitions and composed them through an explicit ordered scheduler boundary. Verification passed 119 of 119 characterization tests and 127 of 127 complete Node test entries. Duplicate, restart, missing-statistics, invalid-state, save-failure, event-failure, scheduler-overlap, accelerated-week, no-double-advance, and failed-finalization gates passed.
+
+`BR-08` extracted the current compatibility auction resolver, auction-resolution service and job, and automatic weekly-snapshot job while documenting their intentional differences from the approved Season 2 Auctions target. Verification passed 133 of 133 characterization tests and 141 of 141 complete Node test entries. No-bid, single-bid, multiple-bid, amount-tie, missing-team, buyout-lock, activity, exact-boundary, duplicate, restart, overlap, save-failure, event-failure, and one-snapshot-per-occurrence gates passed.
+
+`BR-09` extracted the broad `POST /api/league` compatibility write behind explicit validation, service, and router boundaries without generalizing it for new features. Verification passed 145 of 145 characterization tests and 153 of 153 complete Node test entries. Freeze, wipe, required-array, optional-matchup, commissioner, manager, server-owned-field preservation, save-failure, event-failure, response-contract, protected-hash, and 34/6/28 route-inventory gates passed.
+
+`BR-10` adapted the root league store into an explicit JSON league repository while preserving normalization, queued writes, atomic replacement, backup, schema, list, restore, and compatibility behavior. Verification passed 149 of 149 characterization tests and 157 of 157 complete Node test entries. The focused persistence gate passed 48 of 48 tests, the route inventory remained 34/6/28, and protected JSON and package-manifest hashes remained unchanged.
+
+`BR-11` restored explicit Socket.IO attachment and compatibility invalidation delivery, including safe HTTP behavior when Socket.IO is unavailable. Verification passed 152 of 152 characterization tests and 160 of 160 complete Node test entries. One attached Socket.IO instance, one connection handler, commit-before-event delivery, failure suppression, compatibility CORS, frontend one-refetch lifecycle, protected hashes, and the 34/6/28 route inventory were verified.
+
+`BR-12` removed the remaining debug route handlers and feature composition from root `server.js`, leaving startup and shutdown wiring only. Verification passed 160 of 160 characterization tests and 168 of 168 complete Node test entries. Root `server.js` is 50 lines with zero route handlers, feature imports, or filesystem calls. All 34 routes remain, the six debug routes remain flag-guarded, and protected hashes remain unchanged.
+
+`BR-13` completed the final behavior-preserving refactor gate. The focused architecture and evidence run passed 61 of 61 tests, the final characterization suite passed 164 of 164 tests, and the complete Node suite passed 172 of 172 test entries. Thin-root, explicit-boundary, exact API, read-only tree-hash, accelerated matchup-week, persistence isolation, protected-data, known-gap ownership, and JSON-adapter replaceability gates passed.
 
 The approved Testing Strategy now defines backend, frontend, browser, security, database, migration, job, recovery, staging, release, and production-smoke evidence. The approved Frontend Structure selects TanStack Query for server state, one shared HTTP client, one Socket.IO lifecycle, URL-derived stable league context, feature modules, and an incremental `FE-00` through `FE-11` extraction from the current large `App.jsx`.
 
@@ -728,11 +898,11 @@ The approved Backup and Restore specification selects application-consistent SQL
 
 The approved Deployment specification selects CI-gated staging, manual production publication of exact commits, compatibility-first backend and frontend ordering, explicit migrations, read-only production smoke, release records, first-write rollback boundaries, and separate code, configuration, and database recovery.
 
-The approved Backend Endpoint Checklist tracks all 34 current route registrations and all 124 approved target routes with permanent IDs and evidence gates for characterization, contract tests, frontend connection, staging, production verification, and compatibility retirement.
+The approved Backend Endpoint Checklist tracks all 34 current route registrations and all 125 approved target routes with permanent IDs and evidence gates for characterization, contract tests, frontend connection, staging, production verification, and compatibility retirement.
 
 The approved Manual QA Checklist defines repeatable release-candidate acceptance across desktop, mobile, keyboard, accessibility, roles, two leagues, feature workflows, failures, reconnect, recovery, defect handling, and retest. The approved Release Checklist defines hard go/no-go gates from exact source commits through production authorization, read-only smoke, monitoring, rollback, and closeout.
 
-These specifications and checklists are approved design, not evidence that the target implementation, migration, authentication system, environment infrastructure, deployment pipeline, recovery tooling, endpoint catalogue, QA run, release approval, or refactor sequence is already complete.
+These specifications and checklists are approved design, not evidence that the target Season 2 implementation, migration, authentication system, environment infrastructure, deployment pipeline, recovery tooling, target endpoint catalogue, QA run, or release approval is complete. The behavior-preserving backend refactor sequence itself is complete locally.
 
 ---
 
@@ -740,39 +910,127 @@ These specifications and checklists are approved design, not evidence that the t
 
 ### Frontend
 
-Current documentation work is occurring on:
+The canonical frontend workspace is:
 
 ```text
-docs/summer-2026-foundation
+E:\hundo-leago
 ```
 
-The canonical North Star and operating-mode documents have been created on this branch.
-
-An unrelated local modification currently exists in:
+Current local candidate work is on:
 
 ```text
-src/components/TeamToolsPanel.jsx
+m3-01-browser-authority
 ```
 
-That modification is intentionally being kept separate from the documentation commits.
+The committed head is:
+
+```text
+8ff255348a10039eb9e3e4c72da3be570c6b1860
+```
+
+The complete M2-M7 frontend candidate remains preserved as an unfrozen dirty
+worktree and is not represented by that committed head.
 
 ### Backend
 
-Current local refactor work is on:
+The canonical backend workspace is:
 
 ```text
-stage2
+E:\hundo-leago-backend
 ```
 
-The backend branch contains refactor progress that may not yet exist on the remote `main` branch.
+Current backend candidate work is on:
 
-Before resuming backend coding, the branch state and its difference from `main` must be reviewed.
+```text
+staging
+```
+
+The branch is synchronized with `origin/staging` at:
+
+```text
+734c52f865e1407dcd21fcc9ffa891ca4c022fb2
+```
+
+The complete M2-M7 backend candidate remains preserved as an unfrozen dirty
+worktree and is not represented by that committed head.
+
+On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
+with the canonical E-drive workspaces across 726 relevant non-generated files.
+The compared files, branches, committed heads, and dirty-state inventories
+matched. The C-drive copies are not development, candidate, staging, or
+production inputs.
+
+Backend-refactor items `BR-00` through `BR-13`, M2 items `M2-01`
+through `M2-14`, and the external M2 staging gate are complete. Their
+exact plans and evidence are recorded under
+`docs/06-work-plans/archive/`.
+
+The final M2 gate used a dedicated protected Render staging environment,
+service, and persistent disk. The exact staging commit passed a clean
+build and `261/261` backend tests. Two real-disk imports, independent
+verifications, and recovery rehearsals passed without switching
+application authority.
+
+This staging publication is not evidence that the work exists on
+production `main`. Production was not deployed, migrated, reset, or
+switched to SQLite.
 
 ---
 
 ## Automated Testing
 
-The project does not yet have enough automated test coverage to safely verify all core league behaviour.
+The backend now has an initial automated characterization foundation, but the project does not yet have enough automated test coverage to safely verify all core league behaviour.
+
+The committed BR-00 foundation currently covers:
+
+* the exact 34/6/28 compatibility endpoint inventory;
+* current root-server startup against copied synthetic state;
+* all current GET routes leaving the complete temporary runtime tree unchanged;
+* current league-store load, normalization, save, backup, restore, queue, and atomic-rename failure behavior;
+* importable fixed-clock and fake-publisher test seams;
+* bounded child-process cleanup.
+
+Completed BR-01 coverage additionally proves:
+
+* current compatibility configuration defaults and coercion;
+* current Express and Socket.IO CORS decisions;
+* application and transport construction without listening;
+* explicit temporary-path dependency composition;
+* tracked interval cleanup;
+* bounded, idempotent HTTP and Socket.IO shutdown;
+* removable SIGINT and SIGTERM handlers.
+
+Completed BR-02 coverage additionally proves player normalization, active search, endpoint limits and errors, route order, reload visibility, and unchanged player-file hashes.
+
+Completed BR-03 coverage additionally proves statistics cache reads, one-player lookup, debug behavior, refresh-token handling, NHL paging, refresh locking, minimum-count rejection, atomic replacement, shared HTTP/CLI orchestration, last-valid-cache preservation, and unchanged league-state hashes.
+
+Completed BR-04 coverage additionally proves recovery listing hashes, snapshot naming and contents, successful restore hashes and activity, missing/malformed restore immutability, repository delegation, current traversal behavior, and temporary-fixture-only recovery.
+
+Completed BR-05 coverage additionally proves explicit-time and timezone schedule calculations, daylight-saving boundaries, round-robin compatibility, weekly scoring baselines and diagnostics, standings results and tie breakers, read-service immutability, matchup response contracts, and complete read-only tree hashes.
+
+Completed BR-06 coverage additionally proves schedule generation and reset semantics, one-week future editing, development-only forced editing, Pacific calendar shifts, ordering and neighbor-overlap validation, failed-command immutability, save-before-event ordering, and compatible command responses.
+
+Completed BR-07 coverage additionally proves fixed-clock matchup job boundaries, awaited saves and event attempts, per-job and per-cycle overlap guards, durable compatibility markers, exact time boundaries, duplicate and restart behavior, missing-statistics safety, accelerated weekly execution, one-cycle advancement, and finalization-before-rollover gating.
+
+Completed BR-08 coverage additionally proves pure compatibility auction projection, current numeric bid ranking and earliest tie-breaking, current missing-team and bid-removal behavior, roster ordering, 14-day buyout locks, leading activity, Sunday Pacific occurrence IDs, one resolved auction cycle and weekly snapshot per marker, awaited persistence, overlap guards, retries, and commit-before-event ordering.
+
+Completed BR-09 coverage additionally proves ordered freeze, wipe, required-array, and optional-matchup validation; manager and commissioner projections; preservation of backend-owned fields and automatic markers; one load and one save; save-before-event ordering; current success and error mapping; generic failure behavior; and dedicated compatibility-router ownership.
+
+Completed BR-10 coverage additionally proves direct JSON repository construction, explicit and compatibility save methods, independent single-writer queues, legacy store delegation, missing and malformed source behavior, normalization, atomic rename failure safety, pre-write backups, deterministic pruning, list and restore behavior, and repository composition with no route-level concrete adapter import.
+
+Completed BR-11 coverage additionally proves explicit Socket.IO application attachment, exactly one connection handler, unchanged Socket.IO and HTTP CORS decisions, one compatibility invalidation after a committed save, no invalidation after save failure, safe HTTP success without Socket.IO, root publisher composition, transport shutdown, and the existing frontend's guarded one-listener, one-refetch, reconnect, and cleanup lifecycle.
+
+Completed BR-12 coverage additionally proves all six debug-route contracts and their disabled state, commissioner guards, state summaries, reset semantics, manual job responses, placeholder normalization, commit-before-event ordering, error mapping, explicit compatibility-runtime construction, idempotent snapshot-then-auction-then-matchup startup, thin-root source structure, route-source ownership, and unchanged full behavior.
+
+Completed BR-13 coverage additionally proves dependency direction across domain, services, routes, and jobs; explicit ownership for every compatibility endpoint; constrained concrete-adapter selection; all five replaceable JSON repository boundaries; the complete 61-test final evidence matrix; and unchanged full compatibility behavior across 172 Node test entries.
+
+Completed M2 coverage additionally proves the exact Node and SQLite
+runtime, migration ledger and checksums, strict schema, SQLite repository
+contracts, portable copied-source inventory, approved reset manifest,
+deterministic IDs and transforms, dry-run and persistent imports,
+reconciliation, backup, clean restore, independent semantic
+verification, and cutover/rollback rehearsal. The final exact-runtime
+suite passed `261/261` tests across `55` suites.
 
 The approved Testing Strategy now defines the required tools, layers, fixtures, gates, and evidence. The approved Backend Endpoint Checklist provides the exact route-level tracking structure, and the approved Manual QA and Release checklists provide staging acceptance and production go/no-go records. Their test foundations, endpoint evidence, QA runs, and release evidence have not yet all been completed.
 
@@ -809,13 +1067,35 @@ Read-only endpoints must remain read-only.
 
 ## Staging Environment
 
-A fully documented and isolated staging environment is not yet established.
+The target topology and configuration are documented in
+`docs/04-technical-specs/ENVIRONMENT_SETUP.md`. A dedicated backend
+staging environment now exists on Render:
 
-Its target topology and configuration are now documented in `docs/04-technical-specs/ENVIRONMENT_SETUP.md`. No staging Netlify site, Render service, persistent disk, database, secret set, or backup namespace was created by approving that design.
+* protected, network-isolated environment
+  `evm-d9eo1v3rjlhs73cpujvg`;
+* service `srv-d9eo2turnols73ekb830` on branch `staging`;
+* separately attached disk `dsk-d9eo2u6rnols73ekb8t0`;
+* staging-only paths, secret values, and `hundo-leago/staging` backup
+  prefix;
+* jobs, backup scheduling, debug routes, matchups, snapshots, and
+  auctions disabled.
+
+The exact staging commit
+`734c52f865e1407dcd21fcc9ffa891ca4c022fb2` is healthy. M2 ran two
+complete current-data import, independent verification, backup, restore,
+cutover, and rollback rehearsals on the real staging disk. JSON remains
+application authority.
+
+A staging Netlify frontend, test accounts, test leagues, and functional
+encrypted offsite backup target have not yet been established. The
+offsite endpoint and bucket remain nonfunctional staging placeholders,
+and backup scheduling is disabled.
 
 Current development has used:
 
 * local frontend and backend servers;
+* OS-temporary SQLite migration roots;
+* the dedicated Render backend staging service and disk;
 * production deployments;
 * manual verification.
 
@@ -835,15 +1115,26 @@ Before Season 2 launches, staging must have:
 
 The following require attention before the 2026–27 launch:
 
-1. The backend refactor is incomplete.
+1. The completed M1 refactor and M2 SQLite migration foundation are
+   published to `origin/staging` and deployed only to the dedicated
+   staging service; they are not on production `main`.
 2. Mutable league data still uses file-backed JSON.
-3. Secure authentication is not implemented.
-4. Multi-league isolation is not implemented.
+3. Secure accounts, permissions, leagues, teams, memberships, account/league
+   frontend integration, and provider email are complete locally through the
+   M3 gate but remain isolated from production authority and are not deployed.
+4. Existing compatibility feature workflows are not yet converted to the
+   completed league-scoped target authority.
 5. Contracts are not yet complete for the new season model.
 6. Existing features are not yet scoped by league.
-7. Automated tests are limited.
-8. Staging is not yet established.
-9. Backup and restoration are documented but not yet implemented or rehearsed.
+7. The backend has a 725-test exact-runtime suite and the M3 frontend/browser
+   gates pass, but broader feature and integrated release-candidate coverage
+   remains incomplete.
+8. Dedicated backend staging exists, but staging frontend, test users,
+   test leagues, and full integrated release-candidate workflows remain
+   incomplete.
+9. SQLite backup, clean restore, and rollback are verified on the
+   staging disk, but encrypted offsite upload and offsite restore remain
+   unverified.
 10. Matchups and standings have not completed a full real season.
 11. Off-season scoring makes realistic matchup testing difficult without simulation tools.
 12. Some frontend cap displays may disagree.
@@ -859,18 +1150,310 @@ The following require attention before the 2026–27 launch:
 
 The current priority order is:
 
-1. Establish canonical documentation and repository instructions.
-2. Finish the behaviour-preserving backend refactor.
-3. Document the current API and architecture.
-4. Design and implement SQLite safely.
-5. Introduce users, leagues, memberships, and permissions.
-6. Convert existing features to league-scoped data.
-7. Complete contracts and roster models.
-8. Harden auctions and trades.
-9. fully test matchups and standings.
-10. Establish staging, backups, release procedures, and launch testing.
+1. Complete M7-07 integrated local release rehearsal, browser verification,
+   recovery drills, and hosted-staging preflight without touching hosted state.
+2. Keep production reset, migration, deployment, and job startup blocked until
+   Grae gives explicit authority for their exact scope.
+3. Complete staging frontend, test identities, offsite backups, release
+   procedures, and launch testing through bounded M7 steps.
 
-Architecture, Data Model, API Contracts, Backend Refactor, SQLite Migration, Security, Frontend Structure, Environment Setup, Deployment, Testing Strategy, Backend Endpoint Checklist, Manual QA Checklist, Release Checklist, Backup and Restore, Active Roadmap, and Active Work Plan are now approved. The next coding step, when Grae requests execution, remains backend-refactor work item `BR-00`: Baseline and Safety Harness.
+Architecture, Data Model, API Contracts, Backend Refactor, SQLite
+Migration, Security, Frontend Structure, Environment Setup, Deployment,
+Testing Strategy, Backend Endpoint Checklist, Manual QA Checklist,
+Release Checklist, Backup and Restore, Active Roadmap, and Active Work
+Plan are approved. Backend-refactor work items `BR-00` through `BR-13`
+and Milestones M1, M2, and M3 are complete. `M3-01` is
+complete locally with its focused verifier, full lint, build, isolated
+connected-browser, GET-only network, anonymous-reload, Socket.IO,
+backend, and protected-hash evidence passing. The exact `M3-02` plan is
+complete with `15/15` focused, `104/104` cumulative foundation, and
+`276/276` complete backend tests passing. `M3-03` is complete with
+`15/15` focused, `30/30` combined security, `119/119` cumulative
+foundation, and `292/292` complete backend tests passing. `M3-04` is
+also complete locally. Its opaque session secrets, digest-only SQLite
+repository, lifecycle service, one-active-session replacement, expiry,
+revocation, refresh, and cookie transport foundations passed `17/17`
+focused, `47/47` combined security, `136/136` cumulative foundation,
+and `309/309` complete backend tests. Grae selected stable versioned
+HMAC-SHA-256 derivation from the opaque random session token for
+reload-safe and multi-tab-safe CSRF bootstrap. `M3-05` is complete with
+`5/5` focused, `39/39` combined security, `143/143` cumulative
+foundation, and `316/316` complete backend tests passing. `M3-06` is
+complete with `8/8` focused, `62/62` combined security, `151/151`
+cumulative foundation, and `324/324` complete backend tests passing.
+`M3-07` is complete with `18/18` focused, `80/80` combined security,
+`169/169` cumulative foundation, and `342/342` complete backend tests.
+`M3-08` is complete with `50/50` focused regression, `116/116` combined
+security, `205/205` cumulative foundation, and `378/378` complete backend
+tests. `M3-09` is complete with `14/14` focused, `130/130` combined M3,
+`219/219` cumulative foundation, and `392/392` complete backend tests.
+`M3-10` is complete with `18/18` focused, `148/148` combined M3,
+`237/237` cumulative foundation, and `410/410` complete backend tests.
+`M3-11` is complete with `16/16` focused, `164/164` combined M3,
+`253/253` cumulative foundation, and `426/426` complete backend tests.
+`M3-12` is complete with `10/10` focused, `174/174` combined M3,
+`263/263` cumulative foundation, and `436/436` complete backend tests.
+`M3-13` is complete with `15/15` focused, `190/190` combined M3,
+`279/279` cumulative foundation, and `452/452` complete backend tests.
+`M3-14` is complete with `7/7` focused, `197/197` combined M3,
+`286/286` cumulative foundation, and `459/459` complete backend tests.
+`M3-15` is complete with `17/17` focused, `214/214` combined M3, `303/303`
+cumulative foundation, and `476/476` complete backend tests. `M3-16` is
+complete with `9/9` focused, `223/223` combined M3, `312/312` cumulative
+foundation, and `485/485` complete backend tests. `M3-17` is complete with
+`11/11` focused, `234/234` combined M3, `323/323` cumulative foundation, and
+`496/496` complete backend tests. `M3-18` is complete with `16/16` focused,
+`250/250` combined M3, `339/339` cumulative foundation, and `512/512` complete
+backend tests. `M3-19` is complete with `21/21` focused, `271/271` combined M3,
+`360/360` cumulative foundation, and `533/533` complete backend tests. `M3-20`
+account and league-selection frontend integration is complete with `57/57`
+frontend tests, `533/533` backend tests, lint, build, and the connected
+ordinary-Chrome gate passing. `M3-21` provider-backed account email and
+required notifications is complete with `12/12` focused tests and `546/546`
+complete backend tests. The M3 completion gate passed. M4-01 global player
+identity and provider identifiers is complete locally: its focused suite passed
+`7/7`, its M4-01 plus M2 schema/repository suite passed `22/22`, and the
+complete backend suite passed `553/553` under Node `24.14.1`. It reuses the
+existing M2 player schema without a migration, endpoint, provider, or authority
+cutover. M4-02 league-scoped position corrections and ownership reads is also
+complete locally: its focused suite passed `7/7`, its M4-01/M4-02/M2/M3
+compatibility suite passed `39/39`, and the complete backend suite passed
+`560/560` across 140 suites under Node `24.14.1`. It adds atomic current F/D
+correction replacement and immutable league-scoped ownership reads without an
+ownership writer, migration, endpoint, roster-category behavior, provider, or
+authority cutover. M4-03 roster categories and slot assignment is complete
+locally with `6/6` focused and `566/566` complete backend tests passing under
+Node `24.14.1`. M4-04 roster movement persistence and structural legality is
+complete locally with `7/7` focused and `573/573` complete backend tests
+passing. Grae selected the approved rounded-AAV representation for M4-05:
+original total remains exact while AAV is stored independently to the nearest
+cent. M4-05 is complete locally with `9/9` focused, `72/72` cumulative, and
+`582/582` complete backend tests passing under Node `24.14.1`. The bounded
+M4-06 fantasy ELC signing and prospect-rights decline is complete locally with
+`10/10` focused and `592/592` complete backend tests passing. The bounded M4-07
+retained-salary and yearly-obligation work is complete locally with `7/7`
+focused and `599/599` complete backend tests passing. The bounded M4-08 buyout,
+contract-elimination, release, and yearly-penalty work is complete locally with
+`7/7` focused and `606/606` complete backend tests passing. The bounded M4-09
+authoritative team-cap calculation is complete locally with `5/5` focused and
+`611/611` complete backend tests passing. The bounded M4-10 approved public
+roster projection is complete locally with `5/5` focused, `106/106` cumulative,
+and `616/616` complete backend tests passing. The bounded M4-11 commissioner
+roster and contract correction foundation is complete locally with `9/9`
+focused, `114/114` cumulative, and `625/625` complete backend tests passing.
+The bounded M4-12 frontend roster, contract, and cap integration is complete
+locally with `5/5` focused public-roster tests, `119/119` cumulative M4
+foundation tests, `630/630` complete backend tests, and `61/61` complete
+frontend tests passing. The M4 milestone gate is complete locally. M5-01 is the
+first complete M5 slice with `10/10` focused, `138/138` cumulative M4/M5,
+and `640/640` complete backend tests passing. It adds the nullable auction-
+lifecycle timestamp and atomic auction-plus-opening-bid foundation. M5-02 is
+complete locally with `18/18` focused, `81/81` migration and target-runtime
+regression, and `658/658` complete backend tests passing. It adds schema version
+`10`, atomic sealed bid submission and editing, blind commissioner
+administration, assigned-manager own-bid reads, and five isolated target auction
+routes. M5-03 is complete locally with `16/16` focused, `65/65` auction and
+target-runtime regression, and `674/674` complete backend tests passing. It
+adds deterministic resolution and anti-bluff decisions, SELECT-only candidate
+loading, historical submission-authority validation, and durable leased job
+coordination without persisting a winner or starting a scheduler. M5-04 is
+complete locally with `57/57` focused completion/resolution/runtime tests,
+`688/688` complete backend tests, and `296/296` JavaScript syntax checks passing
+under Node `24.14.1`. It adds schema version `11` and one idempotent atomic
+winner/no-winner/cancellation transaction spanning future planned seasons,
+contract years, the 14-day buyout lock, ownership and Active assignment,
+general-illegality evidence, authenticated signing activity, terminal auction
+history, and metadata-only outbox invalidation. Exact replay is write-free and
+late failure rolls every effect back. M5-05 is complete locally with `29/29`
+focused trade/runtime tests, `696/696` complete backend tests, `4/4` runtime-
+declaration tests, and `300/300` JavaScript syntax checks passing under Node
+`24.14.1`. It adds exact two-team, current-season, Entry-Draft-open, 168-hour,
+trade-deadline, manager/commissioner, freeze, league-member visibility, and
+independent simultaneous-preview policy with SELECT-only SQLite projections.
+It persists no trade or asset and performs no expiry-on-read. M5-06 is complete
+locally with `40/40` focused trade/runtime tests, `707/707` complete backend
+tests across 181 suites, `4/4` runtime-declaration tests, and `305/305`
+JavaScript syntax checks passing under Node `24.14.1`. It adds schema version
+`12`, strict typed trade assets, immutable proposal snapshots, creating-actor
+and effective-deadline evidence, exact idempotency, and one immediate atomic
+pending-proposal transaction. Every approved asset family, requested-retention
+preview, independent simultaneous offers, replay/conflict, and late rollback
+passed without reserving or transferring source assets. M5-07 is complete
+locally with `58/58` focused trade/schema/runtime tests, `725/725` complete
+backend tests across 185 suites, and `311/311` JavaScript syntax checks passing
+under Node `24.14.1`. It adds exact receiver rejection, proposer cancellation,
+explicit commissioner handling during a freeze, exact-deadline closure, durable
+leased expiry without expiry-on-read, and a byte-for-byte read-only acceptance
+preflight. The preflight revalidates every typed asset from current state and
+projects current cap, roster, retention-slot, and approved general-illegality
+evidence without accepting, reserving, or transferring anything. M5-08 is
+complete locally with `83/83` focused trade, schema, import, cutover, and
+runtime tests, `734/734` complete backend tests across 188 suites, and `315/315`
+JavaScript syntax checks passing under Node `24.14.1`. It adds schema version
+`13` and one idempotent immediate transaction that repeats acceptance
+validation, transfers every approved typed asset with unchanged terms and
+complete history, represents approved unplaced normal-roster results
+explicitly, completes the proposal, and automatically cancels other pending
+proposals made stale by the transferred identities. Exact replay is write-free
+and late failure rolls every effect back. M5-09 is complete locally with
+`74/74` focused activity, notification, outbox, auction, trade, and runtime
+tests, `740/740` complete backend tests across 193 suites, and `326/326`
+JavaScript syntax checks passing under Node `24.14.1`. It adds safe atomic
+auction and trade activity, metadata-only transactional outbox evidence,
+deterministic league-member activity reads, owner-only notification reads and
+explicit acknowledgement, retry-safe post-commit Socket.IO publication, and
+the four approved target HTTP routes. No auction or trade email, push, or
+separate notification row is created. M5-10 is complete locally with `75/75`
+focused recovery and regression tests, `751/751` complete backend tests across
+195 suites, and `327/327` JavaScript syntax checks passing under Node
+`24.14.1`. It adds schema version `14`, exact SELECT-only recoverability
+preview, atomic safe reversal for all approved executed asset forms, and
+explicit correction-required routing that moves no asset when reversal is
+unsafe. The three current-commissioner target recovery routes are composed with
+typed history, correction, activity, exact-idempotency, and metadata-only
+outbox evidence. M5-11 is complete locally with `34/34` focused backend
+trade/runtime tests, `18/18` focused auction tests, `756/756` complete backend
+tests across 196 suites, `330/330` JavaScript syntax checks, and `71/71`
+complete frontend tests across 16 files passing. Frontend lint and production
+build also pass. It composes the approved trade reads and participant workflow,
+adds safe typed trade detail history, exposes only the caller team's sealed bid
+state, integrates auction, trade, activity, and owner-only notification pages,
+and uses authenticated metadata-only Socket.IO events solely for scoped query
+invalidation. The complete M5 gate is recorded as passed. M6-01 is complete
+locally with `25/25` focused schema/repository tests, `766/766` complete backend
+tests across 198 suites, and `335/335` JavaScript syntax checks passing under
+Node `24.14.1`. It adds atomic provider-backed statistics refreshes and preserves
+the last valid successful season set after every tested failure. M6-02 is
+complete locally with deterministic even and odd round-robin generation,
+exact Pacific calendar boundaries, schema version `15` pairing and bye display
+context, commissioner-only read-only preview, and one atomic persist. Its
+`61/61` focused tests, architecture regression, `774/774` complete backend
+tests across 201 suites, and `340/340` JavaScript syntax checks pass under Node
+`24.14.1`. M6-03 is complete locally with schema version `16`, exact inclusive
+baseline, lock, and end boundaries, manager-write closure at the lock instant,
+and atomic single-winner week transitions. Its `80/80` focused tests,
+`781/781` complete backend tests across 204 suites, and `345/345` JavaScript
+syntax checks pass. M6-04 is complete locally with an immutable `1:00 AM`
+scoring baseline and exact `4:00 PM` active-lineup snapshot. Its exact six-hour
+freshness boundary, zero fallback totals, replay, conflict, isolation,
+immutability, and rollback tests pass; the complete backend suite is `786/786`
+across 206 suites and JavaScript syntax is `349/349` under Node `24.14.1`.
+M6-05 is complete locally with schema version `17`, strict normal-lock illegal
+evidence, zero scoring state, and one-way fresh late-legality conversion. Its
+`68/68` focused tests, `791/791` complete backend tests across 209 suites, and
+`353/353` JavaScript syntax checks pass under Node `24.14.1`. M6-06 is complete
+locally with exact SELECT-only player and team
+deltas, illegal-team zero, independent baselines, last-valid stale health, and
+source-regression rejection. Its `18/18` focused tests, `795/795` complete
+backend tests across 211 suites, and `357/357` syntax checks pass under Node
+`24.14.1`. M6-07 is complete locally with fresh post-end waiting, atomic
+official version 1, durable replay, conditional week finalization, and
+append-only attributable correction. Its `14/14` focused tests, `801/801`
+complete backend tests across 213 suites, and `361/361` syntax checks pass.
+M6-08 is complete locally with current-version-only 2/1/0 standings,
+deterministic approved ordering, competition ranks, zero-game participants,
+and no write-on-read. Its `13/13` focused tests, `804/804` complete backend
+tests across 215 suites, and `365/365` syntax checks pass. M6-09 durable job
+occurrences, leases, and recovery is complete locally with schema version `18`,
+single-owner token leases, exact expiry takeover, explicit retry timing, and
+terminal success. Its `63/63` focused tests, `809/809` complete backend tests
+across 218 suites, and `370/370` syntax checks pass. M6-10 commissioner matchup
+and standings recovery is complete locally with read-only previews, explicit
+confirmed correction routing, exact authoritative rebuild, preserved
+superseded snapshots, attribution, replay, and rollback. Its `17/17` focused
+tests, `813/813` complete backend tests across 220 suites, and `374/374` syntax
+checks pass. M6-11 is complete locally with an 88-event 22-week accelerated
+simulation, exact DST boundaries, failed-event checkpoint, explicit resume,
+scope isolation, and no production composition. Its `19/19` focused tests,
+`817/817` complete backend tests across 222 suites, and `378/378` syntax checks
+pass. M6-12 is complete locally with all nine authenticated target routes,
+read-only GETs, CSRF-protected commissioner previews and versioned confirmations,
+safe health, and manager/commissioner frontend states. Its focused backend gate
+passed `30/30`, focused frontend gate passed `15/15`, complete backend suite
+passed `826/826` across 224 suites, `386/386` syntax checks passed, and the
+complete frontend passed `75/75`, lint, and production build. The M6 milestone
+gate is complete on `2026-07-22`. M7-01 deployed SQLite target runtime, public
+and authenticated health, exact migration/identity opening, safe target start,
+and graceful shutdown are complete locally with `837/837` backend tests and
+`394/394` JavaScript syntax checks passing. M7-02 explicit identity provisioning
+is complete locally with `842/842` backend tests and `397/397` syntax checks
+passing; the command was not run on staging or production. M7-03 explicit
+maintenance and league-write closure is complete locally with `39/39` focused,
+`845/845` complete backend, and `399/399` syntax checks passing. M7-04
+controlled scheduler, outbox, account-email, durable matchup occurrence, and
+shutdown composition is complete locally with `854/854` complete backend and
+`403/403` syntax checks passing. M7-05 encrypted offsite backup and clean
+restore foundation is complete locally with `17/17` focused, `862/862`
+complete backend, and `413/413` syntax checks passing; no real offsite object
+was created. M7-06 deterministic two-league release-QA fixture and automated
+rehearsal is complete locally with `4/4` fixture, `68/68` focused, `866/866`
+complete backend, and `418/418` syntax checks passing. M7-07 now runs the real
+target backend and sibling Vite frontend together through a one-command,
+loopback-only manual-QA launcher. It creates disposable temporary state, prints
+all nine synthetic account identities without printing their password, keeps
+the scheduler and provider disabled, and cleans up on shutdown. Its focused
+launcher and integrated-environment gate passes `7/7`. The complete backend
+passes `893/893` across 228 suites and `436/436` JavaScript syntax checks under
+the required Node `24.14.1`; the complete frontend passes `95/95` across 19
+files, lint, and production build. Canonical authenticated feature routes are
+loaded as separate production chunks; the initial JavaScript chunk is
+approximately `363.86 kB`, below Vite's `500 kB` advisory threshold. The
+obsolete root dashboard is kept behind its already-disabled compatibility
+backend-session gate and is absent from the active build. Its old quote storage,
+league `GET`, and Socket.IO connection also refuse before starting without that
+session. The updated M3 browser-authority verifier enforces these boundaries
+and passes across 15 compatibility files while inventorying all 86 shipped
+frontend source files.
+
+Rendered loopback desktop, mobile, reload, sign-out, and two-league isolation
+checks pass. Grae's local manual run also passed sign-in refresh, Tab and
+Shift+Tab navigation, visible focus, Enter submission, and the rendered
+Socket.IO reconnect procedure. The 200% zoom run preserved sign-in, sign-out,
+and no whole-page horizontal overflow, but exposed header overlap, off-frame
+navigation, mixed legacy/target navigation, and incomplete standings display
+in the observed build. Functional navigation, six-team standings, player,
+auction, matchup, and team-link corrections now pass focused automated tests.
+The old direct player, matchup, and standings URLs now enter the one canonical
+league-scoped feature, including safe multi-league selection and remembered
+authorized-league behavior. An authenticated `/` entry redirects to league
+selection, the logo no longer uses fixed absolute inline positioning, and
+Escape closes the primary menu and restores trigger focus. The combined recent
+frontend gate passes `38/38` across seven files. Theme A - Midnight Rink is now
+implemented locally across the authenticated shell, account flows, league
+selection, real-data dashboard, teams, rosters, players, auctions, trades,
+matchups, standings, activity, notifications, and commissioner tools. It
+preserves the canonical Hundo Leago data and authority contracts while
+adapting the supplied Figma Make visual direction. The Theme A desktop,
+narrow-mobile, and 200% zoom rendered acceptance passes for the documented
+local matrix.
+
+Grae's Theme A Tours 1 and 2 pass. Tour 3 confirms that a Beta auction
+persists across sign-out/sign-in and remains invisible to the Alpha manager.
+Tour 4 exposed and drove a local release-QA correction: the platform
+administrator now has explicit active memberships in both fixture leagues,
+backend league responses distinguish stored membership from inherited
+`platform_administrator` authority, and the frontend exposes Commissioner tools
+for that inherited authority. Platform role without active membership remains
+denied. The pending-verification and deactivated accounts intentionally return
+the same generic sign-in failure to prevent account enumeration.
+
+On `2026-07-24`, Grae reported all six focused simplified-account checks
+passing: administrator access to both leagues and Commissioner tools,
+commissioner access, Alpha/Beta manager isolation, the explicit no-membership
+state, and the matching generic rejection for pending and deactivated
+accounts. The synchronized `E:` workspace then passed `893/893` complete
+backend tests across 228 suites under Node `24.14.1`, `95/95` frontend tests
+across 19 files, frontend lint, and the production build. M7-07 is complete
+locally.
+
+The actual read-only candidate inspection correctly blocks the non-staging
+frontend branch, both dirty worktrees, and absent exact candidate input without
+mutation or authority. Encrypted private-object backup, wrong-key failure,
+clean-path restore, provider-failure containment, disabled scheduler, protected
+hashes, and clean teardown pass locally. Hosted staging, real providers,
+physical mobile QA, candidate freeze, commit/push, deployment, and production
+remain unverified or unauthorized. M7 remains active; M7-07 is complete
+locally. No M4, M5, M6, or M7 work is deployed or enabled in production.
 
 The active schedule will be maintained in:
 

@@ -155,10 +155,12 @@ The exact version may be advanced only through a separate dependency-maintenance
 The approved initial driver is:
 
 ```text
-better-sqlite3 12.11.2
+better-sqlite3 12.11.1
 ```
 
 It must be saved as an exact production dependency and pinned in the lockfile.
+
+The specification originally named `12.11.2`, but that version was not published in the authoritative npm registry. Grae approved correcting the pin to the published Node 24-compatible `12.11.1` release on 2026-07-19 before driver installation.
 
 This driver was selected because it provides:
 
@@ -294,6 +296,13 @@ SQLite dynamic typing must not weaken the approved model. Booleans are integer `
 Values must remain inside JavaScript's safe-integer range. Boundary validation occurs before a statement is executed.
 
 Core relationships, ownership, money, permissions, and status must not be hidden in JSON columns.
+
+Append-only `ownership_events.ownership_id` is deliberately a stable historical
+reference rather than a foreign key to current `player_ownerships`. This is the
+documented exception that permits a release to remove current ownership without
+deleting or rewriting history. The release transaction verifies the live row's
+exact league, owner, version, and stable ID before deletion; all other event
+relationships remain declared foreign keys.
 
 ---
 
@@ -581,7 +590,8 @@ The final import fails rather than guesses when:
 * a required relationship is missing;
 * a cross-league relationship would result;
 * money or fantasy points cannot be represented exactly under approved rounding;
-* contract, retention, or buyout schedules do not reconcile;
+* contract, retention, or buyout schedules do not reconcile under their
+  approved integer-cent rounding rules;
 * a protected record would be omitted;
 * an unsupported source shape is encountered.
 
@@ -1064,7 +1074,7 @@ Expected result:
 The SQLite design is approved with:
 
 * Node `24.14.1`;
-* exact `better-sqlite3` `12.11.2`;
+* exact `better-sqlite3` `12.11.1`;
 * one persistent SQLite database and one backend instance per environment;
 * WAL, full synchronous durability, foreign keys, strict tables, and trusted-schema restrictions;
 * explicit immutable SQL migrations with checksums;

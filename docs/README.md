@@ -777,7 +777,8 @@ APPROVED
 ACTIVE
 ```
 
-Its current next implementation item is backend-refactor work item `BR-00`, the Baseline and Safety Harness.
+Its current next implementation item is `M7-08`, Exact Candidate Freeze and
+Staging Branch Publication.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -818,22 +819,23 @@ docs/06-work-plans/archive/
 The approved active work plan is:
 
 ```text
-BR-00 - Backend Refactor Step 0: Baseline and Safety Harness
-Status: READY TO START
+M7-08 - Exact Candidate Freeze and Staging Branch Publication
+Status: ACTIVE
 ```
 
 It defines:
 
-* the exact backend repository and branch;
-* the only modified and added paths;
-* temporary synthetic fixtures;
-* the 34/6/28 endpoint-manifest proof;
-* child-process startup against explicit temporary paths;
-* read-only endpoint file-hash proof;
-* league-store save, backup, restore, queue, and failure characterization;
-* focused verification, risks, rollback, stop conditions, and completion evidence.
+* the exact canonical `E:` repository boundary;
+* the audited frontend and backend M3-M7 candidate scope;
+* Node `24.14.1` and reproducible clean-install gates;
+* complete frontend, backend, characterization, release, and syntax checks;
+* separate staging branches and commits for the two repositories;
+* exact commit, lockfile, schema, and migration identities;
+* staging-branch-only publication with no hosted or production side effect;
+* stop conditions, rollback, and the hosted-staging next-step boundary.
 
-Writing the plan does not begin coding. Execution starts only when Grae requests it.
+Grae authorized this candidate-freeze and staging-publication step on
+`2026-07-24`.
 
 A work plan is used for a contained current task such as:
 
@@ -871,6 +873,9 @@ Testing-document paths include:
 docs/07-testing/TESTING_STRATEGY.md
 docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md
 docs/07-testing/MANUAL_QA_CHECKLIST.md
+docs/07-testing/M7_MANUAL_WEBSITE_TEST_GUIDE.md
+docs/07-testing/MATCHUP_FIGMA_HANDOFF.md
+docs/07-testing/SITE_FIGMA_HANDOFF.md
 docs/07-testing/RELEASE_CHECKLIST.md
 ```
 
@@ -899,7 +904,7 @@ APPROVED
 The approved active checklist defines:
 
 * all 34 current compatibility route registrations, including the six conditional debug routes;
-* all 124 approved `/api/v1` target endpoints;
+* all 125 approved `/api/v1` target endpoints;
 * permanent compatibility and target endpoint IDs;
 * characterization, contract, frontend, staging, production, and retirement statuses;
 * authentication, permission, two-league isolation, validation, concurrency, transaction, read-only, privacy, outbox, and Socket.IO proof;
@@ -931,6 +936,22 @@ ACTIVE
 ```
 
 Manual QA is release evidence, not production authority.
+
+## Local Website Testing and Figma Handoffs
+
+The M7 manual website guide is the short operator path for starting the
+disposable two-league site, selecting synthetic accounts, and repeating the
+highest-value navigation, isolation, authority, responsive, keyboard, and
+reconnect tours.
+
+The matchup and site-wide Figma handoffs define the canonical routes, screen
+inventory, data states, responsive frames, interaction requirements,
+accessibility contract, and backend-authoritative boundaries that a visual
+redesign must preserve.
+
+These guides make implementation and testing easier. They do not replace the
+approved Manual QA or Release checklists and grant no staging, provider,
+deployment, or production authority.
 
 ## Release Checklist
 

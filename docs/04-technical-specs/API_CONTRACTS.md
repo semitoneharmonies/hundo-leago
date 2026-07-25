@@ -799,6 +799,7 @@ Destructive administration requires idempotency and explicit confirmation fields
 | `GET /api/v1/leagues` | Authenticated | List only leagues visible to the user |
 | `GET /api/v1/leagues/:leagueId` | League member | Return safe league summary and current season |
 | `GET /api/v1/leagues/:leagueId/settings` | League member | Return effective league settings |
+| `GET /api/v1/leagues/:leagueId/seasons` | League member | List current and historical seasons for season-scoped navigation without mutation |
 | `PATCH /api/v1/leagues/:leagueId/settings` | Platform administrator | Update approved editable settings using `If-Match`; commissioners cannot edit settings in the initial release |
 | `PUT /api/v1/leagues/:leagueId/setup/trade-deadline` | Commissioner while league is in Setup | Record the informational trade deadline without starting an automated event |
 | `POST /api/v1/leagues/:leagueId/start` | Commissioner | Validate at least four teams and all launch invitations, then activate atomically |
@@ -807,6 +808,14 @@ Destructive administration requires idempotency and explicit confirmation fields
 | `DELETE /api/v1/leagues/:leagueId/freeze` | Commissioner | Unfreeze approved manager writes |
 
 Only Active leagues are publicly discoverable. Public league resources return `X-Robots-Tag: noindex, nofollow`; the frontend also emits matching page metadata.
+
+Authenticated league-list and league-detail responses expose both the stored
+membership `permissionCategory` and its backend-derived
+`effectiveAuthority`. They are normally equal. A platform administrator with
+an explicit active `member` membership retains `permissionCategory: "member"`
+and receives `effectiveAuthority: "platform_administrator"`. Platform role
+without active league membership returns no private league and grants no
+commissioner operation.
 
 ---
 
@@ -824,6 +833,7 @@ Only Active leagues are publicly discoverable. Public league resources return `X
 | `GET /api/v1/leagues/:leagueId/teams` | League member | List teams in the league |
 | `POST /api/v1/leagues/:leagueId/teams` | Commissioner | Create a team before the live season |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId` | League member | Return safe team summary |
+| `GET /api/v1/leagues/:leagueId/teams/:teamId/logo` | League member | Return the current inspected raster logo bytes without mutation |
 | `PATCH /api/v1/leagues/:leagueId/teams/:teamId` | Commissioner or authorized manager for permitted profile fields | Update explicitly editable fields |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner | Assign a manager |
 | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner | End the active assignment |
@@ -834,13 +844,53 @@ Only Active leagues are publicly discoverable. Public league resources return `X
 
 Teams are not added or removed during a live season.
 
+Team-profile mutation sends a canonical quoted team version in `If-Match`, a
+scoped `Idempotency-Key`, and an exact JSON object containing at least one of:
+
+```json
+{
+  "name": "Snow Owls",
+  "primaryColour": "#112233",
+  "secondaryColour": "#aabbcc",
+  "logo": {
+    "mediaType": "image/png",
+    "contentBase64": "canonical-base64"
+  }
+}
+```
+
+Unknown fields are rejected. `name` is trimmed, contains at most 35 Unicode
+code points, and remains case-insensitively unique within the league. Colour
+fields are optional only as a pair; supplied values match lowercase
+`#rrggbb`. `logo` is optional, is null to remove the current logo, or is
+exactly `{mediaType, contentBase64}`. The base64 value is canonical without a
+data-URL prefix or whitespace. The decoded static PNG, JPEG, or WebP is at
+most `524288` bytes and each inspected dimension is from `1` through `2048`.
+The endpoint-specific JSON limit is `768 KiB`.
+
+The safe team response exposes `logoReference` as null or the same-league
+backend path `/api/v1/leagues/:leagueId/teams/:teamId/logo`; it never exposes
+the object key or raw bytes. Logo reads revalidate active league membership
+and exact team scope, perform no writes, return the stored `Content-Type`,
+`Content-Length`, a digest-backed `ETag`, `X-Content-Type-Options: nosniff`,
+and `Cache-Control: private, no-store`. Binary logo success is an intentional
+exception to the JSON success envelope; errors retain the standard JSON error
+shape.
+
+An unchanged request is rejected without a version increment. A rename adds
+League Activity with the authenticated actor. Colour-only and logo-only edits
+do not add League Activity. Every successful profile mutation adds separate
+Security Audit and idempotency evidence atomically. A stale version returns
+`412 PRECONDITION_FAILED` with the current safe team version and
+`refetch: true`.
+
 ---
 
 ## Players and Statistics
 
 | Method and path | Authorization | Purpose |
 |---|---|---|
-| `GET /api/v1/players` | Authenticated | Cursor-paginated player search and filters |
+| `GET /api/v1/players` | Authenticated | Cursor-paginated player search and filters; `leagueId` plus `auctionEligible=true` returns only auction-eligible players after active-membership authorization |
 | `GET /api/v1/players/:playerId` | Authenticated | Stable player details |
 | `GET /api/v1/players/:playerId/statistics` | Authenticated | Season totals and calculated FP |
 | `GET /api/v1/leagues/:leagueId/players/:playerId` | League member | League-specific ownership, eligibility, and contract summary |
@@ -906,10 +956,10 @@ Normal contract creation occurs only through approved feature commands such as a
 | Method and path | Authorization | Purpose |
 |---|---|---|
 | `GET /api/v1/leagues/:leagueId/auctions` | League member | List active auctions without competing bid values |
-| `POST /api/v1/leagues/:leagueId/auctions` | Authorized team manager | Start an auction with the initiating bid |
+| `POST /api/v1/leagues/:leagueId/auctions` | Authorized team manager or current commissioner | Start an auction with the initiating bid |
 | `GET /api/v1/leagues/:leagueId/auctions/:auctionId` | League member | Read safe auction timing and own-bid state |
 | `PUT /api/v1/leagues/:leagueId/auctions/:auctionId/bids/mine` | Authorized team manager | Create or replace the caller team's permitted active bid |
-| `PATCH /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner | Replace approved bid fields without first revealing the stored value or term |
+| `PATCH /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner | Submit or replace approved bid fields without first revealing the stored value or term |
 | `DELETE /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner | Remove a stable identified bid through the confirmed logged workflow |
 | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/cancel` | Commissioner | Cancel an unresolved auction through the confirmed logged workflow |
 | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/resolve` | Durable system job; commissioner recovery only when approved | Resolve idempotently |
@@ -920,6 +970,9 @@ Commissioners cannot query active bid values.
 
 Managers have no bid-withdrawal endpoint.
 
+M5-02 composes the first five routes above. Commissioner removal, cancellation,
+and resolution routes remain uncomposed until their later bounded work items.
+
 ---
 
 ## Trades
@@ -929,13 +982,21 @@ Managers have no bid-withdrawal endpoint.
 | `GET /api/v1/leagues/:leagueId/trades` | League member | List proposals involving authorized teams plus allowed league views |
 | `POST /api/v1/leagues/:leagueId/trades` | Authorized proposing team manager | Create a proposal with typed assets |
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId` | Authorized participant or commissioner safe view | Read a proposal |
+| `GET /api/v1/leagues/:leagueId/trades/:tradeId/acceptance-preview` | Authorized receiving team manager | Revalidate the current proposal and project acceptance effects without writes |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/accept` | Authorized receiving team manager | Revalidate and complete atomically |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/decline` | Authorized receiving team manager | Decline |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/cancel` | Authorized proposing team manager | Cancel |
+| `GET /api/v1/leagues/:leagueId/trades/:tradeId/reversal-preview` | Current commissioner | Preview exact direct-reversal recoverability without writes |
+| `POST /api/v1/leagues/:leagueId/trades/:tradeId/reverse` | Current commissioner | Reverse atomically only when every asset remains exactly recoverable |
+| `POST /api/v1/leagues/:leagueId/trades/:tradeId/correction-required` | Current commissioner | Route an unsafe completed trade to explicit correction recovery without moving assets |
 
 Acceptance revalidates ownership, contracts, retention, obligations, picks, rights, deadline, and proposal status inside one transaction.
 
 Multiple simultaneous proposals may reference the same asset. Completion of one cancels or invalidates affected proposals according to the approved trade specification.
+
+M5-11 composes the seven participant workflow routes above. M5-10 composes the
+three current-commissioner recovery routes. Acceptance and reversal previews
+remain SELECT-only and never advance proposal state on read.
 
 ---
 
@@ -952,6 +1013,27 @@ Multiple simultaneous proposals may reference the same asset. Completion of one 
 | `PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId` | Commissioner under timing constraints | Adjust approved future boundaries or pairings |
 | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections` | Commissioner | Append a versioned correction |
 | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/rebuilds` | Commissioner recovery | Rebuild from official result versions |
+
+The matchup-detail response includes a nullable `matchup.scoring` projection.
+When available, it contains:
+
+* `mode`: `live` or `final`;
+* `home` and `away`: the stable `teamId`, locked-roster `legal` flag,
+  `scoreHundredths`, and player rows;
+* each player row: stable `playerId`, `fullName`, `positionGroup`,
+  `slotNumber`, matchup-period `gamesPlayedDelta`, `goalDelta`,
+  `assistDelta`, `pointDelta`, `scoreHundredths`, and `dataStatus`.
+
+`pointDelta` equals `goalDelta + assistDelta`. A missing provider row uses
+`dataStatus: "missing"` so clients can distinguish unavailable data from an
+earned zero. Final player scoring is reconstructed from the exact statistics
+refresh associated with the result. If a commissioner correction changes an
+official team total, `result.currentVersion` remains authoritative; the
+source-snapshot player rows are not presented as a player-level correction.
+
+Manager views convert `health.scoring` into plain-language delay or
+unavailability messages and do not expose provider timestamps as primary UI.
+All matchup and season-list reads remain SELECT-only.
 
 Matchup and standings writes never create League Activity entries.
 

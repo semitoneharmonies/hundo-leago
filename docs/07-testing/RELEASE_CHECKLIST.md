@@ -328,7 +328,7 @@ Secret values are excluded.
 - [ ] `RC-SRC-009` Frontend and backend lockfile hashes are recorded.
 - [ ] `RC-SRC-010` No dependency uses an unintended floating or locally linked source.
 - [ ] `RC-SRC-011` Node version is exactly `24.14.1`.
-- [ ] `RC-SRC-012` Backend SQLite driver is exact approved `12.11.2` when SQLite is implemented.
+- [ ] `RC-SRC-012` Backend SQLite driver is exact approved `12.11.1` when SQLite is implemented.
 - [ ] `RC-SRC-013` Build uses the committed lockfile and `npm ci`.
 - [ ] `RC-SRC-014` No commit or tag was rewritten after evidence was collected.
 

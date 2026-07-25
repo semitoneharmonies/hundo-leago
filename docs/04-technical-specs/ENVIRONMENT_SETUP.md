@@ -258,7 +258,7 @@ Node.js 24.14.1
 The backend additionally pins:
 
 ```text
-better-sqlite3 12.11.2
+better-sqlite3 12.11.1
 ```
 
 Each repository must contain:
@@ -384,6 +384,46 @@ npm run dev
 The backend development command loads `.env.local` through the approved Node startup script or an equivalent explicit local launcher.
 
 Production must not depend on a committed `.env` file or on a local-only dotenv side effect.
+
+---
+
+## One-Command Disposable Manual-QA Site
+
+For local feature and browser testing against the deterministic M7 fixture,
+start both repositories from one PowerShell terminal:
+
+```powershell
+Set-Location E:\hundo-leago-backend
+$env:M7_RELEASE_QA_PASSWORD = 'choose a local test-only password'
+npm.cmd run release:qa:site
+```
+
+Use `npm.cmd` on Windows so a PowerShell execution policy that blocks
+`npm.ps1` does not block the command.
+
+The launcher:
+
+* creates a unique synthetic SQLite fixture below the operating-system
+  temporary directory;
+* starts the target backend on an available loopback port;
+* starts the sibling Vite frontend at `http://127.0.0.1:5173`;
+* prints all nine test-account email addresses and their expected access;
+* uses the value of `M7_RELEASE_QA_PASSWORD` for every fixture account without
+  printing that value;
+* keeps scheduled jobs disabled, email capture-only, and the NHL provider
+  disabled;
+* does not read or modify local, staging, or production league storage.
+
+Keep the terminal open while testing. Press `Ctrl+C` once when finished. The
+launcher closes the frontend and backend and deletes only its own temporary
+fixture directory.
+
+If port `5173` is already in use, stop the other local frontend and run the
+command again. A startup failure closes any resource the launcher already
+opened.
+
+This command is for disposable local QA only. Its password is not a production
+secret and must not be committed to Git.
 
 ---
 
@@ -605,8 +645,14 @@ They must be inventoried during `FE-00`, mapped deliberately where still require
 | `APP_ENV` | Yes | `local`, `test`, `staging`, or `production` |
 | `NODE_ENV` | Yes | Node runtime mode; `production` for staging and production hosted services |
 | `APP_BUILD_ID` | Deployed services | Backend commit or release identifier |
+| `FRONTEND_BUILD_ID` | Deployed services | Exact compatible frontend commit or release identifier |
+| `APP_ENVIRONMENT_ID` | Deployed services | Opaque immutable environment identity expected in SQLite |
+| `DATABASE_ID` | SQLite environments | Opaque immutable database identity expected in SQLite |
 | `PORT` | Hosted service | HTTP listener port supplied by Render |
 | `DATABASE_PATH` | SQLite environments | Absolute SQLite database path |
+| `PERSISTENT_DATA_ROOT` | Deployed services | Absolute persistent-disk root containing the database |
+| `CURRENT_SEASON_LABEL` | Yes | Four-digit current fantasy-season start year |
+| `CURRENT_NHL_SEASON_KEY` | Yes | Eight-digit NHL season key matching the current-season label |
 | `PUBLIC_FRONTEND_ORIGIN` | Yes | Canonical browser origin used in links and security decisions |
 | `FRONTEND_ORIGINS` | Yes | Comma-separated exact allowed browser origins |
 | `LOG_LEVEL` | Yes | Approved structured-log threshold |
@@ -629,7 +675,8 @@ Unknown enum values fail startup.
 | --- | --- | --- |
 | `RATE_LIMIT_KEY_SECRET` | Staging and production | HMAC key for privacy-preserving durable rate-limit keys |
 | `AUDIT_METADATA_SECRET` | Staging and production | HMAC key for protected audit metadata |
-| email-provider credential variables | Where provider is used | Provider authentication |
+| `ACTION_TOKEN_DELIVERY_KEY` | Staging and production | Versioned 32-byte AES-256-GCM key for short-lived encrypted account-link outbox envelopes |
+| `RESEND_API_KEY` | Staging sandbox and production send modes | Environment-specific send-only Resend authentication |
 | backup variables defined by Backup and Restore | Staging and production | Encryption and offsite storage |
 
 Secrets:
@@ -641,6 +688,12 @@ Secrets:
 * are never placed in Netlify browser variables;
 * are never committed to Git;
 * have documented rotation and previous-key handling where required.
+
+`ACTION_TOKEN_DELIVERY_KEY` is an unpadded canonical base64url value that
+decodes to exactly 32 bytes. It is generated independently per environment.
+Its initial key version is `1`; a rotation that introduces another version
+requires an explicit key-ring transition and proof that no pending envelope
+still needs a removed version.
 
 ---
 
@@ -654,17 +707,32 @@ Portable application configuration includes:
 EMAIL_DELIVERY_MODE
 EMAIL_FROM
 EMAIL_REPLY_TO
+RESEND_API_KEY
 PUBLIC_FRONTEND_ORIGIN
+ACTION_TOKEN_DELIVERY_KEY
 ```
 
 Rules:
 
-* `production` requires `send` only when the approved provider is configured;
-* `staging` may use `capture` or `sandbox`, never unrestricted production sending;
+* Resend is the approved transactional provider;
+* `production` requires `send` with a verified sender and a send-only
+  `RESEND_API_KEY`;
+* `staging` may use `capture` or `sandbox`, never unrestricted production
+  sending;
 * `local` and `test` use `capture` or `disabled`;
-* a missing credential in `send` mode fails startup;
+* `EMAIL_FROM` is required in `sandbox` and `send`; `EMAIL_REPLY_TO` is
+  optional but validated when present;
+* a missing or malformed provider credential in `sandbox` or `send` fails
+  startup, while a provider credential in `capture` or `disabled` also fails
+  closed;
+* staging `sandbox` sends every provider request to Resend's non-delivering
+  `delivered@resend.dev` test address rather than the account address;
+* every provider request carries the durable outbox event ID as its
+  `Idempotency-Key`;
 * captured email is stored only in that environment's temporary or persistent test area;
-* account links use `PUBLIC_FRONTEND_ORIGIN`, never a request-supplied Host header.
+* account links use `PUBLIC_FRONTEND_ORIGIN`, never a request-supplied Host header;
+* pending account-action links are recoverable only through the approved
+  encrypted outbox envelope and are cleared after terminal delivery.
 
 ---
 
@@ -672,15 +740,49 @@ Rules:
 
 The authoritative names are defined in `docs/08-operations/BACKUP_AND_RESTORE.md`.
 
-At minimum the deployed backend validates:
+The deployed backend requires and validates:
 
-* local backup staging directory;
-* offsite object namespace;
-* encryption-key version;
-* the presence of the corresponding encryption key;
-* environment identity.
+```text
+BACKUP_LOCAL_DIR
+BACKUP_OBJECT_ENDPOINT
+BACKUP_OBJECT_REGION
+BACKUP_OBJECT_BUCKET
+BACKUP_OBJECT_PREFIX
+BACKUP_OBJECT_ACCESS_KEY_ID
+BACKUP_OBJECT_SECRET_ACCESS_KEY
+BACKUP_ENCRYPTION_KEY_VERSION
+BACKUP_ENCRYPTION_KEY
+BACKUP_SCHEDULE_ENABLED
+```
+
+`BACKUP_LOCAL_DIR` is a normalized child of `PERSISTENT_DATA_ROOT` and is not
+the live database directory. `BACKUP_OBJECT_ENDPOINT` is one canonical HTTPS
+origin. The private object prefix is environment-specific, relative, and ends
+with `/`; for staging the Blueprint value is `hundo-leago/staging/`.
+
+`BACKUP_ENCRYPTION_KEY` is exactly 32 random bytes encoded as 43-character
+unpadded base64url. It must be supplied as a managed secret because a generic
+provider-generated string is not guaranteed to have that format. Access-key,
+secret-access-key, and encryption-key values are non-enumerable in validated
+configuration and must never appear in logs or JSON output.
+
+The explicit non-interactive command surfaces are:
+
+```powershell
+npm run db:backup -- --reason manual-platform-operation
+npm run db:backup:verify -- --manifest-object-key <manifestObjectKey>
+npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <newCleanDatabasePath>
+```
+
+The existing temporary-path M2 verification arguments remain test-only
+compatibility seams. A deployed restore-verification target must be a new path
+inside `PERSISTENT_DATA_ROOT`; these commands do not activate or overwrite the
+live database.
 
 Production cannot start backup scheduling with staging credentials or a staging namespace.
+Staging and production keep `BACKUP_SCHEDULE_ENABLED=false` until the matching
+environment has produced and clean-restored a verified encrypted offsite
+artifact through an approved deployment work plan.
 
 ---
 
@@ -977,6 +1079,23 @@ Logs must not contain:
 10. Start the frontend and verify it targets only the local backend.
 11. Run focused tests before making behavior changes.
 
+Both canonical repositories pin Node through a root `.node-version` file and
+the matching `package.json` engine range. On the canonical Windows workstation,
+the ignored verified runtime is stored at:
+
+```text
+E:\hundo-leago\.tools\node-v24.14.1-win-x64
+```
+
+Run npm with that exact runtime from either repository through:
+
+```powershell
+E:\hundo-leago\scripts\npm-approved.cmd <npm arguments>
+```
+
+The old `C:\Users\graem\Desktop\...` repository copies are not development,
+candidate, staging, or production inputs.
+
 Do not use production values to make local startup convenient.
 
 ---
@@ -1051,7 +1170,7 @@ The environment foundation is complete when:
 
 * all four environment classes have validated configuration;
 * both repositories use Node `24.14.1`;
-* the backend uses exact `better-sqlite3` `12.11.2`;
+* the backend uses exact `better-sqlite3` `12.11.1`;
 * local and test storage are disposable and path-guarded;
 * staging has separate Netlify, Render, disk, SQLite, secrets, users, email, and backup resources;
 * production mutable data resides only under its persistent-disk mount;

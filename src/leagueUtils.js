@@ -1267,10 +1267,6 @@ const getBidFirstTs = (b) => Number(b?.firstTimestamp ?? b?.timestamp ?? 0) || 0
 export function resolveAuctions({
   teams,
   freeAgents,
-  capLimit, // not used to block winners (grace period is allowed)
-  maxRosterSize,
-  minForwards,
-  minDefensemen,
   now = Date.now(),
 }) {
   const originalTeams = teams || [];
@@ -1576,9 +1572,6 @@ export function placeFreeAgentBid({
   position,
   rawAmount,
   capLimit,
-  maxRosterSize,
-  minForwards,
-  minDefensemen,
   playerId,
   now = Date.now(),
 }) {
