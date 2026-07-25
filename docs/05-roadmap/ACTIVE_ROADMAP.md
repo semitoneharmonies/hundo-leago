@@ -970,10 +970,10 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: execute M7-08 exact candidate freeze and staging-branch publication; do not deploy or change hosted configuration or data in this step
-Implementation status: M7-01 through M7-07 COMPLETE LOCALLY; M7-08 ACTIVE; HOSTED STAGING, PROVIDERS, PHYSICAL QA, DEPLOYMENT, AND PRODUCTION OPEN
+Action: execute M7-09 isolated hosted staging deployment and acceptance; do not touch production
+Implementation status: M7-01 through M7-08 COMPLETE; M7-09 ACTIVE; MANUAL HOSTED ACCEPTANCE AND PRODUCTION OPEN
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
-Branches: m3-01-browser-authority and staging
+Branches: staging and staging
 ```
 
 The governing designs are defined in:
@@ -1043,10 +1043,11 @@ tests across 140 suites under Node `24.14.1`. M3 through M6 and their
 milestone gates are now complete locally. M7-01 through M7-07 are complete
 locally with the deterministic two-league fixture, integrated loopback
 rehearsal, recovery checks, `893/893` backend tests, `95/95` frontend tests,
-lint, build, syntax, and rendered local evidence recorded. M7-08 now owns
-exact source freeze, complete rerun of required local gates, separate
-frontend/backend candidate commits, and publication of only the staging
-branches. Hosted staging remains the next separate step.
+lint, build, syntax, and rendered local evidence recorded. M7-08 completed the
+exact source freeze, complete local gate rerun, separate frontend/backend
+candidate commits, and publication of only the staging branches. M7-09 now
+owns isolated hosted staging configuration, database initialization,
+deployment, and acceptance.
 Production cutover remains separately authorized.
 
 ---
@@ -1077,6 +1078,6 @@ Expected result:
 * roadmap status is `ACTIVE`;
 * M1 and M2 are complete, including the external staging gate;
 * M3 through M6 and their milestone gates are complete locally;
-* M7-01 through M7-07 are complete locally and M7-08 is active;
+* M7-01 through M7-08 are complete and M7-09 is active;
 * launch requires staging, backup, recovery, testing, and explicit production authority;
 * deferred work remains outside the launch path.

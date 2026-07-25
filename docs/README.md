@@ -777,8 +777,8 @@ APPROVED
 ACTIVE
 ```
 
-Its current next implementation item is `M7-08`, Exact Candidate Freeze and
-Staging Branch Publication.
+Its current next implementation item is `M7-09`, Isolated Hosted Staging
+Deployment and Acceptance.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -819,7 +819,7 @@ docs/06-work-plans/archive/
 The approved active work plan is:
 
 ```text
-M7-08 - Exact Candidate Freeze and Staging Branch Publication
+M7-09 - Isolated Hosted Staging Deployment and Acceptance
 Status: ACTIVE
 ```
 

@@ -11,199 +11,169 @@
 ## Work Plan ID
 
 ```text
-M7-08
+M7-09
 ```
 
 ## Work Item
 
 ```text
-Exact Candidate Freeze and Staging Branch Publication
+Isolated Hosted Staging Deployment and Acceptance
 ```
 
 # Objective
 
-Convert the fully audited canonical `E:` frontend and backend working trees
-into exact, reproducible M7 staging-candidate commits. Run the complete local
-release gates under Node `24.14.1`, preserve all intentional M3-M7 work,
-exclude secrets and generated runtime artifacts, publish only the staging
-branches, and record the immutable source identities required before hosted
-staging configuration or deployment begins.
+Deploy the exact M7 candidate to a new dedicated Netlify staging project and
+the existing Render service `hundo-leago-backend-staging`, initialize only the
+isolated staging database identity and deterministic two-league QA fixture,
+and run the highest-value hosted acceptance checks that are safely possible.
+Return the public staging URLs so Grae can complete manual browser testing.
 
 # Authority and Boundary
 
-Grae authorized the M7 staging workflow, intentional scoped commits, staging
-branch creation, and staging-branch pushes on `2026-07-24`.
+Grae authorized continuous hosted staging work on `2026-07-24`.
 
 This plan authorizes:
 
-* changes in only `E:\hundo-leago` and `E:\hundo-leago-backend`;
-* the Node-version and ignore protections required for reproducible gates;
-* canonical documentation updates required to identify the active M7 step;
-* complete local frontend and backend verification;
-* creation or use of a frontend `staging` branch;
-* continued use of the backend `staging` branch;
-* scoped staging and separate commits in the two repositories;
-* pushes of only the resulting staging/candidate branches.
+* a separate Netlify staging project created from the frontend `staging`
+  branch;
+* configuration and deployment of only Render service
+  `hundo-leago-backend-staging` (`srv-d9eo2turnols73ekb830`);
+* staging-only environment variables, public origins, secrets, persistent
+  storage paths, database identity, providers, and job controls;
+* explicit staging database initialization and migrations;
+* the deterministic M7 two-league release-QA fixture;
+* hosted HTTPS, CORS, CSRF, Socket.IO, authentication, authorization,
+  league-isolation, provider-containment, backup/restore, and rollback checks
+  that do not cross the staging boundary;
+* staging-only corrective commits and staging-branch pushes when required.
 
 This plan does not authorize:
 
-* use of any legacy `C:` Hundo Leago copy;
-* a Netlify or Render configuration change or deployment;
-* staging database initialization, migration, fixture load, or restore;
-* a real provider call or email;
-* production reset, migration, deployment, restart, traffic, jobs, or writes;
-* a merge to either production `main` branch;
-* a force-push, history rewrite, stash, discard, or destructive Git command;
-* a pull request unless Grae separately requests one.
+* any use of a legacy `C:` Hundo Leago copy;
+* any change, redeploy, restart, configuration update, domain update, or
+  traffic action on Netlify production project `hundoleago`;
+* any change, redeploy, restart, configuration update, database action, or
+  job action on Render production service `hundo-leago-backend`;
+* production reset, migration, deployment, traffic opening, job activation,
+  provider activation, or write;
+* a merge to `main`, pull request, tag, release, force-push, or history rewrite;
+* treating a successful staging test as production authorization.
 
-# Canonical Repositories
-
-```text
-Frontend and documentation: E:\hundo-leago
-Backend:                    E:\hundo-leago-backend
-Workspace:                  E:\hundo-leago.code-workspace
-```
-
-The old `C:\Users\graem\Desktop` copies are not inputs.
-
-# Candidate Scope
-
-The candidate boundary is the complete audited M3-M7 working-tree state in the
-two canonical repositories, including:
+# Exact Candidate
 
 ```text
-Frontend:
-  docs/
-  scripts/
-  src/
-  .gitignore
-  .node-version
-  .npmrc
-  package.json
-  package-lock.json
-  vite.config.js
-
-Backend:
-  database/migrations/
-  database/reset-manifests/2026-season-1-reset.json
-  scripts/
-  src/
-  test/
-  .gitignore
-  .node-version
-  .npmrc
-  package.json
-  render.yaml
-  server.js
-  server-compatibility.js
+Release ID:              HL-20260724-1
+Frontend repository:     E:\hundo-leago
+Frontend branch:         staging
+Frontend commit:         3dd2f0332ae43e3441c5a11c57d03cf83181ea3e
+Backend repository:      E:\hundo-leago-backend
+Backend branch:          staging
+Backend commit:          e8353d1c939ba61f8fd81d188450e620899d60b8
+Render staging service:  srv-d9eo2turnols73ekb830
 ```
 
-The audited inventory contains no candidate database, `.env` file, secret,
-log, cache, backup artifact, coverage output, build output, binary, symlink, or
-unrelated path.
+Documentation-only evidence commits may follow the frontend candidate commit.
+They must not change the verified application build inputs unless the complete
+affected verification is rerun and a new exact candidate is recorded.
 
 # Required Sequence
 
-1. Reinspect both statuses and confirm the exact audited path inventory.
-2. Verify Node `24.14.1`, npm engine enforcement, exact package metadata, and
-   backend SQLite driver `12.11.1`.
-3. Run frontend clean install, lint, complete tests, browser-authority
-   verification, and production build through the approved runtime.
-4. Run backend clean install, check command, complete tests, characterization
-   tests, release-QA focused gates, JavaScript syntax inventory, and candidate
-   preflight through the approved runtime.
-5. Confirm no protected runtime data, generated artifacts, or secrets were
-   created or added to the candidate.
-6. Create or switch the frontend to `staging` without discarding any audited
-   work; confirm the backend remains on `staging`.
-7. Stage only the audited candidate paths in each repository and review the
-   complete cached file inventory and diff checks.
-8. Create one intentional frontend/documentation candidate commit and one
-   intentional backend candidate commit.
-9. Record full commit SHAs, lockfile SHA-256 values, Node/npm versions, schema
-   version, migration checksum-set evidence, and local gate results.
-10. Run the fail-closed candidate preflight against the exact clean commits.
-11. Push only the frontend and backend staging branches to their existing
-    GitHub remotes.
-12. Verify the remote staging refs equal the recorded local commits.
+1. Verify both remote `staging` refs and the clean local branch states.
+2. Inspect the existing Render staging service and current staging-only
+   environment without exposing secret values.
+3. Create or identify a separate Netlify staging project; positively verify it
+   is not the production project `hundoleago`.
+4. Establish the exact public frontend and backend staging origins.
+5. Configure only staging environment variables and secrets, with jobs
+   disabled, capture/sandbox email delivery, debug routes disabled, exact
+   origins, and explicit environment/database identities.
+6. Provision or select an isolated persistent staging database path, initialize
+   it explicitly, apply the approved migrations, and load the deterministic
+   two-league release-QA fixture.
+7. Deploy the exact backend candidate to the existing Render staging service.
+8. Build and deploy the exact frontend candidate to the dedicated Netlify
+   staging project with the Render staging API origin.
+9. Verify HTTPS, public health, build and environment identities, CORS,
+   credentialed sessions, CSRF rejection and acceptance, Socket.IO
+   authorization, role boundaries, and two-league isolation.
+10. Verify provider failure containment and keep scheduled jobs disabled.
+11. Run a staging backup/restore verification when a correctly isolated target
+    and credentials are available; record any provider-dependent gate that
+    cannot safely run.
+12. Confirm rollback identities for both hosted staging services and leave
+    production untouched.
+13. Open the public Netlify staging site in the live browser for Grae.
 
-# Verification Commands
+# Configuration Safety
 
-Use the approved Node runtime:
+* Do not copy production environment variables, databases, provider
+  credentials, domains, or storage objects into staging.
+* Do not print, commit, or store plaintext secrets in the repositories.
+* Use exact allowlisted HTTPS origins; do not use wildcard CORS.
+* Keep `SCHEDULED_JOBS_ENABLED=false` throughout this plan.
+* Keep staging email in capture or approved sandbox mode.
+* Use a distinct `APP_ENVIRONMENT_ID`, `DATABASE_ID`, persistent path, and
+  backup prefix for staging.
+* Runtime initialization must be explicit and observable; it must not become
+  an automatic production startup migration.
 
-```powershell
-E:\hundo-leago\scripts\npm-approved.cmd ci
-E:\hundo-leago\scripts\npm-approved.cmd run lint
-E:\hundo-leago\scripts\npm-approved.cmd test
-E:\hundo-leago\scripts\npm-approved.cmd run verify:m3-browser-authority
-E:\hundo-leago\scripts\npm-approved.cmd run build
+# Verification Evidence
 
-E:\hundo-leago-backend\scripts\npm-approved.cmd ci
-E:\hundo-leago-backend\scripts\npm-approved.cmd run check
-E:\hundo-leago-backend\scripts\npm-approved.cmd test
-E:\hundo-leago-backend\scripts\npm-approved.cmd run test:characterization
-```
+Record:
 
-Also run the implemented M7 focused release commands and the repository-wide
-JavaScript syntax inventory. Do not claim checklist commands that are not
-implemented in the package manifests.
-
-# Commit and Push Rules
-
-* Inspect `git status --short` immediately before staging.
-* Stage explicit audited paths only; do not use an unreviewed broad add.
-* Inspect `git diff --cached --stat`, `git diff --cached --name-status`, and
-  `git diff --cached --check`.
-* Keep frontend/documentation and backend commits separate.
-* Do not amend or rewrite either candidate after evidence is recorded.
-* Push only `staging`; do not push or merge `main`.
-* A push does not authorize a deployment.
+* Netlify staging project identity and public HTTPS URL;
+* Render staging service identity and public HTTPS URL;
+* deployed frontend and backend source identities;
+* schema version, migration checksum set, environment identity, database
+  identity, and fixture checksum;
+* authenticated and anonymous hosted check results;
+* CORS, CSRF, cookie, Socket.IO, authorization, and league-isolation results;
+* provider, backup/restore, and rollback results or explicit safe blockers;
+* confirmation that production resources did not change.
 
 # Rollback
 
-Before commit, correct candidate problems through contained edits while
-preserving all intentional work.
+If frontend staging fails, roll the dedicated Netlify staging project back to
+its prior staging deploy or leave it unpublished. Do not touch `hundoleago`.
 
-After commit, correct a candidate problem with a new staging commit. Do not
-reset, amend, force-push, or discard evidence.
+If backend staging fails, use only the Render staging service rollback identity
+and preserve the isolated staging database for diagnosis. Do not restart,
+redeploy, reconfigure, or write to the production Render service.
 
-Because this plan does not deploy or change hosted configuration or data, its
-rollback is source-only and does not involve Netlify, Render, SQLite, disks,
-providers, or production.
+Correct source defects with new staging commits. Do not amend, reset, force
+push, discard, or rewrite the published candidate.
 
 # Stop Conditions
 
-Stop before publication when:
+Stop hosted mutation when:
 
-* either repository contains an unexplained or unaudited path;
-* Node is not exactly `24.14.1`;
-* `npm ci`, a required local gate, or candidate preflight fails;
-* a secret, database, backup, log, cache, or generated build artifact enters
-  the candidate;
-* frontend and backend contracts are incompatible;
-* a migration checksum or schema expectation differs;
-* either commit contains an unrelated change;
-* the intended remote or branch is ambiguous;
-* publication would update `main` or a production-connected branch.
+* the target cannot be positively identified as staging;
+* an operation would affect either named production resource;
+* a required value appears to be a production credential, database, domain,
+  storage object, or provider target;
+* origin, identity, persistent-path, schema, or migration evidence differs;
+* initialization would overwrite a non-disposable or unidentified database;
+* a secret would need to be committed or printed;
+* a hosted gate reveals cross-league access or an authorization bypass;
+* safe rollback identity cannot be established.
 
 # Completion Gate
 
-M7-08 completes only when:
+M7-09 completes only when:
 
-* the frontend and backend staging branches are clean;
-* both exact candidate commits and lockfile hashes are recorded;
-* complete required local gates pass under Node `24.14.1`;
-* candidate preflight accepts the exact clean commits;
-* each remote staging ref equals its recorded local commit;
-* no hosted service, database, provider, or production resource changed;
-* remaining hosted-staging gates are explicitly recorded as not yet run.
+* both public staging URLs are known and resolve over HTTPS;
+* only the dedicated Netlify staging project and named Render staging service
+  changed;
+* hosted build, health, identity, database, fixture, authentication,
+  authorization, isolation, CORS, CSRF, and Socket.IO checks pass;
+* jobs remain disabled and provider behavior is contained;
+* rollback evidence is recorded;
+* any safely impossible provider or backup gate is explicit;
+* Grae receives the staging URL and can test it in the live browser;
+* production remains unchanged and blocked.
 
 # Next Step Boundary
 
-After M7-08, the next bounded plan is isolated hosted-staging configuration,
-deployment, database identity initialization, deterministic fixture loading,
-and deployed acceptance. It may modify only the dedicated Netlify staging site
-and Render service `hundo-leago-backend-staging`.
-
-Production remains blocked until Grae tests hosted staging and gives separate
-explicit authorization.
+After M7-09, Grae performs manual hosted staging acceptance. Production work
+requires separate explicit authorization after that acceptance; it is not part
+of this plan.
