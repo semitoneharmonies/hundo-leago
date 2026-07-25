@@ -68,7 +68,7 @@ Frontend branch:         staging
 Frontend commit:         3d2cc5989badd9432c312410d4306d07d6c400ce
 Backend repository:      E:\hundo-leago-backend
 Backend branch:          staging
-Backend commit:          d6eea77a0ab0b8c82a9bcd347d5ee0da76f0bd4a
+Backend commit:          1b366691a3edb14eac2af68e52f74fdbe32cf089
 Render staging service:  srv-d9eo2turnols73ekb830
 ```
 
@@ -171,6 +171,21 @@ M7-09 completes only when:
 * any safely impossible provider or backup gate is explicit;
 * Grae receives the staging URL and can test it in the live browser;
 * production remains unchanged and blocked.
+
+# Execution Status
+
+`READY FOR GRAE MANUAL ACCEPTANCE`
+
+The dedicated Netlify and Render staging URLs are live. Exact publication,
+identity, hosted verifier, Socket.IO, browser, backup/restore, rollback, and
+remaining provider evidence is recorded in:
+
+`docs/07-testing/release-runs/M7_HOSTED_STAGING_ACCEPTANCE.md`
+
+The encrypted offsite upload failed safely and remains an explicit
+staging-provider gate. The hosted online SQLite backup and clean-path restore
+passed without replacing the live staging database. Scheduled jobs remain
+disabled and production remains blocked.
 
 # Next Step Boundary
 
