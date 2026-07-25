@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -17,6 +17,10 @@ const tradeId = "55555555-5555-4555-8555-555555555555";
 const auctionId = "66666666-6666-4666-8666-666666666666";
 const assetId = "77777777-7777-4777-8777-777777777777";
 const playerSearchId = "88888888-8888-4888-8888-888888888888";
+const actorUserId = "99999999-9999-4999-8999-999999999999";
+const correctionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const actorMembershipId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const ownershipId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const config = { appEnv: "local", apiOrigin: "http://localhost:4000", socketOrigin: "http://localhost:4000", buildId: null };
 
 function envelope(data) {
@@ -136,6 +140,7 @@ describe("M5-11 authenticated transaction pages", () => {
             sourceVersion: "2026-07-22",
             effectiveAtMs: 1,
           },
+          statistics: null,
           version: 1,
         }]);
       }
@@ -194,12 +199,95 @@ describe("M5-11 authenticated transaction pages", () => {
     expect(await screen.findByRole("button", { name: "Confirm and accept trade" })).toBeInTheDocument();
   });
 
-  it("renders safe league activity without transaction controls", async () => {
+  it("renders commissioner correction attribution, scope, result, and reason without raw metadata", async () => {
+    const occurredAtMs = Date.parse("2026-07-25T18:30:00.000Z");
     const fetchImpl = baseFetch((path) => {
-      if (path === `/api/v1/leagues/${leagueId}/activity`) return envelope({ code: "LEAGUE_ACTIVITY_FOUND", activity: [{ id: assetId, leagueId, seasonId, type: "trade_completed", actor: { userId: "user-1", authority: "manager" }, teamId: teamA, playerId: null, related: { type: "trade", id: tradeId }, summary: "Managed Team completed a trade.", reason: null, metadata: {}, occurredAtMs: 2 }], page: { limit: 25, nextCursor: null } });
+      if (path === `/api/v1/leagues/${leagueId}/activity`) return envelope({
+        code: "LEAGUE_ACTIVITY_FOUND",
+        activity: [{
+          id: assetId,
+          leagueId,
+          seasonId,
+          type: "commissioner_roster_corrected",
+          actor: {
+            userId: actorUserId,
+            authority: "commissioner",
+          },
+          teamId: teamA,
+          playerId: playerSearchId,
+          related: {
+            type: "player_ownership",
+            id: ownershipId,
+          },
+          summary: "Commissioner corrected a roster assignment.",
+          reason: "Manual release acceptance correction",
+          metadata: {
+            correctionId,
+            actorMembershipId,
+            before: {
+              rosterCategory: "Active",
+              positionGroup: "F",
+              slotNumber: 1,
+              privateNote: "hidden before-state note",
+            },
+            after: {
+              rosterCategory: "Bench",
+              positionGroup: "F",
+              slotNumber: null,
+              privateNote: "hidden result-state note",
+            },
+            warnings: [{
+              code: "TEAM_ROSTER_ILLEGAL",
+              privateMessage: "hidden warning details",
+            }],
+            unsafeDiagnostic: "hidden operational detail",
+          },
+          occurredAtMs,
+        }],
+        page: { limit: 25, nextCursor: null },
+      });
       throw new Error(`Unexpected request: ${path}`);
     });
     renderPage(`/leagues/${leagueId}/activity`, "/leagues/:leagueId/activity", <ActivityPage />, fetchImpl);
-    expect(await screen.findByText("Managed Team completed a trade.")).toBeInTheDocument();
+    const entry = (
+      await screen.findByText("Commissioner corrected a roster assignment.")
+    ).closest("li");
+    const audit = within(entry);
+
+    expect(audit.getByText("Commissioner roster corrected")).toBeInTheDocument();
+    expect(audit.getByText("Commissioner")).toBeInTheDocument();
+    for (const visibleId of [
+      actorUserId,
+      leagueId,
+      seasonId,
+      teamA,
+      playerSearchId,
+      correctionId,
+    ]) {
+      expect(audit.getByText(visibleId)).toBeInTheDocument();
+    }
+    expect(
+      audit.getByText(`Player ownership · ${ownershipId}`)
+    ).toBeInTheDocument();
+    expect(audit.getByText(/Roster category: Active/)).toBeInTheDocument();
+    expect(audit.getByText(/Roster category: Bench/)).toBeInTheDocument();
+    expect(audit.getByText("TEAM ROSTER ILLEGAL")).toBeInTheDocument();
+    expect(
+      audit.getByText("Manual release acceptance correction")
+    ).toBeInTheDocument();
+    expect(entry.querySelector("time")).toHaveAttribute(
+      "dateTime",
+      new Date(occurredAtMs).toISOString()
+    );
+    for (const hiddenValue of [
+      actorMembershipId,
+      "hidden before-state note",
+      "hidden result-state note",
+      "hidden warning details",
+      "hidden operational detail",
+      "unsafeDiagnostic",
+    ]) {
+      expect(entry).not.toHaveTextContent(hiddenValue);
+    }
   });
 });

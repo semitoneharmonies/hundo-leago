@@ -12,6 +12,12 @@ The launcher keeps scheduled jobs disabled, captures email locally, uses a
 temporary SQLite database, and deletes its owned fixture after clean shutdown.
 It does not use production data or credentials.
 
+The fixture's player catalog and statistics are intentionally synthetic
+Release-QA data. They are labelled as synthetic in the application and must
+not be represented as SportsDataIO or live NHL data. A real last-season import
+is a separate, explicit staging-only operation that requires the securely
+configured backend provider key.
+
 ## Start the Disposable Website
 
 Open PowerShell and run:
@@ -46,16 +52,16 @@ prints the password.
 | Admin | `admin@release-qa.example.test` | Platform administrator | Explicit membership in both Alpha and Beta plus inherited commissioner authority |
 | Comm A | `comm.a@release-qa.example.test` | Commissioner | Release QA Alpha League and commissioner tools |
 | Comm B | `comm.b@release-qa.example.test` | Commissioner | Release QA Beta League and commissioner tools |
-| Man A Leag A | `man.a.leag.a@release-qa.example.test` | Manager | Alpha only; manages Owls |
-| Man B Leag A | `man.b.leag.a@release-qa.example.test` | Manager | Alpha only; manages Ravens |
-| Man A Leag B | `man.a.leag.b@release-qa.example.test` | Manager | Beta only; manages Owls |
+| Man A Leag A | `man.a.leag.a@release-qa.example.test` | Manager | Alpha only; manages Alpha Owls |
+| Man B Leag A | `man.b.leag.a@release-qa.example.test` | Manager | Alpha only; manages Alpha Ravens |
+| Man A Leag B | `man.a.leag.b@release-qa.example.test` | Manager | Beta only; manages Beta Comets |
 | No League | `no.league@release-qa.example.test` | Active account without a league | Signed in, but no league membership |
 | Pending | `pending@release-qa.example.test` | Pending email verification | Generic invalid-credentials response; no active-account access |
 | Deactivated | `deactivated@release-qa.example.test` | Deactivated account | Same generic invalid-credentials response; no active-account access |
 
-Alpha and Beta intentionally reuse team names. Seeing the other league while
-signed in as a league-specific manager is a privacy failure, not a fixture
-quirk.
+Alpha and Beta have deliberately distinct team names and rosters. Seeing the
+other league while signed in as a league-specific manager is a privacy failure,
+not a fixture quirk.
 
 ## Five Short Test Tours
 
@@ -146,6 +152,97 @@ hidden controls do not substitute for backend authorization.
 Expected result: the current feature remains usable without a mouse, at narrow
 width, after reload, and after reconnect.
 
+## Hosted Staging Remediation Tours
+
+Run these tours only on the positively identified staging website after the
+M7-10 deployment. They are not authorized against production. Record the
+backend build, frontend build, account, league, route, and result before making
+the first change.
+
+### Tour 6 - Provider Catalog and League-Scoped Player Details
+
+1. Sign in as an Alpha member and open Players.
+2. Confirm that the catalog contains the imported NHL player set rather than
+   only the small synthetic Release-QA set.
+3. Search for an assigned player and a free agent, then open both details.
+4. Confirm that the selected league's team, roster category, ownership type,
+   salary, original term, AAV, and remaining years are correct where present.
+5. Sign in to Beta and open the same player. Confirm that only Beta ownership
+   and contract information appears.
+6. As a commissioner or platform administrator, open Commissioner tools and
+   inspect provider health. Confirm the provider is identified as SportsDataIO
+   Discovery Lab, the data is labelled last-season-only, the catalog count is
+   non-zero, and the last-success/stale state is understandable.
+
+Expected result: global player identity and last-season statistics can overlap,
+but league ownership and contracts never cross Alpha/Beta boundaries. Synthetic
+fallback rows remain visibly labelled as synthetic.
+
+### Tour 7 - Commissioner Roster and Contract Corrections
+
+Use Comm A in Alpha. Record the selected player's initial team, category,
+salary, term, versions, and the affected teams' cap projections.
+
+1. Add an unassigned player to a team. Preview first, inspect roster and cap
+   warnings, then apply once.
+2. Move an owned player between Active and Bench. Preview and apply.
+3. Preview an IR or Prospect move. Confirm that the exceptional-status warning
+   must be explicitly accepted before apply.
+4. Correct an active contract's total salary and term. Confirm that the
+   displayed AAV and season schedule are derived by the server.
+5. Remove a test player. Confirm the preview identifies the ownership and
+   active-contract effect before apply.
+6. Refresh the page after every apply and confirm the authoritative workspace,
+   player detail, team roster, and cap impact agree.
+7. Sign in as an Alpha manager and confirm the page and backend actions are
+   denied. Sign in as Comm B and confirm Alpha records cannot be addressed.
+
+Expected result: previews do not write, applies require CSRF and idempotency,
+stale versions fail safely, warnings require confirmation, and every successful
+change returns an audit activity identifier.
+
+### Tour 8 - Trades, Matchup Evidence, Audit, and Reconnect
+
+1. Open Trades and inspect the seeded pending, completed, declined, and
+   invalid-cap scenarios. The completed trade must show its real transferred
+   assets; the invalid-cap acceptance preview must remain blocked by cap.
+2. Open League activity and confirm trade events plus the commissioner add,
+   move, contract, and remove actions from Tour 7 are visible with their
+   recorded reasons.
+3. Open the current matchup and confirm both vertical player lists and
+   per-player statistics are non-empty.
+4. With the page open, set the browser network to Offline, then restore Online.
+   Do not click a manual reconnect button.
+5. Confirm the current route and league stay selected and the active league
+   queries refresh automatically after Socket.IO reconnect.
+
+Expected result: persisted audit evidence is readable, matchup evidence is
+populated, and reconnect recovery happens without an extra click.
+
+### Tour 9 - Staging-Only Reset
+
+Run this last because it intentionally replaces only the staging test-league
+data and invalidates all sessions.
+
+1. As a non-administrator, confirm no reset action is visible and a direct
+   request is denied.
+2. As the platform administrator, record provider catalog count, last
+   successful import, Alpha/Beta team names, and one deliberately different
+   roster assignment.
+3. Open the reset panel, enter the exact displayed confirmation phrase and a
+   bounded test reason, then submit once.
+4. Confirm a verified pre-reset backup is reported and the session is signed
+   out.
+5. Sign in again. Confirm all fixture accounts, six Alpha teams, six Beta
+   teams, different Alpha/Beta rosters, populated matchup statistics, and all
+   seeded trade states have returned.
+6. Confirm the imported provider catalog count and last successful import were
+   preserved.
+
+Expected result: reset is available only on the exact staging fixture identity,
+is audited and idempotent, preserves the provider catalog, and never exposes a
+production capability.
+
 ## Canonical Route Inventory
 
 The menu should expose page-level destinations. Detail routes are reached from
@@ -165,7 +262,7 @@ their parent page.
 | Matchups | `/leagues/:leagueId/matchups` | Active league member |
 | Standings | `/leagues/:leagueId/standings` | Active league member |
 | League activity | `/leagues/:leagueId/activity` | Active league member |
-| Commissioner tools | `/leagues/:leagueId/commissioner` | Current commissioner only |
+| Commissioner tools | `/leagues/:leagueId/commissioner/rosters` | Current commissioner or platform administrator |
 | Notifications | `/notifications` | Every authenticated account |
 | League rules | Main-menu disclosure | Everyone |
 
@@ -202,6 +299,8 @@ Stop the local test and investigate if:
 * real email or provider credentials are requested;
 * Alpha and Beta data cross account boundaries;
 * a read-only page changes stored league data;
+* provider catalog rows disappear during a staging fixture reset;
+* a reset route is present on any non-staging fixture identity;
 * shutdown leaves the fixture or port listener running.
 
 This guide authorizes no commit, push, hosted deployment, production change,

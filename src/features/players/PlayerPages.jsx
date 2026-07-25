@@ -13,8 +13,8 @@ import {
 import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import {
-  playerDetailQuery,
-  playerSearchQuery,
+  leaguePlayerDetailQuery,
+  leaguePlayerSearchQuery,
 } from "./playerQueries.js";
 
 function ErrorMessage({ error }) {
@@ -91,6 +91,53 @@ function displayPosition(player) {
   );
 }
 
+function ageFromBirthDate(birthDate, now = new Date()) {
+  if (typeof birthDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    return "—";
+  }
+  const [year, month, day] = birthDate.split("-").map(Number);
+  const beforeBirthday =
+    now.getUTCMonth() + 1 < month ||
+    (now.getUTCMonth() + 1 === month && now.getUTCDate() < day);
+  return String(now.getUTCFullYear() - year - (beforeBirthday ? 1 : 0));
+}
+
+function displayStatistics(statistics) {
+  if (!statistics) return "Not available";
+  return `${statistics.gamesPlayed} GP · ${statistics.goals} G · ${statistics.assists} A · ${statistics.nhlPoints} P`;
+}
+
+function statisticsSourceLabel(statistics) {
+  if (statistics?.provider === "sportsdataio-discovery-lab") {
+    return "SportsDataIO Discovery Lab last-season data";
+  }
+  if (statistics?.provider === "release_qa_fixture") {
+    return "Synthetic Release QA fixture data";
+  }
+  return "Statistics source unavailable";
+}
+
+function money(cents) {
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+  }).format(cents / 100);
+}
+
+function ownershipLabel(player) {
+  const ownership = player.league.ownership;
+  if (!ownership) return "Free agent";
+  return `${ownership.team.name} · ${ownership.category}`;
+}
+
+function contractLabel(player) {
+  const contract = player.league.activeContract;
+  if (!contract) return "No active contract";
+  return `${money(contract.aavCents)} AAV · ${contract.remainingYears} ${
+    contract.remainingYears === 1 ? "year" : "years"
+  } remaining`;
+}
+
 export function PlayersPage() {
   const { leagueId } = useParams();
   const context = usePlayerContext(leagueId);
@@ -102,7 +149,7 @@ export function PlayersPage() {
   const enabled =
     context.session.status === "authenticated" && Boolean(context.league);
   const players = useQuery({
-    ...playerSearchQuery(context.session.httpClient, {
+    ...leaguePlayerSearchQuery(context.session.httpClient, leagueId, {
       query,
       status,
       limit: 25,
@@ -186,7 +233,10 @@ export function PlayersPage() {
                 <th>Player</th>
                 <th>Position</th>
                 <th>NHL team</th>
-                <th>Birth date</th>
+                <th>Age</th>
+                <th>Last-season stats</th>
+                <th>League assignment</th>
+                <th>Contract / cap</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -200,7 +250,15 @@ export function PlayersPage() {
                   </th>
                   <td>{displayPosition(player)}</td>
                   <td>{player.provider?.nhlTeamAbbreviation || "—"}</td>
-                  <td>{player.birthDate || "—"}</td>
+                  <td>{ageFromBirthDate(player.birthDate)}</td>
+                  <td>
+                    {displayStatistics(player.statistics)}
+                    {player.statistics?.provider === "release_qa_fixture" ? (
+                      <span className="hl-player-stat-source">Synthetic fixture</span>
+                    ) : null}
+                  </td>
+                  <td>{ownershipLabel(player)}</td>
+                  <td>{contractLabel(player)}</td>
                   <td>
                     <StatusBadge tone={player.status === "active" ? "success" : "neutral"}>
                       {player.status === "active" ? "Active" : "Historical"}
@@ -247,7 +305,11 @@ export function PlayerDetailPage() {
   const enabled =
     context.session.status === "authenticated" && Boolean(context.league);
   const player = useQuery({
-    ...playerDetailQuery(context.session.httpClient, playerId),
+    ...leaguePlayerDetailQuery(
+      context.session.httpClient,
+      leagueId,
+      playerId
+    ),
     enabled,
   });
 
@@ -273,11 +335,79 @@ export function PlayerDetailPage() {
             <dd>{player.data.provider?.nhlTeamAbbreviation || "—"}</dd>
             <dt>Birth date</dt>
             <dd>{player.data.birthDate || "—"}</dd>
+            <dt>Age</dt>
+            <dd>{ageFromBirthDate(player.data.birthDate)}</dd>
             <dt>Status</dt>
             <dd>
               {player.data.status === "active" ? "Active" : "Historical"}
             </dd>
           </dl>
+          <section
+            className="hl-profile-statistics"
+            aria-labelledby="league-player-status-heading"
+          >
+            <h3 id="league-player-status-heading">
+              {context.league.name} ownership and contract
+            </h3>
+            {player.data.league.ownership ? (
+              <dl className="hl-detail-list">
+                <dt>Team</dt>
+                <dd>{player.data.league.ownership.team.name}</dd>
+                <dt>Roster category</dt>
+                <dd>{player.data.league.ownership.category}</dd>
+                <dt>Ownership kind</dt>
+                <dd>{player.data.league.ownership.kind}</dd>
+              </dl>
+            ) : (
+              <p>This player is a free agent in the selected league.</p>
+            )}
+            {player.data.league.activeContract ? (
+              <dl className="hl-detail-list">
+                <dt>Cap charge (AAV)</dt>
+                <dd>{money(player.data.league.activeContract.aavCents)}</dd>
+                <dt>Total contract value</dt>
+                <dd>
+                  {money(
+                    player.data.league.activeContract
+                      .originalTotalValueCents
+                  )}
+                </dd>
+                <dt>Original term</dt>
+                <dd>
+                  {player.data.league.activeContract.originalTermYears} years
+                </dd>
+                <dt>Remaining term</dt>
+                <dd>
+                  {player.data.league.activeContract.remainingYears} years
+                </dd>
+              </dl>
+            ) : (
+              <p>No active contract is recorded in the selected league.</p>
+            )}
+          </section>
+          <section className="hl-profile-statistics" aria-labelledby="last-season-statistics-heading">
+            <h3 id="last-season-statistics-heading">Last-season statistics</h3>
+            {player.data.statistics ? (
+              <dl className="hl-detail-list">
+                <dt>Season</dt>
+                <dd>{player.data.statistics.nhlSeasonKey.slice(0, 4)}–{player.data.statistics.nhlSeasonKey.slice(6, 8)}</dd>
+                <dt>Data source</dt>
+                <dd>{statisticsSourceLabel(player.data.statistics)}</dd>
+                <dt>Games played</dt>
+                <dd>{player.data.statistics.gamesPlayed}</dd>
+                <dt>Goals</dt>
+                <dd>{player.data.statistics.goals}</dd>
+                <dt>Assists</dt>
+                <dd>{player.data.statistics.assists}</dd>
+                <dt>NHL points</dt>
+                <dd>{player.data.statistics.nhlPoints}</dd>
+                <dt>Fantasy points</dt>
+                <dd>{(player.data.statistics.fantasyPointsHundredths / 100).toFixed(2)}</dd>
+              </dl>
+            ) : (
+              <p>Last-season statistics are not available for this player.</p>
+            )}
+          </section>
           {player.data.externalIds.length > 0 && (
             <section className="hl-profile-identifiers" aria-labelledby="provider-identifiers-heading">
               <h3 id="provider-identifiers-heading">Provider identifiers</h3>

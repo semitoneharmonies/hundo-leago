@@ -38,6 +38,25 @@ import {
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
 const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" };
 const input = { padding: 8, borderRadius: 6, border: "1px solid #475569", minWidth: 170 };
+const activityDetails = { display: "grid", gap: 5, margin: 0 };
+const activityDetailRow = {
+  display: "grid",
+  gridTemplateColumns: "minmax(7rem, auto) minmax(0, 1fr)",
+  gap: 8,
+};
+const activityDetailTerm = { fontWeight: 700 };
+const activityDetailValue = { margin: 0, overflowWrap: "anywhere" };
+const ACTIVITY_STATE_FIELDS = Object.freeze([
+  ["ownershipKind", "Ownership"],
+  ["rosterCategory", "Roster category"],
+  ["positionGroup", "Position"],
+  ["slotNumber", "Slot"],
+  ["contractType", "Contract type"],
+  ["originalTotalValueCents", "Total value"],
+  ["originalTermYears", "Term"],
+  ["aavCents", "AAV"],
+  ["status", "Status"],
+]);
 
 function key(prefix) {
   const suffix = globalThis.crypto?.randomUUID?.() ||
@@ -51,6 +70,114 @@ function money(cents) {
 
 function time(value) {
   return new Date(value).toLocaleString();
+}
+
+function activityWords(value) {
+  const words = value.replace(/[._-]+/gu, " ").trim();
+  return words.length === 0
+    ? value
+    : `${words[0].toUpperCase()}${words.slice(1)}`;
+}
+
+function activityStateValue(field, value) {
+  if (value === null) return "None";
+  if (["originalTotalValueCents", "aavCents"].includes(field)) {
+    return Number.isSafeInteger(value) && value >= 0 ? money(value) : null;
+  }
+  if (Number.isSafeInteger(value) || typeof value === "boolean") {
+    return String(value);
+  }
+  if (
+    typeof value === "string" &&
+    value.length >= 1 &&
+    value.length <= 200 &&
+    ![...value].some((character) => {
+      const codePoint = character.codePointAt(0);
+      return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
+    })
+  ) {
+    return value;
+  }
+  return null;
+}
+
+function activityStateSummary(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const details = ACTIVITY_STATE_FIELDS.flatMap(([field, label]) => {
+    if (!Object.hasOwn(value, field)) return [];
+    const display = activityStateValue(field, value[field]);
+    return display === null ? [] : [`${label}: ${display}`];
+  });
+  return details.length > 0 ? details.join(" · ") : null;
+}
+
+function activityMetadataRows(metadata) {
+  if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return [];
+  }
+  const rows = [];
+  if (typeof metadata.correctionId === "string") {
+    rows.push(["Correction ID", metadata.correctionId]);
+  }
+  const before = activityStateSummary(metadata.before);
+  if (before) rows.push(["Before", before]);
+  const result = activityStateSummary(metadata.after || metadata.authoritative);
+  if (result) rows.push(["Result", result]);
+  if (Array.isArray(metadata.warnings) && metadata.warnings.length > 0) {
+    const warnings = metadata.warnings
+      .map((warning) => warning?.code)
+      .filter((code) => typeof code === "string")
+      .map(activityWords);
+    if (warnings.length > 0) rows.push(["Warnings", warnings.join(", ")]);
+  }
+  return rows;
+}
+
+function ActivityEntry({ item }) {
+  const rows = [
+    ["Activity ID", item.id],
+    ["Action", activityWords(item.type)],
+    ["Actor authority", activityWords(item.actor.authority)],
+    ...(item.actor.userId ? [["Actor user ID", item.actor.userId]] : []),
+    ["League scope", item.leagueId],
+    ...(item.seasonId ? [["Season scope", item.seasonId]] : []),
+    ...(item.teamId ? [["Affected team", item.teamId]] : []),
+    ...(item.playerId ? [["Affected player", item.playerId]] : []),
+    ...(item.related
+      ? [[
+          "Related result",
+          `${activityWords(item.related.type)} · ${item.related.id}`,
+        ]]
+      : []),
+    ...activityMetadataRows(item.metadata),
+    ...(item.reason ? [["Reason", item.reason]] : []),
+  ];
+  return (
+    <li>
+      <span aria-hidden="true" />
+      <div>
+        <strong>{item.summary}</strong>
+        <dl style={activityDetails}>
+          {rows.map(([label, value]) => (
+            <div key={label} style={activityDetailRow}>
+              <dt style={activityDetailTerm}>{label}</dt>
+              <dd style={activityDetailValue}>{value}</dd>
+            </div>
+          ))}
+          <div style={activityDetailRow}>
+            <dt style={activityDetailTerm}>Timestamp</dt>
+            <dd style={activityDetailValue}>
+              <time dateTime={new Date(item.occurredAtMs).toISOString()}>
+                {time(item.occurredAtMs)}
+              </time>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </li>
+  );
 }
 
 function ErrorMessage({ error }) {
@@ -527,7 +654,7 @@ export function ActivityPage() {
   return (
     <LeaguePageState context={context} title="League Activity">
       {activity.isPending ? <Surface><LoadingBlock>Loading activity…</LoadingBlock></Surface> : activity.isError ? <ErrorMessage error={activity.error} /> : <>
-        {activity.data.activity.length === 0 ? <Surface><EmptyBlock title="No activity on this page" /></Surface> : <Surface><ol className="hl-activity-timeline">{activity.data.activity.map((item) => <li key={item.id}><span aria-hidden="true" /><div><strong>{item.summary}</strong><small>{time(item.occurredAtMs)} · {item.type}</small></div></li>)}</ol></Surface>}
+        {activity.data.activity.length === 0 ? <Surface><EmptyBlock title="No activity on this page" /></Surface> : <Surface><ol className="hl-activity-timeline">{activity.data.activity.map((item) => <ActivityEntry key={item.id} item={item} />)}</ol></Surface>}
         <div className="hl-pagination">
         {activity.data.page.nextCursor && <button className="hl-button hl-button--quiet" onClick={() => setCursor(activity.data.page.nextCursor)}>Next page</button>}
         {cursor && <button className="hl-button hl-button--quiet" onClick={() => setCursor(null)}>First page</button>}

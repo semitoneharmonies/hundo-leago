@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Navigate, useNavigate } from "react-router-dom";
 
@@ -25,6 +25,58 @@ function PendingButton({ children, pending }) {
     >
       {pending ? "Please wait…" : children}
     </button>
+  );
+}
+
+function StagingResetReceipt({ receipt }) {
+  return (
+    <section
+      className="hl-surface hl-route-state"
+      aria-labelledby="staging-reset-receipt-title"
+      role="status"
+    >
+      <p className="hl-eyebrow">Verified staging evidence</p>
+      <h2 id="staging-reset-receipt-title">Staging reset completed</h2>
+      <p>
+        The deterministic fixture was rebuilt, its provider catalog was
+        preserved, and every prior staging session was invalidated.
+      </p>
+      <dl>
+        <div>
+          <dt>Verified backup ID</dt>
+          <dd>{receipt.backupId}</dd>
+        </div>
+        <div>
+          <dt>Fixture build</dt>
+          <dd>{receipt.fixtureBuildId}</dd>
+        </div>
+        <div>
+          <dt>Reset completed</dt>
+          <dd>
+            <time dateTime={new Date(receipt.resetAtMs).toISOString()}>
+              {new Date(receipt.resetAtMs).toLocaleString("en-CA", {
+                dateStyle: "medium",
+                timeStyle: "short",
+                timeZone: "America/Vancouver",
+              })}
+            </time>
+          </dd>
+        </div>
+        <div>
+          <dt>Provider catalog players</dt>
+          <dd>
+            {new Intl.NumberFormat("en-CA").format(
+              receipt.providerCatalogPlayerCount
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Sessions invalidated</dt>
+          <dd>{receipt.sessionInvalidated ? "Yes" : "No"}</dd>
+        </div>
+      </dl>
+      <p>Sign in again to continue testing the rebuilt fixture.</p>
+    </section>
   );
 }
 
@@ -295,6 +347,17 @@ function RecoveryRequest({ httpClient }) {
 
 export function AccountHome() {
   const session = useSession();
+  const consumeStagingResetReceipt = session.consumeStagingResetReceipt;
+  const [stagingResetReceipt] = useState(() =>
+    session.appEnv === "staging" &&
+    session.notice === "staging-fixture-reset"
+      ? session.stagingResetReceipt
+      : null
+  );
+
+  useEffect(() => {
+    if (stagingResetReceipt) consumeStagingResetReceipt();
+  }, [consumeStagingResetReceipt, stagingResetReceipt]);
 
   if (session.status === "unknown") {
     return (
@@ -332,6 +395,9 @@ export function AccountHome() {
         <h1 id="accounts-title">Hundo Leago</h1>
         <p>Sign in to your league, or create a manager account.</p>
       </header>
+      {stagingResetReceipt && (
+        <StagingResetReceipt receipt={stagingResetReceipt} />
+      )}
       {session.notice === "session-expired" && (
         <p className="hl-form-message is-error" role="alert">Your session ended. Sign in again to continue.</p>
       )}

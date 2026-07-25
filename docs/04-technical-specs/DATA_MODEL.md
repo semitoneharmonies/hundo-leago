@@ -622,7 +622,7 @@ Matchup scoring eligibility does not read current ownership after lock; it reads
 
 | Table | Purpose |
 | --- | --- |
-| `contracts` | Stable contract identity and immutable original terms |
+| `contracts` | Stable contract identity and original terms immutable outside explicit commissioner correction |
 | `contract_years` | Per-season contract schedule |
 | `contract_events` | Creation, transfer, expiration, and correction history |
 | `retention_obligations` | Stable retained-AAV obligation |
@@ -650,7 +650,10 @@ Fields include:
 * created and updated timestamps;
 * version.
 
-Original value, term, start season, and AAV do not change after creation.
+Original value, term, start season, and AAV do not change during ordinary
+transactions. An explicit, permission-checked commissioner correction may
+replace those values atomically when it preserves the approved total, term,
+AAV, contract-year, cap, correction-history, and League Activity invariants.
 
 Original total value and rounded AAV are related but independently preserved.
 AAV is calculated from integer cents as original total divided by original term

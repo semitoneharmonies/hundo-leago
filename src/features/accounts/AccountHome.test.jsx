@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/render.jsx";
+import { useSession } from "../session/sessionContext.js";
 import { AccountHome } from "./AccountHome.jsx";
 
 const config = Object.freeze({
@@ -29,6 +31,72 @@ function noSession() {
       },
     },
     401
+  );
+}
+
+const RESET_RECEIPT = Object.freeze({
+  backupId: `backup-v1-${"a".repeat(64)}`,
+  fixtureBuildId: "m7-10-release-qa",
+  providerCatalogPlayerCount: 1_234,
+  resetAtMs: Date.parse("2026-07-25T18:30:00.000Z"),
+  sessionInvalidated: true,
+  unsafeSessionEvidence: "do not retain this field",
+});
+
+function authenticatedReceiptSession() {
+  return jsonResponse({
+    data: {
+      csrfToken: "S".repeat(43),
+      session: {
+        id: "receipt-session",
+        userId: "receipt-administrator",
+        status: "active",
+        createdAtMs: 1,
+        lastUsedAtMs: 2,
+        idleExpiresAtMs: 3,
+        absoluteExpiresAtMs: 4,
+        version: 1,
+      },
+      user: {
+        id: "receipt-administrator",
+        displayName: "Receipt Administrator",
+        status: "active",
+        version: 1,
+      },
+    },
+    meta: { requestId: "request-receipt-session" },
+  });
+}
+
+function ResetReceiptHarness() {
+  const session = useSession();
+  const [showAccountHome, setShowAccountHome] = useState(true);
+  if (session.status === "unknown") return <p>Checking receipt session</p>;
+  if (session.status === "authenticated") {
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          session.clearAuthentication(
+            "staging-fixture-reset",
+            RESET_RECEIPT
+          )
+        }
+      >
+        Complete staging reset
+      </button>
+    );
+  }
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setShowAccountHome((visible) => !visible)}
+      >
+        {showAccountHome ? "Leave Account home" : "Return to Account home"}
+      </button>
+      {showAccountHome ? <AccountHome /> : <p>Another public page</p>}
+    </>
   );
 }
 
@@ -263,5 +331,79 @@ describe("AccountHome", () => {
     );
     expect(email).toHaveValue("");
     expect(password).toHaveValue("");
+  });
+
+  it("shows a sanitized staging reset receipt once without retaining authenticated state", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(authenticatedReceiptSession());
+    const view = renderWithProviders(<ResetReceiptHarness />, {
+      enableSession: true,
+      config: {
+        ...config,
+        appEnv: "staging",
+        buildId: "staging-receipt-build",
+      },
+      sessionOptions: { fetchImpl },
+    });
+
+    await view.user.click(
+      await screen.findByRole("button", {
+        name: "Complete staging reset",
+      })
+    );
+    const receipt = (
+      await screen.findByRole("heading", {
+        name: "Staging reset completed",
+      })
+    ).closest("section");
+    expect(receipt).toHaveTextContent(RESET_RECEIPT.backupId);
+    expect(receipt).toHaveTextContent(RESET_RECEIPT.fixtureBuildId);
+    expect(receipt).toHaveTextContent("1,234");
+    expect(receipt).toHaveTextContent("Sessions invalidated");
+    expect(receipt).not.toHaveTextContent("do not retain this field");
+    expect(screen.queryByText("Receipt Administrator")).not.toBeInTheDocument();
+    expect(screen.queryByText("receipt-session")).not.toBeInTheDocument();
+
+    await view.user.click(
+      screen.getByRole("button", { name: "Leave Account home" })
+    );
+    expect(
+      screen.queryByRole("heading", {
+        name: "Staging reset completed",
+      })
+    ).not.toBeInTheDocument();
+    await view.user.click(
+      screen.getByRole("button", { name: "Return to Account home" })
+    );
+    expect(
+      screen.queryByRole("heading", {
+        name: "Staging reset completed",
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Sign in" })
+    ).toBeInTheDocument();
+  });
+
+  it("does not preserve a staging reset receipt outside staging", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(authenticatedReceiptSession());
+    const view = renderWithProviders(<ResetReceiptHarness />, {
+      enableSession: true,
+      config,
+      sessionOptions: { fetchImpl },
+    });
+
+    await view.user.click(
+      await screen.findByRole("button", {
+        name: "Complete staging reset",
+      })
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Sign in" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Staging reset completed",
+      })
+    ).not.toBeInTheDocument();
   });
 });

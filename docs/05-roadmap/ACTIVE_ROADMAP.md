@@ -970,8 +970,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: execute M7-09 isolated hosted staging deployment and acceptance; do not touch production
-Implementation status: M7-01 through M7-08 COMPLETE; M7-09 ACTIVE; MANUAL HOSTED ACCEPTANCE AND PRODUCTION OPEN
+Action: execute M7-10 staging catalog, deterministic-fixture, commissioner-tool, and acceptance remediation; do not touch production
+Implementation status: M7-01 through M7-08 COMPLETE; M7-09 BLOCKED BY HOSTED ACCEPTANCE FAILURES; M7-10 ACTIVE; PRODUCTION BLOCKED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Branches: staging and staging
 ```
@@ -1045,9 +1045,11 @@ locally with the deterministic two-league fixture, integrated loopback
 rehearsal, recovery checks, `893/893` backend tests, `95/95` frontend tests,
 lint, build, syntax, and rendered local evidence recorded. M7-08 completed the
 exact source freeze, complete local gate rerun, separate frontend/backend
-candidate commits, and publication of only the staging branches. M7-09 now
-owns isolated hosted staging configuration, database initialization,
-deployment, and acceptance.
+candidate commits, and publication of only the staging branches. M7-09
+deployed the isolated staging services, then hosted acceptance failed on
+player-detail, matchup-player-statistics, and reconnect recovery gates. M7-10
+now owns the staging-only catalog and fixture remediation, commissioner roster
+tools, those acceptance repairs, redeployment, and hosted retesting.
 Production cutover remains separately authorized.
 
 ---
@@ -1078,6 +1080,7 @@ Expected result:
 * roadmap status is `ACTIVE`;
 * M1 and M2 are complete, including the external staging gate;
 * M3 through M6 and their milestone gates are complete locally;
-* M7-01 through M7-08 are complete and M7-09 is active;
+* M7-01 through M7-08 are complete, M7-09 records the blocked hosted
+  acceptance outcome, and M7-10 is active;
 * launch requires staging, backup, recovery, testing, and explicit production authority;
 * deferred work remains outside the launch path.

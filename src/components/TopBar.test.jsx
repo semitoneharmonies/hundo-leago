@@ -154,6 +154,7 @@ describe("top bar navigation", () => {
       );
     }
     expect(screen.queryByRole("link", { name: "Commissioner tools" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Roster operations" })).toBeNull();
   });
 
   it("includes commissioner tools only for current commissioner authority", async () => {
@@ -162,6 +163,12 @@ describe("top bar navigation", () => {
     expect(
       screen.getByRole("link", { name: "Commissioner tools" })
     ).toHaveAttribute("href", `/leagues/${leagueId}/commissioner`);
+    expect(
+      screen.getByRole("link", { name: "Roster operations" })
+    ).toHaveAttribute(
+      "href",
+      `/leagues/${leagueId}/commissioner/rosters`
+    );
   });
 
   it("includes commissioner tools for inherited platform-administrator authority", async () => {
@@ -173,6 +180,12 @@ describe("top bar navigation", () => {
     expect(
       screen.getByRole("link", { name: "Commissioner tools" })
     ).toHaveAttribute("href", `/leagues/${leagueId}/commissioner`);
+    expect(
+      screen.getByRole("link", { name: "Roster operations" })
+    ).toHaveAttribute(
+      "href",
+      `/leagues/${leagueId}/commissioner/rosters`
+    );
     await view.user.click(
       screen.getByRole("button", { name: "Account menu" })
     );

@@ -7,6 +7,7 @@ import {
   Bell,
   BookOpen,
   ChevronDown,
+  ClipboardList,
   Gavel,
   LayoutDashboard,
   LogOut,
@@ -53,6 +54,7 @@ function pageLabel(pathname) {
   if (/\/matchups$/.test(pathname)) return "Matchups";
   if (/\/standings$/.test(pathname)) return "Standings";
   if (/\/activity$/.test(pathname)) return "League activity";
+  if (/\/commissioner\/rosters$/.test(pathname)) return "Roster operations";
   if (/\/commissioner$/.test(pathname)) return "Commissioner tools";
   if (/\/teams$/.test(pathname)) return "Teams";
   if (/^\/leagues\/[^/]+$/.test(pathname)) return "Dashboard";
@@ -69,6 +71,7 @@ const descriptions = Object.freeze({
   Standings: "Official league table",
   "League activity": "Transactions and moves",
   "Commissioner tools": "Authorized administration",
+  "Roster operations": "Roster, contract and staging tools",
 });
 
 function MenuLink({ icon, label, description, to, active, onSelect }) {
@@ -150,6 +153,11 @@ function TopBar({ freezeBanner }) {
         "Commissioner tools",
         routePaths.leagueCommissioner(leagueId),
         Shield,
+      ]);
+      links.push([
+        "Roster operations",
+        routePaths.leagueCommissionerRoster(leagueId),
+        ClipboardList,
       ]);
     }
     return links;

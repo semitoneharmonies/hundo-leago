@@ -11,11 +11,17 @@ import { validateSessionData } from "./sessionContracts.js";
 import { SessionContext } from "./sessionContext.js";
 import { createSessionHttpController } from "./sessionHttpController.js";
 
+const STAGING_RESET_NOTICE = "staging-fixture-reset";
+const BACKUP_ID = /^backup-v1-[a-f0-9]{64}$/;
+const FIXTURE_BUILD_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const MAX_TIMESTAMP_MS = 8_640_000_000_000_000;
+
 const UNKNOWN_SESSION = Object.freeze({
   status: "unknown",
   user: null,
   session: null,
   notice: null,
+  stagingResetReceipt: null,
   bootstrapError: null,
 });
 
@@ -26,22 +32,52 @@ function authenticatedSession(data) {
     user: data.user,
     session: data.session,
     notice: null,
+    stagingResetReceipt: null,
     bootstrapError: null,
   });
 }
 
-function unauthenticatedSession(notice = null) {
+function sanitizeStagingResetReceipt(value, { appEnv, notice }) {
+  if (
+    appEnv !== "staging" ||
+    notice !== STAGING_RESET_NOTICE ||
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    !FIXTURE_BUILD_ID.test(value.fixtureBuildId || "") ||
+    !BACKUP_ID.test(value.backupId || "") ||
+    !Number.isSafeInteger(value.resetAtMs) ||
+    value.resetAtMs < 0 ||
+    value.resetAtMs > MAX_TIMESTAMP_MS ||
+    !Number.isSafeInteger(value.providerCatalogPlayerCount) ||
+    value.providerCatalogPlayerCount < 0 ||
+    value.sessionInvalidated !== true
+  ) {
+    return null;
+  }
+  return Object.freeze({
+    backupId: value.backupId,
+    fixtureBuildId: value.fixtureBuildId,
+    providerCatalogPlayerCount: value.providerCatalogPlayerCount,
+    resetAtMs: value.resetAtMs,
+    sessionInvalidated: true,
+  });
+}
+
+function unauthenticatedSession(notice = null, stagingResetReceipt = null) {
   return Object.freeze({
     status: "unauthenticated",
     user: null,
     session: null,
     notice,
+    stagingResetReceipt,
     bootstrapError: null,
   });
 }
 
 export function SessionProvider({
   apiOrigin,
+  appEnv,
   children,
   fetchImpl = globalThis.fetch,
 }) {
@@ -55,13 +91,30 @@ export function SessionProvider({
   const httpClient = httpController.httpClient;
 
   const clearAuthentication = useCallback(
-    async (notice = null) => {
+    async (notice = null, receipt = null) => {
       httpController.clearCsrfToken();
-      setState(unauthenticatedSession(notice));
+      setState(
+        unauthenticatedSession(
+          notice,
+          sanitizeStagingResetReceipt(receipt, { appEnv, notice })
+        )
+      );
       await clearPrivateQueries(queryClient);
     },
-    [httpController, queryClient]
+    [appEnv, httpController, queryClient]
   );
+
+  const consumeStagingResetReceipt = useCallback(() => {
+    setState((current) => {
+      if (
+        current.status !== "unauthenticated" ||
+        current.stagingResetReceipt === null
+      ) {
+        return current;
+      }
+      return unauthenticatedSession(null, null);
+    });
+  }, []);
 
   const adoptSession = useCallback((data) => {
     validateSessionData(data);
@@ -138,16 +191,20 @@ export function SessionProvider({
   const value = useMemo(
     () => ({
       ...state,
+      appEnv,
       httpClient,
       adoptSession,
       clearAuthentication,
+      consumeStagingResetReceipt,
       retryBootstrap,
       signIn,
       signOut,
     }),
     [
       adoptSession,
+      appEnv,
       clearAuthentication,
+      consumeStagingResetReceipt,
       httpClient,
       retryBootstrap,
       signIn,

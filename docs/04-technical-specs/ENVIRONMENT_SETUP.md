@@ -659,7 +659,9 @@ They must be inventoried during `FE-00`, mapped deliberately where still require
 | `SCHEDULED_JOBS_ENABLED` | Yes | Explicit `true` or `false`; no truthy string coercion |
 | `DEBUG_ROUTES_ENABLED` | Yes | Explicit `true` or `false` |
 | `EMAIL_DELIVERY_MODE` | Yes | `disabled`, `capture`, `sandbox`, or `send` |
-| `NHL_API_ORIGIN` | Yes | Approved public NHL-data adapter origin |
+| `SPORTSDATAIO_NHL_API_KEY` | Staging-only managed secret | SportsDataIO Discovery Lab server credential; never exposed to the browser or logs |
+| `SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR` | Required when the SportsDataIO staging secret is set | Four-digit start year for the approved last-season dataset |
+| `SPORTSDATAIO_NHL_API_ORIGIN` | Optional staging-only non-secret | Canonical SportsDataIO NHL origin; defaults to `https://api.sportsdata.io/v3/nhl` |
 
 Whitespace is trimmed. Empty required values are invalid.
 
@@ -981,18 +983,22 @@ Production debug routes remain unregistered.
 
 ## NHL Data
 
-The NHL-data origin is backend-only.
-
-The browser does not receive provider credentials and does not make authoritative NHL-stat requests.
+The approved M7-10 staging provider is SportsDataIO Discovery Lab. Its key is
+backend-only: no browser asset receives provider credentials or makes
+authoritative provider requests.
 
 Environment behavior:
 
 * test uses fixtures;
 * local normally uses fixtures or an explicitly refreshed cache;
-* staging normally uses fixtures, with focused provider smoke when required;
-* production uses the approved live adapter and last-valid-cache protection.
+* staging may use the explicit, maintenance-gated SportsDataIO last-season
+  import after its staging-only key is configured;
+* production has no SportsDataIO authorization under M7-10 and the legacy
+  undocumented NHL adapter is not a deployed runtime path.
 
-Provider failure must not replace valid cached statistics with empty or partial data.
+The staging importer rejects catalog or statistics responses below 800 players.
+Provider failure must not replace valid cached statistics with empty or partial
+data.
 
 ---
 

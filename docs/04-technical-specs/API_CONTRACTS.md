@@ -893,12 +893,34 @@ Security Audit and idempotency evidence atomically. A stale version returns
 | `GET /api/v1/players` | Authenticated | Cursor-paginated player search and filters; `leagueId` plus `auctionEligible=true` returns only auction-eligible players after active-membership authorization |
 | `GET /api/v1/players/:playerId` | Authenticated | Stable player details |
 | `GET /api/v1/players/:playerId/statistics` | Authenticated | Season totals and calculated FP |
-| `GET /api/v1/leagues/:leagueId/players/:playerId` | League member | League-specific ownership, eligibility, and contract summary |
+| `GET /api/v1/leagues/:leagueId/players` | League member | Cursor-paginated global player catalog with current selected-league ownership and active-contract summaries |
+| `GET /api/v1/leagues/:leagueId/players/:playerId` | League member | Stable player detail with current selected-league ownership and active-contract summary |
 | `POST /api/v1/operations/players/import` | Platform administrator | Run approved player synchronization |
 | `POST /api/v1/operations/statistics/refresh` | Platform administrator | Run a durable statistics refresh |
 | `GET /api/v1/operations/statistics/refreshes/:jobId` | Platform administrator | Read refresh status |
 
 Provider failures do not erase the last valid statistics.
+
+The league-scoped player reads require current active membership on every
+request and return `404` for another league's private context. They reuse the
+global player identity, provider, and statistics projection unchanged, then
+add a `league` object containing only the selected league ID, current
+ownership kind and roster category, owning team ID and name, and an active
+contract summary of original total value, original term, AAV, and remaining
+current-or-future league-season years. Ownership and active contract are
+independently `null` when absent. League-specific fields are never added to
+the global player endpoints or a global player cache.
+
+Both league-scoped player endpoints are strictly read-only. They perform no
+import, refresh, normalization, repair, initialization, or other hidden
+write.
+
+Every non-null player `statistics` projection includes its `provider`. The
+approved staging source is `sportsdataio-discovery-lab`, whose Discovery Lab
+data is labelled last-season data. `release_qa_fixture` is permitted only as
+clearly labelled synthetic Release-QA fixture data; it is never presented as
+provider-sourced NHL data. Player reads prefer SportsDataIO and use the
+fixture source only when SportsDataIO data is absent.
 
 ---
 
@@ -910,11 +932,42 @@ Provider failures do not erase the last valid statistics.
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | League member | Return roster groups, slots, ownership, contracts, cap, and legality |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | League member | Return authoritative legality reasons without writing |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Authorized team manager or commissioner correction workflow | Move one owned player between approved groups or slots |
+| `GET /api/v1/leagues/:leagueId/commissioner/roster-workspace` | Current commissioner or platform administrator with active membership | Read-only current teams, seasons, roster, free agents, contracts, cap projections, and provider health |
+| `POST /api/v1/leagues/:leagueId/commissioner/roster-additions/previews` | Current commissioner or inherited platform administrator | Read-only preview of adding one free agent or prospect right, including contract, roster, and cap effects |
+| `POST /api/v1/leagues/:leagueId/commissioner/roster-additions` | Current commissioner or inherited platform administrator | Confirmed, audited addition with warning confirmation and idempotency |
+| `POST /api/v1/leagues/:leagueId/commissioner/roster-removals/previews` | Current commissioner or inherited platform administrator | Read-only preview of removing one ownership and cancelling its active contract when present |
+| `POST /api/v1/leagues/:leagueId/commissioner/roster-removals` | Current commissioner or inherited platform administrator | Confirmed, audited removal with optimistic versions, warning confirmation, and idempotency |
+| `POST /api/v1/leagues/:leagueId/commissioner/roster-corrections/previews` | Current commissioner or inherited platform administrator | Read-only preview of one existing ownership correction, including cap/legality warnings |
+| `POST /api/v1/leagues/:leagueId/commissioner/roster-corrections` | Current commissioner or inherited platform administrator | Confirmed, audited existing-ownership correction with optimistic version and warning confirmation |
+| `POST /api/v1/leagues/:leagueId/commissioner/contract-corrections/previews` | Current commissioner or inherited platform administrator | Read-only preview of one existing contract correction, including derived AAV and cap impact |
+| `POST /api/v1/leagues/:leagueId/commissioner/contract-corrections` | Current commissioner or inherited platform administrator | Confirmed, audited existing-contract correction with optimistic version and warning confirmation |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/sign` | Authorized team manager | Create the approved ELC |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/decline` | Authorized team manager | Decline the ELC under approved rules |
 | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/prospect-rights/:playerId` | Authorized team manager | Release prospect rights |
 
 Transaction-created roster illegality returns a warning in the successful command response. It is not represented as a false failed transaction when the approved feature permits completion.
+
+Commissioner previews use `POST` because they accept an exact proposed command,
+but they run inside a rolled-back transaction and remain byte-for-byte
+read-only. Apply commands require `Idempotency-Key`; retrying the same request
+returns the original correction and activity evidence without a second
+ownership, contract, or activity mutation. Unknown request fields, stale
+ownership or contract versions, cross-league IDs, dependent pending trades,
+active retained-salary or buyout obligations, and illegal season schedules
+fail before durable mutation.
+
+Contract-correction clients submit only `seasonId`, `contractId`, `playerId`,
+`expectedVersion`, `correctedOriginalTotalValueCents`,
+`correctedOriginalTermYears`, and an optional `reason` (plus
+`confirmWarnings` on apply). The backend derives team, contract type, start
+season, lifecycle status, buyout lock, AAV, and the complete year schedule
+from the authoritative league workspace. Clients cannot author those fields.
+
+Every successful apply atomically records the commissioner correction,
+ownership or contract history as applicable, and League Activity with the
+authenticated actor, effective authority, selected league, reason, before and
+after evidence, warnings, and cap projections. The frontend invalidates the
+workspace, player, roster, cap, and activity queries after apply.
 
 The public roster projection contains only:
 
@@ -1081,6 +1134,8 @@ Matchup and standings records remain outside League Activity.
 | `GET /api/v1/health/live` | Public | Minimal process liveness |
 | `GET /api/v1/health/ready` | Public | Minimal dependency readiness without private details |
 | `GET /api/v1/operations/health` | Platform administrator | Detailed read-only operational state |
+| `POST /api/v1/operations/staging-sportsdataio-import` | Platform administrator on the exact closed staging fixture identity only | Explicitly import and audit the approved last-season SportsDataIO catalog and statistics |
+| `POST /api/v1/operations/staging-fixture-reset` | Platform administrator on the exact staging fixture identity only | Back up and deterministically reseed staging test-league data while preserving the imported provider catalog |
 | `GET /api/v1/operations/backups` | Platform administrator | List safe backup metadata without raw paths |
 | `POST /api/v1/operations/backups` | Platform administrator | Create and verify a backup |
 | `POST /api/v1/operations/restores` | Platform administrator plus approved workflow | Start protected restore |
@@ -1093,6 +1148,44 @@ Matchup and standings records remain outside League Activity.
 A commissioner restoration request enters `Awaiting Administrator Approval` and does not itself restore data. Administrator approval activates the approved freeze, pre-restore backup, restore, verification, and notification workflow.
 
 Production restore requires the separate authorization and safeguards defined by Backup and Restore. A normal page view never starts backup, restore, reset, repair, or migration work.
+
+The operations-health projection includes sanitized SportsDataIO state:
+provider name, enabled state, last-season-only scope, stale threshold, last
+successful import summary, and stale status. It never returns an API key,
+provider payload, database path, or backup path.
+
+The SportsDataIO staging-import route is constructed only when all staging
+fixture identity checks match, the provider is enabled, league writes are
+`closed`, and scheduled jobs are disabled. It requires an authenticated
+platform-administrator session, an allowed browser origin, compatible Fetch
+Metadata, JSON, CSRF protection, and `Idempotency-Key`. Its exact body is:
+
+```json
+{
+  "confirmation": "IMPORT SPORTSDATAIO STAGING DATA",
+  "reason": "Import the approved last-season staging test data."
+}
+```
+
+`reason` is trimmed, contains no control characters, and is 1-500 characters.
+The operation revalidates environment, database, and administrator authority
+before and after provider waits and before persistence; serializes concurrent
+imports; requires at least 800 mapped catalog players and statistics rows;
+retains the prior valid statistics refresh on failure; and records sanitized
+success, replay, or failure evidence without returning provider payloads or the
+API key. The route is absent after the same staging source is redeployed with
+league writes `open`, and it is never constructed for production.
+
+The staging-fixture reset route is composed only when all three checks match:
+`APP_ENV=staging`, environment identity `test:release-qa`, and database
+identity `m7-release-qa-fixture`. Its exact JSON command contains the displayed
+confirmation phrase and a bounded reason, and it requires CSRF plus
+`Idempotency-Key`. The command revalidates database identity, creates and
+verifies a pre-reset backup, preserves SportsDataIO catalog and import state,
+replaces only deterministic fixture accounts and league-scoped test data,
+checks foreign keys and provider-row counts, records operational audit
+evidence, and invalidates all sessions. The capability is not constructed for
+production or any other database identity.
 
 ---
 

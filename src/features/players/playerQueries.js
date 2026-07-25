@@ -2,6 +2,8 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 import {
+  validateLeaguePlayerDetail,
+  validateLeaguePlayerList,
   validatePlayerDetail,
   validatePlayerList,
 } from "./playerContracts.js";
@@ -28,6 +30,23 @@ export const playerKeys = Object.freeze({
     auctionEligible,
   ],
   detail: (playerId) => ["players", "detail", playerId],
+  leagueSearch: ({ leagueId, query, status, limit, cursor }) => [
+    "league",
+    leagueId,
+    "players",
+    "search",
+    query,
+    status,
+    limit,
+    cursor,
+  ],
+  leagueDetail: (leagueId, playerId) => [
+    "league",
+    leagueId,
+    "players",
+    "detail",
+    playerId,
+  ],
 });
 
 export function playerSearchQuery(
@@ -98,6 +117,79 @@ export function playerDetailQuery(httpClient, playerId) {
       return response.data;
     },
     meta: { private: true },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function leaguePlayerSearchQuery(
+  httpClient,
+  leagueId,
+  {
+    query = "",
+    status = "active",
+    limit = 25,
+    cursor = null,
+  } = {}
+) {
+  const search = new URLSearchParams({
+    query,
+    status,
+    limit: String(limit),
+    ...(cursor ? { cursor } : {}),
+  });
+  return queryOptions({
+    queryKey: playerKeys.leagueSearch({
+      leagueId,
+      query,
+      status,
+      limit,
+      cursor,
+    }),
+    queryFn: async ({ signal }) => {
+      const response = await httpClient.request(
+        `/api/v1/leagues/${part(leagueId)}/players?${search.toString()}`,
+        {
+          authenticated: true,
+          dataKind: "array",
+          validateData: (data) =>
+            validateLeaguePlayerList(data, leagueId),
+          signal,
+        }
+      );
+      if (!response.page) {
+        throw new ResponseContractError("The player page is missing.");
+      }
+      return Object.freeze({
+        players: response.data,
+        page: response.page,
+      });
+    },
+    meta: { private: true, leagueId },
+    staleTime: 60_000,
+  });
+}
+
+export function leaguePlayerDetailQuery(
+  httpClient,
+  leagueId,
+  playerId
+) {
+  return queryOptions({
+    queryKey: playerKeys.leagueDetail(leagueId, playerId),
+    queryFn: async ({ signal }) => {
+      const response = await httpClient.request(
+        `/api/v1/leagues/${part(leagueId)}/players/${part(playerId)}`,
+        {
+          authenticated: true,
+          dataKind: "object",
+          validateData: (data) =>
+            validateLeaguePlayerDetail(data, leagueId),
+          signal,
+        }
+      );
+      return response.data;
+    },
+    meta: { private: true, leagueId },
     staleTime: 5 * 60_000,
   });
 }

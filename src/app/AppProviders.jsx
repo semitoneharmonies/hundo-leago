@@ -31,6 +31,7 @@ export function AppProviders(props) {
           <SessionProvider
             apiOrigin={config.apiOrigin}
             {...props.sessionOptions}
+            appEnv={config.appEnv}
           >
             <TransactionInvalidationProvider
               socketOrigin={config.socketOrigin}

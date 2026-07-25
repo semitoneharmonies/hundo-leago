@@ -2,7 +2,7 @@
 
 ## Status
 
-`READY FOR GRAE MANUAL ACCEPTANCE`
+`MANUAL ACCEPTANCE FAILED / BLOCKED`
 
 Production remains `NO-GO`. This record does not authorize a production
 reset, migration, deploy, traffic change, job activation, or merge to `main`.
@@ -137,6 +137,45 @@ The dedicated Netlify site rendered successfully in the live browser.
 * the dashboard rendered Week 2, all six teams, one open auction, two pending
   trades, and recent activity.
 
+## Grae Manual Hosted Staging Acceptance
+
+Manual review was completed against the public staging site using the original
+72-check browser checklist. This is user-observed evidence only; it does not
+replace the automated hosted verifier or authorize a production action.
+
+```text
+Passed:      62
+Failed:       4
+Not tested:   6
+Overall:      FAIL / BLOCKED
+```
+
+### Passed
+
+* A01-A06; B01-B15; C01-C03, C05-C08, C11-C13; D01-D04, D06-D10;
+  E01-E02, E04-E07; F01-F12; and G01-G03, G05.
+
+### Failed
+
+* C04 — player names were readable, but there was no player-detail page.
+* C09 — matchups did not show player lists.
+* C10 — team fantasy totals were readable, but player statistics could not be
+  reviewed because no players were listed.
+* G04 — after reconnecting, the user had to click a link to reload.
+
+### Not tested
+
+* A07 — the application navigation uses the root URL, so direct protected
+  nested-URL behavior could not be exercised.
+* D05 — the Players page did not show team ownership.
+* E03 — no Beta commissioner test account was available.
+* E08-E10 — not tested during the interactive review.
+
+The failures and untested gates mean the candidate is not release-ready.
+Production remains blocked. Grae must decide whether to authorize a scoped
+staging defect-fix plan, supply the missing test coverage/accounts, or close
+the acceptance review with these gates explicitly deferred.
+
 ## Backup and Restore
 
 The staging backup configuration validates with:
@@ -202,9 +241,10 @@ Email remains capture-only. Scheduled jobs remain disabled.
 Rollback must select only one of these staging identities. Code rollback does
 not roll back or restore SQLite state.
 
-## Remaining Manual Gates
+## Remaining Gates
 
-* Grae's hosted browser acceptance using the manual website test guide;
+* resolve or explicitly defer the failed and untested Grae manual hosted
+  browser-acceptance gates recorded above;
 * staging offsite object-storage upload and encrypted clean restore after the
   staging-only provider target is reviewed;
 * a focused live NHL provider smoke if Grae chooses to authorize it.

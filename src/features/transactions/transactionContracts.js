@@ -184,6 +184,58 @@ export function validateReversalPreview(data) {
   return true;
 }
 
+function hasActivityControlCharacter(value) {
+  return [...value].some((character) => {
+    const codePoint = character.codePointAt(0);
+    return codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
+  });
+}
+
+function activityText(value, message, { nullable = false, maximum = 500 } = {}) {
+  if (nullable && value === null) return value;
+  contract(
+    typeof value === "string" &&
+      value.length >= 1 &&
+      value.length <= maximum &&
+      value.trim() === value &&
+      !hasActivityControlCharacter(value),
+    message
+  );
+  return value;
+}
+
+function activityId(value, message, { nullable = false } = {}) {
+  if (nullable && value === null) return value;
+  return id(value, message);
+}
+
+function validateActivityMetadata(metadata) {
+  if (metadata === null) return;
+  object(metadata, "The activity metadata is invalid.");
+  if (Object.hasOwn(metadata, "correctionId")) {
+    id(metadata.correctionId, "The activity correction ID is invalid.");
+  }
+  for (const field of ["before", "after", "authoritative"]) {
+    if (Object.hasOwn(metadata, field) && metadata[field] !== null) {
+      object(metadata[field], `The activity ${field} metadata is invalid.`);
+    }
+  }
+  if (Object.hasOwn(metadata, "warnings")) {
+    contract(
+      Array.isArray(metadata.warnings) && metadata.warnings.length <= 100,
+      "The activity warnings are invalid."
+    );
+    for (const warning of metadata.warnings) {
+      object(warning, "An activity warning is invalid.");
+      activityText(
+        warning.code,
+        "An activity warning code is invalid.",
+        { maximum: 100 }
+      );
+    }
+  }
+}
+
 export function validateActivityPage(data) {
   contract(data?.code === "LEAGUE_ACTIVITY_FOUND", "The activity code is invalid.");
   contract(Array.isArray(data.activity), "The activity list is invalid.");
@@ -191,9 +243,45 @@ export function validateActivityPage(data) {
   for (const item of data.activity) {
     object(item, "An activity item is invalid.");
     id(item.id, "An activity ID is invalid.");
-    contract(typeof item.summary === "string" && item.summary.length > 0, "An activity summary is invalid.");
+    id(item.leagueId, "An activity league ID is invalid.");
+    activityId(item.seasonId, "An activity season ID is invalid.", {
+      nullable: true,
+    });
+    activityText(item.type, "An activity type is invalid.", { maximum: 100 });
+    object(item.actor, "An activity actor is invalid.");
+    activityId(item.actor.userId, "An activity actor user ID is invalid.", {
+      nullable: true,
+    });
+    activityText(
+      item.actor.authority,
+      "An activity actor authority is invalid.",
+      { maximum: 100 }
+    );
+    activityId(item.teamId, "An activity team ID is invalid.", {
+      nullable: true,
+    });
+    activityId(item.playerId, "An activity player ID is invalid.", {
+      nullable: true,
+    });
+    if (item.related !== null) {
+      object(item.related, "An activity related record is invalid.");
+      activityText(
+        item.related.type,
+        "An activity related-record type is invalid.",
+        { maximum: 100 }
+      );
+      id(item.related.id, "An activity related-record ID is invalid.");
+    }
+    activityText(item.summary, "An activity summary is invalid.");
+    activityText(item.reason, "An activity reason is invalid.", {
+      nullable: true,
+    });
+    validateActivityMetadata(item.metadata);
     integer(item.occurredAtMs, "An activity time is invalid.");
   }
+  integer(data.page.limit, "The activity page limit is invalid.");
+  contract(data.page.limit >= 1 && data.page.limit <= 100,
+    "The activity page limit is invalid.");
   contract(data.page.nextCursor === null || typeof data.page.nextCursor === "string",
     "The activity cursor is invalid.");
   return true;

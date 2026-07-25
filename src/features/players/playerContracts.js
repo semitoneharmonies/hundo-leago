@@ -75,6 +75,51 @@ function validateProvider(provider) {
   );
 }
 
+function validateStatistics(statistics) {
+  if (statistics === null) return;
+  exactKeys(
+    statistics,
+    [
+      "provider",
+      "nhlSeasonKey",
+      "gamesPlayed",
+      "goals",
+      "assists",
+      "nhlPoints",
+      "fantasyPointsHundredths",
+      "sourceUpdatedAtMs",
+    ],
+    "The player statistics are invalid."
+  );
+  contract(
+    ["sportsdataio-discovery-lab", "release_qa_fixture"].includes(
+      statistics.provider
+    ),
+    "The player statistics provider is invalid."
+  );
+  contract(
+    typeof statistics.nhlSeasonKey === "string" && /^\d{8}$/.test(statistics.nhlSeasonKey),
+    "The player statistics season is invalid."
+  );
+  for (const field of [
+    "gamesPlayed",
+    "goals",
+    "assists",
+    "nhlPoints",
+    "fantasyPointsHundredths",
+    "sourceUpdatedAtMs",
+  ]) {
+    contract(
+      Number.isSafeInteger(statistics[field]) && statistics[field] >= 0,
+      `The player ${field} statistic is invalid.`
+    );
+  }
+  contract(
+    statistics.nhlPoints === statistics.goals + statistics.assists,
+    "The player NHL points do not reconcile."
+  );
+}
+
 export function validatePlayerSummary(player) {
   exactKeys(
     player,
@@ -86,6 +131,7 @@ export function validatePlayerSummary(player) {
       "birthDate",
       "status",
       "provider",
+      "statistics",
       "version",
     ],
     "The player summary is invalid."
@@ -107,6 +153,7 @@ export function validatePlayerSummary(player) {
     "The player status is invalid."
   );
   validateProvider(player.provider);
+  validateStatistics(player.statistics);
   contract(
     Number.isSafeInteger(player.version) && player.version >= 1,
     "The player version is invalid."
@@ -124,7 +171,82 @@ export function validatePlayerList(players) {
   return true;
 }
 
-export function validatePlayerDetail(player) {
+function validateLeagueProjection(league, expectedLeagueId) {
+  exactKeys(
+    league,
+    ["id", "ownership", "activeContract"],
+    "The league player projection is invalid."
+  );
+  contract(ID.test(league.id || ""), "The player league ID is invalid.");
+  contract(
+    expectedLeagueId === undefined || league.id === expectedLeagueId,
+    "The player projection belongs to another league."
+  );
+  if (league.ownership !== null) {
+    exactKeys(
+      league.ownership,
+      ["kind", "category", "team"],
+      "The player ownership projection is invalid."
+    );
+    contract(
+      ["Rostered", "Prospect Right"].includes(league.ownership.kind),
+      "The player ownership kind is invalid."
+    );
+    contract(
+      ["Active", "Bench", "Injured Reserve", "Prospect"].includes(
+        league.ownership.category
+      ),
+      "The player roster category is invalid."
+    );
+    exactKeys(
+      league.ownership.team,
+      ["id", "name"],
+      "The player ownership team is invalid."
+    );
+    contract(
+      ID.test(league.ownership.team.id || ""),
+      "The player ownership team ID is invalid."
+    );
+    contract(
+      typeof league.ownership.team.name === "string" &&
+        league.ownership.team.name.trim().length > 0,
+      "The player ownership team name is invalid."
+    );
+  }
+  if (league.activeContract !== null) {
+    exactKeys(
+      league.activeContract,
+      [
+        "originalTotalValueCents",
+        "originalTermYears",
+        "aavCents",
+        "remainingYears",
+      ],
+      "The active player contract projection is invalid."
+    );
+    for (const field of [
+      "originalTotalValueCents",
+      "originalTermYears",
+      "aavCents",
+      "remainingYears",
+    ]) {
+      contract(
+        Number.isSafeInteger(league.activeContract[field]) &&
+          league.activeContract[field] >= 0,
+        `The player contract ${field} is invalid.`
+      );
+    }
+    contract(
+      league.activeContract.originalTermYears >= 1 &&
+        league.activeContract.originalTermYears <= 3 &&
+        league.activeContract.remainingYears <=
+          league.activeContract.originalTermYears,
+      "The player contract term is invalid."
+    );
+  }
+}
+
+export function validateLeaguePlayerSummary(player, expectedLeagueId) {
   exactKeys(
     player,
     [
@@ -135,13 +257,31 @@ export function validatePlayerDetail(player) {
       "birthDate",
       "status",
       "provider",
+      "statistics",
       "version",
-      "externalIds",
+      "league",
     ],
-    "The player detail is invalid."
+    "The league player summary is invalid."
   );
-  const { externalIds, ...summary } = player;
+  const { league, ...summary } = player;
   validatePlayerSummary(summary);
+  validateLeagueProjection(league, expectedLeagueId);
+  return true;
+}
+
+export function validateLeaguePlayerList(players, expectedLeagueId) {
+  contract(Array.isArray(players), "The league player list is invalid.");
+  for (const player of players) {
+    validateLeaguePlayerSummary(player, expectedLeagueId);
+  }
+  contract(
+    new Set(players.map(({ id }) => id)).size === players.length,
+    "The league player list contains duplicate identities."
+  );
+  return true;
+}
+
+function validateExternalIds(externalIds) {
   contract(Array.isArray(externalIds), "The player provider IDs are invalid.");
   for (const externalId of externalIds) {
     exactKeys(
@@ -165,5 +305,51 @@ export function validatePlayerDetail(player) {
       "A player provider timestamp is invalid."
     );
   }
+}
+
+export function validatePlayerDetail(player) {
+  exactKeys(
+    player,
+    [
+      "id",
+      "firstName",
+      "lastName",
+      "fullName",
+      "birthDate",
+      "status",
+      "provider",
+      "statistics",
+      "version",
+      "externalIds",
+    ],
+    "The player detail is invalid."
+  );
+  const { externalIds, ...summary } = player;
+  validatePlayerSummary(summary);
+  validateExternalIds(externalIds);
+  return true;
+}
+
+export function validateLeaguePlayerDetail(player, expectedLeagueId) {
+  exactKeys(
+    player,
+    [
+      "id",
+      "firstName",
+      "lastName",
+      "fullName",
+      "birthDate",
+      "status",
+      "provider",
+      "statistics",
+      "version",
+      "externalIds",
+      "league",
+    ],
+    "The league player detail is invalid."
+  );
+  const { externalIds, ...summary } = player;
+  validateLeaguePlayerSummary(summary, expectedLeagueId);
+  validateExternalIds(externalIds);
   return true;
 }

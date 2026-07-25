@@ -77,6 +77,11 @@ const CommissionerCompetitionPage = lazyNamed(
   loadCompetitionPages,
   "CommissionerCompetitionPage"
 );
+const CommissionerRosterPage = lazyNamed(
+  () =>
+    import("./features/commissioner/CommissionerRosterPage.jsx"),
+  "CommissionerRosterPage"
+);
 const LegacyMatchupsRedirect = lazyNamed(
   loadCompetitionPages,
   "LegacyMatchupsRedirect"
@@ -1871,6 +1876,10 @@ return (
         <Route path="/leagues/:leagueId/matchups" element={<LeagueMatchupsPage />} />
         <Route path="/leagues/:leagueId/standings" element={<LeagueStandingsPage />} />
         <Route path="/leagues/:leagueId/commissioner" element={<CommissionerCompetitionPage />} />
+        <Route
+          path="/leagues/:leagueId/commissioner/rosters"
+          element={<CommissionerRosterPage />}
+        />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route
           path="/leagues/:leagueId/teams"

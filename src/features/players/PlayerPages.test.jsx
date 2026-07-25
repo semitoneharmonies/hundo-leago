@@ -13,6 +13,7 @@ const leagueId = "11111111-1111-4111-8111-111111111111";
 const playerOneId = "22222222-2222-4222-8222-222222222222";
 const playerTwoId = "33333333-3333-4333-8333-333333333333";
 const membershipId = "44444444-4444-4444-8444-444444444444";
+const teamId = "55555555-5555-4555-8555-555555555555";
 const config = {
   appEnv: "local",
   apiOrigin: "http://localhost:4000",
@@ -51,6 +52,36 @@ function player(id, fullName) {
       active: true,
       sourceVersion: "2026-07-22",
       effectiveAtMs: 1,
+    },
+    statistics: {
+      provider: "sportsdataio-discovery-lab",
+      nhlSeasonKey: "20252026",
+      gamesPlayed: 82,
+      goals: 40,
+      assists: 50,
+      nhlPoints: 90,
+      fantasyPointsHundredths: 10000,
+      sourceUpdatedAtMs: 1,
+    },
+    league: {
+      id: leagueId,
+      ownership:
+        id === playerOneId
+          ? {
+              kind: "Rostered",
+              category: "Active",
+              team: { id: teamId, name: "Player Team" },
+            }
+          : null,
+      activeContract:
+        id === playerOneId
+          ? {
+              originalTotalValueCents: 900,
+              originalTermYears: 3,
+              aavCents: 300,
+              remainingYears: 2,
+            }
+          : null,
     },
     version: 1,
   };
@@ -126,7 +157,10 @@ function renderPage(initialEntry, route, element, fetchImpl) {
 describe("authenticated player pages", () => {
   it("searches by name and links results through stable player IDs", async () => {
     const fetchImpl = baseFetch((parsed) => {
-      if (parsed.pathname === "/api/v1/players") {
+      if (
+        parsed.pathname ===
+        `/api/v1/leagues/${leagueId}/players`
+      ) {
         const query = parsed.searchParams.get("query");
         const players =
           query === "alex"
@@ -162,7 +196,8 @@ describe("authenticated player pages", () => {
         fetchImpl.mock.calls.some(([url]) => {
           const parsed = new URL(url);
           return (
-            parsed.pathname === "/api/v1/players" &&
+            parsed.pathname ===
+              `/api/v1/leagues/${leagueId}/players` &&
             parsed.searchParams.get("query") === "alex"
           );
         })
@@ -170,11 +205,16 @@ describe("authenticated player pages", () => {
     });
     expect(screen.queryByRole("link", { name: "Blair Example" })).toBeNull();
     expect(screen.getByText("VAN")).toBeInTheDocument();
+    expect(screen.getByText("Player Team · Active")).toBeInTheDocument();
+    expect(screen.getByText("$3.00 AAV · 2 years remaining")).toBeInTheDocument();
   });
 
   it("renders stable player details and provider fields", async () => {
     const fetchImpl = baseFetch((parsed) => {
-      if (parsed.pathname === `/api/v1/players/${playerOneId}`) {
+      if (
+        parsed.pathname ===
+        `/api/v1/leagues/${leagueId}/players/${playerOneId}`
+      ) {
         return envelope({
           ...player(playerOneId, "Alex Example"),
           externalIds: [
@@ -195,6 +235,18 @@ describe("authenticated player pages", () => {
       await screen.findByRole("heading", { name: "Alex Example" })
     ).toBeInTheDocument();
     expect(screen.getByText("nhl: 8470001")).toBeInTheDocument();
+    expect(screen.getByText("Last-season statistics")).toBeInTheDocument();
+    expect(screen.getByText("SportsDataIO Discovery Lab last-season data")).toBeInTheDocument();
+    expect(screen.getByText("90")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Player League ownership and contract",
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Player Team")).toBeInTheDocument();
+    expect(screen.getByText("Cap charge (AAV)")).toBeInTheDocument();
+    expect(screen.getByText("$3.00")).toBeInTheDocument();
+    expect(screen.getByText("$9.00")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to players" })).toHaveAttribute(
       "href",
       `/leagues/${leagueId}/players`
