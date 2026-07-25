@@ -58,7 +58,11 @@ Configure these values only on Render service
 | --- | --- | --- |
 | `SPORTSDATAIO_NHL_API_KEY` | Render managed secret | The Discovery Lab key; never place it in Git, a browser variable, or test evidence. |
 | `SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR` | Non-secret staging setting | `2025` for the 2025-26 last-season dataset. |
-| `SPORTSDATAIO_NHL_API_ORIGIN` | Optional non-secret staging setting | Omit to use `https://api.sportsdata.io/v3/nhl`; any override must be the same canonical HTTPS API path. |
+| `SPORTSDATAIO_NHL_API_ORIGIN` | Optional non-secret staging setting | Omit to use `https://api.sportsdata.io/api/nhl/fantasy`; any override must be the same canonical HTTPS API path. |
+
+The local last-season start year remains `2025` for league key `20252026`.
+SportsDataIO identifies that regular season as `2026REG`; the adapter derives
+that provider value and rejects non-regular-season totals.
 
 The import is an explicit maintenance operation, not startup behavior or a
 scheduled job. The hosted route is intentionally composed only while staging

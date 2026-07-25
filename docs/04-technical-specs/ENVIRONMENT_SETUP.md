@@ -661,7 +661,7 @@ They must be inventoried during `FE-00`, mapped deliberately where still require
 | `EMAIL_DELIVERY_MODE` | Yes | `disabled`, `capture`, `sandbox`, or `send` |
 | `SPORTSDATAIO_NHL_API_KEY` | Staging-only managed secret | SportsDataIO Discovery Lab server credential; never exposed to the browser or logs |
 | `SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR` | Required when the SportsDataIO staging secret is set | Four-digit start year for the approved last-season dataset |
-| `SPORTSDATAIO_NHL_API_ORIGIN` | Optional staging-only non-secret | Canonical SportsDataIO NHL origin; defaults to `https://api.sportsdata.io/v3/nhl` |
+| `SPORTSDATAIO_NHL_API_ORIGIN` | Optional staging-only non-secret | Canonical SportsDataIO Discovery Lab NHL fantasy origin; defaults to `https://api.sportsdata.io/api/nhl/fantasy` |
 
 Whitespace is trimmed. Empty required values are invalid.
 
