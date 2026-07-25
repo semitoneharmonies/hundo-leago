@@ -186,16 +186,41 @@ describe("M5-11 authenticated transaction pages", () => {
     expect(screen.getByText("No proposals in this view.")).toBeInTheDocument();
   });
 
-  it("requires an acceptance preview before showing the confirm command", async () => {
+  it("renders backend team arrays and cap warnings before showing the confirm command", async () => {
     const fetchImpl = baseFetch((path) => {
       if (path === `/api/v1/leagues/${leagueId}/trades/${tradeId}`) return envelope({ code: "TRADE_PROPOSAL_FOUND", proposal: { id: tradeId, leagueId, seasonId, proposingTeam: { id: teamB, name: "Other Team" }, receivingTeam: { id: teamA, name: "Managed Team" }, proposingUserId: "user-2", status: "Pending", storageStatus: "proposed", createdAtMs: 1, expiresAtMs: 99, tradeDeadlineAtMs: null, effectiveDeadlineAtMs: 99, respondedAtMs: null, completedAtMs: null, commissionerCompletionReference: null, version: 1, assets: [{ id: assetId, type: "contract", snapshot: { type: "contract", player: { name: "Trade Player" } } }], history: [{ id: assetId, actorUserId: "user-2", type: "proposal_created", reason: null, metadata: {}, occurredAtMs: 1 }] } });
-      if (path.endsWith("/acceptance-preview")) return envelope({ code: "TRADE_ACCEPTANCE_PREVIEWED", proposal: { id: tradeId }, assets: [], teams: {}, generallyIllegal: false });
+      if (path.endsWith("/acceptance-preview")) return envelope({
+        code: "TRADE_ACCEPTANCE_PREVIEWED",
+        proposal: { id: tradeId },
+        assets: [],
+        teams: [{
+          teamId: teamA,
+          rosterCounts: {},
+          cap: {
+            salaryCapCents: 10_000,
+            usageCents: 10_100,
+            spaceCents: -100,
+          },
+          retentionSlots: 0,
+          issues: [{
+            code: "SALARY_CAP_EXCEEDED",
+            usageCents: 10_100,
+            limitCents: 10_000,
+          }],
+          generallyIllegal: true,
+        }],
+        generallyIllegal: true,
+      });
       throw new Error(`Unexpected request: ${path}`);
     });
     const view = renderPage(`/leagues/${leagueId}/trades/${tradeId}`, "/leagues/:leagueId/trades/:tradeId", <TradeDetailPage />, fetchImpl);
     const preview = await screen.findByRole("button", { name: "Preview acceptance" });
     expect(screen.queryByRole("button", { name: "Confirm and accept trade" })).not.toBeInTheDocument();
     await view.user.click(preview);
+    expect(await screen.findByText(
+      "Warning: this trade leaves a normal roster generally illegal."
+    )).toBeInTheDocument();
+    expect(screen.getByText(/SALARY_CAP_EXCEEDED/)).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Confirm and accept trade" })).toBeInTheDocument();
   });
 

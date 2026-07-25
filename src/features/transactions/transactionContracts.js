@@ -172,7 +172,30 @@ export function validateAcceptancePreview(data) {
   contract(data?.code === "TRADE_ACCEPTANCE_PREVIEWED", "The acceptance-preview code is invalid.");
   contract(typeof data.generallyIllegal === "boolean", "The acceptance warning is invalid.");
   contract(Array.isArray(data.assets), "The acceptance assets are invalid.");
-  object(data.teams, "The acceptance team preview is invalid.");
+  contract(Array.isArray(data.teams), "The acceptance team preview is invalid.");
+  for (const team of data.teams) {
+    object(team, "An acceptance team preview is invalid.");
+    id(team.teamId, "An acceptance-preview team ID is invalid.");
+    contract(
+      typeof team.generallyIllegal === "boolean",
+      "An acceptance-preview team warning is invalid."
+    );
+    contract(
+      Array.isArray(team.issues),
+      "The acceptance-preview team issues are invalid."
+    );
+    for (const issue of team.issues) {
+      object(issue, "An acceptance-preview issue is invalid.");
+      contract(
+        typeof issue.code === "string" && issue.code.length > 0,
+        "An acceptance-preview issue code is invalid."
+      );
+    }
+  }
+  contract(
+    data.generallyIllegal === data.teams.some((team) => team.generallyIllegal),
+    "The acceptance-preview warning summary is inconsistent."
+  );
   return true;
 }
 
