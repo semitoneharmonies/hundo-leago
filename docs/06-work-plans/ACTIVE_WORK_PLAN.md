@@ -68,7 +68,7 @@ Frontend branch:         staging
 Frontend commit:         928d76e88b729aef03300999b98206b693e4b118
 Backend repository:      E:\hundo-leago-backend
 Backend branch:          staging
-Backend commit:          e8353d1c939ba61f8fd81d188450e620899d60b8
+Backend commit:          d6eea77a0ab0b8c82a9bcd347d5ee0da76f0bd4a
 Render staging service:  srv-d9eo2turnols73ekb830
 ```
 
