@@ -76,6 +76,31 @@ function sortedByStatistic(players, sort) {
   );
 }
 
+function pointerDropTargetId(event) {
+  const document = event.currentTarget?.ownerDocument;
+  if (!document || typeof document.elementFromPoint !== "function") {
+    return null;
+  }
+  return (
+    document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest?.("[data-roster-order-id]")
+      ?.getAttribute("data-roster-order-id") || null
+  );
+}
+
+function beginPointerDrag(event, ownershipId, onDragStart) {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+  onDragStart(ownershipId);
+}
+
+function endPointerCapture(event) {
+  if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+}
+
 function RosterSortHeading({ label, sortKey, sort, onSort }) {
   return (
     <button
@@ -99,9 +124,12 @@ function CategoryTable({
   players,
   canManage = false,
   draggingId = null,
+  dragTargetId = null,
   onDragStart,
+  onDragTarget,
   onDragEnd,
   onDrop,
+  onPointerDrop,
   onMove,
   sort,
   onSort,
@@ -175,20 +203,17 @@ function CategoryTable({
                 return (
                 <tr
                   key={player.ownershipId}
-                  className={
-                    draggingId === player.ownershipId ? "is-dragging" : ""
+                  className={[
+                    draggingId === player.ownershipId ? "is-dragging" : "",
+                    dragTargetId === player.ownershipId
+                      ? "is-drop-target"
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  data-roster-order-id={
+                    draggable ? player.ownershipId : undefined
                   }
-                  draggable={draggable}
-                  onDragStart={(event) => {
-                    if (!draggable) return;
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData(
-                      "text/plain",
-                      player.ownershipId
-                    );
-                    onDragStart(player.ownershipId);
-                  }}
-                  onDragEnd={onDragEnd}
                   onDragOver={(event) => {
                     if (!draggable) return;
                     event.preventDefault();
@@ -207,7 +232,49 @@ function CategoryTable({
                   {draggable && (
                     <td>
                       <div className="hl-roster-order-controls">
-                        <GripVertical aria-hidden="true" />
+                        <button
+                          type="button"
+                          className="hl-roster-drag-handle"
+                          aria-label={`Drag ${player.name} to reorder`}
+                          title={`Drag ${player.name} to reorder`}
+                          draggable
+                          onDragStart={(event) => {
+                            event.dataTransfer.effectAllowed = "move";
+                            event.dataTransfer.setData(
+                              "text/plain",
+                              player.ownershipId
+                            );
+                            onDragStart(player.ownershipId);
+                          }}
+                          onDragEnd={onDragEnd}
+                          onPointerDown={(event) =>
+                            beginPointerDrag(
+                              event,
+                              player.ownershipId,
+                              onDragStart
+                            )
+                          }
+                          onPointerMove={(event) => {
+                            if (draggingId !== player.ownershipId) return;
+                            onDragTarget(pointerDropTargetId(event));
+                          }}
+                          onPointerUp={(event) => {
+                            const targetId =
+                              pointerDropTargetId(event) || dragTargetId;
+                            endPointerCapture(event);
+                            onPointerDrop(
+                              player.ownershipId,
+                              targetId,
+                              displayedPlayers
+                            );
+                          }}
+                          onPointerCancel={(event) => {
+                            endPointerCapture(event);
+                            onDragEnd();
+                          }}
+                        >
+                          <GripVertical aria-hidden="true" />
+                        </button>
                         <button
                           type="button"
                           onClick={() =>
@@ -282,9 +349,12 @@ function LinePlayer({
   player,
   canManage,
   draggingId,
+  dragTargetId,
   onDragStart,
+  onDragTarget,
   onDragEnd,
   onDrop,
+  onPointerDrop,
   onMove,
   index,
   total,
@@ -294,14 +364,14 @@ function LinePlayer({
   }
   return (
     <div
-      className={`hl-line-player${draggingId === player.ownershipId ? " is-dragging" : ""}`}
-      draggable={canManage}
-      onDragStart={(event) => {
-        event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("text/plain", player.ownershipId);
-        onDragStart(player.ownershipId);
-      }}
-      onDragEnd={onDragEnd}
+      className={[
+        "hl-line-player",
+        draggingId === player.ownershipId ? "is-dragging" : "",
+        dragTargetId === player.ownershipId ? "is-drop-target" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      data-roster-order-id={canManage ? player.ownershipId : undefined}
       onDragOver={(event) => {
         if (canManage) {
           event.preventDefault();
@@ -317,7 +387,39 @@ function LinePlayer({
         onDrop(sourceId, player.ownershipId);
       }}
     >
-      {canManage && <GripVertical aria-hidden="true" />}
+      {canManage && (
+        <button
+          type="button"
+          className="hl-line-player__drag-handle"
+          aria-label={`Drag ${player.name} to reorder`}
+          title={`Drag ${player.name} to reorder`}
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", player.ownershipId);
+            onDragStart(player.ownershipId);
+          }}
+          onDragEnd={onDragEnd}
+          onPointerDown={(event) =>
+            beginPointerDrag(event, player.ownershipId, onDragStart)
+          }
+          onPointerMove={(event) => {
+            if (draggingId !== player.ownershipId) return;
+            onDragTarget(pointerDropTargetId(event));
+          }}
+          onPointerUp={(event) => {
+            const targetId = pointerDropTargetId(event) || dragTargetId;
+            endPointerCapture(event);
+            onPointerDrop(player.ownershipId, targetId);
+          }}
+          onPointerCancel={(event) => {
+            endPointerCapture(event);
+            onDragEnd();
+          }}
+        >
+          <GripVertical aria-hidden="true" />
+        </button>
+      )}
       <span>
         <strong>{player.name}</strong>
         <small>
@@ -355,9 +457,12 @@ function HockeyLines({
   activePlayers,
   canManage,
   draggingId,
+  dragTargetId,
   onDragStart,
+  onDragTarget,
   onDragEnd,
   onDrop,
+  onPointerDrop,
   onMove,
 }) {
   const forwards = activePlayers.filter(
@@ -394,9 +499,12 @@ function HockeyLines({
                     player={player}
                     canManage={canManage}
                     draggingId={draggingId}
+                    dragTargetId={dragTargetId}
                     onDragStart={onDragStart}
+                    onDragTarget={onDragTarget}
                     onDragEnd={onDragEnd}
                     onDrop={onDrop}
+                    onPointerDrop={onPointerDrop}
                     onMove={onMove}
                     index={absoluteIndex}
                     total={forwards.length}
@@ -422,9 +530,12 @@ function HockeyLines({
                     player={player}
                     canManage={canManage}
                     draggingId={draggingId}
+                    dragTargetId={dragTargetId}
                     onDragStart={onDragStart}
+                    onDragTarget={onDragTarget}
                     onDragEnd={onDragEnd}
                     onDrop={onDrop}
+                    onPointerDrop={onPointerDrop}
                     onMove={onMove}
                     index={absoluteIndex}
                     total={defence.length}
@@ -512,6 +623,7 @@ export function TeamRosterPage({
     )
   );
   const [draggingId, setDraggingId] = useState(null);
+  const [dragTargetId, setDragTargetId] = useState(null);
   const [rosterSort, setRosterSort] = useState({
     key: "lineup",
     direction: "asc",
@@ -569,6 +681,7 @@ export function TeamRosterPage({
       sourceId === targetId
     ) {
       setDraggingId(null);
+      setDragTargetId(null);
       return;
     }
     const source = basisPlayers.find(
@@ -579,6 +692,8 @@ export function TeamRosterPage({
     );
     if (!source || !target || source.normalizedPosition !== target.normalizedPosition) {
       setSaveMessage("Players can be reordered only within the same position group.");
+      setDraggingId(null);
+      setDragTargetId(null);
       return;
     }
     const positionPlayers = basisPlayers.filter(
@@ -603,8 +718,14 @@ export function TeamRosterPage({
     setActivePlayers(next);
     setRosterSort({ key: "lineup", direction: "asc" });
     setDraggingId(null);
+    setDragTargetId(null);
     setSaveMessage("Saving line order…");
     mutation.mutate(next);
+  }
+
+  function endDrag() {
+    setDraggingId(null);
+    setDragTargetId(null);
   }
 
   function move(sourceId, direction, basisPlayers = activePlayers) {
@@ -747,9 +868,12 @@ export function TeamRosterPage({
             activePlayers={activePlayers}
             canManage={workspace.canManage && !mutation.isPending}
             draggingId={draggingId}
+            dragTargetId={dragTargetId}
             onDragStart={setDraggingId}
-            onDragEnd={() => setDraggingId(null)}
+            onDragTarget={setDragTargetId}
+            onDragEnd={endDrag}
             onDrop={reorder}
+            onPointerDrop={reorder}
             onMove={move}
           />
           <div className="hl-roster-categories">
@@ -788,9 +912,12 @@ export function TeamRosterPage({
                 !mutation.isPending
               }
               draggingId={draggingId}
+              dragTargetId={dragTargetId}
               onDragStart={setDraggingId}
-              onDragEnd={() => setDraggingId(null)}
+              onDragTarget={setDragTargetId}
+              onDragEnd={endDrag}
               onDrop={reorder}
+              onPointerDrop={reorder}
               onMove={move}
               sort={rosterSort}
               onSort={changeRosterSort}

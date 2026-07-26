@@ -427,13 +427,25 @@ describe("M7-10 commissioner roster operations", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText("sportsdataio-discovery-lab")).not.toBeInTheDocument();
     expect(
+      screen.getByRole("tab", { name: "Add player" })
+    ).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.queryByRole("heading", { name: "Remove a player" })
+    ).not.toBeInTheDocument();
+    expect(
       screen.queryByRole("heading", {
         name: "Reset staging test leagues",
       })
     ).not.toBeInTheDocument();
+    await view.user.click(
+      screen.getByRole("tab", { name: "Correct roster" })
+    );
     const movePanel = screen
       .getByRole("heading", { name: "Move or re-slot a player" })
       .closest("section");
+    await view.user.click(
+      screen.getByRole("tab", { name: "Correct contract" })
+    );
     const contractPanel = screen
       .getByRole("heading", { name: "Correct a contract" })
       .closest("section");
@@ -462,6 +474,9 @@ describe("M7-10 commissioner roster operations", () => {
         name: "Auction buyout lock",
       })
     ).not.toBeInTheDocument();
+    await view.user.click(
+      screen.getByRole("tab", { name: "Correct roster" })
+    );
     await view.user.selectOptions(
       within(movePanel).getByLabelText("Rostered player"),
       IDS.prospectOwnership
@@ -475,6 +490,9 @@ describe("M7-10 commissioner roster operations", () => {
       within(movePanel).getByRole("option", { name: "Prospect" })
     ).toBeInTheDocument();
 
+    await view.user.click(
+      screen.getByRole("tab", { name: "Add player" })
+    );
     const panel = screen
       .getByRole("heading", { name: "Add a player" })
       .closest("section");
@@ -583,6 +601,9 @@ describe("M7-10 commissioner roster operations", () => {
       name: "Commissioner roster operations",
     });
 
+    await view.user.click(
+      screen.getByRole("tab", { name: "Remove player" })
+    );
     const removePanel = screen
       .getByRole("heading", { name: "Remove a player" })
       .closest("section");
@@ -609,6 +630,9 @@ describe("M7-10 commissioner roster operations", () => {
       reason: null,
     });
 
+    await view.user.click(
+      screen.getByRole("tab", { name: "Correct roster" })
+    );
     const movePanel = screen
       .getByRole("heading", { name: "Move or re-slot a player" })
       .closest("section");
@@ -642,6 +666,9 @@ describe("M7-10 commissioner roster operations", () => {
       reason: null,
     });
 
+    await view.user.click(
+      screen.getByRole("tab", { name: "Correct contract" })
+    );
     const contractPanel = screen
       .getByRole("heading", { name: "Correct a contract" })
       .closest("section");

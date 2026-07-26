@@ -330,7 +330,7 @@ function Field({ label, children, hint }) {
   );
 }
 
-function AddPlayerPanel({ workspace, teamsById, workflow }) {
+function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
   const [search, setSearch] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [teamId, setTeamId] = useState("");
@@ -378,7 +378,7 @@ function AddPlayerPanel({ workspace, teamsById, workflow }) {
   }
 
   return (
-    <Surface className={styles.operation} id="add-player">
+    <Surface className={styles.operation} id="add-player" hidden={hidden}>
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Add a player"
@@ -529,7 +529,12 @@ function AddPlayerPanel({ workspace, teamsById, workflow }) {
   );
 }
 
-function RemovePlayerPanel({ workspace, teamsById, workflow }) {
+function RemovePlayerPanel({
+  workspace,
+  teamsById,
+  workflow,
+  hidden = false,
+}) {
   const [ownershipId, setOwnershipId] = useState("");
   const [correctionReason, setCorrectionReason] = useState("");
   const entry = workspace.roster.find(
@@ -555,7 +560,7 @@ function RemovePlayerPanel({ workspace, teamsById, workflow }) {
   }
 
   return (
-    <Surface className={styles.operation} id="remove-player">
+    <Surface className={styles.operation} id="remove-player" hidden={hidden}>
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Remove a player"
@@ -607,7 +612,12 @@ function RemovePlayerPanel({ workspace, teamsById, workflow }) {
   );
 }
 
-function RosterCorrectionPanel({ workspace, teamsById, workflow }) {
+function RosterCorrectionPanel({
+  workspace,
+  teamsById,
+  workflow,
+  hidden = false,
+}) {
   const [ownershipId, setOwnershipId] = useState("");
   const [category, setCategory] = useState("Bench");
   const [position, setPosition] = useState("F");
@@ -665,7 +675,7 @@ function RosterCorrectionPanel({ workspace, teamsById, workflow }) {
   }
 
   return (
-    <Surface className={styles.operation} id="correct-roster">
+    <Surface className={styles.operation} id="correct-roster" hidden={hidden}>
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Move or re-slot a player"
@@ -764,6 +774,7 @@ function ContractCorrectionPanel({
   workspace,
   teamsById,
   workflow,
+  hidden = false,
 }) {
   const contractEntries = workspace.roster.filter(
     (candidate) => candidate.contract !== null
@@ -837,7 +848,11 @@ function ContractCorrectionPanel({
       : null;
 
   return (
-    <Surface className={styles.operation} id="correct-contract">
+    <Surface
+      className={styles.operation}
+      id="correct-contract"
+      hidden={hidden}
+    >
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Correct a contract"
@@ -954,61 +969,100 @@ function ContractCorrectionPanel({
 }
 
 function TeamCapSummary({ teams }) {
+  const overCapCount = teams.filter(({ cap }) => cap.overCap).length;
   return (
-    <Surface>
-      <PanelHeading
-        eyebrow="Authoritative cap"
-        title="Team cap position"
-        description="Current active-roster cap totals before a correction."
-      />
-      <div className={styles.tableScroll}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th scope="col">Team</th>
-              <th scope="col">Usage</th>
-              <th scope="col">Limit</th>
-              <th scope="col">Space</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {teams.map((team) => (
-              <tr key={team.id}>
-                <td>{team.name}</td>
-                <td>{money(team.cap.capUsageCents)}</td>
-                <td>{money(team.cap.capLimitCents)}</td>
-                <td>{money(team.cap.capSpaceCents)}</td>
-                <td>
-                  <StatusBadge tone={team.cap.overCap ? "danger" : "success"}>
-                    {team.cap.overCap ? "Over cap" : "Within cap"}
-                  </StatusBadge>
-                </td>
+    <details className={styles.disclosure}>
+      <summary>
+        <span>
+          <strong>Team cap position</strong>
+          <small>
+            {teams.length} teams ·{" "}
+            {overCapCount === 0
+              ? "all currently within cap"
+              : `${overCapCount} currently over cap`}
+          </small>
+        </span>
+        <span aria-hidden="true">View details</span>
+      </summary>
+      <Surface className={styles.disclosurePanel}>
+        <PanelHeading
+          eyebrow="Authoritative cap"
+          title="Team cap position"
+          description="Current active-roster cap totals before a correction."
+        />
+        <div className={styles.tableScroll}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">Team</th>
+                <th scope="col">Usage</th>
+                <th scope="col">Limit</th>
+                <th scope="col">Space</th>
+                <th scope="col">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Surface>
+            </thead>
+            <tbody>
+              {teams.map((team) => (
+                <tr key={team.id}>
+                  <td>{team.name}</td>
+                  <td>{money(team.cap.capUsageCents)}</td>
+                  <td>{money(team.cap.capLimitCents)}</td>
+                  <td>{money(team.cap.capSpaceCents)}</td>
+                  <td>
+                    <StatusBadge
+                      tone={team.cap.overCap ? "danger" : "success"}
+                    >
+                      {team.cap.overCap ? "Over cap" : "Within cap"}
+                    </StatusBadge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Surface>
+    </details>
   );
 }
 
-function OperationsGuide() {
+const OPERATIONS = Object.freeze([
+  { key: "add", panelId: "add-player", label: "Add player" },
+  { key: "remove", panelId: "remove-player", label: "Remove player" },
+  { key: "roster", panelId: "correct-roster", label: "Correct roster" },
+  {
+    key: "contract",
+    panelId: "correct-contract",
+    label: "Correct contract",
+  },
+]);
+
+function OperationsGuide({ selectedOperation, onSelect }) {
   return (
     <Surface className={styles.guide}>
       <div>
         <p className="hl-eyebrow">Correction workflow</p>
         <h2>Choose the operation you need</h2>
         <p>
-          Every change is previewed first. Review its cap impact and warnings,
-          then confirm only the correction you intend to apply.
+          Work with one correction at a time. Every change is previewed first,
+          then explicitly confirmed and recorded in League Activity.
         </p>
       </div>
-      <nav aria-label="Roster correction operations">
-        <a href="#add-player">Add player</a>
-        <a href="#remove-player">Remove player</a>
-        <a href="#correct-roster">Correct roster</a>
-        <a href="#correct-contract">Correct contract</a>
+      <nav aria-label="Roster correction operations" role="tablist">
+        {OPERATIONS.map((operation) => (
+          <button
+            key={operation.key}
+            type="button"
+            role="tab"
+            aria-selected={selectedOperation === operation.key}
+            aria-controls={operation.panelId}
+            className={
+              selectedOperation === operation.key ? styles.activeGuideTab : ""
+            }
+            onClick={() => onSelect(operation.key)}
+          >
+            {operation.label}
+          </button>
+        ))}
       </nav>
     </Surface>
   );
@@ -1099,6 +1153,7 @@ function CommissionerWorkspace({
   platformAdministrator,
   leagueId,
 }) {
+  const [selectedOperation, setSelectedOperation] = useState("add");
   const teamsById = useMemo(
     () => new Map(workspace.teams.map((team) => [team.id, team])),
     [workspace.teams]
@@ -1139,32 +1194,48 @@ function CommissionerWorkspace({
           </Link>
         }
       />
-      <OperationsGuide />
+      <OperationsGuide
+        selectedOperation={selectedOperation}
+        onSelect={setSelectedOperation}
+      />
       <TeamCapSummary teams={workspace.teams} />
       <div className={styles.operations}>
         <AddPlayerPanel
           workspace={workspace}
           teamsById={teamsById}
           workflow={addWorkflow}
+          hidden={selectedOperation !== "add"}
         />
         <RemovePlayerPanel
           workspace={workspace}
           teamsById={teamsById}
           workflow={removeWorkflow}
+          hidden={selectedOperation !== "remove"}
         />
         <RosterCorrectionPanel
           workspace={workspace}
           teamsById={teamsById}
           workflow={rosterWorkflow}
+          hidden={selectedOperation !== "roster"}
         />
         <ContractCorrectionPanel
           workspace={workspace}
           teamsById={teamsById}
           workflow={contractWorkflow}
+          hidden={selectedOperation !== "contract"}
         />
       </div>
       {platformAdministrator && session.appEnv === "staging" && (
-        <StagingResetPanel session={session} />
+        <details className={`${styles.disclosure} ${styles.dangerDisclosure}`}>
+          <summary>
+            <span>
+              <strong>Staging fixture reset</strong>
+              <small>Platform administrator only · destructive test tool</small>
+            </span>
+            <span aria-hidden="true">Open safeguards</span>
+          </summary>
+          <StagingResetPanel session={session} />
+        </details>
       )}
       <p className="hl-page-backlink">
         <Link to={routePaths.league(leagueId)}>Back to dashboard</Link>

@@ -19,6 +19,10 @@
   border-top: 3px solid #2563eb;
 }
 
+.operation[hidden] {
+  display: none;
+}
+
 .guide {
   display: flex;
   align-items: center;
@@ -48,15 +52,95 @@
   gap: 0.5rem;
 }
 
-.guide nav a {
+.guide nav button {
   border: 1px solid #475569;
   border-radius: 999px;
   background: rgb(15 23 42 / 72%);
   color: #e2e8f0;
   padding: 0.55rem 0.75rem;
+  cursor: pointer;
   font-size: 0.82rem;
   font-weight: 700;
-  text-decoration: none;
+}
+
+.guide nav button:hover {
+  border-color: #60a5fa;
+}
+
+.guide nav button.activeGuideTab {
+  border-color: #93c5fd;
+  background: #2563eb;
+  color: #fff;
+}
+
+.disclosure {
+  overflow: clip;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  background: #111827;
+}
+
+.disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure > summary > span:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.disclosure > summary strong {
+  color: #f8fafc;
+  font-size: 0.9rem;
+}
+
+.disclosure > summary small,
+.disclosure > summary > span:last-child {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.disclosure > summary > span:last-child::after {
+  display: inline-block;
+  margin-left: 0.45rem;
+  content: "↓";
+  transition: transform 160ms ease;
+}
+
+.disclosure[open] > summary > span:last-child::after {
+  transform: rotate(180deg);
+}
+
+.disclosurePanel {
+  border: 0;
+  border-top: 1px solid #334155;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dangerDisclosure {
+  border-color: rgb(239 68 68 / 55%);
+}
+
+.dangerDisclosure > summary {
+  background: rgb(127 29 29 / 22%);
+}
+
+.dangerDisclosure > section {
+  border: 0;
+  border-top: 1px solid rgb(239 68 68 / 45%);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .formGrid {

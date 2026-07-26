@@ -21,6 +21,24 @@ const contractId = "88888888-8888-4888-8888-888888888888";
 const pickId = "99999999-9999-4999-8999-999999999999";
 const laterPickId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
+function mockPointerTarget(element) {
+  const descriptor = Object.getOwnPropertyDescriptor(
+    document,
+    "elementFromPoint"
+  );
+  Object.defineProperty(document, "elementFromPoint", {
+    configurable: true,
+    value: vi.fn(() => element),
+  });
+  return () => {
+    if (descriptor) {
+      Object.defineProperty(document, "elementFromPoint", descriptor);
+    } else {
+      delete document.elementFromPoint;
+    }
+  };
+}
+
 function publicRoster() {
   return {
     league: { id: leagueId, name: "Hundo League" },
@@ -312,16 +330,33 @@ describe("authoritative team roster page", () => {
     await view.user.click(
       screen.getByRole("button", { name: /Hockey lines/ })
     );
-    const source = screen.getByText("Active Player").closest(".hl-line-player");
+    const source = screen.getByRole("button", {
+      name: "Drag Active Player to reorder",
+    });
     const target = screen.getByText("Second Forward").closest(".hl-line-player");
-    const dataTransfer = {
-      effectAllowed: "",
-      setData: vi.fn(),
-      getData: vi.fn(() => activeOwnershipId),
-    };
-    fireEvent.dragStart(source, { dataTransfer });
-    fireEvent.dragOver(target, { dataTransfer });
-    fireEvent.drop(target, { dataTransfer });
+    const restorePointerTarget = mockPointerTarget(target);
+    fireEvent.pointerDown(source, {
+      pointerId: 1,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerMove(source, {
+      pointerId: 1,
+      pointerType: "mouse",
+      buttons: 1,
+      clientX: 40,
+      clientY: 40,
+    });
+    fireEvent.pointerUp(source, {
+      pointerId: 1,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 40,
+      clientY: 40,
+    });
+    restorePointerTarget();
 
     await waitFor(() => {
       expect(savedInput?.forwardOwnerships.map(({ id }) => id)).toEqual([
@@ -379,9 +414,9 @@ describe("authoritative team roster page", () => {
       "Highest AAV Defence",
     ]);
 
-    const source = within(activeRoster)
-      .getByRole("rowheader", { name: "Active Player" })
-      .closest("tr");
+    const source = within(activeRoster).getByRole("button", {
+      name: "Drag Active Player to reorder",
+    });
     const target = within(activeRoster)
       .getByRole("rowheader", { name: "Higher AAV Forward" })
       .closest("tr");
@@ -402,6 +437,41 @@ describe("authoritative team roster page", () => {
       ]);
     });
     expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
+
+    const pointerSource = within(activeRoster).getByRole("button", {
+      name: "Drag Active Player to reorder",
+    });
+    const pointerTarget = within(activeRoster)
+      .getByRole("rowheader", { name: "Higher AAV Forward" })
+      .closest("tr");
+    const restorePointerTarget = mockPointerTarget(pointerTarget);
+    fireEvent.pointerDown(pointerSource, {
+      pointerId: 2,
+      pointerType: "touch",
+      button: 0,
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerMove(pointerSource, {
+      pointerId: 2,
+      pointerType: "touch",
+      clientX: 40,
+      clientY: 40,
+    });
+    fireEvent.pointerUp(pointerSource, {
+      pointerId: 2,
+      pointerType: "touch",
+      clientX: 40,
+      clientY: 40,
+    });
+    restorePointerTarget();
+
+    await waitFor(() => {
+      expect(savedInput?.forwardOwnerships.map(({ id }) => id)).toEqual([
+        secondActiveOwnershipId,
+        activeOwnershipId,
+      ]);
+    });
     expect(view).toBeDefined();
   });
 });

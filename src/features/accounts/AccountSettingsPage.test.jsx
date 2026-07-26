@@ -194,6 +194,10 @@ describe("account and team settings", () => {
     });
     expect(await screen.findByText("Display name saved.")).toBeInTheDocument();
 
+    const invalidateQueries = vi.spyOn(
+      view.queryClient,
+      "invalidateQueries"
+    );
     const teamNameInput = screen.getByLabelText("Team name");
     await view.user.clear(teamNameInput);
     await view.user.type(teamNameInput, "Updated Ravens");
@@ -206,6 +210,9 @@ describe("account and team settings", () => {
         primaryColour: "#16324f",
         secondaryColour: "#f7f7f7",
       });
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ["league", leagueId],
     });
     expect(await screen.findByText("Team profile saved.")).toBeInTheDocument();
   });
