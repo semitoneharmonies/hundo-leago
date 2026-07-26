@@ -2468,6 +2468,36 @@ textarea {
   font-size: 0.55rem;
 }
 
+.hl-notification-invitation {
+  display: grid;
+  gap: 9px;
+  margin-top: 7px;
+  padding: 12px;
+  border: 1px solid var(--hl-border);
+  border-radius: var(--hl-radius-sm);
+  background: color-mix(in srgb, var(--hl-panel) 82%, transparent);
+}
+
+.hl-notification-invitation > span {
+  color: var(--hl-muted-foreground);
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+.hl-notification-invitation .hl-field {
+  max-width: 360px;
+}
+
+.hl-notification-invitation__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hl-notification-invitation__actions .hl-button {
+  min-height: 34px;
+}
+
 .hl-transaction-page {
   display: grid;
   gap: 14px;

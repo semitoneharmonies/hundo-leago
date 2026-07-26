@@ -1,10 +1,14 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { validateNotifications } from "./notificationContracts.js";
+import {
+  validateLeagueInvitation,
+  validateNotifications,
+} from "./notificationContracts.js";
 
 export const notificationKeys = Object.freeze({
   all: ["notifications"],
   page: (cursor = null) => ["notifications", cursor],
+  invitation: (invitationId) => ["notifications", "league-invitation", invitationId],
 });
 
 export function notificationsQuery(httpClient, cursor = null) {
@@ -37,4 +41,56 @@ export async function markAllNotificationsRead(httpClient) {
   return (await httpClient.request("/api/v1/notifications/read-all", {
     method: "POST", body: {}, authenticated: true, dataKind: "object",
   })).data;
+}
+
+export function leagueInvitationQuery(httpClient, invitationId) {
+  return queryOptions({
+    queryKey: notificationKeys.invitation(invitationId),
+    queryFn: async ({ signal }) => {
+      const response = await httpClient.request(
+        `/api/v1/league-invitations/${encodeURIComponent(invitationId)}`,
+        {
+          authenticated: true,
+          dataKind: "object",
+          validateData: validateLeagueInvitation,
+          signal,
+        }
+      );
+      return response.data;
+    },
+    meta: { private: true },
+    staleTime: 5_000,
+  });
+}
+
+export async function acceptLeagueInvitation(
+  httpClient,
+  invitationId,
+  body = {}
+) {
+  const response = await httpClient.request(
+    `/api/v1/league-invitations/${encodeURIComponent(invitationId)}/accept`,
+    {
+      method: "POST",
+      body,
+      authenticated: true,
+      dataKind: "object",
+      validateData: validateLeagueInvitation,
+    }
+  );
+  return response.data;
+}
+
+export async function declineLeagueInvitation(httpClient, invitationId) {
+  const response = await httpClient.request(
+    `/api/v1/league-invitations/${encodeURIComponent(invitationId)}/decline`,
+    {
+      method: "POST",
+      body: {},
+      authenticated: true,
+      dataKind: "object",
+      validateData: validateLeagueInvitation,
+    }
+  );
+  return response.data;
 }

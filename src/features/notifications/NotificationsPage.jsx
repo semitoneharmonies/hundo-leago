@@ -10,8 +10,12 @@ import {
   StatusBadge,
   Surface,
 } from "../../components/HundoUi.jsx";
+import { leagueKeys } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import {
+  acceptLeagueInvitation,
+  declineLeagueInvitation,
+  leagueInvitationQuery,
   markAllNotificationsRead,
   markNotificationRead,
   notificationKeys,
@@ -19,10 +23,130 @@ import {
 } from "./notificationQueries.js";
 
 function message(notification) {
+  if (notification.type === "league_invitation_created") {
+    return `Invitation to ${notification.messageData.leagueName}`;
+  }
   return (
     notification.messageData.message ||
     notification.messageData.summary ||
     notification.type.replaceAll("_", " ")
+  );
+}
+
+function LeagueInvitationActions({ notification, session }) {
+  const queryClient = useQueryClient();
+  const invitationId = notification.messageData.invitationId;
+  const [teamName, setTeamName] = useState("");
+  const [completedMessage, setCompletedMessage] = useState("");
+  const invitation = useQuery(
+    leagueInvitationQuery(session.httpClient, invitationId)
+  );
+  const action = useMutation({
+    mutationFn: (actionName) =>
+      actionName === "accept"
+        ? acceptLeagueInvitation(
+            session.httpClient,
+            invitationId,
+            invitation.data.invitation.workflow === "create_team"
+              ? { teamName: teamName.trim() }
+              : {}
+          )
+        : declineLeagueInvitation(session.httpClient, invitationId),
+    onSuccess: async (result, actionName) => {
+      setCompletedMessage(
+        actionName === "accept"
+          ? `You joined ${result.league.name}.`
+          : `You declined the invitation to ${result.league.name}.`
+      );
+      await markNotificationRead(session.httpClient, notification.id).catch(
+        () => null
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: notificationKeys.invitation(invitationId),
+        }),
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.all }),
+      ]);
+    },
+  });
+
+  if (invitation.isPending) {
+    return (
+      <div className="hl-notification-invitation">
+        <span>Loading invitation details...</span>
+      </div>
+    );
+  }
+  if (invitation.isError) {
+    return (
+      <p className="hl-form-message is-error" role="alert">
+        {invitation.error.message}
+      </p>
+    );
+  }
+  if (invitation.data.invitation.status !== "pending") {
+    return (
+      <div className="hl-notification-invitation">
+        <StatusBadge>{invitation.data.invitation.status}</StatusBadge>
+        {completedMessage && <span>{completedMessage}</span>}
+      </div>
+    );
+  }
+
+  const createsTeam =
+    invitation.data.invitation.workflow === "create_team";
+  return (
+    <div className="hl-notification-invitation">
+      <span>
+        {createsTeam
+          ? `Join ${invitation.data.league.name} and create your team.`
+          : `Join ${invitation.data.league.name} as manager of ${invitation.data.team.name}.`}
+      </span>
+      {createsTeam && (
+        <label className="hl-field">
+          Team name
+          <input
+            value={teamName}
+            maxLength={80}
+            onChange={(event) => setTeamName(event.target.value)}
+          />
+        </label>
+      )}
+      <div className="hl-notification-invitation__actions">
+        <button
+          className="hl-button hl-button--primary"
+          type="button"
+          disabled={
+            action.isPending || (createsTeam && teamName.trim() === "")
+          }
+          onClick={() => action.mutate("accept")}
+        >
+          {action.isPending ? "Saving..." : "Accept invitation"}
+        </button>
+        <button
+          className="hl-button hl-button--danger"
+          type="button"
+          disabled={action.isPending}
+          onClick={() => {
+            if (
+              globalThis.confirm(
+                `Decline the invitation to ${invitation.data.league.name}?`
+              )
+            ) {
+              action.mutate("decline");
+            }
+          }}
+        >
+          Decline invitation
+        </button>
+      </div>
+      {action.error && (
+        <p className="hl-form-message is-error" role="alert">
+          {action.error.message}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -106,6 +230,12 @@ export function NotificationsPage() {
                   <time dateTime={new Date(notification.createdAtMs).toISOString()}>
                     {new Date(notification.createdAtMs).toLocaleString()}
                   </time>
+                  {notification.type === "league_invitation_created" && (
+                    <LeagueInvitationActions
+                      notification={notification}
+                      session={session}
+                    />
+                  )}
                 </div>
                 {notification.readAtMs === null ? (
                   <button
