@@ -1466,8 +1466,9 @@ browser-authority verification. Focused hosted retesting passed and the final
 reset preserved provider data while restoring all fixture state. The staging
 site is ready for Grae's independent retest.
 
-M7-11 is in local verification after Grae's independent staging review. The
-implementation now includes a provider-backed release-QA roster selection when
+M7-11 completed on staging on `2026-07-26` after Grae's independent staging
+review. The implementation now includes a provider-backed release-QA roster
+selection when
 the retained catalog is available, corrected Alpha Ravens fixture cap state,
 four years of draft picks, an authenticated team workspace with authoritative
 cap components and retention-slot usage, and a separate versioned roster
@@ -1501,13 +1502,32 @@ display-order gates pass. The complete backend suite passes `967/967` across
 A loopback API smoke confirms the Alpha Ravens team workspace reports `$7.25`
 cap usage as `$6.50` active net AAV plus `$0.75` retained salary and `$0.00`
 buyout penalties, one of three retention slots used, and sixteen owned picks
-across four chronological draft years. Connected-browser desktop and `390 ×
-844` checks pass for dashboard, roster, players, auction handoff, trades,
-activity, account settings, and Alpha/Beta isolation without whole-page
-horizontal overflow or browser-console errors. Persisted keyboard ordering and
-the DOM drag-event handler pass; hosted manual pointer drag remains open because
-the connected browser could not synthesize the native HTML drag. No candidate
-commit or staging deployment has been made for M7-11.
+across four chronological draft years.
+
+Release `HL-20260726-2` published frontend application commit
+`1233c3c6185d4f7edfa8dcedc8d59dcedce0f0a5` in Netlify deploy
+`6a6638fa90a1d936d7ab5426` and backend commit
+`e7f089ecc81ca9fa17b8b0143949b760668f66d1` in Render deploy
+`dep-d9j3ghhba33s73821490`. The backend is live and ready on schema `19`;
+the migration ledger, SQLite integrity, and foreign-key checks pass. The
+verified pre-migration backup is
+`backup-v1-81b3ca0f587fc64b24c2dba445e04db156e27f19055de0736f9582536560d7dd`.
+The final reset backup is
+`backup-v1-4605c937816ac2469b3e62f3a804d236a5c53df6bc7dddcbfaef5bd3c3d353a6`;
+fixture build `m7-release-qa-fixture-v7` preserves the `3,154`-player catalog
+and `1,091`-row successful statistics import.
+
+Hosted connected-browser desktop and `390 × 844` checks pass for dashboard,
+roster, players, auction handoff, trades, activity, account and team settings,
+and direct Alpha-to-Beta denial without whole-page horizontal overflow.
+Provider-backed names, exact cap and retention values, all sixteen picks,
+team switching, both roster views, persisted keyboard ordering, player
+sorting/filtering/comparison, implicit-team auction prefill, named trade
+choices, plain-language trade panels, and simplified activity all rendered
+against the dedicated public staging services. The DOM drag-event handler and
+saved-order payload pass automated coverage, but manual native pointer drag
+remains a user-acceptance item because the connected browser cannot synthesize
+that gesture.
 
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.

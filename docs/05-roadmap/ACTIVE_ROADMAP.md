@@ -970,8 +970,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Publish and smoke the verified M7-11 candidate only on the dedicated staging services; do not touch production
-Implementation status: M7-01 through M7-10 COMPLETE; M7-11 LOCAL GATE PASSED, STAGING PUBLICATION PENDING; PRODUCTION REMAINS BLOCKED
+Action: Complete Grae's independent M7-11 staging review and record any acceptance defects; do not touch production
+Implementation status: M7-01 through M7-11 COMPLETE ON STAGING; USER ACCEPTANCE AND SEPARATE RELEASE GATES REMAIN; PRODUCTION REMAINS BLOCKED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Branches: staging and staging
 ```
@@ -1054,14 +1054,17 @@ redeployment, and focused hosted retesting. The live staging site is ready for
 Grae's independent retest. That review opened M7-11 for real fixture-player
 identities, the authenticated team workspace and roster presentation, player
 filtering/sorting/comparison and auction handoff, friendly trade and activity
-presentation, and account/team settings. M7-11 is implemented locally. Its
+presentation, and account/team settings. M7-11 is complete on staging. Its
 frontend `110/110` test gate, lint, production build, browser-authority
 verifier, and backend `967/967` test gate under Node `24.14.1` pass. The
-connected-browser desktop and narrow-mobile pass covers the requested pages,
-mutations, responsive containment, and Alpha/Beta isolation. Persisted keyboard
-ordering and the DOM drag-event handler pass; hosted manual pointer drag remains
-in the staging smoke because the browser controller could not synthesize the
-native HTML drag. Production cutover remains separately authorized.
+exact release `HL-20260726-2` published frontend application commit
+`1233c3c6185d4f7edfa8dcedc8d59dcedce0f0a5` and backend commit
+`e7f089ecc81ca9fa17b8b0143949b760668f66d1` only to the dedicated staging
+services. Schema `19`, backup, integrity, reset, hosted desktop/narrow-mobile,
+manager workflow, and direct cross-league denial checks pass. Persisted
+keyboard ordering and the DOM drag-event handler pass; manual native pointer
+drag remains in user acceptance because the browser controller could not
+synthesize the gesture. Production cutover remains separately authorized.
 
 ---
 
@@ -1091,9 +1094,9 @@ Expected result:
 * roadmap status is `ACTIVE`;
 * M1 and M2 are complete, including the external staging gate;
 * M3 through M6 and their milestone gates are complete locally;
-* M7-01 through M7-10 are complete through the first staging remediation;
-* M7-11 has passed its local automated and connected-browser gate and is ready
-  for a dedicated staging-only publication and hosted smoke, while production
-  remains blocked;
+* M7-01 through M7-11 are complete on the dedicated staging services;
+* M7-11 passed its local automated, migration, reset, hosted desktop/mobile,
+  manager workflow, and league-isolation gates, while manual native pointer
+  drag and Grae's independent acceptance remain;
 * launch requires staging, backup, recovery, testing, and explicit production authority;
 * deferred work remains outside the launch path.

@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`IN PROGRESS — LOCAL GATE PASSED; STAGING PUBLICATION PENDING`
+`COMPLETE — STAGING ONLY`
 
 ## Work Plan ID
 
@@ -132,6 +132,39 @@ console had no warnings or errors.
 The connected browser could not synthesize a native HTML pointer drag even
 from the visible drag handles. A focused DOM drag-event test proves the same-
 position handler and saved order payload, and the connected browser proved
-the equivalent keyboard order persists after reload. Hosted manual pointer
-drag remains an explicit staging smoke item. No staging or production action
-had been performed when this local evidence was recorded.
+the equivalent keyboard order persists after reload. Manual pointer drag
+remains an explicit user-acceptance item.
+
+The staging-only candidate was published and verified on `2026-07-26`:
+
+```text
+Release ID:                 HL-20260726-2
+Frontend application:       1233c3c6185d4f7edfa8dcedc8d59dcedce0f0a5
+Netlify deploy:             6a6638fa90a1d936d7ab5426
+Backend application:        e7f089ecc81ca9fa17b8b0143949b760668f66d1
+Render deploy:              dep-d9j3ghhba33s73821490
+Preflight report checksum:  8dcdd49eb3903fb658815cd9460f3dd1fbb04d10736e56b16d526f36a129299a
+```
+
+The exact backend deploy reached `live`, public liveness and readiness
+returned `live` and `ready`, and schema migration `19` completed with
+`integrity_check=ok`, zero foreign-key violations, and all nineteen migration
+ledger rows. The verified pre-migration backup is
+`backup-v1-81b3ca0f587fc64b24c2dba445e04db156e27f19055de0736f9582536560d7dd`.
+The final fixture reset created backup
+`backup-v1-4605c937816ac2469b3e62f3a804d236a5c53df6bc7dddcbfaef5bd3c3d353a6`,
+installed fixture build `m7-release-qa-fixture-v7`, and preserved the
+`3,154`-player catalog and `1,091`-row successful statistics import.
+
+The hosted browser confirmed real provider-backed roster names, the exact
+`$7.25` cap projection and `1/3` retention-slot display, sixteen four-year
+draft picks, team switching, both roster views, persisted keyboard ordering,
+the `3,154`-row available-player catalog, default fantasy-points sort,
+column sorting, filters, comparison, player-to-auction prefill, implicit
+single-team auction context, authoritative named trade choices, plain-language
+trade panels, simplified activity, account/security settings, authorized team
+profile settings, and direct Alpha-to-Beta access denial. Dashboard, roster,
+players, trades, activity, and account remained contained at `390 × 844`.
+
+Production services, data, configuration, branches, jobs, traffic, and
+provider state were not changed.

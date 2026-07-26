@@ -2,7 +2,7 @@
 
 ## Status
 
-`M7-10 REMEDIATION PASSED / USER RETEST READY`
+`M7-11 STAGING REMEDIATION PASSED / USER ACCEPTANCE READY`
 
 Production remains `NO-GO`. This record does not authorize a production
 reset, migration, deploy, traffic change, job activation, or merge to `main`.
@@ -309,9 +309,110 @@ The final Render staging runtime has writes open and scheduled jobs disabled.
 The final Netlify staging deploy is healthy. No production service, data,
 configuration, branch, job, provider, or traffic setting was changed.
 
+## M7-11 Usability Remediation
+
+The second staging-only remediation was published and verified on
+`2026-07-26`.
+
+```text
+Release ID:                    HL-20260726-2
+Frontend application commit:   1233c3c6185d4f7edfa8dcedc8d59dcedce0f0a5
+Frontend Netlify deploy:        6a6638fa90a1d936d7ab5426
+Frontend Netlify build:         6a6638fa90a1d936d7ab5424
+Backend application commit:     e7f089ecc81ca9fa17b8b0143949b760668f66d1
+Backend Render deploy:          dep-d9j3ghhba33s73821490
+Preflight report checksum:      8dcdd49eb3903fb658815cd9460f3dd1fbb04d10736e56b16d526f36a129299a
+Fixture build:                  m7-release-qa-fixture-v7
+```
+
+The release preflight returned `ready-for-freeze-review`. The frontend
+application commit is the exact source used for the prebuilt Netlify artifact;
+the later documentation commit does not alter the application bundle.
+Netlify reported the deploy `ready`, processed two redirect rules, scanned
+`341` files with zero secret matches, and published a bundle containing the
+exact frontend commit and Render staging origin with no configured localhost
+origin.
+
+Render reported the deploy `live`. Public liveness returned `live`, public
+readiness returned `ready`, scheduled jobs remained disabled, and writes
+remained open. The final runtime reports the exact frontend and backend
+application commits.
+
+### Schema 19 migration
+
+The first deploy attempts failed closed with `MIGRATION_DATABASE_BEHIND`; the
+previous runtime remained live. Before migration, the staging database was
+schema `18`, `integrity_check=ok`, and had zero foreign-key violations.
+
+The verified persistent pre-migration backup is:
+
+```text
+Backup ID and plaintext SHA-256:
+backup-v1-81b3ca0f587fc64b24c2dba445e04db156e27f19055de0736f9582536560d7dd
+
+Manifest checksum:
+11e22b8db32572a413bb2ddc428ecc72cb026cd047c23a3a17260ab035b46d0d
+```
+
+Migration `19` ran once from the exact backend candidate. The final database
+has schema `19`, nineteen migration-ledger rows, the exact migration checksum,
+both new tables, `integrity_check=ok`, and zero foreign-key violations.
+
+### Final fixture reset
+
+The protected staging-only reset:
+
+* created and verified backup
+  `backup-v1-4605c937816ac2469b3e62f3a804d236a5c53df6bc7dddcbfaef5bd3c3d353a6`;
+* invalidated all fixture sessions;
+* installed fixture build `m7-release-qa-fixture-v7`;
+* preserved the `3,154`-player catalog and `1,091`-row successful statistics
+  import; and
+* restored both isolated six-team leagues, their controlled accounts, seeded
+  trades, matchups, rosters, and authoritative activity.
+
+### Hosted browser acceptance
+
+The administrator and Alpha-manager workflows confirmed:
+
+* the dashboard and Alpha Ravens roster use provider-backed NHL player names;
+* Alpha Ravens reports `$7.25` usage, `$6.50` active salary, `$0.75`
+  retained salary, `$0.00` buyout penalties, `1/3` retention slots, and
+  `$92.75` available against a `$100.00` limit;
+* the roster exposes sixteen owned picks across four chronological years,
+  switches between league teams, supports table and hockey-line views, and
+  persists keyboard display ordering;
+* the Players page loads `3,154` available records, excludes unavailable
+  records, defaults to descending fantasy points, sorts columns, filters,
+  compares selected players, and sends a stable player selection to Auctions;
+* Connor McDavid was prefilled in the auction form while the single eligible
+  team appeared as implicit `Starting for Alpha Ravens` context;
+* the trade composer exposes only Contract, Prospect, Draft pick, Buyout
+  penalty, Retention, and Future Considerations, and contract selection shows
+  named authoritative players instead of stable identifiers;
+* pending trade panels show player names and contract terms instead of raw
+  JSON;
+* League Activity defaults to readable summaries, times, and team names;
+* Account settings expose display name, immutable email, password change, and
+  the authorized Alpha Ravens name, logo, and two-colour profile controls; and
+* a direct Alpha-manager request for the Beta Vipers roster was denied with a
+  user-facing team-access message.
+
+Dashboard, roster, Players, Trades, Activity, and Account had document width
+equal to viewport width at `390 × 844`, with no visible whole-page overflow.
+
+The connected browser cannot synthesize a native HTML pointer drag. Focused
+frontend coverage proves the DOM drag handler and saved-order payload, and the
+hosted browser proves equivalent keyboard ordering persists after reload.
+Manual native pointer drag remains an explicit user-acceptance check.
+
+No production service, branch, deploy, data, schema, configuration, job,
+provider state, domain, or traffic setting was changed.
+
 ## Remaining Gates
 
-* Grae's independent browser retest and staging acceptance;
+* Grae's independent browser retest, including native pointer drag, and
+  staging acceptance;
 * staging offsite object-storage upload and encrypted clean restore after the
   staging-only provider target is reviewed; and
 * separate explicit production authorization and release execution.
