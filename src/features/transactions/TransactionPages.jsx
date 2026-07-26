@@ -1,6 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, Navigate, useParams } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
@@ -11,7 +16,12 @@ import {
   Surface,
 } from "../../components/HundoUi.jsx";
 import { leagueTeamsQuery, visibleLeaguesQuery } from "../leagues/leagueQueries.js";
-import { playerKeys, playerSearchQuery } from "../players/playerQueries.js";
+import {
+  leaguePlayerDetailQuery,
+  playerKeys,
+  playerSearchQuery,
+} from "../players/playerQueries.js";
+import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import {
   auctionDollarsToCents,
@@ -135,23 +145,12 @@ function activityMetadataRows(metadata) {
   return rows;
 }
 
-function ActivityEntry({ item }) {
+function ActivityEntry({ item, teamName }) {
   const rows = [
-    ["Activity ID", item.id],
-    ["Action", activityWords(item.type)],
-    ["Actor authority", activityWords(item.actor.authority)],
-    ...(item.actor.userId ? [["Actor user ID", item.actor.userId]] : []),
-    ["League scope", item.leagueId],
-    ...(item.seasonId ? [["Season scope", item.seasonId]] : []),
-    ...(item.teamId ? [["Affected team", item.teamId]] : []),
-    ...(item.playerId ? [["Affected player", item.playerId]] : []),
-    ...(item.related
-      ? [[
-          "Related result",
-          `${activityWords(item.related.type)} · ${item.related.id}`,
-        ]]
-      : []),
-    ...activityMetadataRows(item.metadata),
+    ...(teamName ? [["Team", teamName]] : []),
+    ...activityMetadataRows(item.metadata).filter(
+      ([label]) => label !== "Correction ID"
+    ),
     ...(item.reason ? [["Reason", item.reason]] : []),
   ];
   return (
@@ -159,22 +158,39 @@ function ActivityEntry({ item }) {
       <span aria-hidden="true" />
       <div>
         <strong>{item.summary}</strong>
-        <dl style={activityDetails}>
+        <time
+          className="hl-activity-time"
+          dateTime={new Date(item.occurredAtMs).toISOString()}
+        >
+          {time(item.occurredAtMs)}
+        </time>
+        {rows.length > 0 && <dl style={activityDetails}>
           {rows.map(([label, value]) => (
             <div key={label} style={activityDetailRow}>
               <dt style={activityDetailTerm}>{label}</dt>
               <dd style={activityDetailValue}>{value}</dd>
             </div>
           ))}
-          <div style={activityDetailRow}>
-            <dt style={activityDetailTerm}>Timestamp</dt>
-            <dd style={activityDetailValue}>
-              <time dateTime={new Date(item.occurredAtMs).toISOString()}>
-                {time(item.occurredAtMs)}
-              </time>
-            </dd>
-          </div>
-        </dl>
+        </dl>}
+        <details className="hl-technical-details">
+          <summary>Technical record</summary>
+          <dl style={activityDetails}>
+            <div style={activityDetailRow}>
+              <dt style={activityDetailTerm}>Action</dt>
+              <dd style={activityDetailValue}>{activityWords(item.type)}</dd>
+            </div>
+            <div style={activityDetailRow}>
+              <dt style={activityDetailTerm}>Authority</dt>
+              <dd style={activityDetailValue}>
+                {activityWords(item.actor.authority)}
+              </dd>
+            </div>
+            <div style={activityDetailRow}>
+              <dt style={activityDetailTerm}>Activity ID</dt>
+              <dd style={activityDetailValue}>{item.id}</dd>
+            </div>
+          </dl>
+        </details>
       </div>
     </li>
   );
@@ -241,6 +257,7 @@ function LeaguePageState({ context, title, children }) {
 }
 
 function StartAuctionForm({ context, leagueId }) {
+  const [searchParams] = useSearchParams();
   const client = context.session.httpClient;
   const queryClient = useQueryClient();
   const [teamId, setTeamId] = useState("");
@@ -250,6 +267,19 @@ function StartAuctionForm({ context, leagueId }) {
   const [totalValueDollars, setTotalValueDollars] = useState("1.50");
   const [termYears, setTermYears] = useState("1");
   const [clientError, setClientError] = useState(null);
+  const [prefillConsumed, setPrefillConsumed] = useState(false);
+  const prefilledPlayerId = searchParams.get("playerId");
+  const prefilledPlayer = useQuery({
+    ...leaguePlayerDetailQuery(
+      client,
+      leagueId,
+      prefilledPlayerId || "invalid"
+    ),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league) &&
+      /^[a-f0-9-]{36}$/.test(prefilledPlayerId || ""),
+  });
   const players = useQuery({
     ...playerSearchQuery(client, {
       query: playerSearch,
@@ -275,6 +305,19 @@ function StartAuctionForm({ context, leagueId }) {
       ]);
     },
   });
+  useEffect(() => {
+    if (!prefilledPlayer.data || selectedPlayer || prefillConsumed) return;
+    setPrefillConsumed(true);
+    if (prefilledPlayer.data.league.ownership) {
+      setClientError(
+        new Error("That player is already assigned in this league.")
+      );
+      return;
+    }
+    setSelectedPlayer(prefilledPlayer.data);
+    setPlayerSearch(prefilledPlayer.data.fullName);
+    setSuggestionsOpen(false);
+  }, [prefillConsumed, prefilledPlayer.data, selectedPlayer]);
   if (context.teams.isPending) return <p>Loading authorized teams…</p>;
   if (context.managedTeams.length === 0) return <p>You do not currently control a team that can start an auction.</p>;
   const effectiveTeamId = teamId || context.managedTeams[0].id;
@@ -314,9 +357,15 @@ function StartAuctionForm({ context, leagueId }) {
     <form className="hl-surface hl-feature-form" style={card} onSubmit={submit}>
       <h2>Start an auction</h2>
       <div style={row}>
-        <label>Team<br /><select style={input} value={effectiveTeamId} onChange={(e) => setTeamId(e.target.value)}>
-          {context.managedTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-        </select></label>
+        {context.managedTeams.length > 1 ? (
+          <label>Team<br /><select style={input} value={effectiveTeamId} onChange={(e) => setTeamId(e.target.value)}>
+            {context.managedTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+          </select></label>
+        ) : (
+          <p className="hl-form-context">
+            Starting for <strong>{context.managedTeams[0].name}</strong>
+          </p>
+        )}
         <label htmlFor="auction-player-search">Player<br />
           <input
             id="auction-player-search"
@@ -387,7 +436,9 @@ function StartAuctionForm({ context, leagueId }) {
         </select></label>
         <button className="hl-button hl-button--primary" disabled={mutation.isPending || !selectedPlayer}>Start auction</button>
       </div>
-      <ErrorMessage error={clientError || mutation.error} />
+      <ErrorMessage
+        error={clientError || prefilledPlayer.error || mutation.error}
+      />
     </form>
   );
 }
@@ -432,9 +483,15 @@ function OwnBidForm({ auction, managedTeams, client, leagueId }) {
   return (
     <form className="hl-inline-form" onSubmit={submit}>
       <div style={row}>
-        <label>Your team<br /><select style={input} value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-          {availableTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-        </select></label>
+        {availableTeams.length > 1 ? (
+          <label>Your team<br /><select style={input} value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+            {availableTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+          </select></label>
+        ) : (
+          <p className="hl-form-context">
+            Bidding for <strong>{availableTeams[0].name}</strong>
+          </p>
+        )}
         <label>Total value (dollars)<br /><input style={input} type="number" inputMode="decimal" min={auction.ownBid ? (term === "1" ? "1.00" : term) : ({ 1: "1.50", 2: "3", 3: "5" }[term])} step={term === "1" ? "0.01" : "1"} required value={total} onChange={(e) => setTotal(e.target.value)} /></label>
         <label>Term<br /><select style={input} value={term} onChange={(e) => setTerm(e.target.value)}>
           <option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option>
@@ -476,27 +533,152 @@ export function AuctionsPage() {
 }
 
 const ASSET_TYPES = [
-  ["contract", "Contract"], ["prospect_right", "Prospect right"], ["draft_pick", "Draft pick"],
-  ["retention_obligation", "Retention obligation"], ["buyout_obligation", "Buyout obligation"],
-  ["future_consideration", "Existing Future Considerations"],
-  ["future_consideration_instruction", "New Future Considerations"],
-  ["requested_retention", "Requested retention"],
+  ["contract", "Contract"],
+  ["prospect_right", "Prospect"],
+  ["draft_pick", "Draft pick"],
+  ["buyout_obligation", "Buyout penalty"],
+  ["retention", "Retention"],
+  ["future_considerations", "Future Considerations"],
 ];
 
-function AssetEditor({ label, assets, setAssets }) {
+function assetChoices(asset, workspace) {
+  if (!workspace) return [];
+  switch (asset.type) {
+    case "contract":
+      return workspace.tradeAssets.contracts;
+    case "prospect_right":
+      return workspace.tradeAssets.prospects;
+    case "draft_pick":
+      return workspace.tradeAssets.draftPicks;
+    case "buyout_obligation":
+      return workspace.tradeAssets.buyouts;
+    case "retention":
+      return asset.mode === "requested"
+        ? workspace.tradeAssets.contracts
+        : workspace.tradeAssets.retentions;
+    case "future_considerations":
+      return asset.mode === "new"
+        ? []
+        : workspace.tradeAssets.futureConsiderations;
+    default:
+      return [];
+  }
+}
+
+function AssetEditor({
+  label,
+  assets,
+  setAssets,
+  workspace,
+  pending,
+}) {
   function update(index, change) {
     setAssets(assets.map((asset, itemIndex) => itemIndex === index ? { ...asset, ...change } : asset));
   }
   return (
     <fieldset className="hl-asset-editor" style={{ ...card, flex: "1 1 360px" }}>
       <legend>{label}</legend>
+      {pending && <p role="status">Loading this team’s tradeable assets…</p>}
       {assets.map((asset, index) => (
         <div key={index} style={{ ...row, marginBottom: 10 }}>
-          <select aria-label={`${label} asset ${index + 1} type`} style={input} value={asset.type} onChange={(e) => update(index, { type: e.target.value, reference: "" })}>
+          <select
+            aria-label={`${label} asset ${index + 1} type`}
+            style={input}
+            value={asset.type}
+            onChange={(event) =>
+              update(index, {
+                type: event.target.value,
+                reference: "",
+                mode: ["retention", "future_considerations"].includes(
+                  event.target.value
+                )
+                  ? "existing"
+                  : null,
+              })
+            }
+          >
             {ASSET_TYPES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
           </select>
-          <input aria-label={`${label} asset ${index + 1} reference`} style={input} required placeholder={asset.type === "future_consideration_instruction" ? "Description" : "Stable asset ID"} value={asset.reference} onChange={(e) => update(index, { reference: e.target.value })} />
-          {asset.type === "requested_retention" && <input aria-label={`${label} asset ${index + 1} retained AAV cents`} style={input} type="number" min="1" required value={asset.retainedAavCents || ""} onChange={(e) => update(index, { retainedAavCents: e.target.value })} />}
+          {asset.type === "retention" && (
+            <select
+              aria-label={`${label} asset ${index + 1} retention kind`}
+              style={input}
+              value={asset.mode || "existing"}
+              onChange={(event) =>
+                update(index, {
+                  mode: event.target.value,
+                  reference: "",
+                  retainedAavDollars: "",
+                })
+              }
+            >
+              <option value="existing">Existing retention obligation</option>
+              <option value="requested">Retain salary on a contract</option>
+            </select>
+          )}
+          {asset.type === "future_considerations" && (
+            <select
+              aria-label={`${label} asset ${index + 1} Future Considerations kind`}
+              style={input}
+              value={asset.mode || "existing"}
+              onChange={(event) =>
+                update(index, { mode: event.target.value, reference: "" })
+              }
+            >
+              <option value="existing">Existing obligation</option>
+              <option value="new">New promise</option>
+            </select>
+          )}
+          {asset.type === "future_considerations" && asset.mode === "new" ? (
+            <input
+              aria-label={`${label} asset ${index + 1} description`}
+              style={input}
+              required
+              maxLength={500}
+              placeholder="Plain-English description"
+              value={asset.reference}
+              onChange={(event) =>
+                update(index, { reference: event.target.value })
+              }
+            />
+          ) : (
+            <select
+              aria-label={`${label} asset ${index + 1}`}
+              style={input}
+              required
+              value={asset.reference}
+              onChange={(event) =>
+                update(index, { reference: event.target.value })
+              }
+            >
+              <option value="">Choose an item</option>
+              {assetChoices(asset, workspace).map((choice) => (
+                <option key={choice.id} value={choice.id}>
+                  {choice.label}
+                </option>
+              ))}
+            </select>
+          )}
+          {asset.type === "retention" && asset.mode === "requested" && (
+            <>
+              <input
+                aria-label={`${label} asset ${index + 1} retained AAV dollars`}
+                style={input}
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                placeholder="Retained AAV ($)"
+                value={asset.retainedAavDollars || ""}
+                onChange={(event) =>
+                  update(index, {
+                    retainedAavDollars: event.target.value,
+                  })
+                }
+              />
+              <small>The matching contract is included automatically.</small>
+            </>
+          )}
           {assets.length > 1 && <button className="hl-button hl-button--quiet" type="button" onClick={() => setAssets(assets.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>}
         </div>
       ))}
@@ -512,22 +694,69 @@ function NewTradeForm({ context, leagueId }) {
   const [proposingAssets, setProposingAssets] = useState([{ type: "contract", reference: "" }]);
   const [receivingAssets, setReceivingAssets] = useState([{ type: "contract", reference: "" }]);
   const [clientError, setClientError] = useState(null);
+  const proposer =
+    proposingTeamId || context.managedTeams[0]?.id || "";
+  const receiving =
+    receivingTeamId ||
+    context.teams.data?.find(({ id }) => id !== proposer)?.id ||
+    "";
+  const proposerWorkspace = useQuery({
+    ...teamWorkspaceQuery(
+      context.session.httpClient,
+      leagueId,
+      proposer || "invalid"
+    ),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league) &&
+      Boolean(proposer),
+  });
+  const receivingWorkspace = useQuery({
+    ...teamWorkspaceQuery(
+      context.session.httpClient,
+      leagueId,
+      receiving || "invalid"
+    ),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league) &&
+      Boolean(receiving),
+  });
   const mutation = useMutation({
     mutationFn: (body) => createTrade(context.session.httpClient, leagueId, body, key("trade-proposal")),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) }),
   });
   if (context.teams.isPending) return <p>Loading trade teams…</p>;
   if (context.managedTeams.length === 0) return <p>You do not currently control a team that can propose a trade.</p>;
-  const proposer = proposingTeamId || context.managedTeams[0].id;
-  const receiving = receivingTeamId || context.teams.data.find(({ id }) => id !== proposer)?.id || "";
+  function buildSide(items) {
+    const built = items.map(buildTradeAsset);
+    const contractIds = new Set(
+      built
+        .filter((asset) => asset.type === "contract")
+        .map(({ contractId }) => contractId)
+    );
+    return built.flatMap((asset) => {
+      if (
+        asset.type !== "requested_retention" ||
+        contractIds.has(asset.contractId)
+      ) {
+        return [asset];
+      }
+      contractIds.add(asset.contractId);
+      return [
+        { type: "contract", contractId: asset.contractId },
+        asset,
+      ];
+    });
+  }
   function submit(event) {
     event.preventDefault();
     try {
       const body = {
         proposingTeamId: proposer,
         receivingTeamId: receiving,
-        proposingAssets: proposingAssets.map(buildTradeAsset),
-        receivingAssets: receivingAssets.map(buildTradeAsset),
+        proposingAssets: buildSide(proposingAssets),
+        receivingAssets: buildSide(receivingAssets),
       };
       setClientError(null);
       mutation.mutate(body);
@@ -547,11 +776,23 @@ function NewTradeForm({ context, leagueId }) {
         </select></label>
       </div>
       <div style={row}>
-        <AssetEditor label="Proposing team sends" assets={proposingAssets} setAssets={setProposingAssets} />
-        <AssetEditor label="Receiving team sends" assets={receivingAssets} setAssets={setReceivingAssets} />
+        <AssetEditor
+          label="Proposing team sends"
+          assets={proposingAssets}
+          setAssets={setProposingAssets}
+          workspace={proposerWorkspace.data}
+          pending={proposerWorkspace.isPending}
+        />
+        <AssetEditor
+          label="Receiving team sends"
+          assets={receivingAssets}
+          setAssets={setReceivingAssets}
+          workspace={receivingWorkspace.data}
+          pending={receivingWorkspace.isPending}
+        />
       </div>
-      <button className="hl-button hl-button--primary" disabled={mutation.isPending || !receiving}>Send proposal</button>
-      <ErrorMessage error={clientError || mutation.error} />
+      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>Send proposal</button>
+      <ErrorMessage error={clientError || proposerWorkspace.error || receivingWorkspace.error || mutation.error} />
     </form>
   );
 }
@@ -581,7 +822,107 @@ export function TradesPage() {
 }
 
 function Snapshot({ value }) {
-  return <pre className="hl-snapshot">{JSON.stringify(value, null, 2)}</pre>;
+  return (
+    <details className="hl-technical-details">
+      <summary>Technical details</summary>
+      <pre className="hl-snapshot">{JSON.stringify(value, null, 2)}</pre>
+    </details>
+  );
+}
+
+function AssetSummary({ asset }) {
+  const snapshot = asset.snapshot;
+  let title = activityWords(asset.type);
+  let description = "";
+  switch (asset.type) {
+    case "contract":
+      title = snapshot.player?.name || "Player contract";
+      description = `${money(snapshot.contract?.aavCents || 0)} AAV · ${snapshot.contract?.originalTermYears || 0}-year original term · ${activityWords(snapshot.ownership?.rosterCategory || "Rostered")}`;
+      break;
+    case "prospect_right":
+      title = snapshot.player?.name || "Prospect";
+      description = snapshot.fantasyElc
+        ? `Signed prospect · ${money(snapshot.fantasyElc.aavCents)} fantasy ELC`
+        : "Unsigned prospect rights";
+      break;
+    case "draft_pick":
+      title = `${snapshot.targetSeasonLabel || "Future"} Round ${snapshot.roundNumber}`;
+      description = `Pick ${snapshot.positionNumber}`;
+      break;
+    case "retention_obligation":
+      title = `${snapshot.player?.name || "Player"} retained salary`;
+      description = `${money(snapshot.retainedAavCents || 0)} per season · ${snapshot.years?.length || 0} remaining year(s)`;
+      break;
+    case "requested_retention":
+      title = "Requested salary retention";
+      description = `${money(snapshot.retainedAavCents || 0)} retained on the included player contract`;
+      break;
+    case "buyout_obligation":
+      title = `${snapshot.player?.name || "Player"} buyout penalty`;
+      description = `${money(snapshot.annualPenaltyBasisCents || 0)} annual basis · ${snapshot.years?.length || 0} remaining year(s)`;
+      break;
+    case "future_consideration":
+    case "future_consideration_instruction":
+      title = "Future Considerations";
+      description = snapshot.description || "Future obligation";
+      break;
+    default:
+      description = "Tradeable league asset";
+  }
+  return (
+    <article className="hl-trade-asset-card">
+      <span className="hl-position-tag">{activityWords(asset.type)}</span>
+      <strong>{title}</strong>
+      <p>{description}</p>
+    </article>
+  );
+}
+
+function TradeTeamPanel({ team, assets }) {
+  return (
+    <section className="hl-trade-team-panel">
+      <h3>{team.name} sends</h3>
+      {assets.length === 0 ? (
+        <p>No assets from this team.</p>
+      ) : (
+        <div className="hl-trade-asset-list">
+          {assets.map((asset) => (
+            <AssetSummary key={asset.id} asset={asset} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AcceptancePreview({ preview }) {
+  return (
+    <div className="hl-acceptance-preview">
+      <p>
+        {preview.generallyIllegal
+          ? "This trade would leave at least one roster generally illegal."
+          : "The authoritative preflight found no general-illegality warning."}
+      </p>
+      <div className="hl-trade-team-preview">
+        {preview.teams.map((team) => (
+          <article key={team.teamId}>
+            <strong>
+              {team.generallyIllegal ? "Roster issue found" : "No roster issue"}
+            </strong>
+            {team.issues.length > 0 && (
+              <ul>
+                {team.issues.map((issue, index) => (
+                  <li key={`${issue.code}-${index}`}>
+                    {activityWords(issue.code)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function TradeDetailPage() {
@@ -618,14 +959,28 @@ export function TradeDetailPage() {
       {trade.isPending ? <Surface><LoadingBlock>Loading trade…</LoadingBlock></Surface> : trade.isError ? <ErrorMessage error={trade.error} /> : <Surface className="hl-trade-detail">
         <h2>{proposal.proposingTeam.name} ↔ {proposal.receivingTeam.name}</h2>
         <p><StatusBadge>{proposal.status}</StatusBadge> Created {time(proposal.createdAtMs)}.</p>
-        <h3>Assets</h3>
-        <div className="hl-trade-assets">{proposal.assets.map((asset) => <article key={asset.id}><strong>{asset.type.replaceAll("_", " ")}</strong><Snapshot value={asset.snapshot} /></article>)}</div>
+        <div className="hl-trade-team-grid">
+          <TradeTeamPanel
+            team={proposal.proposingTeam}
+            assets={proposal.assets.filter(
+              ({ sourceTeamId }) =>
+                sourceTeamId === proposal.proposingTeam.id
+            )}
+          />
+          <TradeTeamPanel
+            team={proposal.receivingTeam}
+            assets={proposal.assets.filter(
+              ({ sourceTeamId }) =>
+                sourceTeamId === proposal.receivingTeam.id
+            )}
+          />
+        </div>
         {canRespond && <div className="hl-trade-action">
           <div className="hl-button-row">
           <button className="hl-button hl-button--primary" disabled={previewAcceptance.isPending} onClick={() => previewAcceptance.mutate()}>Preview acceptance</button>
           <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "decline" })}>Decline</button>
           </div>
-          {acceptancePreview && <div><p>{acceptancePreview.generallyIllegal ? "Warning: this trade leaves a normal roster generally illegal." : "The authoritative preflight found no general-illegality warning."}</p><Snapshot value={acceptancePreview.teams} /><button className="hl-button hl-button--primary" disabled={command.isPending} onClick={() => command.mutate({ action: "accept" })}>Confirm and accept trade</button></div>}
+          {acceptancePreview && <div><AcceptancePreview preview={acceptancePreview} /><button className="hl-button hl-button--primary" disabled={command.isPending} onClick={() => command.mutate({ action: "accept" })}>Confirm and accept trade</button></div>}
           <ErrorMessage error={previewAcceptance.error || command.error} />
         </div>}
         {canCancel && <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "cancel" })}>Cancel proposal</button>}
@@ -651,10 +1006,13 @@ export function ActivityPage() {
     ...activityQuery(context.session.httpClient, leagueId, cursor),
     enabled: context.session.status === "authenticated" && Boolean(context.league),
   });
+  const teamNames = new Map(
+    (context.teams.data || []).map((team) => [team.id, team.name])
+  );
   return (
     <LeaguePageState context={context} title="League Activity">
       {activity.isPending ? <Surface><LoadingBlock>Loading activity…</LoadingBlock></Surface> : activity.isError ? <ErrorMessage error={activity.error} /> : <>
-        {activity.data.activity.length === 0 ? <Surface><EmptyBlock title="No activity on this page" /></Surface> : <Surface><ol className="hl-activity-timeline">{activity.data.activity.map((item) => <ActivityEntry key={item.id} item={item} />)}</ol></Surface>}
+        {activity.data.activity.length === 0 ? <Surface><EmptyBlock title="No activity on this page" /></Surface> : <Surface><ol className="hl-activity-timeline">{activity.data.activity.map((item) => <ActivityEntry key={item.id} item={item} teamName={teamNames.get(item.teamId) || null} />)}</ol></Surface>}
         <div className="hl-pagination">
         {activity.data.page.nextCursor && <button className="hl-button hl-button--quiet" onClick={() => setCursor(activity.data.page.nextCursor)}>Next page</button>}
         {cursor && <button className="hl-button hl-button--quiet" onClick={() => setCursor(null)}>First page</button>}

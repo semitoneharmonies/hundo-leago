@@ -970,8 +970,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Grae independently retests the live remediated staging site; do not touch production
-Implementation status: M7-01 through M7-10 COMPLETE THROUGH STAGING REMEDIATION; USER STAGING ACCEPTANCE AND PRODUCTION REMAIN BLOCKED
+Action: Publish and smoke the verified M7-11 candidate only on the dedicated staging services; do not touch production
+Implementation status: M7-01 through M7-10 COMPLETE; M7-11 LOCAL GATE PASSED, STAGING PUBLICATION PENDING; PRODUCTION REMAINS BLOCKED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Branches: staging and staging
 ```
@@ -1051,7 +1051,17 @@ player-detail, matchup-player-statistics, and reconnect recovery gates. M7-10
 completed the staging-only SportsDataIO catalog import, deterministic fixture
 and reset, commissioner roster tools, audit evidence, those acceptance repairs,
 redeployment, and focused hosted retesting. The live staging site is ready for
-Grae's independent retest. Production cutover remains separately authorized.
+Grae's independent retest. That review opened M7-11 for real fixture-player
+identities, the authenticated team workspace and roster presentation, player
+filtering/sorting/comparison and auction handoff, friendly trade and activity
+presentation, and account/team settings. M7-11 is implemented locally. Its
+frontend `110/110` test gate, lint, production build, browser-authority
+verifier, and backend `967/967` test gate under Node `24.14.1` pass. The
+connected-browser desktop and narrow-mobile pass covers the requested pages,
+mutations, responsive containment, and Alpha/Beta isolation. Persisted keyboard
+ordering and the DOM drag-event handler pass; hosted manual pointer drag remains
+in the staging smoke because the browser controller could not synthesize the
+native HTML drag. Production cutover remains separately authorized.
 
 ---
 
@@ -1081,7 +1091,9 @@ Expected result:
 * roadmap status is `ACTIVE`;
 * M1 and M2 are complete, including the external staging gate;
 * M3 through M6 and their milestone gates are complete locally;
-* M7-01 through M7-10 are complete through staging remediation, while Grae's
-  independent staging acceptance and production remain blocked;
+* M7-01 through M7-10 are complete through the first staging remediation;
+* M7-11 has passed its local automated and connected-browser gate and is ready
+  for a dedicated staging-only publication and hosted smoke, while production
+  remains blocked;
 * launch requires staging, backup, recovery, testing, and explicit production authority;
 * deferred work remains outside the launch path.

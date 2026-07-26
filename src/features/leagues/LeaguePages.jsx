@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
@@ -11,7 +11,7 @@ import {
   Surface,
 } from "../../components/HundoUi.jsx";
 import { TeamRosterPage } from "../rosters/TeamRosterPage.jsx";
-import { publicRosterQuery } from "../rosters/publicRosterQueries.js";
+import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
 import {
@@ -26,10 +26,7 @@ import {
   readLeaguePreference,
   writeLeaguePreference,
 } from "./leaguePreference.js";
-import {
-  hasCommissionerAuthority,
-  leagueAuthorityLabel,
-} from "../../shared/leagueAuthority.js";
+import { leagueAuthorityLabel } from "../../shared/leagueAuthority.js";
 
 function SafeQueryError({ error }) {
   return (
@@ -266,6 +263,7 @@ export function LeagueTeamsPage() {
 
 export function TeamWorkspacePage() {
   const { leagueId, teamId } = useParams();
+  const navigate = useNavigate();
   const session = useSession();
   const leaguesQuery = useVisibleLeagues();
   useAuthorizationCleanup(leaguesQuery.data);
@@ -274,14 +272,14 @@ export function TeamWorkspacePage() {
     ...teamDetailQuery(session.httpClient, leagueId, teamId),
     enabled: session.status === "authenticated" && authorized === true,
   });
-  const rosterQuery = useQuery({
-    ...publicRosterQuery(session.httpClient, leagueId, teamId),
+  const teamsQuery = useQuery({
+    ...leagueTeamsQuery(session.httpClient, leagueId),
     enabled: session.status === "authenticated" && authorized === true,
   });
-  const leagueMembership = leaguesQuery.data?.find(
-    (league) => league.id === leagueId
-  )?.membership;
-
+  const rosterQuery = useQuery({
+    ...teamWorkspaceQuery(session.httpClient, leagueId, teamId),
+    enabled: session.status === "authenticated" && authorized === true,
+  });
   return (
     <SessionGate>
       <main className="hl-page hl-page--wide" aria-labelledby="team-title">
@@ -292,21 +290,24 @@ export function TeamWorkspacePage() {
             <h1 id="team-title">Team access unavailable</h1>
             <p>This team is not available through your current league access.</p>
           </div>
-        ) : teamQuery.isPending || rosterQuery.isPending ? (
+        ) : teamQuery.isPending || teamsQuery.isPending || rosterQuery.isPending ? (
           <p role="status">Loading team…</p>
         ) : teamQuery.isError ? (
           <SafeQueryError error={teamQuery.error} />
+        ) : teamsQuery.isError ? (
+          <SafeQueryError error={teamsQuery.error} />
         ) : rosterQuery.isError ? (
           <SafeQueryError error={rosterQuery.error} />
         ) : (
           <>
             <TeamRosterPage
-              roster={rosterQuery.data}
+              workspace={rosterQuery.data}
+              teams={teamsQuery.data}
               managerName={teamQuery.data.currentManager?.displayName ?? null}
-              canOperateRoster={
-                hasCommissionerAuthority(leagueMembership) ||
-                teamQuery.data.currentManager?.userId === session.user.id
+              onTeamChange={(nextTeamId) =>
+                navigate(routePaths.teamRoster(leagueId, nextTeamId))
               }
+              httpClient={session.httpClient}
             />
             <p className="hl-page-backlink">
               <Link to={routePaths.league(leagueId)}>Back to dashboard</Link>

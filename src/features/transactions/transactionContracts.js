@@ -310,7 +310,13 @@ export function validateActivityPage(data) {
   return true;
 }
 
-export function buildTradeAsset({ type, reference, retainedAavCents }) {
+export function buildTradeAsset({
+  type,
+  reference,
+  retainedAavCents,
+  retainedAavDollars,
+  mode,
+}) {
   const value = String(reference || "").trim();
   switch (type) {
     case "contract": return { type, contractId: id(value, "The contract ID is invalid.") };
@@ -327,6 +333,42 @@ export function buildTradeAsset({ type, reference, retainedAavCents }) {
       contract(Number.isSafeInteger(cents) && cents > 0, "The retained AAV is invalid.");
       return { type, contractId: id(value, "The retained contract ID is invalid."), retainedAavCents: cents };
     }
+    case "retention": {
+      if (mode !== "requested") {
+        return {
+          type: "retention_obligation",
+          retentionObligationId: id(
+            value,
+            "The retention selection is invalid."
+          ),
+        };
+      }
+      const cents = dollarsToCents(retainedAavDollars);
+      contract(cents > 0, "The retained AAV is invalid.");
+      return {
+        type: "requested_retention",
+        contractId: id(value, "The retained contract is invalid."),
+        retainedAavCents: cents,
+      };
+    }
+    case "future_considerations":
+      if (mode === "new") {
+        contract(
+          value.length > 0 && value.length <= 500,
+          "The Future Considerations description is invalid."
+        );
+        return {
+          type: "future_consideration_instruction",
+          description: value,
+        };
+      }
+      return {
+        type: "future_consideration",
+        futureConsiderationId: id(
+          value,
+          "The Future Considerations selection is invalid."
+        ),
+      };
     default:
       throw new ResponseContractError("The trade asset type is unsupported.");
   }

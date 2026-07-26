@@ -45,6 +45,7 @@ function pageLabel(pathname) {
   if (pathname === "/") return "Account access";
   if (pathname === routePaths.leagues) return "Your leagues";
   if (pathname === routePaths.notifications) return "Notifications";
+  if (pathname === routePaths.account) return "Account settings";
   if (/\/players\/[^/]+$/.test(pathname)) return "Player detail";
   if (/\/trades\/[^/]+$/.test(pathname)) return "Trade detail";
   if (/\/teams\/[^/]+\/roster$/.test(pathname)) return "Team roster";
@@ -416,6 +417,9 @@ function TopBar({ freezeBanner }) {
                     </Link>
                     <Link to={routePaths.notifications} onClick={closeMenus}>
                       Notifications
+                    </Link>
+                    <Link to={routePaths.account} onClick={closeMenus}>
+                      Account and team settings
                     </Link>
                     <button
                       type="button"

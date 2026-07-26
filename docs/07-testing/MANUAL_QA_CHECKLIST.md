@@ -809,6 +809,23 @@ Do not perform uncontrolled penetration testing against production.
 
 ---
 
+## M7-11 Staging Usability Retest
+
+- [ ] `MQ-M711-001` Dashboard and roster show provider-backed NHL player names after the staging reset when the retained provider catalog is present.
+- [ ] `MQ-M711-002` Alpha Ravens cap usage equals active net AAV plus retained salary and buyout penalties, and retained salary shows slots used out of three.
+- [ ] `MQ-M711-003` Team roster switcher changes teams without leaving the selected league; striped identity, logo fallback, readable statistics, and four years of owned picks render.
+- [ ] `MQ-M711-004` Table/lines toggle works; same-position drag ordering and keyboard ordering persist after reload without changing authoritative roster categories or cap.
+- [ ] `MQ-M711-005` Players hides unavailable provider records, defaults to descending total FP, sorts each data column, filters correctly, and builds/clears a comparison list.
+- [ ] `MQ-M711-006` Starting an auction from a free agent opens the selected league auction page with that player prefilled; one-team managers are not asked to choose their own team.
+- [ ] `MQ-M711-007` Trade asset editors offer only approved plain-language asset types and authoritative team choices; pending trade panels contain no raw JSON.
+- [ ] `MQ-M711-008` League Activity defaults to a concise summary, time, resolved team name, and approved details; optional technical IDs remain collapsed.
+- [ ] `MQ-M711-009` Account settings update display name and authorized team name, colours, and logo; email is read-only and password change explains/signals session revocation.
+- [ ] `MQ-M711-010` The preceding workflows remain usable at desktop width and narrow mobile width, including keyboard focus and no whole-page horizontal overflow.
+- [ ] `MQ-M711-011` A second league and a non-manager account cannot read or mutate another league's private workspace or team settings.
+- [ ] `MQ-M711-012` No production service, data, environment variable, job, branch, or deployment changes during the M7-11 run.
+
+---
+
 # Part 18 - Deferred and In-Season Feature QA
 
 ## Entry Draft

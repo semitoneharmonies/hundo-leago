@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -204,9 +204,14 @@ describe("authenticated player pages", () => {
       ).toBe(true);
     });
     expect(screen.queryByRole("link", { name: "Blair Example" })).toBeNull();
-    expect(screen.getByText("VAN")).toBeInTheDocument();
-    expect(screen.getByText("Player Team · Active")).toBeInTheDocument();
-    expect(screen.getByText("$3.00 AAV · 2 years remaining")).toBeInTheDocument();
+    const playerRow = screen.getByRole("row", { name: /Alex Example/ });
+    expect(within(playerRow).getByText("VAN")).toBeInTheDocument();
+    expect(
+      within(playerRow).getByText("Player Team · Active")
+    ).toBeInTheDocument();
+    expect(
+      within(playerRow).getByText("$3.00 AAV · 2 years remaining")
+    ).toBeInTheDocument();
   });
 
   it("renders stable player details and provider fields", async () => {

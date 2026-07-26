@@ -29,6 +29,11 @@ export const routePaths = Object.freeze({
     )}`,
   leagueAuctions: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/auctions`,
+  leagueAuctionForPlayer: (leagueId, playerId) =>
+    `/leagues/${segment(leagueId, "League ID")}/auctions?playerId=${segment(
+      playerId,
+      "Player ID"
+    )}`,
   leagueTrades: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/trades`,
   trade: (leagueId, tradeId) =>
@@ -49,6 +54,7 @@ export const routePaths = Object.freeze({
   leagueCommissionerRoster: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/commissioner/rosters`,
   notifications: "/notifications",
+  account: "/account",
   admin: "/admin",
   publicTeamRoster: (leagueId, teamId) =>
     `/public/leagues/${segment(leagueId, "League ID")}/teams/${segment(

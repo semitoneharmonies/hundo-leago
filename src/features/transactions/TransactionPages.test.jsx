@@ -45,6 +45,46 @@ function session() {
   return { csrfToken: "D".repeat(43), session: { id: assetId, userId: "user-1", status: "active", createdAtMs: 1, lastUsedAtMs: 1, idleExpiresAtMs: 2, absoluteExpiresAtMs: 3, version: 1 }, user: { id: "user-1", displayName: "Manager", status: "active", version: 1 } };
 }
 
+function teamWorkspace(teamId) {
+  return {
+    code: "TEAM_WORKSPACE_FOUND",
+    canManage: teamId === teamA,
+    orderVersion: 0,
+    league: { id: leagueId, name: "Test League" },
+    season: { id: seasonId, label: "2026-27" },
+    team: {
+      id: teamId,
+      name: teamId === teamA ? "Managed Team" : "Other Team",
+      primaryColour: null,
+      secondaryColour: null,
+      logoReference: null,
+      version: 1,
+    },
+    players: [],
+    cap: {
+      limitCents: 10_000,
+      usageCents: 0,
+      spaceCents: 10_000,
+      activePlayerCents: 0,
+      retainedSalaryCents: 0,
+      buyoutPenaltyCents: 0,
+      retentionSlotsUsed: 0,
+      retentionSlotLimit: 3,
+      complete: true,
+      issues: [],
+    },
+    draftPicks: [],
+    tradeAssets: {
+      contracts: [{ id: assetId, label: "Trade Player · $5.00 AAV · 2y" }],
+      prospects: [],
+      draftPicks: [],
+      retentions: [],
+      buyouts: [],
+      futureConsiderations: [],
+    },
+  };
+}
+
 function baseFetch(extra) {
   return vi.fn(async (url, options = {}) => {
     const parsedUrl = new URL(url);
@@ -55,6 +95,10 @@ function baseFetch(extra) {
       { id: teamA, leagueId, name: "Managed Team", status: "active", primaryColour: null, secondaryColour: null, logoReference: null, createdAtMs: 1, updatedAtMs: 1, version: 1, currentManager: { assignmentId: assetId, userId: "user-1", displayName: "Manager", acceptedAtMs: 1, version: 1 } },
       { id: teamB, leagueId, name: "Other Team", status: "active", primaryColour: null, secondaryColour: null, logoReference: null, createdAtMs: 1, updatedAtMs: 1, version: 1, currentManager: null },
     ] });
+    const workspaceMatch = path.match(
+      new RegExp(`^/api/v1/leagues/${leagueId}/teams/([^/]+)/roster$`)
+    );
+    if (workspaceMatch) return envelope(teamWorkspace(workspaceMatch[1]));
     return extra(path, options, parsedUrl);
   });
 }
@@ -182,7 +226,7 @@ describe("M5-11 authenticated transaction pages", () => {
     });
     renderPage(`/leagues/${leagueId}/trades`, "/leagues/:leagueId/trades", <TradesPage />, fetchImpl);
     expect(await screen.findByRole("heading", { name: "New trade proposal" })).toBeInTheDocument();
-    expect(screen.getAllByRole("option", { name: "Requested retention" })).toHaveLength(2);
+    expect(screen.getAllByRole("option", { name: "Retention" })).toHaveLength(2);
     expect(screen.getByText("No proposals in this view.")).toBeInTheDocument();
   });
 
@@ -218,9 +262,9 @@ describe("M5-11 authenticated transaction pages", () => {
     expect(screen.queryByRole("button", { name: "Confirm and accept trade" })).not.toBeInTheDocument();
     await view.user.click(preview);
     expect(await screen.findByText(
-      "Warning: this trade leaves a normal roster generally illegal."
+      "This trade would leave at least one roster generally illegal."
     )).toBeInTheDocument();
-    expect(screen.getByText(/SALARY_CAP_EXCEEDED/)).toBeInTheDocument();
+    expect(screen.getByText("SALARY CAP EXCEEDED")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Confirm and accept trade" })).toBeInTheDocument();
   });
 
@@ -279,21 +323,11 @@ describe("M5-11 authenticated transaction pages", () => {
     ).closest("li");
     const audit = within(entry);
 
+    expect(audit.getByText("Managed Team")).toBeInTheDocument();
+    expect(audit.getByText("Technical record")).toBeInTheDocument();
     expect(audit.getByText("Commissioner roster corrected")).toBeInTheDocument();
     expect(audit.getByText("Commissioner")).toBeInTheDocument();
-    for (const visibleId of [
-      actorUserId,
-      leagueId,
-      seasonId,
-      teamA,
-      playerSearchId,
-      correctionId,
-    ]) {
-      expect(audit.getByText(visibleId)).toBeInTheDocument();
-    }
-    expect(
-      audit.getByText(`Player ownership · ${ownershipId}`)
-    ).toBeInTheDocument();
+    expect(audit.getByText(assetId)).toBeInTheDocument();
     expect(audit.getByText(/Roster category: Active/)).toBeInTheDocument();
     expect(audit.getByText(/Roster category: Bench/)).toBeInTheDocument();
     expect(audit.getByText("TEAM ROSTER ILLEGAL")).toBeInTheDocument();
@@ -305,6 +339,13 @@ describe("M5-11 authenticated transaction pages", () => {
       new Date(occurredAtMs).toISOString()
     );
     for (const hiddenValue of [
+      actorUserId,
+      leagueId,
+      seasonId,
+      teamA,
+      playerSearchId,
+      correctionId,
+      ownershipId,
       actorMembershipId,
       "hidden before-state note",
       "hidden result-state note",

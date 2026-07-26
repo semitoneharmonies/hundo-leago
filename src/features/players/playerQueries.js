@@ -30,7 +30,7 @@ export const playerKeys = Object.freeze({
     auctionEligible,
   ],
   detail: (playerId) => ["players", "detail", playerId],
-  leagueSearch: ({ leagueId, query, status, limit, cursor }) => [
+  leagueSearch: ({ leagueId, query, status, limit, cursor, fetchAll }) => [
     "league",
     leagueId,
     "players",
@@ -39,6 +39,7 @@ export const playerKeys = Object.freeze({
     status,
     limit,
     cursor,
+    fetchAll,
   ],
   leagueDetail: (leagueId, playerId) => [
     "league",
@@ -129,6 +130,7 @@ export function leaguePlayerSearchQuery(
     status = "active",
     limit = 25,
     cursor = null,
+    fetchAll = false,
   } = {}
 ) {
   const search = new URLSearchParams({
@@ -144,24 +146,64 @@ export function leaguePlayerSearchQuery(
       status,
       limit,
       cursor,
+      fetchAll,
     }),
     queryFn: async ({ signal }) => {
-      const response = await httpClient.request(
-        `/api/v1/leagues/${part(leagueId)}/players?${search.toString()}`,
-        {
-          authenticated: true,
-          dataKind: "array",
-          validateData: (data) =>
-            validateLeaguePlayerList(data, leagueId),
-          signal,
+      if (!fetchAll) {
+        const response = await httpClient.request(
+          `/api/v1/leagues/${part(leagueId)}/players?${search.toString()}`,
+          {
+            authenticated: true,
+            dataKind: "array",
+            validateData: (data) =>
+              validateLeaguePlayerList(data, leagueId),
+            signal,
+          }
+        );
+        if (!response.page) {
+          throw new ResponseContractError("The player page is missing.");
         }
-      );
-      if (!response.page) {
-        throw new ResponseContractError("The player page is missing.");
+        return Object.freeze({
+          players: response.data,
+          page: response.page,
+        });
       }
+
+      const collected = [];
+      let nextCursor = null;
+      let pageCount = 0;
+      do {
+        const pageSearch = new URLSearchParams({
+          query,
+          status,
+          limit: "100",
+          ...(nextCursor ? { cursor: nextCursor } : {}),
+        });
+        const response = await httpClient.request(
+          `/api/v1/leagues/${part(leagueId)}/players?${pageSearch.toString()}`,
+          {
+            authenticated: true,
+            dataKind: "array",
+            validateData: (data) =>
+              validateLeaguePlayerList(data, leagueId),
+            signal,
+          }
+        );
+        if (!response.page) {
+          throw new ResponseContractError("The player page is missing.");
+        }
+        collected.push(...response.data);
+        nextCursor = response.page.nextCursor;
+        pageCount += 1;
+        if (pageCount > 100) {
+          throw new ResponseContractError(
+            "The player catalog exceeds the supported page limit."
+          );
+        }
+      } while (nextCursor);
       return Object.freeze({
-        players: response.data,
-        page: response.page,
+        players: Object.freeze(collected),
+        page: Object.freeze({ nextCursor: null, hasMore: false }),
       });
     },
     meta: { private: true, leagueId },

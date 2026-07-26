@@ -755,6 +755,7 @@ The catalogue defines endpoint ownership and minimum contracts. Exact optional d
 | `POST /api/v1/session/password` | Authenticated | Change the current password and rotate the session |
 | `POST /api/v1/password-reset-requests` | Public with rate limit | Send a 30-minute single-use reset link using a non-enumerating response |
 | `POST /api/v1/password-resets` | Public with single-use token | Set a matching new password, revoke sessions, and require sign-in |
+| `GET /api/v1/account` | Authenticated | Return the caller's safe account profile: stable ID, email, display name, status, and version |
 | `PATCH /api/v1/account` | Authenticated | Change the caller's unique display name using `If-Match` |
 | `POST /api/v1/account/deactivation` | Authenticated | Deactivate after current-password and typed confirmation checks |
 | `POST /api/v1/account/reactivation-requests` | Public with rate limit | Send a single-use reactivation link using a non-enumerating response |
@@ -929,7 +930,8 @@ fixture source only when SportsDataIO data is absent.
 | Method and path | Authorization | Purpose |
 |---|---|---|
 | `GET /api/v1/public/leagues/:leagueId/teams/:teamId/roster` | Public when the league is publicly eligible | Return the approved public roster projection only |
-| `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | League member | Return roster groups, slots, ownership, contracts, cap, and legality |
+| `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | League member | Return the authenticated team workspace: roster groups, ownership and contract versions, authoritative cap components, retention-slot usage, four-year owned draft picks, friendly trade-asset choices, and saved presentation order |
+| `PUT /api/v1/leagues/:leagueId/teams/:teamId/roster-display-order` | Authorized team manager or current commissioner | Save an optimistic, versioned F/D presentation order without changing authoritative ownership slots |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | League member | Return authoritative legality reasons without writing |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Authorized team manager or commissioner correction workflow | Move one owned player between approved groups or slots |
 | `GET /api/v1/leagues/:leagueId/commissioner/roster-workspace` | Current commissioner or platform administrator with active membership | Read-only current teams, seasons, roster, free agents, contracts, cap projections, and provider health |
@@ -946,6 +948,13 @@ fixture source only when SportsDataIO data is absent.
 | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/prospect-rights/:playerId` | Authorized team manager | Release prospect rights |
 
 Transaction-created roster illegality returns a warning in the successful command response. It is not represented as a false failed transaction when the approved feature permits completion.
+
+The authenticated team workspace remains a read-only projection. Its salary-cap
+usage is the authoritative active-player net AAV plus retained salary and
+buyout penalties. The roster-display-order command accepts the exact current
+Active F/D ownership set with ownership versions and an `If-Match`-equivalent
+body version. It stores presentation order separately and never changes roster
+category, slot, contract, cap, matchup lock, or ownership authority.
 
 Commissioner previews use `POST` because they accept an exact proposed command,
 but they run inside a rolled-back transaction and remain byte-for-byte

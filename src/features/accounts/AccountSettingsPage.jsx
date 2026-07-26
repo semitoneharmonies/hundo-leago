@@ -1,0 +1,438 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Navigate } from "react-router-dom";
+
+import { routePaths } from "../../app/routePaths.js";
+import {
+  EmptyBlock,
+  LoadingBlock,
+  PageHeading,
+  Surface,
+} from "../../components/HundoUi.jsx";
+import {
+  leagueTeamsQuery,
+  leagueKeys,
+  visibleLeaguesQuery,
+} from "../leagues/leagueQueries.js";
+import { useSession } from "../session/sessionContext.js";
+import { createIntentKey } from "./accountApi.js";
+import {
+  accountKeys,
+  accountProfileQuery,
+  changePassword,
+  updateAccountProfile,
+  updateTeamProfile,
+} from "./accountQueries.js";
+
+function ErrorMessage({ error }) {
+  if (!error) return null;
+  return (
+    <p className="hl-form-message is-error" role="alert">
+      {error.message || "The account request could not be completed."}
+    </p>
+  );
+}
+
+function fileBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("The logo file could not be read."));
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const comma = result.indexOf(",");
+      if (comma < 0) {
+        reject(new Error("The logo file could not be encoded."));
+        return;
+      }
+      resolve({
+        contentBase64: result.slice(comma + 1),
+        mediaType: file.type,
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function TeamProfileForm({ leagueId, team, httpClient }) {
+  const queryClient = useQueryClient();
+  const [nameOverride, setNameOverride] = useState(null);
+  const [primaryColourOverride, setPrimaryColourOverride] = useState(null);
+  const [secondaryColourOverride, setSecondaryColourOverride] = useState(null);
+  const [logoFile, setLogoFile] = useState(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+  const [message, setMessage] = useState("");
+  const savedPrimaryColour = team.primaryColour || "#16324f";
+  const savedSecondaryColour = team.secondaryColour || "#f7f7f7";
+  const name = nameOverride ?? team.name;
+  const primaryColour = primaryColourOverride ?? savedPrimaryColour;
+  const secondaryColour = secondaryColourOverride ?? savedSecondaryColour;
+  const isDirty =
+    name.trim() !== team.name ||
+    primaryColour !== savedPrimaryColour ||
+    secondaryColour !== savedSecondaryColour ||
+    logoFile !== null ||
+    removeLogo;
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const input = {
+        name: name.trim(),
+        primaryColour,
+        secondaryColour,
+      };
+      if (removeLogo) input.logo = null;
+      else if (logoFile) input.logo = await fileBase64(logoFile);
+      return updateTeamProfile(
+        httpClient,
+        leagueId,
+        team.id,
+        input,
+        team.version,
+        createIntentKey("team-profile")
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.teams(leagueId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["league", leagueId, "team", team.id],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["league", leagueId, "team", team.id, "workspace"],
+        }),
+      ]);
+      setNameOverride(null);
+      setPrimaryColourOverride(null);
+      setSecondaryColourOverride(null);
+      setLogoFile(null);
+      setRemoveLogo(false);
+      setMessage("Team profile saved.");
+    },
+    onError: () => setMessage(""),
+  });
+
+  return (
+    <form
+      className="hl-account-team-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setMessage("");
+        mutation.mutate();
+      }}
+    >
+      <div className="hl-account-team-form__heading">
+        <div
+          className="hl-account-team-mark"
+          style={{
+            "--team-primary": primaryColour,
+            "--team-secondary": secondaryColour,
+          }}
+          aria-hidden="true"
+        >
+          {team.logoReference ? (
+            <img src={team.logoReference} alt="" />
+          ) : (
+            name.slice(0, 2).toUpperCase()
+          )}
+        </div>
+        <div>
+          <h3>{team.name}</h3>
+          <p>Team identity and colours</p>
+        </div>
+      </div>
+      <div className="hl-account-form-grid">
+        <label className="hl-field">
+          Team name
+          <input
+            value={name}
+            maxLength={35}
+            required
+            onChange={(event) => setNameOverride(event.target.value)}
+          />
+        </label>
+        <label className="hl-field">
+          Primary stripe
+          <input
+            type="color"
+            value={primaryColour}
+            onChange={(event) =>
+              setPrimaryColourOverride(event.target.value)
+            }
+          />
+        </label>
+        <label className="hl-field">
+          Secondary stripe
+          <input
+            type="color"
+            value={secondaryColour}
+            onChange={(event) =>
+              setSecondaryColourOverride(event.target.value)
+            }
+          />
+        </label>
+        <label className="hl-field">
+          Team logo
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => {
+              setLogoFile(event.target.files?.[0] || null);
+              setRemoveLogo(false);
+            }}
+          />
+          <small>PNG, JPEG, or WebP; maximum 512 KB and 2048×2048.</small>
+        </label>
+      </div>
+      {team.logoReference && (
+        <label className="hl-check-field">
+          <input
+            type="checkbox"
+            checked={removeLogo}
+            onChange={(event) => {
+              setRemoveLogo(event.target.checked);
+              if (event.target.checked) setLogoFile(null);
+            }}
+          />
+          Remove the current logo
+        </label>
+      )}
+      <button
+        type="submit"
+        className="hl-button hl-button--primary"
+        disabled={mutation.isPending || !isDirty}
+      >
+        {mutation.isPending ? "Saving…" : "Save team profile"}
+      </button>
+      {message && <p className="hl-form-message">{message}</p>}
+      <ErrorMessage error={mutation.error} />
+    </form>
+  );
+}
+
+function LeagueTeamSettings({ league, session }) {
+  const teams = useQuery({
+    ...leagueTeamsQuery(session.httpClient, league.id),
+    enabled: session.status === "authenticated",
+  });
+  if (teams.isPending) return <LoadingBlock>Loading {league.name} teams…</LoadingBlock>;
+  if (teams.isError) return <ErrorMessage error={teams.error} />;
+  const editable =
+    league.membership.permissionCategory === "commissioner"
+      ? teams.data
+      : teams.data.filter(
+          (team) => team.currentManager?.userId === session.user.id
+        );
+  if (editable.length === 0) return null;
+  return (
+    <section className="hl-account-league">
+      <h2>{league.name}</h2>
+      <div className="hl-account-team-list">
+        {editable.map((team) => (
+          <TeamProfileForm
+            key={team.id}
+            leagueId={league.id}
+            team={team}
+            httpClient={session.httpClient}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function AccountSettingsPage() {
+  const session = useSession();
+  const queryClient = useQueryClient();
+  const profile = useQuery({
+    ...accountProfileQuery(session.httpClient),
+    enabled: session.status === "authenticated",
+  });
+  const leagues = useQuery({
+    ...visibleLeaguesQuery(session.httpClient),
+    enabled: session.status === "authenticated",
+  });
+  const [displayNameOverride, setDisplayNameOverride] = useState(null);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+
+  const displayName =
+    displayNameOverride ?? profile.data?.displayName ?? "";
+  const profileIsDirty =
+    displayName.trim() !== profile.data?.displayName;
+
+  const profileMutation = useMutation({
+    mutationFn: () =>
+      updateAccountProfile(
+        session.httpClient,
+        { displayName: displayName.trim() },
+        profile.data.version
+      ),
+    onSuccess: async () => {
+      setProfileMessage("Display name saved.");
+      setDisplayNameOverride(null);
+      await queryClient.invalidateQueries({ queryKey: accountKeys.profile });
+      session.retryBootstrap();
+    },
+    onError: () => setProfileMessage(""),
+  });
+  const passwordMutation = useMutation({
+    mutationFn: () =>
+      changePassword(session.httpClient, {
+        currentPassword,
+        newPassword,
+        newPasswordConfirmation: confirmation,
+      }),
+    onSuccess: async () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmation("");
+      await session.clearAuthentication("password-changed");
+    },
+  });
+
+  if (session.status === "unauthenticated") {
+    return <Navigate to={routePaths.home} replace />;
+  }
+  if (
+    session.status === "unknown" ||
+    profile.isPending ||
+    leagues.isPending
+  ) {
+    return (
+      <main className="hl-page">
+        <Surface>
+          <LoadingBlock>Loading account settings…</LoadingBlock>
+        </Surface>
+      </main>
+    );
+  }
+  if (profile.isError || leagues.isError) {
+    return (
+      <main className="hl-page">
+        <ErrorMessage error={profile.error || leagues.error} />
+      </main>
+    );
+  }
+
+  return (
+    <main className="hl-page hl-page--wide">
+      <PageHeading
+        eyebrow="Account"
+        title="Account and team settings"
+        description="Update your identity, security, and the teams you are authorized to manage."
+      />
+      <div className="hl-account-settings-grid">
+        <Surface as="section">
+          <h2>User profile</h2>
+          <form
+            className="hl-feature-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setProfileMessage("");
+              profileMutation.mutate();
+            }}
+          >
+            <label className="hl-field">
+              Display name
+              <input
+                value={displayName}
+                maxLength={50}
+                required
+                onChange={(event) =>
+                  setDisplayNameOverride(event.target.value)
+                }
+              />
+            </label>
+            <label className="hl-field">
+              Email
+              <input value={profile.data.email} readOnly />
+              <small>Email changes require administrator support.</small>
+            </label>
+            <button
+              type="submit"
+              className="hl-button hl-button--primary"
+              disabled={profileMutation.isPending || !profileIsDirty}
+            >
+              Save display name
+            </button>
+            {profileMessage && <p className="hl-form-message">{profileMessage}</p>}
+            <ErrorMessage error={profileMutation.error} />
+          </form>
+        </Surface>
+
+        <Surface as="section">
+          <h2>Change password</h2>
+          <p>
+            Changing your password signs out every session, including this one.
+          </p>
+          <form
+            className="hl-feature-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              passwordMutation.mutate();
+            }}
+          >
+            <label className="hl-field">
+              Current password
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                required
+                onChange={(event) => setCurrentPassword(event.target.value)}
+              />
+            </label>
+            <label className="hl-field">
+              New password
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                required
+                onChange={(event) => setNewPassword(event.target.value)}
+              />
+            </label>
+            <label className="hl-field">
+              Confirm new password
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={confirmation}
+                required
+                onChange={(event) => setConfirmation(event.target.value)}
+              />
+            </label>
+            <button
+              type="submit"
+              className="hl-button hl-button--primary"
+              disabled={passwordMutation.isPending}
+            >
+              Change password
+            </button>
+            <ErrorMessage error={passwordMutation.error} />
+          </form>
+        </Surface>
+      </div>
+
+      <Surface as="section" className="hl-account-teams">
+        <p className="hl-eyebrow">Manager settings</p>
+        <h2>Your team profiles</h2>
+        {leagues.data.length === 0 ? (
+          <EmptyBlock title="No editable teams" />
+        ) : (
+          leagues.data.map((league) => (
+            <LeagueTeamSettings
+              key={league.id}
+              league={league}
+              session={session}
+            />
+          ))
+        )}
+      </Surface>
+    </main>
+  );
+}

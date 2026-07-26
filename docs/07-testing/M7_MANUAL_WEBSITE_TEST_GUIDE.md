@@ -52,9 +52,9 @@ prints the password.
 | Admin | `admin@release-qa.example.test` | Platform administrator | Explicit membership in both Alpha and Beta plus inherited commissioner authority |
 | Comm A | `comm.a@release-qa.example.test` | Commissioner | Release QA Alpha League and commissioner tools |
 | Comm B | `comm.b@release-qa.example.test` | Commissioner | Release QA Beta League and commissioner tools |
-| Man A Leag A | `man.a.leag.a@release-qa.example.test` | Manager | Alpha only; manages Alpha Owls |
-| Man B Leag A | `man.b.leag.a@release-qa.example.test` | Manager | Alpha only; manages Alpha Ravens |
-| Man A Leag B | `man.a.leag.b@release-qa.example.test` | Manager | Beta only; manages Beta Comets |
+| Man A Leag A | `man.a.leag.a@release-qa.example.test` | Manager | Alpha only; manages Alpha Ravens |
+| Man B Leag A | `man.b.leag.a@release-qa.example.test` | Manager | Alpha only; manages Alpha Wolves |
+| Man A Leag B | `man.a.leag.b@release-qa.example.test` | Manager | Beta only; manages Beta Vipers |
 | No League | `no.league@release-qa.example.test` | Active account without a league | Signed in, but no league membership |
 | Pending | `pending@release-qa.example.test` | Pending email verification | Generic invalid-credentials response; no active-account access |
 | Deactivated | `deactivated@release-qa.example.test` | Deactivated account | Same generic invalid-credentials response; no active-account access |

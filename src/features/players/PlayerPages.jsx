@@ -138,7 +138,7 @@ function contractLabel(player) {
   } remaining`;
 }
 
-export function PlayersPage() {
+export function LegacyPlayersPage() {
   const { leagueId } = useParams();
   const context = usePlayerContext(leagueId);
   const [searchInput, setSearchInput] = useState("");
@@ -299,6 +299,8 @@ export function PlayersPage() {
   );
 }
 
+export { PlayersCatalogPage as PlayersPage } from "./PlayersCatalogPage.jsx";
+
 export function PlayerDetailPage() {
   const { leagueId, playerId } = useParams();
   const context = usePlayerContext(leagueId);
@@ -384,6 +386,21 @@ export function PlayerDetailPage() {
             ) : (
               <p>No active contract is recorded in the selected league.</p>
             )}
+            {!player.data.league.ownership &&
+              player.data.status === "active" &&
+              player.data.provider?.active !== false && (
+                <p>
+                  <Link
+                    className="hl-button hl-button--primary"
+                    to={routePaths.leagueAuctionForPlayer(
+                      leagueId,
+                      player.data.id
+                    )}
+                  >
+                    Start an auction for {player.data.fullName}
+                  </Link>
+                </p>
+              )}
           </section>
           <section className="hl-profile-statistics" aria-labelledby="last-season-statistics-heading">
             <h3 id="last-season-statistics-heading">Last-season statistics</h3>

@@ -14,7 +14,7 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-07-23**
+Last reviewed: **2026-07-26**
 
 ---
 
@@ -1465,6 +1465,49 @@ backend passes `962/962`; the final frontend passes `106/106`, lint, build, and
 browser-authority verification. Focused hosted retesting passed and the final
 reset preserved provider data while restoring all fixture state. The staging
 site is ready for Grae's independent retest.
+
+M7-11 is in local verification after Grae's independent staging review. The
+implementation now includes a provider-backed release-QA roster selection when
+the retained catalog is available, corrected Alpha Ravens fixture cap state,
+four years of draft picks, an authenticated team workspace with authoritative
+cap components and retention-slot usage, and a separate versioned roster
+display order. The roster UI supports team switching, striped team identity,
+readable cap cards, draft-pick inventory, table and hockey-line views, drag and
+keyboard ordering, and logo display.
+
+The authenticated Players page now hides explicitly unavailable provider
+records, loads the complete league-visible catalog, defaults to total fantasy
+points, sorts every player-data column, filters by player, position, NHL team,
+league assignment, and minimum games, keeps contract context, and builds a
+comparison list. Eligible free agents link to an auction form prefilled by
+stable player ID. Auction team choice is implicit only when the user has one
+eligible managed team in the selected league.
+
+Trade composition now resolves approved asset types through authoritative
+team-workspace choices instead of asking users for stable IDs. Pending trade
+details use one plain-language panel per team instead of raw JSON. League
+Activity defaults to a summary, timestamp, resolved team name, approved
+human-readable details, and a collapsed technical record. The new Account page
+supports display-name and password changes plus authorized team name, logo,
+and two-colour stripe settings; email remains read-only in this workflow.
+
+Local frontend verification passes `110/110` across 22 files, lint, production
+build, and the browser-authority verifier across 15 compatibility files and 97
+shipped source files. The backend fixture, team-workspace, account-profile,
+schema, reset-manifest, target-runtime, cap, draft-pick, trade-choice, and
+display-order gates pass. The complete backend suite passes `967/967` across
+232 suites under the repository-approved Node `24.14.1`.
+
+A loopback API smoke confirms the Alpha Ravens team workspace reports `$7.25`
+cap usage as `$6.50` active net AAV plus `$0.75` retained salary and `$0.00`
+buyout penalties, one of three retention slots used, and sixteen owned picks
+across four chronological draft years. Connected-browser desktop and `390 ×
+844` checks pass for dashboard, roster, players, auction handoff, trades,
+activity, account settings, and Alpha/Beta isolation without whole-page
+horizontal overflow or browser-console errors. Persisted keyboard ordering and
+the DOM drag-event handler pass; hosted manual pointer drag remains open because
+the connected browser could not synthesize the native HTML drag. No candidate
+commit or staging deployment has been made for M7-11.
 
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.

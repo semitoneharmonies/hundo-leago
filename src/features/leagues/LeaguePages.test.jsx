@@ -131,6 +131,74 @@ function fetchScenario(leagues) {
     }
     if (
       path ===
+      `/api/v1/leagues/${leagueOneId}/teams/${teamId}/roster`
+    ) {
+      return response(
+        {
+          code: "TEAM_WORKSPACE_FOUND",
+          canManage: true,
+          orderVersion: 0,
+          league: { id: leagueOneId, name: leagues[0].name },
+          season: { id: seasonId, label: "2026-27" },
+          team: {
+            id: teamId,
+            name: "Target Owls",
+            primaryColour: null,
+            secondaryColour: null,
+            logoReference: null,
+            version: 1,
+          },
+          players: [
+            {
+              ownershipId: "66666666-6666-4666-8666-666666666666",
+              ownershipVersion: 1,
+              playerId,
+              name: "Connected Player",
+              normalizedPosition: "F",
+              rosterCategory: "Active",
+              ownershipKind: "Contract",
+              slotNumber: 1,
+              displayOrder: 0,
+              age: 25,
+              contract: {
+                id: "77777777-7777-4777-8777-777777777777",
+                version: 1,
+                type: "Standard",
+                originalTotalValueCents: 1_000,
+                originalTermYears: 2,
+                aavCents: 500,
+                remainingYears: 2,
+              },
+              statistics: null,
+            },
+          ],
+          cap: {
+            limitCents: 10_000,
+            usageCents: 500,
+            spaceCents: 9_500,
+            activePlayerCents: 500,
+            retainedSalaryCents: 0,
+            buyoutPenaltyCents: 0,
+            retentionSlotsUsed: 0,
+            retentionSlotLimit: 3,
+            complete: true,
+            issues: [],
+          },
+          draftPicks: [],
+          tradeAssets: {
+            contracts: [],
+            prospects: [],
+            draftPicks: [],
+            retentions: [],
+            buyouts: [],
+            futureConsiderations: [],
+          },
+        },
+        "request-team-workspace"
+      );
+    }
+    if (
+      path ===
       `/api/v1/public/leagues/${leagueOneId}/teams/${teamId}/roster`
     ) {
       return response(
@@ -279,7 +347,7 @@ describe("league selection", () => {
       fetchImpl.mock.calls.some(
         ([url]) =>
           new URL(url).pathname ===
-          `/api/v1/public/leagues/${leagueOneId}/teams/${teamId}/roster`
+          `/api/v1/leagues/${leagueOneId}/teams/${teamId}/roster`
       )
     ).toBe(true);
   });
