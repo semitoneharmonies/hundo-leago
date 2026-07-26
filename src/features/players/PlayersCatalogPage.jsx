@@ -84,6 +84,31 @@ function SortHeading({ activeSort, label, sortKey, onSort }) {
   );
 }
 
+function HockeyHelmetIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+      className="hl-hockey-helmet"
+    >
+      <path
+        d="M4.5 12.5V10a7.5 7.5 0 0 1 15 0v3.5h-4.2v-2.2H8.7v4.4H5.8a1.3 1.3 0 0 1-1.3-1.3v-1.9Z"
+        fill="currentColor"
+      />
+      <path
+        d="M8.7 11.3h6.6v5.5a2.2 2.2 0 0 1-2.2 2.2h-2.2a2.2 2.2 0 0 1-2.2-2.2v-5.5Zm6.6 2.2h4.2v2.2h-4.2"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
+      <path d="M5 9.2h14" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
 export function PlayersCatalogPage() {
   const { leagueId } = useParams();
   const session = useSession();
@@ -105,7 +130,7 @@ export function PlayersCatalogPage() {
   const [comparedIds, setComparedIds] = useState(() => new Set());
   const players = useQuery({
     ...leaguePlayerSearchQuery(session.httpClient, leagueId, {
-      query,
+      query: "",
       status: "active",
       limit: 100,
       fetchAll: true,
@@ -149,6 +174,7 @@ export function PlayersCatalogPage() {
   }, [availablePlayers, teams.data]);
   const visiblePlayers = useMemo(() => {
     const minimum = Number(minimumGames);
+    const normalizedQuery = query.trim().toLowerCase();
     const value = (player, key) => {
       switch (key) {
         case "player":
@@ -182,6 +208,8 @@ export function PlayersCatalogPage() {
     return availablePlayers
       .filter(
         (player) =>
+          (!normalizedQuery ||
+            player.fullName.toLowerCase().includes(normalizedQuery)) &&
           (position === "all" || displayPosition(player) === position) &&
           (nhlTeam === "all" ||
             player.provider?.nhlTeamAbbreviation === nhlTeam) &&
@@ -214,11 +242,16 @@ export function PlayersCatalogPage() {
     nhlTeam,
     ownership,
     position,
+    query,
     sort,
   ]);
-  const comparedPlayers = availablePlayers.filter((player) =>
-    comparedIds.has(player.id)
-  );
+  const autocompletePlayers = useMemo(() => {
+    const needle = searchInput.trim().toLowerCase();
+    if (needle.length < 2 || needle === query.toLowerCase()) return [];
+    return availablePlayers
+      .filter((player) => player.fullName.toLowerCase().includes(needle))
+      .slice(0, 8);
+  }, [availablePlayers, query, searchInput]);
 
   function changeSort(key) {
     setSort((current) =>
@@ -294,14 +327,46 @@ export function PlayersCatalogPage() {
           }}
           className="hl-filter-bar hl-player-filters"
         >
-          <label className="hl-field">
-            Search by player name
+          <div className="hl-field hl-player-autocomplete">
+            <label htmlFor="player-name-search">Search by player name</label>
             <input
+              id="player-name-search"
               type="search"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
+              autoComplete="off"
+              aria-autocomplete="list"
+              aria-controls="player-name-suggestions"
+              aria-expanded={autocompletePlayers.length > 0}
             />
-          </label>
+            {autocompletePlayers.length > 0 && (
+              <ul
+                id="player-name-suggestions"
+                className="hl-player-suggestions"
+                role="listbox"
+                aria-label="Matching players"
+              >
+                {autocompletePlayers.map((player) => (
+                  <li key={player.id} role="option">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchInput(player.fullName);
+                        setQuery(player.fullName);
+                      }}
+                    >
+                      <strong>{player.fullName}</strong>
+                      <span>
+                        {displayPosition(player)} ·{" "}
+                        {player.provider?.nhlTeamAbbreviation ||
+                          "NHL team unavailable"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <label className="hl-field">
             Position
             <select
@@ -450,14 +515,26 @@ export function PlayersCatalogPage() {
                     <td>{contractLabel(player)}</td>
                     <td>
                       <div className="hl-player-actions">
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={comparedIds.has(player.id)}
-                            onChange={() => toggleCompare(player.id)}
-                          />
-                          Compare
-                        </label>
+                        <button
+                          type="button"
+                          className={`hl-player-favourite${
+                            comparedIds.has(player.id) ? " is-active" : ""
+                          }`}
+                          aria-pressed={comparedIds.has(player.id)}
+                          aria-label={`${
+                            comparedIds.has(player.id) ? "Remove" : "Add"
+                          } ${player.fullName} ${
+                            comparedIds.has(player.id) ? "from" : "to"
+                          } favourites`}
+                          title={`${
+                            comparedIds.has(player.id)
+                              ? "Remove from"
+                              : "Add to"
+                          } favourites`}
+                          onClick={() => toggleCompare(player.id)}
+                        >
+                          <HockeyHelmetIcon />
+                        </button>
                         {!player.league.ownership && (
                           <Link
                             className="hl-button hl-button--quiet"
@@ -471,74 +548,6 @@ export function PlayersCatalogPage() {
                         )}
                       </div>
                     </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Surface>
-      )}
-
-      {comparedPlayers.length > 0 && (
-        <Surface
-          as="section"
-          className="hl-player-compare"
-          aria-labelledby="compare-title"
-        >
-          <div className="hl-roster-category__heading">
-            <div>
-              <p className="hl-eyebrow">Selected players</p>
-              <h2 id="compare-title">Compare ({comparedPlayers.length})</h2>
-            </div>
-            <button
-              type="button"
-              className="hl-button hl-button--quiet"
-              onClick={() => setComparedIds(new Set())}
-            >
-              Clear list
-            </button>
-          </div>
-          <div className="hl-table-scroll">
-            <table className="hl-data-table">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>Pos</th>
-                  <th>NHL</th>
-                  <th>GP</th>
-                  <th>G</th>
-                  <th>A</th>
-                  <th>P</th>
-                  <th>FP</th>
-                  <th>FPG</th>
-                  <th>League status</th>
-                  <th>Contract</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparedPlayers.map((player) => (
-                  <tr key={player.id}>
-                    <th scope="row">{player.fullName}</th>
-                    <td>{displayPosition(player)}</td>
-                    <td>{player.provider?.nhlTeamAbbreviation || "—"}</td>
-                    <td>{player.statistics?.gamesPlayed ?? "—"}</td>
-                    <td>{player.statistics?.goals ?? "—"}</td>
-                    <td>{player.statistics?.assists ?? "—"}</td>
-                    <td>{player.statistics?.nhlPoints ?? "—"}</td>
-                    <td>
-                      {player.statistics
-                        ? (
-                            player.statistics.fantasyPointsHundredths / 100
-                          ).toFixed(2)
-                        : "—"}
-                    </td>
-                    <td>
-                      {player.statistics
-                        ? fantasyPointsPerGame(player.statistics).toFixed(2)
-                        : "—"}
-                    </td>
-                    <td>{ownershipLabel(player)}</td>
-                    <td>{contractLabel(player)}</td>
                   </tr>
                 ))}
               </tbody>

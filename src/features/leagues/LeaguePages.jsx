@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
@@ -15,6 +15,9 @@ import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
 import {
+  adminUsersQuery,
+  assignLeagueCommissioner,
+  createLeague,
   leagueDetailQuery,
   leagueTeamsQuery,
   removeInaccessibleLeagueQueries,
@@ -27,6 +30,143 @@ import {
   writeLeaguePreference,
 } from "./leaguePreference.js";
 import { leagueAuthorityLabel } from "../../shared/leagueAuthority.js";
+import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
+import { createIntentKey } from "../accounts/accountApi.js";
+
+function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
+  const queryClient = useQueryClient();
+  const users = usersQuery;
+  const [leagueName, setLeagueName] = useState("");
+  const [createdLeague, setCreatedLeague] = useState(null);
+  const [commissionerUserId, setCommissionerUserId] = useState("");
+  const [message, setMessage] = useState("");
+  const createMutation = useMutation({
+    mutationFn: () =>
+      createLeague(
+        httpClient,
+        leagueName.trim(),
+        createIntentKey("admin-league-create")
+      ),
+    onSuccess: async (result) => {
+      setCreatedLeague(result.league);
+      setLeagueName("");
+      setMessage(
+        `${result.league.name} was created. Choose its commissioner below.`
+      );
+      await queryClient.invalidateQueries({ queryKey: ["leagues"] });
+    },
+    onError: () => setMessage(""),
+  });
+  const assignmentMutation = useMutation({
+    mutationFn: () =>
+      assignLeagueCommissioner(
+        httpClient,
+        createdLeague.id,
+        commissionerUserId,
+        createIntentKey("commissioner-assignment")
+      ),
+    onSuccess: () => {
+      const selected = users.data?.find(
+        ({ id }) => id === commissionerUserId
+      );
+      setMessage(
+        `Commissioner assignment sent to ${
+          selected?.displayName || "the selected user"
+        }. It becomes active after acceptance.`
+      );
+      setCommissionerUserId("");
+    },
+    onError: () => setMessage(""),
+  });
+
+  return (
+    <Surface as="section" className="hl-admin-league-panel">
+      <p className="hl-eyebrow">Platform administration</p>
+      <h2>Create a league</h2>
+      <p>
+        New leagues begin in Setup. Commissioner authority is assigned to an
+        existing user through a separate acceptance workflow.
+      </p>
+      <form
+        className="hl-feature-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setMessage("");
+          createMutation.mutate();
+        }}
+      >
+        <label className="hl-field">
+          League name
+          <input
+            value={leagueName}
+            maxLength={120}
+            required
+            onChange={(event) => setLeagueName(event.target.value)}
+          />
+        </label>
+        <button
+          className="hl-button hl-button--primary"
+          type="submit"
+          disabled={createMutation.isPending || !leagueName.trim()}
+        >
+          {createMutation.isPending ? "Creating…" : "Create league"}
+        </button>
+      </form>
+      {createdLeague && (
+        <form
+          className="hl-feature-form hl-admin-commissioner-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setMessage("");
+            assignmentMutation.mutate();
+          }}
+        >
+          <h3>Assign commissioner for {createdLeague.name}</h3>
+          {users.isPending ? (
+            <LoadingBlock>Loading eligible users…</LoadingBlock>
+          ) : users.isError ? (
+            <SafeQueryError error={users.error} />
+          ) : (
+            <>
+              <label className="hl-field">
+                Commissioner
+                <select
+                  value={commissionerUserId}
+                  required
+                  onChange={(event) =>
+                    setCommissionerUserId(event.target.value)
+                  }
+                >
+                  <option value="">Choose a user</option>
+                  {users.data.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.displayName} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="hl-button hl-button--primary"
+                type="submit"
+                disabled={
+                  assignmentMutation.isPending || !commissionerUserId
+                }
+              >
+                Send commissioner assignment
+              </button>
+            </>
+          )}
+        </form>
+      )}
+      {message && <p className="hl-form-message">{message}</p>}
+      {(createMutation.error || assignmentMutation.error) && (
+        <SafeQueryError
+          error={createMutation.error || assignmentMutation.error}
+        />
+      )}
+    </Surface>
+  );
+}
 
 function SafeQueryError({ error }) {
   return (
@@ -67,9 +207,21 @@ function useAuthorizationCleanup(leagues) {
 }
 
 export function LeagueSelectionPage() {
+  const session = useSession();
   const leaguesQuery = useVisibleLeagues();
+  const adminUsers = useQuery({
+    ...adminUsersQuery(session.httpClient),
+    enabled: session.status === "authenticated",
+    retry: false,
+  });
   const [rememberedLeagueId] = useState(readLeaguePreference);
   useAuthorizationCleanup(leaguesQuery.data);
+  const platformAdministrator =
+    adminUsers.isSuccess ||
+    leaguesQuery.data?.some(
+      (league) =>
+        league.membership.effectiveAuthority === "platform_administrator"
+    );
 
   return (
     <SessionGate>
@@ -80,7 +232,8 @@ export function LeagueSelectionPage() {
           description="Choose the league workspace you want to open."
           id="league-selection-title"
         />
-        {leaguesQuery.isPending ? (
+        {leaguesQuery.isPending ||
+        (leaguesQuery.data?.length === 0 && adminUsers.isPending) ? (
           <Surface>
             <LoadingBlock>Loading your leagues…</LoadingBlock>
           </Surface>
@@ -88,36 +241,46 @@ export function LeagueSelectionPage() {
           <Surface className="hl-state-surface">
             <SafeQueryError error={leaguesQuery.error} />
           </Surface>
-        ) : leaguesQuery.data.length === 0 ? (
+        ) : leaguesQuery.data.length === 0 && !platformAdministrator ? (
           <Surface>
             <EmptyBlock title="No league memberships yet">
               Your account is active, but it does not currently have an active
               league membership. A commissioner can invite you.
             </EmptyBlock>
           </Surface>
-        ) : leaguesQuery.data.length === 1 ? (
+        ) : leaguesQuery.data.length === 1 && !platformAdministrator ? (
           <Navigate
             to={routePaths.league(leaguesQuery.data[0].id)}
             replace
           />
         ) : (
-          <ul className="hl-league-picker">
-            {leaguesQuery.data.map((league) => (
-              <li key={league.id}>
-                <Link
-                  to={routePaths.league(league.id)}
-                  aria-label={league.name}
-                  onClick={() => writeLeaguePreference(league.id)}
-                >
-                  <span>
-                    <strong>{league.name}</strong>
-                    <small>{leagueAuthorityLabel(league.membership)}</small>
-                  </span>
-                  {rememberedLeagueId === league.id && <em>Last opened</em>}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <>
+            {leaguesQuery.data.length > 0 ? (
+              <ul className="hl-league-picker">
+                {leaguesQuery.data.map((league) => (
+                  <li key={league.id}>
+                    <Link
+                      to={routePaths.league(league.id)}
+                      aria-label={league.name}
+                      onClick={() => writeLeaguePreference(league.id)}
+                    >
+                      <span>
+                        <strong>{league.name}</strong>
+                        <small>{leagueAuthorityLabel(league.membership)}</small>
+                      </span>
+                      {rememberedLeagueId === league.id && <em>Last opened</em>}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {platformAdministrator && (
+              <PlatformAdminLeaguePanel
+                httpClient={session.httpClient}
+                usersQuery={adminUsers}
+              />
+            )}
+          </>
         )}
       </main>
     </SessionGate>
@@ -224,12 +387,11 @@ export function LeagueTeamsPage() {
                         <Link
                           to={routePaths.teamRoster(leagueId, team.id)}
                           aria-label={team.name}
-                          style={{
-                            "--team-primary":
-                              team.primaryColour || "#16324f",
-                            "--team-secondary":
-                              team.secondaryColour || "#f7f7f7",
-                          }}
+                          style={teamColourStyle(team)}
+                          className={teamColourClass(
+                            "hl-teams-index__team",
+                            team
+                          )}
                         >
                           <span
                             className="hl-teams-index__mark"
@@ -241,7 +403,7 @@ export function LeagueTeamsPage() {
                               team.name.slice(0, 2).toUpperCase()
                             )}
                           </span>
-                          <span>
+                          <span className="hl-teams-index__identity">
                             <strong>{team.name}</strong>
                             <small>
                               {team.currentManager?.displayName ||

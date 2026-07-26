@@ -6,134 +6,109 @@
 
 ## Plan Status
 
-`COMPLETE — STAGING ONLY`
+`IN PROGRESS - STAGING ONLY`
 
 ## Work Plan ID
 
 ```text
-M7-13
+M7-14
 ```
 
 ## Work Item
 
 ```text
-Residual staging review fixes for commissioner workflow density, horizontal
-team stripes, roster readability, and reliable pointer/touch ordering
+Final staged product-review batch for team identity, roster actions, player
+favourites and search, matchup presentation, and commissioner administration
 ```
 
 ## Authority and Boundary
 
-Grae authorized this work on `2026-07-26` after reviewing the M7-12 staging
-result and directing that every remaining item in the immediate-fix review be
-addressed before the next manual test.
+Grae authorized this coordinated frontend and backend work on `2026-07-26`
+after completing a screenshot-supported staging review and directing that all
+items in that review be addressed before the next manual test.
 
-This plan permits frontend changes in the canonical `E:\hundo-leago`
-repository, disposable local browser testing, and publication to the existing
-dedicated Netlify staging site after the full local gate passes and the site is
-positively re-identified.
+This plan permits changes in the canonical frontend repository and the sibling
+backend repository, a forward-only SQLite migration, disposable local browser
+testing, separate frontend and backend commits, and publication to the existing
+dedicated staging services only after the full local gates pass and both
+staging targets are positively re-identified.
 
 It does not authorize production deployment, production data or configuration
-changes, a staging fixture reset, new league rules, arbitrary or partial
-buyout transfers, provider imports, scheduled jobs, or unrelated redesigns.
+changes, a staging fixture reset, arbitrary member deletion, changes to league
+scoring or roster rules, or unrelated redesigns.
 
 ## Approved Scope
 
-1. Re-audit every item in Grae's immediate-fix review against the deployed
-   M7-12 application and current code, treating already-correct behavior as
-   regression requirements rather than assuming the review is obsolete.
-2. Replace the team-directory card's subtle diagonal colour treatment with
-   clear horizontal bands using each team's configured primary and secondary
-   stripe colours, while preserving logo, name, manager, and managed-team
-   status.
-3. Simplify Commissioner Roster Operations by presenting one selected
-   correction workflow at a time and placing supporting cap and staging-reset
-   information in clearly labelled disclosures. Preserve every preview,
-   confirmation, activity, permission, and staging-only safeguard.
-4. Replace reliance on native row/card drag behavior with an explicit
-   mouse-and-touch pointer handle that identifies the drop target and saves the
-   authoritative display order. Preserve native drag fallback, keyboard
-   controls, position-group boundaries, optimistic feedback, and backend
-   concurrency validation.
-5. Increase roster player and statistics typography, retain the default
-   forward-then-defence descending-AAV order, and keep sortable GP, G, A, P,
-   FP, and FPG columns without inline stat labels.
-6. Reverify commissioner role separation, five roster-finance cards,
-   retention-slot use, team switching, draft picks, player FPG and assignment
-   filters, favourites, auction handoff, optional contract retention, Future
-   Considerations notes, specific whole-buyout transfers, full-season matchup
-   selection, completed-week reads, varied fixture totals, and current
-   scheduled/live team names.
-7. Add focused automated coverage for the residual changes and update
-   canonical staging evidence after hosted acceptance.
+1. Support either two or three team colours. Two colours render as equal top
+   and bottom bands; three colours use the approved three-band pattern.
+   Preserve readable team names and logos with a consistent contrast treatment
+   on directory cards and roster identity headers.
+2. Simplify roster ordering to the drag handle while preserving an accessible
+   keyboard path. Add compact expanding row actions for whole-contract buyout,
+   eligible Active-to-IR movement, trade-composer handoff, and the approved
+   informational trade block.
+3. Persist trade-block state authoritatively in SQLite, enforce league and team
+   authority in the backend, clear stale flags when ownership changes, expose
+   the state through stable API contracts, and display it without affecting
+   transaction or approval rules.
+4. Replace Players-page comparison controls with colour-changing helmet
+   favourite controls, remove the duplicated selected-player table, and add a
+   selectable player-name autocomplete without introducing hidden writes.
+5. Present matchup week labels as human-readable week numbers and date ranges,
+   add games played to both player-score tables, and apply each team's colour
+   bands to the matchup score headers.
+6. Replace commissioner dashboard manager-empty states with league-level
+   auction, trade, membership, and rotating matchup information. Add
+   commissioner invitation and member-removal controls with explicit
+   confirmations and understandable errors.
+7. Add a platform-administrator section to league selection for creating a
+   league and assigning its commissioner through existing protected endpoints.
+8. Add focused backend and frontend coverage, update canonical product/API/data
+   documentation, and record local and hosted staging acceptance evidence.
+
+## Data and Migration Safety
+
+The backend migration must be forward-only and additive. Existing two-colour
+teams remain valid with no tertiary colour. Existing roster ownership,
+contracts, memberships, and league records must be preserved. Trade-block rows
+must reference stable ownership/team/league identifiers and be removed when the
+underlying ownership is transferred, released, or otherwise ceases to be held
+by the flagged team.
+
+Before any staging backend publication, create and verify the standard staging
+database backup and confirm migration readiness against a disposable database.
+No production database may be opened or modified.
 
 ## Required Verification
 
-* Focused frontend tests for commissioner workflow selection and disclosures,
-  horizontal team stripes, pointer/touch roster ordering, keyboard fallback,
-  default AAV ordering, and roster statistic presentation.
-* Existing focused frontend tests for every already-correct review item.
-* Complete frontend test, lint, production-build, and browser-authority gates.
-* Focused local desktop and narrow-layout browser checks for commissioner,
-  teams, roster table, hockey lines, players, trades, and matchups.
-* Staging-only publication after a separate verified frontend commit and
-  positive Netlify staging-site identification.
-* Hosted platform-administrator and Alpha Ravens manager acceptance before
-  Grae's next manual test.
+* Focused backend tests for team-profile third-colour validation and
+  persistence; trade-block authorization, lifecycle cleanup, isolation, and
+  read shape; and the unchanged invitation, membership, league creation, and
+  commissioner-assignment protections.
+* Focused frontend tests for two/three-colour identity treatments, roster
+  action availability and handoffs, helmet favourites and autocomplete,
+  matchup labels/GP/colour headers, commissioner dashboard rotation and member
+  controls, and administrator league creation/commissioner assignment.
+* Complete backend test and syntax gates.
+* Complete frontend test, lint, production-build, browser-authority, and
+  `git diff --check` gates.
+* Disposable local desktop and narrow-layout browser acceptance for manager,
+  commissioner, and platform-administrator roles.
+* Separate backend and frontend commits followed by staging-only publication,
+  migration verification, health checks, and hosted role acceptance.
 
 ## Stop Conditions
 
-Stop before any production action. Stop if a requested change would weaken
-backend authority, league isolation, preview-and-confirm safeguards, or
-buyout-obligation integrity. Stop a hosted write if the target cannot be
-positively identified as the dedicated staging application.
+Stop before any production action. Stop if a requested UI shortcut would bypass
+backend authorization, execute an irreversible action without confirmation,
+weaken league isolation, or conflict with an approved league rule. Stop a
+hosted write if the target cannot be positively identified as the dedicated
+staging service or if a verified database backup is unavailable.
 
 ## Completion Gate
 
-M7-13 is complete only when the residual visual and ordering fixes pass the
-full local gate, every immediate-review item has explicit regression evidence,
-the exact staging application commit is published and hosted acceptance
-passes, residual manual-only checks are recorded, and production remains
-untouched.
-
-## Completion Evidence
-
-M7-13 completed on `2026-07-26`.
-
-```text
-Release ID:                  HL-20260726-4
-Frontend application commit: 51f9c22c8127dcc992ca35ffcb9bdd10c14d3634
-Frontend Netlify deploy:      6a666d6791675949811e06c9
-Frontend Netlify build:       6a666d6791675949811e06c7
-Backend application commit:   a821a95a267a370d7f3fe3ef0b8cfdacea83aea5 (unchanged)
-Fixture build:                m7-release-qa-fixture-v8 (unchanged)
-```
-
-The complete frontend gate passed `115/115` tests across 23 files, lint,
-production build, browser-authority verification across 15 compatibility
-files and 98 shipped source files, and `git diff --check`.
-
-Disposable local and hosted platform-administrator/Alpha Ravens manager
-acceptance confirmed:
-
-* one selected commissioner correction workflow at a time, collapsed cap and
-  staging-reset supporting panels, no Import health pane, and corrected
-  narrow-layout spacing;
-* strong horizontal team-colour bands, five authoritative finance cards,
-  `1/3` retention-slot use, larger sortable roster statistics, four years of
-  picks, and table/hockey-line ordering controls;
-* real provider-backed player names, FPG, Favourites and assignment filters,
-  and stable player-to-auction handoff with the manager's team implicit;
-* optional contract retention, notes-only Future Considerations, named whole
-  buyout obligations, and readable pending-trade details;
-* all 22 matchup weeks, usable completed Week 1 and scheduled future weeks,
-  varied fixture totals, and current scheduled/live team names; and
-* immediate team-name propagation into Matchups and the dashboard, followed by
-  restoration of the original Alpha Ravens name.
-
-The temporary roster display-order change and temporary team-name change used
-for hosted acceptance were restored. No auction, trade, commissioner
-correction, fixture reset, backend deployment, or production action occurred.
-Manual native pointer dragging remains an explicit Grae acceptance check
-because the connected browser's raw drag synthesis does not activate the
-application gesture; mouse/touch pointer paths and saved payloads pass focused
-automated coverage, and the hosted keyboard path persisted authoritatively.
+M7-14 is complete only when every screenshot-review item has focused automated
+evidence, both full local gates pass, the exact backend and frontend commits are
+published to their dedicated staging services, migration and health checks
+pass, manager/commissioner/administrator hosted acceptance passes, canonical
+evidence is current, and production remains untouched.

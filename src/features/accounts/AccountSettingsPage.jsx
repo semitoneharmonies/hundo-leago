@@ -58,18 +58,28 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
   const [nameOverride, setNameOverride] = useState(null);
   const [primaryColourOverride, setPrimaryColourOverride] = useState(null);
   const [secondaryColourOverride, setSecondaryColourOverride] = useState(null);
+  const [tertiaryColourOverride, setTertiaryColourOverride] = useState(null);
+  const [colourModeOverride, setColourModeOverride] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [removeLogo, setRemoveLogo] = useState(false);
   const [message, setMessage] = useState("");
   const savedPrimaryColour = team.primaryColour || "#16324f";
   const savedSecondaryColour = team.secondaryColour || "#f7f7f7";
+  const savedTertiaryColour = team.tertiaryColour;
+  const savedColourMode = savedTertiaryColour ? "three" : "two";
   const name = nameOverride ?? team.name;
   const primaryColour = primaryColourOverride ?? savedPrimaryColour;
   const secondaryColour = secondaryColourOverride ?? savedSecondaryColour;
+  const colourMode = colourModeOverride ?? savedColourMode;
+  const tertiaryColour =
+    tertiaryColourOverride ?? savedTertiaryColour ?? "#f97316";
   const isDirty =
     name.trim() !== team.name ||
     primaryColour !== savedPrimaryColour ||
     secondaryColour !== savedSecondaryColour ||
+    colourMode !== savedColourMode ||
+    (colourMode === "three" &&
+      tertiaryColour !== (savedTertiaryColour ?? "#f97316")) ||
     logoFile !== null ||
     removeLogo;
 
@@ -79,6 +89,7 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
         name: name.trim(),
         primaryColour,
         secondaryColour,
+        tertiaryColour: colourMode === "three" ? tertiaryColour : null,
       };
       if (removeLogo) input.logo = null;
       else if (logoFile) input.logo = await fileBase64(logoFile);
@@ -98,6 +109,8 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
       setNameOverride(null);
       setPrimaryColourOverride(null);
       setSecondaryColourOverride(null);
+      setTertiaryColourOverride(null);
+      setColourModeOverride(null);
       setLogoFile(null);
       setRemoveLogo(false);
       setMessage("Team profile saved.");
@@ -116,11 +129,14 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
     >
       <div className="hl-account-team-form__heading">
         <div
-          className="hl-account-team-mark"
           style={{
             "--team-primary": primaryColour,
             "--team-secondary": secondaryColour,
+            "--team-tertiary": tertiaryColour,
           }}
+          className={`hl-account-team-mark${
+            colourMode === "three" ? " has-three-colours" : ""
+          }`}
           aria-hidden="true"
         >
           {team.logoReference ? (
@@ -145,7 +161,17 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
           />
         </label>
         <label className="hl-field">
-          Primary stripe
+          Stripe colours
+          <select
+            value={colourMode}
+            onChange={(event) => setColourModeOverride(event.target.value)}
+          >
+            <option value="two">Two colours</option>
+            <option value="three">Three colours</option>
+          </select>
+        </label>
+        <label className="hl-field">
+          Top stripe
           <input
             type="color"
             value={primaryColour}
@@ -155,7 +181,7 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
           />
         </label>
         <label className="hl-field">
-          Secondary stripe
+          {colourMode === "three" ? "Middle stripe" : "Bottom stripe"}
           <input
             type="color"
             value={secondaryColour}
@@ -164,6 +190,18 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
             }
           />
         </label>
+        {colourMode === "three" && (
+          <label className="hl-field">
+            Bottom stripe
+            <input
+              type="color"
+              value={tertiaryColour}
+              onChange={(event) =>
+                setTertiaryColourOverride(event.target.value)
+              }
+            />
+          </label>
+        )}
         <label className="hl-field">
           Team logo
           <input

@@ -13,10 +13,12 @@ import {
 import { readLeaguePreference } from "../leagues/leaguePreference.js";
 import {
   leagueSeasonsQuery,
+  leagueTeamsQuery,
   visibleLeaguesQuery,
 } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
+import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
   competitionKeys,
   currentMatchupWeekQuery,
@@ -43,8 +45,29 @@ function points(value) {
   return (Number(value || 0) / 100).toFixed(2);
 }
 
-function dateTime(value) {
-  return new Date(value).toLocaleString("en-CA", { timeZone: "America/Vancouver" });
+function weekLabel(sequence, startsAtMs, endsAtMs) {
+  const options = { month: "short", day: "numeric", timeZone: "America/Vancouver" };
+  const start = new Date(startsAtMs);
+  const end = new Date(Math.max(startsAtMs, endsAtMs - 1));
+  const startMonth = new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    timeZone: "America/Vancouver",
+  }).format(start);
+  const endMonth = new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    timeZone: "America/Vancouver",
+  }).format(end);
+  const startText =
+    startMonth === endMonth
+      ? new Intl.DateTimeFormat("en-CA", { day: "numeric", timeZone: options.timeZone }).format(start)
+      : new Intl.DateTimeFormat("en-CA", options).format(start);
+  const endText = new Intl.DateTimeFormat(
+    "en-CA",
+    startMonth === endMonth
+      ? { day: "numeric", timeZone: options.timeZone }
+      : options
+  ).format(end);
+  return `Week ${sequence}: ${startMonth === endMonth ? `${startMonth} ` : ""}${startText}–${endText}`;
 }
 
 function ErrorMessage({ error }) {
@@ -203,6 +226,10 @@ export function LeagueMatchupsPage() {
     ),
     enabled,
   });
+  const teams = useQuery({
+    ...leagueTeamsQuery(context.session.httpClient, leagueId),
+    enabled: context.session.status === "authenticated" && Boolean(context.league),
+  });
   const current = useQuery({
     ...currentMatchupWeekQuery(
       context.session.httpClient,
@@ -292,7 +319,7 @@ export function LeagueMatchupsPage() {
                 >
                   {weeks.data.weeks.map((item) => (
                     <option key={item.id} value={item.id}>
-                      Week {item.sequence} · {item.status}
+                      {weekLabel(item.sequence, item.startsAtMs, item.endsAtMs)}
                     </option>
                   ))}
                 </select>
@@ -312,8 +339,13 @@ export function LeagueMatchupsPage() {
                           <aside className="hl-surface hl-matchup-sidebar">
                             <header>
                               <p className="hl-eyebrow">Selected week</p>
-                              <h2>{week.data.weekKey}</h2>
-                              <p>{dateTime(week.data.startsAtMs)} – {dateTime(week.data.endsAtMs)}</p>
+                              <h2>
+                                {weekLabel(
+                                  week.data.sequence,
+                                  week.data.startsAtMs,
+                                  week.data.endsAtMs
+                                )}
+                              </h2>
                               <StatusBadge>{week.data.status}</StatusBadge>
                             </header>
                             {week.data.matchups.length === 0 ? (
@@ -371,7 +403,10 @@ export function LeagueMatchupsPage() {
                                     <p role="status">Refreshing matchup score…</p>
                                   ) : null}
                                 </div>
-                                <MatchupCard matchup={matchup.data} />
+                                <MatchupCard
+                                  matchup={matchup.data}
+                                  teams={teams.data || []}
+                                />
                               </>
                             ) : null}
                           </div>
@@ -416,7 +451,7 @@ function playerStat(player, field) {
     : player[field];
 }
 
-function MatchupCard({ matchup }) {
+function MatchupCard({ matchup, teams = [] }) {
   const official = matchup.result?.currentVersion || null;
   const scoring = matchup.scoring;
   const homeScore =
@@ -425,10 +460,17 @@ function MatchupCard({ matchup }) {
     official?.awayScoreHundredths ?? scoring?.away.scoreHundredths ?? 0;
   const homeSlots = scoringSlots(scoring?.home);
   const awaySlots = scoringSlots(scoring?.away);
+  const homeTeam =
+    teams.find(({ id }) => id === matchup.homeTeam.id) || matchup.homeTeam;
+  const awayTeam =
+    teams.find(({ id }) => id === matchup.awayTeam.id) || matchup.awayTeam;
   return (
     <section className="hl-surface hl-matchup-detail" aria-labelledby="matchup-detail-title">
       <header className="hl-matchup-score">
-        <div>
+        <div
+          className={teamColourClass("hl-matchup-score__team", homeTeam)}
+          style={teamColourStyle(homeTeam)}
+        >
           <span>Home</span>
           <strong>{matchup.homeTeam.name}</strong>
           <b>{points(homeScore)} FP</b>
@@ -440,7 +482,10 @@ function MatchupCard({ matchup }) {
           </StatusBadge>
           <span>VS</span>
         </div>
-        <div>
+        <div
+          className={teamColourClass("hl-matchup-score__team", awayTeam)}
+          style={teamColourStyle(awayTeam)}
+        >
           <span>Away</span>
           <strong>{matchup.awayTeam.name}</strong>
           <b>{points(awayScore)} FP</b>
@@ -474,12 +519,12 @@ function MatchupCard({ matchup }) {
               <caption>Player scoring for this matchup</caption>
               <thead>
                 <tr>
-                  <th colSpan="5" scope="colgroup">{matchup.homeTeam.name}</th>
-                  <th colSpan="5" scope="colgroup">{matchup.awayTeam.name}</th>
+                  <th colSpan="6" scope="colgroup">{matchup.homeTeam.name}</th>
+                  <th colSpan="6" scope="colgroup">{matchup.awayTeam.name}</th>
                 </tr>
                 <tr>
-                  <th>Player</th><th>G</th><th>A</th><th>PTS</th><th>FP</th>
-                  <th>Player</th><th>G</th><th>A</th><th>PTS</th><th>FP</th>
+                  <th>Player</th><th>GP</th><th>G</th><th>A</th><th>PTS</th><th>FP</th>
+                  <th>Player</th><th>GP</th><th>G</th><th>A</th><th>PTS</th><th>FP</th>
                 </tr>
               </thead>
               <tbody>
@@ -498,6 +543,7 @@ function MatchupCard({ matchup }) {
                             }`
                           : `Empty ${homeSlot.positionGroup} slot ${homeSlot.slotNumber}`}
                       </th>
+                      <td>{playerStat(homePlayer, "gamesPlayedDelta")}</td>
                       <td>{playerStat(homePlayer, "goalDelta")}</td>
                       <td>{playerStat(homePlayer, "assistDelta")}</td>
                       <td>{playerStat(homePlayer, "pointDelta")}</td>
@@ -511,6 +557,7 @@ function MatchupCard({ matchup }) {
                             }`
                           : `Empty ${awaySlot.positionGroup} slot ${awaySlot.slotNumber}`}
                       </th>
+                      <td>{playerStat(awayPlayer, "gamesPlayedDelta")}</td>
                       <td>{playerStat(awayPlayer, "goalDelta")}</td>
                       <td>{playerStat(awayPlayer, "assistDelta")}</td>
                       <td>{playerStat(awayPlayer, "pointDelta")}</td>

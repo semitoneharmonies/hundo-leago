@@ -87,6 +87,23 @@ function matchupSummary() {
   };
 }
 
+function leagueTeam(id, name, primaryColour, secondaryColour, tertiaryColour = null) {
+  return {
+    id,
+    leagueId,
+    name,
+    status: "active",
+    primaryColour,
+    secondaryColour,
+    tertiaryColour,
+    logoReference: null,
+    createdAtMs: 1,
+    updatedAtMs: 1,
+    version: 1,
+    currentManager: null,
+  };
+}
+
 function secondMatchupSummary() {
   return {
     id: secondMatchupId,
@@ -300,6 +317,17 @@ describe("M6-12 authenticated competition pages", () => {
       dataStatus: "missing",
     });
     const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/teams`) {
+        return envelope({
+          code: "TEAMS_FOUND",
+          teams: [
+            leagueTeam(homeId, "Home Team", "#112233", "#ddeeff", "#cc3300"),
+            leagueTeam(awayId, "Away Team", "#334455", "#ffffff"),
+            leagueTeam(secondHomeId, "Third Team", "#123456", "#abcdef"),
+            leagueTeam(secondAwayId, "Fourth Team", "#654321", "#fedcba"),
+          ],
+        });
+      }
       if (path === `/api/v1/leagues/${leagueId}/seasons`) {
         return envelope(seasonList());
       }
@@ -369,6 +397,21 @@ describe("M6-12 authenticated competition pages", () => {
     expect(
       screen.getByRole("table", { name: "Player scoring for this matchup" })
     ).toBeInTheDocument();
+    const scoringTable = screen.getByRole("table", {
+      name: "Player scoring for this matchup",
+    });
+    expect(within(scoringTable).getAllByText("GP")).toHaveLength(2);
+    const scoreHeader = document.querySelector(".hl-matchup-score");
+    expect(
+      within(scoreHeader)
+        .getByText("Home Team")
+        .closest(".hl-matchup-score__team")
+    ).toHaveClass("has-three-colours");
+    expect(
+      within(scoreHeader)
+        .getByText("Away Team")
+        .closest(".hl-matchup-score__team")
+    ).not.toHaveClass("has-three-colours");
     expect(screen.getByText("Connor Example")).toBeInTheDocument();
     expect(screen.getByText("Jamie Missing — data unavailable")).toBeInTheDocument();
     expect(screen.getAllByText("Empty F slot 2")).toHaveLength(2);
@@ -378,10 +421,10 @@ describe("M6-12 authenticated competition pages", () => {
       ).length
     ).toBeGreaterThan(0);
     expect(screen.queryByText(/Data health:/)).not.toBeInTheDocument();
-    expect(fetchImpl).toHaveBeenCalledTimes(7);
+    expect(fetchImpl).toHaveBeenCalledTimes(8);
 
     await view.user.click(screen.getByRole("button", { name: "Refresh" }));
-    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(8));
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(9));
 
     await view.user.click(
       screen.getByRole("button", { name: "Third Team vs Fourth Team" })
@@ -391,17 +434,17 @@ describe("M6-12 authenticated competition pages", () => {
         name: "Third Team vs Fourth Team",
       })
     ).toBeInTheDocument();
-    expect(fetchImpl).toHaveBeenCalledTimes(9);
+    expect(fetchImpl).toHaveBeenCalledTimes(10);
 
     await view.user.selectOptions(
       screen.getByRole("combobox", { name: "Week" }),
       futureWeekId
     );
     expect(
-      await screen.findByRole("heading", { name: "2026-W02" })
+      await screen.findByRole("heading", { name: /Week 2:/ })
     ).toBeInTheDocument();
     expect(screen.getByText("No pairings in this week.")).toBeInTheDocument();
-    expect(fetchImpl).toHaveBeenCalledTimes(10);
+    expect(fetchImpl).toHaveBeenCalledTimes(11);
   });
 
   it("loads a historical matchup after an explicit season selection", async () => {

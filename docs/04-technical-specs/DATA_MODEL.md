@@ -449,7 +449,7 @@ Platform-administrator authority remains separate from league membership.
 * league ID;
 * current display name and normalized name;
 * status;
-* two approved colours;
+* primary and secondary colours plus an optional tertiary colour;
 * logo object key or URL;
 * created and updated timestamps;
 * version.
@@ -457,10 +457,11 @@ Platform-administrator authority remains separate from league membership.
 Team names are case-insensitively unique inside one league.
 
 For target team-profile writes, colours use canonical lowercase six-digit
-sRGB hex strings in the form `#rrggbb`. Both colour fields are null together
-while a newly created team profile is incomplete, or both contain canonical
-values. The colours do not need to differ and have no league-uniqueness or
-contrast constraint.
+sRGB hex strings in the form `#rrggbb`. Primary and secondary are null
+together while a newly created team profile is incomplete, or both contain
+canonical values. Tertiary is nullable: null selects the two-stripe treatment
+and a canonical value selects the three-stripe treatment. The colours do not
+need to differ and have no league-uniqueness or contrast constraint.
 
 `teams.logo_reference` is null or a backend-generated stable UUID that refers
 to a current `team_logo_objects` row. Raw bytes, data URLs, client filenames,
@@ -553,6 +554,7 @@ Fields include:
 * roster category: `Active`, `Bench`, `Injured Reserve`, or `Prospect`;
 * position group;
 * slot number when applicable;
+* informational trade-block flag;
 * acquired transaction type and ID;
 * created and updated timestamps;
 * version.
@@ -560,6 +562,9 @@ Fields include:
 A unique constraint on league and player prevents two teams in the same league from owning the same player or right.
 
 No ownership row means the player is unowned in that league, subject to feature-specific eligibility.
+
+The trade-block flag has no transaction or approval effect. It clears
+automatically when the ownership moves to another team.
 
 An auction winner is normally assigned to the first available finite Active
 slot for the player's effective F/D position. If every such slot is occupied,

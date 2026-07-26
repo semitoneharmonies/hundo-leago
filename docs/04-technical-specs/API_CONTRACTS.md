@@ -825,6 +825,7 @@ commissioner operation.
 | Method and path | Authorization | Purpose |
 |---|---|---|
 | `GET /api/v1/leagues/:leagueId/memberships` | Commissioner | List league memberships |
+| `GET /api/v1/leagues/:leagueId/invitable-users` | Commissioner | List active existing users who do not already have an active or invited membership |
 | `POST /api/v1/leagues/:leagueId/invitations` | Commissioner | Invite an existing user to join and create or manage a team |
 | `GET /api/v1/league-invitations/:invitationId` | Authenticated invited user | Read safe invitation details |
 | `POST /api/v1/league-invitations/:invitationId/accept` | Authenticated invited user | Accept and atomically create or activate membership and the associated team workflow |
@@ -841,6 +842,20 @@ commissioner operation.
 | `DELETE /api/v1/leagues/:leagueId/teams/:teamId` | Commissioner plus administrator approval | Execute the protected team-erase workflow |
 | `GET /api/v1/commissioner-assignments/:assignmentId` | Authenticated proposed commissioner | Read safe assignment details |
 | `POST /api/v1/commissioner-assignments/:assignmentId/accept` | Authenticated proposed commissioner | Accept and atomically activate commissioner membership and role |
+
+Membership removal uses an exact body:
+
+```json
+{
+  "confirmed": true,
+  "expectedVersion": 3
+}
+```
+
+The current commissioner membership cannot be removed through this endpoint.
+Removing an active manager membership ends its current team assignment in the
+same transaction. The response never exposes the removed user's email or
+credential data.
 | `POST /api/v1/commissioner-assignments/:assignmentId/decline` | Authenticated proposed commissioner | Decline the assignment |
 
 Teams are not added or removed during a live season.
@@ -853,6 +868,7 @@ scoped `Idempotency-Key`, and an exact JSON object containing at least one of:
   "name": "Snow Owls",
   "primaryColour": "#112233",
   "secondaryColour": "#aabbcc",
+  "tertiaryColour": "#f97316",
   "logo": {
     "mediaType": "image/png",
     "contentBase64": "canonical-base64"
@@ -861,9 +877,10 @@ scoped `Idempotency-Key`, and an exact JSON object containing at least one of:
 ```
 
 Unknown fields are rejected. `name` is trimmed, contains at most 35 Unicode
-code points, and remains case-insensitively unique within the league. Colour
-fields are optional only as a pair; supplied values match lowercase
-`#rrggbb`. `logo` is optional, is null to remove the current logo, or is
+code points, and remains case-insensitively unique within the league. Primary
+and secondary colour fields are optional only as a pair; supplied values match
+lowercase `#rrggbb`. `tertiaryColour` is optional or null for a two-colour
+team and canonical `#rrggbb` for a three-colour team. `logo` is optional, is null to remove the current logo, or is
 exactly `{mediaType, contentBase64}`. The base64 value is canonical without a
 data-URL prefix or whitespace. The decoded static PNG, JPEG, or WebP is at
 most `524288` bytes and each inspected dimension is from `1` through `2048`.
@@ -932,6 +949,8 @@ fixture source only when SportsDataIO data is absent.
 | `GET /api/v1/public/leagues/:leagueId/teams/:teamId/roster` | Public when the league is publicly eligible | Return the approved public roster projection only |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | League member | Return the authenticated team workspace: roster groups, ownership and contract versions, authoritative cap components, retention-slot usage, four-year owned draft picks, friendly trade-asset choices including named buyout annual penalty and remaining term, and saved presentation order |
 | `PUT /api/v1/leagues/:leagueId/teams/:teamId/roster-display-order` | Authorized team manager or current commissioner | Save an optimistic, versioned F/D presentation order without changing authoritative ownership slots |
+| `PUT /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/trade-block` | Authorized team manager or current commissioner | Set or clear the versioned informational trade-block flag |
+| `POST /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/move-to-ir` | Authorized team manager or current commissioner | Move an Active provider-eligible player to the first open injured-reserve slot |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | League member | Return authoritative legality reasons without writing |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Authorized team manager or commissioner correction workflow | Move one owned player between approved groups or slots |
 | `GET /api/v1/leagues/:leagueId/commissioner/roster-workspace` | Current commissioner or platform administrator with active membership | Read-only current teams, seasons, roster, free agents, contracts, cap projections, and provider health |
@@ -983,7 +1002,7 @@ The public roster projection contains only:
 ```text
 league: id and public name
 season: id and public label
-team: id, public name, two colours, and logo reference
+team: id, public name, two required colours, optional third colour, and logo reference
 players: stable public player reference, name, normalized position, roster category,
          AAV cents, remaining contract years, age, and available season statistics
 cap: cap limit cents, cap usage cents, cap space cents,
@@ -1004,10 +1023,18 @@ The public roster request is read-only and performs no normalization write, repa
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/contracts` | League member | List current team contracts |
 | `GET /api/v1/leagues/:leagueId/contracts/:contractId` | League member | Read one current contract and remaining schedule |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/cap-obligations` | League member | List retention and buyout obligations |
-| `POST /api/v1/leagues/:leagueId/contracts/:contractId/buyout` | Contract owner manager | Buy out the player under approved rules |
+| `POST /api/v1/leagues/:leagueId/teams/:teamId/contracts/:contractId/buyout` | Contract owner manager or current commissioner | Buy out the owned player under approved rules and current optimistic versions |
 | `POST /api/v1/leagues/:leagueId/contracts/:contractId/corrections` | Commissioner | Create an explicit versioned correction |
 
 There is no general contract-extension endpoint.
+
+The roster shortcuts use only stable league, team, ownership, and contract
+identifiers. Trade-block updates require exactly `blocked` and
+`expectedVersion`. Active-to-IR requests require exactly `expectedVersion`.
+Buyout requests require `confirmed: true`, `expectedContractVersion`, and
+`expectedOwnershipVersion`. The backend re-derives authority, current
+ownership, provider injury status, available IR capacity, contract state,
+buyout lock, and pending-trade conflicts before writing.
 
 Normal contract creation occurs only through approved feature commands such as an auction win, prospect signing, or commissioner correction.
 

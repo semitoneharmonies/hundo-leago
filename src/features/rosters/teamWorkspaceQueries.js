@@ -51,3 +51,72 @@ export async function saveRosterDisplayOrder(
   );
   return response.data;
 }
+
+export async function setTradeBlock(
+  httpClient,
+  leagueId,
+  teamId,
+  ownershipId,
+  input
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${part(leagueId)}/teams/${part(teamId)}/roster/${part(
+        ownershipId
+      )}/trade-block`,
+      {
+        method: "PUT",
+        authenticated: true,
+        body: input,
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
+export async function moveRosterPlayerToIr(
+  httpClient,
+  leagueId,
+  teamId,
+  ownershipId,
+  expectedVersion
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${part(leagueId)}/teams/${part(teamId)}/roster/${part(
+        ownershipId
+      )}/move-to-ir`,
+      {
+        method: "POST",
+        authenticated: true,
+        body: { expectedVersion },
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
+export async function buyOutRosterContract(
+  httpClient,
+  leagueId,
+  teamId,
+  player
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${part(leagueId)}/teams/${part(teamId)}/contracts/${part(
+        player.contract.id
+      )}/buyout`,
+      {
+        method: "POST",
+        authenticated: true,
+        body: {
+          confirmed: true,
+          expectedContractVersion: player.contract.version,
+          expectedOwnershipVersion: player.ownershipVersion,
+        },
+        dataKind: "object",
+      }
+    )
+  ).data;
+}

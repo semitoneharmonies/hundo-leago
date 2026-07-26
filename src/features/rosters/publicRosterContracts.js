@@ -59,10 +59,28 @@ export function validatePublicRosterResponse(data) {
   exactKeys(roster.season, ["id", "label"], "The public season identity is invalid.");
   stableId(roster.season.id, "The public season ID is invalid.");
   text(roster.season.label, "The public season label is invalid.");
-  exactKeys(roster.team, ["id", "name", "primaryColour", "secondaryColour", "logoReference"], "The public team identity is invalid.");
+  exactKeys(
+    roster.team,
+    [
+      "id",
+      "name",
+      "primaryColour",
+      "secondaryColour",
+      ...(Object.hasOwn(roster.team, "tertiaryColour")
+        ? ["tertiaryColour"]
+        : []),
+      "logoReference",
+    ],
+    "The public team identity is invalid."
+  );
   stableId(roster.team.id, "The public team ID is invalid.");
   text(roster.team.name, "The public team name is invalid.");
-  for (const value of [roster.team.primaryColour, roster.team.secondaryColour]) {
+  for (const value of [
+    roster.team.primaryColour,
+    roster.team.secondaryColour,
+    roster.team.tertiaryColour,
+  ]) {
+    if (value === undefined) continue;
     contract(value === null || (typeof value === "string" && COLOUR.test(value)), "The team colour is invalid.");
   }
   contract(roster.team.logoReference === null || (typeof roster.team.logoReference === "string" && roster.team.logoReference.startsWith("/api/v1/public/leagues/")), "The public team logo reference is invalid.");

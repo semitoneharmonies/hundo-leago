@@ -62,6 +62,16 @@ export function validateTeamWorkspace(data) {
       ),
       "A roster category is invalid."
     );
+    contract(
+      player.onTradeBlock === undefined ||
+        typeof player.onTradeBlock === "boolean",
+      "A roster trade-block state is invalid."
+    );
+    contract(
+      player.injuredReserveEligible === undefined ||
+        typeof player.injuredReserveEligible === "boolean",
+      "A roster injured-reserve eligibility state is invalid."
+    );
   }
   object(data.cap, "The team cap is invalid.");
   for (const field of [

@@ -228,12 +228,26 @@ describe("league player catalog", () => {
       "Owned Player",
       "Draft Prospect",
     ]);
+    const nameSearch = screen.getByRole("searchbox", {
+      name: "Search by player name",
+    });
+    await view.user.type(nameSearch, "free");
+    const suggestions = await screen.findByRole("listbox");
+    const suggestion = within(suggestions).getByRole("option", {
+      name: /Free Agent/,
+    });
+    await view.user.click(within(suggestion).getByRole("button"));
+    expect(nameSearch).toHaveValue("Free Agent");
+    expect(
+      within(table).getByRole("rowheader", { name: "Free Agent" })
+    ).toBeInTheDocument();
+    await view.user.clear(nameSearch);
+    await view.user.click(screen.getByRole("button", { name: "Search" }));
 
     await view.user.click(
-      within(table)
-        .getByRole("rowheader", { name: "Free Agent" })
-        .closest("tr")
-        .querySelector('input[type="checkbox"]')
+      within(table).getByRole("button", {
+        name: "Add Free Agent to favourites",
+      })
     );
     const assignmentFilter = screen.getByRole("combobox", {
       name: "League assignment",
@@ -258,5 +272,8 @@ describe("league player catalog", () => {
     expect(
       within(table).getByRole("rowheader", { name: "Draft Prospect" })
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /Compare/ })
+    ).not.toBeInTheDocument();
   });
 });

@@ -1,9 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { GripVertical, List, Rows3 } from "lucide-react";
-
 import {
+  ArrowLeftRight,
+  CircleDollarSign,
+  GripVertical,
+  HeartPulse,
+  List,
+  Megaphone,
+  Rows3,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+
+import { routePaths } from "../../app/routePaths.js";
+import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
+import {
+  buyOutRosterContract,
+  moveRosterPlayerToIr,
   saveRosterDisplayOrder,
+  setTradeBlock,
   teamWorkspaceKeys,
 } from "./teamWorkspaceQueries.js";
 
@@ -26,17 +40,18 @@ function fantasyPointsPerGame(statistics) {
   return statistics.fantasyPointsHundredths / 100 / statistics.gamesPlayed;
 }
 
-function orderedPlayers(players) {
+function orderedPlayers(players, respectDisplayOrder = false) {
   return [...players].sort(
     (left, right) =>
       (left.normalizedPosition === "F" ? 0 : 1) -
         (right.normalizedPosition === "F" ? 0 : 1) ||
-      (Number.isInteger(left.displayOrder) &&
+      (respectDisplayOrder &&
+      Number.isInteger(left.displayOrder) &&
       Number.isInteger(right.displayOrder)
         ? left.displayOrder - right.displayOrder
-        : Number.isInteger(left.displayOrder)
+        : respectDisplayOrder && Number.isInteger(left.displayOrder)
           ? -1
-          : Number.isInteger(right.displayOrder)
+          : respectDisplayOrder && Number.isInteger(right.displayOrder)
             ? 1
             : (right.contract?.aavCents ?? -1) -
               (left.contract?.aavCents ?? -1)) ||
@@ -101,6 +116,77 @@ function endPointerCapture(event) {
   }
 }
 
+function RosterActions({ leagueId, player, pending, onAction }) {
+  const assetType = player.contract ? "contract" : "prospect_right";
+  const assetId = player.contract?.id || player.playerId;
+  const irDisabled =
+    player.rosterCategory !== "Active" || !player.injuredReserveEligible;
+
+  return (
+    <div className="hl-roster-actions">
+      <button
+        type="button"
+        className="hl-roster-action"
+        disabled={pending || !player.contract}
+        onClick={() => onAction("buyout", player)}
+        aria-label={`Buy out ${player.name}`}
+        title={
+          player.contract
+            ? `Buy out ${player.name}`
+            : "This player does not have an active contract."
+        }
+      >
+        <CircleDollarSign aria-hidden="true" />
+        <span>Buyout</span>
+      </button>
+      <button
+        type="button"
+        className="hl-roster-action"
+        disabled={pending || irDisabled}
+        onClick={() => onAction("ir", player)}
+        aria-label={`Move ${player.name} to injured reserve`}
+        title={
+          irDisabled
+            ? `${player.name} is not currently eligible for injured reserve`
+            : `Move ${player.name} to injured reserve`
+        }
+      >
+        <HeartPulse aria-hidden="true" />
+        <span>Move to IR</span>
+      </button>
+      <Link
+        className="hl-roster-action"
+        to={routePaths.leagueTradeForAsset(leagueId, assetType, assetId)}
+        aria-label={`Add ${player.name} to a trade`}
+        title={`Add ${player.name} to a trade`}
+      >
+        <ArrowLeftRight aria-hidden="true" />
+        <span>Trade</span>
+      </Link>
+      <button
+        type="button"
+        className={`hl-roster-action${
+          player.onTradeBlock ? " is-active" : ""
+        }`}
+        disabled={pending}
+        aria-pressed={player.onTradeBlock}
+        onClick={() => onAction("trade-block", player)}
+        aria-label={`${player.onTradeBlock ? "Remove" : "Add"} ${
+          player.name
+        } ${player.onTradeBlock ? "from" : "to"} the trade block`}
+        title={`${player.onTradeBlock ? "Remove from" : "Add to"} trade block`}
+      >
+        <Megaphone aria-hidden="true" />
+        <span>
+          {player.onTradeBlock
+            ? "Remove from trade block"
+            : "Add to trade block"}
+        </span>
+      </button>
+    </div>
+  );
+}
+
 function RosterSortHeading({ label, sortKey, sort, onSort }) {
   return (
     <button
@@ -131,6 +217,9 @@ function CategoryTable({
   onDrop,
   onPointerDrop,
   onMove,
+  onAction,
+  actionPending = false,
+  leagueId,
   sort,
   onSort,
 }) {
@@ -180,7 +269,7 @@ function CategoryTable({
                   ["FP", "fantasyPoints"],
                   ["FPG", "fantasyPointsPerGame"],
                 ].map(([label, sortKey]) => (
-                  <th key={sortKey} scope="col">
+                  <th className="hl-roster-stat" key={sortKey} scope="col">
                     <RosterSortHeading
                       label={label}
                       sortKey={sortKey}
@@ -189,18 +278,11 @@ function CategoryTable({
                     />
                   </th>
                 ))}
+                {canManage && <th scope="col">Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {displayedPlayers.map((player) => {
-                const peers = displayedPlayers.filter(
-                  ({ normalizedPosition }) =>
-                    normalizedPosition === player.normalizedPosition
-                );
-                const peerIndex = peers.findIndex(
-                  ({ ownershipId }) => ownershipId === player.ownershipId
-                );
-                return (
+              {displayedPlayers.map((player) => (
                 <tr
                   key={player.ownershipId}
                   className={[
@@ -272,32 +354,28 @@ function CategoryTable({
                             endPointerCapture(event);
                             onDragEnd();
                           }}
+                          onKeyDown={(event) => {
+                            if (event.key === "ArrowUp") {
+                              event.preventDefault();
+                              onMove(
+                                player.ownershipId,
+                                -1,
+                                displayedPlayers
+                              );
+                            } else if (event.key === "ArrowDown") {
+                              event.preventDefault();
+                              onMove(
+                                player.ownershipId,
+                                1,
+                                displayedPlayers
+                              );
+                            }
+                          }}
                         >
                           <GripVertical aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onMove(
-                              player.ownershipId,
-                              -1,
-                              displayedPlayers
-                            )
-                          }
-                          disabled={peerIndex === 0}
-                          aria-label={`Move ${player.name} earlier`}
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onMove(player.ownershipId, 1, displayedPlayers)
-                          }
-                          disabled={peerIndex === peers.length - 1}
-                          aria-label={`Move ${player.name} later`}
-                        >
-                          ↓
+                          <span className="hl-visually-hidden">
+                            Use the up and down arrow keys to change order.
+                          </span>
                         </button>
                       </div>
                     </td>
@@ -313,24 +391,34 @@ function CategoryTable({
                   </td>
                   <td>{player.contract?.remainingYears ?? "—"}</td>
                   <td>{player.age ?? "Unknown"}</td>
-                  <td>{player.statistics?.gamesPlayed ?? "—"}</td>
-                  <td>{player.statistics?.goals ?? "—"}</td>
-                  <td>{player.statistics?.assists ?? "—"}</td>
-                  <td>{player.statistics?.nhlPoints ?? "—"}</td>
-                  <td>
+                  <td className="hl-roster-stat">{player.statistics?.gamesPlayed ?? "—"}</td>
+                  <td className="hl-roster-stat">{player.statistics?.goals ?? "—"}</td>
+                  <td className="hl-roster-stat">{player.statistics?.assists ?? "—"}</td>
+                  <td className="hl-roster-stat">{player.statistics?.nhlPoints ?? "—"}</td>
+                  <td className="hl-roster-stat">
                     {player.statistics
                       ? (
                           player.statistics.fantasyPointsHundredths / 100
                         ).toFixed(2)
                       : "—"}
                   </td>
-                  <td>
+                  <td className="hl-roster-stat">
                     {player.statistics
                       ? fantasyPointsPerGame(player.statistics).toFixed(2)
                       : "—"}
                   </td>
+                  {canManage && (
+                    <td className="hl-roster-actions-cell">
+                      <RosterActions
+                        leagueId={leagueId}
+                        player={player}
+                        pending={actionPending}
+                        onAction={onAction}
+                      />
+                    </td>
+                  )}
                 </tr>
-              )})}
+              ))}
             </tbody>
           </table>
         </div>
@@ -356,8 +444,6 @@ function LinePlayer({
   onDrop,
   onPointerDrop,
   onMove,
-  index,
-  total,
 }) {
   if (!player) {
     return <div className="hl-line-player is-empty">Open slot</div>;
@@ -416,8 +502,20 @@ function LinePlayer({
             endPointerCapture(event);
             onDragEnd();
           }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              onMove(player.ownershipId, -1);
+            } else if (event.key === "ArrowDown") {
+              event.preventDefault();
+              onMove(player.ownershipId, 1);
+            }
+          }}
         >
           <GripVertical aria-hidden="true" />
+          <span className="hl-visually-hidden">
+            Use the up and down arrow keys to change order.
+          </span>
         </button>
       )}
       <span>
@@ -429,26 +527,6 @@ function LinePlayer({
             : "No stats"}
         </small>
       </span>
-      {canManage && (
-        <span className="hl-line-player__keyboard">
-          <button
-            type="button"
-            onClick={() => onMove(player.ownershipId, -1)}
-            disabled={index === 0}
-            aria-label={`Move ${player.name} earlier`}
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            onClick={() => onMove(player.ownershipId, 1)}
-            disabled={index === total - 1}
-            aria-label={`Move ${player.name} later`}
-          >
-            ↓
-          </button>
-        </span>
-      )}
     </div>
   );
 }
@@ -480,7 +558,7 @@ function HockeyLines({
         </div>
         <span>
           {canManage
-            ? "Drag players or use the arrow controls. Order is saved."
+            ? "Drag players to set the lines. A focused handle also accepts Up and Down arrow keys."
             : "Viewing the manager’s saved order."}
         </span>
       </div>
@@ -506,8 +584,6 @@ function HockeyLines({
                     onDrop={onDrop}
                     onPointerDrop={onPointerDrop}
                     onMove={onMove}
-                    index={absoluteIndex}
-                    total={forwards.length}
                   />
                 );
               })}
@@ -537,8 +613,6 @@ function HockeyLines({
                     onDrop={onDrop}
                     onPointerDrop={onPointerDrop}
                     onMove={onMove}
-                    index={absoluteIndex}
-                    total={defence.length}
                   />
                 );
               })}
@@ -619,7 +693,8 @@ export function TeamRosterPage({
     orderedPlayers(
       workspace.players.filter(
         ({ rosterCategory }) => rosterCategory === "Active"
-      )
+      ),
+      workspace.orderVersion > 0
     )
   );
   const [draggingId, setDraggingId] = useState(null);
@@ -638,7 +713,8 @@ export function TeamRosterPage({
       orderedPlayers(
         workspace.players.filter(
           ({ rosterCategory }) => rosterCategory === "Active"
-        )
+        ),
+        workspace.orderVersion > 0
       )
     );
   }, [workspace.orderVersion, workspace.players]);
@@ -672,6 +748,70 @@ export function TeamRosterPage({
       );
     },
   });
+
+  const actionMutation = useMutation({
+    mutationFn: ({ type, player }) => {
+      if (type === "buyout") {
+        return buyOutRosterContract(
+          httpClient,
+          league.id,
+          team.id,
+          player
+        );
+      }
+      if (type === "ir") {
+        return moveRosterPlayerToIr(
+          httpClient,
+          league.id,
+          team.id,
+          player.ownershipId,
+          player.ownershipVersion
+        );
+      }
+      return setTradeBlock(
+        httpClient,
+        league.id,
+        team.id,
+        player.ownershipId,
+        {
+          blocked: !player.onTradeBlock,
+          expectedVersion: player.ownershipVersion,
+        }
+      );
+    },
+    onSuccess: async (_result, { type, player }) => {
+      setSaveMessage(
+        type === "buyout"
+          ? `${player.name} was bought out.`
+          : type === "ir"
+            ? `${player.name} was moved to injured reserve.`
+            : `${player.name} was ${
+                player.onTradeBlock ? "removed from" : "added to"
+              } the trade block.`
+      );
+      await queryClient.invalidateQueries({
+        queryKey: teamWorkspaceKeys.detail(league.id, team.id),
+      });
+    },
+    onError: (error) => {
+      setSaveMessage(
+        error.message || "The roster action could not be completed."
+      );
+    },
+  });
+
+  function runRosterAction(type, player) {
+    if (
+      type === "buyout" &&
+      !globalThis.confirm(
+        `Buy out ${player.name}'s contract? This creates an authoritative buyout penalty and cannot be undone here.`
+      )
+    ) {
+      return;
+    }
+    setSaveMessage("");
+    actionMutation.mutate({ type, player });
+  }
 
   function reorder(sourceId, targetId, basisPlayers = activePlayers) {
     if (
@@ -771,11 +911,11 @@ export function TeamRosterPage({
   return (
     <div className="hl-team-roster">
       <header
-        className="hl-surface hl-roster-hero hl-roster-hero--striped"
-        style={{
-          "--team-primary": team.primaryColour || "#16324f",
-          "--team-secondary": team.secondaryColour || "#f7f7f7",
-        }}
+        className={teamColourClass(
+          "hl-surface hl-roster-hero hl-roster-hero--striped",
+          team
+        )}
+        style={teamColourStyle(team)}
       >
         <div className="hl-roster-identity">
           <div className="hl-team-logo">
@@ -855,7 +995,9 @@ export function TeamRosterPage({
       </div>
       {saveMessage && (
         <p
-          className={`hl-form-message${mutation.isError ? " is-error" : ""}`}
+          className={`hl-form-message${
+            mutation.isError || actionMutation.isError ? " is-error" : ""
+          }`}
           role="status"
         >
           {saveMessage}
@@ -887,6 +1029,10 @@ export function TeamRosterPage({
                   )}
                   sort={rosterSort}
                   onSort={changeRosterSort}
+                  canManage={workspace.canManage}
+                  leagueId={league.id}
+                  onAction={runRosterAction}
+                  actionPending={actionMutation.isPending}
                 />
               )
             )}
@@ -907,9 +1053,8 @@ export function TeamRosterPage({
                     )
               }
               canManage={
-                category.key === "Active" &&
                 workspace.canManage &&
-                !mutation.isPending
+                !(category.key === "Active" && mutation.isPending)
               }
               draggingId={draggingId}
               dragTargetId={dragTargetId}
@@ -921,6 +1066,9 @@ export function TeamRosterPage({
               onMove={move}
               sort={rosterSort}
               onSort={changeRosterSort}
+              leagueId={league.id}
+              onAction={runRosterAction}
+              actionPending={actionMutation.isPending}
             />
           ))}
         </div>

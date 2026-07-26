@@ -36,6 +36,18 @@ function response(data, requestId = "request-1") {
   });
 }
 
+function errorResponse(code, status = 403) {
+  return new Response(
+    JSON.stringify({
+      error: { code, message: "Request denied.", requestId: "request-error" },
+    }),
+    {
+      status,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+}
+
 function sessionData() {
   return {
     csrfToken: "D".repeat(43),
@@ -75,14 +87,57 @@ function league(id, name) {
   };
 }
 
-function fetchScenario(leagues, { managerAssigned = true } = {}) {
-  return vi.fn(async (url) => {
+function fetchScenario(
+  leagues,
+  { managerAssigned = true, platformAdmin = false } = {}
+) {
+  return vi.fn(async (url, options = {}) => {
     const path = new URL(url).pathname;
     if (path === "/api/v1/session") {
       return response(sessionData(), "request-session");
     }
     if (path === "/api/v1/leagues") {
       return response({ code: "LEAGUES_FOUND", leagues }, "request-leagues");
+    }
+    if (path === "/api/v1/admin/users") {
+      return platformAdmin
+        ? response({
+            code: "ADMIN_USERS_FOUND",
+            users: [
+              {
+                id: playerId,
+                displayName: "Commissioner Candidate",
+                email: "candidate@example.test",
+                status: "active",
+              },
+            ],
+          })
+        : errorResponse("PLATFORM_ADMINISTRATOR_REQUIRED");
+    }
+    if (
+      platformAdmin &&
+      path === "/api/v1/admin/leagues" &&
+      options.method === "POST"
+    ) {
+      return response({
+        code: "LEAGUE_CREATED",
+        league: {
+          id: leagueOneId,
+          name: "New Review League",
+          status: "setup",
+          timezone: "America/Vancouver",
+          currentSeasonId: seasonId,
+          version: 1,
+        },
+      });
+    }
+    if (
+      platformAdmin &&
+      path ===
+        `/api/v1/admin/leagues/${leagueOneId}/commissioner-assignments` &&
+      options.method === "POST"
+    ) {
+      return response({ code: "COMMISSIONER_ASSIGNMENT_PROPOSED" });
     }
     if (path === `/api/v1/leagues/${leagueOneId}`) {
       return response(
@@ -273,6 +328,41 @@ describe("league selection", () => {
     ).toBeInTheDocument();
   });
 
+  it("lets a platform administrator create a league and assign its commissioner", async () => {
+    const fetchImpl = fetchScenario([], { platformAdmin: true });
+    const view = renderLeagueRoutes("/leagues", fetchImpl);
+
+    expect(
+      await screen.findByRole("heading", { name: "Create a league" })
+    ).toBeInTheDocument();
+    await view.user.type(
+      screen.getByRole("textbox", { name: "League name" }),
+      "New Review League"
+    );
+    await view.user.click(
+      screen.getByRole("button", { name: "Create league" })
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "Assign commissioner for New Review League",
+      })
+    ).toBeInTheDocument();
+    await view.user.selectOptions(
+      screen.getByRole("combobox", { name: "Commissioner" }),
+      playerId
+    );
+    await view.user.click(
+      screen.getByRole("button", {
+        name: "Send commissioner assignment",
+      })
+    );
+    expect(
+      await screen.findByText(
+        "Commissioner assignment sent to Commissioner Candidate. It becomes active after acceptance."
+      )
+    ).toBeInTheDocument();
+  });
+
   it("automatically enters exactly one visible league and offers its team", async () => {
     renderLeagueRoutes(
       "/leagues",
@@ -323,9 +413,15 @@ describe("league selection", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "No team is assigned to this account",
+        name: "Commissioner overview",
       })
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Members and invitations" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Managed roster" })
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Your team")).not.toBeInTheDocument();
   });
 

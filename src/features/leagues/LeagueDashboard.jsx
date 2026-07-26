@@ -1,4 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowLeftRight,
@@ -35,6 +40,15 @@ import {
   auctionsQuery,
   tradesQuery,
 } from "../transactions/transactionQueries.js";
+import {
+  inviteLeagueUser,
+  invitableUsersQuery,
+  leagueKeys,
+  leagueMembershipsQuery,
+  removeLeagueMembership,
+} from "./leagueQueries.js";
+import { createIntentKey } from "../accounts/accountApi.js";
+import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 
 function scoreFor(matchup, side) {
   const official = matchup?.result?.currentVersion;
@@ -74,6 +88,7 @@ function MatchupScoreboard({
   matchupSummary,
   matchup,
   managedTeam,
+  commissionerView = false,
   isPending,
   error,
 }) {
@@ -117,7 +132,7 @@ function MatchupScoreboard({
       </Surface>
     );
   }
-  if (!managedTeam) {
+  if (!managedTeam && !matchupSummary) {
     return (
       <Surface
         className="hl-dashboard-matchup"
@@ -150,7 +165,9 @@ function MatchupScoreboard({
       </Surface>
     );
   }
-  const bye = week.byes.find(({ team }) => team.id === managedTeam.id);
+  const bye = managedTeam
+    ? week.byes.find(({ team }) => team.id === managedTeam.id)
+    : null;
   if (!matchupSummary && bye) {
     return (
       <Surface
@@ -225,7 +242,9 @@ function MatchupScoreboard({
       aria-labelledby="dashboard-matchup-title"
     >
       <PanelHeading
-        eyebrow="Your current matchup"
+        eyebrow={
+          commissionerView ? "League matchup spotlight" : "Your current matchup"
+        }
         title={`Week ${week.sequence}`}
         description={`${dateRange(week.startsAtMs, week.endsAtMs)} · ${
           matchup.status
@@ -240,9 +259,11 @@ function MatchupScoreboard({
       <div className="hl-scoreboard">
         <div className="hl-scoreboard__team">
           <span>
-            {matchup.homeTeam.id === managedTeam.id
-              ? "Your team"
-              : "Opponent"}
+            {managedTeam
+              ? matchup.homeTeam.id === managedTeam.id
+                ? "Your team"
+                : "Opponent"
+              : "Home"}
           </span>
           <strong>{matchup.homeTeam.name}</strong>
           <b className="is-accent">{fantasyPoints(homeScore)}</b>
@@ -258,9 +279,11 @@ function MatchupScoreboard({
         </div>
         <div className="hl-scoreboard__team is-away">
           <span>
-            {matchup.awayTeam.id === managedTeam.id
-              ? "Your team"
-              : "Opponent"}
+            {managedTeam
+              ? matchup.awayTeam.id === managedTeam.id
+                ? "Your team"
+                : "Opponent"
+              : "Away"}
           </span>
           <strong>{matchup.awayTeam.name}</strong>
           <b>{fantasyPoints(awayScore)}</b>
@@ -428,6 +451,247 @@ function TeamStatus({
         Cap status uses the authoritative projection. Structural roster
         legality is not inferred in the browser.
       </p>
+    </Surface>
+  );
+}
+
+function CommissionerLeaguePanel({
+  leagueId,
+  teams,
+  auctions,
+  trades,
+}) {
+  const pendingTrades = trades.filter(
+    ({ storageStatus }) => storageStatus === "proposed"
+  ).length;
+  return (
+    <Surface
+      className="hl-dashboard-team hl-commissioner-overview"
+      aria-labelledby="commissioner-overview-title"
+    >
+      <PanelHeading
+        eyebrow="League control"
+        title="Commissioner overview"
+        id="commissioner-overview-title"
+        action={
+          <TextLink to={routePaths.leagueCommissioner(leagueId)}>
+            Commissioner tools
+          </TextLink>
+        }
+      />
+      <dl className="hl-team-facts">
+        <div>
+          <dt>Teams</dt>
+          <dd>{teams.length}</dd>
+        </div>
+        <div>
+          <dt>Managed</dt>
+          <dd>{teams.filter(({ currentManager }) => currentManager).length}</dd>
+        </div>
+        <div>
+          <dt>Live auctions</dt>
+          <dd>{auctions.length}</dd>
+        </div>
+        <div>
+          <dt>Pending trades</dt>
+          <dd>{pendingTrades}</dd>
+        </div>
+      </dl>
+      <p className="hl-dashboard-team__note">
+        This account governs league operations. It does not control a team
+        roster while acting as commissioner.
+      </p>
+    </Surface>
+  );
+}
+
+function CommissionerMembersPanel({ league, teams, session }) {
+  const queryClient = useQueryClient();
+  const [userId, setUserId] = useState("");
+  const [teamId, setTeamId] = useState("");
+  const [message, setMessage] = useState("");
+  const memberships = useQuery(
+    leagueMembershipsQuery(session.httpClient, league.id)
+  );
+  const invitableUsers = useQuery(
+    invitableUsersQuery(session.httpClient, league.id)
+  );
+  const availableTeams = teams.filter(({ currentManager }) => !currentManager);
+  const inviteMutation = useMutation({
+    mutationFn: () =>
+      inviteLeagueUser(
+        session.httpClient,
+        league.id,
+        teamId
+          ? { userId, workflow: "manage_team", teamId }
+          : { userId, workflow: "create_team" },
+        createIntentKey("league-invitation")
+      ),
+    onSuccess: async () => {
+      setMessage("Invitation sent. The user must accept it before joining.");
+      setUserId("");
+      setTeamId("");
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.invitableUsers(league.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.memberships(league.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.teams(league.id),
+        }),
+      ]);
+    },
+    onError: () => setMessage(""),
+  });
+  const removeMutation = useMutation({
+    mutationFn: (membership) =>
+      removeLeagueMembership(
+        session.httpClient,
+        league.id,
+        membership.id,
+        membership.version
+      ),
+    onSuccess: async (_result, membership) => {
+      setMessage(`${membership.user.displayName} was removed from the league.`);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.memberships(league.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.invitableUsers(league.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.teams(league.id),
+        }),
+      ]);
+    },
+    onError: () => setMessage(""),
+  });
+
+  return (
+    <Surface
+      className="hl-dashboard-members"
+      aria-labelledby="commissioner-members-title"
+    >
+      <PanelHeading
+        eyebrow="League access"
+        title="Members and invitations"
+        id="commissioner-members-title"
+      />
+      <form
+        className="hl-commissioner-invite"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setMessage("");
+          inviteMutation.mutate();
+        }}
+      >
+        <label className="hl-field">
+          User
+          <select
+            value={userId}
+            required
+            disabled={invitableUsers.isPending}
+            onChange={(event) => setUserId(event.target.value)}
+          >
+            <option value="">Choose an existing account</option>
+            {(invitableUsers.data || []).map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.displayName} ({user.email})
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="hl-field">
+          Team
+          <select
+            value={teamId}
+            required={league.status !== "setup"}
+            onChange={(event) => setTeamId(event.target.value)}
+          >
+            {league.status === "setup" && (
+              <option value="">User creates a team</option>
+            )}
+            {league.status !== "setup" && (
+              <option value="">Choose an unassigned team</option>
+            )}
+            {availableTeams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="hl-button hl-button--primary"
+          type="submit"
+          disabled={
+            inviteMutation.isPending ||
+            !userId ||
+            (league.status !== "setup" && !teamId)
+          }
+        >
+          {inviteMutation.isPending ? "Sending…" : "Invite user"}
+        </button>
+      </form>
+      {memberships.isPending ? (
+        <LoadingBlock>Loading league members…</LoadingBlock>
+      ) : memberships.isError ? (
+        <ErrorBlock
+          error={memberships.error}
+          fallback="League members could not be loaded."
+        />
+      ) : (
+        <ul className="hl-commissioner-member-list">
+          {memberships.data
+            .filter(({ status }) => status === "active" || status === "invited")
+            .map((membership) => {
+            const protectedMember =
+              membership.user.id === session.user.id ||
+              membership.permissionCategory === "commissioner";
+            return (
+              <li key={membership.id}>
+                <span>
+                  <strong>{membership.user.displayName}</strong>
+                  <small>
+                    {membership.permissionCategory} · {membership.status}
+                  </small>
+                </span>
+                {!protectedMember && (
+                  <button
+                    type="button"
+                    className="hl-button hl-button--danger"
+                    disabled={removeMutation.isPending}
+                    onClick={() => {
+                      if (
+                        globalThis.confirm(
+                          `Remove ${membership.user.displayName} from ${league.name}? Their active team assignment will also end.`
+                        )
+                      ) {
+                        setMessage("");
+                        removeMutation.mutate(membership);
+                      }
+                    }}
+                  >
+                    {membership.status === "invited"
+                      ? "Cancel invitation"
+                      : "Remove"}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {message && <p className="hl-form-message">{message}</p>}
+      {(inviteMutation.error || removeMutation.error) && (
+        <ErrorBlock
+          error={inviteMutation.error || removeMutation.error}
+          fallback="The league membership change could not be completed."
+        />
+      )}
     </Surface>
   );
 }
@@ -734,11 +998,14 @@ function TeamsPanel({ leagueId, teams, currentUserId }) {
 export function LeagueDashboard({ league, teams, session }) {
   const leagueId = league.id;
   const seasonId = league.currentSeason?.id || null;
-  const managedTeam =
-    teams.find(
-      ({ currentManager }) => currentManager?.userId === session.user.id
-    ) || null;
+  const commissioner = hasCommissionerAuthority(league.membership);
+  const managedTeam = commissioner
+    ? null
+    : teams.find(
+        ({ currentManager }) => currentManager?.userId === session.user.id
+      ) || null;
   const enabled = Boolean(seasonId);
+  const [matchupSpotlightIndex, setMatchupSpotlightIndex] = useState(0);
 
   const currentWeek = useQuery({
     ...currentMatchupWeekQuery(
@@ -750,13 +1017,28 @@ export function LeagueDashboard({ league, teams, session }) {
     refetchInterval: 60_000,
   });
   const week = currentWeek.data?.week || null;
+  useEffect(() => {
+    if (!commissioner || !week || week.matchups.length <= 1) return undefined;
+    const timer = globalThis.setInterval(
+      () =>
+        setMatchupSpotlightIndex(
+          (current) => (current + 1) % week.matchups.length
+        ),
+      5_000
+    );
+    return () => globalThis.clearInterval(timer);
+  }, [commissioner, week]);
   const matchupSummary =
-    managedTeam && week
-      ? week.matchups.find(
-          ({ homeTeam, awayTeam }) =>
-            homeTeam.id === managedTeam.id ||
-            awayTeam.id === managedTeam.id
-        ) || null
+    week
+      ? commissioner
+        ? week.matchups[matchupSpotlightIndex % week.matchups.length] || null
+        : managedTeam
+          ? week.matchups.find(
+              ({ homeTeam, awayTeam }) =>
+                homeTeam.id === managedTeam.id ||
+                awayTeam.id === managedTeam.id
+            ) || null
+          : null
       : null;
   const matchup = useQuery({
     ...matchupQuery(
@@ -801,7 +1083,9 @@ export function LeagueDashboard({ league, teams, session }) {
   return (
     <div className="hl-dashboard">
       <PageHeading
-        eyebrow={`${league.membership.permissionCategory} workspace`}
+        eyebrow={`${
+          commissioner ? "Commissioner" : league.membership.permissionCategory
+        } workspace`}
         title={league.name}
         description={
           league.currentSeason
@@ -818,7 +1102,7 @@ export function LeagueDashboard({ league, teams, session }) {
             >
               {league.status}
             </StatusBadge>
-            {league.membership.permissionCategory === "commissioner" && (
+            {commissioner && (
               <Link
                 className="hl-button hl-button--secondary"
                 to={routePaths.leagueCommissioner(leagueId)}
@@ -851,30 +1135,31 @@ export function LeagueDashboard({ league, teams, session }) {
           matchupSummary={matchupSummary}
           matchup={matchup.data}
           managedTeam={managedTeam}
+          commissionerView={commissioner}
           isPending={enabled && (currentWeek.isPending || matchup.isPending)}
           error={currentWeek.error || matchup.error}
         />
-        <TeamStatus
-          leagueId={leagueId}
-          managedTeam={managedTeam}
-          roster={roster.data}
-          standingsRow={standingsRow}
-          pending={enabled && (roster.isPending || standings.isPending)}
-          error={roster.error || standings.error}
-        />
+        {commissioner ? (
+          <CommissionerLeaguePanel
+            leagueId={leagueId}
+            teams={teams}
+            auctions={auctions.data || []}
+            trades={trades.data || []}
+          />
+        ) : (
+          <TeamStatus
+            leagueId={leagueId}
+            managedTeam={managedTeam}
+            roster={roster.data}
+            standingsRow={standingsRow}
+            pending={enabled && (roster.isPending || standings.isPending)}
+            error={roster.error || standings.error}
+          />
+        )}
       </div>
 
-      <div className="hl-dashboard__content">
-        <RosterSnapshot
-          leagueId={leagueId}
-          managedTeam={managedTeam}
-          roster={roster.data}
-          matchup={matchup.data}
-        />
-        <aside
-          className="hl-dashboard__aside"
-          aria-label="Items needing attention"
-        >
+      {commissioner ? (
+        <div className="hl-dashboard__commissioner-content">
           <AuctionsPanel
             leagueId={leagueId}
             auctions={auctions.data || []}
@@ -887,8 +1172,39 @@ export function LeagueDashboard({ league, teams, session }) {
             pending={enabled && trades.isPending}
             error={trades.error}
           />
-        </aside>
-      </div>
+          <CommissionerMembersPanel
+            league={league}
+            teams={teams}
+            session={session}
+          />
+        </div>
+      ) : (
+        <div className="hl-dashboard__content">
+          <RosterSnapshot
+            leagueId={leagueId}
+            managedTeam={managedTeam}
+            roster={roster.data}
+            matchup={matchup.data}
+          />
+          <aside
+            className="hl-dashboard__aside"
+            aria-label="Items needing attention"
+          >
+            <AuctionsPanel
+              leagueId={leagueId}
+              auctions={auctions.data || []}
+              pending={enabled && auctions.isPending}
+              error={auctions.error}
+            />
+            <TradesPanel
+              leagueId={leagueId}
+              trades={trades.data || []}
+              pending={enabled && trades.isPending}
+              error={trades.error}
+            />
+          </aside>
+        </div>
+      )}
 
       <ActivityPanel
         leagueId={leagueId}
@@ -899,7 +1215,7 @@ export function LeagueDashboard({ league, teams, session }) {
       <TeamsPanel
         leagueId={leagueId}
         teams={teams}
-        currentUserId={session.user.id}
+        currentUserId={commissioner ? null : session.user.id}
       />
     </div>
   );

@@ -775,8 +775,6 @@ The initial release uses one normal proposal list with status filters for pendin
 
 ## Trade Block
 
-The current application has a trade-block feature, but approved shared rules do not define it.
-
 The initial release keeps a simple league-visible trade block where a manager may flag an owned player as available. The flag:
 
 * is informational only;

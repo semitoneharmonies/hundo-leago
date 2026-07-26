@@ -637,11 +637,14 @@ A manager may edit the assigned team’s colours.
 
 A commissioner may edit colours for any team in the assigned league through commissioner authority.
 
-Each team has exactly two selectable colours.
+Each team has either two or three selectable colours.
 
-The two colours are displayed using a striped treatment.
+Two-colour teams use two equal horizontal stripes. Three-colour teams use
+three horizontal stripes.
 
-There are no product-level contrast, accessibility, fallback, or league-uniqueness requirements for team colours.
+The selected colours do not need to satisfy contrast or league-uniqueness
+rules. Team-name and logo treatments must add a neutral readability layer so
+the identity remains legible regardless of the selected colours.
 
 The technical specification must define the stored colour representation.
 
@@ -798,6 +801,24 @@ A commissioner invites a user to join the league and create or manage a team.
 The user receives a basic notification.
 
 Acceptance creates or activates the league membership and completes the associated team workflow.
+
+---
+
+## Membership Removal
+
+A commissioner may remove an active or invited non-commissioner membership
+from the assigned league after an explicit confirmation.
+
+Removal:
+
+* immediately ends the membership and any current team-manager assignment tied
+  to it;
+* does not sign the user out of the account or affect memberships in another
+  league;
+* does not delete the team, transactions, activity history, or other
+  authoritative league records; and
+* cannot remove the league's current commissioner membership or be used as a
+  substitute for the separately protected commissioner-replacement workflow.
 
 ---
 
@@ -1322,8 +1343,8 @@ Grae approved the following Season 2 Leagues and Teams product decisions on 2026
 - [x] A team may exist temporarily without a manager during setup.
 - [x] Team names must be unique within their league.
 - [x] Team names have a maximum of `35` characters and no additional product-level character or moderation rules.
-- [x] Each team has two colours displayed as stripes.
-- [x] Team colours have no product-level contrast or fallback requirements.
+- [x] Each team has two or three colours displayed as horizontal stripes.
+- [x] Team colours have no product-level contrast or uniqueness requirement; the interface adds its own neutral identity treatment for readability.
 - [x] Team logos have no product-level file-type, size, dimension, cropping, or fallback requirements.
 - [x] Team deactivation permanently erases the team and may occur only after the entry draft and before the free-agent draft.
 - [x] There is no distinction between team deactivation, removal from competition, and permanent deletion.

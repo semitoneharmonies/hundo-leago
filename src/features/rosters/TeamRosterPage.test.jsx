@@ -296,8 +296,113 @@ describe("authoritative team roster page", () => {
       screen.getByRole("heading", { name: "Hockey lines" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Move Active Player later" })
-    ).toBeDisabled();
+      screen.getByRole("button", {
+        name: "Drag Active Player to reorder",
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Move Active Player later" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers four compact roster actions and sends authoritative commands", async () => {
+    const data = workspace();
+    data.players[0].injuredReserveEligible = true;
+    data.players[0].onTradeBlock = false;
+    data.players[1].injuredReserveEligible = false;
+    data.players[1].onTradeBlock = false;
+    const httpClient = {
+      request: vi.fn(async () => ({ data: {} })),
+    };
+    const confirm = vi.spyOn(globalThis, "confirm").mockReturnValue(true);
+    renderWithProviders(
+      <TeamRosterPage
+        workspace={data}
+        teams={[data.team]}
+        managerName="League Manager"
+        onTeamChange={() => {}}
+        httpClient={httpClient}
+      />
+    );
+    const activeRow = screen
+      .getByRole("rowheader", { name: "Active Player" })
+      .closest("tr");
+    expect(
+      within(activeRow).getByRole("button", {
+        name: "Buy out Active Player",
+      })
+    ).toBeEnabled();
+    expect(
+      within(activeRow).getByRole("button", {
+        name: "Move Active Player to injured reserve",
+      })
+    ).toBeEnabled();
+    expect(
+      within(activeRow).getByRole("link", {
+        name: "Add Active Player to a trade",
+      })
+    ).toHaveAttribute(
+      "href",
+      expect.stringContaining(`assetId=${contractId}`)
+    );
+    expect(
+      within(activeRow).getByRole("button", {
+        name: "Add Active Player to the trade block",
+      })
+    ).toBeEnabled();
+
+    await within(activeRow)
+      .getByRole("button", {
+        name: "Add Active Player to the trade block",
+      })
+      .click();
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `/roster/${activeOwnershipId}/trade-block`
+        ),
+        expect.objectContaining({
+          method: "PUT",
+          body: { blocked: true, expectedVersion: 1 },
+        })
+      )
+    );
+
+    await within(activeRow)
+      .getByRole("button", {
+        name: "Move Active Player to injured reserve",
+      })
+      .click();
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `/roster/${activeOwnershipId}/move-to-ir`
+        ),
+        expect.objectContaining({
+          method: "POST",
+          body: { expectedVersion: 1 },
+        })
+      )
+    );
+
+    await within(activeRow)
+      .getByRole("button", { name: "Buy out Active Player" })
+      .click();
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(`/contracts/${contractId}/buyout`),
+        expect.objectContaining({
+          method: "POST",
+          body: {
+            confirmed: true,
+            expectedContractVersion: 1,
+            expectedOwnershipVersion: 1,
+          },
+        })
+      )
+    );
+    expect(confirm).toHaveBeenCalledOnce();
+    confirm.mockRestore();
   });
 
   it("saves same-position pointer drag ordering", async () => {

@@ -709,9 +709,22 @@ function AssetEditor({
 
 function NewTradeForm({ context, leagueId }) {
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const requestedAssetType = searchParams.get("assetType");
+  const requestedAssetId = searchParams.get("assetId") || "";
+  const initialAssetType = ASSET_TYPES.some(
+    ([value]) => value === requestedAssetType
+  )
+    ? requestedAssetType
+    : "contract";
   const [proposingTeamId, setProposingTeamId] = useState("");
   const [receivingTeamId, setReceivingTeamId] = useState("");
-  const [proposingAssets, setProposingAssets] = useState([{ type: "contract", reference: "" }]);
+  const [proposingAssets, setProposingAssets] = useState([
+    {
+      type: initialAssetType,
+      reference: requestedAssetId,
+    },
+  ]);
   const [receivingAssets, setReceivingAssets] = useState([{ type: "contract", reference: "" }]);
   const [clientError, setClientError] = useState(null);
   const proposer =

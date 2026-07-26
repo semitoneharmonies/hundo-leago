@@ -4,6 +4,9 @@ import {
   validateLeagueDetail,
   validateLeagueList,
   validateLeagueSeasonList,
+  validateMembershipList,
+  validateInvitableUsers,
+  validateAdminUsers,
   validateTeamDetail,
   validateTeamList,
 } from "./leagueContracts.js";
@@ -14,6 +17,9 @@ export const leagueKeys = Object.freeze({
   seasons: (leagueId) => ["league", leagueId, "seasons"],
   teams: (leagueId) => ["league", leagueId, "teams"],
   team: (leagueId, teamId) => ["league", leagueId, "team", teamId],
+  memberships: (leagueId) => ["league", leagueId, "memberships"],
+  invitableUsers: (leagueId) => ["league", leagueId, "invitable-users"],
+  adminUsers: ["admin", "users"],
 });
 
 export function visibleLeaguesQuery(httpClient) {
@@ -31,6 +37,142 @@ export function visibleLeaguesQuery(httpClient) {
     meta: { private: true },
     staleTime: 30_000,
   });
+}
+
+export function leagueMembershipsQuery(httpClient, leagueId) {
+  return queryOptions({
+    queryKey: leagueKeys.memberships(leagueId),
+    queryFn: async ({ signal }) => {
+      const response = await httpClient.request(
+        `/api/v1/leagues/${encodeURIComponent(leagueId)}/memberships`,
+        {
+          authenticated: true,
+          dataKind: "object",
+          validateData: validateMembershipList,
+          signal,
+        }
+      );
+      return response.data.memberships;
+    },
+    meta: { private: true, leagueId },
+    staleTime: 10_000,
+  });
+}
+
+export function invitableUsersQuery(httpClient, leagueId) {
+  return queryOptions({
+    queryKey: leagueKeys.invitableUsers(leagueId),
+    queryFn: async ({ signal }) => {
+      const response = await httpClient.request(
+        `/api/v1/leagues/${encodeURIComponent(leagueId)}/invitable-users`,
+        {
+          authenticated: true,
+          dataKind: "object",
+          validateData: validateInvitableUsers,
+          signal,
+        }
+      );
+      return response.data.users;
+    },
+    meta: { private: true, leagueId },
+    staleTime: 10_000,
+  });
+}
+
+export function adminUsersQuery(httpClient) {
+  return queryOptions({
+    queryKey: leagueKeys.adminUsers,
+    queryFn: async ({ signal }) => {
+      const response = await httpClient.request("/api/v1/admin/users", {
+        authenticated: true,
+        dataKind: "object",
+        validateData: validateAdminUsers,
+        signal,
+      });
+      return response.data.users;
+    },
+    meta: { private: true },
+    staleTime: 30_000,
+  });
+}
+
+export async function inviteLeagueUser(
+  httpClient,
+  leagueId,
+  input,
+  idempotencyKey
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${encodeURIComponent(leagueId)}/invitations`,
+      {
+        method: "POST",
+        authenticated: true,
+        body: input,
+        idempotencyKey,
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
+export async function removeLeagueMembership(
+  httpClient,
+  leagueId,
+  membershipId,
+  expectedVersion
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${encodeURIComponent(
+        leagueId
+      )}/memberships/${encodeURIComponent(membershipId)}`,
+      {
+        method: "DELETE",
+        authenticated: true,
+        body: { confirmed: true, expectedVersion },
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
+export async function createLeague(
+  httpClient,
+  name,
+  idempotencyKey
+) {
+  return (
+    await httpClient.request("/api/v1/admin/leagues", {
+      method: "POST",
+      authenticated: true,
+      body: { name },
+      idempotencyKey,
+      dataKind: "object",
+    })
+  ).data;
+}
+
+export async function assignLeagueCommissioner(
+  httpClient,
+  leagueId,
+  userId,
+  idempotencyKey
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/admin/leagues/${encodeURIComponent(
+        leagueId
+      )}/commissioner-assignments`,
+      {
+        method: "POST",
+        authenticated: true,
+        body: { userId },
+        idempotencyKey,
+        dataKind: "object",
+      }
+    )
+  ).data;
 }
 
 export function leagueDetailQuery(httpClient, leagueId) {

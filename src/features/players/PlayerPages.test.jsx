@@ -191,18 +191,20 @@ describe("authenticated player pages", () => {
       "alex"
     );
     await view.user.click(screen.getByRole("button", { name: "Search" }));
-    await waitFor(() => {
+    await waitFor(() =>
       expect(
-        fetchImpl.mock.calls.some(([url]) => {
-          const parsed = new URL(url);
-          return (
-            parsed.pathname ===
-              `/api/v1/leagues/${leagueId}/players` &&
-            parsed.searchParams.get("query") === "alex"
-          );
-        })
-      ).toBe(true);
-    });
+        screen.queryByRole("link", { name: "Blair Example" })
+      ).toBeNull()
+    );
+    expect(
+      fetchImpl.mock.calls.some(([url]) => {
+        const parsed = new URL(url);
+        return (
+          parsed.pathname === `/api/v1/leagues/${leagueId}/players` &&
+          parsed.searchParams.get("query") === "alex"
+        );
+      })
+    ).toBe(false);
     expect(screen.queryByRole("link", { name: "Blair Example" })).toBeNull();
     const playerRow = screen.getByRole("row", { name: /Alex Example/ });
     expect(within(playerRow).getByText("VAN")).toBeInTheDocument();

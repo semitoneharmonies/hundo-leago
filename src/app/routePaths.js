@@ -36,6 +36,13 @@ export const routePaths = Object.freeze({
     )}`,
   leagueTrades: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/trades`,
+  leagueTradeForAsset: (leagueId, assetType, assetId) =>
+    `/leagues/${segment(
+      leagueId,
+      "League ID"
+    )}/trades?assetType=${encodeURIComponent(
+      assetType
+    )}&assetId=${segment(assetId, "Trade asset ID")}`,
   trade: (leagueId, tradeId) =>
     `/leagues/${segment(leagueId, "League ID")}/trades/${segment(
       tradeId,

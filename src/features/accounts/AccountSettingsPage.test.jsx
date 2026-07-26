@@ -179,8 +179,8 @@ describe("account and team settings", () => {
     expect(
       await screen.findByRole("heading", { name: "Alpha Ravens" })
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Primary stripe")).toHaveValue("#16324f");
-    expect(screen.getByLabelText("Secondary stripe")).toHaveValue("#f7f7f7");
+    expect(screen.getByLabelText("Top stripe")).toHaveValue("#16324f");
+    expect(screen.getByLabelText("Bottom stripe")).toHaveValue("#f7f7f7");
 
     const displayName = screen.getByLabelText("Display name");
     await view.user.clear(displayName);
@@ -209,6 +209,7 @@ describe("account and team settings", () => {
         name: "Updated Ravens",
         primaryColour: "#16324f",
         secondaryColour: "#f7f7f7",
+        tertiaryColour: null,
       });
     });
     expect(invalidateQueries).toHaveBeenCalledWith({

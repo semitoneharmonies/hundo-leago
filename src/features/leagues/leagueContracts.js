@@ -115,6 +115,67 @@ export function validateTeam(value) {
       "The team manager is invalid."
     );
   }
+  for (const field of [
+    "primaryColour",
+    "secondaryColour",
+    "tertiaryColour",
+  ]) {
+    contract(
+      value[field] === undefined ||
+        value[field] === null ||
+        (typeof value[field] === "string" &&
+          /^#[0-9a-f]{6}$/.test(value[field])),
+      `The team ${field} is invalid.`
+    );
+  }
+  return true;
+}
+
+export function validateMembershipList(data) {
+  contract(
+    data?.code === "LEAGUE_MEMBERSHIPS_FOUND",
+    "The membership-list code is invalid."
+  );
+  contract(Array.isArray(data.memberships), "The membership list is invalid.");
+  for (const membership of data.memberships) {
+    assertResourceIdentity(membership, { requireVersion: true });
+    assertResourceIdentity(membership.user);
+    contract(
+      typeof membership.user.displayName === "string",
+      "A league member identity is invalid."
+    );
+  }
+  return true;
+}
+
+export function validateInvitableUsers(data) {
+  contract(
+    data?.code === "INVITABLE_LEAGUE_USERS_FOUND",
+    "The invitable-user code is invalid."
+  );
+  contract(Array.isArray(data.users), "The invitable-user list is invalid.");
+  for (const user of data.users) {
+    assertResourceIdentity(user);
+    contract(
+      typeof user.displayName === "string" && typeof user.email === "string",
+      "An invitable user is invalid."
+    );
+  }
+  return true;
+}
+
+export function validateAdminUsers(data) {
+  contract(data?.code === "ADMIN_USERS_FOUND", "The admin-user code is invalid.");
+  contract(Array.isArray(data.users), "The admin-user list is invalid.");
+  for (const user of data.users) {
+    assertResourceIdentity(user);
+    contract(
+      typeof user.displayName === "string" &&
+        typeof user.email === "string" &&
+        typeof user.status === "string",
+      "An administrative user is invalid."
+    );
+  }
   return true;
 }
 
