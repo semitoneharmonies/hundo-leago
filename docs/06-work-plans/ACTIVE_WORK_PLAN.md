@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`IN PROGRESS — STAGING ONLY`
+`COMPLETE — STAGING ONLY`
 
 ## Work Plan ID
 
@@ -95,3 +95,45 @@ M7-12 is complete only when all unambiguous acceptance fixes pass the full
 local gate, the browser workflows are usable on desktop and mobile, exact
 changed-file and residual-risk evidence is recorded, the dedicated staging
 deployment is verified if performed, and production remains untouched.
+
+## Completion Evidence
+
+M7-12 completed on staging on `2026-07-26`.
+
+```text
+Release ID:                    HL-20260726-3
+Frontend application commit:   7146bd042fd86f11dd4f1226c61d879f4956f358
+Frontend Netlify deploy:        6a66610577aa69f808ad00a9
+Frontend Netlify build:         6a66610477aa69f808ad00a7
+Backend application commit:     a821a95a267a370d7f3fe3ef0b8cfdacea83aea5
+Backend Render deploy:          dep-d9j5vnt8nd3s73asjkn0
+Preflight report checksum:      d92192498d533c90ea160867c7b1c5378324c2c1c2b1d40aec47b2a309d68d06
+Fixture build:                  m7-release-qa-fixture-v8
+Reset backup:                   backup-v1-d90df160904d8d36441233bffc6037207fa4bb666677798557f82a4a07412ca1
+```
+
+The complete frontend gate passes `115/115` tests across 23 files, lint,
+production build, and browser-authority verification across 15 compatibility
+files and 98 shipped source files. The complete backend gate passes `968/968`
+tests across 232 suites under Node `24.14.1`, plus the repository check.
+
+Render reported the backend deploy `live`; public liveness returned `live`
+and readiness returned `ready`. Netlify reported the frontend deploy `ready`,
+processed both redirects, and found no secret-scan matches. The protected
+reset created the verified backup above, invalidated prior staging sessions,
+installed fixture v8, and preserved all `3,154` provider-catalog players.
+
+Hosted administrator and Alpha Ravens manager checks confirmed the requested
+commissioner context, roster presentation and ordering, player discovery,
+trade composition, specific whole-buyout transfer, full-season matchup
+browsing, auction handoff, readable activity, and account access. No trade or
+auction was submitted during acceptance. The connected-browser environment
+verified a narrow `667`-pixel layout without whole-page horizontal overflow;
+focused responsive styles and component coverage also passed.
+
+The connected browser cannot synthesize a native HTML pointer drag. Focused
+frontend coverage proves the DOM drag handler and saved-order request, while
+hosted keyboard ordering persisted and was restored. Native pointer drag
+remains a user-acceptance check rather than an implementation blocker.
+
+Production remained untouched.

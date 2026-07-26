@@ -1529,6 +1529,43 @@ saved-order payload pass automated coverage, but manual native pointer drag
 remains a user-acceptance item because the connected browser cannot synthesize
 that gesture.
 
+M7-12 completed on staging on `2026-07-26`. Commissioner-only accounts no
+longer inherit a fixture team, Commissioner Roster Operations has a cleaner
+correction guide without import-health or raw-JSON panels, and team-directory
+cards use each team's configured stripe identity. Roster finance presentation
+now uses five authoritative cards, active players default to forwards then
+defence ordered by descending AAV within each group, and roster statistics use
+sortable GP, G, A, P, FP, and FPG columns in table and hockey-line workflows.
+
+The Players page now includes FPG and exposes All Players, Free Agents,
+Favourites, every league team, and Prospects while continuing to hide
+unavailable provider records. Trade composition adds optional contract
+retention and plain Future Considerations notes. Buyouts are selected as
+specific player obligations with annual AAV and remaining term, and the
+receiving team assumes the selected obligation's complete remaining schedule;
+arbitrary buyout amounts and partial transfers are not supported.
+
+Matchups now exposes all 22 regular-season weeks in one selector, accepts
+completed Week 1 responses, shows future opponents, varies release-fixture
+team totals, and resolves current team names for scheduled and live views
+while preserving finalized historical names.
+
+Release `HL-20260726-3` published frontend application commit
+`7146bd042fd86f11dd4f1226c61d879f4956f358` in Netlify deploy
+`6a66610577aa69f808ad00a9` and backend application commit
+`a821a95a267a370d7f3fe3ef0b8cfdacea83aea5` in Render deploy
+`dep-d9j5vnt8nd3s73asjkn0`. The reset installed
+`m7-release-qa-fixture-v8`, preserved all `3,154` provider-catalog players,
+and created verified backup
+`backup-v1-d90df160904d8d36441233bffc6037207fa4bb666677798557f82a4a07412ca1`.
+
+The complete frontend gate passes `115/115` tests across 23 files, lint,
+production build, and browser-authority verification across 15 compatibility
+files and 98 shipped source files. The complete backend gate passes `968/968`
+tests across 232 suites under Node `24.14.1`, plus the repository check.
+Hosted administrator and Alpha Ravens manager checks passed without submitting
+an auction, trade, roster correction, or account/team-profile change.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 

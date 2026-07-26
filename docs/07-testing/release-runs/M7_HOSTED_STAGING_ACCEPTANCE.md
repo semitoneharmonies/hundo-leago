@@ -2,7 +2,7 @@
 
 ## Status
 
-`M7-11 STAGING REMEDIATION PASSED / USER ACCEPTANCE READY`
+`M7-12 STAGING REMEDIATION PASSED / USER ACCEPTANCE READY`
 
 Production remains `NO-GO`. This record does not authorize a production
 reset, migration, deploy, traffic change, job activation, or merge to `main`.
@@ -405,6 +405,95 @@ The connected browser cannot synthesize a native HTML pointer drag. Focused
 frontend coverage proves the DOM drag handler and saved-order payload, and the
 hosted browser proves equivalent keyboard ordering persists after reload.
 Manual native pointer drag remains an explicit user-acceptance check.
+
+No production service, branch, deploy, data, schema, configuration, job,
+provider state, domain, or traffic setting was changed.
+
+## M7-12 Acceptance-Fix Remediation
+
+The third staging-only remediation was published and verified on
+`2026-07-26`.
+
+```text
+Release ID:                    HL-20260726-3
+Frontend application commit:   7146bd042fd86f11dd4f1226c61d879f4956f358
+Frontend Netlify deploy:        6a66610577aa69f808ad00a9
+Frontend Netlify build:         6a66610477aa69f808ad00a7
+Backend application commit:     a821a95a267a370d7f3fe3ef0b8cfdacea83aea5
+Backend Render deploy:          dep-d9j5vnt8nd3s73asjkn0
+Preflight report checksum:      d92192498d533c90ea160867c7b1c5378324c2c1c2b1d40aec47b2a309d68d06
+Fixture build:                  m7-release-qa-fixture-v8
+```
+
+The preflight returned `ready-for-freeze-review`. The complete frontend gate
+passed `115/115` tests across 23 files, lint, production build, and
+browser-authority verification across 15 compatibility files and 98 shipped
+source files. The complete backend gate passed `968/968` tests across 232
+suites under Node `24.14.1`, plus the repository check.
+
+Render reported deploy `dep-d9j5vnt8nd3s73asjkn0` `live`. Public liveness
+returned `live` and public readiness returned `ready`. Netlify reported deploy
+`6a66610577aa69f808ad00a9` `ready`, processed two redirect rules, scanned
+`343` files, and found no secret matches. The frontend application commit is
+the exact source used for the uploaded Netlify artifact; the later
+documentation-only commit does not alter that bundle.
+
+### Fixture v8 reset
+
+The protected staging-only reset:
+
+* created and verified backup
+  `backup-v1-d90df160904d8d36441233bffc6037207fa4bb666677798557f82a4a07412ca1`;
+* invalidated all prior staging sessions;
+* installed fixture build `m7-release-qa-fixture-v8`;
+* preserved the complete `3,154`-player provider catalog; and
+* restored both isolated release-QA leagues with the commissioner account
+  separate from team-manager assignments and all 22 regular-season weeks.
+
+### Hosted browser acceptance
+
+The platform-administrator and Alpha Ravens manager sessions confirmed:
+
+* a commissioner-only dashboard has no implicit managed team, while the
+  Alpha Ravens manager dashboard retains its team context;
+* Commissioner Roster Operations has the cleaner operation guide and no
+  Import health or raw-JSON pane;
+* team-directory cards render team-specific two-colour stripe backgrounds;
+* Alpha Ravens reports `$7.25` usage, `$92.75` space, `$6.50` active salary,
+  `$0.75` retained salary, `1/3` retention slots, and `$0.00` buyouts in five
+  finance cards;
+* the roster defaults to forwards before defence, exposes sortable GP, G, A,
+  P, FP, and FPG columns, switches teams from one control, shows sixteen
+  owned picks over four years, switches to hockey lines, and persists and
+  restores keyboard ordering;
+* the Players page exposes All Players, Free Agents, Favourites, every team,
+  and Prospects, includes FPG, loads `3,154` visible provider records, defaults
+  to descending FP, and filters a selected favourite;
+* Connor McDavid handed off to Auctions by stable ID and appeared prefilled
+  while the team was implicit as `Starting for Alpha Ravens`;
+* contract selection exposes optional retained AAV, Future Considerations
+  exposes only a notes field, and Alpha Foxes' selectable buyout reads
+  `Adam Klapka · $92.50 penalty · 1y`;
+* the selected buyout detail identifies Adam Klapka's buyout as `$92.50 AAV`
+  with `1 season remaining` and states that the complete remaining obligation
+  transfers;
+* pending trade panels use player names and contract terms instead of JSON;
+* Matchups exposes all 22 regular-season weeks, Week 1 loads without a
+  response-shape error, Week 10 shows future opponents, and live fixture team
+  totals differ; and
+* League Activity remains summary-first and Account settings remains
+  reachable.
+
+No auction, trade, roster correction, account change, or team-profile change
+was submitted during acceptance. The temporary roster keyboard reordering was
+restored.
+
+At the connected browser's narrow `667`-pixel viewport, the tested document
+width equalled the viewport width with no whole-page horizontal overflow. The
+connected browser cannot synthesize a native HTML pointer drag. Focused
+frontend coverage proves the DOM drag handler and saved-order payload, and the
+hosted browser proves equivalent keyboard ordering. Manual native pointer
+drag remains an explicit user-acceptance check.
 
 No production service, branch, deploy, data, schema, configuration, job,
 provider state, domain, or traffic setting was changed.
