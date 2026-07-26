@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`IN PROGRESS - STAGING ONLY`
+`COMPLETE - STAGING ONLY`
 
 ## Work Plan ID
 
@@ -112,3 +112,35 @@ evidence, both full local gates pass, the exact backend and frontend commits are
 published to their dedicated staging services, migration and health checks
 pass, manager/commissioner/administrator hosted acceptance passes, canonical
 evidence is current, and production remains untouched.
+
+## Completion Evidence
+
+M7-14 completed on staging on `2026-07-26`.
+
+The implementation was published as frontend application commit
+`ae7cb7d0dc5d9cba14b8f5d8b080aa3eb932eeb9` in Netlify deploy
+`6a669ac2e7798097bd3f111c` and backend application commit
+`9b1b89aebcd79ced9343eb1cde68543fa80023f3` in Render deploy
+`dep-d9j98evaqgkc73b587mg`. The backend migrated from schema `19` to schema
+`20` only after verified staging backup
+`backup-v1-02af141187ca38d6746b3d85bd4351cc045639c2755dd5a22af639c7a0a536ed`
+was created. Migration-ledger, SQLite integrity, foreign-key, liveness, and
+readiness checks passed.
+
+The complete frontend gate passed `118/118` tests across 23 files, lint,
+configured production build, browser-authority verification across 15
+compatibility files and 99 shipped source files, and `git diff --check`. The
+complete backend gate passed `974/974` tests across 234 suites under Node
+`24.14.1`, syntax verification, and `git diff --check`.
+
+Hosted administrator, commissioner, and manager acceptance confirmed the
+two/three-colour identity treatments, roster actions and handoffs, helmet
+favourites and player autocomplete, matchup presentation, commissioner
+workspace, member invitation and removal controls, administrator league
+creation controls, and actionable invitation notifications. A temporary
+staging manager-membership removal performed during the confirmation check was
+repaired through the normal invitation and acceptance workflow; the Alpha
+Wolves manager assignment is restored and the resulting plain-language
+activity entries intentionally remain.
+
+No staging fixture reset occurred. Production remained untouched.

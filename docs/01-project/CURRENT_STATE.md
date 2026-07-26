@@ -1592,6 +1592,46 @@ acceptance were restored. Manual native pointer dragging remains the explicit
 Grae acceptance item because the connected browser cannot activate that raw
 gesture; focused automated pointer and saved-order coverage passes.
 
+M7-14 completed on staging on `2026-07-26`. Team identities now support either
+two equal colour bands or the approved three-band pattern, with readable
+identity plates on the team directory, roster header, and matchup score
+headers. The roster uses drag handles without visual arrow controls, preserves
+an accessible keyboard ordering path, and exposes compact Buyout, Move to IR,
+Trade, and Trade Block actions. Trade-block state and eligible roster actions
+are authorized and persisted by the backend.
+
+The Players page now uses colour-changing hockey helmets for favourites,
+removes the duplicated comparison table, and provides selectable player-name
+autocomplete. Matchups uses a plain-language week/date label, includes GP in
+both player tables, and retains all 22 selectable weeks. Commissioner
+dashboards now prioritize rotating matchups, auctions, trades, membership, and
+invitation controls instead of manager-empty panels. Platform administrators
+can create leagues and assign commissioners through protected existing
+administrative authority. Pending invitation notifications now expose
+Accept/Decline actions and update league access after an authoritative
+response.
+
+Release `HL-20260726-5` published frontend application commit
+`ae7cb7d0dc5d9cba14b8f5d8b080aa3eb932eeb9` in Netlify deploy
+`6a669ac2e7798097bd3f111c` and backend application commit
+`9b1b89aebcd79ced9343eb1cde68543fa80023f3` in Render deploy
+`dep-d9j98evaqgkc73b587mg`. The backend migrated from schema `19` to schema
+`20` after verified backup
+`backup-v1-02af141187ca38d6746b3d85bd4351cc045639c2755dd5a22af639c7a0a536ed`.
+Migration-ledger, SQLite integrity, foreign-key, liveness, and readiness checks
+pass. Fixture `m7-release-qa-fixture-v8` remains installed; no fixture reset
+occurred.
+
+The complete frontend gate passes `118/118` tests across 23 files, lint,
+configured production build, browser-authority verification across 15
+compatibility files and 99 shipped source files, and `git diff --check`. The
+complete backend gate passes `974/974` tests across 234 suites under Node
+`24.14.1`, syntax verification, and `git diff --check`. Hosted administrator,
+commissioner, and manager checks passed. A temporary Alpha Wolves manager
+removal used to verify the confirmation path was repaired through the normal
+invitation and acceptance workflow; the assignment is restored and the
+plain-language audit entries remain.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 

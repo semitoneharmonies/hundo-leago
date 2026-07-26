@@ -2,7 +2,7 @@
 
 ## Status
 
-`M7-13 RESIDUAL REMEDIATION PASSED / USER ACCEPTANCE READY`
+`M7-14 FINAL PRODUCT-REVIEW BATCH PASSED / USER ACCEPTANCE READY`
 
 Production remains `NO-GO`. This record does not authorize a production
 reset, migration, deploy, traffic change, job activation, or merge to `main`.
@@ -568,6 +568,121 @@ pointer dragging remains the explicit Grae acceptance check.
 
 No production service, branch, deploy, data, schema, configuration, job,
 provider state, domain, or traffic setting was changed.
+
+## M7-14 Final Product-Review Batch
+
+The fifth staging-only remediation was published and verified on
+`2026-07-26`.
+
+```text
+Release ID:                    HL-20260726-5
+Frontend feature commit:       152d2131275b0686feaffbc5c17268732f597053
+Frontend application commit:   ae7cb7d0dc5d9cba14b8f5d8b080aa3eb932eeb9
+Frontend Netlify deploy:        6a669ac2e7798097bd3f111c
+Frontend Netlify build:         prebuilt verified artifact; no separate build
+Backend application commit:     9b1b89aebcd79ced9343eb1cde68543fa80023f3
+Backend Render deploy:          dep-d9j98evaqgkc73b587mg
+Schema transition:              19 -> 20
+Fixture build:                  m7-release-qa-fixture-v8 (unchanged)
+```
+
+The exact backend and frontend application commits were pushed to their
+respective `origin/staging` branches before publication. The frontend artifact
+was built with the dedicated Render staging API and Socket.IO origins, embeds
+application commit `ae7cb7d0dc5d9cba14b8f5d8b080aa3eb932eeb9`, and contains no
+configured localhost origin. Netlify reported deploy
+`6a669ac2e7798097bd3f111c` ready.
+
+Render reported deploy `dep-d9j98evaqgkc73b587mg` live. Public liveness
+returned `live` and public readiness returned `ready`.
+
+### Migration and backup evidence
+
+Before the staging migration, the standard backup workflow created:
+
+```text
+Backup ID:
+backup-v1-02af141187ca38d6746b3d85bd4351cc045639c2755dd5a22af639c7a0a536ed
+
+Backup directory:
+/opt/render/project/data/hundo-staging/sqlite-backups/m7-14-pre-migration-1785106772436
+
+Manifest checksum:
+22b730fdcd893c9fc347dde9b46a93d173a4c0f07e2fdc289f0f3c9f03dbde61
+```
+
+The additive migration installed schema `20`, the twentieth migration-ledger
+entry, optional tertiary team colour, and stable trade-block state. The
+migration checksum was
+`8e3692e3b0846ce7e6b0cb0a069f5e7e498b79c5ea26888b2ae207f4102acb0e`.
+SQLite integrity returned `ok`, foreign-key verification returned zero
+violations, and the expected columns and cleanup trigger were present. No
+fixture reset occurred.
+
+### Automated verification
+
+The complete frontend gate passed:
+
+* `118/118` tests across 23 files;
+* lint;
+* configured production build;
+* browser-authority verification across 15 compatibility files and 99 shipped
+  source files; and
+* `git diff --check`.
+
+The complete backend gate passed:
+
+* `974/974` tests across 234 suites under Node `24.14.1`;
+* repository syntax verification; and
+* `git diff --check`.
+
+### Hosted browser acceptance
+
+The platform-administrator and commissioner session confirmed:
+
+* the league-selection page retains existing leagues and exposes protected
+  league creation and commissioner assignment;
+* a commissioner dashboard has no implicit team and prioritizes a
+  five-second rotating matchup spotlight, live auctions, pending trades,
+  membership, and invitations;
+* member removal is commissioner-only, explicit, and confirmation-protected;
+* Commissioner Roster Operations remains simplified with no Import health
+  pane; and
+* the Teams directory displays readable identity plates over each team's
+  two- or three-colour horizontal bands.
+
+The team-manager session confirmed:
+
+* the roster header uses the selected team's colour bands, the finance area
+  remains at five cards, active players default to forwards and then defence
+  ordered by descending AAV, and both roster views preserve drag ordering;
+* visual arrow controls are removed while the keyboard fallback remains;
+* compact expanding Buyout, Move to IR, Trade, and Trade Block controls are
+  present, and Trade hands off the selected contract to the composer;
+* the Players page uses colour-changing hockey helmets for favourites, has no
+  duplicate selected-player table, includes FPG, and offers selectable
+  player-name autocomplete;
+* Matchups uses a professional week/date label, exposes all 22 weeks, includes
+  GP for both teams, and colours both score headers with the corresponding
+  team identity; and
+* Account team settings switch between two and three colours and expose the
+  third colour only in three-colour mode.
+
+Pending league-invitation notifications were then rechecked. Manage-team
+invitations expose Accept and Decline controls; accepting the invitation uses
+the protected API, refreshes league access, and displays the accepted state.
+
+During the member-removal confirmation check, the connected browser accepted
+the native confirmation and temporarily removed the synthetic Alpha Wolves
+manager membership. The same user was immediately re-invited through the
+commissioner workflow and accepted through the repaired notification action.
+The Alpha Wolves manager assignment is authoritatively restored. The
+plain-language removal, invitation, and acceptance audit entries remain by
+design.
+
+No auction, trade, buyout, IR move, trade-block change, league creation,
+team-profile update, roster correction, or fixture reset was submitted.
+Production remained untouched.
 
 ## Remaining Gates
 
