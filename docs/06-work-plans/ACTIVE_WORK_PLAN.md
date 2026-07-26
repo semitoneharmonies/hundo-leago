@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`IN PROGRESS — STAGING ONLY`
+`COMPLETE — STAGING ONLY`
 
 ## Work Plan ID
 
@@ -94,3 +94,46 @@ full local gate, every immediate-review item has explicit regression evidence,
 the exact staging application commit is published and hosted acceptance
 passes, residual manual-only checks are recorded, and production remains
 untouched.
+
+## Completion Evidence
+
+M7-13 completed on `2026-07-26`.
+
+```text
+Release ID:                  HL-20260726-4
+Frontend application commit: 51f9c22c8127dcc992ca35ffcb9bdd10c14d3634
+Frontend Netlify deploy:      6a666d6791675949811e06c9
+Frontend Netlify build:       6a666d6791675949811e06c7
+Backend application commit:   a821a95a267a370d7f3fe3ef0b8cfdacea83aea5 (unchanged)
+Fixture build:                m7-release-qa-fixture-v8 (unchanged)
+```
+
+The complete frontend gate passed `115/115` tests across 23 files, lint,
+production build, browser-authority verification across 15 compatibility
+files and 98 shipped source files, and `git diff --check`.
+
+Disposable local and hosted platform-administrator/Alpha Ravens manager
+acceptance confirmed:
+
+* one selected commissioner correction workflow at a time, collapsed cap and
+  staging-reset supporting panels, no Import health pane, and corrected
+  narrow-layout spacing;
+* strong horizontal team-colour bands, five authoritative finance cards,
+  `1/3` retention-slot use, larger sortable roster statistics, four years of
+  picks, and table/hockey-line ordering controls;
+* real provider-backed player names, FPG, Favourites and assignment filters,
+  and stable player-to-auction handoff with the manager's team implicit;
+* optional contract retention, notes-only Future Considerations, named whole
+  buyout obligations, and readable pending-trade details;
+* all 22 matchup weeks, usable completed Week 1 and scheduled future weeks,
+  varied fixture totals, and current scheduled/live team names; and
+* immediate team-name propagation into Matchups and the dashboard, followed by
+  restoration of the original Alpha Ravens name.
+
+The temporary roster display-order change and temporary team-name change used
+for hosted acceptance were restored. No auction, trade, commissioner
+correction, fixture reset, backend deployment, or production action occurred.
+Manual native pointer dragging remains an explicit Grae acceptance check
+because the connected browser's raw drag synthesis does not activate the
+application gesture; mouse/touch pointer paths and saved payloads pass focused
+automated coverage, and the hosted keyboard path persisted authoritatively.

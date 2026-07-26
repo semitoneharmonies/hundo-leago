@@ -1566,6 +1566,32 @@ tests across 232 suites under Node `24.14.1`, plus the repository check.
 Hosted administrator and Alpha Ravens manager checks passed without submitting
 an auction, trade, roster correction, or account/team-profile change.
 
+M7-13 completed on staging on `2026-07-26`. Commissioner Roster Operations
+now presents one correction workflow at a time, collapses supporting cap and
+staging-reset panels, removes the Import health pane, and has verified
+narrow-layout spacing. Team-directory identity now uses strong horizontal
+primary/secondary bands. Roster table and hockey-line views expose explicit
+desktop and touch drag handles plus keyboard controls, preserve within-position
+ordering, and use larger player/statistic typography.
+
+Release `HL-20260726-4` published exact frontend application commit
+`51f9c22c8127dcc992ca35ffcb9bdd10c14d3634` in ready Netlify deploy
+`6a666d6791675949811e06c9`. The backend remained at application commit
+`a821a95a267a370d7f3fe3ef0b8cfdacea83aea5`, Render deploy
+`dep-d9j5vnt8nd3s73asjkn0`, and fixture
+`m7-release-qa-fixture-v8`; no backend deployment or reset occurred.
+
+The complete frontend gate again passes `115/115` tests across 23 files,
+lint, production build, and browser-authority verification across 15
+compatibility files and 98 shipped source files. Hosted administrator and
+Alpha Ravens manager acceptance reverified role separation, all immediate
+review behavior, readable narrow layouts, real provider-backed players, named
+whole-buyout selection, all 22 matchup weeks, and immediate current-name
+propagation. The temporary roster ordering and Alpha Ravens rename used for
+acceptance were restored. Manual native pointer dragging remains the explicit
+Grae acceptance item because the connected browser cannot activate that raw
+gesture; focused automated pointer and saved-order coverage passes.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-`M7-12 STAGING REMEDIATION PASSED / USER ACCEPTANCE READY`
+`M7-13 RESIDUAL REMEDIATION PASSED / USER ACCEPTANCE READY`
 
 Production remains `NO-GO`. This record does not authorize a production
 reset, migration, deploy, traffic change, job activation, or merge to `main`.
@@ -494,6 +494,77 @@ connected browser cannot synthesize a native HTML pointer drag. Focused
 frontend coverage proves the DOM drag handler and saved-order payload, and the
 hosted browser proves equivalent keyboard ordering. Manual native pointer
 drag remains an explicit user-acceptance check.
+
+No production service, branch, deploy, data, schema, configuration, job,
+provider state, domain, or traffic setting was changed.
+
+## M7-13 Residual-Review Remediation
+
+The fourth staging-only remediation was published and verified on
+`2026-07-26`.
+
+```text
+Release ID:                    HL-20260726-4
+Frontend application commit:   51f9c22c8127dcc992ca35ffcb9bdd10c14d3634
+Frontend Netlify deploy:        6a666d6791675949811e06c9
+Frontend Netlify build:         6a666d6791675949811e06c7
+Backend application commit:     a821a95a267a370d7f3fe3ef0b8cfdacea83aea5 (unchanged)
+Backend Render deploy:          dep-d9j5vnt8nd3s73asjkn0 (unchanged)
+Fixture build:                  m7-release-qa-fixture-v8 (unchanged)
+```
+
+The exact frontend commit was pushed to `origin/staging` before artifact
+publication. Netlify reported the final deploy `ready`, processed both redirect
+rules, scanned `344` files, and found no secret matches.
+
+The complete frontend gate passed `115/115` tests across 23 files, lint,
+production build, browser-authority verification across 15 compatibility
+files and 98 shipped source files, and `git diff --check`.
+
+### Hosted browser acceptance
+
+The platform-administrator session confirmed:
+
+* the dashboard represents the administrator as league-wide, with All teams,
+  no assigned team, and no managed roster;
+* Commissioner Roster Operations shows one selected workflow at a time, has
+  no Import health pane, collapses the cap and staging-reset support panels,
+  and has corrected narrow-layout spacing;
+* team-directory cards show strong horizontal primary/secondary colour bands;
+* all 22 matchup weeks and completed Week 1 load; and
+* League Activity remains summary-first without raw activity or user IDs.
+
+The Alpha Ravens manager session confirmed:
+
+* the dashboard and auction composer use the assigned Alpha Ravens context;
+* the roster shows `$7.25` usage, `$92.75` space, `$6.50` active salary,
+  `$0.75` retained salary, `1/3` retention slots and `$0.00` buyouts in five
+  cards, plus sixteen picks over four years;
+* active players default to forwards then defence by descending AAV and render
+  larger GP, G, A, P, FP and FPG values in both table and hockey-line views;
+* keyboard ordering saves authoritatively and was restored, while explicit
+  mouse/touch drag handles are present in both views;
+* provider-backed player names replace fixtures; FP is the default sort; FPG,
+  Favourites, Free Agents, every team and Prospects are available; and a
+  selected Connor McDavid handed off to Auctions prefilled with the manager's
+  team implicit;
+* Trades exposes optional contract retention, notes-only Future
+  Considerations, and the named `Adam Klapka · $92.50 penalty · 1y` buyout
+  obligation instead of an arbitrary amount;
+* all 22 matchup weeks, completed Week 1 and scheduled Week 22 are selectable;
+  and
+* a temporary team rename appeared immediately in Matchups and the dashboard
+  quick view, then the original Alpha Ravens name was restored.
+
+The tested narrow browser document width equalled the viewport width with no
+whole-page horizontal overflow. No auction, trade, commissioner correction or
+fixture reset was submitted. The temporary roster display-order and team-name
+changes were restored.
+
+The connected browser's raw drag synthesis did not activate the application
+gesture. Focused tests pass the desktop-native handle path, mouse/touch pointer
+drop-target path, keyboard fallback, and saved-order payload. Manual native
+pointer dragging remains the explicit Grae acceptance check.
 
 No production service, branch, deploy, data, schema, configuration, job,
 provider state, domain, or traffic setting was changed.
