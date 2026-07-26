@@ -224,15 +224,22 @@ export function LeagueTeamsPage() {
                         <Link
                           to={routePaths.teamRoster(leagueId, team.id)}
                           aria-label={team.name}
+                          style={{
+                            "--team-primary":
+                              team.primaryColour || "#16324f",
+                            "--team-secondary":
+                              team.secondaryColour || "#f7f7f7",
+                          }}
                         >
                           <span
                             className="hl-teams-index__mark"
                             aria-hidden="true"
-                            style={{
-                              "--team-accent": team.primaryColour || "#2563eb",
-                            }}
                           >
-                            {team.name.slice(0, 2).toUpperCase()}
+                            {team.logoReference ? (
+                              <img src={team.logoReference} alt="" />
+                            ) : (
+                              team.name.slice(0, 2).toUpperCase()
+                            )}
                           </span>
                           <span>
                             <strong>{team.name}</strong>

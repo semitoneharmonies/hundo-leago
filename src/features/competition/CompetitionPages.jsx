@@ -59,7 +59,13 @@ function ErrorMessage({ error }) {
 
 function Health({ health }) {
   const source = health?.statistics || health?.scoring;
-  if (!source || source.status === "fresh") return null;
+  if (
+    !source ||
+    source.status === "fresh" ||
+    source.status === "not_live"
+  ) {
+    return null;
+  }
   if (source.status === "unavailable") {
     return (
       <p role="alert">
@@ -274,22 +280,31 @@ export function LeagueMatchupsPage() {
                   ))}
                 </select>
               </label>
+              <label className="hl-field">
+                Week{" "}
+                <select
+                  value={effectiveWeekId || ""}
+                  onChange={(event) => {
+                    setSelectedWeekId(event.target.value);
+                    setSelectedMatchupId(null);
+                  }}
+                  disabled={weeks.data.weeks.length === 0}
+                >
+                  {weeks.data.weeks.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      Week {item.sequence} · {item.status}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Health health={current.data.health} />
               </Surface>
               {weeks.data.weeks.length === 0 ? (
                 <Surface>
                   <EmptyBlock title="No matchup schedule has been generated yet." />
                 </Surface>
-              ) : (
-                <>
-                  <nav className="hl-week-tabs" aria-label="Matchup weeks">
-                    {weeks.data.weeks.map((item) => (
-                      <button className="hl-week-tab" key={item.id} type="button" aria-pressed={item.id === effectiveWeekId}
-                        onClick={() => { setSelectedWeekId(item.id); setSelectedMatchupId(null); }}>
-                        Week {item.sequence}
-                      </button>
-                    ))}
-                  </nav>
+                ) : (
+                  <>
                   {week.isPending ? <Surface><LoadingBlock>Loading week…</LoadingBlock></Surface>
                     : week.isError ? <ErrorMessage error={week.error} />
                       : (

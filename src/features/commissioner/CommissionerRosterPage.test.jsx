@@ -419,8 +419,13 @@ describe("M7-10 commissioner roster operations", () => {
         name: "Commissioner roster operations",
       })
     ).toBeInTheDocument();
-    expect(screen.getByText("sportsdataio-discovery-lab")).toBeInTheDocument();
-    expect(screen.getByText("1,234")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Choose the operation you need" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Import health" })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("sportsdataio-discovery-lab")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", {
         name: "Reset staging test leagues",

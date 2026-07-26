@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -22,6 +22,7 @@ const otherLeagueId = "11111111-1111-4111-8111-111111111112";
 const seasonId = "22222222-2222-4222-8222-222222222222";
 const historicalSeasonId = "22222222-2222-4222-8222-222222222223";
 const weekId = "33333333-3333-4333-8333-333333333333";
+const futureWeekId = "33333333-3333-4333-8333-333333333335";
 const historicalWeekId = "33333333-3333-4333-8333-333333333334";
 const matchupId = "44444444-4444-4444-8444-444444444444";
 const secondMatchupId = "44444444-4444-4444-8444-444444444445";
@@ -103,6 +104,8 @@ function week({
   id = weekId,
   season = seasonId,
   key = "2026-W01",
+  sequence = 1,
+  status = "live",
   matchups = [matchupSummary()],
 } = {}) {
   return {
@@ -110,13 +113,13 @@ function week({
     leagueId,
     seasonId: season,
     weekKey: key,
-    sequence: 1,
+    sequence,
     startsAtMs: 1,
     baselineAtMs: 2,
     locksAtMs: 3,
     endsAtMs: 99,
     rollsOverAtMs: 100,
-    status: "live",
+    status,
     version: 2,
     matchups,
     byes: [],
@@ -303,13 +306,20 @@ describe("M6-12 authenticated competition pages", () => {
       const matchupWeek = week({
         matchups: [matchupSummary(), secondMatchupSummary()],
       });
+      const futureWeek = week({
+        id: futureWeekId,
+        key: "2026-W02",
+        sequence: 2,
+        status: "scheduled",
+        matchups: [],
+      });
       if (path === `${prefix}/matchup-weeks`) {
         return envelope({
           code: "MATCHUP_WEEKS_FOUND",
           leagueId,
           seasonId,
           health: health(),
-          weeks: [matchupWeek],
+          weeks: [matchupWeek, futureWeek],
         });
       }
       if (path === `${prefix}/matchup-weeks/current`) {
@@ -323,6 +333,9 @@ describe("M6-12 authenticated competition pages", () => {
       }
       if (path === `${prefix}/matchup-weeks/${weekId}`) {
         return envelope({ code: "MATCHUP_WEEK_FOUND", week: matchupWeek });
+      }
+      if (path === `${prefix}/matchup-weeks/${futureWeekId}`) {
+        return envelope({ code: "MATCHUP_WEEK_FOUND", week: futureWeek });
       }
       if (path === `${prefix}/matchup-weeks/${weekId}/matchups/${matchupId}`) {
         return envelope(
@@ -345,6 +358,13 @@ describe("M6-12 authenticated competition pages", () => {
       fetchImpl
     );
     expect(await screen.findByRole("heading", { name: "Home Team vs Away Team" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Week" })
+    ).toHaveValue(weekId);
+    expect(
+      within(screen.getByRole("combobox", { name: "Week" }))
+        .getAllByRole("option")
+    ).toHaveLength(2);
     expect(screen.getByText("2.25 FP", { exact: false })).toBeInTheDocument();
     expect(
       screen.getByRole("table", { name: "Player scoring for this matchup" })
@@ -372,6 +392,16 @@ describe("M6-12 authenticated competition pages", () => {
       })
     ).toBeInTheDocument();
     expect(fetchImpl).toHaveBeenCalledTimes(9);
+
+    await view.user.selectOptions(
+      screen.getByRole("combobox", { name: "Week" }),
+      futureWeekId
+    );
+    expect(
+      await screen.findByRole("heading", { name: "2026-W02" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("No pairings in this week.")).toBeInTheDocument();
+    expect(fetchImpl).toHaveBeenCalledTimes(10);
   });
 
   it("loads a historical matchup after an explicit season selection", async () => {
@@ -447,6 +477,7 @@ describe("M6-12 authenticated competition pages", () => {
         return envelope(
           matchupDetail(historicalSummary, {
             mode: "final",
+            scoringStatus: "not_live",
             homePlayers: [
               playerScore({
                 playerId: homePlayerId,

@@ -20,25 +20,98 @@ function money(cents) {
   return `${sign}$${(Math.abs(cents) / 100).toFixed(2)}`;
 }
 
-function playerStatistics(statistics) {
-  if (!statistics) return "Not available";
-  return `${statistics.gamesPlayed} GP · ${statistics.goals} G · ${statistics.assists} A · ${statistics.nhlPoints} P · ${(statistics.fantasyPointsHundredths / 100).toFixed(2)} FP`;
+function fantasyPointsPerGame(statistics) {
+  if (!statistics) return null;
+  if (statistics.gamesPlayed === 0) return 0;
+  return statistics.fantasyPointsHundredths / 100 / statistics.gamesPlayed;
 }
 
 function orderedPlayers(players) {
   return [...players].sort(
     (left, right) =>
-      (left.displayOrder ?? left.slotNumber ?? 999) -
-        (right.displayOrder ?? right.slotNumber ?? 999) ||
+      (left.normalizedPosition === "F" ? 0 : 1) -
+        (right.normalizedPosition === "F" ? 0 : 1) ||
+      (Number.isInteger(left.displayOrder) &&
+      Number.isInteger(right.displayOrder)
+        ? left.displayOrder - right.displayOrder
+        : Number.isInteger(left.displayOrder)
+          ? -1
+          : Number.isInteger(right.displayOrder)
+            ? 1
+            : (right.contract?.aavCents ?? -1) -
+              (left.contract?.aavCents ?? -1)) ||
       left.name.localeCompare(right.name)
   );
 }
 
-function CategoryTable({ category, players }) {
+function statisticValue(player, key) {
+  if (!player.statistics) return -1;
+  switch (key) {
+    case "gamesPlayed":
+      return player.statistics.gamesPlayed;
+    case "goals":
+      return player.statistics.goals;
+    case "assists":
+      return player.statistics.assists;
+    case "nhlPoints":
+      return player.statistics.nhlPoints;
+    case "fantasyPoints":
+      return player.statistics.fantasyPointsHundredths;
+    case "fantasyPointsPerGame":
+      return fantasyPointsPerGame(player.statistics);
+    default:
+      return -1;
+  }
+}
+
+function sortedByStatistic(players, sort) {
+  if (sort.key === "lineup") return players;
+  return [...players].sort(
+    (left, right) =>
+      (left.normalizedPosition === "F" ? 0 : 1) -
+        (right.normalizedPosition === "F" ? 0 : 1) ||
+      (sort.direction === "asc" ? 1 : -1) *
+        (statisticValue(left, sort.key) - statisticValue(right, sort.key)) ||
+      left.name.localeCompare(right.name)
+  );
+}
+
+function RosterSortHeading({ label, sortKey, sort, onSort }) {
+  return (
+    <button
+      type="button"
+      className="hl-sort-button"
+      onClick={() => onSort(sortKey)}
+      aria-label={`Sort roster by ${label}`}
+    >
+      {label}
+      {sort.key === sortKey
+        ? sort.direction === "asc"
+          ? " ↑"
+          : " ↓"
+        : ""}
+    </button>
+  );
+}
+
+function CategoryTable({
+  category,
+  players,
+  canManage = false,
+  draggingId = null,
+  onDragStart,
+  onDragEnd,
+  onDrop,
+  onMove,
+  sort,
+  onSort,
+}) {
   const forwards = players.filter(
     ({ normalizedPosition }) => normalizedPosition === "F"
   ).length;
   const defence = players.length - forwards;
+  const displayedPlayers = sortedByStatistic(players, sort);
+  const draggable = category.key === "Active" && canManage;
   const capacity =
     category.key === "Active"
       ? `${players.length}/18 used · F ${forwards}/12 · D ${defence}/6`
@@ -65,23 +138,103 @@ function CategoryTable({ category, players }) {
           <table className="hl-data-table hl-roster-table">
             <thead>
               <tr>
+                {draggable && <th scope="col">Order</th>}
+                <th scope="col">Pos</th>
+                <th scope="col">Player</th>
+                <th scope="col">AAV</th>
+                <th scope="col">Years</th>
+                <th scope="col">Age</th>
                 {[
-                  "Position",
-                  "Player",
-                  "AAV",
-                  "Remaining years",
-                  "Age",
-                  "Season statistics",
-                ].map((heading) => (
-                  <th key={heading} scope="col">
-                    {heading}
+                  ["GP", "gamesPlayed"],
+                  ["G", "goals"],
+                  ["A", "assists"],
+                  ["P", "nhlPoints"],
+                  ["FP", "fantasyPoints"],
+                  ["FPG", "fantasyPointsPerGame"],
+                ].map(([label, sortKey]) => (
+                  <th key={sortKey} scope="col">
+                    <RosterSortHeading
+                      label={label}
+                      sortKey={sortKey}
+                      sort={sort}
+                      onSort={onSort}
+                    />
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {orderedPlayers(players).map((player) => (
-                <tr key={player.ownershipId}>
+              {displayedPlayers.map((player) => {
+                const peers = displayedPlayers.filter(
+                  ({ normalizedPosition }) =>
+                    normalizedPosition === player.normalizedPosition
+                );
+                const peerIndex = peers.findIndex(
+                  ({ ownershipId }) => ownershipId === player.ownershipId
+                );
+                return (
+                <tr
+                  key={player.ownershipId}
+                  className={
+                    draggingId === player.ownershipId ? "is-dragging" : ""
+                  }
+                  draggable={draggable}
+                  onDragStart={(event) => {
+                    if (!draggable) return;
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData(
+                      "text/plain",
+                      player.ownershipId
+                    );
+                    onDragStart(player.ownershipId);
+                  }}
+                  onDragEnd={onDragEnd}
+                  onDragOver={(event) => {
+                    if (!draggable) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(event) => {
+                    if (!draggable) return;
+                    event.preventDefault();
+                    const sourceId =
+                      (typeof event.dataTransfer.getData === "function"
+                        ? event.dataTransfer.getData("text/plain")
+                        : "") || draggingId;
+                    onDrop(sourceId, player.ownershipId, displayedPlayers);
+                  }}
+                >
+                  {draggable && (
+                    <td>
+                      <div className="hl-roster-order-controls">
+                        <GripVertical aria-hidden="true" />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onMove(
+                              player.ownershipId,
+                              -1,
+                              displayedPlayers
+                            )
+                          }
+                          disabled={peerIndex === 0}
+                          aria-label={`Move ${player.name} earlier`}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onMove(player.ownershipId, 1, displayedPlayers)
+                          }
+                          disabled={peerIndex === peers.length - 1}
+                          aria-label={`Move ${player.name} later`}
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    </td>
+                  )}
                   <td>
                     <span className="hl-position-tag">
                       {player.normalizedPosition}
@@ -93,11 +246,24 @@ function CategoryTable({ category, players }) {
                   </td>
                   <td>{player.contract?.remainingYears ?? "—"}</td>
                   <td>{player.age ?? "Unknown"}</td>
-                  <td className="is-mono">
-                    {playerStatistics(player.statistics)}
+                  <td>{player.statistics?.gamesPlayed ?? "—"}</td>
+                  <td>{player.statistics?.goals ?? "—"}</td>
+                  <td>{player.statistics?.assists ?? "—"}</td>
+                  <td>{player.statistics?.nhlPoints ?? "—"}</td>
+                  <td>
+                    {player.statistics
+                      ? (
+                          player.statistics.fantasyPointsHundredths / 100
+                        ).toFixed(2)
+                      : "—"}
+                  </td>
+                  <td>
+                    {player.statistics
+                      ? fantasyPointsPerGame(player.statistics).toFixed(2)
+                      : "—"}
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
@@ -117,6 +283,7 @@ function LinePlayer({
   canManage,
   draggingId,
   onDragStart,
+  onDragEnd,
   onDrop,
   onMove,
   index,
@@ -134,12 +301,20 @@ function LinePlayer({
         event.dataTransfer.setData("text/plain", player.ownershipId);
         onDragStart(player.ownershipId);
       }}
+      onDragEnd={onDragEnd}
       onDragOver={(event) => {
-        if (canManage) event.preventDefault();
+        if (canManage) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }
       }}
       onDrop={(event) => {
         event.preventDefault();
-        onDrop(player.ownershipId);
+        const sourceId =
+          (typeof event.dataTransfer.getData === "function"
+            ? event.dataTransfer.getData("text/plain")
+            : "") || draggingId;
+        onDrop(sourceId, player.ownershipId);
       }}
     >
       {canManage && <GripVertical aria-hidden="true" />}
@@ -181,6 +356,7 @@ function HockeyLines({
   canManage,
   draggingId,
   onDragStart,
+  onDragEnd,
   onDrop,
   onMove,
 }) {
@@ -219,6 +395,7 @@ function HockeyLines({
                     canManage={canManage}
                     draggingId={draggingId}
                     onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
                     onDrop={onDrop}
                     onMove={onMove}
                     index={absoluteIndex}
@@ -246,6 +423,7 @@ function HockeyLines({
                     canManage={canManage}
                     draggingId={draggingId}
                     onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
                     onDrop={onDrop}
                     onMove={onMove}
                     index={absoluteIndex}
@@ -334,9 +512,16 @@ export function TeamRosterPage({
     )
   );
   const [draggingId, setDraggingId] = useState(null);
+  const [rosterSort, setRosterSort] = useState({
+    key: "lineup",
+    direction: "asc",
+  });
   const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
+    // This local order is the optimistic drag state and must be replaced when
+    // the authoritative team workspace or saved order changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActivePlayers(
       orderedPlayers(
         workspace.players.filter(
@@ -376,25 +561,27 @@ export function TeamRosterPage({
     },
   });
 
-  function reorder(sourceId, targetId) {
+  function reorder(sourceId, targetId, basisPlayers = activePlayers) {
     if (
       !workspace.canManage ||
       mutation.isPending ||
+      !sourceId ||
       sourceId === targetId
     ) {
+      setDraggingId(null);
       return;
     }
-    const source = activePlayers.find(
+    const source = basisPlayers.find(
       ({ ownershipId }) => ownershipId === sourceId
     );
-    const target = activePlayers.find(
+    const target = basisPlayers.find(
       ({ ownershipId }) => ownershipId === targetId
     );
     if (!source || !target || source.normalizedPosition !== target.normalizedPosition) {
       setSaveMessage("Players can be reordered only within the same position group.");
       return;
     }
-    const positionPlayers = activePlayers.filter(
+    const positionPlayers = basisPlayers.filter(
       ({ normalizedPosition }) => normalizedPosition === source.normalizedPosition
     );
     const from = positionPlayers.findIndex(
@@ -406,36 +593,48 @@ export function TeamRosterPage({
     const reorderedPosition = [...positionPlayers];
     const [moved] = reorderedPosition.splice(from, 1);
     reorderedPosition.splice(to, 0, moved);
-    let positionIndex = 0;
-    const next = activePlayers.map((player) =>
-      player.normalizedPosition === source.normalizedPosition
-        ? reorderedPosition[positionIndex++]
-        : player
+    const next = ["F", "D"].flatMap((position) =>
+      position === source.normalizedPosition
+        ? reorderedPosition
+        : basisPlayers.filter(
+            ({ normalizedPosition }) => normalizedPosition === position
+          )
     );
     setActivePlayers(next);
+    setRosterSort({ key: "lineup", direction: "asc" });
     setDraggingId(null);
     setSaveMessage("Saving line order…");
     mutation.mutate(next);
   }
 
-  function move(sourceId, direction) {
-    const source = activePlayers.find(
+  function move(sourceId, direction, basisPlayers = activePlayers) {
+    const source = basisPlayers.find(
       ({ ownershipId }) => ownershipId === sourceId
     );
     if (!source) return;
-    const peers = activePlayers.filter(
+    const peers = basisPlayers.filter(
       ({ normalizedPosition }) => normalizedPosition === source.normalizedPosition
     );
     const index = peers.findIndex(({ ownershipId }) => ownershipId === sourceId);
     const target = peers[index + direction];
-    if (target) reorder(sourceId, target.ownershipId);
+    if (target) reorder(sourceId, target.ownershipId, basisPlayers);
+  }
+
+  function changeRosterSort(key) {
+    setRosterSort((current) =>
+      current.key === key
+        ? {
+            key,
+            direction: current.direction === "asc" ? "desc" : "asc",
+          }
+        : { key, direction: "desc" }
+    );
   }
 
   const overCap = cap.spaceCents < 0;
   const statCards = useMemo(
     () => [
       ["Usage", money(cap.usageCents), "All current cap charges"],
-      ["Limit", money(cap.limitCents), "League salary cap"],
       ["Space", money(cap.spaceCents), overCap ? "Over cap" : "Available"],
       ["Active salary", money(cap.activePlayerCents), "Net active AAV"],
       [
@@ -549,7 +748,8 @@ export function TeamRosterPage({
             canManage={workspace.canManage && !mutation.isPending}
             draggingId={draggingId}
             onDragStart={setDraggingId}
-            onDrop={(targetId) => reorder(draggingId, targetId)}
+            onDragEnd={() => setDraggingId(null)}
+            onDrop={reorder}
             onMove={move}
           />
           <div className="hl-roster-categories">
@@ -561,6 +761,8 @@ export function TeamRosterPage({
                   players={workspace.players.filter(
                     ({ rosterCategory }) => rosterCategory === category.key
                   )}
+                  sort={rosterSort}
+                  onSort={changeRosterSort}
                 />
               )
             )}
@@ -580,6 +782,18 @@ export function TeamRosterPage({
                         rosterCategory === category.key
                     )
               }
+              canManage={
+                category.key === "Active" &&
+                workspace.canManage &&
+                !mutation.isPending
+              }
+              draggingId={draggingId}
+              onDragStart={setDraggingId}
+              onDragEnd={() => setDraggingId(null)}
+              onDrop={reorder}
+              onMove={move}
+              sort={rosterSort}
+              onSort={changeRosterSort}
             />
           ))}
         </div>

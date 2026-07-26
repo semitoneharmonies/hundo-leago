@@ -292,20 +292,10 @@ function PreviewResult({ label, workflow, teamsById }) {
             impacts={workflow.preview.capImpact}
             teamsById={teamsById}
           />
-          <details>
-            <summary>Review before, requested, and projected records</summary>
-            <pre className={styles.snapshot}>
-              {JSON.stringify(
-                {
-                  before: workflow.preview.before,
-                  requested: workflow.preview.requested,
-                  projected: workflow.preview.authoritative,
-                },
-                null,
-                2
-              )}
-            </pre>
-          </details>
+          <p className={styles.previewSummary}>
+            The server compared the current records with this correction and
+            calculated the authoritative roster and cap result shown above.
+          </p>
           <label className={styles.confirmation}>
             <input
               type="checkbox"
@@ -388,7 +378,7 @@ function AddPlayerPanel({ workspace, teamsById, workflow }) {
   }
 
   return (
-    <Surface className={styles.operation}>
+    <Surface className={styles.operation} id="add-player">
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Add a player"
@@ -565,7 +555,7 @@ function RemovePlayerPanel({ workspace, teamsById, workflow }) {
   }
 
   return (
-    <Surface className={styles.operation}>
+    <Surface className={styles.operation} id="remove-player">
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Remove a player"
@@ -675,7 +665,7 @@ function RosterCorrectionPanel({ workspace, teamsById, workflow }) {
   }
 
   return (
-    <Surface className={styles.operation}>
+    <Surface className={styles.operation} id="correct-roster">
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Move or re-slot a player"
@@ -847,7 +837,7 @@ function ContractCorrectionPanel({
       : null;
 
   return (
-    <Surface className={styles.operation}>
+    <Surface className={styles.operation} id="correct-contract">
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Correct a contract"
@@ -963,65 +953,6 @@ function ContractCorrectionPanel({
   );
 }
 
-function ProviderHealth({ health }) {
-  return (
-    <Surface className={styles.health}>
-      <PanelHeading
-        eyebrow="Player data provider"
-        title="Import health"
-        description="Last import activity for the staging player catalog."
-        action={
-          <StatusBadge tone={health.stale ? "danger" : "success"}>
-            {health.stale ? "Stale" : "Current"}
-          </StatusBadge>
-        }
-      />
-      {health.stale && (
-        <div className={styles.warning} role="alert">
-          Player data is stale. Confirm the provider import before relying on
-          current catalog data.
-        </div>
-      )}
-      <dl className={styles.metrics}>
-        <div>
-          <dt>Provider</dt>
-          <dd>{health.provider}</dd>
-        </div>
-        <div>
-          <dt>Import enabled</dt>
-          <dd>{health.enabled ? "Yes" : "No"}</dd>
-        </div>
-        <div>
-          <dt>Catalog players</dt>
-          <dd>{health.catalogPlayerCount.toLocaleString("en-CA")}</dd>
-        </div>
-        <div>
-          <dt>Last attempt</dt>
-          <dd>
-            {health.lastAttempt
-              ? `${dateTime(health.lastAttempt.completedAtMs)} · ${
-                  health.lastAttempt.status
-                }`
-              : "No attempt recorded"}
-          </dd>
-        </div>
-        <div>
-          <dt>Last successful import</dt>
-          <dd>
-            {health.lastSuccessfulImport
-              ? `${dateTime(
-                  health.lastSuccessfulImport.completedAtMs
-                )} · ${health.lastSuccessfulImport.playerCount.toLocaleString(
-                  "en-CA"
-                )} players`
-              : "No successful import recorded"}
-          </dd>
-        </div>
-      </dl>
-    </Surface>
-  );
-}
-
 function TeamCapSummary({ teams }) {
   return (
     <Surface>
@@ -1058,6 +989,27 @@ function TeamCapSummary({ teams }) {
           </tbody>
         </table>
       </div>
+    </Surface>
+  );
+}
+
+function OperationsGuide() {
+  return (
+    <Surface className={styles.guide}>
+      <div>
+        <p className="hl-eyebrow">Correction workflow</p>
+        <h2>Choose the operation you need</h2>
+        <p>
+          Every change is previewed first. Review its cap impact and warnings,
+          then confirm only the correction you intend to apply.
+        </p>
+      </div>
+      <nav aria-label="Roster correction operations">
+        <a href="#add-player">Add player</a>
+        <a href="#remove-player">Remove player</a>
+        <a href="#correct-roster">Correct roster</a>
+        <a href="#correct-contract">Correct contract</a>
+      </nav>
     </Surface>
   );
 }
@@ -1187,7 +1139,7 @@ function CommissionerWorkspace({
           </Link>
         }
       />
-      <ProviderHealth health={workspace.providerHealth} />
+      <OperationsGuide />
       <TeamCapSummary teams={workspace.teams} />
       <div className={styles.operations}>
         <AddPlayerPanel

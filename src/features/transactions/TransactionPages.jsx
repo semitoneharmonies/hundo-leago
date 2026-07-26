@@ -536,7 +536,7 @@ const ASSET_TYPES = [
   ["contract", "Contract"],
   ["prospect_right", "Prospect"],
   ["draft_pick", "Draft pick"],
-  ["buyout_obligation", "Buyout penalty"],
+  ["buyout_obligation", "Buyout obligation"],
   ["retention", "Retention"],
   ["future_considerations", "Future Considerations"],
 ];
@@ -557,9 +557,7 @@ function assetChoices(asset, workspace) {
         ? workspace.tradeAssets.contracts
         : workspace.tradeAssets.retentions;
     case "future_considerations":
-      return asset.mode === "new"
-        ? []
-        : workspace.tradeAssets.futureConsiderations;
+      return [];
     default:
       return [];
   }
@@ -589,11 +587,13 @@ function AssetEditor({
               update(index, {
                 type: event.target.value,
                 reference: "",
-                mode: ["retention", "future_considerations"].includes(
-                  event.target.value
-                )
-                  ? "existing"
-                  : null,
+                mode:
+                  event.target.value === "retention"
+                    ? "existing"
+                    : event.target.value === "future_considerations"
+                      ? "new"
+                      : null,
+                retainedAavDollars: "",
               })
             }
           >
@@ -616,26 +616,13 @@ function AssetEditor({
               <option value="requested">Retain salary on a contract</option>
             </select>
           )}
-          {asset.type === "future_considerations" && (
-            <select
-              aria-label={`${label} asset ${index + 1} Future Considerations kind`}
-              style={input}
-              value={asset.mode || "existing"}
-              onChange={(event) =>
-                update(index, { mode: event.target.value, reference: "" })
-              }
-            >
-              <option value="existing">Existing obligation</option>
-              <option value="new">New promise</option>
-            </select>
-          )}
-          {asset.type === "future_considerations" && asset.mode === "new" ? (
+          {asset.type === "future_considerations" ? (
             <input
-              aria-label={`${label} asset ${index + 1} description`}
+              aria-label={`${label} asset ${index + 1} notes`}
               style={input}
               required
               maxLength={500}
-              placeholder="Plain-English description"
+              placeholder="Future Considerations notes"
               value={asset.reference}
               onChange={(event) =>
                 update(index, { reference: event.target.value })
@@ -657,7 +644,40 @@ function AssetEditor({
                   {choice.label}
                 </option>
               ))}
-            </select>
+              </select>
+          )}
+          {asset.type === "buyout_obligation" && asset.reference && (() => {
+            const buyout = workspace?.tradeAssets.buyouts.find(
+              ({ id }) => id === asset.reference
+            );
+            return buyout ? (
+              <p className="hl-inline-copy">
+                <strong>{buyout.playerName}</strong> buyout ·{" "}
+                {money(buyout.annualPenaltyCents)} AAV ·{" "}
+                {buyout.remainingYears} season
+                {buyout.remainingYears === 1 ? "" : "s"} remaining. The entire
+                remaining obligation transfers.
+              </p>
+            ) : null;
+          })()}
+          {asset.type === "contract" && asset.reference && (
+            <>
+              <input
+                aria-label={`${label} asset ${index + 1} retained AAV dollars`}
+                style={input}
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="Retained AAV ($) — optional"
+                value={asset.retainedAavDollars || ""}
+                onChange={(event) =>
+                  update(index, {
+                    retainedAavDollars: event.target.value,
+                  })
+                }
+              />
+              <small>Leave blank to trade the contract without retention.</small>
+            </>
           )}
           {asset.type === "retention" && asset.mode === "requested" && (
             <>
@@ -729,7 +749,24 @@ function NewTradeForm({ context, leagueId }) {
   if (context.teams.isPending) return <p>Loading trade teams…</p>;
   if (context.managedTeams.length === 0) return <p>You do not currently control a team that can propose a trade.</p>;
   function buildSide(items) {
-    const built = items.map(buildTradeAsset);
+    const built = items.flatMap((item) => {
+      const asset = buildTradeAsset(item);
+      if (
+        item.type !== "contract" ||
+        !String(item.retainedAavDollars || "").trim()
+      ) {
+        return [asset];
+      }
+      return [
+        asset,
+        buildTradeAsset({
+          type: "retention",
+          mode: "requested",
+          reference: item.reference,
+          retainedAavDollars: item.retainedAavDollars,
+        }),
+      ];
+    });
     const contractIds = new Set(
       built
         .filter((asset) => asset.type === "contract")

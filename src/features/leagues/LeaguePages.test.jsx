@@ -75,7 +75,7 @@ function league(id, name) {
   };
 }
 
-function fetchScenario(leagues) {
+function fetchScenario(leagues, { managerAssigned = true } = {}) {
   return vi.fn(async (url) => {
     const path = new URL(url).pathname;
     if (path === "/api/v1/session") {
@@ -106,13 +106,15 @@ function fetchScenario(leagues) {
               createdAtMs: 1,
               updatedAtMs: 1,
               version: 1,
-              currentManager: {
-                assignmentId: "assignment-1",
-                userId: "user-league",
-                displayName: "League Manager",
-                acceptedAtMs: 1,
-                version: 1,
-              },
+              currentManager: managerAssigned
+                ? {
+                    assignmentId: "assignment-1",
+                    userId: "user-league",
+                    displayName: "League Manager",
+                    acceptedAtMs: 1,
+                    version: 1,
+                  }
+                : null,
             },
           ],
         },
@@ -300,6 +302,31 @@ describe("league selection", () => {
       "href",
       `/leagues/${leagueOneId}/teams/${teamId}/roster`
     );
+    expect(
+      screen.getByRole("link", { name: "Target Owls" })
+    ).toHaveStyle({
+      "--team-primary": "#16324f",
+      "--team-secondary": "#f7f7f7",
+    });
+  });
+
+  it("does not give a commissioner an implicit dashboard team", async () => {
+    const commissionerLeague = league(leagueOneId, "Commissioner League");
+    commissionerLeague.membership.permissionCategory = "commissioner";
+    renderLeagueRoutes(
+      `/leagues/${leagueOneId}`,
+      fetchScenario([commissionerLeague], { managerAssigned: false })
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Commissioner League" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "No team is assigned to this account",
+      })
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Your team")).not.toBeInTheDocument();
   });
 
   it("shows a chooser for two visible leagues", async () => {

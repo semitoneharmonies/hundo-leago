@@ -1,0 +1,262 @@
+import { screen, within } from "@testing-library/react";
+import { Route, Routes } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("socket.io-client", () => ({
+  io: () => ({ onAny() {}, offAny() {}, disconnect() {} }),
+}));
+
+import { renderWithProviders } from "../../test/render.jsx";
+import { PlayersCatalogPage } from "./PlayersCatalogPage.jsx";
+
+const leagueId = "11111111-1111-4111-8111-111111111111";
+const seasonId = "22222222-2222-4222-8222-222222222222";
+const teamA = "33333333-3333-4333-8333-333333333333";
+const teamB = "44444444-4444-4444-8444-444444444444";
+const userId = "55555555-5555-4555-8555-555555555555";
+const freeAgentId = "66666666-6666-4666-8666-666666666666";
+const ownedPlayerId = "77777777-7777-4777-8777-777777777777";
+const prospectId = "88888888-8888-4888-8888-888888888888";
+const unavailableId = "99999999-9999-4999-8999-999999999999";
+const config = {
+  appEnv: "local",
+  apiOrigin: "http://localhost:4000",
+  socketOrigin: "http://localhost:4000",
+  buildId: null,
+};
+
+function envelope(data, { page } = {}) {
+  return new Response(
+    JSON.stringify({
+      data,
+      ...(page ? { page } : {}),
+      meta: { requestId: "request-1" },
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
+  );
+}
+
+function session() {
+  return {
+    csrfToken: "D".repeat(43),
+    session: {
+      id: userId,
+      userId,
+      status: "active",
+      createdAtMs: 1,
+      lastUsedAtMs: 1,
+      idleExpiresAtMs: 2,
+      absoluteExpiresAtMs: 3,
+      version: 1,
+    },
+    user: {
+      id: userId,
+      displayName: "Manager",
+      status: "active",
+      version: 1,
+    },
+  };
+}
+
+function league() {
+  return {
+    id: leagueId,
+    name: "Test League",
+    status: "active",
+    timezone: "America/Vancouver",
+    currentSeason: {
+      id: seasonId,
+      label: "2026-27",
+      status: "active",
+      version: 1,
+    },
+    membership: {
+      id: userId,
+      permissionCategory: "manager",
+      status: "active",
+      version: 1,
+    },
+    version: 1,
+  };
+}
+
+function team(id, name) {
+  return {
+    id,
+    leagueId,
+    name,
+    status: "active",
+    primaryColour: "#16324f",
+    secondaryColour: "#f7f7f7",
+    logoReference: null,
+    createdAtMs: 1,
+    updatedAtMs: 1,
+    version: 1,
+    currentManager: null,
+  };
+}
+
+function player({
+  id,
+  name,
+  active = true,
+  gamesPlayed,
+  fantasyPointsHundredths,
+  ownership = null,
+}) {
+  const [firstName, ...lastParts] = name.split(" ");
+  const lastName = lastParts.join(" ");
+  return {
+    id,
+    firstName,
+    lastName,
+    fullName: name,
+    birthDate: "1998-01-01",
+    status: "active",
+    provider: {
+      provider: "sportsdataio-discovery-lab",
+      sourcePosition: "C",
+      normalizedPosition: "F",
+      nhlTeamAbbreviation: "VAN",
+      active,
+      sourceVersion: "2026REG",
+      effectiveAtMs: 1,
+    },
+    statistics: {
+      provider: "release_qa_fixture",
+      nhlSeasonKey: "20262027",
+      gamesPlayed,
+      goals: 1,
+      assists: 2,
+      nhlPoints: 3,
+      fantasyPointsHundredths,
+      sourceUpdatedAtMs: 1,
+    },
+    version: 1,
+    league: {
+      id: leagueId,
+      ownership,
+      activeContract: null,
+    },
+  };
+}
+
+describe("league player catalog", () => {
+  it("shows FPG and filters favourites, teams, and prospects while hiding unavailable players", async () => {
+    const players = [
+      player({
+        id: freeAgentId,
+        name: "Free Agent",
+        gamesPlayed: 10,
+        fantasyPointsHundredths: 2500,
+      }),
+      player({
+        id: ownedPlayerId,
+        name: "Owned Player",
+        gamesPlayed: 5,
+        fantasyPointsHundredths: 500,
+        ownership: {
+          kind: "Rostered",
+          category: "Active",
+          team: { id: teamA, name: "Alpha Team" },
+        },
+      }),
+      player({
+        id: prospectId,
+        name: "Draft Prospect",
+        gamesPlayed: 0,
+        fantasyPointsHundredths: 0,
+        ownership: {
+          kind: "Prospect Right",
+          category: "Prospect",
+          team: { id: teamB, name: "Beta Team" },
+        },
+      }),
+      player({
+        id: unavailableId,
+        name: "Unavailable Player",
+        active: false,
+        gamesPlayed: 10,
+        fantasyPointsHundredths: 9999,
+      }),
+    ];
+    const fetchImpl = vi.fn(async (url) => {
+      const path = new URL(url).pathname;
+      if (path === "/api/v1/session") return envelope(session());
+      if (path === "/api/v1/leagues") {
+        return envelope({ code: "LEAGUES_FOUND", leagues: [league()] });
+      }
+      if (path === `/api/v1/leagues/${leagueId}/teams`) {
+        return envelope({
+          code: "TEAMS_FOUND",
+          teams: [team(teamA, "Alpha Team"), team(teamB, "Beta Team")],
+        });
+      }
+      if (path === `/api/v1/leagues/${leagueId}/players`) {
+        return envelope(players, {
+          page: { nextCursor: null, hasMore: false },
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const view = renderWithProviders(
+      <Routes>
+        <Route
+          path="/leagues/:leagueId/players"
+          element={<PlayersCatalogPage />}
+        />
+      </Routes>,
+      {
+        initialEntries: [`/leagues/${leagueId}/players`],
+        enableSession: true,
+        config,
+        sessionOptions: { fetchImpl },
+      }
+    );
+
+    const table = await screen.findByRole("table");
+    expect(
+      within(table).getByRole("button", { name: "Sort by FPG" })
+    ).toBeInTheDocument();
+    expect(within(table).getByText("2.50")).toBeInTheDocument();
+    expect(screen.queryByText("Unavailable Player")).not.toBeInTheDocument();
+    const rowNames = within(table)
+      .getAllByRole("rowheader")
+      .map(({ textContent }) => textContent);
+    expect(rowNames.slice(0, 3)).toEqual([
+      "Free Agent",
+      "Owned Player",
+      "Draft Prospect",
+    ]);
+
+    await view.user.click(
+      within(table)
+        .getByRole("rowheader", { name: "Free Agent" })
+        .closest("tr")
+        .querySelector('input[type="checkbox"]')
+    );
+    const assignmentFilter = screen.getByRole("combobox", {
+      name: "League assignment",
+    });
+    await view.user.selectOptions(assignmentFilter, "favourites");
+    expect(
+      within(table).getByRole("rowheader", { name: "Free Agent" })
+    ).toBeInTheDocument();
+    expect(
+      within(table).queryByRole("rowheader", { name: "Owned Player" })
+    ).not.toBeInTheDocument();
+
+    await view.user.selectOptions(assignmentFilter, `team:${teamB}`);
+    expect(
+      within(table).getByRole("rowheader", { name: "Draft Prospect" })
+    ).toBeInTheDocument();
+    expect(
+      within(table).queryByRole("rowheader", { name: "Free Agent" })
+    ).not.toBeInTheDocument();
+
+    await view.user.selectOptions(assignmentFilter, "prospects");
+    expect(
+      within(table).getByRole("rowheader", { name: "Draft Prospect" })
+    ).toBeInTheDocument();
+  });
+});

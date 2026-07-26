@@ -9,10 +9,54 @@
 }
 
 .operation,
-.health,
 .dangerZone {
   display: grid;
   gap: 1rem;
+}
+
+.operation {
+  scroll-margin-top: 5.5rem;
+  border-top: 3px solid #2563eb;
+}
+
+.guide {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-color: #2563eb;
+  background:
+    linear-gradient(135deg, rgb(37 99 235 / 18%), transparent 58%),
+    #111827;
+}
+
+.guide h2,
+.guide p {
+  margin: 0;
+}
+
+.guide > div {
+  display: grid;
+  gap: 0.4rem;
+  max-width: 46rem;
+}
+
+.guide nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.guide nav a {
+  border: 1px solid #475569;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 72%);
+  color: #e2e8f0;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .formGrid {
@@ -74,36 +118,6 @@
   background: rgb(15 23 42 / 55%);
   color: #cbd5e1;
   padding: 0.65rem 0.75rem;
-}
-
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-  gap: 0.75rem;
-  margin: 0;
-}
-
-.metrics div {
-  display: grid;
-  gap: 0.25rem;
-  min-width: 0;
-  border: 1px solid #334155;
-  border-radius: 0.6rem;
-  background: rgb(15 23 42 / 55%);
-  padding: 0.75rem;
-}
-
-.metrics dt {
-  color: #94a3b8;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.metrics dd {
-  margin: 0;
-  overflow-wrap: anywhere;
 }
 
 .tableScroll {
@@ -170,17 +184,10 @@
   gap: 0.25rem;
 }
 
-.snapshot {
-  max-height: 24rem;
-  overflow: auto;
-  border: 1px solid #334155;
-  border-radius: 0.55rem;
-  background: #020617;
-  padding: 0.8rem;
+.previewSummary {
+  margin: 0;
   color: #cbd5e1;
-  font-size: 0.78rem;
-  white-space: pre-wrap;
-  word-break: break-word;
+  line-height: 1.5;
 }
 
 .confirmation {
@@ -202,9 +209,13 @@
   border-color: #ef4444;
 }
 
-@media (min-width: 74rem) {
-  .operations {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
+@media (max-width: 48rem) {
+  .guide {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .guide nav {
+    justify-content: flex-start;
   }
 }

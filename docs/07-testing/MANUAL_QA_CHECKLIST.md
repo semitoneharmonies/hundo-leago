@@ -528,6 +528,10 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-ROS-025` Prospect rights release makes the player available under approved rules.
 - [ ] `MQ-ROS-026` Manual injured-reserve placement and return follow current approved eligibility workflow.
 - [ ] `MQ-ROS-027` Concurrent roster edit produces a safe stale-version conflict rather than lost update.
+- [ ] `MQ-ROS-028` Active roster defaults to 12 forwards then 6 defence, each group ordered by descending AAV when no custom order exists.
+- [ ] `MQ-ROS-029` Table and lines views both support within-position drag ordering and keyboard ordering without changing authoritative slots.
+- [ ] `MQ-ROS-030` Roster GP, G, A, P, FP, and FPG columns sort clearly without inline stat labels.
+- [ ] `MQ-ROS-031` Player catalog supports All Players, Free Agents, Favourites, every league team, and Prospects filters and displays FPG.
 
 ---
 
@@ -613,6 +617,8 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-TRD-017` Completed trade appears once in League Activity and sends expected notifications.
 - [ ] `MQ-TRD-018` Cross-league team, player ownership, proposal, and pick IDs fail safely.
 - [ ] `MQ-TRD-019` Trade builder and proposal detail remain usable on mobile.
+- [ ] `MQ-TRD-020` Selected contract retention is optional and Future Considerations uses one plain-language notes field.
+- [ ] `MQ-TRD-021` Buyout choices identify the bought-out player, annual penalty, and remaining term, and acceptance transfers the selected obligation in full.
 
 ---
 
@@ -642,6 +648,8 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-MAT-015` Commissioner correction creates a visible versioned result without League Activity entry.
 - [ ] `MQ-MAT-016` Reconnect or refresh does not double-count fantasy points.
 - [ ] `MQ-MAT-017` Matchup tables/cards remain understandable on mobile.
+- [ ] `MQ-MAT-024` One week selector exposes every completed, current, and future regular-season week.
+- [ ] `MQ-MAT-025` Current and future matchups reflect approved team renames while finalized matchups retain their historical names.
 
 ---
 
@@ -669,6 +677,8 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-COM-007` League-specific correction is preferred over whole-database restore.
 - [ ] `MQ-COM-008` Debug controls are absent from production-target presentation.
 - [ ] `MQ-COM-009` Commissioner operation failure leaves prior data intact and shows request ID.
+- [ ] `MQ-COM-023` Commissioner dashboard shows personal-team context only when the user also has an explicit current manager assignment.
+- [ ] `MQ-COM-024` Commissioner Roster Operations presents the four correction workflows without provider import-health or raw-JSON panes.
 
 ---
 

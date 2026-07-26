@@ -91,5 +91,17 @@ export function validateTeamWorkspace(data) {
       validateChoice(choice, `A ${key} trade choice is invalid.`)
     );
   }
+  for (const buyout of data.tradeAssets.buyouts) {
+    contract(
+      typeof buyout.playerName === "string" &&
+        buyout.playerName.trim().length > 0,
+      "A buyout player name is invalid."
+    );
+    integer(
+      buyout.annualPenaltyCents,
+      "A buyout annual penalty is invalid."
+    );
+    integer(buyout.remainingYears, "A buyout remaining term is invalid.");
+  }
   return true;
 }

@@ -930,7 +930,7 @@ fixture source only when SportsDataIO data is absent.
 | Method and path | Authorization | Purpose |
 |---|---|---|
 | `GET /api/v1/public/leagues/:leagueId/teams/:teamId/roster` | Public when the league is publicly eligible | Return the approved public roster projection only |
-| `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | League member | Return the authenticated team workspace: roster groups, ownership and contract versions, authoritative cap components, retention-slot usage, four-year owned draft picks, friendly trade-asset choices, and saved presentation order |
+| `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | League member | Return the authenticated team workspace: roster groups, ownership and contract versions, authoritative cap components, retention-slot usage, four-year owned draft picks, friendly trade-asset choices including named buyout annual penalty and remaining term, and saved presentation order |
 | `PUT /api/v1/leagues/:leagueId/teams/:teamId/roster-display-order` | Authorized team manager or current commissioner | Save an optimistic, versioned F/D presentation order without changing authoritative ownership slots |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | League member | Return authoritative legality reasons without writing |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Authorized team manager or commissioner correction workflow | Move one owned player between approved groups or slots |
@@ -1056,6 +1056,12 @@ Acceptance revalidates ownership, contracts, retention, obligations, picks, righ
 
 Multiple simultaneous proposals may reference the same asset. Completion of one cancels or invalidates affected proposals according to the approved trade specification.
 
+Each `buyout_obligation` choice is a stable whole obligation. Its friendly
+workspace projection includes the bought-out player's name, annual penalty in
+cents, and remaining year count. Trade creation submits only that stable
+obligation ID; acceptance transfers the complete unchanged remaining schedule
+and never accepts an arbitrary partial amount.
+
 M5-11 composes the seven participant workflow routes above. M5-10 composes the
 three current-commissioner recovery routes. Acceptance and reversal previews
 remain SELECT-only and never advance proposal state on read.
@@ -1074,6 +1080,12 @@ remain SELECT-only and never advance proposal state on read.
 | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-schedules` | Commissioner before live season | Generate an approved balanced schedule |
 | `PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId` | Commissioner under timing constraints | Adjust approved future boundaries or pairings |
 | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections` | Commissioner | Append a versioned correction |
+
+Matchup week and detail reads resolve current team names for scheduled and
+live rows. Final rows use the stored finalized display context so a later team
+rename does not rewrite historical results. A legitimate historical
+`not_live` scoring-health state is a valid read projection, not a response
+contract failure.
 | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/rebuilds` | Commissioner recovery | Rebuild from official result versions |
 
 The matchup-detail response includes a nullable `matchup.scoring` projection.

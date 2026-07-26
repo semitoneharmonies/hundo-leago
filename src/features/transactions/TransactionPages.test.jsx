@@ -79,7 +79,13 @@ function teamWorkspace(teamId) {
       prospects: [],
       draftPicks: [],
       retentions: [],
-      buyouts: [],
+      buyouts: teamId === teamA ? [{
+        id: correctionId,
+        label: "Bought Out Player · $1.25 penalty · 3y",
+        playerName: "Bought Out Player",
+        annualPenaltyCents: 125,
+        remainingYears: 3,
+      }] : [],
       futureConsiderations: [],
     },
   };
@@ -228,6 +234,149 @@ describe("M5-11 authenticated transaction pages", () => {
     expect(await screen.findByRole("heading", { name: "New trade proposal" })).toBeInTheDocument();
     expect(screen.getAllByRole("option", { name: "Retention" })).toHaveLength(2);
     expect(screen.getByText("No proposals in this view.")).toBeInTheDocument();
+  });
+
+  it("adds optional retention to a contract and uses notes for Future Considerations", async () => {
+    let submitted = null;
+    const fetchImpl = baseFetch((path, options) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades`) {
+        if (options.method === "POST") {
+          submitted = JSON.parse(options.body);
+          return envelope({ code: "TRADE_PROPOSAL_CREATED" });
+        }
+        return envelope({ code: "TRADE_PROPOSALS_FOUND", proposals: [] });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const view = renderPage(
+      `/leagues/${leagueId}/trades`,
+      "/leagues/:leagueId/trades",
+      <TradesPage />,
+      fetchImpl
+    );
+
+    await screen.findByRole("heading", { name: "New trade proposal" });
+    await screen.findAllByRole("option", { name: /Trade Player/ });
+    await view.user.selectOptions(
+      screen.getByRole("combobox", {
+        name: "Proposing team sends asset 1",
+      }),
+      assetId
+    );
+    await view.user.type(
+      screen.getByRole("spinbutton", {
+        name: "Proposing team sends asset 1 retained AAV dollars",
+      }),
+      "1.25"
+    );
+    await view.user.selectOptions(
+      screen.getByRole("combobox", {
+        name: "Receiving team sends asset 1 type",
+      }),
+      "future_considerations"
+    );
+    expect(
+      screen.queryByRole("combobox", {
+        name: "Receiving team sends asset 1 Future Considerations kind",
+      })
+    ).not.toBeInTheDocument();
+    await view.user.type(
+      screen.getByRole("textbox", {
+        name: "Receiving team sends asset 1 notes",
+      }),
+      "Conditional 2027 consideration"
+    );
+    await view.user.click(
+      screen.getByRole("button", { name: "Send proposal" })
+    );
+
+    await waitFor(() => {
+      expect(submitted).toEqual({
+        proposingTeamId: teamA,
+        receivingTeamId: teamB,
+        proposingAssets: [
+          { type: "contract", contractId: assetId },
+          {
+            type: "requested_retention",
+            contractId: assetId,
+            retainedAavCents: 125,
+          },
+        ],
+        receivingAssets: [
+          {
+            type: "future_consideration_instruction",
+            description: "Conditional 2027 consideration",
+          },
+        ],
+      });
+    });
+  });
+
+  it("identifies the exact buyout obligation and transfers its full remaining schedule", async () => {
+    let submitted = null;
+    const fetchImpl = baseFetch((path, options) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades`) {
+        if (options.method === "POST") {
+          submitted = JSON.parse(options.body);
+          return envelope({ code: "TRADE_PROPOSAL_CREATED" });
+        }
+        return envelope({ code: "TRADE_PROPOSALS_FOUND", proposals: [] });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const view = renderPage(
+      `/leagues/${leagueId}/trades`,
+      "/leagues/:leagueId/trades",
+      <TradesPage />,
+      fetchImpl
+    );
+
+    await screen.findByRole("heading", { name: "New trade proposal" });
+    await view.user.selectOptions(
+      screen.getByRole("combobox", {
+        name: "Proposing team sends asset 1 type",
+      }),
+      "buyout_obligation"
+    );
+    await view.user.selectOptions(
+      screen.getByRole("combobox", {
+        name: "Proposing team sends asset 1",
+      }),
+      correctionId
+    );
+    expect(
+      screen.getByText(
+        (_, node) =>
+          node?.tagName === "P" &&
+          node.textContent.includes(
+            "Bought Out Player buyout · $1.25 AAV · 3 seasons remaining"
+          )
+      )
+    ).toBeInTheDocument();
+    await view.user.selectOptions(
+      screen.getByRole("combobox", {
+        name: "Receiving team sends asset 1 type",
+      }),
+      "future_considerations"
+    );
+    await view.user.type(
+      screen.getByRole("textbox", {
+        name: "Receiving team sends asset 1 notes",
+      }),
+      "Completes the obligation-only trade"
+    );
+    await view.user.click(
+      screen.getByRole("button", { name: "Send proposal" })
+    );
+
+    await waitFor(() => {
+      expect(submitted?.proposingAssets).toEqual([
+        {
+          type: "buyout_obligation",
+          buyoutObligationId: correctionId,
+        },
+      ]);
+    });
   });
 
   it("renders backend team arrays and cap warnings before showing the confirm command", async () => {

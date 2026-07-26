@@ -116,7 +116,7 @@
 }
 
 .hl-stat-grid--readable {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
 }
 
 .hl-stat-grid--readable .hl-stat-card {
@@ -2000,7 +2000,60 @@ textarea {
 }
 
 .hl-roster-table {
-  min-width: 760px;
+  min-width: 1040px;
+  font-size: 0.73rem;
+}
+
+.hl-roster-table tbody td:nth-last-child(-n + 6) {
+  font-family: var(--hl-font-mono);
+  font-size: 0.74rem;
+  font-weight: 650;
+  text-align: right;
+}
+
+.hl-roster-table thead th:nth-last-child(-n + 6) {
+  text-align: right;
+}
+
+.hl-roster-table thead th:nth-last-child(-n + 6) .hl-sort-button {
+  justify-content: flex-end;
+}
+
+.hl-roster-table tbody tr[draggable="true"] {
+  cursor: grab;
+}
+
+.hl-roster-table tbody tr.is-dragging {
+  opacity: 0.5;
+}
+
+.hl-roster-order-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hl-roster-order-controls svg {
+  width: 16px;
+  height: 16px;
+  color: var(--hl-muted-foreground);
+}
+
+.hl-roster-order-controls button {
+  display: inline-grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid var(--hl-border);
+  border-radius: var(--hl-radius-sm);
+  background: var(--hl-panel);
+  color: var(--hl-foreground);
+  cursor: pointer;
+}
+
+.hl-roster-order-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .hl-position-tag {
@@ -2814,7 +2867,12 @@ textarea {
   padding: 12px;
   border: 1px solid var(--hl-border);
   border-radius: var(--hl-radius-md);
-  background: var(--hl-panel);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--team-primary) 34%, var(--hl-panel)) 0 62%,
+      color-mix(in srgb, var(--team-secondary) 18%, var(--hl-panel)) 62% 100%
+    );
   color: var(--hl-foreground);
   text-decoration: none;
 }
@@ -2830,13 +2888,21 @@ textarea {
   height: 44px;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--team-accent) 65%, transparent);
+  overflow: hidden;
+  border: 1px solid
+    color-mix(in srgb, var(--team-primary) 65%, transparent);
   border-radius: var(--hl-radius-md);
-  background: color-mix(in srgb, var(--team-accent) 14%, var(--hl-panel));
-  color: color-mix(in srgb, var(--team-accent) 65%, white);
+  background: color-mix(in srgb, var(--team-primary) 28%, var(--hl-panel));
+  color: color-mix(in srgb, var(--team-primary) 65%, white);
   font-family: var(--hl-font-display);
   font-size: 0.9rem;
   font-weight: 850;
+}
+
+.hl-teams-index__mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .hl-teams-index a > span:nth-child(2) {

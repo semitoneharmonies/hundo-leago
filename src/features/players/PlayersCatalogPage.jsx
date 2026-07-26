@@ -9,7 +9,10 @@ import {
   PageHeading,
   Surface,
 } from "../../components/HundoUi.jsx";
-import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
+import {
+  leagueTeamsQuery,
+  visibleLeaguesQuery,
+} from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { leaguePlayerSearchQuery } from "./playerQueries.js";
 
@@ -55,6 +58,12 @@ function contractLabel(player) {
   const contract = player.league.activeContract;
   if (!contract) return "—";
   return `$${(contract.aavCents / 100).toFixed(2)} AAV · ${contract.remainingYears} years remaining`;
+}
+
+function fantasyPointsPerGame(statistics) {
+  if (!statistics) return null;
+  if (statistics.gamesPlayed === 0) return 0;
+  return statistics.fantasyPointsHundredths / 100 / statistics.gamesPlayed;
 }
 
 function SortHeading({ activeSort, label, sortKey, onSort }) {
@@ -103,6 +112,10 @@ export function PlayersCatalogPage() {
     }),
     enabled: session.status === "authenticated" && Boolean(league),
   });
+  const teams = useQuery({
+    ...leagueTeamsQuery(session.httpClient, leagueId),
+    enabled: session.status === "authenticated" && Boolean(league),
+  });
 
   const availablePlayers = useMemo(
     () =>
@@ -123,6 +136,17 @@ export function PlayersCatalogPage() {
       ].sort(),
     [availablePlayers]
   );
+  const leagueTeams = useMemo(() => {
+    if (teams.data) return teams.data;
+    const byId = new Map();
+    for (const player of availablePlayers) {
+      const team = player.league.ownership?.team;
+      if (team) byId.set(team.id, team);
+    }
+    return [...byId.values()].sort((left, right) =>
+      left.name.localeCompare(right.name)
+    );
+  }, [availablePlayers, teams.data]);
   const visiblePlayers = useMemo(() => {
     const minimum = Number(minimumGames);
     const value = (player, key) => {
@@ -145,6 +169,8 @@ export function PlayersCatalogPage() {
           return player.statistics?.nhlPoints ?? -1;
         case "fantasyPoints":
           return player.statistics?.fantasyPointsHundredths ?? -1;
+        case "fantasyPointsPerGame":
+          return fantasyPointsPerGame(player.statistics) ?? -1;
         case "assignment":
           return player.league.ownership?.team.name || "";
         case "contract":
@@ -161,7 +187,12 @@ export function PlayersCatalogPage() {
             player.provider?.nhlTeamAbbreviation === nhlTeam) &&
           (ownership === "all" ||
             (ownership === "free" && !player.league.ownership) ||
-            (ownership === "owned" && Boolean(player.league.ownership))) &&
+            (ownership === "favourites" && comparedIds.has(player.id)) ||
+            (ownership === "prospects" &&
+              (player.league.ownership?.category === "Prospect" ||
+                player.league.ownership?.kind === "Prospect Right")) ||
+            (ownership.startsWith("team:") &&
+              player.league.ownership?.team.id === ownership.slice(5))) &&
           (player.statistics?.gamesPlayed ?? 0) >= minimum
       )
       .sort((left, right) => {
@@ -178,6 +209,7 @@ export function PlayersCatalogPage() {
       });
   }, [
     availablePlayers,
+    comparedIds,
     minimumGames,
     nhlTeam,
     ownership,
@@ -203,6 +235,7 @@ export function PlayersCatalogPage() {
               "assists",
               "nhlPoints",
               "fantasyPoints",
+              "fantasyPointsPerGame",
             ].includes(key)
               ? "desc"
               : "asc",
@@ -247,7 +280,7 @@ export function PlayersCatalogPage() {
       <PageHeading
         eyebrow={league.name}
         title="Players"
-        description="Filter, sort, compare, and open an auction for an available free agent."
+        description="Filter and compare the league player catalog, then open an auction for an eligible free agent."
       />
       <Surface
         as="section"
@@ -300,9 +333,17 @@ export function PlayersCatalogPage() {
               value={ownership}
               onChange={(event) => setOwnership(event.target.value)}
             >
-              <option value="all">All available players</option>
-              <option value="free">Free agents only</option>
-              <option value="owned">Rostered / prospects</option>
+              <option value="all">All Players</option>
+              <option value="free">Free Agents</option>
+              <option value="favourites">
+                Favourites ({comparedIds.size})
+              </option>
+              {leagueTeams.map((team) => (
+                <option value={`team:${team.id}`} key={team.id}>
+                  {team.name}
+                </option>
+              ))}
+              <option value="prospects">Prospects</option>
             </select>
           </label>
           <label className="hl-field">
@@ -337,7 +378,7 @@ export function PlayersCatalogPage() {
         </Surface>
       ) : visiblePlayers.length === 0 ? (
         <Surface>
-          <EmptyBlock title="No available players match these filters" />
+          <EmptyBlock title="No players match these filters" />
         </Surface>
       ) : (
         <Surface className="hl-feature-section">
@@ -363,6 +404,7 @@ export function PlayersCatalogPage() {
                     ["A", "assists"],
                     ["P", "nhlPoints"],
                     ["FP", "fantasyPoints"],
+                    ["FPG", "fantasyPointsPerGame"],
                   ].map(([label, sortKey]) => (
                     <th key={sortKey}>
                       <SortHeading activeSort={sort} label={label} sortKey={sortKey} onSort={changeSort} />
@@ -397,6 +439,11 @@ export function PlayersCatalogPage() {
                         ? (
                             player.statistics.fantasyPointsHundredths / 100
                           ).toFixed(2)
+                        : "—"}
+                    </td>
+                    <td>
+                      {player.statistics
+                        ? fantasyPointsPerGame(player.statistics).toFixed(2)
                         : "—"}
                     </td>
                     <td>{ownershipLabel(player)}</td>
@@ -463,6 +510,7 @@ export function PlayersCatalogPage() {
                   <th>A</th>
                   <th>P</th>
                   <th>FP</th>
+                  <th>FPG</th>
                   <th>League status</th>
                   <th>Contract</th>
                 </tr>
@@ -482,6 +530,11 @@ export function PlayersCatalogPage() {
                         ? (
                             player.statistics.fantasyPointsHundredths / 100
                           ).toFixed(2)
+                        : "—"}
+                    </td>
+                    <td>
+                      {player.statistics
+                        ? fantasyPointsPerGame(player.statistics).toFixed(2)
                         : "—"}
                     </td>
                     <td>{ownershipLabel(player)}</td>

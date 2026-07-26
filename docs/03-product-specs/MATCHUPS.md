@@ -560,6 +560,11 @@ Authenticated league members may select:
 
 Completed-season matchups remain available through a season selector.
 
+The week selector lists the complete persisted season schedule. Scheduled and
+live pairings resolve each stable team ID to its current team name so an
+approved rename appears throughout the active schedule. Finalized matchups
+preserve their stored historical team display context.
+
 ---
 
 ## Notifications
@@ -688,6 +693,7 @@ Tests must cover:
 - [x] Matchup statuses are `Scheduled`, `Live`, `Awaiting Data`, `Final`, `Postponed`, `Cancelled`, and `Correction Required`.
 - [x] A bye is stored as a week assignment rather than a fabricated placeholder matchup.
 - [x] Matchup records preserve finalized team display context in addition to stable team IDs.
+- [x] Scheduled and live matchup projections use the current team name while finalized matchups preserve stored historical names.
 - [x] Every authenticated league member may view all current, future, and historical league matchups.
 - [x] Matchups remain unavailable to unauthenticated public viewers.
 - [x] The normal baseline operation is idempotent and preserves its original source snapshot.
@@ -723,6 +729,7 @@ Tests must cover:
 - [x] The Matchups page defaults to the current week.
 - [x] The default page shows week timing, pairings, byes, standings context, scores, player breakdowns, and health warnings.
 - [x] Week navigation includes completed, current, and future scheduled weeks.
+- [x] Week navigation exposes every persisted regular-season week through one selector.
 - [x] Future weeks show schedules without live scores.
 - [x] Completed-season matchups remain available through a season selector.
 - [x] The initial release uses in-app status without separate email or push matchup notifications.

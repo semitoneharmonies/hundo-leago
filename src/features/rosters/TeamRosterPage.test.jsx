@@ -14,6 +14,8 @@ const prospectPlayerId = "55555555-5555-4555-8555-555555555555";
 const activeOwnershipId = "66666666-6666-4666-8666-666666666666";
 const secondActiveOwnershipId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const secondActivePlayerId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const activeDefenceOwnershipId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+const activeDefencePlayerId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 const prospectOwnershipId = "77777777-7777-4777-8777-777777777777";
 const contractId = "88888888-8888-4888-8888-888888888888";
 const pickId = "99999999-9999-4999-8999-999999999999";
@@ -240,7 +242,20 @@ describe("authoritative team roster page", () => {
     expect(
       screen.getByRole("rowheader", { name: "Active Player" })
     ).toBeInTheDocument();
-    expect(screen.getByText(/10 GP.*12\.50 FP/)).toBeInTheDocument();
+    for (const heading of ["GP", "G", "A", "P", "FP", "FPG"]) {
+      expect(
+        screen.getAllByRole("button", {
+          name: `Sort roster by ${heading}`,
+        }).length
+      ).toBeGreaterThan(0);
+    }
+    const activeRow = screen
+      .getByRole("rowheader", { name: "Active Player" })
+      .closest("tr");
+    expect(within(activeRow).getAllByText("10")).toHaveLength(2);
+    expect(within(activeRow).getByText("12.50")).toBeInTheDocument();
+    expect(within(activeRow).getByText("1.25")).toBeInTheDocument();
+    expect(screen.queryByText("Limit")).not.toBeInTheDocument();
     expect(screen.getByText("1/3 slots used")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Owned draft picks" })
@@ -302,6 +317,7 @@ describe("authoritative team roster page", () => {
     const dataTransfer = {
       effectAllowed: "",
       setData: vi.fn(),
+      getData: vi.fn(() => activeOwnershipId),
     };
     fireEvent.dragStart(source, { dataTransfer });
     fireEvent.dragOver(target, { dataTransfer });
@@ -314,5 +330,78 @@ describe("authoritative team roster page", () => {
       ]);
     });
     expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
+  });
+
+  it("defaults to AAV order within position groups and saves table drag ordering", async () => {
+    const data = workspace();
+    data.players[0].displayOrder = null;
+    data.players.splice(1, 0, {
+      ...data.players[0],
+      ownershipId: secondActiveOwnershipId,
+      playerId: secondActivePlayerId,
+      name: "Higher AAV Forward",
+      contract: { ...data.players[0].contract, aavCents: 700 },
+    });
+    data.players.splice(2, 0, {
+      ...data.players[0],
+      ownershipId: activeDefenceOwnershipId,
+      playerId: activeDefencePlayerId,
+      name: "Highest AAV Defence",
+      normalizedPosition: "D",
+      contract: { ...data.players[0].contract, aavCents: 900 },
+    });
+    let savedInput = null;
+    const view = renderWithProviders(
+      <TeamRosterPage
+        workspace={data}
+        teams={[data.team]}
+        managerName="League Manager"
+        onTeamChange={() => {}}
+        httpClient={{
+          request: vi.fn(async (_path, options) => {
+            savedInput = options.body;
+            return { data: { orderVersion: 1 } };
+          }),
+        }}
+      />
+    );
+
+    const activeRoster = screen.getByRole("region", {
+      name: "Active roster",
+    });
+    expect(
+      within(activeRoster)
+        .getAllByRole("rowheader")
+        .map(({ textContent }) => textContent)
+    ).toEqual([
+      "Higher AAV Forward",
+      "Active Player",
+      "Highest AAV Defence",
+    ]);
+
+    const source = within(activeRoster)
+      .getByRole("rowheader", { name: "Active Player" })
+      .closest("tr");
+    const target = within(activeRoster)
+      .getByRole("rowheader", { name: "Higher AAV Forward" })
+      .closest("tr");
+    const dataTransfer = {
+      effectAllowed: "",
+      dropEffect: "",
+      setData: vi.fn(),
+      getData: vi.fn(() => activeOwnershipId),
+    };
+    fireEvent.dragStart(source, { dataTransfer });
+    fireEvent.dragOver(target, { dataTransfer });
+    fireEvent.drop(target, { dataTransfer });
+
+    await waitFor(() => {
+      expect(savedInput?.forwardOwnerships.map(({ id }) => id)).toEqual([
+        activeOwnershipId,
+        secondActiveOwnershipId,
+      ]);
+    });
+    expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
+    expect(view).toBeDefined();
   });
 });

@@ -188,7 +188,7 @@ export function validateMatchupDetail(data) {
   if (data.matchup.health.scoring) {
     object(data.matchup.health.scoring, "The scoring health is invalid.");
     contract(
-      ["fresh", "stale", "degraded", "unavailable"].includes(
+      ["fresh", "stale", "degraded", "unavailable", "not_live"].includes(
         data.matchup.health.scoring.status
       ),
       "The scoring health status is invalid."
