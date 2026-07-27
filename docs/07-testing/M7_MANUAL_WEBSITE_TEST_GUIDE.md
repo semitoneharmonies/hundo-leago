@@ -88,6 +88,11 @@ While still signed in as the Alpha manager:
 1. On league home, open a team and confirm its roster, contracts, and cap
    projection load instead of the application-data error.
 2. Open Players and confirm player names are readable and player details open.
+   Confirm the page initially reports 100 loaded players, starts with the
+   highest total-fantasy-point players, and offers **Load next 100 players**.
+   Select it once and confirm the loaded count becomes 200 without duplicate
+   rows. Type part of a player name and confirm the suggestion still appears
+   without loading the complete catalog.
 3. Open Auctions. In the **Player** field, type part of a name with different
    capitalization, choose a matching suggestion, and confirm money is shown in
    dollars rather than cents.
@@ -96,6 +101,8 @@ While still signed in as the Alpha manager:
    available on the one canonical page.
 5. Open Standings and confirm all six fixture teams appear in an understandable
    standings table.
+6. Open Teams and confirm the **Your team** badge remains clearly readable
+   against the managed team's colour stripes.
 
 Expected result: these operations remain within `/leagues/<league-id>/...`.
 The old direct URLs `/free-agents`, `/matchups`, and `/standings` must redirect

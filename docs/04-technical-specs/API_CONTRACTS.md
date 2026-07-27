@@ -933,6 +933,15 @@ Both league-scoped player endpoints are strictly read-only. They perform no
 import, refresh, normalization, repair, initialization, or other hidden
 write.
 
+The league-scoped collection accepts `query`, `status`, `limit`, `cursor`,
+and `sort`. `limit` remains bounded at `100`. `sort` defaults to `name`;
+`sort=fantasyPoints` orders current statistics from highest to lowest, places
+players without statistics last, and uses normalized player name plus stable
+player ID as deterministic tie breakers. A continuation cursor must be reused
+with the same query, status, and sort. The authenticated Players catalog
+requests one 100-player page at a time in fantasy-points order and follows the
+returned cursor only after the user chooses **Load next 100 players**.
+
 Every non-null player `statistics` projection includes its `provider`. The
 approved staging source is `sportsdataio-discovery-lab`, whose Discovery Lab
 data is labelled last-season data. `release_qa_fixture` is permitted only as

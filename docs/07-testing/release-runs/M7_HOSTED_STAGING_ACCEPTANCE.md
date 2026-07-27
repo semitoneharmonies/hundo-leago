@@ -841,6 +841,38 @@ was then uploaded with the rebuild explicitly disabled. Netlify deploy
 `9044974306badd8df192880b5f7b229397d8a685`, and contains only the dedicated
 Render staging origins in its configured public variables.
 
+### Player pagination and managed-team badge follow-up
+
+Frontend commit `72d30d687841196e1cf7e80051eaf0782079c402` and backend
+commit `c1c3a3b53f397747ecf219a8cc4dc7a428339b3b` passed the complete local
+gates. Frontend lint and the configured staging production build passed, as
+did `120/120` tests across 23 files. Backend syntax verification and
+`978/978` tests across 234 suites passed under pinned Node `24.14.1`.
+`git diff --check` passed in both repositories.
+
+Backend deploy `dep-d9jdn5vavr4c73caolmg` reached `live`, with public
+liveness returning `live` and readiness returning `ready`. No schema or data
+change was required. The exact prebuilt frontend artifact was uploaded with
+the Netlify rebuild disabled. Deploy `6a66dc51cc47020a84ddc746` is `ready`,
+embeds application build ID
+`72d30d687841196e1cf7e80051eaf0782079c402`, contains the dedicated staging
+backend origin, and contains no localhost backend origin.
+
+Hosted manager acceptance confirmed:
+
+* the first Players request renders exactly 100 player rows;
+* Connor McDavid, Nikita Kucherov, and Nathan MacKinnon lead the first page in
+  descending total-fantasy-point order;
+* **Load next 100 players** appends one cursor page, producing exactly 200
+  player rows while retaining another continuation for the remaining catalog;
+* the page reports `Showing 100 of 100 loaded players.` and then
+  `Showing 200 of 200 loaded players.`;
+* entering `kuch` still returns Nikita Kucherov from the bounded server-backed
+  autocomplete; and
+* the managed Alpha Ravens card presents **Your team** as a white,
+  dark-text, double-outline pill that remains visually distinct from the
+  configured stripe colours.
+
 ## Remaining Gates
 
 * Grae's independent browser retest, including native pointer drag;

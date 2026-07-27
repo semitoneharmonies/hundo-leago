@@ -186,6 +186,18 @@ M7-15 completed on staging on `2026-07-26`.
   dark-blue fade is limited to the name/logo identity area on the team index,
   dashboard team panel, matchup score headers, and roster header, and that the
   Players favourite action uses a front-facing hockey helmet.
+- A final catalog-efficiency follow-up is published as frontend commit
+  `72d30d687841196e1cf7e80051eaf0782079c402` in ready Netlify deploy
+  `6a66dc51cc47020a84ddc746` and backend commit
+  `c1c3a3b53f397747ecf219a8cc4dc7a428339b3b` in live Render deploy
+  `dep-d9jdn5vavr4c73caolmg`. The team-index **Your team** badge now has
+  colour-independent contrast. The Players catalog loads 100 records at a
+  time, preserves default fantasy-points ordering through backend cursor
+  support, keeps bounded server-backed autocomplete, and exposes one explicit
+  **Load next 100 players** continuation. Hosted acceptance confirmed the
+  100-to-200 flow. Follow-up gates passed `120/120` frontend tests and
+  `978/978` backend tests under Node `24.14.1`; no migration or data reset was
+  required.
 
 The connected browser cannot synthesize a native pointer drag gesture from an
 HTML drag handle. Focused automated drag coverage passes, and native pointer

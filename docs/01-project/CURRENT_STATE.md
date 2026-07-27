@@ -1704,6 +1704,29 @@ variables. The Players favourite action uses a symmetrical front-facing hockey
 helmet. Hosted manager acceptance visually confirmed all five affected
 surfaces.
 
+The final player-catalog pagination follow-up is published as frontend commit
+`72d30d687841196e1cf7e80051eaf0782079c402` in ready Netlify deploy
+`6a66dc51cc47020a84ddc746` and backend commit
+`c1c3a3b53f397747ecf219a8cc4dc7a428339b3b` in live Render deploy
+`dep-d9jdn5vavr4c73caolmg`. The Players page now requests only 100 records
+initially, displays the number of loaded and currently visible players, and
+follows one authoritative cursor only when **Load next 100 players** is
+selected. The backend preserves the approved default experience by ordering
+those cursor pages by total fantasy points with deterministic name and stable
+ID tie breakers. Player-name autocomplete uses its own bounded server search
+instead of depending on every catalog page already being loaded. The team
+index now gives **Your team** a white, dark-text, double-outline badge that
+remains distinct from every configured stripe colour.
+
+The complete follow-up gates pass: frontend lint, configured staging build,
+and `120/120` tests across 23 files; backend syntax verification and `978/978`
+tests across 234 suites under Node `24.14.1`; and `git diff --check` in both
+repositories. Hosted manager acceptance confirmed 100 initial player rows,
+200 rows after one continuation, preserved fantasy-points ordering,
+player-name autocomplete, and the high-contrast team badge. Public liveness
+and readiness remain healthy. No database migration, fixture reset, or
+production change occurred.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 
