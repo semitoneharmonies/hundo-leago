@@ -1067,6 +1067,18 @@ Layouts own:
 
 Commissioner and admin layouts separate sensitive operations from ordinary manager workflows.
 
+The authenticated application header may present the approved static hockey
+quote catalog as non-authoritative atmosphere. The modern ticker:
+
+* shuffles a copy of the catalog in memory once per full page load;
+* performs no API request, mutation, or browser-storage write;
+* stays clipped inside the flexible space between location and account
+  controls;
+* remains visually subordinate to navigation;
+* pauses while hovered or keyboard-focused; and
+* replaces continuous movement with one static quote when reduced motion is
+  requested.
+
 ---
 
 ## Loading and Empty State
@@ -1156,7 +1168,7 @@ Versioned local storage may hold:
 * sound preference;
 * theme or display density when implemented;
 * dismissed client-only help;
-* last shown non-authoritative quote;
+* last shown non-authoritative quote in disabled legacy compatibility code;
 * other explicitly documented view preferences.
 
 Every stored value is parsed defensively and may be discarded.

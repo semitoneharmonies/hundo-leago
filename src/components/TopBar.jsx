@@ -30,6 +30,7 @@ import {
   leagueAuthorityLabel,
 } from "../shared/leagueAuthority.js";
 import LeagueRulesDropdown from "./LeagueRulesDropdown";
+import QuoteTicker from "./QuoteTicker";
 
 function leagueIdFromPathname(pathname) {
   const match = /^\/leagues\/([^/]+)/.exec(pathname);
@@ -346,9 +347,15 @@ function TopBar({ freezeBanner }) {
             </span>
           </Link>
 
-          <div className="hl-app-header__context" aria-label="Current location">
-            {currentLeague && <span>{currentLeague.name}</span>}
-            <strong>{currentPageLabel}</strong>
+          <div className="hl-app-header__context">
+            <div
+              className="hl-app-header__location"
+              aria-label="Current location"
+            >
+              {currentLeague && <span>{currentLeague.name}</span>}
+              <strong>{currentPageLabel}</strong>
+            </div>
+            {session.status === "authenticated" && <QuoteTicker />}
           </div>
 
           <div className="hl-app-header__account" ref={accountRef}>

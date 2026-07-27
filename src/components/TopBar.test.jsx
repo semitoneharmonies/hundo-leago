@@ -113,6 +113,11 @@ describe("top bar navigation", () => {
     expect(logo.style.transform).toBe("");
     expect(logo.querySelector("img")).toBeNull();
     expect(within(logo).getByText("Hundo", { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", {
+        name: "Hockey quote ticker. Hover or focus to pause.",
+      })
+    ).toBeInTheDocument();
   });
 
   it("closes the primary menu with Escape and restores trigger focus", async () => {
