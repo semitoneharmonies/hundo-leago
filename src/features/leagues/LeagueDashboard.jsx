@@ -242,8 +242,11 @@ function MatchupScoreboard({
   const awayScore = scoreFor(matchup, "away");
   return (
     <Surface
-      className="hl-dashboard-matchup"
+      className={`hl-dashboard-matchup${
+        commissionerView ? " hl-dashboard-matchup--spotlight" : ""
+      }`}
       aria-labelledby="dashboard-matchup-title"
+      aria-live={commissionerView ? "polite" : undefined}
     >
       <PanelHeading
         eyebrow={
@@ -1012,6 +1015,7 @@ function TeamsPanel({ leagueId, teams, currentUserId }) {
 }
 
 export function LeagueDashboard({ league, teams, session }) {
+  const queryClient = useQueryClient();
   const leagueId = league.id;
   const seasonId = league.currentSeason?.id || null;
   const commissioner = hasCommissionerAuthority(league.membership);
@@ -1035,15 +1039,32 @@ export function LeagueDashboard({ league, teams, session }) {
   const week = currentWeek.data?.week || null;
   useEffect(() => {
     if (!commissioner || !week || week.matchups.length <= 1) return undefined;
-    const timer = globalThis.setInterval(
-      () =>
-        setMatchupSpotlightIndex(
-          (current) => (current + 1) % week.matchups.length
-        ),
+    const nextIndex =
+      (matchupSpotlightIndex + 1) % week.matchups.length;
+    const nextMatchup = week.matchups[nextIndex];
+    void queryClient.prefetchQuery(
+      matchupQuery(
+        session.httpClient,
+        leagueId,
+        seasonId,
+        week.id,
+        nextMatchup.id
+      )
+    );
+    const timer = globalThis.setTimeout(
+      () => setMatchupSpotlightIndex(nextIndex),
       5_000
     );
-    return () => globalThis.clearInterval(timer);
-  }, [commissioner, week]);
+    return () => globalThis.clearTimeout(timer);
+  }, [
+    commissioner,
+    leagueId,
+    matchupSpotlightIndex,
+    queryClient,
+    seasonId,
+    session.httpClient,
+    week,
+  ]);
   const matchupSummary =
     week
       ? commissioner
@@ -1146,6 +1167,11 @@ export function LeagueDashboard({ league, teams, session }) {
 
       <div className="hl-dashboard__hero">
         <MatchupScoreboard
+          key={
+            commissioner
+              ? `spotlight-${matchupSummary?.id || "empty"}`
+              : "managed-matchup"
+          }
           leagueId={leagueId}
           week={week}
           matchupSummary={matchupSummary}

@@ -477,6 +477,7 @@ export function TeamWorkspacePage() {
             <TeamRosterPage
               workspace={rosterQuery.data}
               teams={teamsQuery.data}
+              currentUserId={session.user.id}
               managerName={teamQuery.data.currentManager?.displayName ?? null}
               onTeamChange={(nextTeamId) =>
                 navigate(routePaths.teamRoster(leagueId, nextTeamId))

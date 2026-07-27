@@ -702,29 +702,52 @@ function AssetEditor({
 function NewTradeForm({ context, leagueId }) {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
+  const requestedAssetDirection = searchParams.get("assetDirection");
   const requestedAssetType = searchParams.get("assetType");
   const requestedAssetId = searchParams.get("assetId") || "";
+  const requestedSourceTeamId = searchParams.get("sourceTeamId") || "";
+  const requestedProposingTeamId =
+    searchParams.get("proposingTeamId") || "";
   const initialAssetType = ASSET_TYPES.some(
     ([value]) => value === requestedAssetType
   )
     ? requestedAssetType
     : "contract";
-  const [proposingTeamId, setProposingTeamId] = useState("");
-  const [receivingTeamId, setReceivingTeamId] = useState("");
+  const prefillRequestedAsset =
+    requestedAssetDirection === "requested" && Boolean(requestedAssetId);
+  const [proposingTeamId, setProposingTeamId] = useState(
+    requestedProposingTeamId
+  );
+  const [receivingTeamId, setReceivingTeamId] = useState(
+    prefillRequestedAsset ? requestedSourceTeamId : ""
+  );
   const [proposingAssets, setProposingAssets] = useState([
-    {
-      type: initialAssetType,
-      reference: requestedAssetId,
-    },
+    prefillRequestedAsset
+      ? { type: "contract", reference: "" }
+      : {
+          type: initialAssetType,
+          reference: requestedAssetId,
+        },
   ]);
-  const [receivingAssets, setReceivingAssets] = useState([{ type: "contract", reference: "" }]);
+  const [receivingAssets, setReceivingAssets] = useState([
+    prefillRequestedAsset
+      ? {
+          type: initialAssetType,
+          reference: requestedAssetId,
+        }
+      : { type: "contract", reference: "" },
+  ]);
   const [clientError, setClientError] = useState(null);
   const proposer =
-    proposingTeamId || context.managedTeams[0]?.id || "";
+    context.managedTeams.some(({ id }) => id === proposingTeamId)
+      ? proposingTeamId
+      : context.managedTeams[0]?.id || "";
   const receiving =
-    receivingTeamId ||
-    context.teams.data?.find(({ id }) => id !== proposer)?.id ||
-    "";
+    context.teams.data?.some(
+      ({ id }) => id === receivingTeamId && id !== proposer
+    )
+      ? receivingTeamId
+      : context.teams.data?.find(({ id }) => id !== proposer)?.id || "";
   const proposerWorkspace = useQuery({
     ...teamWorkspaceQuery(
       context.session.httpClient,
@@ -810,10 +833,18 @@ function NewTradeForm({ context, leagueId }) {
     <form className="hl-surface hl-feature-form" style={card} onSubmit={submit}>
       <h2>New trade proposal</h2>
       <div style={row}>
-        <label>Proposing team<br /><select style={input} value={proposer} onChange={(e) => { setProposingTeamId(e.target.value); setReceivingTeamId(""); }}>
+        <label>Proposing team<br /><select style={input} value={proposer} onChange={(e) => {
+          setProposingTeamId(e.target.value);
+          setReceivingTeamId("");
+          setProposingAssets([{ type: "contract", reference: "" }]);
+          setReceivingAssets([{ type: "contract", reference: "" }]);
+        }}>
           {context.managedTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
         </select></label>
-        <label>Receiving team<br /><select style={input} value={receiving} onChange={(e) => setReceivingTeamId(e.target.value)}>
+        <label>Receiving team<br /><select style={input} value={receiving} onChange={(e) => {
+          setReceivingTeamId(e.target.value);
+          setReceivingAssets([{ type: "contract", reference: "" }]);
+        }}>
           {context.teams.data.filter(({ id }) => id !== proposer).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
         </select></label>
       </div>
@@ -850,12 +881,44 @@ export function TradesPage() {
   const visible = (trades.data || []).filter((trade) =>
     trade.storageStatus !== "expired" && (status === "all" || trade.storageStatus === "proposed")
   );
+  const managedTeamIds = new Set(
+    (context.teams.data || [])
+      .filter(
+        ({ currentManager }) =>
+          currentManager?.userId === context.session.user?.id
+      )
+      .map(({ id }) => id)
+  );
   return (
     <LeaguePageState context={context} title="Trades">
       <NewTradeForm context={context} leagueId={leagueId} />
       <label className="hl-field hl-compact-filter">Status <select value={status} onChange={(e) => setStatus(e.target.value)}><option value="pending">Pending</option><option value="all">All non-expired</option></select></label>
       {trades.isPending ? <Surface><LoadingBlock>Loading trades…</LoadingBlock></Surface> : trades.isError ? <ErrorMessage error={trades.error} /> : visible.length === 0 ? <Surface><EmptyBlock title="No proposals in this view." /></Surface> : (
-        <Surface><ul className="hl-trade-list">{visible.map((trade) => <li key={trade.id}><Link to={routePaths.trade(leagueId, trade.id)}><span><strong>{trade.proposingTeam.name} → {trade.receivingTeam.name}</strong><small>Open proposal details</small></span><StatusBadge>{trade.status}</StatusBadge></Link></li>)}</ul></Surface>
+        <Surface><ul className="hl-trade-list">{visible.map((trade) => {
+          const awaitingManagedTeam =
+            trade.storageStatus === "proposed" &&
+            managedTeamIds.has(trade.receivingTeam.id);
+          return (
+            <li
+              key={trade.id}
+              className={awaitingManagedTeam ? "is-awaiting-you" : undefined}
+            >
+              <Link to={routePaths.trade(leagueId, trade.id)}>
+                <span>
+                  <strong>{trade.proposingTeam.name} → {trade.receivingTeam.name}</strong>
+                  <small>
+                    {awaitingManagedTeam
+                      ? "Awaiting your response"
+                      : "Open proposal details"}
+                  </small>
+                </span>
+                <StatusBadge tone={awaitingManagedTeam ? "live" : "neutral"}>
+                  {trade.status}
+                </StatusBadge>
+              </Link>
+            </li>
+          );
+        })}</ul></Surface>
       )}
       <p>Expired proposals are preserved in <Link to={routePaths.leagueActivity(leagueId)}>League Activity</Link>.</p>
       <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>
@@ -969,6 +1032,7 @@ function AcceptancePreview({ preview }) {
 
 export function TradeDetailPage() {
   const { leagueId, tradeId } = useParams();
+  const [searchParams] = useSearchParams();
   const context = useLeagueContext(leagueId);
   const queryClient = useQueryClient();
   const trade = useQuery({
@@ -996,6 +1060,29 @@ export function TradeDetailPage() {
   const pending = proposal?.storageStatus === "proposed";
   const canRespond = pending && (commissioner || managedIds.has(proposal.receivingTeam.id));
   const canCancel = pending && (commissioner || managedIds.has(proposal.proposingTeam.id));
+  const openAcceptancePreview = searchParams.get("preview") === "acceptance";
+  const requestAcceptancePreview = previewAcceptance.mutate;
+  useEffect(() => {
+    if (
+      !openAcceptancePreview ||
+      !canRespond ||
+      acceptancePreview ||
+      previewAcceptance.isPending ||
+      previewAcceptance.isSuccess ||
+      previewAcceptance.isError
+    ) {
+      return;
+    }
+    requestAcceptancePreview();
+  }, [
+    acceptancePreview,
+    canRespond,
+    openAcceptancePreview,
+    previewAcceptance.isError,
+    previewAcceptance.isPending,
+    previewAcceptance.isSuccess,
+    requestAcceptancePreview,
+  ]);
   return (
     <LeaguePageState context={context} title="Trade proposal">
       {trade.isPending ? <Surface><LoadingBlock>Loading trade…</LoadingBlock></Surface> : trade.isError ? <ErrorMessage error={trade.error} /> : <Surface className="hl-trade-detail">

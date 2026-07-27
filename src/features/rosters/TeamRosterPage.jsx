@@ -131,7 +131,7 @@ function endPointerCapture(event) {
   }
 }
 
-function RosterActions({ leagueId, player, pending, onAction }) {
+function RosterActions({ leagueId, teamId, player, pending, onAction }) {
   const assetType = player.contract ? "contract" : "prospect_right";
   const assetId = player.contract?.id || player.playerId;
   const irDisabled =
@@ -190,7 +190,12 @@ function RosterActions({ leagueId, player, pending, onAction }) {
       )}
       <Link
         className="hl-roster-action"
-        to={routePaths.leagueTradeForAsset(leagueId, assetType, assetId)}
+        to={routePaths.leagueTradeForOfferedAsset(
+          leagueId,
+          teamId,
+          assetType,
+          assetId
+        )}
         aria-label={`Add ${player.name} to a trade`}
         title={`Add ${player.name} to a trade`}
       >
@@ -218,6 +223,33 @@ function RosterActions({ leagueId, player, pending, onAction }) {
         </span>
       </button>
     </div>
+  );
+}
+
+function TradeRequestAction({
+  leagueId,
+  proposingTeamId,
+  sourceTeamId,
+  player,
+}) {
+  const assetType = player.contract ? "contract" : "prospect_right";
+  const assetId = player.contract?.id || player.playerId;
+  return (
+    <Link
+      className="hl-roster-action is-request"
+      to={routePaths.leagueTradeForRequestedAsset(
+        leagueId,
+        proposingTeamId,
+        sourceTeamId,
+        assetType,
+        assetId
+      )}
+      aria-label={`Request ${player.name} in a trade`}
+      title={`Request ${player.name} in a trade`}
+    >
+      <ArrowLeftRight aria-hidden="true" />
+      <span>Request trade</span>
+    </Link>
   );
 }
 
@@ -252,7 +284,10 @@ function CategoryTable({
   onMove,
   onAction,
   actionPending = false,
+  canRequestTrade = false,
   leagueId,
+  requestingTeamId = null,
+  viewedTeamId,
   sort,
   onSort,
 }) {
@@ -330,7 +365,9 @@ function CategoryTable({
                     />
                   </th>
                 ))}
-                {canManage && <th scope="col">Actions</th>}
+                {(canManage || canRequestTrade) && (
+                  <th scope="col">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -475,14 +512,27 @@ function CategoryTable({
                       ? fantasyPointsPerGame(player.statistics).toFixed(2)
                       : "—"}
                   </td>
-                  {canManage && (
+                  {(canManage || canRequestTrade) && (
                     <td className="hl-roster-actions-cell">
-                      <RosterActions
-                        leagueId={leagueId}
-                        player={player}
-                        pending={actionPending}
-                        onAction={onAction}
-                      />
+                      <div className="hl-roster-actions-group">
+                        {canManage && (
+                          <RosterActions
+                            leagueId={leagueId}
+                            teamId={viewedTeamId}
+                            player={player}
+                            pending={actionPending}
+                            onAction={onAction}
+                          />
+                        )}
+                        {canRequestTrade && (
+                          <TradeRequestAction
+                            leagueId={leagueId}
+                            proposingTeamId={requestingTeamId}
+                            sourceTeamId={viewedTeamId}
+                            player={player}
+                          />
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -504,6 +554,8 @@ function chunk(values, size, count) {
 function LinePlayer({
   player,
   canManage,
+  team,
+  tradeRequestPath,
   draggingId,
   dragTargetId,
   onDragStart,
@@ -517,13 +569,17 @@ function LinePlayer({
   }
   return (
     <div
-      className={[
-        "hl-line-player",
-        draggingId === player.ownershipId ? "is-dragging" : "",
-        dragTargetId === player.ownershipId ? "is-drop-target" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={teamColourClass(
+        [
+          "hl-line-player hl-line-player--team",
+          draggingId === player.ownershipId ? "is-dragging" : "",
+          dragTargetId === player.ownershipId ? "is-drop-target" : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        team
+      )}
+      style={teamColourStyle(team)}
       data-roster-order-id={canManage ? player.ownershipId : undefined}
       data-roster-category="Active"
       onDragOver={(event) => {
@@ -602,6 +658,16 @@ function LinePlayer({
             : "No stats"}
         </small>
       </span>
+      {tradeRequestPath && (
+        <Link
+          className="hl-line-player__trade-request"
+          to={tradeRequestPath}
+          aria-label={`Request ${player.name} in a trade`}
+          title={`Request ${player.name} in a trade`}
+        >
+          <ArrowLeftRight aria-hidden="true" />
+        </Link>
+      )}
     </div>
   );
 }
@@ -609,6 +675,9 @@ function LinePlayer({
 function HockeyLines({
   activePlayers,
   canManage,
+  leagueId,
+  requestingTeamId,
+  team,
   draggingId,
   dragTargetId,
   onDragStart,
@@ -668,6 +737,18 @@ function HockeyLines({
                     key={player?.ownershipId || `f-open-${absoluteIndex}`}
                     player={player}
                     canManage={canManage}
+                    team={team}
+                    tradeRequestPath={
+                      player && requestingTeamId
+                        ? routePaths.leagueTradeForRequestedAsset(
+                            leagueId,
+                            requestingTeamId,
+                            team.id,
+                            player.contract ? "contract" : "prospect_right",
+                            player.contract?.id || player.playerId
+                          )
+                        : null
+                    }
                     draggingId={draggingId}
                     dragTargetId={dragTargetId}
                     onDragStart={onDragStart}
@@ -696,6 +777,18 @@ function HockeyLines({
                     key={player?.ownershipId || `d-open-${absoluteIndex}`}
                     player={player}
                     canManage={canManage}
+                    team={team}
+                    tradeRequestPath={
+                      player && requestingTeamId
+                        ? routePaths.leagueTradeForRequestedAsset(
+                            leagueId,
+                            requestingTeamId,
+                            team.id,
+                            player.contract ? "contract" : "prospect_right",
+                            player.contract?.id || player.playerId
+                          )
+                        : null
+                    }
                     draggingId={draggingId}
                     dragTargetId={dragTargetId}
                     onDragStart={onDragStart}
@@ -714,11 +807,22 @@ function HockeyLines({
   );
 }
 
-function DraftPicks({ picks }) {
+function DraftPicks({
+  canOffer,
+  leagueId,
+  picks,
+  requestingTeamId,
+  team,
+  teams,
+}) {
   const bySeason = picks.reduce((groups, pick) => {
     const key = pick.targetSeason.id;
     if (!groups.has(key)) {
-      groups.set(key, { label: pick.targetSeason.label, picks: [] });
+      groups.set(key, {
+        id: pick.targetSeason.id,
+        label: pick.targetSeason.label,
+        picks: [],
+      });
     }
     groups.get(key).picks.push(pick);
     return groups;
@@ -734,6 +838,77 @@ function DraftPicks({ picks }) {
       ),
     }))
     .sort((left, right) => left.label.localeCompare(right.label));
+  const roundCount = Math.max(4, ...picks.map(({ round }) => round));
+  const rounds = Array.from({ length: roundCount }, (_, index) => index + 1);
+  const teamById = new Map(teams.map((candidate) => [candidate.id, candidate]));
+
+  function tradePath(pick) {
+    if (requestingTeamId) {
+      return routePaths.leagueTradeForRequestedAsset(
+        leagueId,
+        requestingTeamId,
+        team.id,
+        "draft_pick",
+        pick.id
+      );
+    }
+    if (canOffer) {
+      return routePaths.leagueTradeForOfferedAsset(
+        leagueId,
+        team.id,
+        "draft_pick",
+        pick.id
+      );
+    }
+    return null;
+  }
+
+  function pickMark(pick) {
+    const originalTeam =
+      teamById.get(pick.originalTeam.id) || pick.originalTeam;
+    const path = tradePath(pick);
+    const label = `${pick.targetSeason.label} round ${pick.round}, pick ${
+      pick.position
+    }, originally ${pick.originalTeam.name}${
+      path ? " — add to a trade proposal" : ""
+    }`;
+    const mark = (
+      <span
+        className={teamColourClass("hl-draft-pick-team-mark", originalTeam)}
+        style={teamColourStyle(originalTeam)}
+      >
+        {originalTeam.logoReference ? (
+          <img src={originalTeam.logoReference} alt="" />
+        ) : (
+          <span aria-hidden="true">
+            {originalTeam.name.slice(0, 2).toUpperCase()}
+          </span>
+        )}
+        <small aria-hidden="true">{pick.position}</small>
+      </span>
+    );
+    return path ? (
+      <Link
+        className="hl-draft-pick-link"
+        key={pick.id}
+        to={path}
+        aria-label={label}
+        title={label}
+      >
+        {mark}
+      </Link>
+    ) : (
+      <span
+        className="hl-draft-pick-link is-read-only"
+        key={pick.id}
+        aria-label={label}
+        title={label}
+      >
+        {mark}
+      </span>
+    );
+  }
+
   return (
     <section className="hl-surface hl-draft-picks" aria-labelledby="draft-picks-title">
       <div className="hl-roster-category__heading">
@@ -746,23 +921,40 @@ function DraftPicks({ picks }) {
       {picks.length === 0 ? (
         <p>No unused draft picks are currently owned by this team.</p>
       ) : (
-        <div className="hl-draft-pick-grid">
-          {seasons.map((season) => (
-            <article key={season.label}>
-              <h3>{season.label}</h3>
-              <ul>
-                {season.picks.map((pick) => (
-                  <li key={pick.id}>
-                    <strong>Round {pick.round}</strong>
-                    <span>
-                      Pick {pick.position} · originally{" "}
-                      {pick.originalTeam.name}
-                    </span>
-                  </li>
+        <div className="hl-draft-pick-matrix-wrap">
+          <table className="hl-draft-pick-matrix">
+            <thead>
+              <tr>
+                <th scope="col">Year</th>
+                {rounds.map((round) => (
+                  <th scope="col" key={round}>
+                    R{round}
+                  </th>
                 ))}
-              </ul>
-            </article>
-          ))}
+              </tr>
+            </thead>
+            <tbody>
+              {seasons.map((season) => (
+                <tr key={season.id}>
+                  <th scope="row">{season.label}</th>
+                  {rounds.map((round) => {
+                    const roundPicks = season.picks.filter(
+                      (pick) => pick.round === round
+                    );
+                    return (
+                      <td key={round}>
+                        <span className="hl-draft-pick-cell">
+                          {roundPicks.length > 0
+                            ? roundPicks.map(pickMark)
+                            : <span aria-label="No owned pick">—</span>}
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </section>
@@ -772,6 +964,7 @@ function DraftPicks({ picks }) {
 export function TeamRosterPage({
   workspace,
   teams,
+  currentUserId = null,
   managerName,
   onTeamChange,
   httpClient,
@@ -795,6 +988,13 @@ export function TeamRosterPage({
     direction: "asc",
   });
   const [saveMessage, setSaveMessage] = useState("");
+  const requestingTeam =
+    teams.find(
+      (candidate) =>
+        candidate.id !== team.id &&
+        candidate.currentManager?.userId === currentUserId
+    ) || null;
+  const canRequestTrade = Boolean(requestingTeam);
 
   useEffect(() => {
     // This local order is the optimistic drag state and must be replaced when
@@ -1186,6 +1386,9 @@ export function TeamRosterPage({
           <HockeyLines
             activePlayers={activePlayers}
             canManage={workspace.canManage && !mutation.isPending}
+            leagueId={league.id}
+            requestingTeamId={requestingTeam?.id || null}
+            team={team}
             draggingId={draggingId}
             dragTargetId={dragTargetId}
             onDragStart={setDraggingId}
@@ -1216,6 +1419,9 @@ export function TeamRosterPage({
                   leagueId={league.id}
                   onAction={runRosterAction}
                   actionPending={actionMutation.isPending}
+                  canRequestTrade={canRequestTrade}
+                  requestingTeamId={requestingTeam?.id || null}
+                  viewedTeamId={team.id}
                 />
               )
             )}
@@ -1251,12 +1457,22 @@ export function TeamRosterPage({
               leagueId={league.id}
               onAction={runRosterAction}
               actionPending={actionMutation.isPending}
+              canRequestTrade={canRequestTrade}
+              requestingTeamId={requestingTeam?.id || null}
+              viewedTeamId={team.id}
             />
           ))}
         </div>
       )}
 
-      <DraftPicks picks={workspace.draftPicks} />
+      <DraftPicks
+        canOffer={workspace.canManage}
+        leagueId={league.id}
+        picks={workspace.draftPicks}
+        requestingTeamId={requestingTeam?.id || null}
+        team={team}
+        teams={teams}
+      />
     </div>
   );
 }

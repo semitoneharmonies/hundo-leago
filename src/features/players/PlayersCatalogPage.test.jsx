@@ -257,11 +257,11 @@ describe("league player catalog", () => {
     await screen.findByRole("rowheader", { name: "Owned Player" });
     table = screen.getByRole("table");
 
-    await view.user.click(
-      within(table).getByRole("button", {
-        name: "Add Free Agent to favourites",
-      })
-    );
+    const favouriteButton = within(table).getByRole("button", {
+      name: "Add Free Agent to favourites",
+    });
+    expect(favouriteButton.querySelector(".hl-hockey-stick")).not.toBeNull();
+    await view.user.click(favouriteButton);
     const assignmentFilter = screen.getByRole("combobox", {
       name: "League assignment",
     });

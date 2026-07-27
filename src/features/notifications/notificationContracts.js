@@ -45,6 +45,29 @@ export function validateNotifications(data) {
         "A league invitation notification team is invalid."
       );
     }
+    if (notification.type === "trade_proposal_received") {
+      for (const [field, description] of [
+        ["tradeId", "trade"],
+        ["leagueId", "league"],
+        ["proposingTeamId", "proposing team"],
+        ["receivingTeamId", "receiving team"],
+      ]) {
+        contract(
+          stableId(notification.messageData[field]),
+          `A trade notification ${description} ID is invalid.`
+        );
+      }
+      contract(
+        typeof notification.messageData.proposingTeamName === "string" &&
+          notification.messageData.proposingTeamName.trim() !== "",
+        "A trade notification proposing team name is invalid."
+      );
+      contract(
+        typeof notification.messageData.receivingTeamName === "string" &&
+          notification.messageData.receivingTeamName.trim() !== "",
+        "A trade notification receiving team name is invalid."
+      );
+    }
     contract(Number.isSafeInteger(notification.createdAtMs), "A notification time is invalid.");
     contract(notification.readAtMs === null || Number.isSafeInteger(notification.readAtMs),
       "A notification read time is invalid.");

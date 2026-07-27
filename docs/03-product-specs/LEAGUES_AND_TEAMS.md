@@ -651,7 +651,7 @@ surface. Where the stripes pass behind a team name or logo, they fade toward
 the standard dark-blue application background and return to the configured
 team colours outside that identity area. This treatment applies consistently
 to the team index, the dashboard league-teams panel, matchup score headers,
-and the roster identity header.
+the roster identity header, and player cards in the roster hockey-lines view.
 
 The technical specification must define the stored colour representation.
 

@@ -703,6 +703,20 @@ The page must clearly show:
 * every known legality reason;
 * current manager or commissioner controls.
 
+The table and hockey-lines views expose stable-ID trade shortcuts. Managers
+may offer assets from their own team or request a player or draft pick while
+viewing another team; each shortcut opens the proposal builder with the asset
+on the correct side.
+
+The hockey-lines player cards use the viewed team's two- or three-colour
+horizontal stripes, fading to the standard dark-blue background beneath the
+player identity for reliable readability.
+
+Owned draft picks are displayed as a four-year by four-round matrix. Each pick
+shows the original owner's logo when available, or a team-colour identity mark
+when no logo exists. The original team and current owner remain
+backend-authoritative stable identities.
+
 ---
 
 ## Move Feedback

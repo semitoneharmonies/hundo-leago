@@ -755,6 +755,12 @@ The proposal builder shows:
 
 Unavailable assets are disabled with a clear explanation.
 
+Player and draft-pick actions on a team roster may open the proposal builder
+with one stable asset ID preloaded. An action on the manager's own team
+preloads the proposing side. A request action while viewing another team
+preloads that team as the receiver and the selected asset on the receiving
+side. The user must still review and explicitly submit the proposal.
+
 ---
 
 ## Proposal Views
@@ -787,11 +793,13 @@ The initial release keeps a simple league-visible trade block where a manager ma
 
 Creating a proposal atomically creates an in-app notification for every active
 manager of the receiving team other than the actor. The notification links the
-recipient to the trade feature and does not reveal the proposal to a user
-outside the league.
+recipient directly to the identified proposal and opens its authoritative
+acceptance preview when that recipient has response authority. It does not
+reveal the proposal to a user outside the league.
 
-The trade dashboard visually distinguishes pending proposals involving the
-signed-in manager's team. This presentation is not an authorization boundary.
+The league dashboard and normal Trades list visually distinguish a pending
+proposal when the signed-in receiving manager is expected to respond. This
+presentation is not an authorization boundary.
 
 The initial release does not require separate email or push notifications for
 new, accepted, rejected, cancelled, expired, or countered proposals.

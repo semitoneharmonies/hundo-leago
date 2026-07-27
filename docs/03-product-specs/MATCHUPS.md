@@ -548,6 +548,12 @@ The Matchups page defaults to the current week and shows:
 * selected matchup player breakdown;
 * lock, late-lock, stale-data, and correction status.
 
+The commissioner dashboard highlights one league matchup at a time and
+advances through the current week's pairings every five seconds. Each incoming
+matchup moves from right to left rather than changing abruptly. Reduced-motion
+preferences disable that movement without disabling the rotation or matchup
+information.
+
 ---
 
 ## Week Navigation

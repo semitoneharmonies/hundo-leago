@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Navigate } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
+import { Link, Navigate } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
@@ -30,6 +31,14 @@ function message(notification) {
     notification.messageData.message ||
     notification.messageData.summary ||
     notification.type.replaceAll("_", " ")
+  );
+}
+
+function notificationDestination(notification) {
+  if (notification.type !== "trade_proposal_received") return null;
+  return routePaths.tradeAcceptance(
+    notification.messageData.leagueId,
+    notification.messageData.tradeId
   );
 }
 
@@ -219,37 +228,72 @@ export function NotificationsPage() {
           <EmptyBlock title="No notifications on this page" />
         ) : (
           <ul className="hl-notification-list">
-            {notifications.data.notifications.map((notification) => (
-              <li
-                className={notification.readAtMs === null ? "is-unread" : ""}
-                key={notification.id}
-              >
-                <span className="hl-notification-list__indicator" aria-hidden="true" />
-                <div>
-                  <strong>{message(notification)}</strong>
-                  <time dateTime={new Date(notification.createdAtMs).toISOString()}>
-                    {new Date(notification.createdAtMs).toLocaleString()}
-                  </time>
-                  {notification.type === "league_invitation_created" && (
-                    <LeagueInvitationActions
-                      notification={notification}
-                      session={session}
-                    />
+            {notifications.data.notifications.map((notification) => {
+              const destination = notificationDestination(notification);
+              const notificationMessage = message(notification);
+              const timestamp = (
+                <time
+                  dateTime={new Date(
+                    notification.createdAtMs
+                  ).toISOString()}
+                >
+                  {new Date(notification.createdAtMs).toLocaleString()}
+                </time>
+              );
+              return (
+                <li
+                  className={
+                    notification.readAtMs === null ? "is-unread" : ""
+                  }
+                  key={notification.id}
+                >
+                  <span
+                    className="hl-notification-list__indicator"
+                    aria-hidden="true"
+                  />
+                  {destination ? (
+                    <Link
+                      className="hl-notification-list__link"
+                      to={destination}
+                      onClick={() => {
+                        if (notification.readAtMs === null) {
+                          markOne.mutate(notification.id);
+                        }
+                      }}
+                    >
+                      <span>
+                        <strong>{notificationMessage}</strong>
+                        {timestamp}
+                        <small>Open the trade acceptance preview</small>
+                      </span>
+                      <ChevronRight aria-hidden="true" />
+                    </Link>
+                  ) : (
+                    <div>
+                      <strong>{notificationMessage}</strong>
+                      {timestamp}
+                      {notification.type === "league_invitation_created" && (
+                        <LeagueInvitationActions
+                          notification={notification}
+                          session={session}
+                        />
+                      )}
+                    </div>
                   )}
-                </div>
-                {notification.readAtMs === null ? (
-                  <button
-                    className="hl-button hl-button--quiet"
-                    disabled={markOne.isPending}
-                    onClick={() => markOne.mutate(notification.id)}
-                  >
-                    Mark read
-                  </button>
-                ) : (
-                  <StatusBadge>Read</StatusBadge>
-                )}
-              </li>
-            ))}
+                  {notification.readAtMs === null ? (
+                    <button
+                      className="hl-button hl-button--quiet"
+                      disabled={markOne.isPending}
+                      onClick={() => markOne.mutate(notification.id)}
+                    >
+                      Mark read
+                    </button>
+                  ) : (
+                    <StatusBadge>Read</StatusBadge>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Surface>

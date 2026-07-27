@@ -12,6 +12,7 @@ const notificationId = "11111111-1111-4111-8111-111111111111";
 const invitationId = "22222222-2222-4222-8222-222222222222";
 const leagueId = "33333333-3333-4333-8333-333333333333";
 const teamId = "44444444-4444-4444-8444-444444444444";
+const tradeId = "55555555-5555-4555-8555-555555555555";
 const config = { appEnv: "local", apiOrigin: "http://localhost:4000", socketOrigin: "http://localhost:4000", buildId: null };
 
 function envelope(data) {
@@ -59,6 +60,57 @@ describe("M5-11 owner notifications", () => {
       options.method === "POST" &&
       options.headers.get("X-CSRF-Token") === "D".repeat(43)
     )).toBe(true);
+  });
+
+  it("links a received-trade notification to its acceptance preview", async () => {
+    const fetchImpl = vi.fn(async (url) => {
+      const path = new URL(url).pathname;
+      if (path === "/api/v1/session") return envelope({
+        csrfToken: "D".repeat(43),
+        session: { id: "session-1", userId: "user-1", status: "active", createdAtMs: 1, lastUsedAtMs: 1, idleExpiresAtMs: 2, absoluteExpiresAtMs: 3, version: 1 },
+        user: { id: "user-1", displayName: "Manager", status: "active", version: 1 },
+      });
+      if (path === "/api/v1/notifications") {
+        return envelope({
+          code: "NOTIFICATIONS_FOUND",
+          notifications: [{
+            id: notificationId,
+            leagueId,
+            type: "trade_proposal_received",
+            messageData: {
+              message: "Trade proposal received from Other Team.",
+              tradeId,
+              leagueId,
+              proposingTeamId: teamId,
+              proposingTeamName: "Other Team",
+              receivingTeamId: invitationId,
+              receivingTeamName: "Managed Team",
+            },
+            related: { feature: "trade", recordId: tradeId },
+            deliveryStatus: "delivered",
+            createdAtMs: 1,
+            readAtMs: null,
+            deliveredAtMs: 1,
+            version: 1,
+          }],
+          page: { limit: 25, nextCursor: null },
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    renderWithProviders(<NotificationsPage />, {
+      enableSession: true,
+      config,
+      sessionOptions: { fetchImpl },
+    });
+
+    const link = await screen.findByRole("link", {
+      name: /Trade proposal received from Other Team/i,
+    });
+    expect(link).toHaveAttribute(
+      "href",
+      `/leagues/${leagueId}/trades/${tradeId}?preview=acceptance`
+    );
   });
 
   it("lets the invited user accept a pending manage-team invitation", async () => {

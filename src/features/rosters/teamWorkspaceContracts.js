@@ -108,6 +108,27 @@ export function validateTeamWorkspace(data) {
     );
   }
   contract(Array.isArray(data.draftPicks), "The draft-pick list is invalid.");
+  for (const pick of data.draftPicks) {
+    object(pick, "A draft pick is invalid.");
+    contract(ID.test(pick.id || ""), "A draft-pick ID is invalid.");
+    integer(pick.version, "A draft-pick version is invalid.");
+    object(pick.targetSeason, "A draft-pick season is invalid.");
+    contract(
+      ID.test(pick.targetSeason.id || "") &&
+        typeof pick.targetSeason.label === "string" &&
+        pick.targetSeason.label.trim().length > 0,
+      "A draft-pick season is invalid."
+    );
+    integer(pick.round, "A draft-pick round is invalid.");
+    integer(pick.position, "A draft-pick position is invalid.");
+    object(pick.originalTeam, "A draft-pick original team is invalid.");
+    contract(
+      ID.test(pick.originalTeam.id || "") &&
+        typeof pick.originalTeam.name === "string" &&
+        pick.originalTeam.name.trim().length > 0,
+      "A draft-pick original team is invalid."
+    );
+  }
   object(data.tradeAssets, "The team trade assets are invalid.");
   for (const key of [
     "contracts",

@@ -23,6 +23,7 @@ const prospectOwnershipId = "77777777-7777-4777-8777-777777777777";
 const contractId = "88888888-8888-4888-8888-888888888888";
 const pickId = "99999999-9999-4999-8999-999999999999";
 const laterPickId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const managerTeamId = "abababab-abab-4aba-8aba-abababababab";
 
 function mockPointerTarget(element) {
   const descriptor = Object.getOwnPropertyDescriptor(
@@ -281,14 +282,22 @@ describe("authoritative team roster page", () => {
     expect(
       screen.getByRole("heading", { name: "Owned draft picks" })
     ).toBeInTheDocument();
+    const draftPickRegion = screen.getByRole("region", {
+      name: "Owned draft picks",
+    });
     expect(
-      screen.getAllByText(/Pick 3.*originally Target Owls/)
+      within(draftPickRegion).getAllByRole("link", {
+        name: /pick 3, originally Target Owls/i,
+      })
     ).toHaveLength(2);
     expect(
-      within(
-        screen.getByRole("region", { name: "Owned draft picks" })
-      )
-        .getAllByRole("heading", { level: 3 })
+      within(draftPickRegion)
+        .getAllByRole("columnheader")
+        .map(({ textContent }) => textContent)
+    ).toEqual(["Year", "R1", "R2", "R3", "R4"]);
+    expect(
+      within(draftPickRegion)
+        .getAllByRole("rowheader")
         .map(({ textContent }) => textContent)
     ).toEqual(["2026-27", "2027-28"]);
 
@@ -306,6 +315,69 @@ describe("authoritative team roster page", () => {
     expect(
       screen.queryByRole("button", { name: "Move Active Player later" })
     ).not.toBeInTheDocument();
+    expect(screen.getByText("Active Player").closest(".hl-line-player")).toHaveClass(
+      "hl-line-player--team"
+    );
+  });
+
+  it("starts requested-player and requested-pick trades from another roster", async () => {
+    const data = workspace();
+    data.canManage = false;
+    const managerTeam = {
+      id: managerTeamId,
+      leagueId,
+      name: "Manager Falcons",
+      primaryColour: "#102a43",
+      secondaryColour: "#f97316",
+      tertiaryColour: null,
+      logoReference: null,
+      version: 1,
+      currentManager: {
+        userId: "user-1",
+        displayName: "League Manager",
+        version: 1,
+      },
+    };
+    const view = renderWithProviders(
+      <TeamRosterPage
+        workspace={data}
+        teams={[data.team, managerTeam]}
+        currentUserId="user-1"
+        managerName="Other Manager"
+        onTeamChange={() => {}}
+        httpClient={{ request: vi.fn() }}
+      />
+    );
+
+    const playerRequest = screen.getByRole("link", {
+      name: "Request Active Player in a trade",
+    });
+    expect(playerRequest.getAttribute("href")).toContain(
+      `assetDirection=requested`
+    );
+    expect(playerRequest.getAttribute("href")).toContain(
+      `proposingTeamId=${managerTeamId}`
+    );
+    expect(playerRequest.getAttribute("href")).toContain(
+      `sourceTeamId=${teamId}`
+    );
+    expect(screen.getByRole("link", {
+      name: "Request Prospect Player in a trade",
+    })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: /2026-27 round 1, pick 3, originally Target Owls/i,
+      }).getAttribute("href")
+    ).toContain("assetType=draft_pick");
+
+    await view.user.click(
+      screen.getByRole("button", { name: /Hockey lines/ })
+    );
+    expect(
+      screen.getByRole("link", {
+        name: "Request Active Player in a trade",
+      })
+    ).toBeInTheDocument();
   });
 
   it("offers compact roster actions and sends authoritative commands", async () => {

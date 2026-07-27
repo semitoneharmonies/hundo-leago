@@ -236,6 +236,77 @@ describe("M5-11 authenticated transaction pages", () => {
     expect(screen.getByText("No proposals in this view.")).toBeInTheDocument();
   });
 
+  it("highlights a pending proposal awaiting the receiving manager", async () => {
+    const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades`) {
+        return envelope({
+          code: "TRADE_PROPOSALS_FOUND",
+          proposals: [{
+            id: tradeId,
+            leagueId,
+            seasonId,
+            proposingTeam: { id: teamB, name: "Other Team" },
+            receivingTeam: { id: teamA, name: "Managed Team" },
+            proposingUserId: "user-2",
+            status: "Pending",
+            storageStatus: "proposed",
+            createdAtMs: 1,
+            expiresAtMs: 2,
+            tradeDeadlineAtMs: null,
+            effectiveDeadlineAtMs: 2,
+            respondedAtMs: null,
+            completedAtMs: null,
+            commissionerCompletionReference: null,
+            version: 1,
+          }],
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    renderPage(
+      `/leagues/${leagueId}/trades`,
+      "/leagues/:leagueId/trades",
+      <TradesPage />,
+      fetchImpl
+    );
+
+    const responseLabel = await screen.findByText("Awaiting your response");
+    expect(responseLabel.closest("li")).toHaveClass("is-awaiting-you");
+  });
+
+  it("preloads another roster's stable asset on the requested side", async () => {
+    const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades`) {
+        return envelope({ code: "TRADE_PROPOSALS_FOUND", proposals: [] });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    renderPage(
+      `/leagues/${leagueId}/trades?assetDirection=requested&assetType=contract&assetId=${assetId}&sourceTeamId=${teamB}&proposingTeamId=${teamA}`,
+      "/leagues/:leagueId/trades",
+      <TradesPage />,
+      fetchImpl
+    );
+
+    await screen.findAllByRole("option", { name: /Trade Player/ });
+    expect(screen.getByRole("combobox", { name: "Proposing team" })).toHaveValue(
+      teamA
+    );
+    expect(screen.getByRole("combobox", { name: "Receiving team" })).toHaveValue(
+      teamB
+    );
+    expect(
+      screen.getByRole("combobox", {
+        name: "Proposing team sends asset 1",
+      })
+    ).toHaveValue("");
+    expect(
+      screen.getByRole("combobox", {
+        name: "Receiving team sends asset 1",
+      })
+    ).toHaveValue(assetId);
+  });
+
   it("adds optional retention to a contract and uses notes for Future Considerations", async () => {
     let submitted = null;
     const fetchImpl = baseFetch((path, options) => {
@@ -379,7 +450,7 @@ describe("M5-11 authenticated transaction pages", () => {
     });
   });
 
-  it("renders backend team arrays and cap warnings before showing the confirm command", async () => {
+  it("opens a notification deep link directly into the acceptance preview", async () => {
     const fetchImpl = baseFetch((path) => {
       if (path === `/api/v1/leagues/${leagueId}/trades/${tradeId}`) return envelope({ code: "TRADE_PROPOSAL_FOUND", proposal: { id: tradeId, leagueId, seasonId, proposingTeam: { id: teamB, name: "Other Team" }, receivingTeam: { id: teamA, name: "Managed Team" }, proposingUserId: "user-2", status: "Pending", storageStatus: "proposed", createdAtMs: 1, expiresAtMs: 99, tradeDeadlineAtMs: null, effectiveDeadlineAtMs: 99, respondedAtMs: null, completedAtMs: null, commissionerCompletionReference: null, version: 1, assets: [{ id: assetId, type: "contract", snapshot: { type: "contract", player: { name: "Trade Player" } } }], history: [{ id: assetId, actorUserId: "user-2", type: "proposal_created", reason: null, metadata: {}, occurredAtMs: 1 }] } });
       if (path.endsWith("/acceptance-preview")) return envelope({
@@ -406,10 +477,7 @@ describe("M5-11 authenticated transaction pages", () => {
       });
       throw new Error(`Unexpected request: ${path}`);
     });
-    const view = renderPage(`/leagues/${leagueId}/trades/${tradeId}`, "/leagues/:leagueId/trades/:tradeId", <TradeDetailPage />, fetchImpl);
-    const preview = await screen.findByRole("button", { name: "Preview acceptance" });
-    expect(screen.queryByRole("button", { name: "Confirm and accept trade" })).not.toBeInTheDocument();
-    await view.user.click(preview);
+    renderPage(`/leagues/${leagueId}/trades/${tradeId}?preview=acceptance`, "/leagues/:leagueId/trades/:tradeId", <TradeDetailPage />, fetchImpl);
     expect(await screen.findByText(
       "This trade would leave at least one roster generally illegal."
     )).toBeInTheDocument();

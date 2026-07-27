@@ -4754,6 +4754,282 @@ textarea {
   border-top: 1px solid var(--hl-border);
 }
 
+/* M7-16 trade shortcuts, roster identity, and dashboard motion */
+.hl-trade-list li.is-awaiting-you {
+  border-color: rgb(96 165 250 / 68%);
+  background:
+    linear-gradient(90deg, rgb(37 99 235 / 24%), rgb(15 23 42 / 42%));
+  box-shadow: inset 4px 0 0 #60a5fa;
+}
+
+.hl-trade-list li.is-awaiting-you + li {
+  border-top-color: rgb(96 165 250 / 34%);
+}
+
+.hl-notification-list__link {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--hl-radius-md);
+  color: var(--hl-foreground);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.hl-notification-list__link:hover,
+.hl-notification-list__link:focus-visible {
+  border-color: rgb(96 165 250 / 42%);
+  background: rgb(37 99 235 / 9%);
+  color: #bfdbfe;
+}
+
+.hl-notification-list__link > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.hl-notification-list__link small {
+  color: #93c5fd;
+  font-size: 0.56rem;
+  font-weight: 700;
+}
+
+.hl-notification-list__link > svg {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+}
+
+.hl-line-player--team {
+  background:
+    linear-gradient(
+      90deg,
+      #091121 0 38%,
+      rgb(9 17 33 / 96%) 50%,
+      rgb(9 17 33 / 64%) 66%,
+      transparent 88%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--team-primary) 84%, #020617) 0 50%,
+      color-mix(in srgb, var(--team-secondary) 76%, #020617) 50% 100%
+    );
+}
+
+.hl-line-player--team.has-three-colours {
+  background:
+    linear-gradient(
+      90deg,
+      #091121 0 38%,
+      rgb(9 17 33 / 96%) 50%,
+      rgb(9 17 33 / 64%) 66%,
+      transparent 88%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--team-primary) 84%, #020617) 0 34%,
+      color-mix(in srgb, var(--team-secondary) 76%, #020617) 34% 66%,
+      color-mix(in srgb, var(--team-tertiary) 84%, #020617) 66% 100%
+    );
+}
+
+.hl-line-player--team.is-drop-target {
+  border-color: #60a5fa;
+  box-shadow:
+    inset 0 0 0 999px rgb(37 99 235 / 14%),
+    0 0 0 2px rgb(96 165 250 / 32%);
+}
+
+.hl-line-player__trade-request {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  place-items: center;
+  border: 1px solid rgb(147 197 253 / 34%);
+  border-radius: 999px;
+  background: rgb(2 6 23 / 72%);
+  color: #93c5fd;
+}
+
+.hl-line-player__trade-request:hover,
+.hl-line-player__trade-request:focus-visible {
+  border-color: #93c5fd;
+  background: rgb(37 99 235 / 28%);
+  color: #dbeafe;
+}
+
+.hl-line-player__trade-request svg {
+  width: 15px;
+  height: 15px;
+}
+
+.hl-roster-actions-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.hl-roster-action.is-request {
+  border-color: rgb(96 165 250 / 48%);
+  color: #93c5fd;
+}
+
+.hl-draft-pick-matrix-wrap {
+  overflow-x: auto;
+  padding: 14px;
+}
+
+.hl-draft-pick-matrix {
+  width: 100%;
+  min-width: 460px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.hl-draft-pick-matrix th,
+.hl-draft-pick-matrix td {
+  height: 52px;
+  padding: 6px 8px;
+  border: 1px solid var(--hl-border);
+  text-align: center;
+}
+
+.hl-draft-pick-matrix thead th {
+  background: color-mix(in srgb, var(--hl-primary) 28%, var(--hl-panel));
+  color: #bfdbfe;
+  font-family: var(--hl-font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.hl-draft-pick-matrix th:first-child {
+  width: 108px;
+  text-align: left;
+}
+
+.hl-draft-pick-matrix tbody th {
+  background: rgb(9 17 33 / 82%);
+  color: #93c5fd;
+  font-size: 0.62rem;
+}
+
+.hl-draft-pick-cell {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--hl-muted-foreground);
+}
+
+.hl-draft-pick-link {
+  display: inline-grid;
+  border-radius: 999px;
+  color: var(--hl-foreground);
+  text-decoration: none;
+}
+
+.hl-draft-pick-link:not(.is-read-only):hover,
+.hl-draft-pick-link:not(.is-read-only):focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+  transform: translateY(-1px);
+}
+
+.hl-draft-pick-team-mark {
+  position: relative;
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  place-items: center;
+  border: 2px solid rgb(255 255 255 / 72%);
+  border-radius: 50%;
+  background:
+    linear-gradient(
+      180deg,
+      var(--team-primary) 0 50%,
+      var(--team-secondary) 50% 100%
+    );
+  box-shadow:
+    0 0 0 2px rgb(2 6 23 / 72%),
+    0 5px 12px rgb(0 0 0 / 26%);
+  color: #fff;
+  font-size: 0.52rem;
+  font-weight: 850;
+  text-shadow: 0 1px 3px #020617;
+}
+
+.hl-draft-pick-team-mark.has-three-colours {
+  background:
+    linear-gradient(
+      180deg,
+      var(--team-primary) 0 34%,
+      var(--team-secondary) 34% 66%,
+      var(--team-tertiary) 66% 100%
+    );
+}
+
+.hl-draft-pick-team-mark > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hl-draft-pick-team-mark > small {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: grid;
+  min-width: 14px;
+  height: 14px;
+  padding-inline: 2px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 999px;
+  background: #091121;
+  color: #dbeafe;
+  font-family: var(--hl-font-mono);
+  font-size: 0.43rem;
+  line-height: 1;
+  text-shadow: none;
+}
+
+@keyframes hl-dashboard-spotlight-swipe {
+  from {
+    opacity: 0.35;
+    transform: translateX(58px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.hl-dashboard-matchup--spotlight {
+  animation: hl-dashboard-spotlight-swipe 460ms
+    cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hl-dashboard-matchup--spotlight {
+    animation: none;
+  }
+}
+
 @media (max-width: 900px) {
   .hl-dashboard__commissioner-content {
     grid-template-columns: 1fr;

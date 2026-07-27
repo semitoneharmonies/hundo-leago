@@ -5,6 +5,28 @@ function segment(value, description) {
   return encodeURIComponent(value);
 }
 
+function tradeAssetQuery({
+  assetDirection,
+  assetId,
+  assetType,
+  proposingTeamId,
+  sourceTeamId,
+}) {
+  const query = new URLSearchParams({
+    assetDirection,
+    assetType,
+    assetId: segment(assetId, "Trade asset ID"),
+    sourceTeamId: segment(sourceTeamId, "Trade source team ID"),
+  });
+  if (proposingTeamId) {
+    query.set(
+      "proposingTeamId",
+      segment(proposingTeamId, "Trade proposing team ID")
+    );
+  }
+  return query.toString();
+}
+
 export const routePaths = Object.freeze({
   home: "/",
   verifyEmail: "/verify-email",
@@ -43,11 +65,46 @@ export const routePaths = Object.freeze({
     )}/trades?assetType=${encodeURIComponent(
       assetType
     )}&assetId=${segment(assetId, "Trade asset ID")}`,
+  leagueTradeForOfferedAsset: (
+    leagueId,
+    proposingTeamId,
+    assetType,
+    assetId
+  ) =>
+    `/leagues/${segment(
+      leagueId,
+      "League ID"
+    )}/trades?${tradeAssetQuery({
+      assetDirection: "offered",
+      assetType,
+      assetId,
+      proposingTeamId,
+      sourceTeamId: proposingTeamId,
+    })}`,
+  leagueTradeForRequestedAsset: (
+    leagueId,
+    proposingTeamId,
+    sourceTeamId,
+    assetType,
+    assetId
+  ) =>
+    `/leagues/${segment(
+      leagueId,
+      "League ID"
+    )}/trades?${tradeAssetQuery({
+      assetDirection: "requested",
+      assetType,
+      assetId,
+      proposingTeamId,
+      sourceTeamId,
+    })}`,
   trade: (leagueId, tradeId) =>
     `/leagues/${segment(leagueId, "League ID")}/trades/${segment(
       tradeId,
       "Trade ID"
     )}`,
+  tradeAcceptance: (leagueId, tradeId) =>
+    `${routePaths.trade(leagueId, tradeId)}?preview=acceptance`,
   leagueMatchups: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/matchups`,
   leagueStandings: (leagueId) =>
