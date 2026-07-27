@@ -246,6 +246,36 @@ Expected result: reset is available only on the exact staging fixture identity,
 is audited and idempotent, preserves the provider catalog, and never exposes a
 production capability.
 
+### Tour 10 - M7-15 Roster Depth and Review Follow-up
+
+1. Reset the staging fixture and verify each of the 12 teams has 12 Active
+   forwards, 6 Active defence players, 1-4 Bench players, the configured IR
+   examples, and 3 under-19 Prospects. Confirm Active ordering defaults to
+   forwards then defence, with descending AAV inside each group.
+2. As a manager, move one Active player to Bench by its compact action and move
+   a Bench player to Active by drag-and-drop. When a move causes a slot or cap
+   overage, confirm the warning, verify the move persists, and verify a red
+   authoritative illegal-roster banner remains until corrected.
+3. Verify a Bench move above `$4.00 AAV` and an ineligible IR move remain hard
+   rejections rather than confirmation warnings.
+4. Create a trade proposal between managed fixture teams, sign in as the
+   receiver, and verify a new in-app notification and the manager-team
+   highlight on the pending proposal.
+5. Verify Players favourite and auction controls begin as icons and expand on
+   hover or keyboard focus, team and matchup colours fade to a readable neutral
+   identity area, and both matchup stat halves fit without horizontal
+   scrolling.
+6. Verify auctions contain neither `Starting for ...` nor `Bidding for ...`
+   labels when the team context is already authoritative.
+7. As commissioner, verify Add Player searches free-agent names and assigns
+   position/slot automatically. Verify Remove Player, Correct Roster, and
+   Correct Contract require a team first and list only that team's eligible
+   records.
+
+Expected result: fixture depth, permission scope, eligibility, warnings,
+authoritative illegality, notification delivery, and all visual follow-up
+behave consistently without cross-league leakage or hidden writes.
+
 ## Canonical Route Inventory
 
 The menu should expose page-level destinations. Detail routes are reached from

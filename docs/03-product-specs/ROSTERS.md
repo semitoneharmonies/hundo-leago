@@ -490,11 +490,15 @@ An injured-reserve placement must verify:
 * player ownership;
 * current roster category;
 * the manager’s or commissioner’s explicit injury-or-illness eligibility selection;
-* available injured-reserve space;
 * actor permission;
 * resulting roster and cap state.
 
 The placement changes category only and preserves the contract.
+
+If the destination count or cap result is illegal, the first request returns a
+general confirmation requirement without writing. Repeating the exact move
+with explicit confirmation saves it and returns the authoritative illegal
+roster state. Injured-reserve eligibility remains a hard requirement.
 
 ---
 
@@ -560,7 +564,9 @@ Empty active slots are not legality failures.
 
 ## Temporary Illegality
 
-A transaction that creates an illegal normal roster may complete after a general illegality flag and confirmation.
+A transaction or ordinary Active, Bench, or injured-reserve move that creates
+an illegal normal roster may complete after a general illegality flag and
+confirmation.
 
 The product must:
 
@@ -569,6 +575,11 @@ The product must:
 * provide a visible path to correct the roster.
 
 No read-only request may repair illegality.
+
+The roster page provides both drag-and-drop and keyboard-accessible action
+controls for Active-to-Bench and Bench-to-Active movement. A successful
+over-limit move does not swap or silently move a second player; the manager
+must make the separate correcting move.
 
 ---
 

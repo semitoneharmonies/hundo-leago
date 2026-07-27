@@ -570,8 +570,15 @@ An auction winner is normally assigned to the first available finite Active
 slot for the player's effective F/D position. If every such slot is occupied,
 the approved atomic auction completion may persist one explicitly unplaced
 Active row with `slot_number = NULL` and
-`acquired_transaction_type = auction_resolution`. No other acquisition type or
-roster category may use this null-slot representation.
+`acquired_transaction_type = auction_resolution`.
+
+An approved transaction or explicitly confirmed ordinary roster move may also
+leave an Active, Bench, or injured-reserve ownership unplaced when no finite
+destination slot is available. In that case `slot_number = NULL` records the
+authoritative temporary illegal state. `acquired_transaction_type` remains
+immutable acquisition history and does not determine whether a later
+confirmed roster overage may be represented. Prospect ownership remains
+slotless by definition.
 
 ---
 
@@ -587,9 +594,9 @@ Slot constraints are:
 * Injured Reserve: slots 1 through 4;
 * Prospect: no slot number.
 
-An explicitly unplaced auction winner is surfaced separately by roster
-projections and makes structural roster legality false; it is not presented as
-occupying a finite slot.
+An explicitly unplaced normal-roster ownership is surfaced separately by
+roster projections and makes structural roster legality false; it is not
+presented as occupying a finite slot.
 
 Unique team/category/position/slot constraints prevent two players from occupying one finite slot.
 
@@ -896,9 +903,9 @@ buyout obligations, and existing Future Considerations without changing their
 underlying terms; creates approved requested-retention schedules and new Future
 Considerations; appends typed history; and automatically cancels other pending
 proposals made stale by the transferred asset identities. A generally illegal
-normal roster may persist a null finite slot only when its acquisition source
-is `trade_execution`; the ownership remains explicit and requires a later
-normal roster move. Exact idempotent replay changes no row.
+normal roster may persist a null finite slot; the ownership remains explicit
+and requires a later normal roster move. Exact idempotent replay changes no
+row.
 
 ---
 

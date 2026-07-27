@@ -431,6 +431,16 @@ A roster move must:
 
 A read-only roster request must not normalize, repair, reseed, or otherwise change the roster.
 
+An authorized Active, Bench, or injured-reserve move that would exceed the
+destination count limit or salary cap may be saved only after the user
+explicitly confirms the general illegality warning. The saved result remains
+illegal until a later explicit action corrects it.
+
+This warning path does not override player eligibility. The backend must still
+reject a missing required contract, Bench AAV above `$4.00`, ineligible
+injured-reserve placement, invalid prospect movement, stale ownership, or an
+unauthorized or cross-league action.
+
 ---
 
 # Part 4 — Salary Cap and Roster Legality
@@ -524,7 +534,8 @@ The exact API shape belongs in `docs/04-technical-specs/API_CONTRACTS.md`.
 
 ## Temporary Illegality
 
-Transactions are allowed to complete when their resulting roster is illegal.
+Transactions and ordinary Active, Bench, or injured-reserve moves are allowed
+to complete when their resulting roster is illegal.
 
 Before completion, the system must:
 

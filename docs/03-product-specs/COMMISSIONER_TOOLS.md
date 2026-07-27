@@ -188,6 +188,14 @@ A commissioner roster correction uses the same slot, position, cap, and ownershi
 
 It does not change a matchup snapshot unless the commissioner uses the separate Matchups correction workflow.
 
+The commissioner roster workspace presents four explicit operations: add
+player, remove player, correct roster, and correct contract. Adding a player
+uses searchable free-agent selection and derives the player's position and
+first available slot from authoritative workspace data. Removal and correction
+first select a team, then expose only that team's eligible players or
+contracts. These interface conveniences do not replace backend validation or
+authorize cross-league records.
+
 ---
 
 ## Contracts and Cap Obligations

@@ -1632,6 +1632,68 @@ removal used to verify the confirmation path was repaired through the normal
 invitation and acceptance workflow; the assignment is restored and the
 plain-language audit entries remain.
 
+M7-15 is complete on staging and ready for Grae's independent browser retest.
+Ordinary
+Active-to-Bench, Bench-to-Active, and eligible injured-reserve moves now use
+one versioned command. A count or cap overage requires explicit confirmation,
+then persists with an authoritative illegal-roster result until a separate
+correcting move. Contract, Bench-AAV, injured-reserve eligibility, prospect,
+ownership, authority, isolation, and stale-version failures remain hard
+rejections.
+
+The release fixture now gives every team 12 active forwards, 6 active defence
+players, 1-4 Bench players, selected injured-reserve examples, and 3 under-19
+Prospects. Fixture v10 assigns normal roster slots from active retained
+SportsDataIO identities and permits unavailable under-19 provider records only
+for Prospect slots; a deterministic synthetic identity is retained solely as
+the local no-provider fallback.
+
+Creating a trade proposal atomically notifies each active receiving-team
+manager, and manager-facing pending-trade lists distinguish proposals
+involving the managed team. Players use compact helmet and auction actions.
+Team cards and matchup score headers fade colour bands toward neutral identity
+areas. Matchup player statistics fit both six-column sides without internal
+horizontal scrolling. Redundant auction team-context pills are removed.
+Commissioner roster corrections use searchable player selection,
+team-scoped choices, automatic position and slot handling, and one clean
+four-operation control.
+
+Release `HL-20260726-6` publishes frontend application commit
+`5cb9f63c1185581eed0687188b9bc25bc885dac2` in Netlify deploy
+`6a66c4f9708a1baaa94b6135` and backend application commit
+`d46104e754ffe56d68fc75baa3ec672a17f80d38` in Render deploy
+`dep-d9jcs0urnols738i11pg`. The verified final reset backup is
+`backup-v1-6a143967ddc394e1bcdf539f813c988a4fe1768b6e986fab28c5561640f17847`;
+fixture build `m7-release-qa-fixture-v10` preserves all `3,154` provider
+catalog players.
+
+Hosted acceptance found and corrected one final persistence defect: a
+confirmed manager-originated overflow reached the application service but was
+rejected by the schema-20 ownership constraint. Additive migration `21`
+permits an explicitly unplaced Active, Bench, or injured-reserve ownership
+while the authoritative service continues to enforce confirmation and every
+hard eligibility rule. The migration followed verified backup
+`backup-v1-8fc3212d1387f55cd5ed5f34ab3a017af7d1026b9c058d39e00f12ee78a66fb8`.
+The one-time, exact-staging-identity migration bridge was removed before the
+final deploy and its confirmation setting was disabled.
+
+The complete frontend gate passes `119/119` tests across 23 files, lint, the
+configured production build, browser-authority verification across 15
+compatibility files and 99 shipped source files, and `git diff --check`. The
+complete backend gate passes `976/976` tests across 234 suites under Node
+`24.14.1`, syntax verification, and `git diff --check`.
+
+Hosted administrator, commissioner, and manager acceptance now passes the
+M7-15 list. All twelve fixture teams have the required real-player roster
+depth with no synthetic active identities. The matchup player table has no
+internal overflow at the checked `727`-pixel viewport. Receiver trade
+notifications, managed-team trade highlighting, player action pills,
+two-/three-colour identity treatments, auction context cleanup, and
+commissioner roster workflows are present. A Bench-to-Active move required
+confirmation, persisted at `19/18` with the red authoritative
+`Illegal roster` flag, and a correcting Active-to-Bench move restored the
+fixture to `18/18`.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 

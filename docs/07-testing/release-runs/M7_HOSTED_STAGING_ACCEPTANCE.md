@@ -684,10 +684,136 @@ No auction, trade, buyout, IR move, trade-block change, league creation,
 team-profile update, roster correction, or fixture reset was submitted.
 Production remained untouched.
 
+## M7-15 Roster Flexibility and Final Review Follow-up
+
+The sixth staging-only remediation was published on `2026-07-26`.
+
+```text
+Release ID:                    HL-20260726-6
+Frontend application commit:   5cb9f63c1185581eed0687188b9bc25bc885dac2
+Frontend Netlify deploy:        6a66c4f9708a1baaa94b6135
+Frontend Netlify build:         6a66c4f9708a1baaa94b6133
+Backend application commit:     d46104e754ffe56d68fc75baa3ec672a17f80d38
+Backend Render deploy:          dep-d9jcs0urnols738i11pg
+Fixture build:                  m7-release-qa-fixture-v10
+```
+
+The exact frontend and backend commits were pushed to their respective
+`origin/staging` branches before publication. The immutable Netlify artifact
+contains the exact frontend build identifier and dedicated Render staging API
+origin, contains no configured localhost origin, processed two redirect rules,
+scanned `404` files, and found no secret matches. Render reported the exact
+backend commit `live`; public liveness returned `live` and readiness returned
+`ready`.
+
+### Automated verification
+
+The complete frontend gate passed:
+
+* `119/119` tests across 23 files;
+* lint;
+* configured production build;
+* browser-authority verification across 15 compatibility files and 99 shipped
+  source files; and
+* `git diff --check`.
+
+The final complete backend gate passed:
+
+* `976/976` tests across 234 suites under Node `24.14.1`;
+* repository syntax verification;
+* provider-identity and protected-reset fixture coverage; and
+* `git diff --check`.
+
+### Fixture resets and corrective acceptance
+
+The first protected reset installed fixture v9 after creating verified backup
+`backup-v1-ba4e8665b6a69db12dc9a916c182a3c264c025ee7823fd14b9bc0bb57c3279dd`.
+The connected hosted check then detected that full roster depth had fallen
+back to synthetic display identities, and that the matchup table exceeded its
+internal scroll container by `13` pixels at a `727`-pixel viewport. Neither
+defect was accepted.
+
+The corrected backend selects active provider-backed NHL identities for
+normal roster slots and may select unavailable under-19 provider records only
+for Prospect slots. The corrected matchup grid no longer allows its team
+colgroup header to distort the twelve player-stat columns and clips compact
+cell content inside the fixed grid.
+
+The final protected reset:
+
+* created verified backup
+  `backup-v1-6a143967ddc394e1bcdf539f813c988a4fe1768b6e986fab28c5561640f17847`;
+* installed fixture build `m7-release-qa-fixture-v10`;
+* preserved all `3,154` provider-catalog players; and
+* invalidated all prior staging sessions.
+
+### Schema 21 correction
+
+The first final hosted roster-move check proved ordinary Active-to-Bench and
+Bench-to-Active moves worked, but accepting the warning for a `19/18` Active
+roster returned a safe generic failure and left the roster unchanged.
+Diagnosis showed that the service correctly accepted `confirmedIllegal=true`,
+while the schema-20 ownership constraint permitted an unplaced overflow only
+when its original acquisition type was an auction or trade.
+
+Additive migration `21` removes that acquisition-type restriction for a
+temporarily unplaced Active, Bench, or injured-reserve ownership. The
+application service remains authoritative for warning confirmation and still
+hard-rejects invalid contracts, Bench AAV, injured-reserve eligibility,
+Prospect transitions, stale versions, authority, and cross-league scope.
+
+The complete backend suite passed `976/976` tests across 234 suites under the
+pinned Node `24.14.1` runtime. The Render candidate then failed closed with
+`MIGRATION_DATABASE_BEHIND`, leaving the schema-20 runtime live. An
+exact-staging-identity, one-time bridge created and verified:
+
+```text
+Backup ID:
+backup-v1-8fc3212d1387f55cd5ed5f34ab3a017af7d1026b9c058d39e00f12ee78a66fb8
+
+Manifest checksum:
+d6c729cc9d34efd68018b32e463109967efbde362e33d80cf58d3c48f73c9305
+```
+
+It then applied only migration `21`, whose source SHA-256 is
+`41d6db004e5b10f890197e4c32f88a97255e3ddc4f50748a51a793ce1a9dbe99`.
+The bridge was removed and its confirmation environment value disabled before
+the final backend application commit
+`d46104e754ffe56d68fc75baa3ec672a17f80d38` reached `live` in Render deploy
+`dep-d9jcs0urnols738i11pg`. Public liveness returned `live` and readiness
+returned `ready`.
+
+### Final hosted browser acceptance
+
+The connected administrator, commissioner, and manager sessions confirmed:
+
+* all twelve Alpha/Beta teams have 12 active forwards, 6 active defence
+  players, 1-4 Bench players, the selected injured-reserve examples, and
+  three Prospects, with no synthetic active player names;
+* receiver trade notifications are present, pending trades involving the
+  managed team carry the managed-team highlight, and unrelated trades do not;
+* Players uses the recognizable hockey-helmet favourite action and compact
+  start-auction action, the Favourites filter has no duplicate selected-player
+  panel, and the auction form receives the selected player;
+* team and matchup identity gradients preserve the colour bands while fading
+  toward a readable neutral centre;
+* the matchup table fits both teams' Player, GP, G, A, PTS, and FP columns
+  without internal overflow at a `727`-pixel viewport;
+* auction forms contain no redundant `Starting for` or `Bidding for` box;
+* Commissioner Roster Operations has four clean operation tabs, searchable
+  provider-backed player choices, team-scoped roster choices, and automatic
+  position/slot handling; and
+* moving Adam Engstrom from Bench to a full Active roster required explicit
+  confirmation, persisted at `19/18` and `D 7/6`, and displayed the red
+  authoritative `Illegal roster` flag. Moving him back to Bench restored
+  `18/18`, `D 6/6`, and the original two-player Bench.
+
+The hosted acceptance mutation was fully reversed. Fixture v10 remains in its
+intended legal state.
+
 ## Remaining Gates
 
-* Grae's independent browser retest, including native pointer drag, and
-  staging acceptance;
+* Grae's independent browser retest, including native pointer drag;
 * staging offsite object-storage upload and encrypted clean restore after the
   staging-only provider target is reviewed; and
 * separate explicit production authorization and release execution.

@@ -951,6 +951,7 @@ fixture source only when SportsDataIO data is absent.
 | `PUT /api/v1/leagues/:leagueId/teams/:teamId/roster-display-order` | Authorized team manager or current commissioner | Save an optimistic, versioned F/D presentation order without changing authoritative ownership slots |
 | `PUT /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/trade-block` | Authorized team manager or current commissioner | Set or clear the versioned informational trade-block flag |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/move-to-ir` | Authorized team manager or current commissioner | Move an Active provider-eligible player to the first open injured-reserve slot |
+| `POST /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/move` | Authorized team manager or current commissioner | Move one owned player to `Active`, `Bench`, or `Injured Reserve` with optimistic ownership versioning and explicit illegal-result confirmation |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | League member | Return authoritative legality reasons without writing |
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Authorized team manager or commissioner correction workflow | Move one owned player between approved groups or slots |
 | `GET /api/v1/leagues/:leagueId/commissioner/roster-workspace` | Current commissioner or platform administrator with active membership | Read-only current teams, seasons, roster, free agents, contracts, cap projections, and provider health |
@@ -968,9 +969,28 @@ fixture source only when SportsDataIO data is absent.
 
 Transaction-created roster illegality returns a warning in the successful command response. It is not represented as a false failed transaction when the approved feature permits completion.
 
+The general roster-move request body is exact:
+
+```json
+{
+  "confirmedIllegal": false,
+  "destinationCategory": "Bench",
+  "expectedVersion": 7
+}
+```
+
+When the player is eligible but the projected count or cap result is illegal,
+the unconfirmed request returns `409` with code
+`ROSTER_ILLEGAL_CONFIRMATION_REQUIRED`, the projected legality details, and no
+write. Repeating the same command with `confirmedIllegal: true` persists the
+move. Contract, Bench-AAV, injured-reserve eligibility, ownership, authority,
+league isolation, malformed input, and stale-version failures remain hard
+rejections.
+
 The authenticated team workspace remains a read-only projection. Its salary-cap
 usage is the authoritative active-player net AAV plus retained salary and
-buyout penalties. The roster-display-order command accepts the exact current
+buyout penalties, and its `legality` object is the authoritative current roster
+result. The roster-display-order command accepts the exact current
 Active F/D ownership set with ownership versions and an `If-Match`-equivalent
 body version. It stores presentation order separately and never changes roster
 category, slot, contract, cap, matchup lock, or ownership authority.
@@ -1170,6 +1190,12 @@ There is no selection undo endpoint.
 | `POST /api/v1/notifications/read-all` | Authenticated | Mark the caller's current notifications read |
 
 Listing notifications is read-only.
+
+Creating a pending trade proposal writes the proposal, proposal history,
+outbox evidence, and one `trade_proposal_received` in-app notification for
+each active receiving-team manager other than the actor in the same database
+transaction. A late notification failure rolls back the proposal rather than
+leaving a pending trade without receiver notification.
 
 Matchup and standings records remain outside League Activity.
 

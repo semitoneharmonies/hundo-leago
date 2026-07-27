@@ -11,136 +11,177 @@
 ## Work Plan ID
 
 ```text
-M7-14
+M7-15
 ```
 
 ## Work Item
 
 ```text
-Final staged product-review batch for team identity, roster actions, player
-favourites and search, matchup presentation, and commissioner administration
+Staging review follow-up for roster flexibility, fixture depth, transaction
+notifications, commissioner correction workflows, and final visual polish
 ```
 
 ## Authority and Boundary
 
 Grae authorized this coordinated frontend and backend work on `2026-07-26`
 after completing a screenshot-supported staging review and directing that all
-items in that review be addressed before the next manual test.
+items be addressed and published to the existing staging site before the next
+manual test.
 
-This plan permits changes in the canonical frontend repository and the sibling
-backend repository, a forward-only SQLite migration, disposable local browser
-testing, separate frontend and backend commits, and publication to the existing
-dedicated staging services only after the full local gates pass and both
-staging targets are positively re-identified.
+This plan permits changes in the canonical frontend repository and sibling
+backend repository, a protected staging backup and fixture reset, separate
+frontend and backend commits, and publication to the existing staging services
+after all local gates pass.
 
-It does not authorize production deployment, production data or configuration
-changes, a staging fixture reset, arbitrary member deletion, changes to league
-scoring or roster rules, or unrelated redesigns.
+This plan does not authorize production deployment, production data or
+configuration changes, force-pushing, unrelated redesigns, or weakening
+identity, ownership, contract, bench-AAV, injured-reserve, or prospect
+eligibility rules.
 
 ## Approved Scope
 
-1. Support either two or three team colours. Two colours render as equal top
-   and bottom bands; three colours use the approved three-band pattern.
-   Preserve readable team names and logos with a consistent contrast treatment
-   on directory cards and roster identity headers.
-2. Simplify roster ordering to the drag handle while preserving an accessible
-   keyboard path. Add compact expanding row actions for whole-contract buyout,
-   eligible Active-to-IR movement, trade-composer handoff, and the approved
-   informational trade block.
-3. Persist trade-block state authoritatively in SQLite, enforce league and team
-   authority in the backend, clear stale flags when ownership changes, expose
-   the state through stable API contracts, and display it without affecting
-   transaction or approval rules.
-4. Replace Players-page comparison controls with colour-changing helmet
-   favourite controls, remove the duplicated selected-player table, and add a
-   selectable player-name autocomplete without introducing hidden writes.
-5. Present matchup week labels as human-readable week numbers and date ranges,
-   add games played to both player-score tables, and apply each team's colour
-   bands to the matchup score headers.
-6. Replace commissioner dashboard manager-empty states with league-level
-   auction, trade, membership, and rotating matchup information. Add
-   commissioner invitation and member-removal controls with explicit
-   confirmations and understandable errors.
-7. Add a platform-administrator section to league selection for creating a
-   league and assigning its commissioner through existing protected endpoints.
-8. Add focused backend and frontend coverage, update canonical product/API/data
-   documentation, and record local and hosted staging acceptance evidence.
+1. Create an in-app notification for each active receiving-team manager when a
+   trade proposal is created, and visually highlight pending trades involving
+   the signed-in manager's team.
+2. Replace the Players-page favourite symbol with a recognizable hockey helmet
+   and present favourite and start-auction actions as compact icon buttons that
+   expand to labelled pills on hover or keyboard focus.
+3. Improve team-directory and matchup-header readability by fading team colour
+   stripes toward a neutral dark identity area while keeping team colours
+   visible at the outer edges.
+4. Fit both sides of matchup player statistics without horizontal scrolling or
+   clipping.
+5. Remove redundant "Starting for" and "Bidding for" team labels from auctions
+   while preserving backend-authoritative team context.
+6. Support Active-to-Bench and Bench-to-Active moves by row action and drag and
+   drop. Active, Bench, IR, and salary-cap overages may persist after an
+   explicit warning and must produce an authoritative red illegal-roster flag
+   until corrected. Preserve all other roster eligibility rules.
+7. Expand the release-QA fixture so every team has 12 active forwards, 6 active
+   defence players, 1-4 bench players, selected IR players, and several
+   under-19 unsigned or ELC prospects.
+8. Present team-colour inputs as compact two- or three-swatch controls.
+9. Simplify commissioner roster operations: searchable free-agent selection,
+   team-scoped player selection for removal and corrections, automatic
+   position/slot handling, and a clean four-operation tab grid.
+10. Add focused backend and frontend coverage, update canonical rule,
+    product, API, fixture, and release documentation, and record local and
+    hosted staging acceptance evidence.
 
-## Data and Migration Safety
+## Roster Rule Reconciliation
 
-The backend migration must be forward-only and additive. Existing two-colour
-teams remain valid with no tertiary colour. Existing roster ownership,
-contracts, memberships, and league records must be preserved. Trade-block rows
-must reference stable ownership/team/league identifiers and be removed when the
-underlying ownership is transferred, released, or otherwise ceases to be held
-by the flagged team.
+This plan changes general legality handling, not player eligibility. A move may
+temporarily create too many Active, Bench, or IR players, or exceed the salary
+cap, only after the manager confirms the warning. The move then persists and
+the backend returns the authoritative illegal-roster state.
 
-Before any staging backend publication, create and verify the standard staging
-database backup and confirm migration readiness against a disposable database.
-No production database may be opened or modified.
+The backend must continue to reject:
 
-## Required Verification
+- unknown or cross-league player ownership;
+- actions by an unauthorized user;
+- moves without the required contract;
+- Bench placement above the approved AAV ceiling;
+- IR placement without authoritative IR eligibility;
+- invalid prospect placement or activation;
+- stale writes and malformed requests.
 
-* Focused backend tests for team-profile third-colour validation and
-  persistence; trade-block authorization, lifecycle cleanup, isolation, and
-  read shape; and the unchanged invitation, membership, league creation, and
-  commissioner-assignment protections.
-* Focused frontend tests for two/three-colour identity treatments, roster
-  action availability and handoffs, helmet favourites and autocomplete,
-  matchup labels/GP/colour headers, commissioner dashboard rotation and member
-  controls, and administrator league creation/commissioner assignment.
-* Complete backend test and syntax gates.
-* Complete frontend test, lint, production-build, browser-authority, and
-  `git diff --check` gates.
-* Disposable local desktop and narrow-layout browser acceptance for manager,
-  commissioner, and platform-administrator roles.
-* Separate backend and frontend commits followed by staging-only publication,
-  migration verification, health checks, and hosted role acceptance.
+## Data and Deployment Safety
 
-## Stop Conditions
+The fixture change requires a protected reset of the dedicated staging
+database. Before the reset:
 
-Stop before any production action. Stop if a requested UI shortcut would bypass
-backend authorization, execute an irreversible action without confirmation,
-weaken league isolation, or conflict with an approved league rule. Stop a
-hosted write if the target cannot be positively identified as the dedicated
-staging service or if a verified database backup is unavailable.
+1. Positively identify the staging Render service and staging database.
+2. Create and verify the standard staging backup.
+3. Verify fixture apply and verification commands on a disposable local
+   database.
+4. Publish and migrate only the staging backend.
+5. Reset and verify only the staging fixture.
 
-## Completion Gate
+The reset intentionally replaces disposable staging fixture activity,
+invitations, transactions, and account state. Production must not be opened or
+modified.
 
-M7-14 is complete only when every screenshot-review item has focused automated
-evidence, both full local gates pass, the exact backend and frontend commits are
-published to their dedicated staging services, migration and health checks
-pass, manager/commissioner/administrator hosted acceptance passes, canonical
-evidence is current, and production remains untouched.
+## Verification Gates
+
+### Backend
+
+```text
+npm run lint
+npm test
+npm run verify:release-qa-fixture
+npm run verify:migration-readiness
+npm run verify:staging-backup
+```
+
+### Frontend
+
+```text
+npm run lint
+npm test -- --run
+npm run build
+```
+
+Focused browser acceptance must cover:
+
+- receiver trade notification and manager trade highlighting;
+- player action pills;
+- team and matchup gradients;
+- matchup width without horizontal scrolling;
+- auctions without redundant team pills;
+- Active/Bench moves, confirmation, persistence, and illegal-roster flag;
+- compact team-colour inputs;
+- commissioner add/remove/correct-roster/correct-contract workflows;
+- complete fixture roster and prospect depth.
+
+## Rollback
+
+- Frontend: redeploy the previous known-good Netlify staging release.
+- Backend: redeploy the previous known-good Render staging build.
+- Data: restore the verified staging backup if fixture apply or hosted
+  verification fails.
+- Source: revert only the separate M7-15 commits; do not rewrite shared history.
+
+## Completion Conditions
+
+This plan is complete only when:
+
+1. all approved items are implemented;
+2. focused and full local gates pass;
+3. documentation matches shipped behaviour;
+4. frontend and backend commits are separate and scoped;
+5. both staging branches are pushed;
+6. the staging database is backed up, reset, and verified;
+7. both hosted services are healthy;
+8. focused hosted acceptance passes; and
+9. no known release-blocking defect remains in this batch.
 
 ## Completion Evidence
 
-M7-14 completed on staging on `2026-07-26`.
+M7-15 completed on staging on `2026-07-26`.
 
-The implementation was published as frontend application commit
-`ae7cb7d0dc5d9cba14b8f5d8b080aa3eb932eeb9` in Netlify deploy
-`6a669ac2e7798097bd3f111c` and backend application commit
-`9b1b89aebcd79ced9343eb1cde68543fa80023f3` in Render deploy
-`dep-d9j98evaqgkc73b587mg`. The backend migrated from schema `19` to schema
-`20` only after verified staging backup
-`backup-v1-02af141187ca38d6746b3d85bd4351cc045639c2755dd5a22af639c7a0a536ed`
-was created. Migration-ledger, SQLite integrity, foreign-key, liveness, and
-readiness checks passed.
+- Frontend application commit
+  `5cb9f63c1185581eed0687188b9bc25bc885dac2` is published in Netlify
+  deploy `6a66c4f9708a1baaa94b6135`.
+- Backend application commit
+  `d46104e754ffe56d68fc75baa3ec672a17f80d38` is published in Render
+  deploy `dep-d9jcs0urnols738i11pg`.
+- The dedicated staging database is at schema `21`. Migration `21` followed
+  verified backup
+  `backup-v1-8fc3212d1387f55cd5ed5f34ab3a017af7d1026b9c058d39e00f12ee78a66fb8`.
+- Fixture `m7-release-qa-fixture-v10` remains installed with all `3,154`
+  provider-catalog players and the required roster, Bench, injured-reserve,
+  and Prospect depth.
+- The complete frontend gate passed `119/119` tests across 23 files. The
+  complete backend gate passed `976/976` tests across 234 suites under Node
+  `24.14.1`.
+- Hosted administrator, commissioner, and manager acceptance passed for every
+  item listed in this plan. A confirmed Bench-to-Active overage persisted at
+  `19/18` with the red authoritative illegal-roster flag, and the correcting
+  Active-to-Bench move restored `18/18`.
+- Public liveness and readiness both pass. Production branches, services,
+  data, configuration, jobs, and traffic were not changed.
 
-The complete frontend gate passed `118/118` tests across 23 files, lint,
-configured production build, browser-authority verification across 15
-compatibility files and 99 shipped source files, and `git diff --check`. The
-complete backend gate passed `974/974` tests across 234 suites under Node
-`24.14.1`, syntax verification, and `git diff --check`.
-
-Hosted administrator, commissioner, and manager acceptance confirmed the
-two/three-colour identity treatments, roster actions and handoffs, helmet
-favourites and player autocomplete, matchup presentation, commissioner
-workspace, member invitation and removal controls, administrator league
-creation controls, and actionable invitation notifications. A temporary
-staging manager-membership removal performed during the confirmation check was
-repaired through the normal invitation and acceptance workflow; the Alpha
-Wolves manager assignment is restored and the resulting plain-language
-activity entries intentionally remain.
-
-No staging fixture reset occurred. Production remained untouched.
+The connected browser cannot synthesize a native pointer drag gesture from an
+HTML drag handle. Focused automated drag coverage passes, and native pointer
+drag remains a clearly recorded item for Grae's independent browser retest;
+it is not a known application failure in this batch.

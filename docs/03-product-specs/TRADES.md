@@ -785,9 +785,16 @@ The initial release keeps a simple league-visible trade block where a manager ma
 
 ## Notifications
 
-The initial release uses in-app proposal status and activity.
+Creating a proposal atomically creates an in-app notification for every active
+manager of the receiving team other than the actor. The notification links the
+recipient to the trade feature and does not reveal the proposal to a user
+outside the league.
 
-It does not require separate email or push notifications for new, accepted, rejected, cancelled, expired, or countered proposals.
+The trade dashboard visually distinguishes pending proposals involving the
+signed-in manager's team. This presentation is not an authorization boundary.
+
+The initial release does not require separate email or push notifications for
+new, accepted, rejected, cancelled, expired, or countered proposals.
 
 ---
 
