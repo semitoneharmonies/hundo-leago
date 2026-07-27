@@ -1749,6 +1749,23 @@ stripes, hockey-stick controls, and matchup rotation motion. No proposal was
 submitted or resolved during acceptance. The backend, migration state,
 fixture, database, Render service, and production remain untouched.
 
+M7-17 trade-preview presentation is published as frontend commit
+`6ee9db750b2060f148fbd67b64278cc333bac53d` in ready Netlify staging
+deploy `6a66f059a77bc9c3d416ccb3`. A requested-retention asset now pairs
+with its included player contract by stable contract ID and appears in one
+combined card with player name, contract AAV and term, roster category, and
+retained AAV. Draft picks, existing retention obligations, and independent
+assets remain separate. Hosted acceptance on the accepted
+**Riddles ↔ The Boobies** proposal confirmed Adam Pelech's contract and
+`$1.00` requested retention share one card while the 2028-29 round-three pick
+remains separate.
+
+The M7-17 frontend gates pass: `125/125` tests across 23 files, the focused
+`11/11` transaction suite, lint, configured staging build, and
+`git diff --check`. The API contract, trade records, backend, database,
+fixture, Render service, email configuration, and production remain
+untouched.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 

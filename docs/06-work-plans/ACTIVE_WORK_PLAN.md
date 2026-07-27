@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`IN PROGRESS - STAGING ONLY`
+`COMPLETE - STAGING ONLY`
 
 ## Work Plan ID
 
@@ -74,4 +74,18 @@ This plan is complete only when:
 
 ## Completion Evidence
 
-Pending staging publication and hosted acceptance.
+M7-17 completed on staging on `2026-07-26`.
+
+- Frontend application and product-specification commit
+  `6ee9db750b2060f148fbd67b64278cc333bac53d` is published in ready
+  Netlify staging deploy `6a66f059a77bc9c3d416ccb3`.
+- The complete frontend gate passed `125/125` tests across 23 files. The
+  focused transaction suite passed `11/11`; lint, configured staging build,
+  and `git diff --check` also passed.
+- Hosted commissioner acceptance opened the accepted
+  **Riddles ↔ The Boobies** proposal. Adam Pelech's contract and requested
+  `$1.00` retention appeared in one **Contract + retention** card, while the
+  included 2028-29 round-three draft pick remained a separate card.
+- The proposal records and API contract were unchanged. No trade, backend,
+  database, fixture, Render service, email configuration, or production state
+  changed.
