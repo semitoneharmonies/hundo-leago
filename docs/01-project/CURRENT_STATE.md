@@ -14,7 +14,7 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-07-26**
+Last reviewed: **2026-07-27**
 
 ---
 
@@ -1765,6 +1765,35 @@ The M7-17 frontend gates pass: `125/125` tests across 23 files, the focused
 `git diff --check`. The API contract, trade records, backend, database,
 fixture, Render service, email configuration, and production remain
 untouched.
+
+M7-18 completed the broad staging hardening and regression pass. It corrected
+inherited platform-administrator competition authority, replaced technical
+commissioner previews with user-facing presentation, removed client diagnostic
+payload logging, added cross-environment frontend configuration guards, and
+hardened public response headers. Frontend Netlify deploy
+`6a6713c190a1d98698ab558b` and backend Render deploy
+`dep-d9jhfhsm0tmc73b0jjn0` passed the recorded local and hosted gates. The full
+record is `docs/07-testing/release-runs/M7_HARDENING_REGRESSION_2026-07-27.md`.
+
+M7-19 frontend release-readiness hardening is published as frontend commit
+`d16ade0` in ready Netlify staging deploy
+`6a676a67f354847de9aa60ac`. Another team's roster now identifies
+commissioner-action mode for commissioners and inherited platform
+administrators while a manager's own roster remains in ordinary manager mode.
+Player and roster sortable headers expose their current direction through
+`aria-sort`. Shared horizontally scrollable player, roster, matchup,
+standings, and standings-preview tables are named keyboard-focusable regions,
+and the auction dashboard uses correct singular and plural bidder copy.
+
+The M7-19 frontend gates pass: lint, `129/129` tests across 23 files,
+staging-configured production build, browser-authority verification across 15
+compatibility files and 100 shipped source files, dependency-tree validation,
+and `git diff --check`. Hosted acceptance passed at 390- and 1280-pixel
+viewports for administrator and manager roster modes, player and roster sort
+state, table keyboard access, matchup and standings regions, dashboard copy,
+and whole-page overflow. Backend liveness returned `200`, and the inspected
+Render window contained no application errors or `5xx` requests. The backend,
+database, fixture, email, provider, jobs, and production remain untouched.
 
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.

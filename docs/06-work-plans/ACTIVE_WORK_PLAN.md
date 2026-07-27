@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - STAGING ONLY`
+`COMPLETE - STAGING ONLY`
 
 ## Work Plan ID
 
@@ -108,6 +108,31 @@ This plan is complete only when:
    presentation;
 8. hosted player and roster tables expose sort state and keyboard scroll
    access at narrow width;
-9. the hosted console remains free of application errors; and
+9. no hosted route renders an application error state and the inspected
+   backend log window contains no application error or `5xx` request; and
 10. production, backend state, fixtures, provider, email, and jobs remain
     untouched.
+
+## Completion Evidence
+
+- Frontend commit `d16ade0` was pushed to `staging`.
+- Netlify deploy `6a676a67f354847de9aa60ac` is ready on
+  `https://hundoleago-staging.netlify.app`.
+- Netlify processed the redirect and header rules without errors, uploaded the
+  changed Vite bundle, and found no secret-scan match across `413` files.
+- Frontend lint, all `129` tests across `23` files, the staging-configured
+  production build, the M3 browser-authority verifier across `15`
+  compatibility files and `100` shipped source files, dependency-tree
+  validation, and whitespace checks passed.
+- The backend safety baseline passed syntax and dependency checks. Its complete
+  local suite retained only the known workstation runtime assertion:
+  Node `24.11.1` installed versus `24.14.1` pinned. No backend file or service
+  was changed.
+- Hosted checks passed for administrator and manager roster modes, player and
+  roster sort direction, keyboard-focusable table regions, matchup and
+  standings table regions, singular bidder copy, and no whole-page overflow at
+  `390` and `1280` pixels.
+- Backend liveness returned `200`; the inspected Render window contained no
+  application error and no `5xx` request.
+- The detailed run record is
+  `docs/07-testing/release-runs/M7_FRONTEND_ACCESSIBILITY_HARDENING_2026-07-27.md`.
