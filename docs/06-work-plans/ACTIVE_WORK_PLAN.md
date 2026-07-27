@@ -180,6 +180,12 @@ M7-15 completed on staging on `2026-07-26`.
   Active-to-Bench move restored `18/18`.
 - Public liveness and readiness both pass. Production branches, services,
   data, configuration, jobs, and traffic were not changed.
+- A final identity clarification is published as frontend commit
+  `9044974306badd8df192880b5f7b229397d8a685` in ready Netlify deploy
+  `6a66d52d249ebdc854dbf6f1`. Hosted visual acceptance confirmed the
+  dark-blue fade is limited to the name/logo identity area on the team index,
+  dashboard team panel, matchup score headers, and roster header, and that the
+  Players favourite action uses a front-facing hockey helmet.
 
 The connected browser cannot synthesize a native pointer drag gesture from an
 HTML drag handle. Focused automated drag coverage passes, and native pointer

@@ -811,6 +811,36 @@ The connected administrator, commissioner, and manager sessions confirmed:
 The hosted acceptance mutation was fully reversed. Fixture v10 remains in its
 intended legal state.
 
+### Final identity-fade and helmet clarification
+
+Grae clarified that the configured horizontal stripes must remain unchanged
+except where they pass behind the team identity. Frontend commit
+`9044974306badd8df192880b5f7b229397d8a685` therefore fades the stripes to the
+standard dark-blue background only beneath the team name/logo area on:
+
+* the team index;
+* the dashboard league-teams panel;
+* both matchup score headers; and
+* the roster identity header.
+
+The dashboard team links now receive their authoritative two- or three-colour
+CSS variables. The Players favourite action also replaces the prior abstract
+symbol with a symmetrical front-facing hockey helmet while preserving the
+compact expanding action.
+
+The full frontend suite passed `119/119` tests across 23 files, lint passed,
+the configured staging production build passed, and `git diff --check`
+passed. Focused hosted manager acceptance visually confirmed all five affected
+surfaces.
+
+The first CLI upload, deploy `6a66d482be43e385d7023b7a`, rebuilt with local
+default public variables and correctly failed closed before sending any league
+request. It changed no backend or league data. The verified prebuilt artifact
+was then uploaded with the rebuild explicitly disabled. Netlify deploy
+`6a66d52d249ebdc854dbf6f1` is `ready`, embeds exact application build ID
+`9044974306badd8df192880b5f7b229397d8a685`, and contains only the dedicated
+Render staging origins in its configured public variables.
+
 ## Remaining Gates
 
 * Grae's independent browser retest, including native pointer drag;

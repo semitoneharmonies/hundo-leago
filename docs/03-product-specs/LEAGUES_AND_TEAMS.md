@@ -646,6 +646,13 @@ The selected colours do not need to satisfy contrast or league-uniqueness
 rules. Team-name and logo treatments must add a neutral readability layer so
 the identity remains legible regardless of the selected colours.
 
+The horizontal stripe pattern remains visible across the containing team
+surface. Where the stripes pass behind a team name or logo, they fade toward
+the standard dark-blue application background and return to the configured
+team colours outside that identity area. This treatment applies consistently
+to the team index, the dashboard league-teams panel, matchup score headers,
+and the roster identity header.
+
 The technical specification must define the stored colour representation.
 
 ---

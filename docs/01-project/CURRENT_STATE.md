@@ -1694,6 +1694,16 @@ confirmation, persisted at `19/18` with the red authoritative
 `Illegal roster` flag, and a correcting Active-to-Bench move restored the
 fixture to `18/18`.
 
+The final identity clarification is published as frontend commit
+`9044974306badd8df192880b5f7b229397d8a685` in ready Netlify deploy
+`6a66d52d249ebdc854dbf6f1`. Team stripes now fade to the standard dark-blue
+background only beneath the name/logo identity area on the team index,
+dashboard team panel, matchup score headers, and roster header. The dashboard
+team panel now receives each team's configured two- or three-colour stripe
+variables. The Players favourite action uses a symmetrical front-facing hockey
+helmet. Hosted manager acceptance visually confirmed all five affected
+surfaces.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 
