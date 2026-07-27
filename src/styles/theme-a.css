@@ -4525,22 +4525,24 @@ textarea {
 
 .hl-matchup-table th,
 .hl-matchup-table td {
-  padding-inline: clamp(4px, 0.7vw, 10px);
-}
-
-.hl-matchup-table th:nth-child(1),
-.hl-matchup-table td:nth-child(1),
-.hl-matchup-table th:nth-child(7),
-.hl-matchup-table td:nth-child(7) {
-  width: 26%;
+  padding-inline: clamp(2px, 0.5vw, 8px);
   overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: clamp(0.46rem, 1vw, 0.68rem);
+  text-overflow: clip;
   white-space: nowrap;
 }
 
-.hl-matchup-table th:not(:nth-child(1)):not(:nth-child(7)),
-.hl-matchup-table td:not(:nth-child(1)):not(:nth-child(7)) {
-  width: 4.8%;
+.hl-matchup-table thead tr:nth-child(2) > th:nth-child(1),
+.hl-matchup-table thead tr:nth-child(2) > th:nth-child(7),
+.hl-matchup-table tbody tr > th:nth-child(1),
+.hl-matchup-table tbody tr > th:nth-child(7) {
+  width: 19%;
+  text-overflow: ellipsis;
+}
+
+.hl-matchup-table thead tr:nth-child(2) > th:not(:nth-child(1)):not(:nth-child(7)),
+.hl-matchup-table tbody tr > td {
+  width: 6.2%;
 }
 
 .hl-matchup-table th:nth-child(6),
