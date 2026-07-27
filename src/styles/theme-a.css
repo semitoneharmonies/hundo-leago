@@ -4527,7 +4527,7 @@ textarea {
 .hl-matchup-table td {
   padding-inline: clamp(2px, 0.5vw, 8px);
   overflow: hidden;
-  font-size: clamp(0.46rem, 1vw, 0.68rem);
+  font-size: clamp(0.52rem, 1.2vw, 0.68rem);
   text-overflow: clip;
   white-space: nowrap;
 }
