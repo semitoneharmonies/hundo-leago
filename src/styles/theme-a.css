@@ -4287,6 +4287,18 @@ textarea {
   color: #a9b9d1;
 }
 
+.hl-teams-index__managed-badge.hl-status-badge {
+  border: 2px solid #fff;
+  background: #f8fafc;
+  color: #07101f;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  box-shadow:
+    0 0 0 2px rgb(2 6 23 / 78%),
+    0 7px 18px rgb(2 6 23 / 58%);
+  text-shadow: none;
+}
+
 .hl-roster-hero--striped {
   background: linear-gradient(180deg,
     color-mix(in srgb, var(--team-primary) 86%, #020617) 0 50%,
@@ -4545,6 +4557,36 @@ textarea {
 .hl-player-suggestions span {
   color: var(--hl-muted-foreground);
   font-size: 0.55rem;
+}
+
+.hl-player-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--hl-border);
+  border-radius: var(--hl-radius-md);
+  background: color-mix(in srgb, var(--hl-panel) 88%, #020617);
+}
+
+.hl-player-pagination p,
+.hl-player-pagination span {
+  margin: 0;
+  color: var(--hl-muted-foreground);
+  font-size: 0.62rem;
+}
+
+@media (max-width: 640px) {
+  .hl-player-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hl-player-pagination .hl-button {
+    width: 100%;
+  }
 }
 
 .hl-matchup-score > .hl-matchup-score__team {

@@ -1,51 +1,65 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { leaguePlayerSearchQuery } from "./playerQueries.js";
+import {
+  leaguePlayerInfiniteQuery,
+  leaguePlayerSearchQuery,
+} from "./playerQueries.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 
-describe("complete league player catalog query", () => {
-  it("loads a provider catalog larger than 2,500 records", async () => {
-    let page = 0;
-    const request = vi.fn(async () => {
-      const current = page;
-      page += 1;
-      return {
-        data: [{ id: `player-${current}` }],
-        page: {
-          nextCursor: current < 31 ? `cursor-${current + 1}` : null,
-          hasMore: current < 31,
-        },
-      };
+describe("league player catalog queries", () => {
+  it("loads one 100-player page at a time in fantasy-points order", async () => {
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: [{ id: "first-player" }],
+        page: { nextCursor: "next-player", hasMore: true },
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: "second-player" }],
+        page: { nextCursor: null, hasMore: false },
+      });
+    const query = leaguePlayerInfiniteQuery({ request }, leagueId);
+
+    const first = await query.queryFn({
+      pageParam: null,
+      signal: new AbortController().signal,
     });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][0]).toContain("limit=100");
+    expect(request.mock.calls[0][0]).toContain("sort=fantasyPoints");
+    expect(query.getNextPageParam(first)).toBe("next-player");
+
+    const second = await query.queryFn({
+      pageParam: query.getNextPageParam(first),
+      signal: new AbortController().signal,
+    });
+
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(request.mock.calls[1][0]).toContain("cursor=next-player");
+    expect(query.getNextPageParam(second)).toBeUndefined();
+  });
+
+  it("keeps autocomplete searches to a single small page", async () => {
+    const request = vi.fn(async () => ({
+      data: [{ id: "matching-player" }],
+      page: { nextCursor: "not-followed", hasMore: true },
+    }));
     const query = leaguePlayerSearchQuery(
       { request },
       leagueId,
-      { fetchAll: true }
+      { query: "kuch", limit: 8, sort: "name" }
     );
 
     const result = await query.queryFn({
       signal: new AbortController().signal,
     });
-    expect(request).toHaveBeenCalledTimes(32);
-    expect(result.players).toHaveLength(32);
-    expect(result.page).toEqual({ nextCursor: null, hasMore: false });
-  });
 
-  it("still fails closed on an unexpectedly unbounded catalog", async () => {
-    const request = vi.fn(async () => ({
-      data: [],
-      page: { nextCursor: "another-page", hasMore: true },
-    }));
-    const query = leaguePlayerSearchQuery(
-      { request },
-      leagueId,
-      { fetchAll: true }
-    );
-
-    await expect(
-      query.queryFn({ signal: new AbortController().signal })
-    ).rejects.toThrow(/exceeds the supported page limit/i);
-    expect(request).toHaveBeenCalledTimes(101);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][0]).toContain("query=kuch");
+    expect(request.mock.calls[0][0]).toContain("limit=8");
+    expect(request.mock.calls[0][0]).toContain("sort=name");
+    expect(result.page.hasMore).toBe(true);
   });
 });

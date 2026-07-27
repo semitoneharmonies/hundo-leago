@@ -204,7 +204,7 @@ describe("authenticated player pages", () => {
           parsed.searchParams.get("query") === "alex"
         );
       })
-    ).toBe(false);
+    ).toBe(true);
     expect(screen.queryByRole("link", { name: "Blair Example" })).toBeNull();
     const playerRow = screen.getByRole("row", { name: /Alex Example/ });
     expect(within(playerRow).getByText("VAN")).toBeInTheDocument();

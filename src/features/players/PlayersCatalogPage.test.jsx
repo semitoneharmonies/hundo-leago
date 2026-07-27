@@ -214,7 +214,17 @@ describe("league player catalog", () => {
       }
     );
 
-    const table = await screen.findByRole("table");
+    let table = await screen.findByRole("table");
+    const playerRequests = fetchImpl.mock.calls
+      .map(([url]) => new URL(url))
+      .filter(
+        ({ pathname }) =>
+          pathname === `/api/v1/leagues/${leagueId}/players`
+      );
+    expect(playerRequests[0].searchParams.get("limit")).toBe("100");
+    expect(playerRequests[0].searchParams.get("sort")).toBe(
+      "fantasyPoints"
+    );
     expect(
       within(table).getByRole("button", { name: "Sort by FPG" })
     ).toBeInTheDocument();
@@ -238,11 +248,14 @@ describe("league player catalog", () => {
     });
     await view.user.click(within(suggestion).getByRole("button"));
     expect(nameSearch).toHaveValue("Free Agent");
+    const searchedTable = await screen.findByRole("table");
     expect(
-      within(table).getByRole("rowheader", { name: "Free Agent" })
+      within(searchedTable).getByRole("rowheader", { name: "Free Agent" })
     ).toBeInTheDocument();
     await view.user.clear(nameSearch);
     await view.user.click(screen.getByRole("button", { name: "Search" }));
+    await screen.findByRole("rowheader", { name: "Owned Player" });
+    table = screen.getByRole("table");
 
     await view.user.click(
       within(table).getByRole("button", {
@@ -274,6 +287,93 @@ describe("league player catalog", () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: /Compare/ })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Load next 100 players" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("All matching players loaded.")).toBeInTheDocument();
+  });
+
+  it("appends the next player page only after the user requests it", async () => {
+    let playerPageRequests = 0;
+    const fetchImpl = vi.fn(async (url) => {
+      const parsed = new URL(url);
+      const { pathname, searchParams } = parsed;
+      if (pathname === "/api/v1/session") return envelope(session());
+      if (pathname === "/api/v1/leagues") {
+        return envelope({ code: "LEAGUES_FOUND", leagues: [league()] });
+      }
+      if (pathname === `/api/v1/leagues/${leagueId}/teams`) {
+        return envelope({
+          code: "TEAMS_FOUND",
+          teams: [team(teamA, "Alpha Team")],
+        });
+      }
+      if (pathname === `/api/v1/leagues/${leagueId}/players`) {
+        playerPageRequests += 1;
+        if (!searchParams.get("cursor")) {
+          return envelope(
+            [
+              player({
+                id: freeAgentId,
+                name: "First Page Player",
+                gamesPlayed: 10,
+                fantasyPointsHundredths: 2500,
+              }),
+            ],
+            {
+              page: { nextCursor: freeAgentId, hasMore: true },
+            }
+          );
+        }
+        expect(searchParams.get("cursor")).toBe(freeAgentId);
+        return envelope(
+          [
+            player({
+              id: ownedPlayerId,
+              name: "Second Page Player",
+              gamesPlayed: 8,
+              fantasyPointsHundredths: 1500,
+            }),
+          ],
+          { page: { nextCursor: null, hasMore: false } }
+        );
+      }
+      throw new Error(`Unexpected request: ${pathname}`);
+    });
+    const view = renderWithProviders(
+      <Routes>
+        <Route
+          path="/leagues/:leagueId/players"
+          element={<PlayersCatalogPage />}
+        />
+      </Routes>,
+      {
+        initialEntries: [`/leagues/${leagueId}/players`],
+        enableSession: true,
+        config,
+        sessionOptions: { fetchImpl },
+      }
+    );
+
+    expect(
+      await screen.findByRole("rowheader", { name: "First Page Player" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("rowheader", { name: "Second Page Player" })
+    ).not.toBeInTheDocument();
+    expect(playerPageRequests).toBe(1);
+
+    await view.user.click(
+      screen.getByRole("button", { name: "Load next 100 players" })
+    );
+
+    expect(
+      await screen.findByRole("rowheader", { name: "Second Page Player" })
+    ).toBeInTheDocument();
+    expect(playerPageRequests).toBe(2);
+    expect(
+      screen.queryByRole("button", { name: "Load next 100 players" })
     ).not.toBeInTheDocument();
   });
 });

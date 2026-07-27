@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useDeferredValue, useMemo, useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Gavel } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
@@ -15,7 +15,10 @@ import {
   visibleLeaguesQuery,
 } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
-import { leaguePlayerSearchQuery } from "./playerQueries.js";
+import {
+  leaguePlayerInfiniteQuery,
+  leaguePlayerSearchQuery,
+} from "./playerQueries.js";
 
 function ErrorMessage({ error }) {
   if (!error) return null;
@@ -140,27 +143,50 @@ export function PlayersCatalogPage() {
     direction: "desc",
   });
   const [comparedIds, setComparedIds] = useState(() => new Set());
-  const players = useQuery({
-    ...leaguePlayerSearchQuery(session.httpClient, leagueId, {
-      query: "",
+  const deferredSearchInput = useDeferredValue(searchInput.trim());
+  const players = useInfiniteQuery({
+    ...leaguePlayerInfiniteQuery(session.httpClient, leagueId, {
+      query,
       status: "active",
       limit: 100,
-      fetchAll: true,
+      sort: "fantasyPoints",
     }),
     enabled: session.status === "authenticated" && Boolean(league),
+  });
+  const autocomplete = useQuery({
+    ...leaguePlayerSearchQuery(session.httpClient, leagueId, {
+      query: deferredSearchInput,
+      status: "active",
+      limit: 8,
+      sort: "name",
+    }),
+    enabled:
+      session.status === "authenticated" &&
+      Boolean(league) &&
+      deferredSearchInput.length >= 2 &&
+      deferredSearchInput.toLowerCase() !== query.toLowerCase(),
   });
   const teams = useQuery({
     ...leagueTeamsQuery(session.httpClient, leagueId),
     enabled: session.status === "authenticated" && Boolean(league),
   });
 
+  const loadedPlayers = useMemo(() => {
+    const playersById = new Map();
+    for (const page of players.data?.pages || []) {
+      for (const player of page.players) {
+        playersById.set(player.id, player);
+      }
+    }
+    return [...playersById.values()];
+  }, [players.data]);
   const availablePlayers = useMemo(
     () =>
-      (players.data?.players || []).filter(
+      loadedPlayers.filter(
         (player) =>
           player.status === "active" && player.provider?.active !== false
       ),
-    [players.data]
+    [loadedPlayers]
   );
   const nhlTeams = useMemo(
     () =>
@@ -260,10 +286,15 @@ export function PlayersCatalogPage() {
   const autocompletePlayers = useMemo(() => {
     const needle = searchInput.trim().toLowerCase();
     if (needle.length < 2 || needle === query.toLowerCase()) return [];
-    return availablePlayers
-      .filter((player) => player.fullName.toLowerCase().includes(needle))
+    return (autocomplete.data?.players || [])
+      .filter(
+        (player) =>
+          player.status === "active" &&
+          player.provider?.active !== false &&
+          player.fullName.toLowerCase().includes(needle)
+      )
       .slice(0, 8);
-  }, [availablePlayers, query, searchInput]);
+  }, [autocomplete.data, query, searchInput]);
 
   function changeSort(key) {
     setSort((current) =>
@@ -568,6 +599,29 @@ export function PlayersCatalogPage() {
             </table>
           </div>
         </Surface>
+      )}
+
+      {!players.isPending && !players.isError && (
+        <div className="hl-player-pagination" aria-live="polite">
+          <p>
+            Showing {visiblePlayers.length} of {availablePlayers.length} loaded
+            players.
+          </p>
+          {players.hasNextPage ? (
+            <button
+              type="button"
+              className="hl-button hl-button--secondary"
+              onClick={() => players.fetchNextPage()}
+              disabled={players.isFetchingNextPage}
+            >
+              {players.isFetchingNextPage
+                ? "Loading next 100 players..."
+                : "Load next 100 players"}
+            </button>
+          ) : (
+            <span>All matching players loaded.</span>
+          )}
+        </div>
       )}
 
       <p className="hl-page-backlink">

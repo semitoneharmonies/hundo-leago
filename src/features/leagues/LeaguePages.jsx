@@ -411,7 +411,12 @@ export function LeagueTeamsPage() {
                             </small>
                           </span>
                           {managedByUser && (
-                            <StatusBadge tone="success">Your team</StatusBadge>
+                            <StatusBadge
+                              tone="success"
+                              className="hl-teams-index__managed-badge"
+                            >
+                              Your team
+                            </StatusBadge>
                           )}
                         </Link>
                       </li>

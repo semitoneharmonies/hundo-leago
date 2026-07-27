@@ -405,6 +405,9 @@ describe("league selection", () => {
       "--team-primary": "#16324f",
       "--team-secondary": "#f7f7f7",
     });
+    expect(screen.getByText("Your team")).toHaveClass(
+      "hl-teams-index__managed-badge"
+    );
   });
 
   it("does not give a commissioner an implicit dashboard team", async () => {

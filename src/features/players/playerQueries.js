@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 import {
@@ -30,7 +30,7 @@ export const playerKeys = Object.freeze({
     auctionEligible,
   ],
   detail: (playerId) => ["players", "detail", playerId],
-  leagueSearch: ({ leagueId, query, status, limit, cursor, fetchAll }) => [
+  leagueSearch: ({ leagueId, query, status, limit, cursor, sort }) => [
     "league",
     leagueId,
     "players",
@@ -39,7 +39,17 @@ export const playerKeys = Object.freeze({
     status,
     limit,
     cursor,
-    fetchAll,
+    sort,
+  ],
+  leagueInfinite: ({ leagueId, query, status, limit, sort }) => [
+    "league",
+    leagueId,
+    "players",
+    "infinite",
+    query,
+    status,
+    limit,
+    sort,
   ],
   leagueDetail: (leagueId, playerId) => [
     "league",
@@ -130,13 +140,14 @@ export function leaguePlayerSearchQuery(
     status = "active",
     limit = 25,
     cursor = null,
-    fetchAll = false,
+    sort = "name",
   } = {}
 ) {
   const search = new URLSearchParams({
     query,
     status,
     limit: String(limit),
+    sort,
     ...(cursor ? { cursor } : {}),
   });
   return queryOptions({
@@ -146,66 +157,79 @@ export function leaguePlayerSearchQuery(
       status,
       limit,
       cursor,
-      fetchAll,
+      sort,
     }),
     queryFn: async ({ signal }) => {
-      if (!fetchAll) {
-        const response = await httpClient.request(
-          `/api/v1/leagues/${part(leagueId)}/players?${search.toString()}`,
-          {
-            authenticated: true,
-            dataKind: "array",
-            validateData: (data) =>
-              validateLeaguePlayerList(data, leagueId),
-            signal,
-          }
-        );
-        if (!response.page) {
-          throw new ResponseContractError("The player page is missing.");
+      const response = await httpClient.request(
+        `/api/v1/leagues/${part(leagueId)}/players?${search.toString()}`,
+        {
+          authenticated: true,
+          dataKind: "array",
+          validateData: (data) =>
+            validateLeaguePlayerList(data, leagueId),
+          signal,
         }
-        return Object.freeze({
-          players: response.data,
-          page: response.page,
-        });
+      );
+      if (!response.page) {
+        throw new ResponseContractError("The player page is missing.");
       }
-
-      const collected = [];
-      let nextCursor = null;
-      let pageCount = 0;
-      do {
-        const pageSearch = new URLSearchParams({
-          query,
-          status,
-          limit: "100",
-          ...(nextCursor ? { cursor: nextCursor } : {}),
-        });
-        const response = await httpClient.request(
-          `/api/v1/leagues/${part(leagueId)}/players?${pageSearch.toString()}`,
-          {
-            authenticated: true,
-            dataKind: "array",
-            validateData: (data) =>
-              validateLeaguePlayerList(data, leagueId),
-            signal,
-          }
-        );
-        if (!response.page) {
-          throw new ResponseContractError("The player page is missing.");
-        }
-        collected.push(...response.data);
-        nextCursor = response.page.nextCursor;
-        pageCount += 1;
-        if (pageCount > 100) {
-          throw new ResponseContractError(
-            "The player catalog exceeds the supported page limit."
-          );
-        }
-      } while (nextCursor);
       return Object.freeze({
-        players: Object.freeze(collected),
-        page: Object.freeze({ nextCursor: null, hasMore: false }),
+        players: response.data,
+        page: response.page,
       });
     },
+    meta: { private: true, leagueId },
+    staleTime: 60_000,
+  });
+}
+
+export function leaguePlayerInfiniteQuery(
+  httpClient,
+  leagueId,
+  {
+    query = "",
+    status = "active",
+    limit = 100,
+    sort = "fantasyPoints",
+  } = {}
+) {
+  return infiniteQueryOptions({
+    queryKey: playerKeys.leagueInfinite({
+      leagueId,
+      query,
+      status,
+      limit,
+      sort,
+    }),
+    initialPageParam: null,
+    queryFn: async ({ pageParam, signal }) => {
+      const search = new URLSearchParams({
+        query,
+        status,
+        limit: String(limit),
+        sort,
+        ...(pageParam ? { cursor: pageParam } : {}),
+      });
+      const response = await httpClient.request(
+        `/api/v1/leagues/${part(leagueId)}/players?${search.toString()}`,
+        {
+          authenticated: true,
+          dataKind: "array",
+          validateData: (data) =>
+            validateLeaguePlayerList(data, leagueId),
+          signal,
+        }
+      );
+      if (!response.page) {
+        throw new ResponseContractError("The player page is missing.");
+      }
+      return Object.freeze({
+        players: response.data,
+        page: response.page,
+      });
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.page.hasMore ? lastPage.page.nextCursor : undefined,
     meta: { private: true, leagueId },
     staleTime: 60_000,
   });
