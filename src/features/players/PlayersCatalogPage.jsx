@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Gavel } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
@@ -93,18 +94,19 @@ function HockeyHelmetIcon() {
       className="hl-hockey-helmet"
     >
       <path
-        d="M4.5 12.5V10a7.5 7.5 0 0 1 15 0v3.5h-4.2v-2.2H8.7v4.4H5.8a1.3 1.3 0 0 1-1.3-1.3v-1.9Z"
+        d="M4.2 10.6c0-4.4 3.4-7.6 7.8-7.6s7.8 3.2 7.8 7.6v2.8H4.2v-2.8Z"
         fill="currentColor"
       />
       <path
-        d="M8.7 11.3h6.6v5.5a2.2 2.2 0 0 1-2.2 2.2h-2.2a2.2 2.2 0 0 1-2.2-2.2v-5.5Zm6.6 2.2h4.2v2.2h-4.2"
+        d="M6.2 5.8 4.9 3.2l3.5 1.1m9.4 1.5 1.3-2.6-3.5 1.1M4.2 9.4h15.6M7 13.4v3.4c0 2.3 1.8 4.2 4.1 4.2h1.8c2.3 0 4.1-1.9 4.1-4.2v-3.4"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="1.6"
       />
-      <path d="M5 9.2h14" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M7.1 7.5h2.7M14.2 7.5h2.7" stroke="#020617" strokeLinecap="round" strokeWidth="1.4" />
+      <circle cx="12" cy="10.5" r=".8" fill="#020617" />
     </svg>
   );
 }
@@ -517,7 +519,7 @@ export function PlayersCatalogPage() {
                       <div className="hl-player-actions">
                         <button
                           type="button"
-                          className={`hl-player-favourite${
+                          className={`hl-player-action hl-player-favourite${
                             comparedIds.has(player.id) ? " is-active" : ""
                           }`}
                           aria-pressed={comparedIds.has(player.id)}
@@ -534,16 +536,18 @@ export function PlayersCatalogPage() {
                           onClick={() => toggleCompare(player.id)}
                         >
                           <HockeyHelmetIcon />
+                          <span>Favourites</span>
                         </button>
                         {!player.league.ownership && (
                           <Link
-                            className="hl-button hl-button--quiet"
+                            className="hl-player-action hl-player-auction-action"
                             to={routePaths.leagueAuctionForPlayer(
                               leagueId,
                               player.id
                             )}
                           >
-                            Start auction
+                            <Gavel aria-hidden="true" />
+                            <span>Start auction</span>
                           </Link>
                         )}
                       </div>

@@ -170,38 +170,43 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
             <option value="three">Three colours</option>
           </select>
         </label>
-        <label className="hl-field">
-          Top stripe
-          <input
-            type="color"
-            value={primaryColour}
-            onChange={(event) =>
-              setPrimaryColourOverride(event.target.value)
-            }
-          />
-        </label>
-        <label className="hl-field">
-          {colourMode === "three" ? "Middle stripe" : "Bottom stripe"}
-          <input
-            type="color"
-            value={secondaryColour}
-            onChange={(event) =>
-              setSecondaryColourOverride(event.target.value)
-            }
-          />
-        </label>
-        {colourMode === "three" && (
-          <label className="hl-field">
-            Bottom stripe
+        <fieldset className="hl-account-colour-swatches">
+          <legend>Choose stripe colours</legend>
+          <label>
+            <span>Top stripe</span>
             <input
               type="color"
-              value={tertiaryColour}
+              value={primaryColour}
               onChange={(event) =>
-                setTertiaryColourOverride(event.target.value)
+                setPrimaryColourOverride(event.target.value)
               }
             />
           </label>
-        )}
+          <label>
+            <span>
+              {colourMode === "three" ? "Middle stripe" : "Bottom stripe"}
+            </span>
+            <input
+              type="color"
+              value={secondaryColour}
+              onChange={(event) =>
+                setSecondaryColourOverride(event.target.value)
+              }
+            />
+          </label>
+          {colourMode === "three" && (
+            <label>
+              <span>Bottom stripe</span>
+              <input
+                type="color"
+                value={tertiaryColour}
+                onChange={(event) =>
+                  setTertiaryColourOverride(event.target.value)
+                }
+              />
+            </label>
+          )}
+        </fieldset>
         <label className="hl-field">
           Team logo
           <input

@@ -854,7 +854,7 @@ function AuctionsPanel({ leagueId, auctions, pending, error }) {
   );
 }
 
-function TradesPanel({ leagueId, trades, pending, error }) {
+function TradesPanel({ leagueId, trades, pending, error, managedTeamId = null }) {
   const pendingTrades = trades.filter(
     ({ storageStatus }) => storageStatus === "proposed"
   );
@@ -882,7 +882,17 @@ function TradesPanel({ leagueId, trades, pending, error }) {
       ) : (
         <ul className="hl-compact-list">
           {pendingTrades.slice(0, 3).map((trade) => (
-            <li key={trade.id}>
+            <li
+              key={trade.id}
+              className={
+                managedTeamId &&
+                [trade.proposingTeam.id, trade.receivingTeam.id].includes(
+                  managedTeamId
+                )
+                  ? "is-managed-team"
+                  : undefined
+              }
+            >
               <div>
                 <ArrowLeftRight aria-hidden="true" />
                 <span>
@@ -1201,6 +1211,7 @@ export function LeagueDashboard({ league, teams, session }) {
               trades={trades.data || []}
               pending={enabled && trades.isPending}
               error={trades.error}
+              managedTeamId={managedTeam?.id || null}
             />
           </aside>
         </div>

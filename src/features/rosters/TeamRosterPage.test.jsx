@@ -16,6 +16,9 @@ const secondActiveOwnershipId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const secondActivePlayerId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const activeDefenceOwnershipId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const activeDefencePlayerId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const benchOwnershipId = "12121212-1212-4121-8121-121212121212";
+const benchPlayerId = "34343434-3434-4343-8343-343434343434";
+const benchContractId = "56565656-5656-4565-8565-565656565656";
 const prospectOwnershipId = "77777777-7777-4777-8777-777777777777";
 const contractId = "88888888-8888-4888-8888-888888888888";
 const pickId = "99999999-9999-4999-8999-999999999999";
@@ -305,7 +308,7 @@ describe("authoritative team roster page", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("offers four compact roster actions and sends authoritative commands", async () => {
+  it("offers compact roster actions and sends authoritative commands", async () => {
     const data = workspace();
     data.players[0].injuredReserveEligible = true;
     data.players[0].onTradeBlock = false;
@@ -335,6 +338,11 @@ describe("authoritative team roster page", () => {
     expect(
       within(activeRow).getByRole("button", {
         name: "Move Active Player to injured reserve",
+      })
+    ).toBeEnabled();
+    expect(
+      within(activeRow).getByRole("button", {
+        name: "Move to bench Active Player",
       })
     ).toBeEnabled();
     expect(
@@ -376,11 +384,36 @@ describe("authoritative team roster page", () => {
     await waitFor(() =>
       expect(httpClient.request).toHaveBeenCalledWith(
         expect.stringContaining(
-          `/roster/${activeOwnershipId}/move-to-ir`
+          `/roster/${activeOwnershipId}/move`
         ),
         expect.objectContaining({
           method: "POST",
-          body: { expectedVersion: 1 },
+          body: {
+            confirmedIllegal: false,
+            destinationCategory: "Injured Reserve",
+            expectedVersion: 1,
+          },
+        })
+      )
+    );
+
+    await within(activeRow)
+      .getByRole("button", {
+        name: "Move to bench Active Player",
+      })
+      .click();
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `/roster/${activeOwnershipId}/move`
+        ),
+        expect.objectContaining({
+          method: "POST",
+          body: {
+            confirmedIllegal: false,
+            destinationCategory: "Bench",
+            expectedVersion: 1,
+          },
         })
       )
     );
@@ -470,6 +503,66 @@ describe("authoritative team roster page", () => {
       ]);
     });
     expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
+  });
+
+  it("moves a Bench player to Active by drag and drop", async () => {
+    const data = workspace();
+    data.players.splice(1, 0, {
+      ...data.players[0],
+      ownershipId: benchOwnershipId,
+      playerId: benchPlayerId,
+      name: "Bench Player",
+      rosterCategory: "Bench",
+      slotNumber: 1,
+      displayOrder: null,
+      contract: {
+        ...data.players[0].contract,
+        id: benchContractId,
+        aavCents: 300,
+      },
+    });
+    const httpClient = {
+      request: vi.fn(async () => ({ data: {} })),
+    };
+    renderWithProviders(
+      <TeamRosterPage
+        workspace={data}
+        teams={[data.team]}
+        managerName="League Manager"
+        onTeamChange={() => {}}
+        httpClient={httpClient}
+      />
+    );
+
+    const source = screen.getByRole("button", {
+      name: "Drag Bench Player to reorder",
+    });
+    const target = screen
+      .getByRole("rowheader", { name: "Active Player" })
+      .closest("tr");
+    const dataTransfer = {
+      effectAllowed: "",
+      dropEffect: "",
+      setData: vi.fn(),
+      getData: vi.fn(() => benchOwnershipId),
+    };
+    fireEvent.dragStart(source, { dataTransfer });
+    fireEvent.dragOver(target, { dataTransfer });
+    fireEvent.drop(target, { dataTransfer });
+
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(`/roster/${benchOwnershipId}/move`),
+        expect.objectContaining({
+          method: "POST",
+          body: {
+            confirmedIllegal: false,
+            destinationCategory: "Active",
+            expectedVersion: 1,
+          },
+        })
+      )
+    );
   });
 
   it("defaults to AAV order within position groups and saves table drag ordering", async () => {

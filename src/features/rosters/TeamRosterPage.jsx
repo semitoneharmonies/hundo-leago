@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowDown,
   ArrowLeftRight,
+  ArrowUp,
   CircleDollarSign,
   GripVertical,
   HeartPulse,
@@ -15,7 +17,7 @@ import { routePaths } from "../../app/routePaths.js";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
   buyOutRosterContract,
-  moveRosterPlayerToIr,
+  moveRosterPlayer,
   saveRosterDisplayOrder,
   setTradeBlock,
   teamWorkspaceKeys,
@@ -104,6 +106,19 @@ function pointerDropTargetId(event) {
   );
 }
 
+function pointerDropTargetCategory(event) {
+  const document = event.currentTarget?.ownerDocument;
+  if (!document || typeof document.elementFromPoint !== "function") {
+    return null;
+  }
+  return (
+    document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest?.("[data-roster-category]")
+      ?.getAttribute("data-roster-category") || null
+  );
+}
+
 function beginPointerDrag(event, ownershipId, onDragStart) {
   if (event.pointerType === "mouse" && event.button !== 0) return;
   event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -121,6 +136,12 @@ function RosterActions({ leagueId, player, pending, onAction }) {
   const assetId = player.contract?.id || player.playerId;
   const irDisabled =
     player.rosterCategory !== "Active" || !player.injuredReserveEligible;
+  const rosterMove =
+    player.rosterCategory === "Active"
+      ? { type: "bench", label: "Move to bench", Icon: ArrowDown }
+      : player.rosterCategory === "Bench"
+        ? { type: "active", label: "Move to active", Icon: ArrowUp }
+        : null;
 
   return (
     <div className="hl-roster-actions">
@@ -154,6 +175,19 @@ function RosterActions({ leagueId, player, pending, onAction }) {
         <HeartPulse aria-hidden="true" />
         <span>Move to IR</span>
       </button>
+      {rosterMove && (
+        <button
+          type="button"
+          className="hl-roster-action"
+          disabled={pending}
+          onClick={() => onAction(rosterMove.type, player)}
+          aria-label={`${rosterMove.label} ${player.name}`}
+          title={`${rosterMove.label} ${player.name}`}
+        >
+          <rosterMove.Icon aria-hidden="true" />
+          <span>{rosterMove.label}</span>
+        </button>
+      )}
       <Link
         className="hl-roster-action"
         to={routePaths.leagueTradeForAsset(leagueId, assetType, assetId)}
@@ -214,8 +248,7 @@ function CategoryTable({
   onDragStart,
   onDragTarget,
   onDragEnd,
-  onDrop,
-  onPointerDrop,
+  onCategoryDrop,
   onMove,
   onAction,
   actionPending = false,
@@ -228,19 +261,38 @@ function CategoryTable({
   ).length;
   const defence = players.length - forwards;
   const displayedPlayers = sortedByStatistic(players, sort);
-  const draggable = category.key === "Active" && canManage;
+  const draggable =
+    ["Active", "Bench"].includes(category.key) && canManage;
   const capacity =
     category.key === "Active"
       ? `${players.length}/18 used · F ${forwards}/12 · D ${defence}/6`
       : category.limit === null
         ? `${players.length} held · unlimited eligible slots`
-        : `${players.length}/${category.limit} used · ${category.limit - players.length} available`;
+        : `${players.length}/${category.limit} used · ${Math.max(
+            0,
+            category.limit - players.length
+          )} available`;
   const headingId = `roster-${category.key.replaceAll(" ", "-")}`;
 
   return (
     <section
       className="hl-surface hl-roster-category"
       aria-labelledby={headingId}
+      data-roster-category={category.key}
+      onDragOver={(event) => {
+        if (!draggable) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(event) => {
+        if (!draggable || event.defaultPrevented) return;
+        event.preventDefault();
+        const sourceId =
+          (typeof event.dataTransfer.getData === "function"
+            ? event.dataTransfer.getData("text/plain")
+            : "") || draggingId;
+        onCategoryDrop(sourceId, category.key, null, displayedPlayers);
+      }}
     >
       <div className="hl-roster-category__heading">
         <h2 id={headingId}>{category.title}</h2>
@@ -296,6 +348,7 @@ function CategoryTable({
                   data-roster-order-id={
                     draggable ? player.ownershipId : undefined
                   }
+                  data-roster-category={category.key}
                   onDragOver={(event) => {
                     if (!draggable) return;
                     event.preventDefault();
@@ -304,11 +357,17 @@ function CategoryTable({
                   onDrop={(event) => {
                     if (!draggable) return;
                     event.preventDefault();
+                    event.stopPropagation();
                     const sourceId =
                       (typeof event.dataTransfer.getData === "function"
                         ? event.dataTransfer.getData("text/plain")
                         : "") || draggingId;
-                    onDrop(sourceId, player.ownershipId, displayedPlayers);
+                    onCategoryDrop(
+                      sourceId,
+                      category.key,
+                      player.ownershipId,
+                      displayedPlayers
+                    );
                   }}
                 >
                   {draggable && (
@@ -343,9 +402,12 @@ function CategoryTable({
                           onPointerUp={(event) => {
                             const targetId =
                               pointerDropTargetId(event) || dragTargetId;
+                            const targetCategory =
+                              pointerDropTargetCategory(event) || category.key;
                             endPointerCapture(event);
-                            onPointerDrop(
+                            onCategoryDrop(
                               player.ownershipId,
+                              targetCategory,
                               targetId,
                               displayedPlayers
                             );
@@ -355,14 +417,20 @@ function CategoryTable({
                             onDragEnd();
                           }}
                           onKeyDown={(event) => {
-                            if (event.key === "ArrowUp") {
+                            if (
+                              category.key === "Active" &&
+                              event.key === "ArrowUp"
+                            ) {
                               event.preventDefault();
                               onMove(
                                 player.ownershipId,
                                 -1,
                                 displayedPlayers
                               );
-                            } else if (event.key === "ArrowDown") {
+                            } else if (
+                              category.key === "Active" &&
+                              event.key === "ArrowDown"
+                            ) {
                               event.preventDefault();
                               onMove(
                                 player.ownershipId,
@@ -441,8 +509,7 @@ function LinePlayer({
   onDragStart,
   onDragTarget,
   onDragEnd,
-  onDrop,
-  onPointerDrop,
+  onCategoryDrop,
   onMove,
 }) {
   if (!player) {
@@ -458,6 +525,7 @@ function LinePlayer({
         .filter(Boolean)
         .join(" ")}
       data-roster-order-id={canManage ? player.ownershipId : undefined}
+      data-roster-category="Active"
       onDragOver={(event) => {
         if (canManage) {
           event.preventDefault();
@@ -466,11 +534,12 @@ function LinePlayer({
       }}
       onDrop={(event) => {
         event.preventDefault();
+        event.stopPropagation();
         const sourceId =
           (typeof event.dataTransfer.getData === "function"
             ? event.dataTransfer.getData("text/plain")
             : "") || draggingId;
-        onDrop(sourceId, player.ownershipId);
+        onCategoryDrop(sourceId, "Active", player.ownershipId);
       }}
     >
       {canManage && (
@@ -495,8 +564,14 @@ function LinePlayer({
           }}
           onPointerUp={(event) => {
             const targetId = pointerDropTargetId(event) || dragTargetId;
+            const targetCategory =
+              pointerDropTargetCategory(event) || "Active";
             endPointerCapture(event);
-            onPointerDrop(player.ownershipId, targetId);
+            onCategoryDrop(
+              player.ownershipId,
+              targetCategory,
+              targetId
+            );
           }}
           onPointerCancel={(event) => {
             endPointerCapture(event);
@@ -539,8 +614,7 @@ function HockeyLines({
   onDragStart,
   onDragTarget,
   onDragEnd,
-  onDrop,
-  onPointerDrop,
+  onCategoryDrop,
   onMove,
 }) {
   const forwards = activePlayers.filter(
@@ -550,7 +624,25 @@ function HockeyLines({
     ({ normalizedPosition }) => normalizedPosition === "D"
   );
   return (
-    <section className="hl-hockey-lines" aria-labelledby="hockey-lines-title">
+    <section
+      className="hl-hockey-lines"
+      aria-labelledby="hockey-lines-title"
+      data-roster-category="Active"
+      onDragOver={(event) => {
+        if (!canManage) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(event) => {
+        if (!canManage || event.defaultPrevented) return;
+        event.preventDefault();
+        const sourceId =
+          (typeof event.dataTransfer.getData === "function"
+            ? event.dataTransfer.getData("text/plain")
+            : "") || draggingId;
+        onCategoryDrop(sourceId, "Active", null);
+      }}
+    >
       <div className="hl-roster-category__heading">
         <div>
           <p className="hl-eyebrow">Line arrangement</p>
@@ -581,8 +673,7 @@ function HockeyLines({
                     onDragStart={onDragStart}
                     onDragTarget={onDragTarget}
                     onDragEnd={onDragEnd}
-                    onDrop={onDrop}
-                    onPointerDrop={onPointerDrop}
+                    onCategoryDrop={onCategoryDrop}
                     onMove={onMove}
                   />
                 );
@@ -610,8 +701,7 @@ function HockeyLines({
                     onDragStart={onDragStart}
                     onDragTarget={onDragTarget}
                     onDragEnd={onDragEnd}
-                    onDrop={onDrop}
-                    onPointerDrop={onPointerDrop}
+                    onCategoryDrop={onCategoryDrop}
                     onMove={onMove}
                   />
                 );
@@ -688,6 +778,7 @@ export function TeamRosterPage({
 }) {
   const queryClient = useQueryClient();
   const { cap, league, season, team } = workspace;
+  const legality = workspace.legality ?? { legal: true, reasons: [] };
   const [view, setView] = useState("table");
   const [activePlayers, setActivePlayers] = useState(() =>
     orderedPlayers(
@@ -750,7 +841,7 @@ export function TeamRosterPage({
   });
 
   const actionMutation = useMutation({
-    mutationFn: ({ type, player }) => {
+    mutationFn: async ({ type, player }) => {
       if (type === "buyout") {
         return buyOutRosterContract(
           httpClient,
@@ -759,14 +850,42 @@ export function TeamRosterPage({
           player
         );
       }
-      if (type === "ir") {
-        return moveRosterPlayerToIr(
-          httpClient,
-          league.id,
-          team.id,
-          player.ownershipId,
-          player.ownershipVersion
-        );
+      const destinationCategory = {
+        active: "Active",
+        bench: "Bench",
+        ir: "Injured Reserve",
+      }[type];
+      if (destinationCategory) {
+        const input = {
+          confirmedIllegal: false,
+          destinationCategory,
+          expectedVersion: player.ownershipVersion,
+        };
+        try {
+          return await moveRosterPlayer(
+            httpClient,
+            league.id,
+            team.id,
+            player.ownershipId,
+            input
+          );
+        } catch (error) {
+          if (
+            error?.code !== "ROSTER_ILLEGAL_CONFIRMATION_REQUIRED" ||
+            !globalThis.confirm(
+              `Moving ${player.name} to ${destinationCategory} will create an illegal roster. Continue and fix the highlighted roster issues afterward?`
+            )
+          ) {
+            throw error;
+          }
+          return moveRosterPlayer(
+            httpClient,
+            league.id,
+            team.id,
+            player.ownershipId,
+            { ...input, confirmedIllegal: true }
+          );
+        }
       }
       return setTradeBlock(
         httpClient,
@@ -785,6 +904,10 @@ export function TeamRosterPage({
           ? `${player.name} was bought out.`
           : type === "ir"
             ? `${player.name} was moved to injured reserve.`
+            : type === "bench"
+              ? `${player.name} was moved to the bench.`
+              : type === "active"
+                ? `${player.name} was moved to the active roster.`
             : `${player.name} was ${
                 player.onTradeBlock ? "removed from" : "added to"
               } the trade block.`
@@ -861,6 +984,49 @@ export function TeamRosterPage({
     setDragTargetId(null);
     setSaveMessage("Saving line order…");
     mutation.mutate(next);
+  }
+
+  function handleRosterDrop(
+    sourceId,
+    destinationCategory,
+    targetId,
+    basisPlayers = activePlayers
+  ) {
+    const source = workspace.players.find(
+      ({ ownershipId }) => ownershipId === sourceId
+    );
+    if (
+      !source ||
+      !["Active", "Bench"].includes(destinationCategory) ||
+      actionMutation.isPending
+    ) {
+      endDrag();
+      return;
+    }
+    if (source.rosterCategory === destinationCategory) {
+      if (destinationCategory === "Active" && targetId) {
+        reorder(sourceId, targetId, basisPlayers);
+      } else {
+        endDrag();
+      }
+      return;
+    }
+    if (
+      ![
+        "Active:Bench",
+        "Bench:Active",
+      ].includes(`${source.rosterCategory}:${destinationCategory}`)
+    ) {
+      setSaveMessage("Players can move directly only between Active and Bench.");
+      endDrag();
+      return;
+    }
+    setSaveMessage("");
+    endDrag();
+    actionMutation.mutate({
+      type: destinationCategory === "Active" ? "active" : "bench",
+      player: source,
+    });
   }
 
   function endDrag() {
@@ -975,6 +1141,17 @@ export function TeamRosterPage({
         </p>
       </section>
 
+      {!legality.legal && (
+        <div className="hl-roster-illegal" role="alert">
+          <strong>Illegal roster</strong>
+          <span>
+            {legality.reasons.length} authoritative issue
+            {legality.reasons.length === 1 ? "" : "s"} must be fixed
+            before this roster is legal.
+          </span>
+        </div>
+      )}
+
       <div className="hl-view-toggle" role="group" aria-label="Roster view">
         <button
           type="button"
@@ -1014,8 +1191,7 @@ export function TeamRosterPage({
             onDragStart={setDraggingId}
             onDragTarget={setDragTargetId}
             onDragEnd={endDrag}
-            onDrop={reorder}
-            onPointerDrop={reorder}
+            onCategoryDrop={handleRosterDrop}
             onMove={move}
           />
           <div className="hl-roster-categories">
@@ -1030,6 +1206,13 @@ export function TeamRosterPage({
                   sort={rosterSort}
                   onSort={changeRosterSort}
                   canManage={workspace.canManage}
+                  draggingId={draggingId}
+                  dragTargetId={dragTargetId}
+                  onDragStart={setDraggingId}
+                  onDragTarget={setDragTargetId}
+                  onDragEnd={endDrag}
+                  onCategoryDrop={handleRosterDrop}
+                  onMove={move}
                   leagueId={league.id}
                   onAction={runRosterAction}
                   actionPending={actionMutation.isPending}
@@ -1061,8 +1244,7 @@ export function TeamRosterPage({
               onDragStart={setDraggingId}
               onDragTarget={setDragTargetId}
               onDragEnd={endDrag}
-              onDrop={reorder}
-              onPointerDrop={reorder}
+              onCategoryDrop={handleRosterDrop}
               onMove={move}
               sort={rosterSort}
               onSort={changeRosterSort}

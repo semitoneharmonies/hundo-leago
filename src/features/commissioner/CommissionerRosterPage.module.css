@@ -47,9 +47,8 @@
 }
 
 .guide nav {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(7rem, 1fr));
   gap: 0.5rem;
 }
 
@@ -301,6 +300,7 @@
   }
 
   .guide nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: flex-start;
   }
 }

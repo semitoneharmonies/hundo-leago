@@ -361,11 +361,7 @@ function StartAuctionForm({ context, leagueId }) {
           <label>Team<br /><select style={input} value={effectiveTeamId} onChange={(e) => setTeamId(e.target.value)}>
             {context.managedTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
           </select></label>
-        ) : (
-          <p className="hl-form-context">
-            Starting for <strong>{context.managedTeams[0].name}</strong>
-          </p>
-        )}
+        ) : null}
         <label htmlFor="auction-player-search">Player<br />
           <input
             id="auction-player-search"
@@ -487,11 +483,7 @@ function OwnBidForm({ auction, managedTeams, client, leagueId }) {
           <label>Your team<br /><select style={input} value={teamId} onChange={(e) => setTeamId(e.target.value)}>
             {availableTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
           </select></label>
-        ) : (
-          <p className="hl-form-context">
-            Bidding for <strong>{availableTeams[0].name}</strong>
-          </p>
-        )}
+        ) : null}
         <label>Total value (dollars)<br /><input style={input} type="number" inputMode="decimal" min={auction.ownBid ? (term === "1" ? "1.00" : term) : ({ 1: "1.50", 2: "3", 3: "5" }[term])} step={term === "1" ? "0.01" : "1"} required value={total} onChange={(e) => setTotal(e.target.value)} /></label>
         <label>Term<br /><select style={input} value={term} onChange={(e) => setTerm(e.target.value)}>
           <option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option>

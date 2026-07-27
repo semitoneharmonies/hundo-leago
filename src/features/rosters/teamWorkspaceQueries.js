@@ -96,6 +96,28 @@ export async function moveRosterPlayerToIr(
   ).data;
 }
 
+export async function moveRosterPlayer(
+  httpClient,
+  leagueId,
+  teamId,
+  ownershipId,
+  input
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${part(leagueId)}/teams/${part(teamId)}/roster/${part(
+        ownershipId
+      )}/move`,
+      {
+        method: "POST",
+        authenticated: true,
+        body: input,
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
 export async function buyOutRosterContract(
   httpClient,
   leagueId,

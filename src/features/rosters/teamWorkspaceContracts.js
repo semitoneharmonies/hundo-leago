@@ -86,6 +86,27 @@ export function validateTeamWorkspace(data) {
     integer(data.cap[field], `The cap field ${field} is invalid.`);
   }
   integer(data.cap.spaceCents, "The cap space is invalid.", { signed: true });
+  if (data.legality !== undefined) {
+    object(data.legality, "The roster legality is invalid.");
+    contract(
+      typeof data.legality.legal === "boolean",
+      "The roster legal state is invalid."
+    );
+    object(data.legality.counts, "The roster legality counts are invalid.");
+    object(data.legality.limits, "The roster legality limits are invalid.");
+    object(data.legality.cap, "The roster legality cap is invalid.");
+    contract(
+      Array.isArray(data.legality.reasons) &&
+        data.legality.reasons.every(
+          (reason) =>
+            reason &&
+            typeof reason === "object" &&
+            typeof reason.code === "string" &&
+            reason.code.length > 0
+        ),
+      "The roster legality reasons are invalid."
+    );
+  }
   contract(Array.isArray(data.draftPicks), "The draft-pick list is invalid.");
   object(data.tradeAssets, "The team trade assets are invalid.");
   for (const key of [

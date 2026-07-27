@@ -45,15 +45,6 @@ function money(cents) {
   }).format(cents / 100);
 }
 
-function dateTime(value) {
-  if (!Number.isSafeInteger(value)) return "Never";
-  return new Date(value).toLocaleString("en-CA", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "America/Vancouver",
-  });
-}
-
 function reason(value) {
   const normalized = value.trim();
   return normalized ? normalized : null;
@@ -97,10 +88,29 @@ function newOperationId() {
   return id;
 }
 
-function rosterLabel(entry, teamsById) {
-  return `${entry.player.fullName} · ${
-    teamsById.get(entry.teamId)?.name || "Unknown team"
-  } · ${entry.rosterCategory}`;
+function automaticRosterSlot(
+  roster,
+  { teamId, category, positionGroup, excludeOwnershipId = null }
+) {
+  if (category === "Prospect") return null;
+  const maximum =
+    category === "Active" ? (positionGroup === "F" ? 12 : 6) : 4;
+  const occupied = new Set(
+    roster
+      .filter(
+        (entry) =>
+          entry.ownershipId !== excludeOwnershipId &&
+          entry.teamId === teamId &&
+          entry.rosterCategory === category &&
+          (category !== "Active" || entry.positionGroup === positionGroup)
+      )
+      .map((entry) => entry.slotNumber)
+  );
+  return (
+    Array.from({ length: maximum }, (_, index) => index + 1).find(
+      (slotNumber) => !occupied.has(slotNumber)
+    ) ?? null
+  );
 }
 
 function hasPreviewWarnings(preview) {
@@ -335,8 +345,6 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
   const [playerId, setPlayerId] = useState("");
   const [teamId, setTeamId] = useState("");
   const [category, setCategory] = useState("Bench");
-  const [position, setPosition] = useState("F");
-  const [slot, setSlot] = useState("1");
   const [contractType, setContractType] = useState("normal");
   const [totalValue, setTotalValue] = useState("3.00");
   const [term, setTerm] = useState("1");
@@ -350,6 +358,9 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
       )
       .slice(0, 100);
   }, [search, workspace.freeAgents]);
+  const selectedPlayer = workspace.freeAgents.find(
+    (player) => player.playerId === playerId
+  );
 
   function changed(callback) {
     workflow.clearPreview();
@@ -357,17 +368,22 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
   }
 
   function buildInput() {
-    if (!playerId || !teamId) {
+    if (!selectedPlayer || !teamId) {
       throw new Error("Choose both a free agent and a destination team.");
     }
     const prospect = category === "Prospect";
+    const positionGroup = selectedPlayer.effectivePosition;
     return {
       seasonId: workspace.league.currentSeasonId,
-      playerId,
+      playerId: selectedPlayer.playerId,
       teamId,
       rosterCategory: category,
-      positionGroup: position,
-      slotNumber: prospect ? null : positiveInteger(slot, "Slot number"),
+      positionGroup,
+      slotNumber: automaticRosterSlot(workspace.roster, {
+        teamId,
+        category,
+        positionGroup,
+      }),
       contractType: prospect ? null : contractType,
       originalTotalValueCents: prospect
         ? null
@@ -387,33 +403,38 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
       <div className={styles.formGrid}>
         <Field label="Find free agent">
           <input
+            role="combobox"
+            aria-label="Find free agent"
+            aria-autocomplete="list"
+            aria-controls="commissioner-free-agent-suggestions"
+            list="commissioner-free-agent-suggestions"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Filter by player name"
-          />
-        </Field>
-        <Field label="Player">
-          <select
-            value={playerId}
             onChange={(event) =>
               changed(() => {
-                const selected = workspace.freeAgents.find(
-                  (player) => player.playerId === event.target.value
+                const value = event.target.value;
+                setSearch(value);
+                setPlayerId(
+                  workspace.freeAgents.find(
+                    (player) =>
+                      player.fullName.toLocaleLowerCase("en-CA") ===
+                      value.trim().toLocaleLowerCase("en-CA")
+                  )?.playerId || ""
                 );
-                setPlayerId(event.target.value);
-                if (["F", "D"].includes(selected?.effectivePosition)) {
-                  setPosition(selected.effectivePosition);
-                }
               })
             }
-          >
-            <option value="">Choose a free agent</option>
+            placeholder="Type a player name"
+          />
+          <datalist id="commissioner-free-agent-suggestions">
             {filteredAgents.map((player) => (
-              <option key={player.playerId} value={player.playerId}>
-                {player.fullName} · {player.effectivePosition}
+              <option key={player.playerId} value={player.fullName}>
+                {player.effectivePosition}
               </option>
             ))}
-          </select>
+          </datalist>
+          <small>
+            Select a matching player; position and open slot are assigned
+            automatically.
+          </small>
         </Field>
         <Field label="Destination team">
           <select
@@ -433,35 +454,13 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
             value={category}
             onChange={(event) => {
               const next = event.target.value;
-              changed(() => {
-                setCategory(next);
-                if (next === "Prospect") setSlot("");
-                else if (!slot) setSlot("1");
-              });
+              changed(() => setCategory(next));
             }}
           >
             {ROSTER_CATEGORIES.map((value) => (
               <option key={value}>{value}</option>
             ))}
           </select>
-        </Field>
-        <Field label="Position">
-          <select
-            value={position}
-            onChange={(event) => changed(() => setPosition(event.target.value))}
-          >
-            <option value="F">Forward</option>
-            <option value="D">Defence</option>
-          </select>
-        </Field>
-        <Field label="Slot number">
-          <input
-            type="number"
-            min="1"
-            value={slot}
-            disabled={category === "Prospect"}
-            onChange={(event) => changed(() => setSlot(event.target.value))}
-          />
         </Field>
         <Field label="Contract type">
           <select
@@ -535,10 +534,14 @@ function RemovePlayerPanel({
   workflow,
   hidden = false,
 }) {
+  const [teamId, setTeamId] = useState("");
   const [ownershipId, setOwnershipId] = useState("");
   const [correctionReason, setCorrectionReason] = useState("");
   const entry = workspace.roster.find(
     (candidate) => candidate.ownershipId === ownershipId
+  );
+  const teamRoster = workspace.roster.filter(
+    (candidate) => candidate.teamId === teamId
   );
 
   function changed(callback) {
@@ -567,6 +570,24 @@ function RemovePlayerPanel({
         description="Release a rostered player and their active contract after reviewing the authoritative preview."
       />
       <div className={styles.formGrid}>
+        <Field label="Team">
+          <select
+            value={teamId}
+            onChange={(event) =>
+              changed(() => {
+                setTeamId(event.target.value);
+                setOwnershipId("");
+              })
+            }
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Rostered player">
           <select
             value={ownershipId}
@@ -575,12 +596,12 @@ function RemovePlayerPanel({
             }
           >
             <option value="">Choose a rostered player</option>
-            {workspace.roster.map((candidate) => (
+            {teamRoster.map((candidate) => (
               <option
                 key={candidate.ownershipId}
                 value={candidate.ownershipId}
               >
-                {rosterLabel(candidate, teamsById)}
+                {candidate.player.fullName} · {candidate.rosterCategory}
               </option>
             ))}
           </select>
@@ -618,13 +639,15 @@ function RosterCorrectionPanel({
   workflow,
   hidden = false,
 }) {
+  const [teamId, setTeamId] = useState("");
   const [ownershipId, setOwnershipId] = useState("");
   const [category, setCategory] = useState("Bench");
-  const [position, setPosition] = useState("F");
-  const [slot, setSlot] = useState("1");
   const [correctionReason, setCorrectionReason] = useState("");
   const entry = workspace.roster.find(
     (candidate) => candidate.ownershipId === ownershipId
+  );
+  const teamRoster = workspace.roster.filter(
+    (candidate) => candidate.teamId === teamId
   );
   const availableCategories =
     entry && entry.contract === null ? ["Prospect"] : ROSTER_CATEGORIES;
@@ -642,8 +665,6 @@ function RosterCorrectionPanel({
       setOwnershipId(nextOwnershipId);
       if (!selected) return;
       setCategory(selected.rosterCategory);
-      setPosition(selected.positionGroup);
-      setSlot(selected.slotNumber === null ? "" : String(selected.slotNumber));
     });
   }
 
@@ -656,7 +677,6 @@ function RosterCorrectionPanel({
         "An unsigned prospect right cannot move to a contracted roster category."
       );
     }
-    const prospect = category === "Prospect";
     return {
       seasonId: entry.seasonId,
       ownershipId: entry.ownershipId,
@@ -666,10 +686,13 @@ function RosterCorrectionPanel({
       correctedOwnershipKind:
         entry.contract === null ? "Prospect Right" : "Rostered",
       correctedRosterCategory: category,
-      correctedPositionGroup: position,
-      correctedSlotNumber: prospect
-        ? null
-        : positiveInteger(slot, "Slot number"),
+      correctedPositionGroup: entry.positionGroup,
+      correctedSlotNumber: automaticRosterSlot(workspace.roster, {
+        teamId: entry.teamId,
+        category,
+        positionGroup: entry.positionGroup,
+        excludeOwnershipId: entry.ownershipId,
+      }),
       reason: reason(correctionReason),
     };
   }
@@ -682,66 +705,52 @@ function RosterCorrectionPanel({
         description="Move a signed player among Active, Bench, Injured Reserve, and Prospect categories, or re-slot an unsigned prospect right."
       />
       <div className={styles.formGrid}>
+        <Field label="Team">
+          <select
+            value={teamId}
+            onChange={(event) =>
+              changed(() => {
+                setTeamId(event.target.value);
+                setOwnershipId("");
+              })
+            }
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Rostered player">
           <select
             value={ownershipId}
             onChange={(event) => chooseEntry(event.target.value)}
           >
             <option value="">Choose a rostered player</option>
-            {workspace.roster.map((candidate) => (
+            {teamRoster.map((candidate) => (
               <option
                 key={candidate.ownershipId}
                 value={candidate.ownershipId}
               >
-                {rosterLabel(candidate, teamsById)}
+                {candidate.player.fullName} · {candidate.rosterCategory}
               </option>
             ))}
           </select>
-        </Field>
-        <Field
-          label="Current team"
-          hint="Roster corrections cannot transfer ownership."
-        >
-          <output className={styles.readOnlyValue}>
-            {entry
-              ? teamsById.get(entry.teamId)?.name || entry.teamId
-              : "Choose a player"}
-          </output>
         </Field>
         <Field label="Roster category">
           <select
             value={category}
             onChange={(event) => {
               const next = event.target.value;
-              changed(() => {
-                setCategory(next);
-                if (next === "Prospect") setSlot("");
-                else if (!slot) setSlot("1");
-              });
+              changed(() => setCategory(next));
             }}
           >
             {availableCategories.map((value) => (
               <option key={value}>{value}</option>
             ))}
           </select>
-        </Field>
-        <Field label="Position">
-          <select
-            value={position}
-            onChange={(event) => changed(() => setPosition(event.target.value))}
-          >
-            <option value="F">Forward</option>
-            <option value="D">Defence</option>
-          </select>
-        </Field>
-        <Field label="Slot number">
-          <input
-            type="number"
-            min="1"
-            value={slot}
-            disabled={category === "Prospect"}
-            onChange={(event) => changed(() => setSlot(event.target.value))}
-          />
         </Field>
         <Field label="Reason" hint="Optional; recorded in league activity.">
           <input
@@ -779,12 +788,16 @@ function ContractCorrectionPanel({
   const contractEntries = workspace.roster.filter(
     (candidate) => candidate.contract !== null
   );
+  const [teamId, setTeamId] = useState("");
   const [ownershipId, setOwnershipId] = useState("");
   const [totalValue, setTotalValue] = useState("3.00");
   const [term, setTerm] = useState("1");
   const [correctionReason, setCorrectionReason] = useState("");
   const entry = contractEntries.find(
     (candidate) => candidate.ownershipId === ownershipId
+  );
+  const teamContracts = contractEntries.filter(
+    (candidate) => candidate.teamId === teamId
   );
 
   function changed(callback) {
@@ -859,41 +872,40 @@ function ContractCorrectionPanel({
         description="Correct original contract value, term, and the resulting AAV schedule. Ownership and lifecycle fields remain read-only."
       />
       <div className={styles.formGrid}>
+        <Field label="Team">
+          <select
+            value={teamId}
+            onChange={(event) =>
+              changed(() => {
+                setTeamId(event.target.value);
+                setOwnershipId("");
+              })
+            }
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Contracted player">
           <select
             value={ownershipId}
             onChange={(event) => chooseEntry(event.target.value)}
           >
             <option value="">Choose a contracted player</option>
-            {contractEntries.map((candidate) => (
+            {teamContracts.map((candidate) => (
               <option
                 key={candidate.ownershipId}
                 value={candidate.ownershipId}
               >
-                {rosterLabel(candidate, teamsById)}
+                {candidate.player.fullName} ·{" "}
+                {money(candidate.contract.aavCents)} AAV
               </option>
             ))}
           </select>
-        </Field>
-        <Field
-          label="Current owner"
-          hint="Contract corrections cannot transfer ownership."
-        >
-          <output className={styles.readOnlyValue}>
-            {entry
-              ? teamsById.get(entry.contract.teamId)?.name ||
-                entry.contract.teamId
-              : "Choose a player"}
-          </output>
-        </Field>
-        <Field label="Contract type" hint="Lifecycle context; read-only.">
-          <output className={styles.readOnlyValue}>
-            {entry
-              ? entry.contract.type === "fantasy_elc"
-                ? "Fantasy ELC"
-                : "Normal"
-              : "Choose a player"}
-          </output>
         </Field>
         <Field
           label="Total contract value"
@@ -919,27 +931,6 @@ function ContractCorrectionPanel({
             value={term}
             onChange={(event) => changed(() => setTerm(event.target.value))}
           />
-        </Field>
-        <Field label="Contract status" hint="Lifecycle context; read-only.">
-          <output className={styles.readOnlyValue}>
-            {entry ? entry.contract.status : "Choose a player"}
-          </output>
-        </Field>
-        <Field label="Start season" hint="Schedule context; read-only.">
-          <output className={styles.readOnlyValue}>
-            {entry
-              ? workspace.seasons.find(
-                  (season) => season.id === entry.contract.startSeasonId
-                )?.label || entry.contract.startSeasonId
-              : "Choose a player"}
-          </output>
-        </Field>
-        <Field label="Auction buyout lock" hint="Lifecycle context; read-only.">
-          <output className={styles.readOnlyValue}>
-            {entry
-              ? dateTime(entry.contract.auctionBuyoutLockExpiresAtMs)
-              : "Choose a player"}
-          </output>
         </Field>
         <Field label="Reason" hint="Optional; recorded in league activity.">
           <input

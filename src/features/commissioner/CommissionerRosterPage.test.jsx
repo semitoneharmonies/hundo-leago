@@ -478,6 +478,10 @@ describe("M7-10 commissioner roster operations", () => {
       screen.getByRole("tab", { name: "Correct roster" })
     );
     await view.user.selectOptions(
+      within(movePanel).getByLabelText("Team"),
+      IDS.secondTeam
+    );
+    await view.user.selectOptions(
       within(movePanel).getByLabelText("Rostered player"),
       IDS.prospectOwnership
     );
@@ -497,10 +501,7 @@ describe("M7-10 commissioner roster operations", () => {
       .getByRole("heading", { name: "Add a player" })
       .closest("section");
     const form = within(panel);
-    await view.user.selectOptions(
-      form.getByLabelText("Player"),
-      IDS.freeAgent
-    );
+    await view.user.type(form.getByLabelText("Find free agent"), "Free Agent");
     await view.user.selectOptions(
       form.getByLabelText("Destination team"),
       IDS.team
@@ -608,6 +609,10 @@ describe("M7-10 commissioner roster operations", () => {
       .getByRole("heading", { name: "Remove a player" })
       .closest("section");
     await view.user.selectOptions(
+      within(removePanel).getByLabelText("Team"),
+      IDS.team
+    );
+    await view.user.selectOptions(
       within(removePanel).getByLabelText("Rostered player"),
       IDS.ownership
     );
@@ -636,6 +641,10 @@ describe("M7-10 commissioner roster operations", () => {
     const movePanel = screen
       .getByRole("heading", { name: "Move or re-slot a player" })
       .closest("section");
+    await view.user.selectOptions(
+      within(movePanel).getByLabelText("Team"),
+      IDS.team
+    );
     await view.user.selectOptions(
       within(movePanel).getByLabelText("Rostered player"),
       IDS.ownership
@@ -672,6 +681,10 @@ describe("M7-10 commissioner roster operations", () => {
     const contractPanel = screen
       .getByRole("heading", { name: "Correct a contract" })
       .closest("section");
+    await view.user.selectOptions(
+      within(contractPanel).getByLabelText("Team"),
+      IDS.team
+    );
     await view.user.selectOptions(
       within(contractPanel).getByLabelText("Contracted player"),
       IDS.ownership

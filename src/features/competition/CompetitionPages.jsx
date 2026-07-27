@@ -472,7 +472,7 @@ function MatchupCard({ matchup, teams = [] }) {
           style={teamColourStyle(homeTeam)}
         >
           <span>Home</span>
-          <strong>{matchup.homeTeam.name}</strong>
+          <strong>{homeTeam.name}</strong>
           <b>{points(homeScore)} FP</b>
           <small>fantasy points</small>
         </div>
@@ -487,12 +487,12 @@ function MatchupCard({ matchup, teams = [] }) {
           style={teamColourStyle(awayTeam)}
         >
           <span>Away</span>
-          <strong>{matchup.awayTeam.name}</strong>
+          <strong>{awayTeam.name}</strong>
           <b>{points(awayScore)} FP</b>
           <small>fantasy points</small>
         </div>
       </header>
-      <h2 className="hl-visually-hidden" id="matchup-detail-title">{matchup.homeTeam.name} vs {matchup.awayTeam.name}</h2>
+      <h2 className="hl-visually-hidden" id="matchup-detail-title">{homeTeam.name} vs {awayTeam.name}</h2>
       <Health health={matchup.health} />
       {!scoring ? (
         <p>
@@ -519,8 +519,8 @@ function MatchupCard({ matchup, teams = [] }) {
               <caption>Player scoring for this matchup</caption>
               <thead>
                 <tr>
-                  <th colSpan="6" scope="colgroup">{matchup.homeTeam.name}</th>
-                  <th colSpan="6" scope="colgroup">{matchup.awayTeam.name}</th>
+                  <th colSpan="6" scope="colgroup">{homeTeam.name}</th>
+                  <th colSpan="6" scope="colgroup">{awayTeam.name}</th>
                 </tr>
                 <tr>
                   <th>Player</th><th>GP</th><th>G</th><th>A</th><th>PTS</th><th>FP</th>
