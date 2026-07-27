@@ -69,6 +69,29 @@ describe("createFrontendConfig", () => {
     ).toThrow("local origin");
   });
 
+  it("refuses cross-environment Hundo Leago backend origins", () => {
+    expect(() =>
+      createFrontendConfig({
+        VITE_APP_ENV: "staging",
+        VITE_API_ORIGIN: "https://hundo-leago-backend.onrender.com",
+        VITE_SOCKET_ORIGIN:
+          "https://hundo-leago-backend-staging.onrender.com",
+        VITE_BUILD_ID: "staging-build",
+      })
+    ).toThrow("wrong Hundo Leago environment");
+
+    expect(() =>
+      createFrontendConfig({
+        VITE_APP_ENV: "production",
+        VITE_API_ORIGIN:
+          "https://hundo-leago-backend-staging.onrender.com",
+        VITE_SOCKET_ORIGIN:
+          "https://hundo-leago-backend.onrender.com",
+        VITE_BUILD_ID: "production-build",
+      })
+    ).toThrow("wrong Hundo Leago environment");
+  });
+
   it("maps only legacy local endpoint variables and warns", () => {
     const warn = vi.fn();
     const config = createFrontendConfig(

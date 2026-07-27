@@ -48,9 +48,11 @@ secret changes, force-push, or merge to `main`.
    auction, or backend response details.
 5. Add static hosting security headers without changing application data or
    API authorization.
-6. Add focused regression coverage and extend the release-QA verifier for
+6. Reject staging builds configured for the production backend, and production
+   builds configured for the staging backend.
+7. Add focused regression coverage and extend the release-QA verifier for
    inherited administrator competition authority.
-7. Publish the exact verified commits to staging and complete hosted acceptance.
+8. Publish the exact verified commits to staging and complete hosted acceptance.
 
 ## Verification Gates
 
@@ -94,12 +96,13 @@ This plan is complete only when:
 1. both confirmed defects are fixed with regression coverage;
 2. client diagnostic payload logging is removed;
 3. hosting security headers are present on the public staging response;
-4. complete local gates pass except for any explicitly isolated workstation
+4. cross-environment backend origins are rejected by frontend configuration;
+5. complete local gates pass except for any explicitly isolated workstation
    runtime mismatch;
-5. the Render build passes under the pinned Node runtime;
-6. exact commits are published to both staging services;
-7. hosted role, isolation, preview, console, and health checks pass; and
-8. no known release-blocking regression remains in the tested scope.
+6. the Render build passes under the pinned Node runtime;
+7. exact commits are published to both staging services;
+8. hosted role, isolation, preview, console, and health checks pass; and
+9. no known release-blocking regression remains in the tested scope.
 
 ## Completion Evidence
 
