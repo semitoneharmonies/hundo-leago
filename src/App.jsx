@@ -223,7 +223,6 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   const [leagueLog, setLeagueLog] = useState([]);
   const [historyFilter, setHistoryFilter] = useState("all");
   const [hasLoaded, setHasLoaded] = useState(false);
-const saveTimerRef = useRef(null);
 const autoCancelLockRef = useRef(false);
 
 // ===============================
@@ -390,16 +389,13 @@ useEffect(() => {
   (async () => {
     try {
       const url = `${PLAYERS_API_URL}?limit=100000`;
-      console.log("[PLAYERS] preload url =", url);
 
       const res = await fetch(url);
-      console.log("[PLAYERS] preload status =", res.status);
 
       if (!res.ok) return;
 
       const data = await res.json();
       const arr = Array.isArray(data?.players) ? data.players : [];
-      console.log("[PLAYERS] preload count =", arr.length);
 
       if (cancelled) return;
 
@@ -408,11 +404,9 @@ useEffect(() => {
         upsertPlayers(arr);
         setPlayersReady(true);
         setPlayersTick((x) => x + 1);
-      } else {
-        console.warn("[PLAYERS] preload too small, leaving playersReady=false");
       }
-    } catch (e) {
-      console.warn("[PLAYERS] preload failed:", e);
+    } catch {
+      // The legacy catalog preload remains unavailable until the next mount.
     }
   })();
 
@@ -428,9 +422,7 @@ useEffect(() => {
 
   const fetchStats = async () => {
     try {
-      console.log("[STATS] fetching:", STATS_API_URL);
       const res = await fetch(STATS_API_URL);
-      console.log("[STATS] status:", res.status);
 
       if (!res.ok) return;
 
@@ -448,10 +440,9 @@ const ready = res.ok && count > 0;
 setStatsByPlayerId(by);
 setStatsReady(ready);
 
-console.log("[STATS] ready =", ready, "count =", count);
 
-    } catch (e) {
-      console.warn("[STATS] fetch failed:", e);
+    } catch {
+      // The periodic refresh retries statistics without exposing provider details.
     }
   };
 
@@ -533,8 +524,8 @@ if (missing.length === 0) {
       (pid) => !playersByIdRef.current.has(pid)
     );
     if (!stillMissing) setPlayersReady(true);
-  } catch (e) {
-    console.warn("[PLAYERS] prefetch failed:", e);
+  } catch {
+    // A later dependency change retries unresolved legacy player names.
   } finally {
     prefetchLockRef.current.running = false;
   }
@@ -624,16 +615,11 @@ function trimLeagueLogNewestFirst(log) {
 
 const commitLeagueUpdate = (reason, updater) => {
   if (!hasAuthenticatedBackendSession) {
-    console.warn(
-      "[COMMIT] blocked until secure backend sessions are available:",
-      reason
-    );
     return false;
   }
 
   // Local freeze gate (fast UX)
   if (typeof guardWriteIfFrozen === "function" && guardWriteIfFrozen()) {
-    console.warn("[COMMIT] blocked (frozen):", reason);
     return false;
   }
 
@@ -648,7 +634,6 @@ const commitLeagueUpdate = (reason, updater) => {
   }
 
   if (!cappedPatch) {
-    console.warn("[COMMIT] no-op:", reason);
     return false;
   }
 
@@ -660,7 +645,6 @@ const commitLeagueUpdate = (reason, updater) => {
 
   // Phase 0 shape safety: don’t allow accidental wipes / malformed writes
   if (!leagueStateLooksValid(next)) {
-    console.error("[COMMIT] rejected (invalid next state):", reason, next);
     return false;
   }
 
@@ -724,28 +708,13 @@ useEffect(() => {
 
   socketRef.current = socket;
 
-  socket.on("connect", () => {
-    console.log("[WS] connected:", socket.id);
-  });
-
-  socket.on("connect_error", (err) => {
-    const msg = String(err?.message || "");
-    if (import.meta.env.DEV && msg.includes("closed before the connection is established")) {
-      // harmless strict-mode hiccup
-      return;
-    }
-    console.warn("[WS] connect_error:", err);
-  });
-
   socket.on("league:updated", () => {
-    console.log("[WS] league updated → reloading");
     fetch(API_URL)
       .then((r) => r.json())
       .then((data) => {
         const loadedState = normalizeLoadedLeague(data);
 
         if (!leagueStateLooksValid(loadedState)) {
-          console.error("[WS] Invalid or incomplete league state on reload. Ignoring update.");
           return;
         }
 
@@ -769,18 +738,13 @@ useEffect(() => {
           setIntegrityMsg(
             "⚠️ Player ID migration required. Managers cannot make changes right now."
           );
-          console.warn("[INTEGRITY] legacy issues:", legacyIssues);
         } else {
           setIntegrityLock(false);
           setIntegrityMsg("");
         }
 
       })
-      .catch((err) => console.error("[WS] reload failed:", err));
-  });
-
-  socket.on("disconnect", () => {
-    console.log("[WS] disconnected");
+      .catch(() => {});
   });
 
   return () => {
@@ -795,7 +759,6 @@ useEffect(() => {
 useEffect(() => {
   if (!hasAuthenticatedBackendSession) return;
 
-  console.log("[LOAD] Fetching league from backend:", API_URL);
 
   fetch(API_URL)
     .then((res) => {
@@ -803,15 +766,11 @@ useEffect(() => {
       return res.json();
     })
     .then((data) => {
-      console.log("[LOAD] Backend responded with keys:", Object.keys(data || {}));
 
       const loadedState = normalizeLoadedLeague(data);
 
       // CRITICAL: Do NOT enter "loaded" mode unless the response is valid.
       if (!leagueStateLooksValid(loadedState)) {
-        console.error(
-          "[LOAD] Invalid or incomplete league state from backend. NOT enabling autosave."
-        );
         return; // hasLoaded stays false -> autosave never runs
       }
 
@@ -840,7 +799,6 @@ setSelectedTeamName((prev) => {
         setIntegrityMsg(
           "League contains legacy players/bids without playerId. Managers cannot make changes until commissioner migrates/fixes this."
         );
-        console.warn("[INTEGRITY] legacy issues:", legacyIssues);
       } else {
         setIntegrityLock(false);
         setIntegrityMsg("");
@@ -848,8 +806,7 @@ setSelectedTeamName((prev) => {
 
       setHasLoaded(true);
     })
-    .catch((err) => {
-      console.error("[LOAD] Failed to load league from backend:", err);
+    .catch(() => {
       // DO NOT setHasLoaded(true) here
     });
 }, [hasAuthenticatedBackendSession]);
@@ -858,28 +815,11 @@ setSelectedTeamName((prev) => {
 // M3-01: autosave remains disabled until backend sessions exist.
 useEffect(() => {
   if (!hasLoaded) return;
+  if (!hasAuthenticatedBackendSession) return;
 
-  if (!hasAuthenticatedBackendSession) {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-    return;
-  }
+  // Compatibility state is never persisted from the browser.
+}, [hasLoaded, hasAuthenticatedBackendSession]);
 
-  console.error(
-    "[SAVE] Refusing autosave because no authenticated backend session exists."
-  );
-}, [
-  hasLoaded,
-  hasAuthenticatedBackendSession,
-  teams,
-  tradeProposals,
-  freeAgents,
-  leagueLog,
-  tradeBlock,
-  leagueSettings,
-]);
 
   // --- Helpers ---
 
@@ -1573,7 +1513,6 @@ const offeredDetails = (newTrade.offeredPlayers || []).map((name) => {
 const handleCounterTrade = (trade) => {
   if (!trade || !currentUser) return;
 
-  console.log("[Counter] starting counter for trade:", trade);
 
   const now = Date.now();
 
@@ -1608,7 +1547,6 @@ const handleCounterTrade = (trade) => {
     retentionTo: { ...(trade.retentionFrom || {}) },
   };
 
-  console.log("[Counter] new draft built:", newDraft);
 
   setTradeDraft(newDraft);
 };
@@ -1691,17 +1629,6 @@ const handlePlaceBid = ({ playerId, playerName, position, amount }) => {
   if (!currentUser || currentUser.role !== "manager") {
     window.alert("Only logged-in managers can place bids.");
     return;
-  }
-
-  // TEMP DEBUG (remove after verification)
-  if (import.meta.env.DEV) {
-    console.log("[BID] handlePlaceBid received:", {
-      playerId,
-      playerIdType: typeof playerId,
-      playerName,
-      position,
-      amount,
-    });
   }
 
   const biddingTeamName = currentUser.teamName;

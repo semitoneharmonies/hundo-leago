@@ -696,8 +696,7 @@ export function buildTradeImpactPreview({
     }
 
     return { fromPreview, toPreview, issues };
-  } catch (err) {
-    console.error("[buildTradeImpactPreview] Failed to build preview", err);
+  } catch {
     return { fromPreview: null, toPreview: null, issues: [] };
   }
 }

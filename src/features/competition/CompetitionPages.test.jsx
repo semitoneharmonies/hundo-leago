@@ -764,7 +764,20 @@ describe("M6-12 authenticated competition pages", () => {
       if (path === `${prefix}/matchup-schedules`) {
         const body = JSON.parse(options.body);
         requests.push({ body, headers: options.headers });
-        if (!body.confirmed) return envelope({ code: "MATCHUP_SCHEDULE_PREVIEWED", preview: { expectedVersion: 3, participantCount: 6, weekCount: 22 } });
+        if (!body.confirmed) {
+          return envelope({
+            code: "MATCHUP_SCHEDULE_PREVIEWED",
+            preview: {
+              expectedVersion: 3,
+              participantCount: 6,
+              weekCount: 22,
+              matchupCount: 66,
+              byeCount: 0,
+              firstWeekStartsAtMs: Date.parse("2026-10-12T07:00:00.000Z"),
+              lastWeekEndsAtMs: Date.parse("2027-03-15T07:00:00.000Z"),
+            },
+          });
+        }
         return envelope({ code: "MATCHUP_SCHEDULE_GENERATED", result: { weekCount: 22 } }, 201);
       }
       throw new Error(`Unexpected request: ${path}`);
@@ -776,7 +789,15 @@ describe("M6-12 authenticated competition pages", () => {
       fetchImpl
     );
     await view.user.click(await screen.findByRole("button", { name: "Preview schedule generation" }));
-    await screen.findByText(/"expectedVersion": 3/);
+    const preview = await screen.findByRole("region", {
+      name: "Schedule generation preview",
+    });
+    expect(preview).toHaveTextContent("Teams included");
+    expect(preview).toHaveTextContent("Scheduled matchups");
+    expect(preview).toHaveTextContent("66");
+    expect(preview).toHaveTextContent("Current season version");
+    expect(preview).not.toHaveTextContent("expectedVersion");
+    expect(preview.querySelector("pre")).toBeNull();
     await view.user.click(screen.getByRole("button", { name: "Confirm schedule generation" }));
     await waitFor(() => expect(requests).toHaveLength(2));
     expect(requests.map(({ body }) => body)).toEqual([{ confirmed: false }, { confirmed: true }]);

@@ -633,6 +633,59 @@ function PreviewAction({
   previewDisabled = false,
   children,
 }) {
+  const previewMetrics =
+    title === "Schedule generation"
+      ? [
+          ["Teams included", preview?.participantCount ?? 0],
+          ["Matchup weeks", preview?.weekCount ?? 0],
+          ["Scheduled matchups", preview?.matchupCount ?? 0],
+          ["Team byes", preview?.byeCount ?? 0],
+          [
+            "First week starts",
+            previewTimestamp(preview?.firstWeekStartsAtMs),
+          ],
+          [
+            "Regular season ends",
+            previewTimestamp(preview?.lastWeekEndsAtMs),
+          ],
+          ["Current season version", preview?.expectedVersion ?? "Unavailable"],
+        ]
+      : title === "Week transition"
+        ? [
+            [
+              "Current status",
+              humanizeStatus(preview?.currentStatus),
+            ],
+            [
+              "Transition time",
+              previewTimestamp(preview?.effectiveAtMs),
+            ],
+            ["Current week version", preview?.expectedVersion ?? "Unavailable"],
+          ]
+        : title === "Result correction"
+          ? [
+              ["Selected result", "Official matchup result"],
+              ["Current result version", preview?.expectedVersion ?? "Unavailable"],
+            ]
+          : [
+              [
+                "Current standings snapshot",
+                preview?.currentSnapshotId ? "Available" : "Not created yet",
+              ],
+              [
+                "Next snapshot version",
+                preview?.nextSnapshotVersion ?? "Unavailable",
+              ],
+              [
+                "Finalized results included",
+                preview?.projection?.finalizedResultCount ?? 0,
+              ],
+              [
+                "Teams in projection",
+                preview?.projection?.rows?.length ?? 0,
+              ],
+            ];
+
   return (
     <section className="hl-surface hl-preview-action" style={card}>
       <h2>{title}</h2>
@@ -644,7 +697,50 @@ function PreviewAction({
         </button>
       ) : (
         <div>
-          <pre className="hl-snapshot">{JSON.stringify(preview, null, 2)}</pre>
+          <section
+            className="hl-commissioner-preview"
+            aria-label={`${title} preview`}
+          >
+            <p className="hl-eyebrow">Review before confirming</p>
+            <dl>
+              {previewMetrics.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+            {title === "Standings rebuild" &&
+            preview?.projection?.rows?.length > 0 ? (
+              <div className="hl-table-scroll">
+                <table className="hl-data-table hl-commissioner-preview__table">
+                  <caption>Projected standings after rebuild</caption>
+                  <thead>
+                    <tr>
+                      <th>Rank</th>
+                      <th>Team</th>
+                      <th>W</th>
+                      <th>L</th>
+                      <th>T</th>
+                      <th>PTS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.projection.rows.map((standing) => (
+                      <tr key={standing.teamId}>
+                        <td>{standing.rank}</td>
+                        <th scope="row">{standing.teamDisplayName}</th>
+                        <td>{standing.wins}</td>
+                        <td>{standing.losses}</td>
+                        <td>{standing.ties}</td>
+                        <td>{standing.standingsPoints}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </section>
           <div className="hl-button-row">
           <button className="hl-button hl-button--primary" type="button" onClick={onConfirm} disabled={mutation.isPending || confirmDisabled}>
             Confirm {title.toLowerCase()}
@@ -658,6 +754,22 @@ function PreviewAction({
       {mutation.isSuccess && !preview && <p role="status">Action completed.</p>}
     </section>
   );
+}
+
+function humanizeStatus(value) {
+  if (typeof value !== "string" || value === "") return "Unavailable";
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function previewTimestamp(value) {
+  if (!Number.isSafeInteger(value) || value < 0) return "Not set";
+  return new Intl.DateTimeFormat("en-CA", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Vancouver",
+  }).format(new Date(value));
 }
 
 export function CommissionerCompetitionPage() {

@@ -104,8 +104,7 @@ export default function StandingsPage() {
     fetch(`${API_BASE_URL}/api/matchups/standings`)
       .then((r) => r.json())
       .then(setData)
-      .catch((e) => {
-        console.error(e);
+      .catch(() => {
         setError("Failed to load standings");
       });
   }, []);

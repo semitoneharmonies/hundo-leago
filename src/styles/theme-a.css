@@ -3176,6 +3176,54 @@ textarea {
   gap: 10px;
 }
 
+.hl-commissioner-preview {
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--hl-accent) 24%, var(--hl-border));
+  border-radius: var(--hl-radius-md);
+  background: color-mix(in srgb, var(--hl-panel) 84%, var(--hl-accent) 4%);
+}
+
+.hl-commissioner-preview > p {
+  color: var(--hl-accent);
+}
+
+.hl-commissioner-preview dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.hl-commissioner-preview dl > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--hl-border);
+  border-radius: var(--hl-radius-sm);
+  background: color-mix(in srgb, var(--hl-background) 72%, transparent);
+}
+
+.hl-commissioner-preview dt {
+  color: var(--hl-muted-foreground);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hl-commissioner-preview dd {
+  margin: 0;
+  color: var(--hl-foreground);
+  font-family: var(--hl-font-mono);
+  font-size: 0.68rem;
+}
+
+.hl-commissioner-preview__table {
+  min-width: 480px;
+}
+
 .hl-teams-index > ul {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

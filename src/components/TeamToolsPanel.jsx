@@ -1398,10 +1398,6 @@ if (
                           onClick={() => {
   const norm = normalizeSearchPlayer(p);
 
-  // TEMP DEBUG (remove after verification)
-  console.log("[AUCTION] dropdown raw player:", p);
-  console.log("[AUCTION] dropdown normalized:", norm);
-
   if (!norm?.id) {
     window.alert("That player result is missing a valid NHL playerId. Try another search result.");
     return;
@@ -1469,7 +1465,6 @@ if (
 
       if (typeof onPlaceBid !== "function") {
         window.alert("Auction error: onPlaceBid is not wired (not a function).");
-        console.error("[AUCTION] onPlaceBid is not a function:", onPlaceBid);
         return;
       }
 
@@ -1511,9 +1506,8 @@ if (!isExistingAuction && isPlayerRostered(selectedAuctionPlayer.id || selectedA
       setSelectedAuctionPlayer(null);
       setPlayerSearchResults([]);
       setPlayerSearchOpen(false);
-    } catch (err) {
-      console.error("[AUCTION] Start/place bid crashed:", err);
-      window.alert("Auction crashed — check console for [AUCTION] error.");
+    } catch {
+      window.alert("The auction request failed. Please try again.");
     }
   }}
   style={{

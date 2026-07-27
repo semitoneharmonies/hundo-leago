@@ -478,7 +478,6 @@ export default function CommissionerPanel({
 
       setSelectedWeekIndex(idx);
     } catch (e) {
-      console.error("[MATCHUPS] load schedule failed:", e);
       setSchedError(e?.message || "Failed to load schedule.");
     } finally {
       setSchedLoading(false);
@@ -526,8 +525,7 @@ export default function CommissionerPanel({
       const list = Array.isArray(data?.snapshots) ? data.snapshots : [];
       setSnapshots(list);
       if (list.length && !selectedSnapshotId) setSelectedSnapshotId(list[0].id);
-    } catch (e) {
-      console.error("[SNAPSHOTS] load failed:", e);
+    } catch {
       setAdminMessage("Failed to load snapshots.");
     } finally {
       setSnapshotsLoading(false);
@@ -572,7 +570,6 @@ export default function CommissionerPanel({
 
       setAdminMessage(`Snapshot restored: ${snapshotId}`);
     } catch (e) {
-      console.error("[SNAPSHOTS] restore failed:", e);
       setAdminMessage(`Restore failed: ${e.message || "unknown error"}`);
     } finally {
       setBusy(false);
@@ -614,7 +611,6 @@ export default function CommissionerPanel({
       setAdminMessage("Snapshot created.");
       await loadSnapshots();
     } catch (e) {
-      console.error("[SNAPSHOTS] create failed:", e);
       setAdminMessage(`Snapshot create failed. ${e.message || ""}`.trim());
     } finally {
       setBusy(false);
@@ -691,7 +687,6 @@ export default function CommissionerPanel({
       setAdminMessage(`Saved: ${selectedWeek.weekId}`);
       await loadMatchupsSchedule(); // reload schedule from server so UI matches source of truth
     } catch (e) {
-      console.error("[MATCHUPS] save failed:", e);
       setSchedError(e?.message || "Save failed.");
       setAdminMessage(`Save failed: ${e?.message || "unknown error"}`);
     } finally {
@@ -791,8 +786,7 @@ export default function CommissionerPanel({
     try {
       const res = await playerApi.searchPlayers(q, 12);
       setResultsByKey((prev) => ({ ...prev, [rowKey]: Array.isArray(res) ? res : [] }));
-    } catch (e) {
-      console.warn("[MIGRATION] search failed:", e);
+    } catch {
       setResultsByKey((prev) => ({ ...prev, [rowKey]: [] }));
     } finally {
       setLoadingKey(null);
@@ -1039,8 +1033,7 @@ export default function CommissionerPanel({
     try {
       const res = await playerApi.searchPlayers(q, 10);
       setSearchResultsByRowId((prev) => ({ ...(prev || {}), [rowId]: Array.isArray(res) ? res : [] }));
-    } catch (e) {
-      console.warn("[ROW SEARCH] failed:", e);
+    } catch {
       setSearchResultsByRowId((prev) => ({ ...(prev || {}), [rowId]: [] }));
     } finally {
       setSearchLoadingRowId(null);

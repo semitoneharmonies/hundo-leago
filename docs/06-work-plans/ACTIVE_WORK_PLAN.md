@@ -6,86 +6,101 @@
 
 ## Plan Status
 
-`COMPLETE - STAGING ONLY`
+`IN PROGRESS - STAGING ONLY`
 
 ## Work Plan ID
 
 ```text
-M7-17
+M7-18
 ```
 
 ## Work Item
 
 ```text
-Trade-preview contract and requested-retention presentation
+Staging hardening and regression pass
 ```
 
 ## Authority and Boundary
 
-Grae authorized this frontend follow-up on `2026-07-26` after hosted manual
-testing. This plan permits a scoped trade-detail presentation change, focused
-and complete frontend verification, documentation, a staging branch push, and
-publication to the existing Netlify staging site.
+Grae authorized a thorough hardening and regression pass on `2026-07-27`,
+including any necessary staging-branch fixes and staging publication.
 
-This plan does not authorize a trade-contract change, backend or database
-change, email-environment change, production deployment, force-push, or
-unrelated transaction redesign.
+This plan permits read-only hosted inspection, local automated verification,
+scoped fixes for confirmed defects, regression coverage, exact staging-branch
+commits, and deployment to the existing isolated Netlify and Render staging
+resources.
+
+This plan does not authorize production changes, fixture reset, destructive
+database work, scheduled-job activation, provider refresh, outbound email,
+secret changes, force-push, or merge to `main`.
 
 ## Approved Scope
 
-1. Pair a requested-retention asset with its matching included player contract
-   using the stable contract ID.
-2. Render that contract and requested retention in one trade-preview card with
-   player name, contract AAV and term, roster category, and retained AAV.
-3. Keep draft picks and every other independent tradeable asset in separate
-   cards.
-4. Preserve unmatched or independently tradeable retention obligations rather
-   than hiding them.
-5. Add focused coverage, run the complete frontend gates, publish the exact
-   committed build to staging, and perform hosted browser acceptance.
-6. Report the existing account-email environment boundary and recommended
-   sender/reply-to setup without changing email delivery.
+1. Exercise administrator, commissioner, manager, account, league-isolation,
+   team, player, roster, auction, trade, matchup, standings, activity, and
+   notification workflows on hosted staging.
+2. Run complete frontend and backend automated gates, dependency-tree checks,
+   secret-pattern scans, unsafe-browser-API scans, and build verification.
+3. Fix confirmed staging defects that conflict with approved specifications:
+   inherited platform-administrator competition authority and raw technical
+   commissioner previews.
+4. Remove leftover client diagnostic logging that exposes transaction, player,
+   auction, or backend response details.
+5. Add static hosting security headers without changing application data or
+   API authorization.
+6. Add focused regression coverage and extend the release-QA verifier for
+   inherited administrator competition authority.
+7. Publish the exact verified commits to staging and complete hosted acceptance.
 
 ## Verification Gates
+
+Frontend:
 
 ```text
 npm run lint
 npm test -- --run
 npm run build
+npm run verify:m3-browser-authority
+npm ls --all
 git diff --check
 ```
 
+Backend:
+
+```text
+npm run check
+npm test
+npm ls --all
+git diff --check
+```
+
+The backend suite must also pass in the Render build under the pinned Node
+runtime. A local failure solely because the workstation Node patch version
+does not match the pinned runtime must be reported explicitly and must not be
+present in the Render build.
+
 ## Rollback
 
-- Redeploy the previous known-good Netlify staging release.
-- Revert only the scoped M7-17 frontend commits; do not rewrite history.
-- No backend or data rollback is expected.
+- Redeploy the prior known-good Netlify staging deploy.
+- Redeploy the prior known-good Render staging deploy.
+- Revert only the M7-18 commits in their respective repositories.
+- Do not rewrite history or restore a database; this work contains no schema or
+  persistent-data migration.
 
 ## Completion Conditions
 
 This plan is complete only when:
 
-1. matching requested retention renders within its contract card;
-2. draft picks and independent assets remain separate;
-3. focused and complete frontend gates pass;
-4. the exact committed build is published to staging;
-5. hosted acceptance passes; and
-6. no known release-blocking defect remains in this adjustment.
+1. both confirmed defects are fixed with regression coverage;
+2. client diagnostic payload logging is removed;
+3. hosting security headers are present on the public staging response;
+4. complete local gates pass except for any explicitly isolated workstation
+   runtime mismatch;
+5. the Render build passes under the pinned Node runtime;
+6. exact commits are published to both staging services;
+7. hosted role, isolation, preview, console, and health checks pass; and
+8. no known release-blocking regression remains in the tested scope.
 
 ## Completion Evidence
 
-M7-17 completed on staging on `2026-07-26`.
-
-- Frontend application and product-specification commit
-  `6ee9db750b2060f148fbd67b64278cc333bac53d` is published in ready
-  Netlify staging deploy `6a66f059a77bc9c3d416ccb3`.
-- The complete frontend gate passed `125/125` tests across 23 files. The
-  focused transaction suite passed `11/11`; lint, configured staging build,
-  and `git diff --check` also passed.
-- Hosted commissioner acceptance opened the accepted
-  **Riddles ↔ The Boobies** proposal. Adam Pelech's contract and requested
-  `$1.00` retention appeared in one **Contract + retention** card, while the
-  included 2028-29 round-three draft pick remained a separate card.
-- The proposal records and API contract were unchanged. No trade, backend,
-  database, fixture, Render service, email configuration, or production state
-  changed.
+To be recorded after staging deployment and hosted acceptance.
