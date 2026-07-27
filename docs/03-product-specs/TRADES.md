@@ -775,6 +775,14 @@ Authenticated league proposal views show:
 * automatic-cancellation reason;
 * completion, reversal, or correction references.
 
+When a proposal requests new salary retention on an included player contract,
+the proposal view presents that requested retention within the matching
+contract card. The combined card shows the player, contract AAV and term,
+roster category, and requested retained AAV. Draft picks, existing retention
+obligations, and every other independent tradeable asset remain separate
+items. Pairing uses the stable contract ID and does not change the underlying
+proposal assets.
+
 The initial release uses one normal proposal list with status filters for pending and other non-expired proposal states. Expired proposals leave that interface and remain available in League Activity. Alternate view methods may be added in future updates.
 
 ---

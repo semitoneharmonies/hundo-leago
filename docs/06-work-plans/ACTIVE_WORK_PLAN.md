@@ -6,58 +6,45 @@
 
 ## Plan Status
 
-`COMPLETE - STAGING ONLY`
+`IN PROGRESS - STAGING ONLY`
 
 ## Work Plan ID
 
 ```text
-M7-16
+M7-17
 ```
 
 ## Work Item
 
 ```text
-Staging trade navigation, roster asset shortcuts, draft-pick identity,
-and commissioner matchup motion
+Trade-preview contract and requested-retention presentation
 ```
 
 ## Authority and Boundary
 
-Grae authorized this frontend follow-up on `2026-07-26` after a
-screenshot-supported staging review and directed that the completed batch be
-pushed to the existing staging site for testing.
+Grae authorized this frontend follow-up on `2026-07-26` after hosted manual
+testing. This plan permits a scoped trade-detail presentation change, focused
+and complete frontend verification, documentation, a staging branch push, and
+publication to the existing Netlify staging site.
 
-This plan permits scoped frontend changes, tests, documentation, a staging
-branch push, and publication to the existing Netlify staging site. It does not
-authorize production deployment, backend or database changes, force-pushing,
-or unrelated product work.
+This plan does not authorize a trade-contract change, backend or database
+change, email-environment change, production deployment, force-push, or
+unrelated transaction redesign.
 
 ## Approved Scope
 
-1. Highlight a pending proposal on the Trades page when the signed-in
-   receiving manager is expected to respond.
-2. Link a received-trade notification directly to that proposal and open its
-   backend-authoritative acceptance preview.
-3. Animate the commissioner dashboard's five-second matchup rotation from
-   right to left, with reduced-motion support.
-4. Apply the approved team-stripe identity treatment to player cards in the
-   roster hockey-lines view, retaining a dark-blue name area.
-5. Replace the Players-page favourite helmet with a simple hockey-stick icon.
-6. Provide another team's players and owned draft picks as stable-ID trade
-   request shortcuts that open the proposal builder with the receiving side
-   preloaded.
-7. Present owned draft picks in a four-year, four-round matrix using each
-   pick's original-team logo or team-colour fallback.
-8. Add focused coverage, run the complete frontend gates, publish the exact
-   committed build to staging, and perform connected-browser acceptance.
-
-## Authority Reconciliation
-
-The attached visual reference contained seven round columns. The approved Entry
-Draft product specification defines four linear rounds, so this implementation
-uses the reference's matrix and original-owner identity treatment while
-displaying the authoritative four rounds. All preloaded trade assets use stable
-backend IDs; display names and team colours are presentation only.
+1. Pair a requested-retention asset with its matching included player contract
+   using the stable contract ID.
+2. Render that contract and requested retention in one trade-preview card with
+   player name, contract AAV and term, roster category, and retained AAV.
+3. Keep draft picks and every other independent tradeable asset in separate
+   cards.
+4. Preserve unmatched or independently tradeable retention obligations rather
+   than hiding them.
+5. Add focused coverage, run the complete frontend gates, publish the exact
+   committed build to staging, and perform hosted browser acceptance.
+6. Report the existing account-email environment boundary and recommended
+   sender/reply-to setup without changing email delivery.
 
 ## Verification Gates
 
@@ -68,58 +55,23 @@ npm run build
 git diff --check
 ```
 
-Focused browser acceptance must cover:
-
-- receiving-manager trade-list highlighting;
-- notification-to-acceptance-preview navigation;
-- player and draft-pick request shortcuts with the correct proposal side;
-- the four-round draft-pick matrix and original-team identity;
-- hockey-line team stripes;
-- the hockey-stick favourite action; and
-- commissioner matchup rotation motion.
-
 ## Rollback
 
 - Redeploy the previous known-good Netlify staging release.
-- Revert only the scoped M7-16 frontend commits; do not rewrite history.
-- No backend or data rollback is expected because this work creates no backend,
-  migration, fixture, or persistent-data change.
+- Revert only the scoped M7-17 frontend commits; do not rewrite history.
+- No backend or data rollback is expected.
 
 ## Completion Conditions
 
 This plan is complete only when:
 
-1. all approved items are implemented;
-2. focused and complete frontend gates pass;
-3. canonical documentation matches the shipped behavior;
-4. the scoped staging commit is pushed;
-5. the exact committed build is published to Netlify staging;
-6. focused hosted acceptance passes; and
-7. no known release-blocking defect remains in this batch.
+1. matching requested retention renders within its contract card;
+2. draft picks and independent assets remain separate;
+3. focused and complete frontend gates pass;
+4. the exact committed build is published to staging;
+5. hosted acceptance passes; and
+6. no known release-blocking defect remains in this adjustment.
 
 ## Completion Evidence
 
-M7-16 completed on staging on `2026-07-26`.
-
-- Frontend application and specification commit
-  `32b0e444aa546eca5c7c33a662cb9136cb611c61` is published in ready
-  Netlify staging deploy `6a66ea347cac9a645d5059d7`.
-- The complete frontend gate passed `124/124` tests across 23 files. Lint,
-  configured staging build, and `git diff --check` also passed.
-- Hosted receiving-manager acceptance confirmed that two pending proposals
-  display the high-emphasis **Awaiting your response** treatment on the normal
-  Trades page.
-- A pending received-trade notification deep-linked to the identified proposal,
-  marked the notice read, and automatically loaded the backend-authoritative
-  acceptance preflight with the explicit confirmation action.
-- Hosted manager acceptance confirmed player and draft-pick request shortcuts,
-  correct proposing and receiving teams, the requested asset on the receiving
-  side, the four-year/four-round pick matrix, original-owner identity marks,
-  striped hockey-line player cards, and 100 hockey-stick favourite controls.
-- Hosted commissioner acceptance confirmed the matchup spotlight advanced
-  between pairings after five seconds and used the
-  `hl-dashboard-spotlight-swipe` animation.
-- No proposal was submitted, accepted, or declined during acceptance. No
-  backend repository, migration, fixture, database, Render service, production
-  branch, production service, production data, or production configuration
-  changed.
+Pending staging publication and hosted acceptance.

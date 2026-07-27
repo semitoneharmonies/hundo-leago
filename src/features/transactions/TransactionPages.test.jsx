@@ -485,6 +485,108 @@ describe("M5-11 authenticated transaction pages", () => {
     expect(await screen.findByRole("button", { name: "Confirm and accept trade" })).toBeInTheDocument();
   });
 
+  it("groups requested retention with its player contract while keeping draft picks separate", async () => {
+    const retentionAssetId = correctionId;
+    const draftPickId = ownershipId;
+    const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades/${tradeId}`) {
+        return envelope({
+          code: "TRADE_PROPOSAL_FOUND",
+          proposal: {
+            id: tradeId,
+            leagueId,
+            seasonId,
+            proposingTeam: { id: teamA, name: "Managed Team" },
+            receivingTeam: { id: teamB, name: "Other Team" },
+            proposingUserId: "user-1",
+            status: "Pending",
+            storageStatus: "proposed",
+            createdAtMs: 1,
+            expiresAtMs: 99,
+            tradeDeadlineAtMs: null,
+            effectiveDeadlineAtMs: 99,
+            respondedAtMs: null,
+            completedAtMs: null,
+            commissionerCompletionReference: null,
+            version: 1,
+            assets: [
+              {
+                id: assetId,
+                type: "contract",
+                sourceTeamId: teamA,
+                snapshot: {
+                  type: "contract",
+                  player: { name: "Adam Pelech" },
+                  contract: {
+                    id: assetId,
+                    aavCents: 200,
+                    originalTermYears: 1,
+                  },
+                  ownership: { rosterCategory: "Active" },
+                },
+              },
+              {
+                id: retentionAssetId,
+                type: "requested_retention",
+                sourceTeamId: teamA,
+                snapshot: {
+                  type: "requested_retention",
+                  contractId: assetId,
+                  retainedAavCents: 100,
+                },
+              },
+              {
+                id: draftPickId,
+                type: "draft_pick",
+                sourceTeamId: teamA,
+                snapshot: {
+                  type: "draft_pick",
+                  targetSeasonLabel: "2027-28",
+                  roundNumber: 1,
+                  positionNumber: 4,
+                },
+              },
+            ],
+            history: [
+              {
+                id: retentionAssetId,
+                actorUserId: "user-1",
+                type: "proposal_created",
+                reason: null,
+                metadata: {},
+                occurredAtMs: 1,
+              },
+            ],
+          },
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    renderPage(
+      `/leagues/${leagueId}/trades/${tradeId}`,
+      "/leagues/:leagueId/trades/:tradeId",
+      <TradeDetailPage />,
+      fetchImpl
+    );
+
+    const contract = await screen.findByText("Adam Pelech");
+    const contractCard = contract.closest(".hl-trade-asset-card");
+    expect(contractCard).not.toBeNull();
+    expect(within(contractCard).getByText("Contract + retention")).toBeInTheDocument();
+    expect(
+      within(contractCard).getByText(
+        "$2.00 AAV · 1-year original term · Active · with $1.00 retained salary"
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Requested salary retention")
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("2027-28 Round 1")).toBeInTheDocument();
+    expect(screen.getByText("Pick 4")).toBeInTheDocument();
+    expect(document.querySelectorAll(".hl-trade-asset-card")).toHaveLength(2);
+  });
+
   it("renders commissioner correction attribution, scope, result, and reason without raw metadata", async () => {
     const occurredAtMs = Date.parse("2026-07-25T18:30:00.000Z");
     const fetchImpl = baseFetch((path) => {

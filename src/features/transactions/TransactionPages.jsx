@@ -935,14 +935,24 @@ function Snapshot({ value }) {
   );
 }
 
-function AssetSummary({ asset }) {
+function AssetSummary({ asset, requestedRetention = null }) {
   const snapshot = asset.snapshot;
   let title = activityWords(asset.type);
   let description = "";
   switch (asset.type) {
     case "contract":
       title = snapshot.player?.name || "Player contract";
-      description = `${money(snapshot.contract?.aavCents || 0)} AAV · ${snapshot.contract?.originalTermYears || 0}-year original term · ${activityWords(snapshot.ownership?.rosterCategory || "Rostered")}`;
+      description = `${money(snapshot.contract?.aavCents || 0)} AAV · ${
+        snapshot.contract?.originalTermYears || 0
+      }-year original term · ${activityWords(
+        snapshot.ownership?.rosterCategory || "Rostered"
+      )}${
+        requestedRetention
+          ? ` · with ${money(
+              requestedRetention.snapshot.retainedAavCents || 0
+            )} retained salary`
+          : ""
+      }`;
       break;
     case "prospect_right":
       title = snapshot.player?.name || "Prospect";
@@ -976,14 +986,53 @@ function AssetSummary({ asset }) {
   }
   return (
     <article className="hl-trade-asset-card">
-      <span className="hl-position-tag">{activityWords(asset.type)}</span>
+      <span className="hl-position-tag">
+        {requestedRetention
+          ? "Contract + retention"
+          : activityWords(asset.type)}
+      </span>
       <strong>{title}</strong>
       <p>{description}</p>
     </article>
   );
 }
 
+function groupRequestedRetention(assets) {
+  const requestedByContractId = new Map();
+  for (const asset of assets) {
+    const contractId =
+      asset.type === "requested_retention"
+        ? asset.snapshot?.contractId
+        : null;
+    if (contractId && !requestedByContractId.has(contractId)) {
+      requestedByContractId.set(contractId, asset);
+    }
+  }
+
+  const retentionByContractAssetId = new Map();
+  const groupedRetentionIds = new Set();
+  for (const asset of assets) {
+    const contractId =
+      asset.type === "contract" ? asset.snapshot?.contract?.id : null;
+    const requestedRetention = contractId
+      ? requestedByContractId.get(contractId)
+      : null;
+    if (requestedRetention) {
+      retentionByContractAssetId.set(asset.id, requestedRetention);
+      groupedRetentionIds.add(requestedRetention.id);
+    }
+  }
+
+  return assets
+    .filter((asset) => !groupedRetentionIds.has(asset.id))
+    .map((asset) => ({
+      asset,
+      requestedRetention: retentionByContractAssetId.get(asset.id) || null,
+    }));
+}
+
 function TradeTeamPanel({ team, assets }) {
+  const groupedAssets = groupRequestedRetention(assets);
   return (
     <section className="hl-trade-team-panel">
       <h3>{team.name} sends</h3>
@@ -991,8 +1040,12 @@ function TradeTeamPanel({ team, assets }) {
         <p>No assets from this team.</p>
       ) : (
         <div className="hl-trade-asset-list">
-          {assets.map((asset) => (
-            <AssetSummary key={asset.id} asset={asset} />
+          {groupedAssets.map(({ asset, requestedRetention }) => (
+            <AssetSummary
+              key={asset.id}
+              asset={asset}
+              requestedRetention={requestedRetention}
+            />
           ))}
         </div>
       )}
