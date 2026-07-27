@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`IN PROGRESS - STAGING ONLY`
+`COMPLETE - STAGING ONLY`
 
 ## Work Plan ID
 
@@ -99,4 +99,27 @@ This plan is complete only when:
 
 ## Completion Evidence
 
-Pending staging publication and hosted acceptance.
+M7-16 completed on staging on `2026-07-26`.
+
+- Frontend application and specification commit
+  `32b0e444aa546eca5c7c33a662cb9136cb611c61` is published in ready
+  Netlify staging deploy `6a66ea347cac9a645d5059d7`.
+- The complete frontend gate passed `124/124` tests across 23 files. Lint,
+  configured staging build, and `git diff --check` also passed.
+- Hosted receiving-manager acceptance confirmed that two pending proposals
+  display the high-emphasis **Awaiting your response** treatment on the normal
+  Trades page.
+- A pending received-trade notification deep-linked to the identified proposal,
+  marked the notice read, and automatically loaded the backend-authoritative
+  acceptance preflight with the explicit confirmation action.
+- Hosted manager acceptance confirmed player and draft-pick request shortcuts,
+  correct proposing and receiving teams, the requested asset on the receiving
+  side, the four-year/four-round pick matrix, original-owner identity marks,
+  striped hockey-line player cards, and 100 hockey-stick favourite controls.
+- Hosted commissioner acceptance confirmed the matchup spotlight advanced
+  between pairings after five seconds and used the
+  `hl-dashboard-spotlight-swipe` animation.
+- No proposal was submitted, accepted, or declined during acceptance. No
+  backend repository, migration, fixture, database, Render service, production
+  branch, production service, production data, or production configuration
+  changed.

@@ -1727,6 +1727,28 @@ player-name autocomplete, and the high-contrast team badge. Public liveness
 and readiness remain healthy. No database migration, fixture reset, or
 production change occurred.
 
+M7-16 trade navigation and roster-asset follow-up is published as frontend
+commit `32b0e444aa546eca5c7c33a662cb9136cb611c61` in ready Netlify
+staging deploy `6a66ea347cac9a645d5059d7`. The receiving manager's normal
+Trades page now highlights proposals awaiting that manager's response, and
+received-trade notifications deep-link to the identified pending proposal and
+load its backend-authoritative acceptance preflight. Another team's player and
+draft-pick controls open the proposal builder with stable team and asset IDs on
+the requested side. Owned picks use a four-year by four-round matrix, matching
+the approved four-round Entry Draft rather than the seven columns in the visual
+reference, with original-owner logo or team-colour identity. Hockey-line player
+cards use the team-stripe identity treatment, the favourite action uses a
+hockey stick, and the commissioner matchup spotlight advances every five
+seconds with right-to-left motion and reduced-motion support.
+
+The complete M7-16 frontend gates pass: lint, configured staging build,
+`124/124` tests across 23 files, and `git diff --check`. Hosted manager and
+commissioner acceptance confirmed trade-list highlighting, notification
+preflight navigation, player and pick preloading, the draft matrix, line-card
+stripes, hockey-stick controls, and matchup rotation motion. No proposal was
+submitted or resolved during acceptance. The backend, migration state,
+fixture, database, Render service, and production remain untouched.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 
