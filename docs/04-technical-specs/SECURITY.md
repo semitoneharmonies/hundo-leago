@@ -603,8 +603,9 @@ incompatible idempotency reuse are terminal.
 Provider acceptance means only that the message was accepted for processing;
 it is not evidence of inbox delivery. Local and test use capture or disabled
 mode. Staging sandbox mode forces the recipient to Resend's non-delivering
-`delivered@resend.dev` test address. Production send mode uses the verified
-account address.
+`delivered@resend.dev` test address. Staging allowlist mode sends only to exact
+configured test recipients and rejects every other address before contacting
+the provider. Production send mode uses the verified account address.
 
 ---
 

@@ -658,7 +658,8 @@ They must be inventoried during `FE-00`, mapped deliberately where still require
 | `LOG_LEVEL` | Yes | Approved structured-log threshold |
 | `SCHEDULED_JOBS_ENABLED` | Yes | Explicit `true` or `false`; no truthy string coercion |
 | `DEBUG_ROUTES_ENABLED` | Yes | Explicit `true` or `false` |
-| `EMAIL_DELIVERY_MODE` | Yes | `disabled`, `capture`, `sandbox`, or `send` |
+| `EMAIL_DELIVERY_MODE` | Yes | `disabled`, `capture`, `sandbox`, `allowlist`, or `send` |
+| `STAGING_EMAIL_RECIPIENT_ALLOWLIST` | Staging allowlist mode only | Comma-separated exact test recipients approved to receive staging account email |
 | `SPORTSDATAIO_NHL_API_KEY` | Staging-only managed secret | SportsDataIO Discovery Lab server credential; never exposed to the browser or logs |
 | `SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR` | Required when the SportsDataIO staging secret is set | Four-digit start year for the approved last-season dataset |
 | `SPORTSDATAIO_NHL_API_ORIGIN` | Optional staging-only non-secret | Canonical SportsDataIO Discovery Lab NHL fantasy origin; defaults to `https://api.sportsdata.io/api/nhl/fantasy` |
@@ -678,7 +679,7 @@ Unknown enum values fail startup.
 | `RATE_LIMIT_KEY_SECRET` | Staging and production | HMAC key for privacy-preserving durable rate-limit keys |
 | `AUDIT_METADATA_SECRET` | Staging and production | HMAC key for protected audit metadata |
 | `ACTION_TOKEN_DELIVERY_KEY` | Staging and production | Versioned 32-byte AES-256-GCM key for short-lived encrypted account-link outbox envelopes |
-| `RESEND_API_KEY` | Staging sandbox and production send modes | Environment-specific send-only Resend authentication |
+| `RESEND_API_KEY` | Staging sandbox/allowlist and production send modes | Environment-specific send-only Resend authentication |
 | backup variables defined by Backup and Restore | Staging and production | Encryption and offsite storage |
 
 Secrets:
@@ -710,6 +711,7 @@ EMAIL_DELIVERY_MODE
 EMAIL_FROM
 EMAIL_REPLY_TO
 RESEND_API_KEY
+STAGING_EMAIL_RECIPIENT_ALLOWLIST
 PUBLIC_FRONTEND_ORIGIN
 ACTION_TOKEN_DELIVERY_KEY
 ```
@@ -719,16 +721,19 @@ Rules:
 * Resend is the approved transactional provider;
 * `production` requires `send` with a verified sender and a send-only
   `RESEND_API_KEY`;
-* `staging` may use `capture` or `sandbox`, never unrestricted production
-  sending;
+* `staging` may use `capture`, `sandbox`, or `allowlist`, never unrestricted
+  production sending;
 * `local` and `test` use `capture` or `disabled`;
-* `EMAIL_FROM` is required in `sandbox` and `send`; `EMAIL_REPLY_TO` is
+* `EMAIL_FROM` is required in `sandbox`, `allowlist`, and `send`; `EMAIL_REPLY_TO` is
   optional but validated when present;
-* a missing or malformed provider credential in `sandbox` or `send` fails
+* a missing or malformed provider credential in `sandbox`, `allowlist`, or `send` fails
   startup, while a provider credential in `capture` or `disabled` also fails
   closed;
 * staging `sandbox` sends every provider request to Resend's non-delivering
   `delivered@resend.dev` test address rather than the account address;
+* staging `allowlist` sends only when the normalized account address exactly
+  matches `STAGING_EMAIL_RECIPIENT_ALLOWLIST`; every other recipient fails
+  closed before a provider request;
 * every provider request carries the durable outbox event ID as its
   `Idempotency-Key`;
 * captured email is stored only in that environment's temporary or persistent test area;
