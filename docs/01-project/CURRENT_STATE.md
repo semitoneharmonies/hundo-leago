@@ -1795,6 +1795,25 @@ and whole-page overflow. Backend liveness returned `200`, and the inspected
 Render window contained no application errors or `5xx` requests. The backend,
 database, fixture, email, provider, jobs, and production remain untouched.
 
+M7-20 restores the legacy static hockey-quote catalog to the modern
+authenticated application shell in frontend commit `bc42937`. Quotes are
+shuffled in memory on each full page load and move continuously from right to
+left through the flexible top-bar space between location and account controls.
+The ticker is clipped, low-contrast, slow, hover- and focus-pausable, and
+reduced-motion aware. It performs no API request, mutation, or modern
+browser-storage write.
+
+Ready Netlify staging deploy `6a677c25e8319f5595bb8e36` passed hosted
+administrator acceptance at 390- and 1280-pixel viewports. The quote order
+changed on reload, normal motion ran without layout overflow, keyboard focus
+paused the track, navigation and account controls retained their space, and
+the browser console remained free of errors. The complete frontend gate passes
+lint, `131/131` tests across 24 files, the staging-configured production build,
+browser-authority verification across 18 compatibility files and 103 shipped
+source files, dependency-tree validation, and `git diff --check`. The quote
+catalog remains verbatim; no backend, database, fixture, email, provider, job,
+or production change occurred.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 
