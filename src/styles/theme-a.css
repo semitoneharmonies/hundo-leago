@@ -54,7 +54,15 @@
 .hl-roster-hero--striped::after {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.72));
+  background:
+    linear-gradient(
+      90deg,
+      #091121 0 26%,
+      rgb(9 17 33 / 96%) 38%,
+      rgb(9 17 33 / 68%) 52%,
+      rgb(9 17 33 / 18%) 72%,
+      transparent 88%
+    );
   content: "";
   pointer-events: none;
 }
@@ -4225,21 +4233,42 @@ textarea {
 }
 
 /* M7-14 team identity and review refinements */
-.hl-teams-index__team {
-  background:
-    linear-gradient(90deg, #08111f 0 32%, rgb(8 17 31 / 88%) 43%, transparent 72%),
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--team-primary) 82%, #020617) 0 50%,
-      color-mix(in srgb, var(--team-secondary) 74%, #020617) 50% 100%);
+.hl-teams-index a.hl-teams-index__team {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--team-primary) 82%, #020617) 0 50%,
+    color-mix(in srgb, var(--team-secondary) 74%, #020617) 50% 100%);
 }
 
-.hl-teams-index__team.has-three-colours {
+.hl-teams-index a.hl-teams-index__team.has-three-colours {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--team-primary) 82%, #020617) 0 34%,
+    color-mix(in srgb, var(--team-secondary) 74%, #020617) 34% 66%,
+    color-mix(in srgb, var(--team-tertiary) 82%, #020617) 66% 100%);
+}
+
+.hl-teams-index__team::before,
+.hl-team-grid__team::before {
+  position: absolute;
+  inset: 0;
   background:
-    linear-gradient(90deg, #08111f 0 32%, rgb(8 17 31 / 88%) 43%, transparent 72%),
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--team-primary) 82%, #020617) 0 34%,
-      color-mix(in srgb, var(--team-secondary) 74%, #020617) 34% 66%,
-      color-mix(in srgb, var(--team-tertiary) 82%, #020617) 66% 100%);
+    linear-gradient(
+      90deg,
+      #091121 0 25%,
+      rgb(9 17 33 / 98%) 36%,
+      rgb(9 17 33 / 76%) 48%,
+      rgb(9 17 33 / 24%) 66%,
+      transparent 82%
+    );
+  content: "";
+  pointer-events: none;
+}
+
+.hl-teams-index__team > *,
+.hl-team-grid__team > * {
+  position: relative;
+  z-index: 1;
 }
 
 .hl-teams-index__identity {
@@ -4280,6 +4309,30 @@ textarea {
   background: rgb(2 6 23 / 74%);
   box-shadow: 0 12px 28px rgb(0 0 0 / 25%);
   backdrop-filter: blur(5px);
+}
+
+.hl-team-grid > a.hl-team-grid__team {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--team-primary) 82%, #020617) 0 50%,
+    color-mix(in srgb, var(--team-secondary) 74%, #020617) 50% 100%);
+}
+
+.hl-team-grid > a.hl-team-grid__team.has-three-colours {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--team-primary) 82%, #020617) 0 34%,
+    color-mix(in srgb, var(--team-secondary) 74%, #020617) 34% 66%,
+    color-mix(in srgb, var(--team-tertiary) 82%, #020617) 66% 100%);
+}
+
+.hl-team-grid__team strong {
+  color: #fff;
+  text-shadow: 0 1px 3px #020617;
+}
+
+.hl-team-grid__team small {
+  color: #a9b9d1;
 }
 
 .hl-account-team-mark {
@@ -4494,22 +4547,45 @@ textarea {
   font-size: 0.55rem;
 }
 
-.hl-matchup-score__team {
+.hl-matchup-score > .hl-matchup-score__team {
+  position: relative;
+  overflow: hidden;
   background:
-    linear-gradient(90deg, rgb(2 6 23 / 22%), rgb(2 6 23 / 88%)),
     linear-gradient(180deg,
       var(--team-primary) 0 50%,
       var(--team-secondary) 50% 100%);
   text-shadow: 0 2px 4px #020617;
 }
 
-.hl-matchup-score__team.has-three-colours {
+.hl-matchup-score > .hl-matchup-score__team.has-three-colours {
   background:
-    linear-gradient(90deg, rgb(2 6 23 / 22%), rgb(2 6 23 / 88%)),
     linear-gradient(180deg,
       var(--team-primary) 0 34%,
       var(--team-secondary) 34% 66%,
       var(--team-tertiary) 66% 100%);
+}
+
+.hl-matchup-score__team::before {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 8%,
+      rgb(9 17 33 / 34%) 22%,
+      rgb(9 17 33 / 86%) 38%,
+      #091121 48% 52%,
+      rgb(9 17 33 / 86%) 62%,
+      rgb(9 17 33 / 34%) 78%,
+      transparent 92% 100%
+    );
+  content: "";
+  pointer-events: none;
+}
+
+.hl-matchup-score__team > * {
+  position: relative;
+  z-index: 1;
 }
 
 .hl-matchup-score__team > span:first-child,
@@ -4553,23 +4629,6 @@ textarea {
 .hl-matchup-table th:nth-child(7),
 .hl-matchup-table td:nth-child(7) {
   border-left: 2px solid color-mix(in srgb, var(--hl-border) 90%, #2563eb);
-}
-
-.hl-matchup-score__team:last-child {
-  background:
-    linear-gradient(90deg, rgb(2 6 23 / 88%), rgb(2 6 23 / 22%)),
-    linear-gradient(180deg,
-      var(--team-primary) 0 50%,
-      var(--team-secondary) 50% 100%);
-}
-
-.hl-matchup-score__team:last-child.has-three-colours {
-  background:
-    linear-gradient(90deg, rgb(2 6 23 / 88%), rgb(2 6 23 / 22%)),
-    linear-gradient(180deg,
-      var(--team-primary) 0 34%,
-      var(--team-secondary) 34% 66%,
-      var(--team-tertiary) 66% 100%);
 }
 
 .hl-compact-list > li.is-managed-team {

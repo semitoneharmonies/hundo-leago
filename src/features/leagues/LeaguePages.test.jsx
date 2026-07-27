@@ -377,6 +377,13 @@ describe("league selection", () => {
       "href",
       `/leagues/${leagueOneId}/teams/${teamId}/roster`
     );
+    expect(screen.getByRole("link", { name: "Target Owls" })).toHaveClass(
+      "hl-team-grid__team"
+    );
+    expect(screen.getByRole("link", { name: "Target Owls" })).toHaveStyle({
+      "--team-primary": "#16324f",
+      "--team-secondary": "#f7f7f7",
+    });
     expect(screen.getByText(/managed by you/i)).toBeInTheDocument();
   });
 

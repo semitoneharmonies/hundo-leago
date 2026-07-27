@@ -30,6 +30,10 @@ import {
   relativeTime,
 } from "../../shared/hundoFormat.js";
 import {
+  teamColourClass,
+  teamColourStyle,
+} from "../../shared/teamIdentity.js";
+import {
   currentMatchupWeekQuery,
   matchupQuery,
   standingsQuery,
@@ -980,6 +984,8 @@ function TeamsPanel({ leagueId, teams, currentUserId }) {
                 key={team.id}
                 to={routePaths.teamRoster(leagueId, team.id)}
                 aria-label={team.name}
+                className={teamColourClass("hl-team-grid__team", team)}
+                style={teamColourStyle(team)}
               >
                 <span className="hl-team-grid__mark" aria-hidden="true">
                   {team.name.slice(0, 2).toUpperCase()}

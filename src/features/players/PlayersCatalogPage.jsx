@@ -88,25 +88,35 @@ function SortHeading({ activeSort, label, sortKey, onSort }) {
 function HockeyHelmetIcon() {
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox="0 0 32 32"
       aria-hidden="true"
       focusable="false"
       className="hl-hockey-helmet"
     >
       <path
-        d="M4.2 10.6c0-4.4 3.4-7.6 7.8-7.6s7.8 3.2 7.8 7.6v2.8H4.2v-2.8Z"
+        d="M5 14.2C5 7.1 9.5 3 16 3s11 4.1 11 11.2v3.3l-2.5 3H7.5l-2.5-3v-3.3Z"
         fill="currentColor"
       />
       <path
-        d="M6.2 5.8 4.9 3.2l3.5 1.1m9.4 1.5 1.3-2.6-3.5 1.1M4.2 9.4h15.6M7 13.4v3.4c0 2.3 1.8 4.2 4.1 4.2h1.8c2.3 0 4.1-1.9 4.1-4.2v-3.4"
-        fill="none"
+        d="M8.2 10.7 12 9.8l-.8-2.2-3.9 1.2.9 1.9Zm15.6 0L20 9.8l.8-2.2 3.9 1.2-.9 1.9ZM7 14.2h18v3.6H7v-3.6Z"
+        fill="var(--hl-panel)"
+      />
+      <path
+        d="M9.2 18.8h13.6v4.7c0 2.2-1.8 4-4 4h-5.6c-2.2 0-4-1.8-4-4v-4.7Z"
+        fill="var(--hl-panel)"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="1.6"
       />
-      <path d="M7.1 7.5h2.7M14.2 7.5h2.7" stroke="#020617" strokeLinecap="round" strokeWidth="1.4" />
-      <circle cx="12" cy="10.5" r=".8" fill="#020617" />
+      <path
+        d="M7.5 19.4v4.4m17-4.4v4.4M7.5 23.8c0 3.1 2.5 5.7 5.7 5.7h5.6c3.2 0 5.7-2.6 5.7-5.7"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+      />
+      <circle cx="16" cy="12.3" r="1.1" fill="var(--hl-panel)" />
     </svg>
   );
 }
