@@ -225,9 +225,27 @@ describe("league player catalog", () => {
     expect(playerRequests[0].searchParams.get("sort")).toBe(
       "fantasyPoints"
     );
-    expect(
-      within(table).getByRole("button", { name: "Sort by FPG" })
-    ).toBeInTheDocument();
+    const catalogRegion = screen.getByRole("region", {
+      name: "Player catalog",
+    });
+    expect(catalogRegion).toHaveAttribute("tabindex", "0");
+    const fantasyPointsSort = within(table).getByRole("button", {
+      name: "Sort by FP",
+    });
+    expect(fantasyPointsSort.closest("th")).toHaveAttribute(
+      "aria-sort",
+      "descending"
+    );
+    const fpgSort = within(table).getByRole("button", {
+      name: "Sort by FPG",
+    });
+    expect(fpgSort.closest("th")).not.toHaveAttribute("aria-sort");
+    await view.user.click(fpgSort);
+    expect(fpgSort.closest("th")).toHaveAttribute(
+      "aria-sort",
+      "descending"
+    );
+    expect(fantasyPointsSort.closest("th")).not.toHaveAttribute("aria-sort");
     expect(within(table).getByText("2.50")).toBeInTheDocument();
     expect(screen.queryByText("Unavailable Player")).not.toBeInTheDocument();
     const rowNames = within(table)

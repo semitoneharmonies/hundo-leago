@@ -9,6 +9,7 @@ import {
   PageHeading,
   StatusBadge,
   Surface,
+  TableScroll,
 } from "../../components/HundoUi.jsx";
 import { readLeaguePreference } from "../leagues/leaguePreference.js";
 import {
@@ -514,7 +515,9 @@ function MatchupCard({ matchup, teams = [] }) {
               no fantasy points were awarded.
             </p>
           ) : null}
-          <div className="hl-table-scroll">
+          <TableScroll
+            label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}
+          >
             <table className="hl-data-table hl-matchup-table">
               <caption>Player scoring for this matchup</caption>
               <thead>
@@ -567,7 +570,7 @@ function MatchupCard({ matchup, teams = [] }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </>
       )}
       {matchup.result?.status === "corrected" && <p className="hl-inline-copy">Official result corrected (version {matchup.result.currentVersion.versionNumber}).</p>}
@@ -592,7 +595,7 @@ export function LeagueStandingsPage() {
               <Health health={standings.data.health} />
               {standings.data.rows.length === 0 ? <Surface><EmptyBlock title="No teams are registered for this season." /></Surface> : (
                 <Surface className="hl-standings-panel">
-                <div className="hl-table-scroll">
+                <TableScroll label="League standings">
                   <table className="hl-data-table hl-standings-table">
                     <thead>
                       <tr>
@@ -612,7 +615,7 @@ export function LeagueStandingsPage() {
                       </tr>
                     ))}</tbody>
                   </table>
-                </div>
+                </TableScroll>
                 </Surface>
               )}
               <p className="hl-standings-note">{standings.data.finalizedResultCount} finalized results counted.</p>
@@ -712,7 +715,7 @@ function PreviewAction({
             </dl>
             {title === "Standings rebuild" &&
             preview?.projection?.rows?.length > 0 ? (
-              <div className="hl-table-scroll">
+              <TableScroll label="Projected standings after rebuild">
                 <table className="hl-data-table hl-commissioner-preview__table">
                   <caption>Projected standings after rebuild</caption>
                   <thead>
@@ -738,7 +741,7 @@ function PreviewAction({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TableScroll>
             ) : null}
           </section>
           <div className="hl-button-row">

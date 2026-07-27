@@ -51,6 +51,7 @@ import {
   leagueMembershipsQuery,
   removeLeagueMembership,
 } from "./leagueQueries.js";
+import { bidderCountLabel } from "./dashboardLabels.js";
 import { createIntentKey } from "../accounts/accountApi.js";
 import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 
@@ -850,7 +851,7 @@ function AuctionsPanel({ leagueId, auctions, pending, error }) {
                 <small>
                   {auction.ownBid
                     ? "Your bid"
-                    : `${auction.participantCount} bidders`}
+                    : bidderCountLabel(auction.participantCount)}
                 </small>
               </span>
             </li>

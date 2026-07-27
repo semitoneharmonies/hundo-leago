@@ -400,6 +400,11 @@ describe("M6-12 authenticated competition pages", () => {
     const scoringTable = screen.getByRole("table", {
       name: "Player scoring for this matchup",
     });
+    expect(
+      screen.getByRole("region", {
+        name: "Home Team versus Away Team player scoring",
+      })
+    ).toHaveAttribute("tabindex", "0");
     expect(within(scoringTable).getAllByText("GP")).toHaveLength(2);
     const scoreHeader = document.querySelector(".hl-matchup-score");
     expect(
@@ -699,6 +704,9 @@ describe("M6-12 authenticated competition pages", () => {
     });
     renderPage(`/leagues/${leagueId}/standings`, "/leagues/:leagueId/standings", <LeagueStandingsPage />, fetchImpl);
     const row = await screen.findByRole("row", { name: /Complete Team/ });
+    expect(
+      screen.getByRole("region", { name: "League standings" })
+    ).toHaveAttribute("tabindex", "0");
     for (const heading of ["Rank", "Team", "GP", "W", "L", "T", "PTS", "PCT", "PF", "PA", "DIFF"]) {
       expect(screen.getByRole("columnheader", { name: heading })).toBeInTheDocument();
     }

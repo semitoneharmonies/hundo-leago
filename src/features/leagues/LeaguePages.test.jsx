@@ -10,6 +10,7 @@ import {
   LeagueTeamsPage,
   TeamWorkspacePage,
 } from "./LeaguePages.jsx";
+import { bidderCountLabel } from "./dashboardLabels.js";
 import { removeInaccessibleLeagueQueries } from "./leagueQueries.js";
 import {
   clearUnauthorizedLeaguePreference,
@@ -321,6 +322,12 @@ function renderLeagueRoutes(initialEntry, fetchImpl) {
 }
 
 describe("league selection", () => {
+  it("uses correct singular and plural bidder labels", () => {
+    expect(bidderCountLabel(0)).toBe("0 bidders");
+    expect(bidderCountLabel(1)).toBe("1 bidder");
+    expect(bidderCountLabel(2)).toBe("2 bidders");
+  });
+
   it("shows an explicit zero-membership state", async () => {
     renderLeagueRoutes("/leagues", fetchScenario([]));
     expect(

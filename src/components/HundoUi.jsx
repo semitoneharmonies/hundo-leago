@@ -63,6 +63,19 @@ export function StatusBadge({ tone = "neutral", children, className }) {
   );
 }
 
+export function TableScroll({ label, className, children }) {
+  return (
+    <div
+      className={classes("hl-table-scroll", className)}
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function LoadingBlock({ children = "Loading…" }) {
   return (
     <div className="hl-state-block" role="status">

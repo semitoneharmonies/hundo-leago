@@ -2124,6 +2124,7 @@ textarea {
 .hl-table-scroll {
   max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
 }
 
 .hl-data-table {
@@ -4502,6 +4503,37 @@ textarea {
 
 .hl-roster-illegal span {
   font-size: 0.64rem;
+}
+
+.hl-authority-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid rgb(245 158 11 / 42%);
+  border-radius: var(--hl-radius-md);
+  background: linear-gradient(
+    90deg,
+    rgb(120 53 15 / 28%),
+    rgb(15 23 42 / 72%)
+  );
+  color: var(--hl-muted-foreground);
+  box-shadow: inset 4px 0 0 #f59e0b;
+}
+
+.hl-authority-notice > svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #fbbf24;
+}
+
+.hl-authority-notice p {
+  margin: 7px 0 0;
+  max-width: 720px;
+  font-size: 0.65rem;
+  line-height: 1.5;
 }
 
 .hl-player-action {

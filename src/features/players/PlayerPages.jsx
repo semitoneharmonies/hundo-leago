@@ -9,6 +9,7 @@ import {
   PageHeading,
   StatusBadge,
   Surface,
+  TableScroll,
 } from "../../components/HundoUi.jsx";
 import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
@@ -226,7 +227,7 @@ export function LegacyPlayersPage() {
         </Surface>
       ) : (
         <Surface className="hl-feature-section">
-        <div className="hl-table-scroll">
+        <TableScroll label="Player search results">
           <table className="hl-data-table hl-player-table">
             <thead>
               <tr>
@@ -268,7 +269,7 @@ export function LegacyPlayersPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
         </Surface>
       )}
 

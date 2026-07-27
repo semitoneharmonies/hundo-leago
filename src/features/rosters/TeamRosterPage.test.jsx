@@ -262,6 +262,9 @@ describe("authoritative team roster page", () => {
     }
     expect(screen.getByText(/1\/18 used/)).toBeInTheDocument();
     expect(
+      screen.getByRole("region", { name: "Active roster table" })
+    ).toHaveAttribute("tabindex", "0");
+    expect(
       screen.getByRole("rowheader", { name: "Active Player" })
     ).toBeInTheDocument();
     for (const heading of ["GP", "G", "A", "P", "FP", "FPG"]) {
@@ -271,6 +274,18 @@ describe("authoritative team roster page", () => {
         }).length
       ).toBeGreaterThan(0);
     }
+    const activeTable = screen.getByRole("region", {
+      name: "Active roster table",
+    });
+    const gpSort = within(activeTable).getByRole("button", {
+      name: "Sort roster by GP",
+    });
+    expect(gpSort.closest("th")).not.toHaveAttribute("aria-sort");
+    await view.user.click(gpSort);
+    expect(gpSort.closest("th")).toHaveAttribute(
+      "aria-sort",
+      "descending"
+    );
     const activeRow = screen
       .getByRole("rowheader", { name: "Active Player" })
       .closest("tr");
@@ -318,6 +333,66 @@ describe("authoritative team roster page", () => {
     expect(screen.getByText("Active Player").closest(".hl-line-player")).toHaveClass(
       "hl-line-player--team"
     );
+  });
+
+  it("distinguishes commissioner roster actions from manager actions", () => {
+    const data = workspace();
+    const commissionerTeam = {
+      ...data.team,
+      currentManager: {
+        userId: "manager-user",
+        displayName: "League Manager",
+        version: 1,
+      },
+    };
+
+    renderWithProviders(
+      <TeamRosterPage
+        workspace={data}
+        teams={[commissionerTeam]}
+        currentUserId="commissioner-user"
+        managerName="League Manager"
+        onTeamChange={() => {}}
+        httpClient={{ request: vi.fn() }}
+      />
+    );
+
+    const notice = screen.getByRole("note", {
+      name: "Commissioner action mode",
+    });
+    expect(notice).toHaveTextContent(
+      "Roster changes on this team are recorded under commissioner authority"
+    );
+    expect(notice).toHaveTextContent(
+      "not as actions by this team's manager"
+    );
+  });
+
+  it("does not label a manager's own roster actions as commissioner actions", () => {
+    const data = workspace();
+    const managerTeam = {
+      ...data.team,
+      currentManager: {
+        userId: "manager-user",
+        displayName: "League Manager",
+        version: 1,
+      },
+    };
+
+    renderWithProviders(
+      <TeamRosterPage
+        workspace={data}
+        teams={[managerTeam]}
+        currentUserId="manager-user"
+        managerName="League Manager"
+        onTeamChange={() => {}}
+        httpClient={{ request: vi.fn() }}
+      />
+    );
+
+    expect(
+      screen.queryByRole("note", { name: "Commissioner action mode" })
+    ).not.toBeInTheDocument();
   });
 
   it("starts requested-player and requested-pick trades from another roster", async () => {

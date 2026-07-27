@@ -9,6 +9,7 @@ import {
   LoadingBlock,
   PageHeading,
   Surface,
+  TableScroll,
 } from "../../components/HundoUi.jsx";
 import {
   leagueTeamsQuery,
@@ -85,6 +86,33 @@ function SortHeading({ activeSort, label, sortKey, onSort }) {
           : " ↓"
         : ""}
     </button>
+  );
+}
+
+function SortableColumnHeading({
+  activeSort,
+  label,
+  sortKey,
+  onSort,
+}) {
+  return (
+    <th
+      scope="col"
+      aria-sort={
+        activeSort.key === sortKey
+          ? activeSort.direction === "asc"
+            ? "ascending"
+            : "descending"
+          : undefined
+      }
+    >
+      <SortHeading
+        activeSort={activeSort}
+        label={label}
+        sortKey={sortKey}
+        onSort={onSort}
+      />
+    </th>
   );
 }
 
@@ -481,22 +509,14 @@ export function PlayersCatalogPage() {
         </Surface>
       ) : (
         <Surface className="hl-feature-section">
-          <div className="hl-table-scroll">
+          <TableScroll label="Player catalog">
             <table className="hl-data-table hl-player-table">
               <thead>
                 <tr>
-                  <th>
-                    <SortHeading activeSort={sort} label="Player" sortKey="player" onSort={changeSort} />
-                  </th>
-                  <th>
-                    <SortHeading activeSort={sort} label="Pos" sortKey="position" onSort={changeSort} />
-                  </th>
-                  <th>
-                    <SortHeading activeSort={sort} label="NHL" sortKey="nhlTeam" onSort={changeSort} />
-                  </th>
-                  <th>
-                    <SortHeading activeSort={sort} label="Age" sortKey="age" onSort={changeSort} />
-                  </th>
+                  <SortableColumnHeading activeSort={sort} label="Player" sortKey="player" onSort={changeSort} />
+                  <SortableColumnHeading activeSort={sort} label="Pos" sortKey="position" onSort={changeSort} />
+                  <SortableColumnHeading activeSort={sort} label="NHL" sortKey="nhlTeam" onSort={changeSort} />
+                  <SortableColumnHeading activeSort={sort} label="Age" sortKey="age" onSort={changeSort} />
                   {[
                     ["GP", "gamesPlayed"],
                     ["G", "goals"],
@@ -505,17 +525,17 @@ export function PlayersCatalogPage() {
                     ["FP", "fantasyPoints"],
                     ["FPG", "fantasyPointsPerGame"],
                   ].map(([label, sortKey]) => (
-                    <th key={sortKey}>
-                      <SortHeading activeSort={sort} label={label} sortKey={sortKey} onSort={changeSort} />
-                    </th>
+                    <SortableColumnHeading
+                      activeSort={sort}
+                      key={sortKey}
+                      label={label}
+                      sortKey={sortKey}
+                      onSort={changeSort}
+                    />
                   ))}
-                  <th>
-                    <SortHeading activeSort={sort} label="League assignment" sortKey="assignment" onSort={changeSort} />
-                  </th>
-                  <th>
-                    <SortHeading activeSort={sort} label="Contract" sortKey="contract" onSort={changeSort} />
-                  </th>
-                  <th>Actions</th>
+                  <SortableColumnHeading activeSort={sort} label="League assignment" sortKey="assignment" onSort={changeSort} />
+                  <SortableColumnHeading activeSort={sort} label="Contract" sortKey="contract" onSort={changeSort} />
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -588,7 +608,7 @@ export function PlayersCatalogPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </Surface>
       )}
 

@@ -10,10 +10,12 @@ import {
   List,
   Megaphone,
   Rows3,
+  ShieldCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { StatusBadge, TableScroll } from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
   buyOutRosterContract,
@@ -338,7 +340,7 @@ function CategoryTable({
           No players occupy this category.
         </p>
       ) : (
-        <div className="hl-table-scroll">
+        <TableScroll label={`${category.title} table`}>
           <table className="hl-data-table hl-roster-table">
             <thead>
               <tr>
@@ -356,7 +358,18 @@ function CategoryTable({
                   ["FP", "fantasyPoints"],
                   ["FPG", "fantasyPointsPerGame"],
                 ].map(([label, sortKey]) => (
-                  <th className="hl-roster-stat" key={sortKey} scope="col">
+                  <th
+                    aria-sort={
+                      sort.key === sortKey
+                        ? sort.direction === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
+                    className="hl-roster-stat"
+                    key={sortKey}
+                    scope="col"
+                  >
                     <RosterSortHeading
                       label={label}
                       sortKey={sortKey}
@@ -539,7 +552,7 @@ function CategoryTable({
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       )}
     </section>
   );
@@ -995,6 +1008,12 @@ export function TeamRosterPage({
         candidate.currentManager?.userId === currentUserId
     ) || null;
   const canRequestTrade = Boolean(requestingTeam);
+  const viewedTeam = teams.find((candidate) => candidate.id === team.id);
+  const managesViewedTeam =
+    Boolean(currentUserId) &&
+    viewedTeam?.currentManager?.userId === currentUserId;
+  const commissionerActionMode =
+    Boolean(currentUserId) && workspace.canManage && !managesViewedTeam;
 
   useEffect(() => {
     // This local order is the optimistic drag state and must be replaced when
@@ -1349,6 +1368,23 @@ export function TeamRosterPage({
             {legality.reasons.length === 1 ? "" : "s"} must be fixed
             before this roster is legal.
           </span>
+        </div>
+      )}
+
+      {commissionerActionMode && (
+        <div
+          className="hl-authority-notice"
+          role="note"
+          aria-label="Commissioner action mode"
+        >
+          <ShieldCheck aria-hidden="true" />
+          <div>
+            <StatusBadge tone="warning">Commissioner action mode</StatusBadge>
+            <p>
+              Roster changes on this team are recorded under commissioner
+              authority, not as actions by this team&apos;s manager.
+            </p>
+          </div>
         </div>
       )}
 
