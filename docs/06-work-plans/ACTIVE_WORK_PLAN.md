@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`IN PROGRESS - STAGING ONLY`
+`COMPLETE - STAGING ONLY`
 
 ## Work Plan ID
 
@@ -47,7 +47,7 @@ secret changes, force-push, or merge to `main`.
 4. Remove leftover client diagnostic logging that exposes transaction, player,
    auction, or backend response details.
 5. Add static hosting security headers without changing application data or
-   API authorization.
+   API authorization, and remove the backend framework fingerprint header.
 6. Reject staging builds configured for the production backend, and production
    builds configured for the staging backend.
 7. Add focused regression coverage and extend the release-QA verifier for
@@ -106,4 +106,26 @@ This plan is complete only when:
 
 ## Completion Evidence
 
-To be recorded after staging deployment and hosted acceptance.
+- Frontend commits `82d1e48d8fc9617e174ffd34a77a40fc89c713f4`
+  and `07cd689916c8083e84cbfd72281df8cb479699ec` were pushed to
+  `staging`.
+- Frontend Netlify deploy `6a6713c190a1d98698ab558b` is ready on
+  `https://hundoleago-staging.netlify.app`.
+- Backend commits `cdcb139b0c2c859abfbf11d8fcedd9a0eecc9f70`,
+  `b8f93af412df4d608d8d6f10103fec49edeb3ffa`, and
+  `522f0ce2a03428f6ed72f8a504d1b560d012ee35` were pushed to
+  `staging`.
+- Final Render deploy `dep-d9jhfhsm0tmc73b0jjn0` is live on
+  `https://hundo-leago-backend-staging.onrender.com`.
+- Frontend lint, all `126` tests, build, M3 verifier, dependency-tree, and
+  whitespace gates passed.
+- Backend syntax, dependency-tree, whitespace, and focused response-hardening
+  gates passed. The complete local suite passed `982/983`; the sole failure was
+  the workstation Node `24.11.1` versus pinned `24.14.1` assertion.
+- The final Render build used Node `24.14.1` and passed all `983` tests.
+- Public liveness and readiness return `200`; the deployed target no longer
+  sends `X-Powered-By`.
+- Hosted role, league-isolation, page, pagination, deep-link, read-only
+  competition-preview, CSP, cache, and console checks passed.
+- The detailed run record is
+  `docs/07-testing/release-runs/M7_HARDENING_REGRESSION_2026-07-27.md`.
