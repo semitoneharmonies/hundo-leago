@@ -449,6 +449,7 @@ Platform-administrator authority remains separate from league membership.
 * league ID;
 * current display name and normalized name;
 * status;
+* approved pattern-template ID;
 * primary and secondary colours plus an optional tertiary colour;
 * logo object key or URL;
 * created and updated timestamps;
@@ -459,9 +460,29 @@ Team names are case-insensitively unique inside one league.
 For target team-profile writes, colours use canonical lowercase six-digit
 sRGB hex strings in the form `#rrggbb`. Primary and secondary are null
 together while a newly created team profile is incomplete, or both contain
-canonical values. Tertiary is nullable: null selects the two-stripe treatment
-and a canonical value selects the three-stripe treatment. The colours do not
-need to differ and have no league-uniqueness or contrast constraint.
+canonical values. `teams.pattern_template` stores one approved template ID and
+determines the required colour count. Tertiary is null for a two-colour
+template and contains a canonical value for a three-colour template. The
+colours do not need to differ and have no league-uniqueness or contrast
+constraint.
+
+The approved template IDs are:
+
+* even splits: `even-two`, `even-three`;
+* hockey stripes: `wide-centre-stripe`, `thin-centre-stripe`,
+  `triple-pinstripe`, `double-accent-bands`, `angular-peak`,
+  `mirrored-centre-band`, `offset-outlined-stack`, `layered-six-band`,
+  `alternating-ladder`, `double-hairline`, `double-light-top-accent`,
+  `layered-monochrome`, `split-colour-block`, `two-tone-stack`,
+  `outlined-block`, `layered-contrast`, `mirrored-seven-band`,
+  `accent-line-band`, `outlined-centre`, `two-stage-contrast`, and
+  `layered-double-light`;
+* decorative patterns: `tiger`, `leopard`, `cowhide`, `camouflage`,
+  `snake-scales`, `honeycomb`, `checkerboard`, `argyle`, `chevrons`,
+  `ocean-waves`, `two-colour-gradient`, and `three-colour-gradient`.
+
+Existing two-colour teams migrate to `even-two`; existing teams with a
+tertiary colour migrate to `even-three`.
 
 `teams.logo_reference` is null or a backend-generated stable UUID that refers
 to a current `team_logo_objects` row. Raw bytes, data URLs, client filenames,

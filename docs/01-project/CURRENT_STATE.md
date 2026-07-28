@@ -1871,6 +1871,27 @@ API contracts, transaction rules, backend, database, fixture, provider,
 email, jobs, and production remain untouched. The full record is
 `docs/07-testing/release-runs/M7_MOBILE_LAYOUT_POLISH_2026-07-27.md`.
 
+M7-24 team-identity templates are deployed to the dedicated staging services
+for Grae's manual testing. The manager settings page replaces its separate
+two-/three-colour choice with a catalog of 35 fixed-count templates: the
+existing two- and three-stripe even splits, 21 deduplicated hockey stripe
+arrangements, and 12 decorative patterns. The selected template exposes
+exactly two or three colour inputs, is persisted as
+`teams.pattern_template`, and renders through the shared team-identity
+treatment.
+
+Staging migration `0022` completed after creating verified backup
+`backup-v1-5d25e421cf21b9f59342f8fb08b16701311d98729f6fa907ff9b592eeed33b4a`.
+The final backend deploy `dep-d9k4b7favr4c73a5ts8g` is live on schema `22`
+without the temporary migration bridge, and Netlify deploy
+`6a6845cd5e20aa47c911e71b` is ready at
+`https://staging.hundoleago.com`. Hosted acceptance confirmed all 35 options,
+fixed two-/three-colour switching, the matching preview, and no browser
+console errors without submitting a profile write. The complete frontend
+suite passes `135/135`; the final backend Render build passes `986/986`.
+Exact release evidence is recorded in
+`docs/07-testing/release-runs/M7_TEAM_IDENTITY_TEMPLATES_2026-07-27.md`.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 

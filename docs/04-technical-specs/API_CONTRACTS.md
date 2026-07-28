@@ -866,6 +866,7 @@ scoped `Idempotency-Key`, and an exact JSON object containing at least one of:
 ```json
 {
   "name": "Snow Owls",
+  "patternTemplate": "mirrored-centre-band",
   "primaryColour": "#112233",
   "secondaryColour": "#aabbcc",
   "tertiaryColour": "#f97316",
@@ -879,8 +880,13 @@ scoped `Idempotency-Key`, and an exact JSON object containing at least one of:
 Unknown fields are rejected. `name` is trimmed, contains at most 35 Unicode
 code points, and remains case-insensitively unique within the league. Primary
 and secondary colour fields are optional only as a pair; supplied values match
-lowercase `#rrggbb`. `tertiaryColour` is optional or null for a two-colour
-team and canonical `#rrggbb` for a three-colour team. `logo` is optional, is null to remove the current logo, or is
+lowercase `#rrggbb`. `patternTemplate` is optional for a partial update and,
+when supplied, must be one of the approved template IDs defined by the data
+model. The effective template fixes the colour count: a two-colour template
+requires null or omitted `tertiaryColour`, while a three-colour template
+requires canonical `#rrggbb` `tertiaryColour`. A request that changes between
+two- and three-colour templates therefore supplies the matching colour fields
+in the same update. `logo` is optional, is null to remove the current logo, or is
 exactly `{mediaType, contentBase64}`. The base64 value is canonical without a
 data-URL prefix or whitespace. The decoded static PNG, JPEG, or WebP is at
 most `524288` bytes and each inspected dimension is from `1` through `2048`.

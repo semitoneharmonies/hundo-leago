@@ -407,7 +407,7 @@ For each assigned team, a manager may:
 * submit and edit auction bids, but not withdraw them;
 * propose, accept, reject, and cancel trades where the assigned team is an authorized party;
 * buy out eligible players;
-* edit the team name, team colours, and team logo.
+* edit the team name, team colours, pattern template, and team logo.
 
 The legal active roster locks automatically for matchups. Managers do not submit a separate matchup lineup.
 
@@ -1057,7 +1057,7 @@ Grae approved the following Season 2 permission decisions on 2026-07-18.
 - [x] Managers may propose, accept, reject, and cancel trades for their assigned teams.
 - [x] Managers may buy out eligible players owned by their assigned teams.
 - [x] The legal active roster locks automatically; managers do not submit a separate matchup lineup.
-- [x] Managers may edit their team name, team colours, and team logo.
+- [x] Managers may edit their team name, team colours, pattern template, and team logo.
 
 ## Visibility
 

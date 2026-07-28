@@ -631,29 +631,35 @@ There are no additional product-level character or moderation restrictions.
 
 ---
 
-## Team Colours
+## Team Colours and Patterns
 
-A manager may edit the assigned team’s colours.
+A manager may edit the assigned team's colours and pattern template.
 
-A commissioner may edit colours for any team in the assigned league through commissioner authority.
+A commissioner may edit colours and the pattern template for any team in the
+assigned league through commissioner authority.
 
-Each team has either two or three selectable colours.
+Each approved template has a fixed requirement of either two or three
+selectable colours. Choosing a template determines how many colour inputs the
+manager receives; there is no separate two-colour or three-colour selector.
 
-Two-colour teams use two equal horizontal stripes. Three-colour teams use
-three horizontal stripes.
+The approved catalog includes the existing two-stripe and three-stripe even
+splits, deduplicated hockey stripe arrangements, animal and geometric
+patterns, and two- and three-colour gradients. Templates that produce the same
+arrangement are represented once.
 
 The selected colours do not need to satisfy contrast or league-uniqueness
 rules. Team-name and logo treatments must add a neutral readability layer so
 the identity remains legible regardless of the selected colours.
 
-The horizontal stripe pattern remains visible across the containing team
-surface. Where the stripes pass behind a team name or logo, they fade toward
-the standard dark-blue application background and return to the configured
-team colours outside that identity area. This treatment applies consistently
-to the team index, the dashboard league-teams panel, matchup score headers,
-the roster identity header, and player cards in the roster hockey-lines view.
+The selected template remains visible across the containing team surface.
+Where it passes behind a team name or logo, it may fade toward the standard
+dark-blue application background to preserve readability. This treatment
+applies consistently to the team index, the dashboard league-teams panel,
+matchup score headers, the roster identity header, and player cards in the
+roster hockey-lines view.
 
-The technical specification must define the stored colour representation.
+The technical specification must define the stored colour and template
+representations.
 
 ---
 
@@ -1350,7 +1356,8 @@ Grae approved the following Season 2 Leagues and Teams product decisions on 2026
 - [x] A team may exist temporarily without a manager during setup.
 - [x] Team names must be unique within their league.
 - [x] Team names have a maximum of `35` characters and no additional product-level character or moderation rules.
-- [x] Each team has two or three colours displayed as horizontal stripes.
+- [x] Each team selects an approved pattern template whose fixed definition requires two or three colours.
+- [x] The template catalog retains the two- and three-stripe even splits and does not duplicate equivalent hockey stripe arrangements.
 - [x] Team colours have no product-level contrast or uniqueness requirement; the interface adds its own neutral identity treatment for readability.
 - [x] Team logos have no product-level file-type, size, dimension, cropping, or fallback requirements.
 - [x] Team deactivation permanently erases the team and may occur only after the entry draft and before the free-agent draft.
