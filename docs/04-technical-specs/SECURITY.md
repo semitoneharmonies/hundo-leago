@@ -1232,6 +1232,12 @@ Domain services write a notification or outbox record in the same transaction as
 * safe failure status;
 * no rollback of an already completed password or account action merely because email delivery failed.
 
+The durable account-email worker has explicit enablement independent from the
+general league scheduler. Enabling account-email delivery must not activate
+auction resolution, trade expiry, matchup processing, or the league outbox.
+Staging provider delivery remains restricted to the configured exact recipient
+allowlist.
+
 Email content must not include an existing or generated password.
 
 ---

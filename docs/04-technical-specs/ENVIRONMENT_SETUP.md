@@ -458,6 +458,7 @@ Tests must refuse a path that:
 APP_ENV=test
 NODE_ENV=test
 EMAIL_DELIVERY_MODE=capture
+ACCOUNT_EMAIL_DELIVERY_ENABLED=false
 SCHEDULED_JOBS_ENABLED=false
 DEBUG_ROUTES_ENABLED=false
 ```
@@ -656,6 +657,7 @@ They must be inventoried during `FE-00`, mapped deliberately where still require
 | `PUBLIC_FRONTEND_ORIGIN` | Yes | Canonical browser origin used in links and security decisions |
 | `FRONTEND_ORIGINS` | Yes | Comma-separated exact allowed browser origins |
 | `LOG_LEVEL` | Yes | Approved structured-log threshold |
+| `ACCOUNT_EMAIL_DELIVERY_ENABLED` | Yes | Explicit `true` or `false`; controls only the durable account-email worker |
 | `SCHEDULED_JOBS_ENABLED` | Yes | Explicit `true` or `false`; no truthy string coercion |
 | `DEBUG_ROUTES_ENABLED` | Yes | Explicit `true` or `false` |
 | `EMAIL_DELIVERY_MODE` | Yes | `disabled`, `capture`, `sandbox`, `allowlist`, or `send` |
@@ -708,6 +710,7 @@ Portable application configuration includes:
 
 ```text
 EMAIL_DELIVERY_MODE
+ACCOUNT_EMAIL_DELIVERY_ENABLED
 EMAIL_FROM
 EMAIL_REPLY_TO
 RESEND_API_KEY
@@ -719,6 +722,8 @@ ACTION_TOKEN_DELIVERY_KEY
 Rules:
 
 * Resend is the approved transactional provider;
+* `ACCOUNT_EMAIL_DELIVERY_ENABLED` controls only delivery of durable account
+  email and does not enable auction, trade, matchup, or league-outbox jobs;
 * `production` requires `send` with a verified sender and a send-only
   `RESEND_API_KEY`;
 * `staging` may use `capture`, `sandbox`, or `allowlist`, never unrestricted
@@ -968,6 +973,12 @@ Rules:
 * a second accidental process must not silently perform the same work.
 
 Disabling scheduling does not erase pending job state.
+
+Account-email delivery is independently controlled by
+`ACCOUNT_EMAIL_DELIVERY_ENABLED`. Staging may enable that worker while
+`SCHEDULED_JOBS_ENABLED=false` only under an approved plan, with
+`EMAIL_DELIVERY_MODE=allowlist` and an exact recipient allowlist. This
+email-only mode must not run league jobs.
 
 ---
 

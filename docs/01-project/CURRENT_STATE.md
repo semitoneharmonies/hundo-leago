@@ -1814,6 +1814,24 @@ source files, dependency-tree validation, and `git diff --check`. The quote
 catalog remains verbatim; no backend, database, fixture, email, provider, job,
 or production change occurred.
 
+M7-21 isolates durable account-email delivery from the general league
+scheduler in backend commit `dfee0a0`. Staging now runs the account-email
+worker behind `ACCOUNT_EMAIL_DELIVERY_ENABLED=true` while
+`SCHEDULED_JOBS_ENABLED=false` continues to disable auction resolution, trade
+expiry, matchup processing, the league outbox, and other league jobs. Runtime
+health reports the separate email-delivery switch without exposing provider
+secrets.
+
+Render deploy `dep-d9jve7dbedkc738lrmpg` is live with the verified
+`notify.hundoleago.com` sender. A fresh allowlisted account-verification
+request returned `202 Accepted`, and Resend recorded the message as
+`delivered`. Public liveness and readiness remain healthy. The complete
+backend gate passed `985/985` tests across 234 suites, `npm run check`,
+dependency-tree validation, a 467-file JavaScript syntax sweep under Node
+`24.14.1`, and whitespace validation. No database, fixture, league job, or
+production change occurred. The full record is
+`docs/07-testing/release-runs/M7_ACCOUNT_EMAIL_DELIVERY_2026-07-27.md`.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 

@@ -11,93 +11,99 @@
 ## Work Plan ID
 
 ```text
-M7-20
+M7-21
 ```
 
 ## Work Item
 
 ```text
-Legacy hockey quote ticker in the modern top bar
+Isolated staging account-email delivery
 ```
 
 ## Authority and Boundary
 
-Grae explicitly requested this frontend presentation change on `2026-07-27`
-and authorized staging-branch publication.
+Grae explicitly approved this staging implementation and deployment on
+`2026-07-27`.
 
-This plan permits reuse of the existing frontend quote catalog, a contained
-modern-header component and styles, focused regression coverage,
-documentation, an exact frontend staging commit, and publication to the
-existing isolated Netlify staging site.
+This plan permits one independently controlled account-email worker, focused
+backend tests, the matching environment contract and Blueprint update, an
+exact backend staging commit, a Render staging deployment, and one
+allowlisted verification-email acceptance check through the configured Resend
+provider.
 
-This plan does not authorize quote-catalog rewriting, backend behavior or data
-changes, API changes, email, scheduled jobs, secret changes, production
-changes, force-push, or a merge to `main`.
+This plan does not authorize global scheduled jobs, auction resolution, trade
+expiry, matchup processing, backup scheduling, production changes, database
+reset or reseeding, secret disclosure, force-push, or a merge to `main`.
 
 ## Approved Scope
 
-1. Reuse the quotes already stored in `src/quotes.js`.
-2. Randomize their display order once per page load.
-3. Continuously move the sequence from right to left in the open center lane of
-   the authenticated top bar.
-4. Keep the treatment quiet, clipped, and visually subordinate to navigation.
-5. Preserve current location context, navigation, notifications, account
-   controls, and responsive behavior.
-6. Pause motion for hover or keyboard focus and present a static quote when the
-   user requests reduced motion.
-7. Add focused frontend regression coverage.
-8. Run the complete frontend verification gate.
-9. Publish only the exact verified frontend commit to staging and perform
-   hosted desktop and narrow-width acceptance.
+1. Add an explicit `ACCOUNT_EMAIL_DELIVERY_ENABLED` deployed-runtime setting.
+2. Start and stop the durable account-email worker independently from the
+   league scheduler.
+3. Keep `SCHEDULED_JOBS_ENABLED=false` on staging.
+4. Keep email delivery restricted to the existing staging recipient allowlist.
+5. Add focused configuration, scheduler, runtime, and Blueprint regression
+   coverage.
+6. Document the separate scheduler and email-delivery controls.
+7. Run the complete backend verification gate.
+8. Publish only the exact verified backend commit to staging.
+9. Configure only the new staging switch, deploy, and verify one queued or
+   newly requested allowlisted verification email in Resend.
 
 ## Verification Gates
 
 ```text
-npm run lint
-npm test -- --run
-npm run build
-npm run verify:m3-browser-authority
+npm run check
+npm test
 npm ls --all
 git diff --check
 ```
 
+Hosted acceptance must additionally prove:
+
+- the Render deploy reaches `live`;
+- liveness and readiness remain healthy;
+- the general league scheduler is still disabled;
+- an allowlisted account-email event is accepted by Resend; and
+- no auction, trade, matchup, backup, fixture, or production job was enabled.
+
 ## Rollback
 
-- Redeploy the prior known-good Netlify staging deploy.
-- Revert only the M7-20 frontend commit.
-- Do not rewrite history or restore a database; this work has no persistent
-  data, API, schema, or backend change.
+- Set `ACCOUNT_EMAIL_DELIVERY_ENABLED=false` on the Render staging service.
+- Redeploy the prior known-good backend staging commit if code rollback is
+  required.
+- Leave `SCHEDULED_JOBS_ENABLED=false`.
+- Do not rewrite history, reset the database, or change production.
 
 ## Completion Conditions
 
 This plan is complete only when:
 
-1. the legacy quote catalog drives the modern authenticated top-bar ticker;
-2. the order changes through an in-memory shuffle without a backend write;
-3. the ticker does not displace or cover navigation and account controls;
-4. hover, keyboard focus, and reduced-motion behavior are verified;
-5. focused and complete frontend verification passes;
-6. the exact frontend commit is pushed to `staging`;
-7. the Netlify staging deploy is ready;
-8. hosted desktop and narrow-width checks pass; and
-9. production, backend state, provider services, email, and jobs remain
-   untouched.
+1. account-email delivery has an explicit switch independent from league jobs;
+2. email-only startup cannot run auction, trade, matchup, or league-outbox
+   jobs;
+3. shutdown drains and closes the email worker;
+4. focused and complete backend verification passes;
+5. the exact backend commit is pushed to `staging`;
+6. the Render staging deploy is live and healthy;
+7. Resend records the allowlisted verification message; and
+8. documentation records the exact evidence and remaining production boundary.
 
 ## Completion Evidence
 
-- Frontend commit `bc42937` was pushed to `staging`.
-- Netlify deploy `6a677c25e8319f5595bb8e36` is ready at
-  `https://hundoleago-staging.netlify.app`.
-- Netlify processed two redirects and three header rules without error and
-  found no secret-scan match across 418 files.
-- Lint, all `131` tests across 24 files, the staging-configured production
-  build, browser-authority verification across 18 compatibility files and 103
-  shipped source files, dependency-tree validation, and whitespace checks
-  passed.
-- Hosted administrator acceptance confirmed randomized reload order, slow
-  right-to-left motion, focus pause, 390- and 1280-pixel layout fit, no
-  whole-page overflow, and no browser-console error.
-- The backend, database, fixtures, email, provider services, scheduled jobs,
-  and production were not changed.
+- Backend commit `dfee0a0` was pushed to `staging`.
+- Render deploy `dep-d9jve7dbedkc738lrmpg` reached `live` with the verified
+  `notify.hundoleago.com` sender persisted.
+- Public liveness and readiness both returned their healthy status.
+- `ACCOUNT_EMAIL_DELIVERY_ENABLED=true` runs only the durable account-email
+  worker while `SCHEDULED_JOBS_ENABLED=false` keeps league jobs disabled.
+- A fresh allowlisted verification request returned `202 Accepted`; Resend
+  recorded the message as `delivered`.
+- The focused scheduler and deployment foundation run passed `25/25` tests.
+- The complete backend gate passed `985/985` tests across 234 suites,
+  `npm run check`, dependency-tree validation, a 467-file JavaScript syntax
+  sweep under Node `24.14.1`, and whitespace validation.
+- No production, database, fixture, auction, trade, matchup, backup, or
+  league-outbox setting was changed.
 - The detailed run record is
-  `docs/07-testing/release-runs/M7_QUOTE_TICKER_2026-07-27.md`.
+  `docs/07-testing/release-runs/M7_ACCOUNT_EMAIL_DELIVERY_2026-07-27.md`.
