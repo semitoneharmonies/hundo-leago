@@ -9,6 +9,11 @@ import {
   PageHeading,
   Surface,
 } from "../../components/HundoUi.jsx";
+import { teamColourStyle } from "../../shared/teamIdentity.js";
+import {
+  TEAM_PATTERN_GROUPS,
+  teamPatternTemplate,
+} from "../../shared/teamPatternCatalog.js";
 import {
   leagueTeamsQuery,
   leagueKeys,
@@ -59,26 +64,43 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
   const [primaryColourOverride, setPrimaryColourOverride] = useState(null);
   const [secondaryColourOverride, setSecondaryColourOverride] = useState(null);
   const [tertiaryColourOverride, setTertiaryColourOverride] = useState(null);
-  const [colourModeOverride, setColourModeOverride] = useState(null);
+  const [patternTemplateOverride, setPatternTemplateOverride] =
+    useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [removeLogo, setRemoveLogo] = useState(false);
   const [message, setMessage] = useState("");
   const savedPrimaryColour = team.primaryColour || "#16324f";
   const savedSecondaryColour = team.secondaryColour || "#f7f7f7";
   const savedTertiaryColour = team.tertiaryColour;
-  const savedColourMode = savedTertiaryColour ? "three" : "two";
+  const savedPatternTemplate = teamPatternTemplate(
+    team.patternTemplate,
+    savedTertiaryColour
+  ).id;
   const name = nameOverride ?? team.name;
   const primaryColour = primaryColourOverride ?? savedPrimaryColour;
   const secondaryColour = secondaryColourOverride ?? savedSecondaryColour;
-  const colourMode = colourModeOverride ?? savedColourMode;
+  const patternTemplate =
+    patternTemplateOverride ?? savedPatternTemplate;
+  const selectedPattern = teamPatternTemplate(
+    patternTemplate,
+    savedTertiaryColour
+  );
   const tertiaryColour =
     tertiaryColourOverride ?? savedTertiaryColour ?? "#f97316";
+  const previewTeam = {
+    ...team,
+    patternTemplate: selectedPattern.id,
+    primaryColour,
+    secondaryColour,
+    tertiaryColour:
+      selectedPattern.colourCount === 3 ? tertiaryColour : null,
+  };
   const isDirty =
     name.trim() !== team.name ||
     primaryColour !== savedPrimaryColour ||
     secondaryColour !== savedSecondaryColour ||
-    colourMode !== savedColourMode ||
-    (colourMode === "three" &&
+    patternTemplate !== savedPatternTemplate ||
+    (selectedPattern.colourCount === 3 &&
       tertiaryColour !== (savedTertiaryColour ?? "#f97316")) ||
     logoFile !== null ||
     removeLogo;
@@ -87,9 +109,11 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
     mutationFn: async () => {
       const input = {
         name: name.trim(),
+        patternTemplate: selectedPattern.id,
         primaryColour,
         secondaryColour,
-        tertiaryColour: colourMode === "three" ? tertiaryColour : null,
+        tertiaryColour:
+          selectedPattern.colourCount === 3 ? tertiaryColour : null,
       };
       if (removeLogo) input.logo = null;
       else if (logoFile) input.logo = await fileBase64(logoFile);
@@ -110,7 +134,7 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
       setPrimaryColourOverride(null);
       setSecondaryColourOverride(null);
       setTertiaryColourOverride(null);
-      setColourModeOverride(null);
+      setPatternTemplateOverride(null);
       setLogoFile(null);
       setRemoveLogo(false);
       setMessage("Team profile saved.");
@@ -129,14 +153,8 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
     >
       <div className="hl-account-team-form__heading">
         <div
-          style={{
-            "--team-primary": primaryColour,
-            "--team-secondary": secondaryColour,
-            "--team-tertiary": tertiaryColour,
-          }}
-          className={`hl-account-team-mark${
-            colourMode === "three" ? " has-three-colours" : ""
-          }`}
+          style={teamColourStyle(previewTeam)}
+          className="hl-account-team-mark has-team-pattern"
           aria-hidden="true"
         >
           {team.logoReference ? (
@@ -161,19 +179,30 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
           />
         </label>
         <label className="hl-field">
-          Stripe colours
+          Team template
           <select
-            value={colourMode}
-            onChange={(event) => setColourModeOverride(event.target.value)}
+            value={patternTemplate}
+            onChange={(event) =>
+              setPatternTemplateOverride(event.target.value)
+            }
           >
-            <option value="two">Two colours</option>
-            <option value="three">Three colours</option>
+            {TEAM_PATTERN_GROUPS.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.templates.map((pattern) => (
+                  <option key={pattern.id} value={pattern.id}>
+                    {pattern.name} · {pattern.colourCount} colours
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
         </label>
         <fieldset className="hl-account-colour-swatches">
-          <legend>Choose stripe colours</legend>
+          <legend>
+            Choose {selectedPattern.colourCount} template colours
+          </legend>
           <label>
-            <span>Top stripe</span>
+            <span>Colour 1</span>
             <input
               type="color"
               value={primaryColour}
@@ -183,9 +212,7 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
             />
           </label>
           <label>
-            <span>
-              {colourMode === "three" ? "Middle stripe" : "Bottom stripe"}
-            </span>
+            <span>Colour 2</span>
             <input
               type="color"
               value={secondaryColour}
@@ -194,9 +221,9 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
               }
             />
           </label>
-          {colourMode === "three" && (
+          {selectedPattern.colourCount === 3 && (
             <label>
-              <span>Bottom stripe</span>
+              <span>Colour 3</span>
               <input
                 type="color"
                 value={tertiaryColour}
@@ -207,6 +234,17 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
             </label>
           )}
         </fieldset>
+        <div
+          className="hl-account-pattern-preview"
+          style={teamColourStyle(previewTeam)}
+          role="img"
+          aria-label={`${selectedPattern.name} preview using ${selectedPattern.colourCount} colours`}
+        >
+          <span>
+            {selectedPattern.name}
+            <small>{selectedPattern.colourCount} colours</small>
+          </span>
+        </div>
         <label className="hl-field">
           Team logo
           <input

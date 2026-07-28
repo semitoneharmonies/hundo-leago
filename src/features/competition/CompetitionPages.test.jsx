@@ -410,16 +410,20 @@ describe("M6-12 authenticated competition pages", () => {
       "hl-matchup-player-fp"
     );
     const scoreHeader = document.querySelector(".hl-matchup-score");
+    const homeScore = within(scoreHeader)
+      .getByText("Home Team")
+      .closest(".hl-matchup-score__team");
+    const awayScore = within(scoreHeader)
+      .getByText("Away Team")
+      .closest(".hl-matchup-score__team");
+    expect(homeScore).toHaveClass("has-team-pattern");
+    expect(awayScore).toHaveClass("has-team-pattern");
     expect(
-      within(scoreHeader)
-        .getByText("Home Team")
-        .closest(".hl-matchup-score__team")
-    ).toHaveClass("has-three-colours");
+      homeScore.style.getPropertyValue("--team-pattern-image")
+    ).toContain("#cc3300");
     expect(
-      within(scoreHeader)
-        .getByText("Away Team")
-        .closest(".hl-matchup-score__team")
-    ).not.toHaveClass("has-three-colours");
+      awayScore.style.getPropertyValue("--team-pattern-image")
+    ).not.toContain("#cc3300");
     expect(screen.getByText("Connor Example")).toHaveClass(
       "hl-matchup-player-name"
     );

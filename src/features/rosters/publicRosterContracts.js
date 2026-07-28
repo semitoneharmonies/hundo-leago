@@ -1,4 +1,7 @@
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
+import {
+  isTeamPatternTemplate,
+} from "../../shared/teamPatternCatalog.js";
 
 const STABLE_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const COLOUR = /^#[0-9a-f]{6}$/;
@@ -64,6 +67,9 @@ export function validatePublicRosterResponse(data) {
     [
       "id",
       "name",
+      ...(Object.hasOwn(roster.team, "patternTemplate")
+        ? ["patternTemplate"]
+        : []),
       "primaryColour",
       "secondaryColour",
       ...(Object.hasOwn(roster.team, "tertiaryColour")
@@ -75,6 +81,12 @@ export function validatePublicRosterResponse(data) {
   );
   stableId(roster.team.id, "The public team ID is invalid.");
   text(roster.team.name, "The public team name is invalid.");
+  if (roster.team.patternTemplate !== undefined) {
+    contract(
+      isTeamPatternTemplate(roster.team.patternTemplate),
+      "The team pattern template is invalid."
+    );
+  }
   for (const value of [
     roster.team.primaryColour,
     roster.team.secondaryColour,

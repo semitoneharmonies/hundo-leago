@@ -2,6 +2,9 @@ import {
   ResponseContractError,
   assertResourceIdentity,
 } from "../../shared/api/responseContracts.js";
+import {
+  isTeamPatternTemplate,
+} from "../../shared/teamPatternCatalog.js";
 
 function contract(condition, message) {
   if (!condition) throw new ResponseContractError(message);
@@ -128,6 +131,11 @@ export function validateTeam(value) {
       `The team ${field} is invalid.`
     );
   }
+  contract(
+    value.patternTemplate === undefined ||
+      isTeamPatternTemplate(value.patternTemplate),
+    "The team pattern template is invalid."
+  );
   return true;
 }
 

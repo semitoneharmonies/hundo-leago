@@ -117,6 +117,8 @@ describe("account and team settings", () => {
               status: "active",
               primaryColour: null,
               secondaryColour: null,
+              tertiaryColour: null,
+              patternTemplate: "even-two",
               logoReference: null,
               createdAtMs: 1,
               updatedAtMs: 1,
@@ -148,6 +150,8 @@ describe("account and team settings", () => {
             status: "active",
             primaryColour: teamPatch.primaryColour,
             secondaryColour: teamPatch.secondaryColour,
+            tertiaryColour: teamPatch.tertiaryColour,
+            patternTemplate: teamPatch.patternTemplate,
             logoReference: null,
             version: teamVersion,
           },
@@ -179,8 +183,12 @@ describe("account and team settings", () => {
     expect(
       await screen.findByRole("heading", { name: "Alpha Ravens" })
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Top stripe")).toHaveValue("#16324f");
-    expect(screen.getByLabelText("Bottom stripe")).toHaveValue("#f7f7f7");
+    const templateSelect = screen.getByLabelText("Team template");
+    expect(templateSelect).toHaveValue("even-two");
+    expect(templateSelect.options).toHaveLength(35);
+    expect(screen.getByLabelText("Colour 1")).toHaveValue("#16324f");
+    expect(screen.getByLabelText("Colour 2")).toHaveValue("#f7f7f7");
+    expect(screen.queryByLabelText("Colour 3")).not.toBeInTheDocument();
 
     const displayName = screen.getByLabelText("Display name");
     await view.user.clear(displayName);
@@ -198,6 +206,16 @@ describe("account and team settings", () => {
       view.queryClient,
       "invalidateQueries"
     );
+    await view.user.selectOptions(
+      screen.getByLabelText("Team template"),
+      "leopard"
+    );
+    expect(screen.getByLabelText("Colour 3")).toHaveValue("#f97316");
+    expect(
+      screen.getByRole("img", {
+        name: "Leopard preview using 3 colours",
+      })
+    ).toBeInTheDocument();
     const teamNameInput = screen.getByLabelText("Team name");
     await view.user.clear(teamNameInput);
     await view.user.type(teamNameInput, "Updated Ravens");
@@ -209,7 +227,8 @@ describe("account and team settings", () => {
         name: "Updated Ravens",
         primaryColour: "#16324f",
         secondaryColour: "#f7f7f7",
-        tertiaryColour: null,
+        tertiaryColour: "#f97316",
+        patternTemplate: "leopard",
       });
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
