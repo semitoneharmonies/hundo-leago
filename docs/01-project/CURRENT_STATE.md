@@ -1832,6 +1832,26 @@ dependency-tree validation, a 467-file JavaScript syntax sweep under Node
 production change occurred. The full record is
 `docs/07-testing/release-runs/M7_ACCOUNT_EMAIL_DELIVERY_2026-07-27.md`.
 
+M7-22 corrects the staging mobile-login loop by moving the frontend and API to
+the same registrable domain. The staging application is now served from
+`staging.hundoleago.com`, with API and Socket.IO traffic at
+`api-staging.hundoleago.com`. The backend uses an explicit, host-only,
+HttpOnly, Secure `SameSite=Lax` session cookie, and the former Netlify hostname
+permanently redirects old bookmarks and deep links to the custom frontend
+hostname.
+
+Frontend application commit `66986b9`, frontend routing commit `8c96e71`, and
+backend commit `d04f18f` are published in ready Netlify deploy
+`6a68164f5056482991266e18` and live Render deploy
+`dep-d9k11ltbedkc738pf5d0`. Hosted sign-in, reload persistence, old-host
+redirect persistence, cookie-attribute inspection, authenticated session
+bootstrap, CSP, liveness, and readiness checks pass. Complete frontend and
+backend regression gates pass. Physical phone verification remains Grae's
+final device-specific acceptance item. No database, fixture, provider, league
+job, production domain, production environment, or production deployment
+changed. The full record is
+`docs/07-testing/release-runs/M7_MOBILE_SAME_SITE_SESSIONS_2026-07-27.md`.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 

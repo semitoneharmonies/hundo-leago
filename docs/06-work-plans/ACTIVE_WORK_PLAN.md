@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`IN PROGRESS - STAGING ONLY`
+`COMPLETE - STAGING ONLY (2026-07-27)`
 
 ## Work Plan ID
 
@@ -75,6 +75,37 @@ npm test
 npm ls --all
 git diff --check
 ```
+
+## Completion Evidence
+
+- Frontend application commit
+  `66986b9c7592176228854f6d4c6d1f7c97a7b783` configures the custom
+  staging API and Socket.IO origins and permits them in the deployed CSP.
+- Frontend routing commit
+  `8c96e71a85b8d6a68099e29968ea13a732f4aff6` permanently redirects the
+  former Netlify staging hostname, including deep links, to the custom
+  staging hostname.
+- Backend commit `d04f18f8212750ea0180b806480ecea6203582f3` makes the
+  deployed cookie site policy explicit and uses that policy in the session
+  runtime.
+- Netlify staging deploy `6a68164f5056482991266e18` is ready at
+  `https://staging.hundoleago.com`.
+- Render staging deploy `dep-d9k11ltbedkc738pf5d0` is live at
+  `https://api-staging.hundoleago.com`.
+- The deployed session cookie is host-only and includes `Path=/`,
+  `HttpOnly`, `Secure`, and `SameSite=Lax`.
+- Hosted sign-in reached the authenticated league dashboard, a full reload
+  retained the session, and an old-host deep link redirected to the same
+  authenticated custom-domain path without a session-expired message.
+- Credentialed login and the immediately following authenticated session
+  request both returned HTTP `200`.
+- Public liveness and readiness both returned HTTP `200`.
+- Exact Origin/CORS, CSRF, Fetch Metadata, HttpOnly, Secure, host-only, and
+  backend authorization protections remain in place.
+- Complete frontend and backend verification passed. The detailed evidence,
+  deployment notes, rollback, and remaining manual mobile acceptance item are
+  recorded in
+  `docs/07-testing/release-runs/M7_MOBILE_SAME_SITE_SESSIONS_2026-07-27.md`.
 
 ## Rollback
 
