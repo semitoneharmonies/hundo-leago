@@ -356,13 +356,28 @@ function StartAuctionForm({ context, leagueId }) {
   return (
     <form className="hl-surface hl-feature-form" style={card} onSubmit={submit}>
       <h2>Start an auction</h2>
-      <div style={row}>
+      <div className="hl-auction-form-grid" style={row}>
         {context.managedTeams.length > 1 ? (
-          <label>Team<br /><select style={input} value={effectiveTeamId} onChange={(e) => setTeamId(e.target.value)}>
-            {context.managedTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-          </select></label>
+          <label className="hl-auction-field hl-auction-field--team">
+            Team<br />
+            <select
+              style={input}
+              value={effectiveTeamId}
+              onChange={(e) => setTeamId(e.target.value)}
+            >
+              {context.managedTeams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
-        <label htmlFor="auction-player-search">Player<br />
+        <label
+          className="hl-auction-field hl-auction-field--player"
+          htmlFor="auction-player-search"
+        >
+          Player<br />
           <input
             id="auction-player-search"
             style={input}
@@ -426,11 +441,37 @@ function StartAuctionForm({ context, leagueId }) {
             </span>
           )}
         </label>
-        <label>Total value (dollars)<br /><input style={input} type="number" inputMode="decimal" min={termYears === "1" ? "1.00" : termYears} step={termYears === "1" ? "0.01" : "1"} required value={totalValueDollars} onChange={(e) => setTotalValueDollars(e.target.value)} /></label>
-        <label>Term<br /><select style={input} value={termYears} onChange={(e) => setTermYears(e.target.value)}>
-          <option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option>
-        </select></label>
-        <button className="hl-button hl-button--primary" disabled={mutation.isPending || !selectedPlayer}>Start auction</button>
+        <label className="hl-auction-field">
+          Total value (dollars)<br />
+          <input
+            style={input}
+            type="number"
+            inputMode="decimal"
+            min={termYears === "1" ? "1.00" : termYears}
+            step={termYears === "1" ? "0.01" : "1"}
+            required
+            value={totalValueDollars}
+            onChange={(e) => setTotalValueDollars(e.target.value)}
+          />
+        </label>
+        <label className="hl-auction-field">
+          Term<br />
+          <select
+            style={input}
+            value={termYears}
+            onChange={(e) => setTermYears(e.target.value)}
+          >
+            <option value="1">1 year</option>
+            <option value="2">2 years</option>
+            <option value="3">3 years</option>
+          </select>
+        </label>
+        <button
+          className="hl-button hl-button--primary hl-auction-submit"
+          disabled={mutation.isPending || !selectedPlayer}
+        >
+          Start auction
+        </button>
       </div>
       <ErrorMessage
         error={clientError || prefilledPlayer.error || mutation.error}
@@ -478,17 +519,60 @@ function OwnBidForm({ auction, managedTeams, client, leagueId }) {
 
   return (
     <form className="hl-inline-form" onSubmit={submit}>
-      <div style={row}>
+      <div className="hl-auction-form-grid" style={row}>
         {availableTeams.length > 1 ? (
-          <label>Your team<br /><select style={input} value={teamId} onChange={(e) => setTeamId(e.target.value)}>
-            {availableTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-          </select></label>
+          <label className="hl-auction-field hl-auction-field--team">
+            Your team<br />
+            <select
+              style={input}
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
+            >
+              {availableTeams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
-        <label>Total value (dollars)<br /><input style={input} type="number" inputMode="decimal" min={auction.ownBid ? (term === "1" ? "1.00" : term) : ({ 1: "1.50", 2: "3", 3: "5" }[term])} step={term === "1" ? "0.01" : "1"} required value={total} onChange={(e) => setTotal(e.target.value)} /></label>
-        <label>Term<br /><select style={input} value={term} onChange={(e) => setTerm(e.target.value)}>
-          <option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option>
-        </select></label>
-        <button className="hl-button hl-button--primary" disabled={mutation.isPending}>{auction.ownBid ? "Update my bid" : "Join auction"}</button>
+        <label className="hl-auction-field">
+          Total value (dollars)<br />
+          <input
+            style={input}
+            type="number"
+            inputMode="decimal"
+            min={
+              auction.ownBid
+                ? term === "1"
+                  ? "1.00"
+                  : term
+                : { 1: "1.50", 2: "3", 3: "5" }[term]
+            }
+            step={term === "1" ? "0.01" : "1"}
+            required
+            value={total}
+            onChange={(e) => setTotal(e.target.value)}
+          />
+        </label>
+        <label className="hl-auction-field">
+          Term<br />
+          <select
+            style={input}
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+          >
+            <option value="1">1 year</option>
+            <option value="2">2 years</option>
+            <option value="3">3 years</option>
+          </select>
+        </label>
+        <button
+          className="hl-button hl-button--primary hl-auction-submit"
+          disabled={mutation.isPending}
+        >
+          {auction.ownBid ? "Update my bid" : "Join auction"}
+        </button>
       </div>
       <ErrorMessage error={clientError || mutation.error} />
     </form>

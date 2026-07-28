@@ -406,6 +406,9 @@ describe("M6-12 authenticated competition pages", () => {
       })
     ).toHaveAttribute("tabindex", "0");
     expect(within(scoringTable).getAllByText("GP")).toHaveLength(2);
+    expect(within(scoringTable).getByText("2.25")).toHaveClass(
+      "hl-matchup-player-fp"
+    );
     const scoreHeader = document.querySelector(".hl-matchup-score");
     expect(
       within(scoreHeader)
@@ -417,7 +420,9 @@ describe("M6-12 authenticated competition pages", () => {
         .getByText("Away Team")
         .closest(".hl-matchup-score__team")
     ).not.toHaveClass("has-three-colours");
-    expect(screen.getByText("Connor Example")).toBeInTheDocument();
+    expect(screen.getByText("Connor Example")).toHaveClass(
+      "hl-matchup-player-name"
+    );
     expect(screen.getByText("Jamie Missing — data unavailable")).toBeInTheDocument();
     expect(screen.getAllByText("Empty F slot 2")).toHaveLength(2);
     expect(

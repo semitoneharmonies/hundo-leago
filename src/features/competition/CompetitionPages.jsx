@@ -537,7 +537,10 @@ function MatchupCard({ matchup, teams = [] }) {
                   const awayPlayer = awaySlot.player;
                   return (
                     <tr key={`${homeSlot.positionGroup}-${homeSlot.slotNumber}`}>
-                      <th className={homePlayer ? "" : "is-empty"} scope="row">
+                      <th
+                        className={`hl-matchup-player-name${homePlayer ? "" : " is-empty"}`}
+                        scope="row"
+                      >
                         {homePlayer
                           ? `${homePlayer.fullName}${
                               homePlayer.dataStatus === "missing"
@@ -550,8 +553,19 @@ function MatchupCard({ matchup, teams = [] }) {
                       <td>{playerStat(homePlayer, "goalDelta")}</td>
                       <td>{playerStat(homePlayer, "assistDelta")}</td>
                       <td>{playerStat(homePlayer, "pointDelta")}</td>
-                      <td>{playerStat(homePlayer, "scoreHundredths")}</td>
-                      <th className={awayPlayer ? "" : "is-empty"} scope="row">
+                      <td
+                        className={
+                          homePlayer?.dataStatus === "available"
+                            ? "hl-matchup-player-fp"
+                            : ""
+                        }
+                      >
+                        {playerStat(homePlayer, "scoreHundredths")}
+                      </td>
+                      <th
+                        className={`hl-matchup-player-name${awayPlayer ? "" : " is-empty"}`}
+                        scope="row"
+                      >
                         {awayPlayer
                           ? `${awayPlayer.fullName}${
                               awayPlayer.dataStatus === "missing"
@@ -564,7 +578,15 @@ function MatchupCard({ matchup, teams = [] }) {
                       <td>{playerStat(awayPlayer, "goalDelta")}</td>
                       <td>{playerStat(awayPlayer, "assistDelta")}</td>
                       <td>{playerStat(awayPlayer, "pointDelta")}</td>
-                      <td>{playerStat(awayPlayer, "scoreHundredths")}</td>
+                      <td
+                        className={
+                          awayPlayer?.dataStatus === "available"
+                            ? "hl-matchup-player-fp"
+                            : ""
+                        }
+                      >
+                        {playerStat(awayPlayer, "scoreHundredths")}
+                      </td>
                     </tr>
                   );
                 })}
