@@ -11,52 +11,48 @@
 ## Work Plan ID
 
 ```text
-M7-22
+M7-23
 ```
 
 ## Work Item
 
 ```text
-Mobile-safe same-site staging sessions
+Mobile matchup and transaction-layout polish
 ```
 
 ## Authority and Boundary
 
-Grae reported on `2026-07-27` that mobile sign-in immediately loses both new
-and fixture-account sessions and asked Codex to correct the defect.
+Grae asked Codex on `2026-07-27` to correct the matchup player layout on
+small screens, emphasize each player's matchup fantasy points, review the
+existing uncommitted mobile transaction and table styling, and publish the
+verified result to staging.
 
-This plan permits a staging-only same-site frontend/API domain pair, explicit
-session-cookie site policy, matching frontend and backend environment changes,
-focused and complete authentication regression coverage, exact staging
-commits, hosted deployment, and mobile-compatible session acceptance.
+This plan permits the requested frontend presentation changes, focused and
+complete frontend regression coverage, exact staging commits, hosted Netlify
+deployment, and responsive acceptance at phone and desktop widths.
 
-This plan does not authorize production-domain changes, production
-environment changes, authentication tokens in browser storage or URLs,
-weakened CSRF/CORS/origin protections, wildcard origins, database changes,
-fixture resets, force-push, or a merge to `main`.
+This plan does not authorize backend, API, scoring-rule, auction-rule,
+database, fixture, email, scheduled-job, production-environment, or
+production-deployment changes.
 
 ## Approved Scope
 
-1. Use `staging.hundoleago.com` for the Netlify staging frontend.
-2. Use `api-staging.hundoleago.com` for the Render staging API and Socket.IO
-   service.
-3. Add an explicit deployed `SESSION_COOKIE_SAME_SITE` contract.
-4. Configure the same-site staging pair to use `SameSite=Lax`, `Secure`,
-   `HttpOnly`, `Path=/`, and no `Domain` attribute.
-5. Preserve exact credentialed CORS, Origin validation, session-bound CSRF,
-   Fetch Metadata checks, and backend authorization.
-6. Keep the prior Netlify and Render service URLs available for rollback while
-   directing the staging application to the same-site pair.
-7. Add focused configuration, cookie, runtime, and deployment regression
-   coverage.
-8. Run complete frontend and backend verification.
-9. Publish and deploy only the exact verified staging commits.
-10. Verify login, authenticated bootstrap, credentialed API access, and the
-    authenticated Socket.IO path on the hosted same-site domains.
+1. At phone width, show each matchup player's complete name above that
+   player's GP, G, A, PTS, and FP values.
+2. Keep home and away players aligned for direct comparison without
+   horizontal scrolling.
+3. Display valid player FP values in the same orange accent as team matchup
+   totals and use a bold weight on phone and desktop layouts.
+4. Preserve one semantic scoring table and backend-authoritative score data.
+5. Complete the pre-existing phone-width roster and player-table density,
+   compact action-control, and auction/bid form layout work.
+6. Preserve auction input rules, submission handlers, API payloads, and
+   authorization.
+7. Run focused and complete frontend verification.
+8. Publish and deploy only the exact verified staging commits.
+9. Verify the affected hosted workflows at `390`- and `1280`-pixel widths.
 
 ## Verification Gates
-
-Frontend:
 
 ```text
 npm run lint
@@ -67,70 +63,55 @@ npm ls --all
 git diff --check
 ```
 
-Backend:
+Focused suites:
 
 ```text
-npm run check
-npm test
-npm ls --all
-git diff --check
+src/features/competition/CompetitionPages.test.jsx
+src/features/transactions/TransactionPages.test.jsx
 ```
 
 ## Completion Evidence
 
 - Frontend application commit
-  `66986b9c7592176228854f6d4c6d1f7c97a7b783` configures the custom
-  staging API and Socket.IO origins and permits them in the deployed CSP.
-- Frontend routing commit
-  `8c96e71a85b8d6a68099e29968ea13a732f4aff6` permanently redirects the
-  former Netlify staging hostname, including deep links, to the custom
-  staging hostname.
-- Backend commit `d04f18f8212750ea0180b806480ecea6203582f3` makes the
-  deployed cookie site policy explicit and uses that policy in the session
-  runtime.
-- Netlify staging deploy `6a68164f5056482991266e18` is ready at
+  `a3f4015bf7a07738bbcdb14e7f4cc5300e538263` contains the bounded
+  matchup, transaction-form, roster-table, and player-table presentation
+  changes.
+- Follow-up CSS commits `a1da43312beb41937d26b6b608fa40b2e29fae1a`
+  and `d45373ddda7c85211e4ea0feb21179898221b12b` resolve the legacy
+  percentage-width interaction found during hosted responsive inspection.
+- Netlify staging deploy `6a6823aaa8f41d9b53c1ca0d` is ready at
   `https://staging.hundoleago.com`.
-- Render staging deploy `dep-d9k11ltbedkc738pf5d0` is live at
-  `https://api-staging.hundoleago.com`.
-- The deployed session cookie is host-only and includes `Path=/`,
-  `HttpOnly`, `Secure`, and `SameSite=Lax`.
-- Hosted sign-in reached the authenticated league dashboard, a full reload
-  retained the session, and an old-host deep link redirected to the same
-  authenticated custom-domain path without a session-expired message.
-- Credentialed login and the immediately following authenticated session
-  request both returned HTTP `200`.
-- An authenticated Socket.IO client connected successfully through
-  `api-staging.hundoleago.com` with the exact custom frontend Origin.
-- Public liveness and readiness both returned HTTP `200`.
-- Exact Origin/CORS, CSRF, Fetch Metadata, HttpOnly, Secure, host-only, and
-  backend authorization protections remain in place.
-- Complete frontend and backend verification passed. The detailed evidence,
-  deployment notes, rollback, and remaining manual mobile acceptance item are
-  recorded in
-  `docs/07-testing/release-runs/M7_MOBILE_SAME_SITE_SESSIONS_2026-07-27.md`.
+- Netlify processed all redirect and header rules without errors and reported
+  no secret-scan match across `479` scanned files.
+- The focused competition and transaction suites pass `24/24`.
+- The complete frontend suite passes `132/132` across `24` files.
+- Lint, the staging-configured production build, browser-authority
+  verification, dependency-tree validation, and whitespace validation pass.
+- Hosted acceptance confirms complete matchup names above evenly divided
+  stat rows, orange bold player FP, no matchup or page overflow, compact
+  player and roster actions, internal table scrolling, and responsive
+  auction/bid controls.
+- The detailed release evidence and remaining manual items are recorded in
+  `docs/07-testing/release-runs/M7_MOBILE_LAYOUT_POLISH_2026-07-27.md`.
 
 ## Rollback
 
-- Restore the staging frontend API and Socket.IO origins to the Render
-  `onrender.com` hostname.
-- Restore the backend public frontend origin and exact allowlist to the
-  Netlify hostname.
-- Set `SESSION_COOKIE_SAME_SITE=none` only while those staging hosts are
-  cross-site.
-- Redeploy the prior known-good frontend and backend staging commits.
-- Leave both custom-domain DNS records in place unless a separate cleanup is
-  approved; they do not alter production.
-- Do not rewrite history, reset the database, or change production.
+1. Restore the previous known-good Netlify staging deploy
+   `6a68164f5056482991266e18`.
+2. Revert the M7-23 frontend commits through normal Git history if the change
+   must be removed from the `staging` branch.
+3. Do not force-push, rewrite shared history, change backend configuration,
+   reset fixture data, or alter production.
 
 ## Completion Conditions
 
-This plan is complete only when:
+This plan is complete because:
 
-1. frontend and backend staging use the same registrable domain;
-2. the deployed cookie site policy is explicit and accurately configured;
-3. mobile-compatible login retains the backend-managed session;
-4. CSRF, exact Origin/CORS, HttpOnly, Secure, and host-only safeguards remain;
-5. authenticated Socket.IO still connects through the same-site API host;
-6. complete verification passes in both repositories;
-7. exact commits are pushed and hosted deploys are healthy; and
-8. documentation records the evidence, rollback, and production boundary.
+1. the phone matchup table presents complete names above stats;
+2. player FP is orange and bold on phone and desktop;
+3. the requested earlier mobile-layout changes were reviewed and preserved;
+4. focused and complete frontend verification passes;
+5. the exact commits are published on `origin/staging`;
+6. the final Netlify staging deploy is ready and passed hosted acceptance;
+7. no backend-authoritative calculation or transaction behavior changed; and
+8. production and all out-of-scope systems remain untouched.

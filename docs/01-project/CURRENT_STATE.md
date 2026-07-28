@@ -1852,6 +1852,25 @@ database, fixture, provider, league job, production domain, production
 environment, or production deployment changed. The full record is
 `docs/07-testing/release-runs/M7_MOBILE_SAME_SITE_SESSIONS_2026-07-27.md`.
 
+M7-23 publishes phone-layout polish in frontend commits `a3f4015`,
+`a1da433`, and `d45373d`, with the exact final commit in ready Netlify
+staging deploy `6a6823aaa8f41d9b53c1ca0d`. At phone width, matchup
+player names now use each team's half of the table above evenly divided GP,
+G, A, PTS, and FP cells. Valid player FP is orange and bold on phone and
+desktop. The reviewed auction/bid forms use a responsive two-column layout,
+and roster/player table density and icon controls are compact at phone width.
+
+The complete frontend gate passes lint, `132/132` tests across `24` files,
+the staging-configured production build, browser-authority verification,
+dependency-tree validation, and whitespace validation. Hosted authenticated
+acceptance at `390` and `1280` pixels confirms complete names, aligned stats,
+orange bold FP, zero matchup and document overflow, responsive auction/bid
+controls, compact roster/player actions, and internal wide-table scrolling.
+No state-changing action was submitted. Backend-authoritative calculations,
+API contracts, transaction rules, backend, database, fixture, provider,
+email, jobs, and production remain untouched. The full record is
+`docs/07-testing/release-runs/M7_MOBILE_LAYOUT_POLISH_2026-07-27.md`.
+
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.
 
