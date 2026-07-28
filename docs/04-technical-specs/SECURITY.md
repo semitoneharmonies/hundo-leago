@@ -345,6 +345,18 @@ Max-Age=604800
 
 Moving production to same-site custom domains and `SameSite=Lax` is preferred when deployment supports it, but the security implementation must accurately represent the deployed origins instead of assuming they are same-site.
 
+The staging deployment uses the reviewed same-site pair:
+
+```text
+https://staging.hundoleago.com
+https://api-staging.hundoleago.com
+```
+
+Staging therefore uses `SameSite=Lax`. The policy is an explicit deployed
+setting, not an application-environment guess. The Netlify and Render service
+subdomains remain available for rollback, but the staging application does not
+use that cross-site pair for normal browser authentication.
+
 Local development uses a separate:
 
 ```text

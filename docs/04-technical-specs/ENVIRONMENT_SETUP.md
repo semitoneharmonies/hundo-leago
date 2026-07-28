@@ -459,6 +459,7 @@ APP_ENV=test
 NODE_ENV=test
 EMAIL_DELIVERY_MODE=capture
 ACCOUNT_EMAIL_DELIVERY_ENABLED=false
+SESSION_COOKIE_SAME_SITE=lax
 SCHEDULED_JOBS_ENABLED=false
 DEBUG_ROUTES_ENABLED=false
 ```
@@ -657,6 +658,7 @@ They must be inventoried during `FE-00`, mapped deliberately where still require
 | `PUBLIC_FRONTEND_ORIGIN` | Yes | Canonical browser origin used in links and security decisions |
 | `FRONTEND_ORIGINS` | Yes | Comma-separated exact allowed browser origins |
 | `LOG_LEVEL` | Yes | Approved structured-log threshold |
+| `SESSION_COOKIE_SAME_SITE` | Yes | Explicit `lax` or `none`; must match the deployed frontend/API site relationship |
 | `ACCOUNT_EMAIL_DELIVERY_ENABLED` | Yes | Explicit `true` or `false`; controls only the durable account-email worker |
 | `SCHEDULED_JOBS_ENABLED` | Yes | Explicit `true` or `false`; no truthy string coercion |
 | `DEBUG_ROUTES_ENABLED` | Yes | Explicit `true` or `false` |
@@ -950,6 +952,13 @@ Cookie behavior is derived and validated according to Security:
 * `SameSite=None; Secure` is used only when the deployed Netlify/Render topology is cross-site;
 * cookie Domain is not set for a `__Host-` cookie;
 * trusted proxy behavior is enabled only for the reviewed Render topology.
+
+`SESSION_COOKIE_SAME_SITE` is required explicitly in staging and production.
+Local and test runtimes use `lax`. The current staging pair is
+`https://staging.hundoleago.com` and
+`https://api-staging.hundoleago.com`, so staging uses `lax`. The underlying
+Netlify and Render service domains remain rollback addresses, not the
+application's primary browser/API pair.
 
 These protections are not casual environment toggles.
 

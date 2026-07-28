@@ -5,8 +5,14 @@ const SECRET_VALUE_PATTERN =
   /(?:-----BEGIN [A-Z ]*PRIVATE KEY-----|\bBearer\s+[A-Za-z0-9._~-]+|(?:password|secret|api[_-]?key)\s*[:=])/i;
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const HUNDO_DEPLOYED_BACKENDS = Object.freeze({
-  production: "hundo-leago-backend.onrender.com",
-  staging: "hundo-leago-backend-staging.onrender.com",
+  production: new Set([
+    "api.hundoleago.com",
+    "hundo-leago-backend.onrender.com",
+  ]),
+  staging: new Set([
+    "api-staging.hundoleago.com",
+    "hundo-leago-backend-staging.onrender.com",
+  ]),
 });
 
 export class FrontendConfigError extends Error {
@@ -65,13 +71,15 @@ function parseOrigin(name, rawValue, appEnv, { compatibility = false } = {}) {
   if (url.protocol === "http:" && (appEnv !== "local" || !isLoopback)) {
     fail(`${name} must use HTTPS outside loopback local development.`);
   }
-  const forbiddenHundoBackend =
+  const forbiddenHundoBackends =
     appEnv === "staging"
       ? HUNDO_DEPLOYED_BACKENDS.production
       : appEnv === "production"
         ? HUNDO_DEPLOYED_BACKENDS.staging
         : null;
-  if (forbiddenHundoBackend && url.hostname.toLowerCase() === forbiddenHundoBackend) {
+  if (
+    forbiddenHundoBackends?.has(url.hostname.toLowerCase())
+  ) {
     fail(`${name} points at the wrong Hundo Leago environment.`);
   }
 

@@ -82,6 +82,15 @@ describe("createFrontendConfig", () => {
 
     expect(() =>
       createFrontendConfig({
+        VITE_APP_ENV: "staging",
+        VITE_API_ORIGIN: "https://api.hundoleago.com",
+        VITE_SOCKET_ORIGIN: "https://api-staging.hundoleago.com",
+        VITE_BUILD_ID: "staging-build",
+      })
+    ).toThrow("wrong Hundo Leago environment");
+
+    expect(() =>
+      createFrontendConfig({
         VITE_APP_ENV: "production",
         VITE_API_ORIGIN:
           "https://hundo-leago-backend-staging.onrender.com",
@@ -90,6 +99,31 @@ describe("createFrontendConfig", () => {
         VITE_BUILD_ID: "production-build",
       })
     ).toThrow("wrong Hundo Leago environment");
+
+    expect(() =>
+      createFrontendConfig({
+        VITE_APP_ENV: "production",
+        VITE_API_ORIGIN: "https://api-staging.hundoleago.com",
+        VITE_SOCKET_ORIGIN: "https://api.hundoleago.com",
+        VITE_BUILD_ID: "production-build",
+      })
+    ).toThrow("wrong Hundo Leago environment");
+  });
+
+  it("accepts the reviewed same-site staging API and socket origin", () => {
+    expect(
+      createFrontendConfig({
+        VITE_APP_ENV: "staging",
+        VITE_API_ORIGIN: "https://api-staging.hundoleago.com",
+        VITE_SOCKET_ORIGIN: "https://api-staging.hundoleago.com",
+        VITE_BUILD_ID: "staging-build",
+      })
+    ).toEqual({
+      appEnv: "staging",
+      apiOrigin: "https://api-staging.hundoleago.com",
+      socketOrigin: "https://api-staging.hundoleago.com",
+      buildId: "staging-build",
+    });
   });
 
   it("maps only legacy local endpoint variables and warns", () => {

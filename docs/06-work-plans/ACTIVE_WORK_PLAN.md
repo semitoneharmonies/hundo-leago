@@ -6,51 +6,68 @@
 
 ## Plan Status
 
-`COMPLETE - STAGING ONLY`
+`IN PROGRESS - STAGING ONLY`
 
 ## Work Plan ID
 
 ```text
-M7-21
+M7-22
 ```
 
 ## Work Item
 
 ```text
-Isolated staging account-email delivery
+Mobile-safe same-site staging sessions
 ```
 
 ## Authority and Boundary
 
-Grae explicitly approved this staging implementation and deployment on
-`2026-07-27`.
+Grae reported on `2026-07-27` that mobile sign-in immediately loses both new
+and fixture-account sessions and asked Codex to correct the defect.
 
-This plan permits one independently controlled account-email worker, focused
-backend tests, the matching environment contract and Blueprint update, an
-exact backend staging commit, a Render staging deployment, and one
-allowlisted verification-email acceptance check through the configured Resend
-provider.
+This plan permits a staging-only same-site frontend/API domain pair, explicit
+session-cookie site policy, matching frontend and backend environment changes,
+focused and complete authentication regression coverage, exact staging
+commits, hosted deployment, and mobile-compatible session acceptance.
 
-This plan does not authorize global scheduled jobs, auction resolution, trade
-expiry, matchup processing, backup scheduling, production changes, database
-reset or reseeding, secret disclosure, force-push, or a merge to `main`.
+This plan does not authorize production-domain changes, production
+environment changes, authentication tokens in browser storage or URLs,
+weakened CSRF/CORS/origin protections, wildcard origins, database changes,
+fixture resets, force-push, or a merge to `main`.
 
 ## Approved Scope
 
-1. Add an explicit `ACCOUNT_EMAIL_DELIVERY_ENABLED` deployed-runtime setting.
-2. Start and stop the durable account-email worker independently from the
-   league scheduler.
-3. Keep `SCHEDULED_JOBS_ENABLED=false` on staging.
-4. Keep email delivery restricted to the existing staging recipient allowlist.
-5. Add focused configuration, scheduler, runtime, and Blueprint regression
+1. Use `staging.hundoleago.com` for the Netlify staging frontend.
+2. Use `api-staging.hundoleago.com` for the Render staging API and Socket.IO
+   service.
+3. Add an explicit deployed `SESSION_COOKIE_SAME_SITE` contract.
+4. Configure the same-site staging pair to use `SameSite=Lax`, `Secure`,
+   `HttpOnly`, `Path=/`, and no `Domain` attribute.
+5. Preserve exact credentialed CORS, Origin validation, session-bound CSRF,
+   Fetch Metadata checks, and backend authorization.
+6. Keep the prior Netlify and Render service URLs available for rollback while
+   directing the staging application to the same-site pair.
+7. Add focused configuration, cookie, runtime, and deployment regression
    coverage.
-6. Document the separate scheduler and email-delivery controls.
-7. Run the complete backend verification gate.
-8. Publish only the exact verified backend commit to staging.
-9. Configure only the new staging switch, deploy, and verify one queued or
-   newly requested allowlisted verification email in Resend.
+8. Run complete frontend and backend verification.
+9. Publish and deploy only the exact verified staging commits.
+10. Verify login, authenticated bootstrap, credentialed API access, and the
+    authenticated Socket.IO path on the hosted same-site domains.
 
 ## Verification Gates
+
+Frontend:
+
+```text
+npm run lint
+npm test -- --run
+npm run build
+npm run verify:m3-browser-authority
+npm ls --all
+git diff --check
+```
+
+Backend:
 
 ```text
 npm run check
@@ -59,51 +76,28 @@ npm ls --all
 git diff --check
 ```
 
-Hosted acceptance must additionally prove:
-
-- the Render deploy reaches `live`;
-- liveness and readiness remain healthy;
-- the general league scheduler is still disabled;
-- an allowlisted account-email event is accepted by Resend; and
-- no auction, trade, matchup, backup, fixture, or production job was enabled.
-
 ## Rollback
 
-- Set `ACCOUNT_EMAIL_DELIVERY_ENABLED=false` on the Render staging service.
-- Redeploy the prior known-good backend staging commit if code rollback is
-  required.
-- Leave `SCHEDULED_JOBS_ENABLED=false`.
+- Restore the staging frontend API and Socket.IO origins to the Render
+  `onrender.com` hostname.
+- Restore the backend public frontend origin and exact allowlist to the
+  Netlify hostname.
+- Set `SESSION_COOKIE_SAME_SITE=none` only while those staging hosts are
+  cross-site.
+- Redeploy the prior known-good frontend and backend staging commits.
+- Leave both custom-domain DNS records in place unless a separate cleanup is
+  approved; they do not alter production.
 - Do not rewrite history, reset the database, or change production.
 
 ## Completion Conditions
 
 This plan is complete only when:
 
-1. account-email delivery has an explicit switch independent from league jobs;
-2. email-only startup cannot run auction, trade, matchup, or league-outbox
-   jobs;
-3. shutdown drains and closes the email worker;
-4. focused and complete backend verification passes;
-5. the exact backend commit is pushed to `staging`;
-6. the Render staging deploy is live and healthy;
-7. Resend records the allowlisted verification message; and
-8. documentation records the exact evidence and remaining production boundary.
-
-## Completion Evidence
-
-- Backend commit `dfee0a0` was pushed to `staging`.
-- Render deploy `dep-d9jve7dbedkc738lrmpg` reached `live` with the verified
-  `notify.hundoleago.com` sender persisted.
-- Public liveness and readiness both returned their healthy status.
-- `ACCOUNT_EMAIL_DELIVERY_ENABLED=true` runs only the durable account-email
-  worker while `SCHEDULED_JOBS_ENABLED=false` keeps league jobs disabled.
-- A fresh allowlisted verification request returned `202 Accepted`; Resend
-  recorded the message as `delivered`.
-- The focused scheduler and deployment foundation run passed `25/25` tests.
-- The complete backend gate passed `985/985` tests across 234 suites,
-  `npm run check`, dependency-tree validation, a 467-file JavaScript syntax
-  sweep under Node `24.14.1`, and whitespace validation.
-- No production, database, fixture, auction, trade, matchup, backup, or
-  league-outbox setting was changed.
-- The detailed run record is
-  `docs/07-testing/release-runs/M7_ACCOUNT_EMAIL_DELIVERY_2026-07-27.md`.
+1. frontend and backend staging use the same registrable domain;
+2. the deployed cookie site policy is explicit and accurately configured;
+3. mobile-compatible login retains the backend-managed session;
+4. CSRF, exact Origin/CORS, HttpOnly, Secure, and host-only safeguards remain;
+5. authenticated Socket.IO still connects through the same-site API host;
+6. complete verification passes in both repositories;
+7. exact commits are pushed and hosted deploys are healthy; and
+8. documentation records the evidence, rollback, and production boundary.
