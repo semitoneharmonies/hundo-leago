@@ -99,6 +99,8 @@ git diff --check
   authenticated custom-domain path without a session-expired message.
 - Credentialed login and the immediately following authenticated session
   request both returned HTTP `200`.
+- An authenticated Socket.IO client connected successfully through
+  `api-staging.hundoleago.com` with the exact custom frontend Origin.
 - Public liveness and readiness both returned HTTP `200`.
 - Exact Origin/CORS, CSRF, Fetch Metadata, HttpOnly, Secure, host-only, and
   backend authorization protections remain in place.

@@ -222,6 +222,9 @@ attempts never became live.
   and `SameSite=Lax`.
 - The login request and the immediately following authenticated
   `GET /api/v1/session` both returned HTTP `200`.
+- An authenticated Socket.IO client connected through
+  `api-staging.hundoleago.com` using the backend-issued cookie and the exact
+  `https://staging.hundoleago.com` Origin.
 - The deployed frontend CSP contains both the HTTPS and WSS custom API
   origins.
 - Custom-domain liveness and readiness both returned HTTP `200`.
