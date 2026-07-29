@@ -271,6 +271,51 @@ describe("AccountHome", () => {
     ).toBe(true);
   });
 
+  it("lets a pending account request a replacement verification email", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(noSession())
+      .mockResolvedValueOnce(
+        jsonResponse(
+          {
+            data: { accepted: true },
+            meta: { requestId: "request-verification-resend" },
+          },
+          202
+        )
+      );
+    const view = renderWithProviders(<AccountHome />, {
+      enableSession: true,
+      config,
+      sessionOptions: { fetchImpl },
+    });
+
+    await view.user.click(
+      await screen.findByRole("button", {
+        name: "Resend a verification email",
+      })
+    );
+    await view.user.type(
+      screen.getByLabelText("Email address used to sign up"),
+      "pending@example.test"
+    );
+    await view.user.click(
+      screen.getByRole("button", { name: "Send instructions" })
+    );
+
+    expect(
+      await screen.findByText(
+        /without confirming whether an account exists/i
+      )
+    ).toBeInTheDocument();
+    expect(fetchImpl.mock.calls[1][0]).toBe(
+      "http://localhost:4000/api/v1/accounts/email-verification-requests"
+    );
+    expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({
+      email: "pending@example.test",
+    });
+  });
+
   it("navigates a successful sign-in to league selection", async () => {
     const sessionData = {
       csrfToken: "B".repeat(43),

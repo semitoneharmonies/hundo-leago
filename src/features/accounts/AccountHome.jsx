@@ -8,6 +8,7 @@ import {
   createIntentKey,
   registerAccount,
   requestAccountReactivation,
+  requestEmailVerification,
   requestPasswordReset,
 } from "./accountApi.js";
 
@@ -287,8 +288,13 @@ function RecoveryRequest({ httpClient }) {
     setMessage("");
     setError("");
     try {
-      if (mode === "reset") await requestPasswordReset(httpClient, email);
-      else await requestAccountReactivation(httpClient, email);
+      if (mode === "reset") {
+        await requestPasswordReset(httpClient, email);
+      } else if (mode === "verification") {
+        await requestEmailVerification(httpClient, email);
+      } else {
+        await requestAccountReactivation(httpClient, email);
+      }
       setMessage(
         "If that email is eligible, instructions will be sent without confirming whether an account exists."
       );
@@ -312,6 +318,13 @@ function RecoveryRequest({ httpClient }) {
         <button
           className="hl-button hl-button--quiet"
           type="button"
+          onClick={() => setMode("verification")}
+        >
+          Resend a verification email
+        </button>
+        <button
+          className="hl-button hl-button--quiet"
+          type="button"
           onClick={() => setMode("reactivate")}
         >
           Reactivate an account
@@ -322,9 +335,17 @@ function RecoveryRequest({ httpClient }) {
 
   return (
     <form className="hl-surface hl-recovery-card" onSubmit={handleSubmit}>
-      <h3>{mode === "reset" ? "Request a reset link" : "Request a reactivation link"}</h3>
+      <h3>
+        {mode === "reset"
+          ? "Request a reset link"
+          : mode === "verification"
+            ? "Request a verification link"
+            : "Request a reactivation link"}
+      </h3>
       <label className="hl-field">
-        Verified email address
+        {mode === "verification"
+          ? "Email address used to sign up"
+          : "Verified email address"}
         <input
           type="email"
           autoComplete="email"
