@@ -115,7 +115,7 @@ Hundo Leago has exactly four application environment classes:
 | --- | --- | --- | --- | --- | --- |
 | `local` | Developer implementation and focused manual checks | Local disposable or copied data only | No | Captured or disabled | Disabled by default |
 | `test` | Automated unit, integration, contract, migration, and browser tests | Temporary synthetic data only | No | Captured in memory or temporary files | Controlled explicitly by tests |
-| `staging` | Integrated release rehearsal and recovery drills | Staging-only persistent data | Test accounts only | Capture/sandbox mode | Enabled only for the scenario under test |
+| `staging` | Integrated release rehearsal and recovery drills | Staging-only persistent data | Test accounts only | Capture, sandbox, allowlist, or explicitly approved staging send | Enabled only for the scenario under test |
 | `production` | Live Hundo Leago leagues | Production persistent data | Yes | Send mode | Enabled as approved |
 
 `development`, `preview`, `demo`, and a developer's machine name are not additional environment classes.
@@ -485,7 +485,7 @@ Staging requires:
 * a staging-only offsite-backup namespace;
 * staging-only secrets;
 * test users and test leagues;
-* captured or sandboxed email;
+* staging-only account-email configuration;
 * staging logs and alerts.
 
 The staging Render service must not have the production disk attached and must not possess production storage credentials.
@@ -512,7 +512,7 @@ Staging data is never promoted into production.
 Default behavior:
 
 ```text
-Email:       capture or provider sandbox
+Email:       capture, sandbox, or allowlist; approved public sign-up testing may use staging send
 NHL data:    recorded fixtures or controlled cache
 Jobs:        disabled unless a scenario enables them
 Debug routes: disabled unless a focused test enables them
@@ -521,7 +521,9 @@ Backups:     staging namespace and staging key only
 
 A focused staging smoke may call the real public NHL data provider, but failure of that provider must not erase the last valid cache.
 
-Staging must not email production users.
+Staging must not send bulk or system-initiated email to production user lists.
+User-initiated staging account flows may send only to addresses submitted or
+verified in staging.
 
 ---
 
@@ -683,7 +685,7 @@ Unknown enum values fail startup.
 | `RATE_LIMIT_KEY_SECRET` | Staging and production | HMAC key for privacy-preserving durable rate-limit keys |
 | `AUDIT_METADATA_SECRET` | Staging and production | HMAC key for protected audit metadata |
 | `ACTION_TOKEN_DELIVERY_KEY` | Staging and production | Versioned 32-byte AES-256-GCM key for short-lived encrypted account-link outbox envelopes |
-| `RESEND_API_KEY` | Staging sandbox/allowlist and production send modes | Environment-specific send-only Resend authentication |
+| `RESEND_API_KEY` | Staging sandbox/allowlist/send and production send modes | Environment-specific send-only Resend authentication |
 | backup variables defined by Backup and Restore | Staging and production | Encryption and offsite storage |
 
 Secrets:
@@ -728,8 +730,10 @@ Rules:
   email and does not enable auction, trade, matchup, or league-outbox jobs;
 * `production` requires `send` with a verified sender and a send-only
   `RESEND_API_KEY`;
-* `staging` may use `capture`, `sandbox`, or `allowlist`, never unrestricted
-  production sending;
+* `staging` may use `capture`, `sandbox`, `allowlist`, or explicitly approved
+  `send`; staging send uses staging-only credentials, a verified staging
+  sender, durable public-endpoint rate limits, and actual staging-account
+  addresses;
 * `local` and `test` use `capture` or `disabled`;
 * `EMAIL_FROM` is required in `sandbox`, `allowlist`, and `send`; `EMAIL_REPLY_TO` is
   optional but validated when present;
@@ -741,6 +745,8 @@ Rules:
 * staging `allowlist` sends only when the normalized account address exactly
   matches `STAGING_EMAIL_RECIPIENT_ALLOWLIST`; every other recipient fails
   closed before a provider request;
+* staging `send` requires `STAGING_EMAIL_RECIPIENT_ALLOWLIST` to be absent and
+  sends only account messages produced by approved staging account workflows;
 * every provider request carries the durable outbox event ID as its
   `Idempotency-Key`;
 * captured email is stored only in that environment's temporary or persistent test area;
@@ -985,9 +991,10 @@ Disabling scheduling does not erase pending job state.
 
 Account-email delivery is independently controlled by
 `ACCOUNT_EMAIL_DELIVERY_ENABLED`. Staging may enable that worker while
-`SCHEDULED_JOBS_ENABLED=false` only under an approved plan, with
-`EMAIL_DELIVERY_MODE=allowlist` and an exact recipient allowlist. This
-email-only mode must not run league jobs.
+`SCHEDULED_JOBS_ENABLED=false` only under an approved plan. The plan may use
+an exact-recipient `allowlist` or approved public-account `send` mode with
+staging-only provider credentials and the durable authentication rate limits.
+This email-only mode must not run league jobs.
 
 ---
 
@@ -1139,7 +1146,7 @@ Do not use production values to make local startup convenient.
 4. Attach a new staging-only disk at `/opt/render/project/data`.
 5. Create staging-only managed secrets and environment identity.
 6. Configure the staging frontend and exact CORS origins.
-7. Configure capture or sandbox email.
+7. Configure capture, sandbox, allowlist, or explicitly approved staging-send email.
 8. Configure a staging-only encrypted backup namespace.
 9. Deploy the reviewed staging commits.
 10. Initialize a new staging database through an explicit migration command.
@@ -1186,7 +1193,7 @@ Setup or deployment stops when:
 * a preview origin has broad credentialed CORS access;
 * Node or the SQLite driver differs from the approved version;
 * a hosted build uses a different lockfile from the reviewed commit;
-* production email is enabled in staging;
+* production email credentials or the production sender are enabled in staging;
 * scheduled jobs can execute concurrently without durable protection;
 * backup verification has not passed before a risky data operation;
 * an unrelated working-tree change would be included.

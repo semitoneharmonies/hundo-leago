@@ -617,7 +617,11 @@ it is not evidence of inbox delivery. Local and test use capture or disabled
 mode. Staging sandbox mode forces the recipient to Resend's non-delivering
 `delivered@resend.dev` test address. Staging allowlist mode sends only to exact
 configured test recipients and rejects every other address before contacting
-the provider. Production send mode uses the verified account address.
+the provider. When Grae explicitly enables public staging account testing,
+staging send mode delivers account messages to actual staging-account
+addresses through a staging-only API key, a verified staging sender, and the
+durable public-endpoint rate limits. Production send mode uses production-only
+credentials and the verified production account address.
 
 ---
 
@@ -1247,8 +1251,11 @@ Domain services write a notification or outbox record in the same transaction as
 The durable account-email worker has explicit enablement independent from the
 general league scheduler. Enabling account-email delivery must not activate
 auction resolution, trade expiry, matchup processing, or the league outbox.
-Staging provider delivery remains restricted to the configured exact recipient
-allowlist.
+Staging provider delivery follows its explicitly approved delivery mode.
+Unrestricted staging send is permitted only for approved public account
+testing with staging-only provider credentials, a verified staging sender,
+and durable public-endpoint rate limits. It must not reuse production
+credentials, bulk-target production users, or enable league jobs.
 
 Email content must not include an existing or generated password.
 
