@@ -8,6 +8,7 @@ import {
   EmptyBlock,
   LoadingBlock,
   PageHeading,
+  PositionTag,
   Surface,
   TableScroll,
 } from "../../components/HundoUi.jsx";
@@ -546,7 +547,14 @@ export function PlayersCatalogPage() {
                         {player.fullName}
                       </Link>
                     </th>
-                    <td>{displayPosition(player)}</td>
+                    <td>
+                      <PositionTag
+                        position={displayPosition(player)}
+                        category={
+                          player.league.ownership?.category || "Free Agent"
+                        }
+                      />
+                    </td>
                     <td>{player.provider?.nhlTeamAbbreviation || "—"}</td>
                     <td>{ageFromBirthDate(player.birthDate)}</td>
                     <td>{player.statistics?.gamesPlayed ?? "—"}</td>

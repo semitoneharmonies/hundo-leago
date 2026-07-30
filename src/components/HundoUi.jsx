@@ -63,6 +63,26 @@ export function StatusBadge({ tone = "neutral", children, className }) {
   );
 }
 
+export function PositionTag({ position, category = "Free Agent" }) {
+  const positionClass =
+    position === "F" ? "is-forward" : position === "D" ? "is-defence" : "";
+  const categoryClass = {
+    Active: "is-active-roster",
+    Bench: "is-bench",
+    "Injured Reserve": "is-injured-reserve",
+    Prospect: "is-prospect",
+    "Free Agent": "is-free-agent",
+  }[category] || "is-free-agent";
+
+  return (
+    <span
+      className={classes("hl-position-tag", positionClass, categoryClass)}
+    >
+      {position}
+    </span>
+  );
+}
+
 export function TableScroll({ label, className, children }) {
   return (
     <div

@@ -19,6 +19,7 @@ import {
   LoadingBlock,
   PageHeading,
   PanelHeading,
+  PositionTag,
   StatusBadge,
   Surface,
   TextLink,
@@ -89,6 +90,7 @@ function countRoster(players) {
 
 function MatchupScoreboard({
   leagueId,
+  teams,
   week,
   matchupSummary,
   matchup,
@@ -241,6 +243,10 @@ function MatchupScoreboard({
   }
   const homeScore = scoreFor(matchup, "home");
   const awayScore = scoreFor(matchup, "away");
+  const homeTeam =
+    teams.find(({ id }) => id === matchup.homeTeam.id) || matchup.homeTeam;
+  const awayTeam =
+    teams.find(({ id }) => id === matchup.awayTeam.id) || matchup.awayTeam;
   return (
     <Surface
       className={`hl-dashboard-matchup${
@@ -265,15 +271,18 @@ function MatchupScoreboard({
         }
       />
       <div className="hl-scoreboard">
-        <div className="hl-scoreboard__team">
+        <div
+          className={teamColourClass("hl-scoreboard__team", homeTeam)}
+          style={teamColourStyle(homeTeam)}
+        >
           <span>
             {managedTeam
-              ? matchup.homeTeam.id === managedTeam.id
+              ? homeTeam.id === managedTeam.id
                 ? "Your team"
                 : "Opponent"
               : "Home"}
           </span>
-          <strong>{matchup.homeTeam.name}</strong>
+          <strong>{homeTeam.name}</strong>
           <b className="is-accent">{fantasyPoints(homeScore)}</b>
           <small>fantasy points</small>
         </div>
@@ -285,15 +294,21 @@ function MatchupScoreboard({
             {matchup.scoring?.mode || matchup.status}
           </StatusBadge>
         </div>
-        <div className="hl-scoreboard__team is-away">
+        <div
+          className={teamColourClass(
+            "hl-scoreboard__team is-away",
+            awayTeam
+          )}
+          style={teamColourStyle(awayTeam)}
+        >
           <span>
             {managedTeam
-              ? matchup.awayTeam.id === managedTeam.id
+              ? awayTeam.id === managedTeam.id
                 ? "Your team"
                 : "Opponent"
               : "Away"}
           </span>
-          <strong>{matchup.awayTeam.name}</strong>
+          <strong>{awayTeam.name}</strong>
           <b>{fantasyPoints(awayScore)}</b>
           <small>fantasy points</small>
         </div>
@@ -740,22 +755,31 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
       className="hl-dashboard-roster"
       aria-labelledby="dashboard-roster-title"
     >
-      <PanelHeading
-        eyebrow={
-          scoringPlayers.length
-            ? "Matchup-period statistics"
-            : "Season statistics"
+      <div
+        className={
+          managedTeam
+            ? teamColourClass("hl-dashboard-roster__identity", managedTeam)
+            : "hl-dashboard-roster__identity"
         }
-        title={managedTeam ? `${managedTeam.name} roster` : "Managed roster"}
-        id="dashboard-roster-title"
-        action={
-          managedTeam ? (
-            <TextLink to={routePaths.teamRoster(leagueId, managedTeam.id)}>
-              Full roster
-            </TextLink>
-          ) : null
-        }
-      />
+        style={managedTeam ? teamColourStyle(managedTeam) : undefined}
+      >
+        <PanelHeading
+          eyebrow={
+            scoringPlayers.length
+              ? "Matchup-period statistics"
+              : "Season statistics"
+          }
+          title={managedTeam ? `${managedTeam.name} roster` : "Managed roster"}
+          id="dashboard-roster-title"
+          action={
+            managedTeam ? (
+              <TextLink to={routePaths.teamRoster(leagueId, managedTeam.id)}>
+                Full roster
+              </TextLink>
+            ) : null
+          }
+        />
+      </div>
       {!managedTeam ? (
         <EmptyBlock title="No managed team">
           Roster details are available from the Teams page.
@@ -790,7 +814,10 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                     )}
                   </th>
                   <td>
-                    <StatusBadge>{player.position}</StatusBadge>
+                    <PositionTag
+                      position={player.position}
+                      category="Active"
+                    />
                   </td>
                   <td>{player.gamesPlayed ?? "—"}</td>
                   <td>{player.goals ?? "—"}</td>
@@ -1174,6 +1201,7 @@ export function LeagueDashboard({ league, teams, session }) {
               : "managed-matchup"
           }
           leagueId={leagueId}
+          teams={teams}
           week={week}
           matchupSummary={matchupSummary}
           matchup={matchup.data}

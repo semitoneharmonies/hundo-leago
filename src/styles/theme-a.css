@@ -2441,12 +2441,62 @@ textarea {
   min-height: 21px;
   align-items: center;
   justify-content: center;
+  border: 2px solid #fff;
   border-radius: var(--hl-radius-sm);
-  background: rgba(37, 99, 235, 0.14);
-  color: #8eb3ff;
+  background: rgb(15 23 42 / 90%);
   font-family: var(--hl-font-mono);
   font-size: 0.59rem;
-  font-weight: 650;
+  font-weight: 800;
+  box-shadow: 0 2px 7px rgb(0 0 0 / 28%);
+}
+
+.hl-position-tag.is-forward {
+  background: rgb(8 145 178 / 24%);
+  color: #67e8f9;
+}
+
+.hl-position-tag.is-defence {
+  background: rgb(219 39 119 / 22%);
+  color: #f9a8d4;
+}
+
+.hl-position-tag.is-active-roster {
+  border-color: #22c55e;
+}
+
+.hl-position-tag.is-bench {
+  border-color: #a16207;
+}
+
+.hl-position-tag.is-injured-reserve {
+  border-color: #ef4444;
+}
+
+.hl-position-tag.is-prospect {
+  border-color: #eab308;
+}
+
+.hl-position-tag.is-free-agent {
+  border-color: #fff;
+}
+
+.hl-roster-table .hl-roster-col-order {
+  width: 44px;
+  padding-right: 4px;
+  text-align: left;
+}
+
+.hl-roster-table .hl-roster-col-position {
+  width: 48px;
+  padding-right: 4px;
+  padding-left: 4px;
+  text-align: center;
+}
+
+.hl-roster-table .hl-roster-col-player {
+  min-width: 178px;
+  padding-left: 4px;
+  text-align: left;
 }
 
 .hl-player-search {
@@ -5339,6 +5389,22 @@ textarea {
     font-size: 0.64rem;
   }
 
+  .hl-roster-table .hl-roster-col-order {
+    width: 34px;
+    padding-right: 3px;
+  }
+
+  .hl-roster-table .hl-roster-col-position {
+    width: 38px;
+    padding-right: 3px;
+    padding-left: 3px;
+  }
+
+  .hl-roster-table .hl-roster-col-player {
+    min-width: 116px;
+    padding-left: 3px;
+  }
+
   .hl-roster-table .hl-roster-stat {
     font-size: 0.6rem;
   }
@@ -5447,6 +5513,8 @@ textarea {
 .hl-draft-pick-team-mark,
 .hl-roster-hero--striped,
 .hl-matchup-score > .hl-matchup-score__team,
+.hl-scoreboard > .hl-scoreboard__team,
+.hl-dashboard-roster__identity,
 .hl-teams-index a.hl-teams-index__team,
 .hl-team-grid > a.hl-team-grid__team {
   background-color: var(--team-primary);
@@ -5454,6 +5522,80 @@ textarea {
   background-position: center;
   background-repeat: var(--team-pattern-repeat, no-repeat);
   background-size: var(--team-pattern-size, cover);
+}
+
+.hl-scoreboard > .hl-scoreboard__team.has-team-pattern {
+  position: relative;
+  overflow: hidden;
+}
+
+.hl-scoreboard > .hl-scoreboard__team.has-team-pattern::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    rgb(2 6 23 / 76%) 0%,
+    rgb(2 6 23 / 60%) 58%,
+    rgb(2 6 23 / 72%) 100%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+.hl-scoreboard > .hl-scoreboard__team.has-team-pattern > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hl-scoreboard > .hl-scoreboard__team.has-team-pattern > span,
+.hl-scoreboard > .hl-scoreboard__team.has-team-pattern > small {
+  color: #cbd5e1;
+}
+
+.hl-scoreboard > .hl-scoreboard__team.has-team-pattern > strong {
+  color: #fff;
+  text-shadow: 0 2px 6px #020617;
+}
+
+.hl-scoreboard > .hl-scoreboard__team.has-team-pattern > b {
+  color: #fff;
+  text-shadow: 0 2px 8px #020617;
+}
+
+.hl-scoreboard > .hl-scoreboard__team.has-team-pattern > b.is-accent {
+  color: var(--hl-accent);
+}
+
+.hl-dashboard-roster__identity.has-team-pattern {
+  position: relative;
+  overflow: hidden;
+}
+
+.hl-dashboard-roster__identity.has-team-pattern::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgb(2 6 23 / 82%) 0%,
+    rgb(2 6 23 / 64%) 64%,
+    rgb(2 6 23 / 78%) 100%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+.hl-dashboard-roster__identity.has-team-pattern > .hl-panel-heading {
+  position: relative;
+  z-index: 1;
+}
+
+.hl-dashboard-roster__identity.has-team-pattern .hl-panel-heading h2 {
+  color: #fff;
+  text-shadow: 0 2px 6px #020617;
+}
+
+.hl-dashboard-roster__identity.has-team-pattern .hl-eyebrow {
+  color: #cbd5e1;
 }
 
 .hl-line-player--team {

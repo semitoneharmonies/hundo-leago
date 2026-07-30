@@ -15,7 +15,11 @@ import {
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
-import { StatusBadge, TableScroll } from "../../components/HundoUi.jsx";
+import {
+  PositionTag,
+  StatusBadge,
+  TableScroll,
+} from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
   buyOutRosterContract,
@@ -344,9 +348,17 @@ function CategoryTable({
           <table className="hl-data-table hl-roster-table">
             <thead>
               <tr>
-                {draggable && <th scope="col">Order</th>}
-                <th scope="col">Pos</th>
-                <th scope="col">Player</th>
+                {draggable && (
+                  <th className="hl-roster-col-order" scope="col">
+                    Order
+                  </th>
+                )}
+                <th className="hl-roster-col-position" scope="col">
+                  Pos
+                </th>
+                <th className="hl-roster-col-player" scope="col">
+                  Player
+                </th>
                 <th scope="col">AAV</th>
                 <th scope="col">Years</th>
                 <th scope="col">Age</th>
@@ -421,7 +433,7 @@ function CategoryTable({
                   }}
                 >
                   {draggable && (
-                    <td>
+                    <td className="hl-roster-col-order">
                       <div className="hl-roster-order-controls">
                         <button
                           type="button"
@@ -498,12 +510,15 @@ function CategoryTable({
                       </div>
                     </td>
                   )}
-                  <td>
-                    <span className="hl-position-tag">
-                      {player.normalizedPosition}
-                    </span>
+                  <td className="hl-roster-col-position">
+                    <PositionTag
+                      position={player.normalizedPosition}
+                      category={player.rosterCategory}
+                    />
                   </td>
-                  <th scope="row">{player.name}</th>
+                  <th className="hl-roster-col-player" scope="row">
+                    {player.name}
+                  </th>
                   <td className="is-mono">
                     {money(player.contract?.aavCents ?? null)}
                   </td>
