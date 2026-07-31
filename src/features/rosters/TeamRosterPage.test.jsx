@@ -277,6 +277,26 @@ describe("authoritative team roster page", () => {
     const activeTable = screen.getByRole("region", {
       name: "Active roster table",
     });
+    expect(
+      within(activeTable)
+        .getAllByRole("columnheader")
+        .map(({ textContent }) => textContent)
+    ).toEqual([
+      "Order",
+      "Pos",
+      "Player",
+      "AAV / FA",
+      "Years",
+      "Age",
+      "NHL",
+      "GP",
+      "G",
+      "A",
+      "P",
+      "FP",
+      "FPG",
+      "Actions",
+    ]);
     const gpSort = within(activeTable).getByRole("button", {
       name: "Sort roster by GP",
     });

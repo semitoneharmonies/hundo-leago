@@ -345,23 +345,22 @@ function CategoryTable({
         </p>
       ) : (
         <TableScroll label={`${category.title} table`}>
-          <table className="hl-data-table hl-roster-table">
+          <table className="hl-data-table hl-player-row-table hl-roster-table">
             <thead>
               <tr>
-                {draggable && (
-                  <th className="hl-roster-col-order" scope="col">
-                    Order
-                  </th>
-                )}
-                <th className="hl-roster-col-position" scope="col">
+                <th className="hl-player-col-order" scope="col">
+                  Order
+                </th>
+                <th className="hl-player-col-position" scope="col">
                   Pos
                 </th>
-                <th className="hl-roster-col-player" scope="col">
+                <th className="hl-player-col-name" scope="col">
                   Player
                 </th>
-                <th scope="col">AAV</th>
-                <th scope="col">Years</th>
-                <th scope="col">Age</th>
+                <th className="hl-player-col-aav" scope="col">AAV / FA</th>
+                <th className="hl-player-col-years" scope="col">Years</th>
+                <th className="hl-player-col-age" scope="col">Age</th>
+                <th className="hl-player-col-nhl" scope="col">NHL</th>
                 {[
                   ["GP", "gamesPlayed"],
                   ["G", "goals"],
@@ -378,7 +377,7 @@ function CategoryTable({
                           : "descending"
                         : undefined
                     }
-                    className="hl-roster-stat"
+                    className="hl-player-col-stat hl-roster-stat"
                     key={sortKey}
                     scope="col"
                   >
@@ -390,9 +389,7 @@ function CategoryTable({
                     />
                   </th>
                 ))}
-                {(canManage || canRequestTrade) && (
-                  <th scope="col">Actions</th>
-                )}
+                <th className="hl-player-col-actions" scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -432,8 +429,8 @@ function CategoryTable({
                     );
                   }}
                 >
-                  {draggable && (
-                    <td className="hl-roster-col-order">
+                  <td className="hl-player-col-order">
+                    {draggable ? (
                       <div className="hl-roster-order-controls">
                         <button
                           type="button"
@@ -508,40 +505,51 @@ function CategoryTable({
                           </span>
                         </button>
                       </div>
-                    </td>
-                  )}
-                  <td className="hl-roster-col-position">
+                    ) : (
+                      <span className="hl-player-row-placeholder" aria-hidden="true">
+                        —
+                      </span>
+                    )}
+                  </td>
+                  <td className="hl-player-col-position">
                     <PositionTag
                       position={player.normalizedPosition}
                       category={player.rosterCategory}
                     />
                   </td>
-                  <th className="hl-roster-col-player" scope="row">
+                  <th className="hl-player-col-name" scope="row">
                     {player.name}
                   </th>
-                  <td className="is-mono">
+                  <td className="hl-player-col-aav is-mono">
                     {money(player.contract?.aavCents ?? null)}
                   </td>
-                  <td>{player.contract?.remainingYears ?? "—"}</td>
-                  <td>{player.age ?? "Unknown"}</td>
-                  <td className="hl-roster-stat">{player.statistics?.gamesPlayed ?? "—"}</td>
-                  <td className="hl-roster-stat">{player.statistics?.goals ?? "—"}</td>
-                  <td className="hl-roster-stat">{player.statistics?.assists ?? "—"}</td>
-                  <td className="hl-roster-stat">{player.statistics?.nhlPoints ?? "—"}</td>
-                  <td className="hl-roster-stat">
+                  <td className="hl-player-col-years">
+                    {player.contract?.remainingYears ?? "—"}
+                  </td>
+                  <td className="hl-player-col-age">{player.age ?? "—"}</td>
+                  <td className="hl-player-col-nhl">
+                    {player.nhlTeamAbbreviation ||
+                      player.provider?.nhlTeamAbbreviation ||
+                      "—"}
+                  </td>
+                  <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.gamesPlayed ?? "—"}</td>
+                  <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.goals ?? "—"}</td>
+                  <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.assists ?? "—"}</td>
+                  <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.nhlPoints ?? "—"}</td>
+                  <td className="hl-player-col-stat hl-roster-stat">
                     {player.statistics
                       ? (
                           player.statistics.fantasyPointsHundredths / 100
                         ).toFixed(2)
                       : "—"}
                   </td>
-                  <td className="hl-roster-stat">
+                  <td className="hl-player-col-stat hl-roster-stat">
                     {player.statistics
                       ? fantasyPointsPerGame(player.statistics).toFixed(2)
                       : "—"}
                   </td>
-                  {(canManage || canRequestTrade) && (
-                    <td className="hl-roster-actions-cell">
+                  <td className="hl-player-col-actions hl-roster-actions-cell">
+                    {canManage || canRequestTrade ? (
                       <div className="hl-roster-actions-group">
                         {canManage && (
                           <RosterActions
@@ -561,8 +569,12 @@ function CategoryTable({
                           />
                         )}
                       </div>
-                    </td>
-                  )}
+                    ) : (
+                      <span className="hl-player-row-placeholder" aria-hidden="true">
+                        —
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

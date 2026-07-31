@@ -22,6 +22,7 @@ import {
   PositionTag,
   StatusBadge,
   Surface,
+  TableScroll,
   TextLink,
 } from "../../components/HundoUi.jsx";
 import {
@@ -86,6 +87,14 @@ function countRoster(players) {
       Prospect: 0,
     }
   );
+}
+
+function fantasyPointsPerGame(hundredths, gamesPlayed) {
+  if (!Number.isSafeInteger(hundredths) || !Number.isSafeInteger(gamesPlayed)) {
+    return "—";
+  }
+  if (gamesPlayed === 0) return "0.00";
+  return (hundredths / 100 / gamesPlayed).toFixed(2);
 }
 
 function MatchupScoreboard({
@@ -270,9 +279,9 @@ function MatchupScoreboard({
           </TextLink>
         }
       />
-      <div className="hl-scoreboard">
+      <div className="hl-matchup-score hl-dashboard-matchup-score">
         <div
-          className={teamColourClass("hl-scoreboard__team", homeTeam)}
+          className={teamColourClass("hl-matchup-score__team", homeTeam)}
           style={teamColourStyle(homeTeam)}
         >
           <span>
@@ -283,20 +292,20 @@ function MatchupScoreboard({
               : "Home"}
           </span>
           <strong>{homeTeam.name}</strong>
-          <b className="is-accent">{fantasyPoints(homeScore)}</b>
+          <b>{fantasyPoints(homeScore)} FP</b>
           <small>fantasy points</small>
         </div>
-        <div className="hl-scoreboard__middle">
-          <span>VS</span>
+        <div>
           <StatusBadge
             tone={matchup.scoring?.mode === "live" ? "live" : "neutral"}
           >
             {matchup.scoring?.mode || matchup.status}
           </StatusBadge>
+          <span>VS</span>
         </div>
         <div
           className={teamColourClass(
-            "hl-scoreboard__team is-away",
+            "hl-matchup-score__team",
             awayTeam
           )}
           style={teamColourStyle(awayTeam)}
@@ -309,7 +318,7 @@ function MatchupScoreboard({
               : "Away"}
           </span>
           <strong>{awayTeam.name}</strong>
-          <b>{fantasyPoints(awayScore)}</b>
+          <b>{fantasyPoints(awayScore)} FP</b>
           <small>fantasy points</small>
         </div>
       </div>
@@ -722,31 +731,57 @@ function CommissionerMembersPanel({ league, teams, session }) {
 function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
   const side = managedTeam ? findTeamSide(matchup, managedTeam.id) : null;
   const scoringPlayers = side ? matchup?.scoring?.[side]?.players || [] : [];
+  const rosterPlayers = roster?.players || [];
+  const rosterPlayersById = new Map(
+    rosterPlayers.map((player) => [player.playerReference, player])
+  );
   const players = scoringPlayers.length
-    ? scoringPlayers.map((player) => ({
-        id: player.playerId,
-        name: player.fullName,
-        position: player.positionGroup,
-        gamesPlayed: player.gamesPlayedDelta,
-        goals: player.goalDelta,
-        assists: player.assistDelta,
-        points: player.pointDelta,
-        fantasyPoints:
-          player.dataStatus === "missing" ? null : player.scoreHundredths,
-        dataStatus: player.dataStatus,
-      }))
-    : (roster?.players || [])
+    ? scoringPlayers.map((player) => {
+        const rosterPlayer = rosterPlayersById.get(player.playerId);
+        const fantasyPoints =
+          player.dataStatus === "missing" ? null : player.scoreHundredths;
+        return {
+          id: player.playerId,
+          name: player.fullName,
+          position: player.positionGroup,
+          category: rosterPlayer?.rosterCategory || "Active",
+          aavCents: rosterPlayer?.aavCents ?? null,
+          years: rosterPlayer?.remainingContractYears ?? null,
+          age: rosterPlayer?.age ?? null,
+          nhlTeam: rosterPlayer?.nhlTeamAbbreviation ?? null,
+          gamesPlayed: player.gamesPlayedDelta,
+          goals: player.goalDelta,
+          assists: player.assistDelta,
+          points: player.pointDelta,
+          fantasyPoints,
+          fantasyPointsPerGame: fantasyPointsPerGame(
+            fantasyPoints,
+            player.gamesPlayedDelta
+          ),
+          dataStatus: player.dataStatus,
+        };
+      })
+    : rosterPlayers
         .filter((player) => player.rosterCategory === "Active")
         .map((player) => ({
           id: player.playerReference,
           name: player.name,
           position: player.normalizedPosition,
+          category: player.rosterCategory,
+          aavCents: player.aavCents,
+          years: player.remainingContractYears,
+          age: player.age,
+          nhlTeam: player.nhlTeamAbbreviation ?? null,
           gamesPlayed: player.seasonStatistics?.gamesPlayed ?? null,
           goals: player.seasonStatistics?.goals ?? null,
           assists: player.seasonStatistics?.assists ?? null,
           points: player.seasonStatistics?.nhlPoints ?? null,
           fantasyPoints:
             player.seasonStatistics?.fantasyPointsHundredths ?? null,
+          fantasyPointsPerGame: fantasyPointsPerGame(
+            player.seasonStatistics?.fantasyPointsHundredths,
+            player.seasonStatistics?.gamesPlayed
+          ),
           dataStatus: player.seasonStatistics ? "available" : "missing",
         }));
 
@@ -789,23 +824,41 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
           Roster or scoring data has not been published yet.
         </EmptyBlock>
       ) : (
-        <div className="hl-table-wrap">
-          <table className="hl-data-table">
+        <TableScroll label="Dashboard roster">
+          <table className="hl-data-table hl-player-row-table hl-dashboard-player-table">
             <thead>
               <tr>
-                <th scope="col">Player</th>
-                <th scope="col">Pos</th>
-                <th scope="col">GP</th>
-                <th scope="col">G</th>
-                <th scope="col">A</th>
-                <th scope="col">PTS</th>
-                <th scope="col">FP</th>
+                <th className="hl-player-col-order" scope="col">Order</th>
+                <th className="hl-player-col-position" scope="col">Pos</th>
+                <th className="hl-player-col-name" scope="col">Player</th>
+                <th className="hl-player-col-aav" scope="col">AAV / FA</th>
+                <th className="hl-player-col-years" scope="col">Years</th>
+                <th className="hl-player-col-age" scope="col">Age</th>
+                <th className="hl-player-col-nhl" scope="col">NHL</th>
+                <th className="hl-player-col-stat" scope="col">GP</th>
+                <th className="hl-player-col-stat" scope="col">G</th>
+                <th className="hl-player-col-stat" scope="col">A</th>
+                <th className="hl-player-col-stat" scope="col">P</th>
+                <th className="hl-player-col-stat" scope="col">FP</th>
+                <th className="hl-player-col-stat" scope="col">FPG</th>
+                <th className="hl-player-col-actions" scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
               {players.slice(0, 10).map((player) => (
                 <tr key={player.id}>
-                  <th scope="row">
+                  <td className="hl-player-col-order">
+                    <span className="hl-player-row-placeholder" aria-hidden="true">
+                      —
+                    </span>
+                  </td>
+                  <td className="hl-player-col-position">
+                    <PositionTag
+                      position={player.position}
+                      category={player.category}
+                    />
+                  </td>
+                  <th className="hl-player-col-name" scope="row">
                     <Link to={routePaths.player(leagueId, player.id)}>
                       {player.name}
                     </Link>
@@ -813,24 +866,39 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                       <small>Data unavailable</small>
                     )}
                   </th>
-                  <td>
-                    <PositionTag
-                      position={player.position}
-                      category="Active"
-                    />
+                  <td className="hl-player-col-aav is-mono">
+                    {money(player.aavCents)}
                   </td>
-                  <td>{player.gamesPlayed ?? "—"}</td>
-                  <td>{player.goals ?? "—"}</td>
-                  <td>{player.assists ?? "—"}</td>
-                  <td>{player.points ?? "—"}</td>
-                  <td className="is-highlight">
+                  <td className="hl-player-col-years">
+                    {player.years ?? "—"}
+                  </td>
+                  <td className="hl-player-col-age">{player.age ?? "—"}</td>
+                  <td className="hl-player-col-nhl">
+                    {player.nhlTeam || "—"}
+                  </td>
+                  <td className="hl-player-col-stat">{player.gamesPlayed ?? "—"}</td>
+                  <td className="hl-player-col-stat">{player.goals ?? "—"}</td>
+                  <td className="hl-player-col-stat">{player.assists ?? "—"}</td>
+                  <td className="hl-player-col-stat">{player.points ?? "—"}</td>
+                  <td className="hl-player-col-stat is-highlight">
                     {fantasyPoints(player.fantasyPoints)}
+                  </td>
+                  <td className="hl-player-col-stat">
+                    {player.fantasyPointsPerGame}
+                  </td>
+                  <td className="hl-player-col-actions">
+                    <Link
+                      className="hl-player-row-action"
+                      to={routePaths.player(leagueId, player.id)}
+                    >
+                      View
+                    </Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       )}
     </Surface>
   );

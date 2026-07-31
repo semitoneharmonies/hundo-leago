@@ -77,6 +77,8 @@ export function PositionTag({ position, category = "Free Agent" }) {
   return (
     <span
       className={classes("hl-position-tag", positionClass, categoryClass)}
+      aria-label={`${position} position, ${category}`}
+      title={`${position} · ${category}`}
     >
       {position}
     </span>

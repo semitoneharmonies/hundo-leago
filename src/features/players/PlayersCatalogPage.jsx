@@ -54,16 +54,14 @@ function ageFromBirthDate(birthDate, now = new Date()) {
   return String(now.getUTCFullYear() - year - (beforeBirthday ? 1 : 0));
 }
 
-function ownershipLabel(player) {
-  const ownership = player.league.ownership;
-  if (!ownership) return "Free agent";
-  return `${ownership.team.name} · ${ownership.category}`;
+function playerAavLabel(player) {
+  const contract = player.league.activeContract;
+  if (contract) return `$${(contract.aavCents / 100).toFixed(2)}`;
+  return player.league.ownership ? "—" : "FA";
 }
 
-function contractLabel(player) {
-  const contract = player.league.activeContract;
-  if (!contract) return "—";
-  return `$${(contract.aavCents / 100).toFixed(2)} AAV · ${contract.remainingYears} years remaining`;
+function playerYearsLabel(player) {
+  return player.league.activeContract?.remainingYears ?? "—";
 }
 
 function fantasyPointsPerGame(statistics) {
@@ -92,12 +90,14 @@ function SortHeading({ activeSort, label, sortKey, onSort }) {
 
 function SortableColumnHeading({
   activeSort,
+  className,
   label,
   sortKey,
   onSort,
 }) {
   return (
     <th
+      className={className}
       scope="col"
       aria-sort={
         activeSort.key === sortKey
@@ -511,13 +511,16 @@ export function PlayersCatalogPage() {
       ) : (
         <Surface className="hl-feature-section">
           <TableScroll label="Player catalog">
-            <table className="hl-data-table hl-player-table">
+            <table className="hl-data-table hl-player-row-table hl-player-table">
               <thead>
                 <tr>
-                  <SortableColumnHeading activeSort={sort} label="Player" sortKey="player" onSort={changeSort} />
-                  <SortableColumnHeading activeSort={sort} label="Pos" sortKey="position" onSort={changeSort} />
-                  <SortableColumnHeading activeSort={sort} label="NHL" sortKey="nhlTeam" onSort={changeSort} />
-                  <SortableColumnHeading activeSort={sort} label="Age" sortKey="age" onSort={changeSort} />
+                  <th className="hl-player-col-order" scope="col">Order</th>
+                  <SortableColumnHeading className="hl-player-col-position" activeSort={sort} label="Pos" sortKey="position" onSort={changeSort} />
+                  <SortableColumnHeading className="hl-player-col-name" activeSort={sort} label="Player" sortKey="player" onSort={changeSort} />
+                  <SortableColumnHeading className="hl-player-col-aav" activeSort={sort} label="AAV / FA" sortKey="contract" onSort={changeSort} />
+                  <th className="hl-player-col-years" scope="col">Years</th>
+                  <SortableColumnHeading className="hl-player-col-age" activeSort={sort} label="Age" sortKey="age" onSort={changeSort} />
+                  <SortableColumnHeading className="hl-player-col-nhl" activeSort={sort} label="NHL" sortKey="nhlTeam" onSort={changeSort} />
                   {[
                     ["GP", "gamesPlayed"],
                     ["G", "goals"],
@@ -528,26 +531,25 @@ export function PlayersCatalogPage() {
                   ].map(([label, sortKey]) => (
                     <SortableColumnHeading
                       activeSort={sort}
+                      className="hl-player-col-stat"
                       key={sortKey}
                       label={label}
                       sortKey={sortKey}
                       onSort={changeSort}
                     />
                   ))}
-                  <SortableColumnHeading activeSort={sort} label="League assignment" sortKey="assignment" onSort={changeSort} />
-                  <SortableColumnHeading activeSort={sort} label="Contract" sortKey="contract" onSort={changeSort} />
-                  <th scope="col">Actions</th>
+                  <th className="hl-player-col-actions" scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {visiblePlayers.map((player) => (
                   <tr key={player.id}>
-                    <th scope="row">
-                      <Link to={routePaths.player(leagueId, player.id)}>
-                        {player.fullName}
-                      </Link>
-                    </th>
-                    <td>
+                    <td className="hl-player-col-order">
+                      <span className="hl-player-row-placeholder" aria-hidden="true">
+                        —
+                      </span>
+                    </td>
+                    <td className="hl-player-col-position">
                       <PositionTag
                         position={displayPosition(player)}
                         category={
@@ -555,27 +557,40 @@ export function PlayersCatalogPage() {
                         }
                       />
                     </td>
-                    <td>{player.provider?.nhlTeamAbbreviation || "—"}</td>
-                    <td>{ageFromBirthDate(player.birthDate)}</td>
-                    <td>{player.statistics?.gamesPlayed ?? "—"}</td>
-                    <td>{player.statistics?.goals ?? "—"}</td>
-                    <td>{player.statistics?.assists ?? "—"}</td>
-                    <td>{player.statistics?.nhlPoints ?? "—"}</td>
-                    <td>
+                    <th className="hl-player-col-name" scope="row">
+                      <Link to={routePaths.player(leagueId, player.id)}>
+                        {player.fullName}
+                      </Link>
+                    </th>
+                    <td className="hl-player-col-aav is-mono">
+                      {playerAavLabel(player)}
+                    </td>
+                    <td className="hl-player-col-years">
+                      {playerYearsLabel(player)}
+                    </td>
+                    <td className="hl-player-col-age">
+                      {ageFromBirthDate(player.birthDate)}
+                    </td>
+                    <td className="hl-player-col-nhl">
+                      {player.provider?.nhlTeamAbbreviation || "—"}
+                    </td>
+                    <td className="hl-player-col-stat">{player.statistics?.gamesPlayed ?? "—"}</td>
+                    <td className="hl-player-col-stat">{player.statistics?.goals ?? "—"}</td>
+                    <td className="hl-player-col-stat">{player.statistics?.assists ?? "—"}</td>
+                    <td className="hl-player-col-stat">{player.statistics?.nhlPoints ?? "—"}</td>
+                    <td className="hl-player-col-stat">
                       {player.statistics
                         ? (
                             player.statistics.fantasyPointsHundredths / 100
                           ).toFixed(2)
                         : "—"}
                     </td>
-                    <td>
+                    <td className="hl-player-col-stat">
                       {player.statistics
                         ? fantasyPointsPerGame(player.statistics).toFixed(2)
                         : "—"}
                     </td>
-                    <td>{ownershipLabel(player)}</td>
-                    <td>{contractLabel(player)}</td>
-                    <td>
+                    <td className="hl-player-col-actions">
                       <div className="hl-player-actions">
                         <button
                           type="button"

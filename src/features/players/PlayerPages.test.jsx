@@ -208,12 +208,15 @@ describe("authenticated player pages", () => {
     expect(screen.queryByRole("link", { name: "Blair Example" })).toBeNull();
     const playerRow = screen.getByRole("row", { name: /Alex Example/ });
     expect(within(playerRow).getByText("VAN")).toBeInTheDocument();
+    expect(playerRow.querySelector(".hl-player-col-aav")).toHaveTextContent(
+      "$3.00"
+    );
+    expect(playerRow.querySelector(".hl-player-col-years")).toHaveTextContent(
+      "2"
+    );
     expect(
-      within(playerRow).getByText("Player Team · Active")
-    ).toBeInTheDocument();
-    expect(
-      within(playerRow).getByText("$3.00 AAV · 2 years remaining")
-    ).toBeInTheDocument();
+      within(playerRow).queryByText("Player Team · Active")
+    ).not.toBeInTheDocument();
   });
 
   it("renders stable player details and provider fields", async () => {

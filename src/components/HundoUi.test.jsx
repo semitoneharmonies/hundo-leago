@@ -12,6 +12,9 @@ describe("PositionTag", () => {
       "is-forward",
       "is-active-roster"
     );
+    expect(screen.getByText("F")).toHaveAccessibleName(
+      "F position, Active"
+    );
 
     view.rerender(<PositionTag position="D" category="Bench" />);
     expect(screen.getByText("D")).toHaveClass("is-defence", "is-bench");

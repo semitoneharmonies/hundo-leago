@@ -103,6 +103,7 @@ function player({
   gamesPlayed,
   fantasyPointsHundredths,
   ownership = null,
+  activeContract = null,
 }) {
   const [firstName, ...lastParts] = name.split(" ");
   const lastName = lastParts.join(" ");
@@ -136,7 +137,7 @@ function player({
     league: {
       id: leagueId,
       ownership,
-      activeContract: null,
+      activeContract,
     },
   };
 }
@@ -159,6 +160,12 @@ describe("league player catalog", () => {
           kind: "Rostered",
           category: "Active",
           team: { id: teamA, name: "Alpha Team" },
+        },
+        activeContract: {
+          originalTotalValueCents: 1_000,
+          originalTermYears: 2,
+          aavCents: 500,
+          remainingYears: 2,
         },
       }),
       player({
@@ -229,6 +236,32 @@ describe("league player catalog", () => {
       name: "Player catalog",
     });
     expect(catalogRegion).toHaveAttribute("tabindex", "0");
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map(({ textContent }) => textContent.replace(/[ ↑↓]/g, ""))
+    ).toEqual([
+      "Order",
+      "Pos",
+      "Player",
+      "AAV/FA",
+      "Years",
+      "Age",
+      "NHL",
+      "GP",
+      "G",
+      "A",
+      "P",
+      "FP",
+      "FPG",
+      "Actions",
+    ]);
+    expect(
+      within(
+        within(table).getByRole("rowheader", { name: "Owned Player" })
+          .closest("tr")
+      ).getByText("$5.00")
+    ).toBeInTheDocument();
     const fantasyPointsSort = within(table).getByRole("button", {
       name: "Sort by FP",
     });
