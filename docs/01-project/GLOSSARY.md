@@ -17,7 +17,7 @@ These definitions apply across:
 
 When a document uses one of these terms differently, it must clearly state that exception.
 
-Last reviewed: **2026-07-14**
+Last reviewed: **2026-08-08**
 
 ---
 
@@ -646,9 +646,30 @@ There is no team-wide limit on total contract years held.
 
 A contract reaching the end of its approved term.
 
-Expiration is processed during the end-of-season league rollover.
+The completed competition season does not immediately change its remaining
+years. Expiration is processed during the automatic contract-year rollover at
+the scheduled start of the next Entry Draft.
 
 The player is immediately removed from the roster and becomes a free agent. The former team has no exclusive re-signing opportunity.
+
+## Pending Rollover
+
+The visible contract state between the end of the competition season and the
+successful scheduled Entry Draft-start contract-year rollover.
+
+During this state, remaining-year counts stay unchanged. Draft selection and
+trading remain locked until rollover succeeds.
+
+## Contract-Year Rollover
+
+The automatic league-level transaction at the scheduled start of the next
+Entry Draft that advances or expires contracts, retention, and buyout
+obligations; reconciles ownership and rosters; cancels affected pending trades;
+and records immutable rollover evidence.
+
+The Entry Draft and trading open only after this idempotent transaction
+succeeds. A failed occurrence leaves no partial advancement and may be retried
+through the approved commissioner recovery action.
 
 ## Retained Salary
 
@@ -678,7 +699,8 @@ Each team may use no more than three retention slots.
 
 A transaction eliminating a player’s contract, releasing the player to free agency, and creating the approved annual cap penalties.
 
-An auction signing cannot be bought out for 14 days. The lock follows the player after a trade.
+An auction or direct automatic FAD signing cannot be bought out for 14 days.
+The lock follows the player after a trade.
 
 ## Buyout Penalty
 
@@ -762,7 +784,9 @@ Proposals do not reserve assets. The same asset may appear in multiple pending p
 
 The league-specific date and time after which trades may not be completed.
 
-The commissioner sets the trade deadline during league creation. Trading reopens at the start of the entry draft.
+The commissioner sets the trade deadline during league creation. Trading
+reopens only after the automatic contract-year rollover at the scheduled Entry
+Draft start succeeds.
 
 ## Salary Retention
 
@@ -834,7 +858,13 @@ It may include:
 * rollover time;
 * team pairings.
 
-The first regular-season matchup week is the first full Monday-through-Sunday scoring week contained in the NHL regular season.
+An authorized commissioner or administrator explicitly chooses and persists
+the first regular-season matchup week's start through the approved schedule
+workflow. That chosen instant is the Hundo Leago season start and the FAD clock
+anchor. It must satisfy the approved matchup-window constraints. The
+application may recommend the first full Monday-through-Sunday scoring week
+contained in the NHL regular season, but that recommendation is not a fixed or
+automatically persisted date.
 
 ## Hundo Leago Playoffs
 
@@ -926,6 +956,94 @@ A team-specific scoring lock and baseline recorded when a previously illegal tea
 
 Only points earned after the team-specific baseline count for that matchup week.
 
+## Committed Roster Mutation Batch
+
+The internal post-commit receipt that groups one successful command's roster
+changes by affected league, season, and team for late-lock evaluation.
+
+Each group contains stable ownership identities and committed versions. A
+deleted ownership uses its last committed pre-delete version. The batch is not
+a browser request or new idempotency record, and replaying it never repeats the
+original roster mutation.
+
+A team-to-team ownership transfer closes the source ownership tenure and
+creates a distinct destination ownership tenure at version `1`. The source
+group therefore carries the deleted source ID and last version, while the
+destination group carries the new present ID and version. Player and contract
+IDs remain stable. A reversal creates another new tenure instead of resurrecting
+either earlier ownership ID.
+
+## Post-Commit Late-Lock Coordinator
+
+The shared, never-rejecting backend service that evaluates whether one
+Committed Roster Mutation Batch makes an illegal normal-lock team eligible for
+a late lock.
+
+It may perform at most one immediate live-data refresh and one evaluation retry
+for the whole command. A failure after the roster commit reports the safe
+`awaiting_data` status without rejecting, reversing, or repeating that commit.
+For a multi-team command, public status priority is `awaiting_data`,
+`still_illegal`, `completed`, then `not_applicable`; `lockId` appears only when
+one safely identifiable completed lock applies.
+
+## Awaiting Data
+
+A fail-closed matchup state used when the authoritative provider evidence
+required to create a late lock, calculate a safe score, or finalize a result is
+missing, incomplete, stale, regressed, or internally inconsistent.
+
+`awaiting_data` never means zero points were earned. The system may retry after
+fresh evidence arrives, but it cannot make the incomplete result official.
+
+## Required Player-Game Binding
+
+A server-authored live-refresh requirement that preserves one exact player,
+provider player, provider team, NHL game, and scheduled game start needed to
+score a prior whole-game exclusion safely.
+
+Bindings come from sealed baseline `expected_game` coverage while the affected
+matchup week is `live`, `awaiting_data`, or `correction_required`. A finalized
+week leaves the active requirement scope and re-enters if it later becomes
+`correction_required`. The binding survives a trade, release, NHL team change,
+or current free-agent status and lets the provider fetch that exact historical
+date without polling the full season.
+
+## Player-Game Coverage Manifest
+
+Immutable provider-backed evidence that accounts for the exact player identity
+set requested by one live-scoring refresh.
+
+Each required player has either one or more expected NHL games, an affirmative
+`no_due_game` disposition for an identified team, or an affirmative `no_team`
+disposition. A missing provider row is not a coverage disposition. The exact
+expected player/game identity set must match the refresh's player-game
+observations before both sets seal atomically.
+
+The response separately affirms a player's current team or current free-agent
+status, while every expected game carries its own provider team. Historical
+required games are an exact subset of expected coverage. A player may therefore
+have old-team and current-team expected games together, or an old-team expected
+game while currently a free agent. Terminal `no_due_game` and `no_team`
+dispositions apply only when no required historical or current due game exists.
+
+## Player-Game Stat Observation
+
+An immutable provider-backed record of one player's statistics in one NHL game
+as seen by one successful live-scoring refresh.
+
+Player-game observations are sealed in a content-addressed refresh set together
+with its independently digested Player-Game Coverage Manifest. Missing
+observations are not assumed to mean zero; an explicit zero-valued row is
+required for every expected pair that produced no scoring events.
+
+## Whole-Game Exclusion
+
+Immutable late-lock evidence that prevents one selected player from scoring for
+one NHL game that was already underway when the team's late snapshot committed.
+
+The exclusion removes both the pre-baseline and post-baseline portions of that
+game without excluding the player from later games in the fantasy week.
+
 ## Fantasy Point
 
 A scoring value calculated from player statistics according to the approved scoring rules.
@@ -989,7 +1107,7 @@ Safe to run more than once without creating duplicate effects.
 
 For example, an idempotent rollover must not advance two weeks merely because the same job ran twice.
 
-## Rollover
+## Matchup Rollover
 
 The process that closes a matchup week and advances league state to the next week.
 
@@ -1002,6 +1120,9 @@ Rollover may include:
 * advancing the current week;
 * preparing the next week;
 * recording completion.
+
+Use **Contract-Year Rollover** for the separate annual Entry Draft-start
+operation and **FAD Rapid Rollover** for a Free Agent Draft auction boundary.
 
 ## Standings
 
@@ -1040,11 +1161,218 @@ The Entry Draft is not part of the initial Season 2 launch but must be implement
 
 The playoff champion selects last, the losing finalist selects second-last, and the remaining initial order uses reverse official regular-season standings before approved lottery movement.
 
+The commissioner schedules the draft in advance. At its persisted start, the
+backend first runs the automatic contract-year rollover. The draft, trading,
+and first pick clock open only after that rollover succeeds.
+
+An on-clock pick may complete one trade and then gives its new owner a fresh
+full clock. Trade acceptance, manual selection, and automatic timeout selection
+use first-commit-wins concurrency with no grace period.
+
+The future final `T-108` selection or confirmed-forfeiture transaction makes
+the last unused pick terminal, marks the Entry Draft `Complete`, and records
+the `entry_draft_completed` FAD-readiness handoff atomically. There is no
+standalone or manual Entry Draft completion endpoint. The complete Entry Draft
+remains M8-deferred; FAD-08 supplies only the reusable internal,
+transaction-bound handoff primitive.
+
 ## Free Agent Draft
 
-A planned future pre-season process for assigning eligible free agents and creating their contracts at the beginning of the season.
+The annual pre-season process for constructing opening rosters through private
+Candidate Cards, automatic allocation ranked by total contract value and then
+AAV, restricted tie auctions, and an initial seven-day daily rapid-auction
+period plus any required contiguous extension cycles.
 
 It is distinct from the Entry Draft and in-season free-agent auctions.
+
+For a continuing league, Entry Draft completion atomically records one durable
+FAD-readiness handoff. Its later server-owned worker evaluates readiness. Every
+Candidate Card opens at the same committed instant when all prerequisites pass;
+otherwise no card opens and the commissioner receives blockers plus the
+approved retry action.
+
+The Free Agent Draft may be abbreviated as:
+
+```text
+FAD
+```
+
+## Candidate Card
+
+One team's private FAD record containing:
+
+* 12 mandatory forward positions;
+* 6 mandatory defence positions;
+* 4 optional Bench positions;
+* locked carried players and contracts;
+* selectable free-agent candidates;
+* each candidate's proposed total contract value and term.
+
+Before the Candidate Card deadline, only the assigned manager and a
+help-authorized commissioner may view its competitive contents. After the
+deadline, every active league member may view every league Candidate Card as a
+read-only historical record.
+
+A Candidate Card is not the visual player card used in the normal roster
+hockey-lines view.
+
+The complete card must fit the Candidate cap projection. At the deadline, a
+card with unresolved carried-roster or cap illegality keeps every carryover but
+excludes every new Candidate offer. The backend never chooses a subset of new
+offers and there is no post-deadline repair.
+
+## Candidate Rights-Release Block
+
+The league-, player-, and event-scoped exclusion from Candidate eligibility
+created by each `fantasy_elc_declined` or
+`unsigned_prospect_rights_released` ownership event.
+
+One block is cleared only by a later `draft_eligible_players` row for the same
+league and player with `eligibility_reason = rights_release_reentry`, a
+`rights_release_event_id` referencing that exact event, and an eligibility
+snapshot confirmed strictly after the event occurred. Evidence for one release
+does not clear a later release. Unowned status, roster absence, or both never
+clear the block by themselves.
+
+## Candidate Card Opening Readiness
+
+The all-or-nothing backend operation created by a durable handoff from Entry
+Draft completion or an approved no-draft transition. The handoff and worker
+execution are separate transaction boundaries: the handoff creates the exact
+operation and canonical pending job, while the worker later evaluates and
+opens cards.
+
+The future final `T-108` selection or confirmed-forfeiture transaction owns
+`entry_draft_completed`. `T-036` owns `no_draft_inaugural`, and `T-037` owns
+`no_draft_initial_season2`. When confirmed `T-095` schedule creation supplies
+a missing inaugural prerequisite after readiness has blocked, it may only
+requeue that same operation and canonical job. It never creates another
+trigger. None of these boundaries exposes a manual Entry Draft completion or
+FAD-opening endpoint.
+
+It validates rollover, draft, target-season, first-matchup, participating-team,
+manager, ownership, contract, and carryover prerequisites. When the selected
+Week 1 is too early, the same operation advances it by whole league-local
+Mondays, regenerates the shortened schedule and dependent jobs, and only then
+opens every Candidate Card together.
+
+## FAD Readiness Attempt
+
+The immutable record of one completed automatic-readiness worker attempt.
+
+It binds the readiness operation, canonical job run, attempt number, observed
+operation version, blocked or succeeded outcome, timestamps, and the exact
+canonically hashed public readiness projection observed for that attempt. A
+real retry that reaches the worker creates a new attempt even when its blockers
+are identical to an earlier attempt.
+
+## FAD Readiness Retry Receipt
+
+The immutable `202 Accepted` result of one authorized, idempotent request to
+retry a blocked FAD readiness operation.
+
+It records the accepted operation version, resulting one-version advance,
+retry attempt number, same canonical job occurrence, actor authority, and
+canonical response hash. The T-128 transaction leaves the job and operation
+attempt counts unchanged. Exact idempotency replay returns the stored receipt
+without changing current readiness or job state.
+
+## FAD Readiness Corrective Requeue
+
+The system-owned, evidence-backed requeue performed inside confirmed `T-095`
+when newly persisted schedule creation supplies the missing prerequisite for
+the same blocked genuine-inaugural readiness occurrence.
+
+It records one immutable row linking the T-095 command result, new schedule
+generation, latest blocked readiness attempt, canonical job/operation,
+unchanged attempt and blocker evidence, retained terminal/retry timestamps,
+and aligned one-version advances. It is not a commissioner retry, creates no
+new readiness trigger, and exact T-095 replay performs no corrective write.
+
+## Candidate Card Help Window
+
+The period in which a manager may grant the commissioner view-and-edit access
+to that exact Candidate Card.
+
+It begins 48 elapsed hours before the Candidate Card deadline, or at automatic
+card opening when less than 48 hours remain, and always ends at the deadline.
+
+## Candidate Card Deadline
+
+The backend-controlled instant exactly `168 elapsed hours` before the league's
+frozen first-matchup start.
+
+At the deadline every Candidate Card locks, league-wide read-only visibility
+opens, and automatic FAD allocation becomes due.
+
+## Restricted Tie Auction
+
+A FAD auction created when two or more teams submit the same highest total
+contract value and the same contract term for one player.
+
+An equal highest total with different terms is resolved by highest AAV before
+the auction stage. Only the teams tied on both highest total and term may bid.
+Lower-ranked teams and other league teams may not participate.
+
+Each tied Candidate offer is a system-created minimum rather than an active
+leader. A team contends only after submitting one valid strict improvement. If
+no eligible current active improvement remains at resolution, the restricted
+auction closes without a winner and opens a fresh league-wide 24-hour FAD
+auction with the original tied floor and no initial leader.
+
+## FAD Rapid-Auction Period
+
+The initial seven elapsed days after the Candidate Card deadline plus any
+contiguous 24-hour extension cycles required by queued nominations, restricted
+fallbacks, delayed activation, or recovery.
+
+Open and restricted FAD auctions normally resolve at each persisted FAD Rapid
+Rollover. A nomination committed during the final 60 minutes is accepted
+privately into the FAD Nomination Queue rather than rejected. Authorized bids
+and valid edits on existing auctions remain available until rollover.
+
+Every submitted FAD bid is binding. Outstanding bids reserve no cap, position,
+or roster capacity, and every otherwise-valid winning contract takes effect
+even when simultaneous wins leave the team illegal.
+
+## FAD Rapid Rollover
+
+One persisted 24 elapsed-hour boundary in the FAD rapid-auction period.
+
+It resolves due auctions, activates delayed restricted paths, opens valid
+queued nominations for the following cycle, creates required fallback and
+extension paths, and records terminal or explicit recovery state
+idempotently.
+
+## FAD Nomination Queue
+
+The private record created when a manager nominates a player during the final
+60 minutes before a FAD Rapid Rollover.
+
+It contains the nominating team and binding starter bid. At rollover, a still
+valid queued nomination opens as an auction and resolves at the following
+24-hour rollover. The queue does not reserve the player, cap room, position
+capacity, or a roster slot.
+
+## FAD Exact-Tie Draw
+
+The persisted auditable equal-chance draw used only when eligible bids in an
+open or restricted FAD auction remain exactly tied after highest AAV and
+shortest-term ranking.
+
+The draw includes only the exact top-tied bids and is replay-stable. Ordinary
+weekly auctions retain their deterministic timestamp and stable-ID tie rules.
+
+## FAD Completion
+
+The durable terminal state reached only after the initial seven-day period and
+every active, queued, fallback, delayed, or recovery path is accounted for.
+
+If completion is at or after the current Week 1, the same atomic transition
+moves competition to the first otherwise-valid league-local Monday strictly
+after completion, removes unavailable early regular-season weeks, regenerates
+the remaining schedule and unexecuted jobs, and preserves the historical FAD
+clock and results.
 
 ## Draft Order
 
@@ -1066,7 +1394,12 @@ The rule determining which players may be selected in one Hundo Leago Entry Draf
 
 The normal pool contains F or D players selected in the most recently completed real NHL Entry Draft. Goalies are excluded.
 
-An unowned player whose Hundo Leago prospect rights were released may re-enter only when selected in the immediately preceding Hundo Leago Entry Draft.
+An unowned player whose Hundo Leago prospect rights were released may re-enter
+only when selected in the immediately preceding Hundo Leago Entry Draft and a
+confirmed `rights_release_reentry` eligibility row for the same league and
+player references that exact release event after it occurred. Each later
+release requires its own later confirmed event-linked row; unowned status or
+roster absence alone is not re-entry evidence.
 
 Every eligible player requires a stable canonical player ID and cannot already be owned or under an active Hundo Leago contract in that league.
 

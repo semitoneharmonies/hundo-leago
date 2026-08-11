@@ -14,6 +14,13 @@ This technical specification consolidates:
 
 Grae delegated the technical architecture decisions and approved adoption of the resulting design on 2026-07-18.
 
+The Free Agent Draft product specification approved on 2026-07-27 and amended
+on 2026-07-28 for Candidate Card ranking, tie handling, and the explicitly
+selected first-matchup clock is implemented
+technically by the approved dedicated amendment at
+`docs/04-technical-specs/FREE_AGENT_DRAFT.md`. Existing module, authority,
+isolation, transaction, job, and recovery rules remain foundations.
+
 ---
 
 ## Technical Purpose
@@ -957,6 +964,7 @@ docs/02-rules/PERMISSIONS.md
 docs/03-product-specs/
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md
+docs/04-technical-specs/FREE_AGENT_DRAFT.md
 docs/04-technical-specs/SECURITY.md
 docs/04-technical-specs/BACKEND_REFACTOR.md
 docs/04-technical-specs/SQLITE_MIGRATION.md

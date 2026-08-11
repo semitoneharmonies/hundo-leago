@@ -220,7 +220,12 @@ Prospects use an approved $3, three-year fantasy entry-level contract when signe
 
 Normal non-ELC contracts require at least $1 AAV per contract year. There is no separate monetary maximum, and three years is the maximum term.
 
-Remaining contract years include the current season. Expiration is processed during end-of-season rollover before the next Entry Draft, immediately removing the player from the roster and returning the player to free agency without exclusive re-signing rights.
+Remaining contract years include the current season. Competition completion
+does not advance or expire them; they remain displayed as `Pending Rollover`.
+At the persisted scheduled start of the next Entry Draft, one automatic
+rollover advances or expires them, immediately removes an expired player from
+the roster, and returns that player to free agency without exclusive
+re-signing rights.
 
 Transactions may create a temporarily illegal roster with a warning. A team that is illegal at the Monday `4:00 PM Pacific` roster lock does not collect matchup points until it becomes legal and receives a team-specific locked roster and scoring baseline. Once a legal matchup roster is locked, later normal-roster adjustments—including adjustments that make the normal roster illegal—do not affect that matchup or the locked players’ fantasy-point earnings.
 
@@ -232,12 +237,16 @@ Hundo Leago supports structured methods of assigning unsigned players.
 
 These may include:
 
-* a future pre-season Free Agent Draft;
+* an annual pre-season Free Agent Draft using private Candidate Cards,
+  automatic total-first/AAV-second allocation, restricted exact-tie auctions,
+  and daily rapid auctions;
 * blind in-season free-agent auctions;
 * follow-up or tie-breaking auctions;
 * commissioner recovery controls.
 
-The approved auction specification determines the exact bidding, timing, tie-breaking, editing, and assignment rules.
+The approved Free Agent Draft and Auction specifications determine the exact
+pre-season and in-season bidding, timing, tie-breaking, editing, and assignment
+rules.
 
 ### Trades and future assets
 
@@ -258,7 +267,10 @@ Player contracts transfer with their existing average annual value and remaining
 
 Multiple former teams may retain salary after successive trades, subject to a cumulative maximum of 50% of the player’s original AAV and three retention slots per team. Existing retention is not affected by a later buyout.
 
-The commissioner sets the trade deadline during league creation. Trading reopens at the start of the entry draft.
+The commissioner sets the trade deadline during league creation. At the
+scheduled Entry Draft start, trading remains locked until the automatic
+contract/ownership rollover succeeds; successful rollover opens trading and
+the draft atomically.
 
 ### Scoring, matchups, and standings
 

@@ -14,6 +14,8 @@ This product specification consolidates:
 
 Grae approved the Season 2 Rosters product specification recorded in this document on 2026-07-18.
 
+Grae approved the FAD carryover amendments on 2026-07-27.
+
 ---
 
 ## Product Purpose
@@ -31,7 +33,9 @@ This specification defines how:
 * public and authenticated users view rosters;
 * concurrent, repeated, stale, and invalid roster actions fail safely.
 
-The goal is a predictable roster workflow that Contracts, Auctions, Trades, Matchups, Entry Draft, and Commissioner Tools can use without recreating roster rules.
+The goal is a predictable roster workflow that Contracts, Auctions, Trades,
+Matchups, Entry Draft, Free Agent Draft, and Commissioner Tools can use without
+recreating roster rules.
 
 ---
 
@@ -43,6 +47,7 @@ This document does not define:
 * auction bidding or resolution;
 * trade proposal or acceptance workflows;
 * draft order or selection workflows;
+* Candidate Card preparation, allocation, or rapid-auction workflows;
 * fantasy-point formulas;
 * matchup scheduling or standings calculations;
 * the exact API request and response shapes;
@@ -349,9 +354,26 @@ The roster workflow must support eligible moves between:
 * bench and injured reserve by moving through active;
 * prospect and a normal roster category only through an approved prospect-signing action.
 
-Acquisition and ownership changes enter through Auctions, Trades, Entry Draft, approved prospect signing, or commissioner correction.
+Acquisition and ownership changes enter through Auctions, Trades, Entry Draft,
+Free Agent Draft, approved prospect signing, or commissioner correction.
 
 An ordinary category move does not create or replace ownership.
+
+---
+
+## FAD Carryover Projection
+
+The Candidate Card is a preseason FAD projection, not an alternate
+authoritative roster.
+
+An owned Active, Bench, or Injured Reserve player with a contract extending
+into the target season carries into the card. An IR player reserves a locked
+Active F or D Candidate position while remaining on the real IR roster. The
+projection must not create a hidden roster move, recreate the contract, or
+open an extra Candidate position.
+
+An approved roster move or prospect signing before the Candidate Card deadline
+updates the projection under the Free Agent Draft specification.
 
 ---
 
@@ -602,9 +624,98 @@ When a team is illegal at the normal lock:
 1. No normal scoring-eligible snapshot is created.
 2. The team collects no points while it lacks a legal scoring snapshot.
 3. Normal roster adjustments remain available.
-4. When the roster first becomes legal, the backend persists a team-specific snapshot, eligibility time, and scoring baseline.
-5. Only points earned after that baseline count.
-6. Earlier points are not recovered.
+4. When the roster first becomes legal, the backend verifies sufficiently
+   fresh statistics and NHL game-state evidence, then atomically persists the
+   team-specific snapshot, eligibility time, scoring baseline, and immutable
+   whole-game exclusion evidence.
+5. Every selected player whose NHL game was already underway at the snapshot
+   timestamp is excluded for that entire NHL game, including events recorded
+   after the baseline.
+6. Each exclusion records the player ID, NHL game ID, scheduled game start,
+   snapshot timestamp, and source/version evidence used to determine that the
+   game was underway.
+7. Only otherwise eligible points earned after the baseline count.
+8. Earlier points are not recovered.
+
+The late-lock occurrence is idempotent. An exact replay returns the already
+committed snapshot, baseline, and exclusion set. Concurrent attempts revalidate
+roster legality, snapshot timing, and source version in the transaction so only
+one valid set commits; an equivalent losing attempt returns that committed
+result, while a stale conflicting attempt rejects without a partial snapshot,
+baseline, or exclusion record.
+
+This replay is semantic. The backend reconstructs and verifies the committed
+selected roster, baseline, sealed coverage, fresh game-state decision, and
+exclusions. Differences in newly generated child IDs alone do not create a
+conflict; differences in timestamp, source lineage, selected roster, coverage,
+or exclusions do. Late-lock replay does not require a new request ID.
+
+Every roster-mutating workflow submits one committed-mutation batch to one
+shared, never-rejecting post-commit late-lock coordinator. The batch groups its
+committed ownership changes by affected team. Each ownership witness contains
+the committed identity and version; when the ownership was deleted, its last
+committed version is the witness. The writer registry includes ordinary moves,
+Injured Reserve moves, buyouts and releases, auction and FAD allocation wins,
+trade acceptance and reversal, commissioner additions, removals and
+corrections, contract transitions, prospect decisions and activations,
+Candidate carryover movement, effective-position corrections, and every
+future workflow that can change authoritative roster legality.
+
+Changing only an ownership's informational trade-block flag, update timestamp,
+and optimistic version does not change authoritative roster legality. That
+metadata-only command is intentionally outside the roster-writer registry and
+does not invoke the late-lock coordinator.
+
+A team-to-team player or prospect-right transfer ends the source ownership
+tenure and creates one distinct destination ownership tenure at version `1`.
+The stable player and contract IDs do not change. The source team contributes
+the deleted source ownership's last committed version to the batch; the
+destination team contributes the new present ownership ID and version. Trade
+reversal closes the destination tenure and creates another new source-team
+tenure rather than resurrecting a historical ownership row.
+
+The coordinator never reruns, compensates, reverses, or rolls back a committed
+roster change. Replaying the original command may re-evaluate the committed
+receipt, but it never repeats the mutation. Any coordinator validation,
+repository, provider, or runtime failure after commit becomes the safe
+`awaiting_data` result and cannot reject the successful roster command.
+
+One command batch may request at most one immediate live-data refresh and one
+late-lock evaluation retry in total, regardless of how many teams or ownerships
+it changed. A later successful scheduled statistics refresh invokes the retry
+hook only after that refresh commits. The hook is isolated from the successful
+refresh result, retries every eligible illegal normal-lock record, never starts
+another refresh, and never repeats a roster mutation.
+
+The safe late-lock portion of every successful roster-mutation response is
+only:
+
+```text
+lateLock: {
+  status: completed | awaiting_data | still_illegal | not_applicable,
+  lockId?: stable lock ID
+}
+```
+
+`completed` means a valid late lock now exists; `awaiting_data` means a complete
+safe late-lock evaluation or its required fresh evidence is not yet available;
+`still_illegal` means the committed roster remains illegal; and
+`not_applicable` means no late-lock action applies. No source, timestamp,
+selected-player, coverage, observation, baseline, or exclusion detail appears
+in this response.
+
+When one command affects several teams, its single public status is the first
+applicable state in this exact priority order: `awaiting_data`,
+`still_illegal`, `completed`, then `not_applicable`. `lockId` appears only when
+exactly one safely identifiable completed late lock applies to the whole
+command; it is omitted for every multi-lock or otherwise ambiguous result.
+
+Affirmative coverage for every selected player is a late-lock requirement
+only. It does not alter or delay the normal scheduled lock. For a late lock,
+sealed coverage selects the exact in-week due NHL games, and a separate NHL
+game-state read observed within five elapsed minutes decides which of those
+games are underway. The live-statistics and game-state source versions are
+independent lineages from compatible providers and need not be equal.
 
 ---
 
@@ -855,6 +966,35 @@ Tests must cover:
 * illegal normal lock;
 * late legality and team-specific baseline;
 * exclusion of pre-baseline points;
+* whole-game exclusion for every selected player whose NHL game was already
+  underway at the late-snapshot timestamp, including events after the baseline;
+* immutable player ID, NHL game ID, scheduled start, snapshot timestamp, and
+  source/version evidence for every whole-game exclusion;
+* atomic persistence of the late snapshot, baseline, and exclusion evidence;
+* exact replay and racing late-lock attempts producing one committed set, with
+  stale conflicts leaving no partial state;
+* semantic replay ignoring only newly generated child IDs while timestamp,
+  source, selected-roster, coverage, or exclusion changes conflict;
+* every current and future roster writer appearing in the shared registry and
+  using one never-rejecting, team-grouped post-commit batch coordinator without
+  rerunning or rolling back its committed mutation;
+* deleted-ownership witnesses using their last committed versions and original
+  command replay never repeating the mutation;
+* one immediate refresh/retry maximum for the whole command batch, later
+  successful scheduled-refresh retry isolated in the occurrence handler
+  without recursion, and successful mutation responses for every coordinator
+  failure after commit;
+* deterministic multi-team status aggregation and `lockId` omission unless one
+  safely identifiable completed lock applies;
+* exact safe `lateLock` response statuses with no evidence leakage;
+* unchanged normal-lock behavior without an affirmative-coverage prerequisite;
+* exact in-week due-game selection from sealed coverage plus a separate
+  no-more-than-five-minute-old underway-state read;
+* independent compatible statistics/game-state source versions and
+  recomputation of all sealed coverage, player-game, game-state, and exclusion
+  digests;
+* current `expected_game` coverage, exact current observations, and
+  non-regressed update lineage for exclusions and finalization;
 * post-lock normal roster changes;
 * post-lock normal-roster illegality without scoring interruption;
 * immutable persisted snapshots;
@@ -864,7 +1004,8 @@ Tests must cover:
 
 # Part 15 — Approval Checklist
 
-Grae approved the following Season 2 Rosters product decisions on 2026-07-18.
+Grae approved the original Season 2 Rosters product decisions on 2026-07-18 and
+the FAD-related amendments on 2026-07-27.
 
 ## Approved Roster Foundation
 
@@ -881,6 +1022,8 @@ Grae approved the following Season 2 Rosters product decisions on 2026-07-18.
 - [x] Unsigned prospects have no salary; signed prospects kept in Prospects have a cap-exempt ELC, use no normal roster slot, and collect no matchup points.
 - [x] A player or prospect right may have only one owner in a league.
 - [x] Ownership and assignments use stable IDs and remain league-scoped.
+- [x] Candidate Cards are separate FAD records rather than normal roster player cards or matchup snapshots.
+- [x] FAD carryovers reserve Active, Bench, or projected Active-from-IR Candidate positions without recreating contracts or silently moving an IR player.
 
 ## Approved Cap and Matchup Rules
 
@@ -893,6 +1036,9 @@ Grae approved the following Season 2 Rosters product decisions on 2026-07-18.
 - [x] Transactions that create an illegal roster may complete with a warning.
 - [x] A team illegal at normal lock collects no points until a legal team-specific snapshot and baseline are persisted.
 - [x] Points earned before the late-legality baseline are not recovered.
+- [x] A late snapshot excludes every selected player whose NHL game was already underway for that entire game, including events after the baseline.
+- [x] Each whole-game exclusion preserves immutable player/game/start/snapshot/source evidence and is persisted atomically with the late snapshot and baseline.
+- [x] Exact replay and racing late-lock attempts produce one committed snapshot, baseline, and exclusion set without partial state.
 - [x] Post-lock normal roster changes do not alter an existing legal matchup snapshot or interrupt its scoring.
 - [x] Matchup and standings information does not enter league activity history.
 
@@ -1007,6 +1153,7 @@ docs/03-product-specs/AUCTIONS.md
 docs/03-product-specs/TRADES.md
 docs/03-product-specs/MATCHUPS.md
 docs/03-product-specs/ENTRY_DRAFT.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/COMMISSIONER_TOOLS.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md

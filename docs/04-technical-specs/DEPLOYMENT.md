@@ -636,6 +636,244 @@ The production work plan supplies the real path through managed configuration. I
 
 ---
 
+## FAD Live-Provider Capability Gate
+
+The live matchup-statistics credential is dedicated and never falls back to
+the staging-import credential. Deployed configuration sets
+`SPORTSDATAIO_NHL_LIVE_MODE` to exactly `disabled`, `probe`, or `required`,
+uses an independent generated
+`SPORTSDATAIO_NHL_LIVE_CAPABILITY_SECRET`, and keeps the signed artifact at
+`SPORTSDATAIO_NHL_LIVE_CAPABILITY_ARTIFACT` beneath the validated persistent
+root. The staging canonical path is
+`/opt/render/project/data/hundo-staging/provider-capability/sportsdataio-live-v1.json`.
+
+FAD-18 uses a schema-agnostic maintenance-hold bridge, then one read-only
+discovery gate and a two-stage activation of the exact final candidate:
+
+1. deploy the full backend bridge commit before the real provider manifest
+   exists, against the existing schema-22 disk path, with deployed
+   `STAGING_MAINTENANCE_HOLD=true`; the exact hold prerequisites are staging
+   application identity, production Node mode, closed league writes, disabled
+   jobs, FAD routes, account-email delivery, debug routes, and backup schedule,
+   capture-only email, and provider `probe` mode;
+2. verify the bridge exposes only generic GET/HEAD liveness and readiness plus
+   the provider's attached-service shell; it must not import or open the
+   database runtime or compose application routes, jobs, Socket.IO, or email;
+   shell reachability is an external operator/provider check, and hold
+   readiness means only that the maintenance process is listening, not that the
+   application or database is ready;
+3. from that disk-backed shell, with the isolated schema-22 database quiesced,
+   use the dedicated paid live key to run exactly
+   `npm run data:discover:sportsdataio-live:staging -- --historical-date YYYY-MM-DD`;
+   do not prefix or override `STAGING_MAINTENANCE_HOLD` for the command:
+   discovery must inherit the bridge's deployed exact `true` value; the command
+   requires and rechecks a sidecar-free guarded source, copies its main file to
+   a private OS-temporary snapshot, verifies source/copy identity and SHA-256,
+   and opens only the copy read-only with `fileMustExist` and `query_only`; it
+   closes and removes the copy before sanitized output and fails without output
+   on any source drift or cleanup failure;
+4. have the operator review that output and commit its exact sanitized manifest
+   as `config/provider-capability/sportsdataio-live-probe-v1.json`;
+5. run `npm run release:candidate:preflight` against the exact final candidate,
+   whose Blueprint default is `STAGING_MAINTENANCE_HOLD=false`; a missing,
+   untracked, invalid, season-mismatched, or build-omitted manifest, or a
+   Blueprint that still enables the hold, stops candidate activation;
+6. deploy that exact final commit and build once with the persisted service
+   hold still set to `true` against the old schema-22 path; verify the same
+   health-only surface before any disk mutation, so every backup and import
+   command runs from the final release source rather than the auxiliary bridge;
+7. while that exact final build remains in hold, create and independently verify
+   a backup of the old schema-22 database, then run
+   `npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <absolute-distinct-clean-restore-path>`;
+   record the previously absent clean-restore path and passed result, leave that
+   path inactive, and only then build the approved reset/import into a different,
+   previously absent schema-49 database path; never migrate, replace, or open
+   the old path with the FAD runtime;
+8. record both paths and database identities, backup identity, import and
+   schema-49 evidence, selected activation path, and the path-and-build rollback
+   pair;
+9. point the service at only the verified new database path and redeploy the
+   same exact final commit and build with
+   `STAGING_MAINTENANCE_HOLD=false` in provider `probe`,
+   keeping scheduled jobs, FAD routes, league writes, email delivery, and the
+   application live adapter disabled;
+10. from the paid web service's Dashboard Shell or SSH session, where the
+   attached disk is available, run the zero-argument
+   `npm run data:check:sportsdataio-live:staging` command to publish the signed
+   artifact; it must reject before manifest, provider, artifact, or output work
+   unless Node mode is production, persisted hold is `false`, writes are
+   closed, jobs, FAD routes, account email, debug routes, and backup schedule
+   are disabled, and email is capture-only;
+11. while the deployed service remains in `probe`, run the zero-argument
+    package interface once from that disk-backed shell with the exact
+    per-process invocation
+    `SPORTSDATAIO_NHL_LIVE_MODE=required npm run data:verify:sportsdataio-live:staging`;
+    it is staging-only, requires that same hold-false normal-probe boundary
+    before artifact read, and does not persist or change the deployed service
+    mode;
+12. change only the deployed service's live mode from `probe` to `required` and
+    restart or redeploy the same commit and build identity;
+13. before database open, startup independently re-verifies the artifact's
+    digest, HMAC, credential binding, environment, build, origin, configured
+    season, probe-manifest digest, issue time, and fixed 24-hour expiry; and
+14. verify health and safe capability status before enabling any remaining FAD
+    route or scheduled-job gates.
+
+Do not run the discovery or provider check in a Render build command,
+pre-deploy command, or Render one-off job because those contexts do not have
+the required service database and attached disk. The independent verifier is a
+one-off command in the disk-backed service shell, not a Render one-off job and
+not a persistent service-mode change. Do not put the provider check in the
+start command: provider failure must not replace deterministic artifact
+verification or make a disk-backed candidate unavailable during a deployment.
+An unavailable endpoint, credential, database, required semantic, manifest, or
+operator blocks FAD-18. None of these tools enables a fallback, persists a raw
+provider body, changes shared league data, or weakens database safeguards.
+
+The artifact is published atomically on the persistent disk with an exclusive
+owned lock, mode-0700 directory, mode-0600 same-directory temporary file,
+file and directory fsync, atomic rename, and post-rename verification. A failed
+replacement preserves the previous valid artifact. Symlinks, path escapes,
+concurrent publication, truncation, noncanonical JSON, or a forged artifact
+fail closed.
+
+The version-controlled input manifest is distinct from that signed runtime
+artifact. The operator-reviewed discovery output supplies the exact manifest;
+the exact release must contain it Git-tracked at
+`config/provider-capability/sportsdataio-live-probe-v1.json`, bound to configured
+season `20262027`, probe season `20252026`, and the approved expected-game,
+no-due-game, no-team, and historical zero-stat observations. A missing,
+untracked, invalid, season-mismatched, or build-omitted manifest blocks FAD-18.
+Synthetic test evidence cannot replace the paid-source observation.
+
+---
+
+## Free Agent Draft Schema 22-49 Transition
+
+The Free Agent Draft migrations `0023` through `0049` and the schema-49
+runtime form one indivisible deployment boundary from the shared schema-22
+baseline.
+
+Migration `0027` backfills audiences for existing league realtime events. An
+old process left running after that backfill could create a new league event
+without an audience. Migrations `0028` through `0047` add the final-standings,
+lifecycle-transition, FAD decision, recovery, auction, rollover, and completion
+evidence that the same runtime requires. Migrations `0048` and `0049` require
+the canonical realtime and setup-exemption publications atomically. Conversely,
+the new runtime requires schema `49`, writes each league event and its audiences
+atomically, and refuses to publish an event without a stored audience.
+Therefore:
+
+* do not apply any of `0023` through `0049` piecemeal to a shared environment;
+* do not deploy the FAD runtime before schema `49`;
+* do not leave the prior runtime accepting writes after the migration begins;
+* do not reopen writes, jobs, or outbox publication between migration and
+  deployment of the exact verified runtime;
+* do not treat a code-only rollback as compatible with schema `49`.
+
+The FAD-18 staging transition uses a fresh-path reset/import instead of an
+in-place migration. The persistent-disk bridge deploy stops the old instance
+before the new hold-only instance starts, so no prior process remains connected
+to the disk. The bridge leaves both database paths unopened by the service
+while the following controlled sequence runs:
+
+1. Record the existing schema-22 database path and identity, bridge commit and
+   deploy ID, and prior build rollback identity.
+2. Keep deployed `STAGING_MAINTENANCE_HOLD=true` and verify the exact hold
+   prerequisites and health-only surface.
+3. Run discovery from the attached-service shell with the inherited deployed
+   hold value, review and commit the manifest, and pass release preflight for a
+   final candidate whose Blueprint hold default is `false`.
+4. Deploy that exact final commit and build with the persisted service hold
+   still `true` against the old schema-22 path, and re-prove the health-only
+   surface before any disk mutation.
+5. Create and independently verify a current backup of the untouched schema-22
+   database. Before reset/import, run
+   `npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <absolute-distinct-clean-restore-path>`
+   against a previously absent clean path distinct from both database paths;
+   record the path and successful result and leave it inactive.
+6. Use the approved staging reset/import flow from that held final build to
+   create a new schema-49 database at a distinct, previously absent path
+   beneath the isolated
+   persistent root. The old schema-22 file and sidecars remain untouched; the
+   default FAD-18 activation path does not run `db:migrate` against them.
+7. Without leaving the hold, complete the exact
+   [Closed-Write Reset Evidence Handoff](FREE_AGENT_DRAFT.md#closed-write-reset-evidence-handoff):
+   independently verify the pristine import; publish the reset/import
+   verification artifact; run the first-platform-administrator bootstrap; run
+   the reset-original-league bootstrap; commit and post-commit verify the exact
+   reset migration report; then initialize the new database's deployed
+   environment identity. Use the exact pinned-Node interfaces, typed
+   confirmations, and protected inputs in that section; none may be reordered
+   or omitted.
+8. Before starting the final runtime, verify the contiguous
+   base-22-to-target-49 source (`49` migrations, `27` post-base) and
+   checksum-set SHA-256
+   `6df4e827296ef3e63a143fb932f557b410511813ea421177afb7908fda15d636`;
+   then verify the migration ledger, schema `49`, `131` application tables
+   (`132` including `schema_migrations`),
+   `PRAGMA integrity_check`, `PRAGMA foreign_key_check`, required row-count
+   reconciliation, the `131`-entry application repository catalog with SHA-256
+   `89b4eb536aef7c4c6d1519c5311f94c449109a55d8b71d130e5b952a157b49ff`, `49`
+   post-reset require-empty tables with policy SHA-256
+   `52d2d5ba6faaad9cc877132ad0153d8e52665b8aa0ae05394b685c9e48267808`, `82`
+   signed-reset-policy table
+   classifications, all `76` immutable-delete guards, one
+   league audience for every existing league event, no audience for
+   global/account/security/email events, null deduplication keys on existing
+   notifications, and no fabricated FAD state.
+9. Record the new database path and identity, exact succeeded import/migration
+   report, reconciliation and verification artifacts, and the explicit
+   activation and rollback path-and-build pairs.
+10. Change `DATABASE_PATH` to only the verified new path, set deployed
+   `STAGING_MAINTENANCE_HOLD=false`, and deploy and start only the exact backend
+   artifact verified against schema `49` in provider `probe`, keeping writes,
+   jobs, FAD enablement, email delivery, and the application live adapter
+   closed.
+11. From the disk-backed service shell, run and review the zero-argument
+   `npm run data:check:sportsdataio-live:staging` provider command to publish the
+   sanitized signed artifact and prove controlled omission without changing
+   shared league data. Then run the zero-argument package interface once as
+   `SPORTSDATAIO_NHL_LIVE_MODE=required npm run data:verify:sportsdataio-live:staging`
+   while the deployed service itself remains in `probe`. This per-process
+   staging-only invocation does not persist or change the service mode. Both
+   commands reject before provider, manifest, or artifact I/O unless the
+   persisted hold is `false` and every normal-probe write/job/FAD/email/debug/
+   backup-schedule gate remains quiesced with capture-only email.
+12. Change only the deployed service's provider mode from `probe` to `required`
+     and restart or redeploy the same commit and build. Startup must
+     independently re-verify the artifact before database open and compose
+     exactly one live adapter.
+13. Verify liveness, readiness, database identity, safe capability status,
+    writer composition, and audience-enforcing publication. An audience-less
+    league event must emit nothing and enter its safe retryable failure state.
+14. Verify league, team, and user-room delivery across two isolated leagues,
+    including delivery-time suppression of a user whose active membership
+    ended after the event was created.
+15. Reconcile pending and interrupted outbox work, then deliberately resume
+    outbox publication, remaining jobs, and league writes in that order.
+16. Record the first accepted post-transition write and verify that its event
+    and audience committed together.
+17. Create and independently verify the post-transition staging backup.
+
+Before the first accepted post-transition write, rollback restores the
+recorded old schema-22 path and exact prior backend artifact together; the
+verified pre-change backup remains the recovery artifact. After that write,
+rollback requires a forward-compatible corrective artifact or a verified
+database restore with external-effect reconciliation; the prior backend must
+not be started against schema `49`.
+
+An in-place schema-22-to-49 `db:migrate` path is excluded from FAD-18 unless
+that command first gains and passes mandatory isolated persistent-root
+enforcement. This exclusion does not weaken the requirement to verify the
+complete migration source and exact schema-49 result.
+
+This section authorizes no staging or production action by itself. FAD-18
+requires its own release record and staging authority.
+Production remains unauthorized and requires a separate explicit decision.
+
+---
+
 ## Persistent-Disk Constraint
 
 The Render disk:
@@ -644,9 +882,12 @@ The Render disk:
 * is unavailable during build and pre-deploy commands;
 * is unavailable to a separate one-off job;
 * prevents multiple service instances;
-* causes a brief service interruption during deploy replacement.
+* prevents zero-downtime deployment: Render stops the existing instance before
+  bringing up the replacement so two versions cannot access the same disk.
 
-The deployment plan must account for that interruption.
+The deployment plan must account for that interruption and record the stopped
+old instance and replacement deploy identities. See the current
+[Render persistent-disk limitations](https://render.com/docs/disks#disk-limitations-and-considerations).
 
 Migration is not moved into a pre-deploy command to make the release appear automatic.
 

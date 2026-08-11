@@ -158,6 +158,7 @@ The following boundaries were approved through League Rules on 2026-07-18.
 | Prospects collect matchup points | `No` | Approved |
 | Team illegal at normal lock collects points before a late legal lock | `No` | Approved |
 | Points earned before late legality are recovered | `No` | Approved |
+| Player whose NHL game is already underway at a late snapshot scores from that game | `No — excluded for the entire game` | Approved |
 | Locked roster is a persisted snapshot | `Yes` | Approved |
 | Post-lock roster changes affect the current matchup | `No` | Approved |
 | Post-lock normal-roster illegality interrupts locked-player scoring | `No` | Approved |
@@ -538,6 +539,13 @@ The team-specific baseline must:
 * include only the newly eligible roster snapshot;
 * preserve the legality result;
 * prevent recovery of points earned before legality;
+* identify every selected player whose NHL game was already underway at the
+  snapshot timestamp and exclude that player for that entire NHL game;
+* persist each whole-game exclusion with the player ID, NHL game ID, scheduled
+  game start, snapshot timestamp, and source/version evidence used to determine
+  that the game was underway;
+* create the roster snapshot, baseline, and immutable whole-game exclusion
+  evidence atomically;
 * be idempotent;
 * be included in the persisted matchup-week baseline records.
 
@@ -573,7 +581,10 @@ Live team fantasy points must be calculated from:
 Conceptually:
 
 ```text
-player weekly FP = current cumulative FP − applicable baseline FP
+player weekly FP =
+  current cumulative FP
+  − applicable baseline FP
+  − post-baseline FP from any whole-game exclusion
 team weekly FP = sum of eligible locked-player weekly FP
 ```
 
@@ -582,6 +593,8 @@ The calculation must not:
 * use the team’s current roster as a substitute for the locked snapshot;
 * add benched, injured-reserve, or prospect players;
 * recover points earned before a late legal lock;
+* count any event from an excluded player/game pair, including events recorded
+  after the late baseline;
 * use statistics from another NHL season;
 * use a different formula from finalization.
 
@@ -841,7 +854,11 @@ The Final uses the last two fantasy scoring weeks of the NHL regular season.
 
 Real NHL playoff games do not affect Hundo Leago under the current format.
 
-Regular-season matchup scheduling begins with the first full Monday-through-Sunday week contained in the NHL regular season and ends before the four playoff weeks.
+Regular-season matchup scheduling begins at the valid Week 1 start explicitly
+chosen by an authorized commissioner or administrator and ends before the four
+playoff weeks. The application may recommend the first full
+Monday-through-Sunday week contained in the NHL regular season, but does not
+impose it as a fixed date.
 
 ---
 
@@ -1098,6 +1115,10 @@ At minimum, test:
 * a roster change after lock;
 * a normal roster becoming illegal after lock without changing the locked roster or current scoring;
 * no recovery of points earned before a late legal lock;
+* whole-game exclusion when a selected player's NHL game was already underway
+  at the late-snapshot timestamp, including events after the baseline;
+* immutable, idempotent player/game exclusion evidence that is created
+  atomically with the late snapshot and baseline;
 * a player missing a stable ID;
 * a failed statistics refresh;
 * a stale cache;
@@ -1166,6 +1187,8 @@ Approved League Rules are included as checked items so their authority remains v
 - [x] A team that is illegal at the normal lock collects no points until it receives a late legal lock and baseline.
 - [x] A team becoming legal late receives a new team-specific baseline.
 - [x] Points earned before late legality are not recovered.
+- [x] A late snapshot excludes a selected player whose NHL game was already underway for that entire game, including events after the baseline.
+- [x] The late snapshot, baseline, and immutable player/game exclusion evidence are persisted atomically.
 - [x] A locked roster is a persisted snapshot and does not silently follow later normal-roster changes.
 - [x] Post-lock roster adjustments do not affect the current matchup.
 - [x] A normal roster may become illegal after lock without interrupting the locked players’ scoring.
@@ -1184,7 +1207,7 @@ Approved League Rules are included as checked items so their authority remains v
 
 ## Matchup Week
 
-- [x] Regular-season matchup Week 1 is the first full Monday-through-Sunday fantasy week contained in the NHL regular season.
+- [x] Regular-season matchup Week 1 starts at the valid instant explicitly chosen by an authorized commissioner or administrator; the first full NHL-season week is only a recommendation.
 - [x] Week start is Monday at `12:00 AM Pacific`.
 - [x] Normal baseline is Monday at `1:00 AM Pacific`.
 - [x] Week end is Sunday at `11:59 PM Pacific`.

@@ -14,6 +14,40 @@ This technical specification defines:
 
 Grae delegated the API-contract decisions and approved adoption of the resulting design on 2026-07-18.
 
+The Free Agent Draft product specification approved on 2026-07-27 and amended
+on 2026-07-28 for Candidate Card ranking, tie handling, and the explicitly
+selected first-matchup clock is implemented
+technically by the approved dedicated amendment at
+`docs/04-technical-specs/FREE_AGENT_DRAFT.md`. That amendment adds target routes
+`T-126` through `T-144` and extends the auction contracts for FAD context.
+
+On 2026-07-29, Grae approved the consolidated FAD lifecycle amendment:
+scheduled Entry Draft-start rollover, automatic all-or-nothing Candidate Card
+opening, adaptive help timing, whole-card structural/cap exclusion, improvement-required
+restricted ties and fallback, final-hour nomination queueing, FAD-only
+equal-chance draws, binding no-reservation wins, and atomic whole-Monday Week 1
+recovery. This shared contract incorporates those rules; the dedicated FAD
+technical specification controls their exact feature payloads and persistence
+boundaries.
+
+On 2026-08-10, Grae approved the FAD-14 opening and realtime clarification.
+Candidate Cards become fillable only after Entry Draft completion, or the
+already-approved no-draft equivalent, and successful atomic readiness commit.
+Each current accepted manager receives one private notification for each
+participating team/card they manage. Non-managers receive no Candidate Card
+notification and retain only normal League Activity visibility. Opening and
+queued-nomination publications carry invalidation metadata only and never card
+contents, offers, players, slots, contract values, help messages, or bids.
+The same approved FAD-14 reconciliation preserves
+`fad_setup_exemption_authorized` as the explicit eleventh FAD Activity and
+thirteenth FAD notification. Its exact destination is
+`{kind: commissioner_fad, leagueId, seasonId}`, and setup authorization creates
+the exact three-event metadata-only publication set defined below.
+
+The explicit final-standings amendment approved on 2026-07-29 adds `T-145`.
+It makes one provenance-complete final standings snapshot a required,
+independently confirmed prerequisite for later season rollover.
+
 ---
 
 ## Technical Purpose
@@ -432,6 +466,24 @@ The server scopes the key by actor, league, and operation.
 
 Reusing a key with the same request returns the original result. Reusing it with a different request returns `409 IDEMPOTENCY_KEY_REUSED`.
 
+For auction-administration commands `T-080` through `T-083`, the original
+result is not reconstructed from the current auction or job. One immutable
+`auction_administration_command_results` row stores the successful response
+`data`, original HTTP status, request hash and precondition, actual actor
+authority, and canonical response SHA-256. Replay uses that row after current
+identity, league isolation, and administration authority are revalidated, but
+before current auction state, version, clock, or new identifiers are sampled.
+The response envelope receives the replay request's new `meta.requestId`.
+Unsuccessful fresh requests write neither a new idempotency row nor a command
+result.
+
+Their exact operation map is `T-080` = `auction.bid.put`, `T-081` =
+`auction.bid.remove`, `T-082` = `auction.cancel`, and `T-083` =
+`auction.resolve.request`. Within league isolation, exact replay is scoped by
+that operation, actor user, and client key, and resolves through the completed
+request's immutable result link. Reusing the same client key under a different
+operation or actor does not select that result.
+
 ---
 
 ## Pagination, Filtering, and Sorting
@@ -803,10 +855,174 @@ Destructive administration requires idempotency and explicit confirmation fields
 | `GET /api/v1/leagues/:leagueId/seasons` | League member | List current and historical seasons for season-scoped navigation without mutation |
 | `PATCH /api/v1/leagues/:leagueId/settings` | Platform administrator | Update approved editable settings using `If-Match`; commissioners cannot edit settings in the initial release |
 | `PUT /api/v1/leagues/:leagueId/setup/trade-deadline` | Commissioner while league is in Setup | Record the informational trade deadline without starting an automated event |
-| `POST /api/v1/leagues/:leagueId/start` | Commissioner | Validate at least four teams and all launch invitations, then activate atomically |
+| `POST /api/v1/leagues/:leagueId/start` | Commissioner | Validate complete setup settings including the stored trade deadline, at least four teams, and all launch invitations, then atomically activate every setup team plus the setup league and its sole planned current season |
 | `POST /api/v1/leagues/:leagueId/lifecycle-transitions` | Platform administrator or authorized commissioner for the requested transition | Execute one explicit approved lifecycle transition |
 | `POST /api/v1/leagues/:leagueId/freeze` | Commissioner | Freeze approved manager writes |
 | `DELETE /api/v1/leagues/:leagueId/freeze` | Commissioner | Unfreeze approved manager writes |
+
+### Setup Trade Deadline
+
+`T-035` uses:
+
+```http
+PUT /api/v1/leagues/:leagueId/setup/trade-deadline
+If-Match: "<current league version>"
+Idempotency-Key: <opaque 1-128 character key>
+Content-Type: application/json
+```
+
+The exact request body is:
+
+```json
+{
+  "tradeDeadlineAtMs": 1798761600000
+}
+```
+
+The selected local date and time is interpreted by the client in the league's
+stored timezone and sent as one safe UTC epoch-millisecond value. A fresh
+request requires the deadline to be strictly in the future. The backend
+reauthorizes the current commissioner, or an active league member with
+inherited platform-administrator authority, inside one immediate transaction.
+It requires the league to remain `setup`, updates both the settings version and
+league aggregate version using compare-and-swap, and writes one
+commissioner-visible activity record, one Security Audit event, one
+league-scoped metadata-only outbox invalidation, and one completed idempotency
+record. It does not create a job, notification, scheduled event, FAD, or
+automatic trading transition. A later setup-only call with a new current
+version may replace the deadline.
+
+The exact success data is:
+
+```json
+{
+  "code": "LEAGUE_TRADE_DEADLINE_RECORDED",
+  "league": {
+    "id": "00000000-0000-4000-8000-000000000000",
+    "status": "setup",
+    "timezone": "America/Vancouver",
+    "version": 3
+  },
+  "settings": {
+    "tradeDeadlineAtMs": 1798761600000,
+    "version": 2
+  },
+  "recordedAtMs": 1785292800000
+}
+```
+
+Fresh success and exact replay both return `200`. Replay is checked before
+current lifecycle, version, or clock validation and reconstructs the original
+result from durable evidence, so an old key continues to return its original
+representation after a later setup replacement or league activation. Reusing
+the key for changed input returns `409 IDEMPOTENCY_KEY_REUSED`. A stale
+`If-Match` returns `412 LEAGUE_TRADE_DEADLINE_PRECONDITION_FAILED`; missing
+visibility returns `404 LEAGUE_NOT_FOUND`; missing authority returns
+`403 LEAGUE_COMMISSIONER_REQUIRED`; a non-setup league returns
+`409 LEAGUE_TRADE_DEADLINE_NOT_ALLOWED`; missing or inconsistent settings
+return `409 LEAGUE_TRADE_DEADLINE_SETTINGS_INVALID`; a current or past fresh
+deadline returns `422 LEAGUE_TRADE_DEADLINE_NOT_FUTURE`; malformed input
+returns `400 LEAGUE_TRADE_DEADLINE_INPUT_INVALID`; and an oversized body
+returns `413 LEAGUE_TRADE_DEADLINE_TOO_LARGE`.
+
+The lifecycle-transition route includes the one FAD-specific
+`authorize_initial_season2_no_draft` command defined in
+`docs/04-technical-specs/FREE_AGENT_DRAFT.md`. It requires a platform
+administrator with active membership in the league, exact typed confirmation,
+a bounded reason, `seasonId`, and `Idempotency-Key`; `If-Match` is forbidden.
+It may create the
+one-time original-league Season 2 exemption only when the target is the
+league's sole persisted current season because the approved reset omitted the
+legacy Season 1 competition container, the league has the exact succeeded
+legacy Season 1 reset-manifest migration evidence, and the current active
+preseason season has no Entry Draft, FAD, or exemption. The same immediate
+snapshot must prove the exact original reset-bootstrap league/season IDs,
+`2026`/`20262027` identity, bootstrap idempotency/activity/audit actor and
+timestamp continuity, and one active current commissioner notification target.
+The transaction records immutable report/bootstrap hashes plus linked
+idempotency, audit, activity, notification, and outbox evidence but does not
+open Candidate Cards or consume the exemption.
+No GET, FAD readiness retry, migration, manual SQL step, or startup path may
+create that row.
+
+`T-037` is an approved target route and remains `PLANNED`; it is not currently
+composed in the backend. It has two HTTP uses:
+
+* `authorize_initial_season2_no_draft`, the one approved initial-transition
+  exemption above; and
+* `retry_scheduled_entry_draft_rollover`, available only after the persisted
+  Entry Draft-start occurrence has failed or blocked.
+
+The normal continuing-season rollover is not a browser command. Entry Draft
+scheduling binds one source season, one already-planned target season with its
+complete persisted calendar and schedule, one immutable scheduled-start
+instant, and one durable occurrence. At that instant, the system job invokes
+the same T-037 service internally as
+`execute_scheduled_entry_draft_rollover`. A commissioner retry supplies the
+persisted draft and occurrence identity, current draft `If-Match`, and
+`Idempotency-Key`; it cannot supply a replacement calendar, completion
+instant, target season, or manual rollover time.
+
+The commissioner retry contract is exact:
+
+```http
+POST /api/v1/leagues/:leagueId/lifecycle-transitions
+If-Match: "<current Entry Draft version>"
+Idempotency-Key: <opaque 1-128 character key>
+Content-Type: application/json
+
+{
+  "transitionType": "retry_scheduled_entry_draft_rollover",
+  "entryDraftId": "<persisted Entry Draft UUID>",
+  "rolloverOccurrenceId": "<persisted scheduled occurrence UUID>"
+}
+```
+
+Unknown or missing body fields fail closed. `If-Match` compares the Entry
+Draft version, not a client-selected source or target season version. Fresh
+acceptance and exact replay return `202`; changed-input key reuse returns
+`409 IDEMPOTENCY_KEY_REUSED`; a stale draft version returns
+`412 SEASON_ROLLOVER_PRECONDITION_FAILED`; an occurrence that is not the exact
+blocked occurrence bound to that draft returns `409 SEASON_ROLLOVER_NOT_READY`.
+The internal `execute_scheduled_entry_draft_rollover` command uses the same
+two persisted UUIDs, is never accepted by this HTTP route, has no browser
+actor, `If-Match`, client idempotency key, body-supplied calendar, or typed
+confirmation, and deduplicates by the durable occurrence identity.
+
+Both paths preserve an `active` or `frozen` league and any active freeze. The
+scheduled path is idempotent by occurrence key and records system authority.
+The retry path accepts the current commissioner or inherited member platform
+administrator, records that actual authority, returns `202`, and replays by
+idempotency key. The no-draft exemption retains its separate `201` response and
+shared reverse-idempotency contract.
+
+Before rollover may write, the transaction revalidates the exact completed
+source FAD and completion marker, every initial and extension rollover,
+allocation, recovery, auction, bid, result, job, matchup, trade, and the
+current canonical T-145/T-097 final-standings lineage. Missing, stale, legacy,
+incomplete, quarantined, or ambiguous evidence returns
+`409 SEASON_ROLLOVER_NOT_READY`; T-037 never repairs, rebuilds, finalizes, or
+guesses it.
+
+The target must be the one same-league consecutive `planned` season already
+bound to the scheduled Entry Draft. Its NHL/playoff calendar must be complete
+and match the draft schedule exactly. At least one valid league-local Monday
+Week 1 must remain before playoffs, but rollover does not require a fixed
+Candidate preparation lead and does not choose or rewrite Week 1. After Entry
+Draft completion, automatic FAD readiness performs any approved whole-Monday
+shift needed to make the Candidate deadline future-facing and fit the complete
+seven-day FAD period.
+
+One outer immediate transaction advances or expires contract, retention, and
+buyout years; carries or releases ownership; cancels affected pending trades;
+marks the source season completed and target active; switches the league's
+current season; writes the immutable rollover attempt, root, manifest,
+activity, audit, and outbox evidence; verifies that evidence; opens target
+trading; changes the prepared Entry Draft from `Scheduled` to `Live`; starts
+the first pick clock; and commits. Any failure leaves both seasons, every
+contract and obligation, trading, and the draft unchanged. A blocked occurrence
+returns exact commissioner-visible blockers and is retried only through the
+approved T-037 retry command.
 
 Only Active leagues are publicly discoverable. Public league resources return `X-Robots-Tag: noindex, nofollow`; the frontend also emits matching page metadata.
 
@@ -925,6 +1141,103 @@ Security Audit and idempotency evidence atomically. A stale version returns
 
 Provider failures do not erase the last valid statistics.
 
+The internal live player-game requirement snapshot remains schema version `1`
+because it is local and unshipped. Its exact shape is `schemaVersion`,
+`nhlSeasonKey`, `playerIdentityProvider`, sorted `requiredPlayers[]`, sorted
+`requiredPlayerGames[]`, and `requirementsSha256`. The normative preimage and
+ordering are defined in `FREE_AGENT_DRAFT.md`. Each required-game item is
+exactly `{playerId, providerPlayerId, providerTeamId, nhlGameId,
+nhlGameScheduledStartsAtMs}` and must reference the exact matching
+`requiredPlayers` identity.
+
+The server derives those game bindings from sealed baseline `expected_game`
+coverage for whole-game exclusions in matchup weeks whose current status is
+`live`, `awaiting_data`, or `correction_required`. A finalized week leaves the
+scope and re-enters only if correction moves it back to
+`correction_required`. Players referenced only by a retained historical game
+remain in `requiredPlayers`, including after a trade, release, team change, or
+move to current free agency.
+
+The internal live player-game adapter request is server-authored and contains
+the exact refresh scope plus both complete required arrays. Its response must
+set `provider` exactly to the configured live-statistics provider, echo the
+exact player set, satisfy every required historical binding, and return:
+
+* one coverage disposition per required player: one or more `expected_game`
+  entries, one `no_due_game` entry, or one `no_team` entry;
+* an affirmative parent current-membership `providerTeamId`, or null only from
+  FreeAgents, plus `providerTeamId` on every individual `expected_game` item
+  with its exact NHL game identity and scheduled start;
+* one explicit player-game observation, including an explicit zero-valued row
+  when appropriate, for every and only every `expected_game` pair; and
+* one provider, capture identity, and `sourceVersion` shared by the coverage
+  manifest and observation rows.
+
+The disposition is `expected_game` whenever the union of required historical
+games and current due games is nonempty. Its per-game team may differ from the
+parent current-membership team, so one response may carry old-team and
+current-team games for the same player. A parent affirmed by FreeAgents may be
+null while historical expected games retain their non-null old team.
+`no_due_game` and `no_team` are allowed only when that union is empty. The
+sealed flat coverage keeps one provider team per expected entry.
+
+The adapter fetches the deduplicated union of its rolling current-game dates
+and every required historical game's provider-Eastern calendar date. On those
+targeted dates, schedule data must affirm the exact game, start, and bound home
+or away team, and PlayerGame data must affirm the exact player/game/team with
+an explicit row. Missing or wrong historical team, start, game, or row rejects
+the entire response.
+
+The backend rejects the whole refresh when the required-player identity set or
+expected player/game identity set differs, when a terminal disposition is not
+an affirmative provider result, or when source identity is mixed. Adapter
+omission is unavailable data, never an earned zero and never an inferred
+`no_due_game` or `no_team`. Coverage entries and observations persist and seal
+atomically under independent canonical digests.
+
+Every required historical binding must be an exact-value subset of normalized
+flat `expected_game` coverage. All flat expected coverage, including additional
+current due games, must still equal the observation identity set. The
+`sourceVersion` digest binds both requested arrays, Players and FreeAgents
+membership, every requested schedule, and the normalized PlayerGame rows.
+
+The repository rereads the requirement snapshot inside completion and compares
+both arrays and `requirementsSha256`. Any concurrent roster, exclusion,
+baseline-coverage, identity-mapping, game binding, or matchup-week status
+change race-rejects completion and preserves the prior authoritative refresh.
+
+This live-statistics `sourceVersion` is not the source version of a later
+late-lock game-state read. Coverage and player-game observations share the
+statistics lineage above; the separately requested fresh game-state response
+has its own independently digested `sourceVersion`. Late-lock processing
+requires compatible providers across the two lineages, not equal source-version
+strings.
+
+The read-only live-provider capability command is an operator boundary, not an
+HTTP or browser contract. It accepts no league, team, roster, auction, or
+matchup input. The server loads the exact version-controlled probe manifest,
+the configured environment/build/current-season identity, and the dedicated
+live credential. Its only successful durable output is the signed
+`sportsdataio-live` capability artifact specified by
+`FREE_AGENT_DRAFT.md`; stdout and stderr expose only status, evidence ID and
+digest, environment/build identity, issue/expiry times, source version, and
+assertion names.
+
+The live-provider runtime mode is exactly `disabled`, `probe`, or `required`.
+`disabled` and `probe` never compose the live adapter. `required` verifies the
+artifact synchronously before database open and composes one live adapter only
+after every environment, build, origin, season, manifest, credential, time,
+digest, and HMAC binding passes. The staging-import credential is never a
+fallback. Missing or invalid evidence is a startup configuration failure, not
+an `awaiting_data` league response and not permission to use synthetic data.
+
+The offseason-safe command proves current Players and FreeAgents plus previous
+completed-season totals, one exact historical schedule/PlayerGame binding,
+all three coverage dispositions, an explicit-zero observation, exact-set
+equality, and controlled-omission rejection. Raw provider bodies remain
+memory-only. Persisted endpoint proofs contain only scope, status, row count,
+and exact-response-byte SHA-256.
+
 The league-scoped player reads require current active membership on every
 request and return `404` for another league's private context. They reuse the
 global player identity, provider, and statistics projection unchanged, then
@@ -965,10 +1278,9 @@ fixture source only when SportsDataIO data is absent.
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | League member | Return the authenticated team workspace: roster groups, ownership and contract versions, authoritative cap components, retention-slot usage, four-year owned draft picks, friendly trade-asset choices including named buyout annual penalty and remaining term, and saved presentation order |
 | `PUT /api/v1/leagues/:leagueId/teams/:teamId/roster-display-order` | Authorized team manager or current commissioner | Save an optimistic, versioned F/D presentation order without changing authoritative ownership slots |
 | `PUT /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/trade-block` | Authorized team manager or current commissioner | Set or clear the versioned informational trade-block flag |
-| `POST /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/move-to-ir` | Authorized team manager or current commissioner | Move an Active provider-eligible player to the first open injured-reserve slot |
-| `POST /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/move` | Authorized team manager or current commissioner | Move one owned player to `Active`, `Bench`, or `Injured Reserve` with optimistic ownership versioning and explicit illegal-result confirmation |
+| `POST /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/move-to-ir` | Authorized team manager or current commissioner | Move an Active provider-eligible player to the first open injured-reserve slot and return the safe post-commit `lateLock` projection |
+| `POST /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/move` | Authorized team manager or current commissioner | Move one owned player to `Active`, `Bench`, or `Injured Reserve` with optimistic ownership versioning, explicit illegal-result confirmation, and the safe post-commit `lateLock` projection |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | League member | Return authoritative legality reasons without writing |
-| `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Authorized team manager or commissioner correction workflow | Move one owned player between approved groups or slots |
 | `GET /api/v1/leagues/:leagueId/commissioner/roster-workspace` | Current commissioner or platform administrator with active membership | Read-only current teams, seasons, roster, free agents, contracts, cap projections, and provider health |
 | `POST /api/v1/leagues/:leagueId/commissioner/roster-additions/previews` | Current commissioner or inherited platform administrator | Read-only preview of adding one free agent or prospect right, including contract, roster, and cap effects |
 | `POST /api/v1/leagues/:leagueId/commissioner/roster-additions` | Current commissioner or inherited platform administrator | Confirmed, audited addition with warning confirmation and idempotency |
@@ -983,6 +1295,111 @@ fixture source only when SportsDataIO data is absent.
 | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/prospect-rights/:playerId` | Authorized team manager | Release prospect rights |
 
 Transaction-created roster illegality returns a warning in the successful command response. It is not represented as a false failed transaction when the approved feature permits completion.
+
+For a late-legality transition, the write path must use authoritative,
+sufficiently fresh NHL game-state evidence. The roster move may commit while
+scoring state reports `awaiting_data`, but scoring eligibility cannot begin
+until one transaction persists the late roster snapshot, applicable baseline,
+and immutable excluded player/game/scheduled-start/snapshot/source-version
+evidence. Replay and racing attempts return that same evidence set. A selected
+player whose game was already underway is excluded for the entire game,
+including events recorded after the late baseline. The required NHL games are
+derived from sealed `expected_game` coverage for the exact selected-player set,
+not from the observation rows returned by the provider. Sealed authoritative
+`no_due_game` and `no_team` dispositions require no game-state row; missing
+coverage or a missing expected observation leaves the late lock
+`awaiting_data` without converting the omission to zero.
+
+Every path that commits a roster mutation invokes one shared, never-rejecting
+post-commit late-lock coordinator through the canonical writer registry. One
+internal committed-mutation batch groups all affected ownership witnesses by
+league, season, and team. A surviving ownership supplies its committed version;
+a deleted ownership supplies its last committed pre-delete version. The batch
+contract is exact in `FREE_AGENT_DRAFT.md` and is not accepted from the browser.
+
+The coordinator rejects any `mutationKind` that is not an exact canonical
+registry member. An affected team's `ownershipWitnesses` may be empty only when
+the durable committed result proves that the writer changed authoritative
+roster legality without changing an ownership tenure, such as a cap-only or
+contract-only effect, an effective-position correction, or an effect on a truly
+empty roster. The writer derives the affected team from that durable result and
+must not substitute an unchanged or synthetic ownership row. Any witness that
+is supplied retains the exact committed identity, version, and state rules.
+
+The registry covers current and future roster moves, buyouts and releases,
+ordinary and FAD auction wins, automatic Candidate allocations, Candidate
+carryover movement, trade acceptance and reversal, commissioner changes,
+contract transitions, prospect operations, effective-position corrections,
+and every equivalent writer. The coordinator never repeats, compensates,
+reverses, or rolls back the mutation. Original-command replay may re-evaluate
+the committed receipt but never repeats the original write.
+
+The trade-block endpoint is a legality-neutral metadata exception: it changes
+only `trade_blocked`, `updated_at_ms`, and the ownership's optimistic `version`.
+It is not a roster-legality writer, is not a registry member, and does not call
+the post-commit late-lock coordinator.
+
+For a player or prospect-right team transfer, the internal receipt contains a
+deleted source-tenure witness and a distinct present destination-tenure witness
+at version `1`. The command's durable result stores the immutable source-to-
+destination ownership-ID mapping. Reversal creates and maps a further new
+tenure. These internal IDs are not accepted from the browser, and the public
+contract continues to expose only the route's approved mutation result and the
+safe `lateLock` projection.
+
+After commit, any coordinator input-validation, repository, provider, or
+runtime failure maps to `lateLock.status = "awaiting_data"` and cannot reject
+the successful command. One complete command batch may perform at most one
+server-owned live refresh and one evaluation retry. Only the scheduled
+statistics occurrence handler may start a later global retry, and only after
+its statistics refresh persists successfully. That isolated retry neither
+changes the successful refresh result nor recursively refreshes or repeats a
+roster write.
+
+Every successful roster-mutation response includes exactly this additional
+safe projection:
+
+```json
+{
+  "lateLock": {
+    "status": "awaiting_data"
+  }
+}
+```
+
+`status` is exactly `completed`, `awaiting_data`, `still_illegal`, or
+`not_applicable`. `lockId` is the only optional sibling field and is omitted
+unless exactly one safely identifiable completed late lock applies to the
+complete command batch. For multiple team results, the public status uses this
+exact priority: `awaiting_data`, then `still_illegal`, then `completed`, then
+`not_applicable`. The
+projection exposes no provider payload, source version, timestamp, selected
+roster, coverage, observation, baseline, or exclusion detail. A committed
+roster mutation followed by delayed evidence remains an ordinary successful
+mutation response with `lateLock.status = "awaiting_data"`; it is not changed
+to an HTTP failure. `still_illegal` means the committed roster remains illegal,
+and `not_applicable` means no late-lock evaluation applies, including when a
+valid lock already exists.
+
+Late-lock idempotency is semantic reconstruction from committed lock,
+baseline, coverage, game-state, and exclusion evidence. Freshly generated
+child UUIDs are not compared, but any timestamp, statistics or game-state
+source lineage, selected-roster, sealed-coverage, or exclusion difference is a
+conflict. No request ID or idempotency-request schema is added for this
+internal occurrence. The stored coverage, player-game observation, game-state,
+and exclusion digests are each recomputed from their committed IDs and exact
+children on replay, use, scoring, and finalization.
+
+For a late lock only, sealed affirmative coverage determines the exact
+selected-player `expected_game` entries inside the matchup week's
+inclusive-start, exclusive-end scoring window. Their distinct NHL games form
+the exact request to a separate game-state read observed no more than five
+elapsed minutes before the late snapshot; coverage does not itself decide
+whether a game is underway. Normal scheduled lock behavior is unchanged and
+does not require affirmative selected-player coverage. Exclusion creation and
+later finalization require exact current `expected_game` coverage and the
+matching observation for each excluded pair, compatible providers, verified
+digests/counts, and non-regressed source-update lineage.
 
 The general roster-move request body is exact:
 
@@ -1058,7 +1475,7 @@ The public roster request is read-only and performs no normalization write, repa
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/contracts` | League member | List current team contracts |
 | `GET /api/v1/leagues/:leagueId/contracts/:contractId` | League member | Read one current contract and remaining schedule |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/cap-obligations` | League member | List retention and buyout obligations |
-| `POST /api/v1/leagues/:leagueId/teams/:teamId/contracts/:contractId/buyout` | Contract owner manager or current commissioner | Buy out the owned player under approved rules and current optimistic versions |
+| `POST /api/v1/leagues/:leagueId/teams/:teamId/contracts/:contractId/buyout` | Contract owner manager or current commissioner | Buy out the owned player under approved rules and current optimistic versions, then return the safe post-commit `lateLock` projection |
 | `POST /api/v1/leagues/:leagueId/contracts/:contractId/corrections` | Commissioner | Create an explicit versioned correction |
 
 There is no general contract-extension endpoint.
@@ -1071,7 +1488,10 @@ Buyout requests require `confirmed: true`, `expectedContractVersion`, and
 ownership, provider injury status, available IR capacity, contract state,
 buyout lock, and pending-trade conflicts before writing.
 
-Normal contract creation occurs only through approved feature commands such as an auction win, prospect signing, or commissioner correction.
+Normal contract creation occurs only through approved feature commands such as
+automatic FAD allocation, an auction win, prospect signing, or commissioner
+correction. The exact automatic-FAD command and persistence boundary is defined
+by the dedicated FAD amendment identified at the start of this document.
 
 ---
 
@@ -1079,23 +1499,154 @@ Normal contract creation occurs only through approved feature commands such as a
 
 | Method and path | Authorization | Purpose |
 |---|---|---|
-| `GET /api/v1/leagues/:leagueId/auctions` | League member | List active auctions without competing bid values |
-| `POST /api/v1/leagues/:leagueId/auctions` | Authorized team manager or current commissioner | Start an auction with the initiating bid |
-| `GET /api/v1/leagues/:leagueId/auctions/:auctionId` | League member | Read safe auction timing and own-bid state |
+| `GET /api/v1/leagues/:leagueId/auctions` | League member | List ordinary or FAD auctions with server context and no competing bid values |
+| `POST /api/v1/leagues/:leagueId/auctions` | Authorized team manager or current commissioner | Open an auction or privately queue a final-hour FAD nomination; backend derives ordinary or open-rapid context |
+| `GET /api/v1/leagues/:leagueId/auctions/:auctionId` | League member | Read safe context, timing, capabilities, and viewer-managed-team bid state |
 | `PUT /api/v1/leagues/:leagueId/auctions/:auctionId/bids/mine` | Authorized team manager | Create or replace the caller team's permitted active bid |
 | `PATCH /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner | Submit or replace approved bid fields without first revealing the stored value or term |
 | `DELETE /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner | Remove a stable identified bid through the confirmed logged workflow |
 | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/cancel` | Commissioner | Cancel an unresolved auction through the confirmed logged workflow |
 | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/resolve` | Durable system job; commissioner recovery only when approved | Resolve idempotently |
 
-Managers see active auctions and their own bid details. Resolved bids are not returned through the normal auction UI; the approved result appears in League Activity.
+Managers see active auctions and exact `viewerTeams[]` rows for every team they
+currently manage. Each row contains per-team eligibility, nullable own bid,
+and join/edit capabilities; a missing bid never means an absent team.
+Collection `startTeams[]` contains per-managed-team start capability. Resolved
+bids are not browsed through the normal auction UI; the complete submitted-bid
+and edit history appears in League Activity. A safe terminal-detail summary
+remains readable by stable ID for notification, Activity, and recovery links,
+as defined by the dedicated FAD amendment.
 
-Commissioners cannot query active bid values.
+Both auction GET routes are strictly read-only. Collection search and opaque
+cursor pagination use bounded deterministic SQL, and the response never
+depends on a write, refresh, or source-row repair. Historical and current bid
+rows may coexist: ordinary and open-rapid teams may join again after a
+withdrawn or invalid prior bid, while a removed restricted participant remains
+ineligible. For restricted auctions, `eligibleTeams[]` is the immutable
+original Candidate-tie allowlist; current `viewerTeams[]` eligibility and
+participant status report later removal without rewriting that allowlist.
+Terminal detail resolves a safe player position from the current league
+correction or deterministic source evidence valid when the auction opened,
+then current and historical source fallbacks. It therefore remains readable
+after later provider conflict or source replacement.
 
-Managers have no bid-withdrawal endpoint.
+Commissioners cannot query active bid values. Auction list/detail may give
+current commissioner authority an `administrativeBids[]` identity projection
+whose exact row contains stable bid ID, team ID/projection, bid version/status,
+nullable restricted-participant status, and per-bid edit/remove capabilities.
+It contains no value, term, AAV, edit history, or minimum offer and exists only
+to support explicit bid administration.
 
-M5-02 composes the first five routes above. Commissioner removal, cancellation,
-and resolution routes remain uncomposed until their later bounded work items.
+For `fad_open_rapid`, an otherwise valid nomination before the creation cutoff
+opens the auction. From the cutoff through the final hour before rollover, the
+same command accepts the nomination privately and returns the discriminated
+result `kind = nomination_queued`; the queue record binds the nominating
+team's starter bid and opens at the next fair boundary. No competing manager
+may discover that queue record. The immediate-open result uses
+`kind = auction_opened`.
+
+Every manager FAD start, queue, join, and permitted edit request carries the
+exact binding no-reservation/possible-illegality confirmation. Submission
+never reserves cap, position capacity, roster space, player ownership, or any
+other bid, but every otherwise-valid winning result creates the contract,
+ownership, and roster assignment without a second confirmation, even when
+concurrent wins make the aggregate roster illegal. Managers have no
+bid-withdrawal endpoint.
+
+For a restricted FAD auction, only a valid current active bid that ranks
+strictly above that team's immutable Candidate minimum is a contender.
+Commissioner bid removal also permanently marks the linked restricted
+participant removed, and the team cannot recreate its bid. If resolution finds
+no eligible current active improvement, including after removal or later
+invalidity, the transaction closes the restricted auction without a draw and
+opens the mandatory fresh league-wide FAD fallback; it does not use generic
+`no_winner` handling or release quarantine. The fallback floor is total-first
+and AAV-second across terms: total must exceed the tied total, or equal it with
+AAV at least the tied AAV. An equal-floor bid may contend.
+
+Cancelling a restricted auction instead moves that allocation to
+`correction_required`, creates recovery evidence, and retains player
+quarantine. Scheduled and manual resolution use one context-aware transaction
+that updates auction and linked FAD allocation together. Any later
+restricted-auction correction must do the same or make no partial change and
+preserve `correction_required`. Equal terminal offers use an auditable
+equal-chance draw only in FAD auction contexts; ordinary weekly auctions retain
+their approved deterministic tie rule. Every semantic terminal FAD auction
+reveals the nonce behind its pre-resolution commitment; non-tied and no-bid
+results expose `selectionUsed = false` with no selected bid, while only an
+exact top tie exposes equal-chance selection evidence.
+
+Ordinary-context `T-081` through `T-083` and the FAD-linked `T-080` through
+`T-083` administration cases are composed and contract-tested locally with
+their exact confirmation bodies, version/idempotency headers, success
+representations, and status mapping. T-083 creates or reuses the durable FAD
+resolution request but does not resolve a FAD auction inline. FAD-12 composes
+that occurrence through the scheduled context-aware resolver for exact
+Candidate-tie restricted auctions and allocation-linked restricted-no-
+improvement fallbacks. FAD-13 extends the same durable request and resolver to
+direct and queued open-rapid auctions without changing the enqueue-only HTTP
+response.
+Auction services accept inherited platform-administrator
+authority with active league membership and persist that actual authority
+rather than hard-coding `commissioner`. A system-created restricted Candidate
+minimum validates its immutable snapshot/participant evidence and creates no
+auction bid, edit count, leader, or cooldown. The participant's first strict
+improvement is its ordinary opening bid.
+
+Every successful `T-080` through `T-083` HTTP request writes exactly one
+immutable `auction_administration_command_results` row linked one-to-one with
+its completed idempotency request:
+
+| Action | Endpoint | Idempotency operation | Stored precondition | Resulting version | Original status |
+| --- | --- | --- | --- | --- | --- |
+| `edit_bid` | `T-080` | `auction.bid.put` | bid version | expected + 1 | `200` |
+| `remove_bid` | `T-081` | `auction.bid.remove` | bid version | expected + 1 | `200` |
+| `cancel_auction` | `T-082` | `auction.cancel` | auction version | greater than expected | `200` |
+| `request_resolution` | `T-083` | `auction.resolve.request` | auction version | unchanged from expected | `202` |
+
+The row records the league, season, auction, nullable bid, actor user and
+membership, actual authority `commissioner` or
+`platform_administrator_as_commissioner`, exact request SHA-256, precondition
+kind, `expected_resource_version`, `resulting_resource_version`, original
+status, `canonical-json-v1` response `data`, and that JSON's lowercase SHA-256.
+Edit and removal require resulting = expected + 1; cancellation requires
+resulting > expected to permit atomic internal progression; resolution request
+requires resulting = expected because it does not mutate the auction. The row
+is version `1` and rejects update or delete. For `request_resolution`,
+`job_run_id`, a nullable column, is required and references
+the exact durable `auction.resolve.target` job occurrence
+`auction:<auctionId>:<resolvesAtMs>`; all other actions require `job_run_id`
+null. The response `operationId` and `occurrenceKey` come from that durable job.
+
+Fresh success commits the auction changes and history, result row, and
+idempotency completion atomically, completing idempotency last. Exact replay
+returns the stored status and parses the stored response `data` even after a
+later bid edit/removal, auction terminal transition or correction, or job-state
+change. Its stored expected/resulting versions remain the immutable version
+evidence for that representation; no current version is substituted.
+Therefore a replayed `T-083` keeps its originally accepted `pending` or
+`already_succeeded` value rather than projecting the job's current status.
+Changed-input key reuse returns `409 IDEMPOTENCY_KEY_REUSED` without altering
+the existing request/result pair.
+
+Malformed input, missing or invalid headers, denied authority, invisible or
+missing resources, stale preconditions, context/state conflicts, not-due
+resolution, and other failed administration requests create neither a new
+idempotency request nor a result row. A scheduled system resolution does not
+use the commissioner HTTP idempotency contract and creates no administration
+result.
+
+M5-02 was the historical baseline that composed the first five routes above.
+FAD-06 composed ordinary-context `T-080` through `T-083`, including
+commissioner removal, cancellation, and due resolution requests. FAD-11 now
+composes their FAD-linked administration, allocation, participant, quarantine,
+recovery, and durable-request transactions locally. At FAD-11 closure this did
+not yet compose the scheduled FAD resolver or restricted/fallback activation
+worker. FAD-12 now composes those workers for the restricted and allocation-
+linked fallback contexts while retaining the enqueue-only T-083 response.
+FAD-13 composes immediate and queued open-rapid starts, queued activation,
+direct/queued resolution, rollover finalization, completion, and the ordinary-
+auction handoff behind the same contract boundary.
 
 ---
 
@@ -1116,7 +1667,24 @@ and resolution routes remain uncomposed until their later bounded work items.
 
 Acceptance revalidates ownership, contracts, retention, obligations, picks, rights, deadline, and proposal status inside one transaction.
 
+For every transferred player or prospect right, that transaction closes the
+source ownership tenure, creates a distinct destination ownership at version
+`1`, and stores the exact immutable old-to-new ownership-ID mapping. A reversal
+closes that destination tenure and creates a new source tenure. Idempotent
+replay returns the original result and mapping without repeating any write.
+
 Multiple simultaneous proposals may reference the same asset. Completion of one cancels or invalidates affected proposals according to the approved trade specification.
+
+An unused on-clock Entry Draft pick may remain in multiple pending proposals.
+Creating a proposal does not reserve the pick or pause the clock. Acceptance,
+manual selection, and the timeout job therefore race under one
+first-commit-wins rule: each transaction revalidates current pick ownership,
+proposal status, and the same live clock before committing. A winning
+selection consumes the pick and advances to the next clock. A winning trade
+records the pick's one allowed on-clock trade, transfers ownership, cancels
+proposals made stale by that transfer, and starts a fresh full clock for the
+same pick. Each loser rejects without a partial trade, selection, queue, or
+clock effect.
 
 Each `buyout_obligation` choice is a stable whole obligation. Its friendly
 workspace projection includes the bought-out player's name, annual penalty in
@@ -1137,18 +1705,480 @@ remain SELECT-only and never advance proposal state on read.
 | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks` | League member | List persisted weeks and pairings |
 | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/current` | League member | Return authoritative current week |
 | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId` | League member | Return week, matchup summaries, and status |
-| `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId/matchups/:matchupId` | League member | Return matchup-period G, A, points, and FP from zero baseline |
+| `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId/matchups/:matchupId` | League member | Return matchup-period G, A, points, and FP from the applicable normal or late zero baseline plus safe whole-game exclusion state; count no event from an excluded player/game pair |
 | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/standings` | League member | Return official derived standings and status |
-| `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-schedules` | Commissioner before live season | Generate an approved balanced schedule |
+| `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-schedules` | Commissioner or inherited member platform administrator before live season | Persist an explicitly selected Week 1 start and generate the approved balanced schedule |
 | `PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId` | Commissioner under timing constraints | Adjust approved future boundaries or pairings |
-| `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections` | Commissioner | Append a versioned correction |
+| `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections` | Commissioner or inherited member platform administrator | Append a versioned correction |
+| `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/rebuilds` | Commissioner or inherited member platform administrator for recovery | Rebuild non-final derived standings from official result versions |
+| `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/finalizations` | Commissioner or inherited member platform administrator | Explicitly create one provenance-complete canonical final standings snapshot |
 
 Matchup week and detail reads resolve current team names for scheduled and
 live rows. Final rows use the stored finalized display context so a later team
 rename does not rewrite historical results. A legitimate historical
 `not_live` scoring-health state is a valid read projection, not a response
 contract failure.
-| `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/rebuilds` | Commissioner recovery | Rebuild from official result versions |
+
+`T-095` accepts exactly:
+
+```json
+{
+  "nhlRegularSeasonStartsAtMs": 1788246000000,
+  "nhlRegularSeasonEndsAtMs": 1804489200000,
+  "fantasyPlayoffsStartAtMs": 1802070000000,
+  "fantasyPlayoffsEndAtMs": 1804489200000,
+  "firstWeekStartsAtMs": 1791183600000,
+  "confirmed": false
+}
+```
+
+The four calendar values and selected Week 1 start are explicit safe-integer
+UTC instants. The backend requires
+`regular start < playoff start < playoff end = regular end`, exactly 28
+elapsed days from playoff start through playoff end, and UTC calendar years
+matching the two halves of the season's canonical NHL key. It then validates
+the selected Week 1 start against the approved league-timezone week
+boundaries, NHL regular-season range, playoff reservation, current server
+time, season state, team set, and existing-schedule state. The first full
+NHL-season week may be presented as a recommendation, but the backend never
+substitutes any missing calendar or Week 1 value.
+
+This is the authoritative calendar path for the inaugural season and the
+reset-created original league's initial Season 2, whose four persisted
+calendar fields intentionally begin all null. A preview uses the supplied
+tuple without writing. A confirmed command accepts the persisted season
+calendar only when all four fields are null or all four already equal the
+supplied tuple; a partial or conflicting persisted tuple is `409`. In the
+all-null case the confirmed transaction persists the exact tuple, Week 1, and
+the complete schedule atomically and advances the season version only once.
+In the already-equal case it creates only the schedule state and still
+advances the season version once. No GET, inferred NHL default, startup path,
+or FAD readiness operation may silently populate or repair these fields.
+
+With `confirmed: false`, the command is a read-only preview, does not require
+`If-Match` or `Idempotency-Key`, returns `200`, and contains exactly:
+
+```text
+code                            MATCHUP_SCHEDULE_PREVIEWED
+preview.seasonId
+preview.expectedSeasonVersion
+preview.nhlRegularSeasonStartsAtMs
+preview.nhlRegularSeasonEndsAtMs
+preview.fantasyPlayoffsStartAtMs
+preview.fantasyPlayoffsEndAtMs
+preview.calendarWillBePersisted
+preview.firstWeekStartsAtMs
+preview.participantCount
+preview.weekCount
+preview.matchupCount
+preview.byeCount
+preview.lastWeekEndsAtMs
+```
+
+With `confirmed: true`, season-version `If-Match` and `Idempotency-Key` are
+required. The same authoritative plan is recalculated inside the write
+transaction. Success returns `201` with exactly:
+
+```text
+code                            MATCHUP_SCHEDULE_GENERATED
+result.operationId
+result.seasonId
+result.seasonVersion
+result.nhlRegularSeasonStartsAtMs
+result.nhlRegularSeasonEndsAtMs
+result.fantasyPlayoffsStartAtMs
+result.fantasyPlayoffsEndAtMs
+result.calendarPersisted
+result.firstWeekId
+result.firstWeekStartsAtMs
+result.participantCount
+result.weekCount
+result.matchupCount
+result.byeCount
+result.lastWeekEndsAtMs
+```
+
+An exact replay returns the original `201` result. Malformed or invalid timing
+is `400`; missing league authority is `403`; a cross-league season is
+side-channel-safe `404`; an ineligible season or existing schedule is `409`;
+and stale season `If-Match` is `412`. Neither mode accepts a missing
+`firstWeekStartsAtMs`.
+
+The confirmed command stores one immutable schedule-command result linked to
+the exact idempotency request and request hash. That row contains every field
+of the original `201` result plus its schedule generation and before/after
+aggregate versions. Replay reads this immutable result; a later T-096 shift or
+server-owned FAD recovery cannot change the original response. Preview creates
+neither an idempotency row nor a schedule-command result.
+
+After persisting that result, confirmed T-095 checks for the exact same-season
+genuine-inaugural readiness occurrence. If it is canonically blocked with its
+same failed job because the schedule was missing, T-095 inserts one immutable
+corrective-requeue row, resets that job cleanly to `pending`, advances the
+operation `blocked` to `blocked` by one aligned version without changing its
+attempt count or blocker evidence, and completes T-095 idempotency last. No
+matching operation, or a pending, running, or succeeded pair, is a no-op.
+Malformed split state fails the full schedule command. Exact T-095 replay reads
+the original command result and performs no corrective write.
+
+Before automatic Candidate Card opening, an authorized `T-096` schedule edit
+may replace Week 1 with another valid explicit start. Once opening readiness
+commits, every manager- or commissioner-authored matchup schedule writer
+permanently rejects a change to Week 1 because that instant owns the frozen
+Candidate deadline and rapid-rollover schedule.
+
+For the FAD clock path, `T-096` targets the persisted sequence-1 `weekId`,
+requires that week's `If-Match`, `Idempotency-Key`, and exactly:
+
+```json
+{
+  "action": "shift_week_one",
+  "firstWeekStartsAtMs": 1791788400000,
+  "confirmation": "CHANGE WEEK 1 START"
+}
+```
+
+The immutable idempotency request uses operation
+`matchup.schedule.shift_week_one.v1` and canonical precondition kind `week`.
+Its request hash covers the exact league, season, Week 1 ID, expected Week 1
+version, and three-field body. Actor and client key remain part of the durable
+idempotency scope rather than the hashed body. The canonical `200` response
+hash covers the ten response fields below and excludes the per-request
+`meta.requestId`.
+
+The transaction revalidates the same timing/calendar rules as `T-095`, requires
+the old and new Week 1 instants to be in the future, shifts every persisted
+regular-season week by the corresponding league-local calendar interval,
+recomputes its baseline/lock/end/rollover timestamps and unexecuted job
+occurrences, preserves pairings/byes, increments every affected week and season
+version, and commits atomically. Success returns `200` with exactly:
+
+```text
+operationId
+seasonId
+seasonVersion
+weekId
+weekVersion
+previousFirstWeekStartsAtMs
+firstWeekStartsAtMs
+lastWeekEndsAtMs
+shiftedWeekCount
+replacedJobOccurrenceCount
+```
+
+T-096 also persists an immutable schedule-command result linked to the exact
+idempotency request, request hash, old/new generation, and old/new
+season/Week 1 versions. Exact replay returns the original `200` fields even
+after a later approved schedule generation.
+
+The command is denied with `409 FAD_WEEK_ONE_FROZEN` after Candidate Card
+opening, even if the FAD is later completed. A live, locked, finalized, or
+otherwise non-editable week is `409`; a stale Week 1 version is `412`; and all
+other shared validation, authority, isolation, and idempotency rules apply.
+Pairing-only schedule edits use their separately approved discriminator and
+must leave the persisted Week 1 start unchanged while FAD protection applies.
+
+Automatic readiness after a late Entry Draft may instead advance Week 1 by
+whole league-local Mondays and regenerate the not-yet-opened schedule and job
+occurrences in the same all-or-none transaction that opens Candidate Cards.
+After opening, only the server-owned FAD completion transaction may move Week 1
+again: when completion overruns the frozen start, it selects the first valid
+league-local Monday after durable FAD completion, removes unavailable early
+regular-season weeks, regenerates fair remaining pairings and versioned jobs,
+and publishes FAD completion atomically. Matchup-start and baseline jobs require
+both the FAD-completion gate and the current matching schedule version. In a
+race, the first transaction to commit wins and the loser revalidates without
+leaving partial completion, schedule, pairing, or job state.
+
+Recovery audit state durably distinguishes a replaced job from an unexecuted
+removed-week job that was cancelled without a successor. The public T-141
+`scheduleRecoveryEvidence` contract remains exactly the closed shape in
+`FREE_AGENT_DRAFT.md`: `replacedJobs[]` contains only actual old/new pairs.
+Cancellation-only evidence is internal and does not add a public
+`cancelledJobs` field.
+
+### Official Standings Finalization
+
+`T-145` uses:
+
+```http
+POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/finalizations
+If-Match: "<current season version>"
+Idempotency-Key: <opaque 1-128 character key>
+Content-Type: application/json
+```
+
+The exact body is:
+
+```json
+{
+  "resultSetHash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "confirmation": "FINALIZE REGULAR SEASON STANDINGS"
+}
+```
+
+`resultSetHash` is exactly 64 lowercase hexadecimal characters. It is the
+SHA-256 digest of the deterministic UTF-8 canonical payload defined in Data
+Model for the complete current official result-version set. Unknown fields,
+an alternate confirmation, or a malformed hash are rejected.
+
+The backend reauthorizes the current commissioner, or an inherited platform
+administrator with active membership in the league, inside one immediate
+transaction. A fresh request requires:
+
+* the target to be the league's current active same-league season;
+* every expected regular-season week to be terminal and its scoring window to
+  have ended;
+* every expected non-bye matchup to have exactly one stable result whose
+  current version is `official` or approved `corrected`;
+* no missing, duplicate, pending, void, cross-league, cross-season,
+  wrong-team, invalid-total, invalid-outcome, correction-pending, or ambiguous
+  source;
+* complete season-participant, scoring-rule, and standings-rule identity;
+* the submitted hash to equal the hash recalculated inside the transaction;
+* no existing canonical final snapshot for a fresh command.
+
+The transaction recalculates all rows and competition ranks and atomically:
+
+1. inserts one immutable canonical final snapshot;
+2. inserts every immutable standings row and exact snapshot-to-result-version
+   provenance link;
+3. records expected-matchup, included-result, participant, rule-version, hash,
+   and finalization evidence;
+4. records one succeeded standings-finalization operation and one Security
+   Audit event with the actual authority used;
+5. creates one deduplicated `standings_finalized` in-app notification for
+   every active league member;
+6. writes one league-scoped metadata-only `standings.changed` invalidation;
+7. increments the season aggregate version and completes idempotency as the
+   final write.
+
+It creates no League Activity, email, push message, matchup result, result
+correction, scheduled job, season rollover, contract rollover, or FAD write.
+No GET, standings rebuild, weekly rollover, season rollover, startup,
+migration, or repair path may call this command or synthesize its evidence.
+
+Success returns `201` with exactly:
+
+```text
+code                                    STANDINGS_FINALIZED
+finalization.operationId
+finalization.snapshotId
+finalization.snapshotVersion
+finalization.leagueId
+finalization.seasonId
+finalization.seasonVersion
+finalization.standingsRuleVersion
+finalization.resultSetHash
+finalization.expectedMatchupCount
+finalization.includedResultCount
+finalization.participantCount
+finalization.finalizedAtMs
+```
+
+An exact idempotent replay returns the original `201` representation from
+immutable finalization evidence before checking current season state, version,
+or clock. Reusing the key for changed input returns
+`409 IDEMPOTENCY_KEY_REUSED`. A simultaneous fresh request has one winner; a
+loser with a different key returns `409 STANDINGS_ALREADY_FINALIZED`.
+
+Malformed input or missing required headers returns
+`400 STANDINGS_FINALIZATION_INPUT_INVALID`; missing authority returns
+`403 LEAGUE_COMMISSIONER_REQUIRED`; an unavailable or cross-league league or
+season returns side-channel-safe `404`; unfinished weeks, missing or invalid
+results, unresolved corrections, or incomplete rule/participant state returns
+`409 STANDINGS_FINALIZATION_NOT_READY`; a changed current result-version set
+returns `409 STANDINGS_RESULT_SET_CHANGED`; an existing non-replay canonical
+final returns `409 STANDINGS_ALREADY_FINALIZED`; a conflicting legacy
+snapshot that cannot be safely classified as noncanonical history returns
+`409 STANDINGS_FINALIZATION_LEGACY_CONFLICT`; and stale season `If-Match`
+returns `412 STANDINGS_FINALIZATION_PRECONDITION_FAILED`. Every failure before
+commit leaves snapshot, result, season, operation, audit, notification,
+outbox, and idempotency state unchanged.
+
+A legacy row marked `final`, a `current` rebuild snapshot, or any snapshot
+without the complete hash, rule, count, exact result-version links, and
+succeeded T-145 evidence never satisfies this contract or T-037 rollover
+readiness. A reviewed migration may preserve it as historical derived output;
+the application may not infer missing provenance.
+
+Finalization requires exactly one current
+`season_matchup_schedule_generations` row for the league-season and the exact
+succeeded immutable `schedule_generate` operation named by that generation.
+Historical succeeded operations remain valid only behind contiguous
+`superseded` generation rows and do not make the current root ambiguous.
+
+The current generation must prove exactly one source: initial T-095 metadata
+with the sorted stable `participantTeamIds` array plus participant, week, and
+matchup counts; an exact immutable T-096 schedule-command result; or an exact
+server-owned FAD pre-open/completion schedule-recovery record. The T-096 and
+FAD branches bind their predecessor and resulting current generation and may
+use their own canonical actor, reason, and metadata shapes. Every branch must
+produce the effective stable team set and counts that exactly match the
+terminal schedule being finalized. Missing, cross-scope, split,
+noncontiguous, or malformed lineage is `409 STANDINGS_FINALIZATION_NOT_READY`.
+A count without the stable ID set remains insufficient because it cannot
+detect same-cardinality team substitution.
+
+### Rebuild and Post-Finalization Correction
+
+`T-097` uses:
+
+```http
+POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections
+Content-Type: application/json
+```
+
+A read-only preview accepts exactly:
+
+```json
+{
+  "confirmed": false
+}
+```
+
+It requires neither `If-Match` nor `Idempotency-Key`, performs no write, and
+returns `200` with exactly:
+
+```text
+code                                      MATCHUP_RESULT_CORRECTION_PREVIEWED
+preview.resultId
+preview.expectedVersion
+preview.weekId
+preview.matchupId
+preview.currentVersion.id
+preview.currentVersion.versionNumber
+preview.currentVersion.homeScoreHundredths
+preview.currentVersion.awayScoreHundredths
+preview.currentVersion.outcome
+```
+
+An apply command requires:
+
+```http
+If-Match: "<current matchup-result aggregate version>"
+Idempotency-Key: <opaque 1-128 character key>
+```
+
+and exactly the three required fields below plus the optional `reason` field:
+
+```json
+{
+  "confirmed": true,
+  "homeScoreHundredths": 450,
+  "awayScoreHundredths": 375,
+  "reason": "Approved official scoring correction"
+}
+```
+
+Scores are non-negative safe integers in persisted fantasy-point hundredths.
+When supplied, the reason is trimmed, contains no control characters, and is
+between 1 and 500 characters. When omitted, the backend records the canonical
+correction-type reason `Official matchup result correction`. The idempotency
+request hash distinguishes an omitted written reason from an explicitly
+supplied reason, including that exact fallback text. Success returns `200`
+with exactly:
+
+```text
+code                                      MATCHUP_RESULT_CORRECTED
+result.resultId
+result.resultVersionId
+result.resultVersionNumber
+result.resultVersion
+result.leagueId
+result.seasonId
+result.weekId
+result.matchupId
+result.correctedAtMs
+result.standingsReplacement               null before canonical finalization
+result.standingsReplacement.snapshotId    present after canonical finalization
+result.standingsReplacement.snapshotVersion
+result.standingsReplacement.resultSetHash
+result.standingsReplacement.standingsRowsChanged
+```
+
+`resultVersion` is the incremented matchup-result aggregate version used by a
+later `If-Match`; `resultVersionNumber` is the appended immutable result
+history version. A post-final correction always returns a replacement
+projection, including when only provenance changed and
+`standingsRowsChanged` is `false`.
+
+Exact replay returns the original `200` representation from immutable
+idempotency, result-version, and optional replacement-finalization evidence
+before reading mutable matchup/standings state, sampling the clock, or
+generating identifiers. Reusing the key with changed scope, expected version,
+scores, confirmation, or reason returns `409 IDEMPOTENCY_KEY_REUSED`.
+Malformed input or missing apply headers returns `400`; missing authority
+returns `403`; an unavailable or cross-league resource returns side-channel-
+safe `404`; invalid current state returns `409`; and a stale result version
+returns `412` with a refetch instruction. Every failure leaves result,
+standings, season, operation, audit, notification, outbox, idempotency, and
+League Activity state unchanged.
+
+`T-098` remains an explicit commissioner recovery command for non-final
+derived standings. It may preserve and replace derived snapshot versions, but
+it never creates, promotes, supersedes, or replaces the canonical final
+snapshot and never makes a season rollover-ready.
+
+Before T-145 succeeds, `T-097` appends an approved result version and current
+read-derived standings use it normally. After a canonical final snapshot
+exists, T-097 is one coupled immediate transaction: it appends and selects the
+new official result version, calculates and inserts the complete replacement
+canonical snapshot, rows, links, hash and counts, preserves the prior snapshot,
+advances the canonical designation, writes matchup and standings operation
+evidence plus Security Audit and scoped invalidation, creates deduplicated
+member notifications when an official row or rank changes, and completes
+idempotency last. A provenance-only change still creates a replacement
+snapshot but no member notification.
+
+If approved matchup recovery has moved the target matchup and its week to
+`correction_required`, T-097 accepts only that exact paired state. In the same
+transaction it compare-and-swaps both rows back to `final` before inserting
+replacement result-version links. A mixed matchup/week state rejects without
+writes, and every later failure restores the original paired recovery state.
+
+The same replacement contract applies after season rollover. Initial `T-145`
+finalization remains limited to the league's active current season. A later
+`T-097` correction may instead target that exact completed non-current season,
+uses the replaced generation's preserved rule and count basis rather than the
+new current season's settings, advances only the historical season aggregate,
+and leaves the league's current-season pointer and current season unchanged.
+
+If any replacement calculation, provenance, notification, audit, outbox, or
+late persistence seam fails, the result correction also rolls back. T-097 may
+never leave a corrected official result paired with a stale final snapshot.
+It creates no League Activity.
+
+Every appended correction version has exactly one immutable succeeded
+`result_correct` matchup operation with the same league, season, week,
+matchup, actor, reason, timestamp, result ID, and result-version ID. T-145
+rejects a corrected result chain before writing unless every correction
+version has that complete operation evidence.
+
+For both paths, the completed idempotency record uses operation
+`matchup.result.correct.v1`, result type `matchup_result_correction`, and
+identifies the newly appended `matchup_result_versions` row as its result. The
+result-version link supplies the authoritative league and season. If that
+season has never had canonical finalization history, completion requires the
+new version to be the current official version and requires no linked
+correction-propagation finalization. If canonical finalization already existed
+when the correction committed, the same idempotency request must also own
+exactly one complete `result_correction` replacement finalization whose
+snapshot links that new result version.
+
+A correction that genuinely committed before the first canonical finalization
+continues to replay its original null-replacement result after later T-145
+work. That exception is proven without timestamps: the initial
+`regular_season_completion` snapshot must link the correction's result version
+or a later version reached through a contiguous direct supersession chain.
+If the initial snapshot instead links an earlier or unrelated version, the
+correction omitted a required post-final replacement and replay fails closed.
+
+A post-final replacement differs from the prior canonical result-version link
+set at exactly one matchup. The replacement link keeps the same week, matchup,
+and result IDs; its result-version number is exactly one greater; and the new
+version directly supersedes the version linked by the prior snapshot. Every
+other result-version link remains identical.
 
 The matchup-detail response includes a nullable `matchup.scoring` projection.
 When available, it contains:
@@ -1166,6 +2196,11 @@ earned zero. Final player scoring is reconstructed from the exact statistics
 refresh associated with the result. If a commissioner correction changes an
 official team total, `result.currentVersion` remains authoritative; the
 source-snapshot player rows are not presented as a player-level correction.
+For a late lock with whole-game exclusions, every excluded player/game pair
+must exist in both the sealed baseline and the selected current refresh with
+compatible provider/source lineage and non-regressed source-update time.
+Otherwise matchup scoring reports `awaiting_data`, and no final result or final
+standings lineage may become official from that incomplete score.
 
 Manager views convert `health.scoring` into plain-language delay or
 unavailability messages and do not expose provider timestamps as primary UI.
@@ -1185,12 +2220,666 @@ Matchup and standings writes never create League Activity entries.
 | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/eligibility-snapshots` | Commissioner | Import and preview a versioned pool |
 | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/eligibility-snapshots/:snapshotId/confirm` | Commissioner | Freeze the selected pool |
 | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/lottery-runs` | Commissioner | Execute the one immutable secure lottery |
-| `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/start` | Commissioner | Start the live draft |
+| `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/schedule` | Commissioner | Persist or replace the confirmed scheduled start and its durable occurrence; does not open the draft |
 | `GET /api/v1/leagues/:leagueId/entry-drafts/:draftId/queue` | Authorized manager | Read only that manager/team private queue |
 | `PUT /api/v1/leagues/:leagueId/entry-drafts/:draftId/queue` | Authorized manager | Replace ordered private queue using `If-Match` |
-| `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/selections` | Authorized on-clock manager or timeout job | Make one immutable selection |
+| `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/selections` | Authorized on-clock manager, assigned-league commissioner, or timeout job | Make one immutable selection or confirmed commissioner forfeiture; the final terminal pick completes the draft |
 
 There is no selection undo endpoint.
+
+The action that makes the last unused pick terminal is the only Entry Draft
+transaction that changes the draft to `Complete`. Before that same transaction
+commits, it invokes the internal `entry_draft_completed` FAD-readiness handoff
+and persists the exact canonical operation/job pair. A handoff failure rolls
+back the selection or forfeiture, pick state, and draft completion. A later
+blocked readiness attempt does not undo the completed draft. There is no
+`/complete` route or other standalone manual completion command. T-108 and the
+Entry Draft frontend remain M8 `PLANNED`; FAD-08's internal handoff primitive
+is not an endpoint and does not change the endpoint inventory.
+
+The Entry Draft scheduling command is exact:
+
+```http
+POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/schedule
+If-Match: "<current Entry Draft version>"
+Idempotency-Key: <opaque 1-128 character key>
+Content-Type: application/json
+
+{
+  "action": "schedule",
+  "scheduledStartsAtMs": 1840780800000,
+  "confirmation": "SCHEDULE ENTRY DRAFT",
+  "reason": null
+}
+```
+
+An existing still-scheduled, unexecuted occurrence instead requires
+`action = "reschedule"` and
+`confirmation = "RESCHEDULE ENTRY DRAFT"`. `reason` is optional; when present
+it is a trimmed 1-500 character commissioner note. Unknown or missing fields
+fail closed, except that omitted `reason` is equivalent to `null`.
+
+The route accepts the current assigned-league commissioner or inherited
+member platform administrator. It derives the source current season, the
+draft's already-planned target season, the complete persisted target calendar
+and matchup schedule, the actor, and the occurrence key on the server. The
+body cannot select or replace any of those values. `scheduledStartsAtMs` is a
+future safe-integer UTC instant interpreted for display in the league timezone.
+The transaction requires complete normalized setup/order/eligibility/
+pick-owner state and the canonical completed-source evidence needed by the
+product workflow, while the due job still performs the complete T-037
+revalidation. Initial scheduling is the attributable atomic setup
+confirmation; it does not assume an earlier hidden confirmation write.
+
+Initial scheduling atomically changes the base draft from `setup` or
+`lottery_ready` to `ready`, creates its scheduled rollover binding and pending
+`league:entry_draft_rollover` job, records the attributable draft event,
+Security Audit, member notification fan-out, and scoped invalidation, and
+advances the draft version. It also writes one immutable
+`entry_draft_schedule_operations` result linked to the idempotency request.
+Rescheduling writes another immutable operation row and may replace only a `scheduled`
+binding whose prior job has not begun and for which no rollover attempt or
+successful rollover exists. It marks the replaced job occurrence `skipped`
+with no lease, attempt, terminal, result, error, or retry payload, updates the
+binding to a new occurrence, creates the new pending job, records the bounded
+reschedule reason on the immutable schedule operation plus attributable audit
+evidence, records the notification, and advances the same draft aggregate
+once. It cannot replace a due, leased, running, blocked, or succeeded
+occurrence.
+
+Initial success returns `201 ENTRY_DRAFT_SCHEDULED`; reschedule success returns
+`200 ENTRY_DRAFT_RESCHEDULED`. Both return exactly:
+
+```text
+operationId
+entryDraftId
+entryDraftVersion
+rolloverBindingId
+rolloverBindingVersion
+rolloverOccurrenceId
+scheduledStartsAtMs
+jobRunId
+action
+```
+
+Exact idempotency replay reads the immutable schedule-operation result and
+returns the original status and representation; it never reconstructs an old
+result from the binding after a later reschedule.
+Changed-input key reuse is `409 IDEMPOTENCY_KEY_REUSED`; stale draft version is
+`412 ENTRY_DRAFT_SCHEDULE_PRECONDITION_FAILED`; a non-replaceable occurrence,
+incomplete setup, invalid source/target/calendar/schedule relationship, or
+ineligible lifecycle is `409 ENTRY_DRAFT_SCHEDULE_NOT_ALLOWED`; invalid
+timing is `422 ENTRY_DRAFT_SCHEDULE_NOT_FUTURE`; missing authority is `403`;
+cross-league or invisible resources are side-channel-safe `404`; and malformed
+input is `400 ENTRY_DRAFT_SCHEDULE_INPUT_INVALID`.
+
+Scheduling binds the exact draft, source season, already-planned target season
+and calendar, start instant, and one replaceable unexecuted occurrence. At that
+instant the scheduler invokes the shared T-037 service; only after its complete
+contract/ownership/obligation/season rollover commits may the same outer
+transaction open trading, move the draft to `Live`, and start the first unused
+pick's full clock. A blocked rollover leaves trading and selections locked and
+exposes only the approved idempotent T-037 commissioner retry.
+
+Selection is one shared atomic service for manager, attributable commissioner,
+and automatic-timeout sources. A selection cancels every pending proposal that
+still contains the pick. Selection and an accepted on-clock trade both
+compare-and-swap the same pick, owner, draft, and clock state; the first commit
+wins. A successful ownership-changing trade consumes the pick's one allowed
+on-clock trade and starts a fresh full clock for the new owner, while every
+losing selection, timeout, or trade transaction leaves no partial effect.
+
+---
+
+## Free Agent Draft
+
+The exact request, response, privacy, phase, error, and command bodies are
+defined by `docs/04-technical-specs/FREE_AGENT_DRAFT.md`.
+
+| Method and path | Authorization | Purpose |
+|---|---|---|
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/navigation` | League member | Read safe active or historical navigation state |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/readiness?seasonId=:seasonId` | Current commissioner or inherited platform administrator with active league membership | Read persisted automatic-opening readiness and blockers without writes |
+| `POST /api/v1/leagues/:leagueId/free-agent-drafts/readiness/retries` | Current commissioner or inherited platform administrator with active league membership | Idempotently retry the same blocked automatic-readiness occurrence without opening parameters |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId` | League member | Read viewer-filtered overview |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/private` | Team manager or exact active help authority | Read one authorized private card |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | League member after publication | List published card summaries |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | League member after publication | Read one immutable published card |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/eligible-players` | Authorized private editor | Search server-confirmed candidates for one slot |
+| `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/revision-previews` | Authorized private editor | Preview one revision without writes |
+| `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/slots/:slotKey/candidate` | Authorized private editor | Add one candidate |
+| `PATCH /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Authorized private editor | Edit one candidate offer |
+| `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Authorized private editor | Move one candidate or compatible carryover projection |
+| `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Authorized private editor | Remove one candidate |
+| `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Team manager during the adaptive help window | Grant exact-card commissioner help |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication | Read paginated allocation results |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner | Read safe FAD operational state |
+| `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner | Retry one allowlisted idempotent operation |
+| `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner | Preview deterministic atomic repair without writes |
+| `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner | Apply confirmed deterministic repair |
+
+Published FAD reads expose only durable results. During the allocation window,
+T-140 returns each persisted `pending` allocation with null decision, winner,
+restricted, fallback, recovery, and resolution fields, an empty draw list, and
+its immutable snapshot offers using `rank = null` and
+`outcomeCode = pending`. T-132 candidate-slot outcomes remain null until a
+durable allocation event exists. A published winner's `snapshotEntryId` is
+nullable only for a league-wide fallback winner that did not originate from a
+Candidate snapshot. T-140 draw `auctionType` is exactly `fad_restricted` or
+`fad_open_rapid`.
+
+Literal `navigation` and `readiness` route families register before `:fadId`.
+Private and published card reads are separate resources and must never share a
+frontend cache key.
+
+T-126 accepts no query or exactly the complete
+`rosterSeasonId`/`rosterTeamId` pair. T-127 accepts exactly `seasonId`; T-129
+accepts no query. Unknown, partial, duplicate, or malformed query shapes are
+`400` before repository access. Every league-scoped FAD route requires active
+membership; platform role without active membership grants no inherited
+commissioner access.
+
+T-130 and T-134 through T-139 accept no query. T-133 accepts only required
+`slotKey` plus optional `q`, `cursor`, and `limit`. Search text collapses
+whitespace, trims, lowercases for matching, and is limited to 200 Unicode code
+points; deterministic order is normalized player name then player ID. Its
+versioned base64url cursor is limited to 1024 characters and binds a filter hash
+to the exact card, slot, normalized search, and limit. Cursor or query mismatch
+is `400`. T-134 is a read-only preview and ignores supplied concurrency or
+idempotency headers. T-135 through T-138 require an exactly quoted positive
+integer card `If-Match` plus a trimmed, control-free 1-through-128-code-point
+`Idempotency-Key`. T-139 requires that same key form and forbids `If-Match`.
+Its body may be `{}`, `{ "message": null }`, or one trimmed control-free string
+of at most 500 Unicode code points; whitespace-only normalizes to null.
+
+Every FAD JSON request body is limited to `16 KiB`; an oversized body returns
+`413 FREE_AGENT_DRAFT_REQUEST_TOO_LARGE` before domain work. Eligible-player
+search and T-134's read-only preview use the shared authenticated read limits.
+FAD writes must satisfy both ceilings in their shared limiter profile:
+
+| Profile and routes | Per session | Per league | Window |
+| --- | ---: | ---: | ---: |
+| `fad_candidate_write`, T-135 through T-138 | `120` | `600` | `15 elapsed minutes` |
+| `fad_help_write`, T-139 | `5` | `25` | `60 elapsed minutes` |
+| `fad_operational_write`, FAD operational commands | `30` | `120` | `15 elapsed minutes` |
+
+Exceeding either ceiling returns `429` without a domain write.
+The Candidate and help profiles are enforced by the composed FAD-09 router.
+The operational profile is configured in the shared policy; each later
+operational route must compose it before that endpoint can leave `PLANNED`.
+
+T-133 and Candidate preview/save validation share one exact rights-release
+re-entry predicate. Every same-league `fantasy_elc_declined` or
+`unsigned_prospect_rights_released` ownership event blocks that player unless
+a same-league `draft_eligible_players` row with
+`eligibility_reason = rights_release_reentry` binds the exact event through
+`rights_release_event_id`, belongs to a confirmed same-league snapshot, and
+that snapshot was confirmed strictly after the release occurred. Every release
+requires its own later approval, so a newer release blocks again after an
+earlier approval. T-133's measured plan must use the schema-34 release-event,
+exact re-entry, and recovery-quarantine indexes; its ordered single-player
+release lookup must not use a temporary sort B-tree.
+
+T-134 keeps `baseCardVersion` equal to the current persisted version and gives
+`projectedCard.cardVersion` the hypothetical next version without advancing
+persistence. The projected card is `private_read_only`, and every projected
+capability is disabled with `PREVIEW_ONLY`. An add uses a deterministic,
+non-persisted preview-only UUID and entry version 1; the authoritative T-135
+add creates a different resource identity. A move's `projectedSlot` is its
+destination, an edit's is the entry's current intended slot, and a remove's is
+null. Preview diagnostics are deduplicated and sorted by code then nullable
+resource ID, and use only the structural-conflict, over-cap, and safe
+candidate-validation forms defined by the FAD technical specification. The
+same authorized preview remains available during a league freeze because it
+is read-only, while its projected capabilities remain disabled.
+
+Candidate operations are exactly `candidate_card.add`, `candidate_card.edit`,
+`candidate_card.move`, `candidate_card.remove`, and `candidate_card.help`.
+Every Candidate replay first re-establishes current exact-card authority. After
+that check, exact replay precedes current phase, deadline, freeze, version,
+resource, and business validation and returns the immutable original status and
+representation. This prevents a former manager or expired help authority from
+replaying private data while preserving retry safety after later state changes.
+
+T-126 sets `showMainNavigation = true` only from automatic Candidate Card
+opening until the earlier of FAD completion or the current competition Week 1
+start. It is false exactly at `competitionFirstMatchupStartsAtMs`, including
+when nonterminal recovery remains; roster history and commissioner recovery
+controls remain the post-start entry points.
+
+T-141's optional `scheduleRecoveryEvidence` projection is exact and closed as
+defined in `FREE_AGENT_DRAFT.md`. Its `removedWeekIds[]` and
+`removedMatchupIds[]` come from immutable recovery children, while
+`replacedJobs[]` projects only durable `replaced` old/new job pairs. Internal
+`cancelled` job effects are intentionally not projected.
+
+FAD-08 supplies one internal readiness-handoff primitive that runs only inside
+its caller's existing write transaction. The future final T-108 selection or
+confirmed-forfeiture transaction owns `entry_draft_completed`; T-036 owns
+`no_draft_inaugural`; and T-037 owns `no_draft_initial_season2`. Each caller
+atomically creates or idempotently reuses one exact readiness operation and one
+pending `fad_readiness` job after validating its authoritative source. Caller
+rollback removes both rows, and conflicting trigger evidence fails closed. The
+canonical server-owned inaugural reason is exactly `Inaugural league season.`
+There is no post-commit in-memory trigger, commissioner-chosen opening time,
+separate confirmation command, or public handoff/completion route.
+
+If confirmed T-095 schedule creation supplies the missing calendar for an
+already-blocked genuine-inaugural occurrence, the same T-095 transaction may
+reset only that occurrence's exact failed job to clean `pending`, preserve its
+attempt count and evidence, advance the blocked operation one aligned version,
+and persist distinct immutable corrective-requeue evidence. It creates no new
+trigger and does not impersonate a T-128 commissioner retry. Absent, pending,
+running, or succeeded readiness is a no-op; split or malformed state rolls the
+complete T-095 transaction back. Exact T-095 replay still returns its original
+immutable schedule-command result without another requeue.
+
+FAD-08 owns readiness-job execution. Its all-or-none opening transaction
+revalidates the opening path, current season/rollover evidence, teams and
+managers, authoritative carryovers, complete cap/roster structure, and current
+schedule. When required it first applies the approved whole-Monday Week 1
+rewrite in that transaction, then creates the FAD, all team
+snapshots/cards/version-one revisions,
+carryovers, seven initial rollovers, `fad_deadline_reminder` and `fad_deadline`
+occurrences, activity, notifications, and scoped invalidations. FAD-10 owns
+execution of those reminder/deadline occurrences. Any blocker rolls the whole
+opening transaction back; the same leased job then records one immutable
+blocked attempt and deduplicated commissioner notification in a separate
+transaction with no opening or schedule effect.
+
+At the deadline, FAD-10 performs final Candidate synchronization, locks and
+revises every card, expires help, seals every immutable 22-slot snapshot,
+creates one pending allocation plus `fad_allocation` job per distinct Candidate
+player, changes the FAD to `deadline_locked`, and publishes the league view in
+one outer transaction. The target runtime then executes allocation coordinator
+-> per-player allocation -> allocation coordinator in the same scheduler cycle
+before ordinary auction resolution. The first coordinator enters `allocating`
+or takes a zero-allocation FAD directly to `rapid`; the second reaches `rapid`
+only when no allocation remains pending and creates aggregate manager/team
+results. Exact Candidate ties remain scheduled or quarantined until the future
+restricted-auction privacy and activation gate.
+
+T-127 reads the operation and latest immutable attempt snapshot; it never runs
+preflight and there is no readiness-preview route. Its Week 1 before/after
+objects are nullable, and initial rollovers are empty until an attempt persists
+a complete clock, then exactly seven. A team projection is exactly `teamId`,
+safe `team`, `managerReady`, nullable `managerAssignmentId`, `carryoverCount`,
+`openForwardSlots`, `openDefenceSlots`, `openBenchSlots`, and
+`structuralConflictCount`. A prior rollover is exactly `rolloverId`,
+`fromSeasonId`, `toSeasonId`, `completedAtMs`, and `manifestSha256`.
+Every public T-127 blocker or warning is exactly `code`, `message`, and
+nullable `resourceId`. The persisted readiness operation's internal blocker
+mirror remains exactly `code`, nullable `field`, nullable `resourceType`,
+nullable `resourceId`, and `message`; the two internal-only fields are never
+projected through T-127.
+
+T-128 can only retry the same persisted blocked occurrence. It requires the
+exact readiness-operation version and idempotency key. Its scope is actor user,
+league, operation, and client key, and a fresh request has a 24-hour lifetime.
+Current authority is revalidated before replay detection; exact replay is then
+checked before the service samples time or IDs. Fresh acceptance leaves the
+operation blocked, advances it exactly one version, requeues the same job, and
+writes one immutable `202` receipt atomically; the worker later performs the
+blocked-to-running transition. Exact replay performs no write and returns the
+receipt's original canonical `data` even after later readiness changes, while
+the envelope uses the current request's `meta.requestId`. Missing or cross-
+scope readiness is side-channel-safe `404`; same-league nonblocked or
+canonical-job-unavailable state is `409 FAD_READINESS_NOT_READY`; stale
+readiness is `412 FAD_READINESS_PRECONDITION_FAILED`.
+That `412` includes only safe `details.currentVersion` and
+`details.refetch = true`. A body over the shared FAD `16 KiB` limit is
+`413 FREE_AGENT_DRAFT_REQUEST_TOO_LARGE`; malformed JSON remains `400`.
+
+Schema 31 adds immutable `free_agent_draft_readiness_attempts` and
+`free_agent_draft_readiness_retry_receipts` with canonical response/projection
+JSON, hashes, same-league evidence, and immutability guards. Migration 0030
+remains byte-for-byte frozen. Migration 0031 replaces only its readiness
+forward-update trigger so the exact receipt-backed blocked-to-blocked retry is
+legal; no other schema-30 table definition or trigger changes.
+Migration `0031` is pinned locally at `46,693` bytes with lowercase SHA-256
+`f2c5104f2eb06e261cc902067bd4623b841f2c37a04f73d27487863077b2662a`.
+
+The job and readiness-operation claim are one transaction. Fresh pending and
+blocked-retry claims advance both attempt counts once and copy one live lease
+identity to both rows. Reclaim at or after an expired `running` lease requires
+a fresh fencing token and atomically advances only the versions of the same
+job and operation from `running` to `running`; attempt counts, original start
+timestamps, and result evidence remain unchanged, and the old token is fenced.
+The abandoned lease creates no separate completed-attempt row. A failed
+readiness job is not directly claimable; an approved retry or corrective
+prerequisite writer first resets that same job cleanly to `pending`. Finalized
+additive migration `0032` creates no table or index and replaces only the
+readiness forward-update trigger to admit that exact guarded handoff while
+leaving migrations `0030` and `0031` byte-for-byte unchanged. It also adds one
+job-side reclaim guard that proves the old job/operation lease and version
+match, exact job-version advance, and bounded fresh lease before the
+operation-side guard accepts the new state. Migration `0032` is pinned at
+`27,882` bytes with lowercase SHA-256
+`ec6bf25a00c2a279d5380a11cb99a3f9b8bc22b06e95ff0f2ef58519e786c7f5`.
+
+Additive migration `0033_add_fad_readiness_corrective_requeues.sql`
+preserves migrations `0030` through `0032` byte-for-byte. It adds immutable
+`free_agent_draft_readiness_corrective_requeues` evidence, its same-league and
+immutability guards, and only the job/readiness trigger branches needed for the
+exact T-095 failed-to-pending plus blocked-to-blocked aligned requeue. The row
+binds the immutable T-095 command result and new schedule generation to the
+same genuine-inaugural operation/job and latest immutable blocked attempt,
+unchanged attempt/blocker evidence, retained prior terminal/retry timestamps,
+and prior/resulting one-version advances. It is not a T-128 receipt. Migration
+or startup code never manufactures a row or readiness occurrence. The
+finalized migration is `56,084` bytes with lowercase SHA-256
+`93714178a4c89687578ca340afbe69c317239118cb50765838e6123ff6faf7f1`.
+Its schema-33 inventory is `127` application tables, `128` including the
+migration ledger, `127` repository-catalog entries, `45` post-reset
+require-empty tables, `82` signed-reset-policy tables, and `63` delete guards.
+The fresh/upgrade schema, identity, catalog, and reset package passes `64/64`
+while migrations `0030` through `0032` retain their pinned identities.
+
+Additive migration
+`0034_add_candidate_eligibility_search_indexes.sql` is finalized at `1,158`
+bytes with lowercase SHA-256
+`9347331419ada113707a4e71ef87c578ddd3cd0bd4ddb9578164f08b3307bb36`.
+It preserves all schema-33 rows, tables, triggers, guards, reset policy, and
+repository-catalog entries; adds only these indexes; and advances
+`application_metadata.data_model_version` from `33` to `34`:
+
+* non-partial `free_agent_draft_recoveries_league_player_status` on
+  `(league_id ASC, player_id ASC, status ASC)` for correlated recovery
+  quarantine;
+* partial `ownership_events_candidate_release_by_player` on
+  `(league_id ASC, player_id ASC, occurred_at_ms DESC, id DESC)` where
+  `event_type IN ('fantasy_elc_declined',
+  'unsigned_prospect_rights_released')`, filtering to Candidate-blocking events
+  and satisfying stable newest-first release order without a temporary sort;
+* partial `draft_eligible_players_rights_release_reentry` on
+  `(league_id ASC, player_id ASC, rights_release_event_id ASC,
+  eligibility_snapshot_id ASC)` where
+  `eligibility_reason = 'rights_release_reentry'`, supporting the correlated
+  exact-event approval and confirmed-snapshot join.
+
+Because migration `0034` adds no table or trigger, the schema-33 inventory
+remains `127` application tables, `128` including `schema_migrations`, `127`
+repository-catalog entries, `45` post-reset require-empty tables, `82`
+signed-reset-policy tables, and `63` delete guards. Fresh `1 -> 34` and exact
+`33 -> 34` proof must preserve that inventory and reproduce all three index
+definitions, the expected T-133 query plans, `integrity_check = ok`, and zero
+foreign-key violations.
+
+Additive migration `0035_add_candidate_card_help_command_results.sql` preserves
+migrations `0030` through `0034` byte-for-byte and adds immutable
+`candidate_card_help_command_results` evidence for exact T-139 status and
+response replay, including the distinct newly-created and already-active help
+outcomes. It is finalized at `10,981` bytes with lowercase SHA-256
+`cbbaf5322c111f3d13659cf6adc1a5046c8b49ba0ab84c3541d770a1dae3b669`.
+
+The FAD-09 local target was schema version `36`. Additive migration
+`0036_add_fad_eligibility_revalidation_occurrences.sql` preserves every earlier
+migration byte and adds immutable
+`free_agent_draft_eligibility_revalidation_occurrences`. A provider catalog
+apply creates one row only for each player/open-FAD/source-operation semantic
+Candidate-eligibility change: active status or effective F/D position.
+Presentation, raw-payload, or source-version-only changes create no occurrence,
+and a league position override may mask a source-position change. Each
+occurrence binds the exact before/after evidence and delta hash to one pending
+`fad_eligibility_revalidation` shared-lease job; one global
+`player_catalog_applied` event seals the complete batch in the same transaction.
+
+The leased worker synchronizes matching cards and terminalizes its job in one
+transaction. The deadline transaction performs one final authoritative
+all-card synchronization, leaves terminal jobs unchanged, and uses exact
+compare-and-swap state to consume observed `pending`, `failed`, `leased`, or
+`running` jobs as `skipped` with outcome `deadline_reconciled`; stale workers
+cannot later commit. The schema rejects `cards_open` to `deadline_locked` until
+every bound occurrence job is `succeeded` or `skipped`.
+
+Migration `0036` is finalized at `22,871` bytes with lowercase SHA-256
+`1351e25758d7192ab804214f0abeb696a9b0a9b3509e81dcd276ac7570fbb1f6`.
+Schema 36 contains `129` application tables, `130` tables including
+`schema_migrations`, `129` repository-catalog entries, `47` post-reset
+require-empty tables, `82` signed-reset-policy tables, and `69` delete guards.
+Fresh `1 -> 36` and exact `35 -> 36` proof preserve every prior ledger identity
+and application row and finish with `integrity_check = ok` and zero foreign-key
+violations.
+
+Additive migration `0037_allow_atomic_fad_deadline_allocations.sql` permits
+only the pending allocation insert owned by the exact live claimed deadline
+occurrence while the root FAD is still `cards_open`.
+Fabricated, stale, mismatched, or unrelated writes remain rejected. It is
+finalized at `4,142` bytes with lowercase SHA-256
+`33b8e7c3479f9a3dc64011a29ced6421a5cc59eca62da8b8144cf82b1d0d80b3`.
+
+Schema `38` was the FAD-10 local target. Additive migration
+`0038_allow_pre_fad12_restricted_scheduling.sql` replaces only the allocation
+forward-update guard so an exact Candidate tie remains
+`restricted_scheduled` for the next complete rapid rollover rather than
+activating before FAD-12. Mismatched context, rollover identity, or past-due
+scheduling remains rejected, and ordinary weekly-auction behavior is
+unchanged. It is finalized at `17,157` bytes with lowercase SHA-256
+`b4567d087b31ff70dfa2776f2a15e6d22e182600d3dd5e5446a169bb64bb5ac5`.
+
+Neither migration adds an application table, catalog entry, reset-policy
+entry, or delete guard. Schema 38 therefore retains `129` application tables,
+`130` including `schema_migrations`, `129` repository-catalog entries, `47`
+post-reset require-empty tables, `82` signed-reset-policy tables, and `69`
+delete guards. Fresh and exact-upgrade proof preserves every earlier ledger
+identity and application row with integrity and foreign keys clean. None of
+migrations `0023` through `0038` had reached shared staging or production at
+FAD-10 closure.
+
+FAD-11 adds migration `0039_add_fad_recovery_correction_evidence.sql`, pinned
+at `201,713` bytes with lowercase SHA-256
+`a176479f3eb3fc1183c595a68026a2e5b73d6b975b66b6bcab5de4954945ae6f`.
+It provides immutable T-142/T-144 command-result, recovery/correction, queue-
+acceptance, and supporting guard evidence. Migration
+`0040_allow_atomic_fad_restricted_fallback_overlap.sql`, pinned at `9,449`
+bytes with lowercase SHA-256
+`cff71c33b628504d38b53cfe1621363740791c119c5b214d7d11e10f216a5a92`,
+advanced the FAD-11 local target to schema `40`. It admits only the exact
+transaction-bound resolving-restricted/open-fallback overlap and exact complete
+fallback window; all unrelated active overlap remains rejected.
+
+Schema 40 contains `131` application tables, `132` including
+`schema_migrations`, and `131` repository-catalog entries.
+
+FAD-12 adds migration
+`0041_allow_fad_auction_resolution_recovery_resume.sql`, pinned at `35,525`
+bytes with lowercase SHA-256
+`00d6926934d46089df6581a8c3edc296394ce57958155e36da7d15b2be61111b`;
+migration `0042_use_current_aav_for_restricted_participant_floor.sql`, pinned
+at `9,326` bytes with lowercase SHA-256
+`4269c4a0c320364b65d20c01b167ff8738f1a67c7e4d52160e6e2245e201e537`;
+and migration `0043_allow_repeat_fad_auction_resolution_recovery.sql`, pinned
+at `92,011` bytes with lowercase SHA-256
+`1623d40ffaa477e3ba0be6bdd7c831f3d16489b53e4befc03eb7aa0e6efa6ae3`.
+Schema 43 was the FAD-12 local target with the same `131` application tables,
+`132` including `schema_migrations`, and `131` repository-catalog entries.
+
+FAD-13 adds migration `0044_allow_immediate_fad_open_rapid_starts.sql`, pinned
+at `32,654` bytes with lowercase SHA-256
+`79f759030c01281f4a21aeba0584a3681d0ae84982d2b7a48dfcd7a5bf0274ee`;
+migration
+`0045_allow_restart_safe_fad_queued_nomination_activation.sql`, pinned at
+`74,289` bytes with lowercase SHA-256
+`cd2a7d3059b6ab0f484267b6999cbadd6db1a86114fcdb67e4220296dca9ae37`;
+migration `0046_bind_fad_open_rapid_starter_edit_limit.sql`, pinned at `18,329`
+bytes with lowercase SHA-256
+`78626350a1efa3e76b09f3ba2dc812b135b1e2d19dd2c01d2e973a57a6a884bb`;
+and migration
+`0047_allow_restart_safe_fad_rollover_finalization.sql`, pinned at `14,129`
+bytes with lowercase SHA-256
+`bdabbcff52cd87c932c3f2e067d825786fd6dac6354ea4a3a90396ec972b0b2b`.
+Schema 47 was the FAD-13 local target at `131` application tables, `132`
+including `schema_migrations`, and `131` repository-catalog entries.
+
+FAD-14 adds trigger-only migration
+`0048_require_canonical_fad_realtime_evidence.sql`, pinned at `73,524` bytes,
+`1,490` lines, and lowercase SHA-256
+`c08445d1b3833343f9c276dff3cd9400ebce6e282665179b992f47919feceb21`.
+It preserves schema `48` as the intermediate canonical realtime-evidence
+checkpoint. Trigger-only migration
+`0049_require_canonical_fad_setup_exemption_publications.sql`, pinned at
+`29,571` bytes, `748` lines, and lowercase SHA-256
+`5109baabaeed39e06498c7c26274a41a48edfbbdee958e7dd6b278021a29ebc6`,
+reconciles the setup-exemption Activity, exact commissioner notification, and
+three required publications. Schema `49` is current locally with the same
+`131` application tables, `132` including `schema_migrations`, and `131`
+repository-catalog entries. None of migrations `0023` through `0049` has
+reached shared staging or production.
+
+T-129 always returns `managedCards`, `commissionerCards`, and
+`queuedNominations`; an unauthorized array is empty. Before publication a
+caller without commissioner authority receives numeric `participatingTeams`
+and null for every other league-wide count. `viewPublishedCards` is allowed
+only after publication and otherwise uses `PHASE_CLOSED`. `viewRecovery`
+requires current commissioner authority and otherwise uses `NOT_AUTHORIZED`.
+`completeRecoveryAction` checks authority first, then requires one exact
+actionable recovery, using `NOT_AUTHORIZED` or `RECOVERY_NOT_AVAILABLE`
+respectively. `presentation` may remain null through FAD-08.
+`scheduleRecoveryOperationId` identifies only completion-overrun recovery;
+pre-open old/new Week 1 remains T-127 attempt evidence.
+
+As of the FAD-08 local closure on `2026-08-08`, T-126 through T-129 are composed
+through their real repository, service, router, target-runtime, and worker
+boundaries. Their privacy, exact query/error/cache shapes, read-only GETs, and
+immutable T-128 replay after later terminal readiness success pass within the
+`336/336` behavior gate. This is local contract evidence only; it does not mean
+frontend-connected or staging-verified.
+
+As of the FAD-09 local closure on `2026-08-08`, T-130 and T-133 through T-139
+are composed through their real repository, service, router, target-runtime,
+shared limiter, summer-writer, provider-revalidation, shared-worker, and final
+deadline-reconciliation boundaries. The target endpoint inventory is exactly
+`110`. Provider occurrence/job/deadline proof passes `60/60`, the complete
+summer-writer selection passes `262/262`, direct Candidate HTTP passes `36/36`,
+composed runtime passes `66/66`, the local staging verifier passes `9/9`, and
+reset bootstrap passes `8/8`, with no failure or skip. This is local contract
+evidence only; there is no frontend caller, shared staging has not been deployed
+or verified, and production remains untouched.
+
+As of the FAD-10 local closure on `2026-08-09`, T-131, T-132, and T-140 are
+composed through their real read repository, service, router, and target-
+runtime boundaries. The target endpoint inventory is exactly `113`. The exact
+FAD-10 closure matrix passes `200/200` across `23` suites; separate recorded
+gates pass `4/4` composed-runtime tests, `18/18` coordinator tests, `103/103`
+shared-auction regression tests, and `7/7` post-amendment reminder tests.
+
+The published-read proof includes the pending-result contract above: T-132
+keeps Candidate-slot outcomes null until durable allocation evidence exists,
+and T-140 never invents a decision, winner, rank, restricted/fallback state,
+recovery, resolution time, or draw for a pending allocation. This is local
+contract evidence only. There is no frontend caller, shared staging has not
+been deployed or verified, and production remains untouched.
+
+As of the FAD-11 local closure on `2026-08-10`, T-141 through T-144 and the
+FAD-linked T-080 through T-083 administration paths are composed through their
+real repository, service, router, and target-runtime boundaries. The local
+target endpoint inventory is exactly `117`. The shared restricted
+no-improvement fallback is transaction-owned and locally verified, including
+immediate and delayed full-window outcomes, exact replay, lease/recovery fences,
+privacy-safe publication timing, collision isolation, and rollback.
+
+Separate recorded gates pass `197/197` broader recovery/correction/
+administration tests, `96/96` schema/runtime tests, `62/62` ordinary-auction
+compatibility tests, and `40/40` complete administration-repository tests on
+Node.js `24.14.1`. This is local contract evidence only. At FAD-11 closure the
+scheduled resolver still filtered to ordinary auctions and restricted/fallback
+activation was not composed. No frontend caller or shared environment changed.
+
+As of the FAD-12 local closure on `2026-08-10`, server-derived restricted/
+fallback manager bidding, read/edit-limit projection, current strict-
+improvement validation, AAV/term ranking, committed exact-top draw, no-
+selection reveal, restricted no-improvement fallback, and allocation-linked
+fallback winner/no-winner settlement are composed. The atomic writer owns
+normal pricing, contract/ownership/roster persistence, summer synchronization,
+allocation/activity/outbox evidence, exact replay, and winner-only post-commit
+late-lock coordination. Deterministic failures record one causal recovery;
+transient failures remain leased for expired reclaim; T-142 resumes the exact
+failed job, auction, allocation, and recovery; and repeated failures bind to
+the latest failure event and completed receipt through schema `43`.
+
+At that checkpoint, the target scheduler awaited FAD resolution, restricted
+activation, and fallback activation before the preserved ordinary resolver,
+then ran FAD completion. Exact Node.js `24.14.1` gates pass `52/52` resolver policy/
+persistence/shared fallback, `15/15` service/runner, `71/71` activation/job-
+repository, `50/50` bid/HTTP/read capability, `170/170` ordinary auction/
+administration compatibility, `303/303` schema-43/current-head, and `94/94`
+final scheduler/runtime/deployment/ordinary compatibility tests. T-083 remains a durable
+`202` request rather than an inline resolution. At that checkpoint, direct and
+queued open-rapid resolution remained FAD-13 work and was rejected by the
+FAD-12 decision service.
+There was no frontend caller; shared staging and production were not opened,
+migrated, deployed, or verified.
+
+As of the FAD-13 local closure on `2026-08-10`, T-077 derives an immediate
+open-rapid start with more than 60 minutes remaining or a private queued start
+at the cutoff, and the queued starter opens atomically at its exact rollover
+for a complete following cycle. T-079 preserves the ordinary starter/non-starter
+edit and cooldown rules in both direct and queued open-rapid contexts. T-083
+continues to return its durable enqueue-only `202`; the same FAD resolver now
+settles direct and queued auctions, including exact-top draw, allocation-null
+winner, and no-bid unclaimed outcomes. Restart-safe activation, contiguous
+extension rollover finalization, causal recovery, atomic FAD/Week 1 completion,
+the matchup-start guard, and the season-start-plus-completion ordinary-auction
+handoff are composed locally. The endpoint inventory remains exactly `117`.
+
+Separate, overlapping Node.js `24.14.1` evidence passes `11/11` start-decision
+policy, `10/10` immediate-start writer, `23/23` FAD start/lifecycle, `12/12`
+ordinary creation compatibility, `125/125` queued activation, `22/22` focused
+allocation-null resolution writer, `18/18` focused resolution service/runner,
+`73/73` broader allocation-null resolution, and `122/122` bid/read
+compatibility. Final closure gates pass `280/280` schema-47/current-head,
+`42/42` rollover policy/writer/service/runner, `31/31` completion, `77/77`
+runtime composition, and `15/15` matchup-start guard tests. These records are
+not added into one aggregate total. There is still no frontend caller; no
+shared staging or production environment was opened, migrated, deployed, or
+verified.
+
+As of the FAD-14 local closure on `2026-08-11`, the approved Activity and
+notification registries, exact four-publication Candidate Card opening,
+canonical eight-related-ID envelopes, private queued-nomination audiences,
+reconnect reauthorization, and the exact three-publication setup-exemption
+contract are composed. `fad_setup_exemption_authorized` remains the explicit
+eleventh FAD Activity and thirteenth FAD notification. The local target
+endpoint inventory remains exactly `117` on schema `49`.
+
+Separate pinned Node.js `24.14.1` records pass `1,294/1,294` focused core tests
+across `142` suites and `110` unique files, `95/95` production JavaScript
+syntax checks, `265/265` schema-49 pin/runtime/reset/release/staging-verifier
+tests, and `189/189` former-failure consolidation tests. The authoritative full
+backend gate records `3,266` tests across `436` suites: `3,264` passed, zero
+failed, cancelled, or todo, and two intentional Windows link-capability skips
+(`symlink` and `target`) in
+`sportsDataIoLiveCapabilityArtifactFoundation.test.js`, in about
+`30m03.603s`. No FAD frontend or shared environment changed; migrations `0023`
+through `0049` remain local only.
+
+T-130 remains privately readable after the deadline while publication is
+pending, but returns phase `deadline_processing`, visibility
+`private_read_only`, and denied mutation capabilities. During that interval,
+T-133 through T-138 return `409 FAD_DEADLINE_PASSED` and T-139 returns
+`409 FAD_HELP_WINDOW_CLOSED`. Every private Candidate path returns
+`409 FAD_PHASE_CONFLICT` after publication. Entry absence and cross-card,
+cross-team, or cross-league entry references use the same side-channel-safe
+`404 CANDIDATE_CARD_ENTRY_NOT_FOUND`. Stale card writes expose only
+`details.currentVersion` and `details.refetch = true` with
+`412 CANDIDATE_CARD_PRECONDITION_FAILED`.
+
+Each card exposes the full 12-forward, 6-defence, and 4-bench structure.
+Carryovers occupy immutable slots. A submitted Candidate offer may remain
+stored while the card has an unresolved carried-roster structural conflict or
+is over the salary cap, but either illegality excludes every non-carryover
+candidate until a later valid revision restores whole-card legality before the
+deadline. Structural conflict is the deterministic exclusion reason when both
+exist, while cap status still reports the overage. The help window is derived
+from the actual available Candidate period, not hard-coded to the final 48
+hours.
+
+The initial seven rapid rollover boundaries are extensible, not a maximum.
+Queued nominations, delayed restricted activation, mandatory fallback, or
+recovery creates the next contiguous fair 24-hour boundary when required. FAD
+completion waits for every allocation, queue, rollover, auction, and recovery
+to reach its approved terminal state; when completion overruns Week 1, its
+server-owned schedule recovery and the completion marker commit together.
 
 ---
 
@@ -1224,7 +2913,7 @@ Matchup and standings records remain outside League Activity.
 | `GET /api/v1/health/ready` | Public | Minimal dependency readiness without private details |
 | `GET /api/v1/operations/health` | Platform administrator | Detailed read-only operational state |
 | `POST /api/v1/operations/staging-sportsdataio-import` | Platform administrator on the exact closed staging fixture identity only | Explicitly import and audit the approved last-season SportsDataIO catalog and statistics |
-| `POST /api/v1/operations/staging-fixture-reset` | Platform administrator on the exact staging fixture identity only | Back up and deterministically reseed staging test-league data while preserving the imported provider catalog |
+| `POST /api/v1/operations/staging-fixture-reset` | Platform administrator on the exact closed staging fixture identity only | Back up and deterministically reseed staging test-league data while preserving the imported provider catalog |
 | `GET /api/v1/operations/backups` | Platform administrator | List safe backup metadata without raw paths |
 | `POST /api/v1/operations/backups` | Platform administrator | Create and verify a backup |
 | `POST /api/v1/operations/restores` | Platform administrator plus approved workflow | Start protected restore |
@@ -1265,16 +2954,24 @@ success, replay, or failure evidence without returning provider payloads or the
 API key. The route is absent after the same staging source is redeployed with
 league writes `open`, and it is never constructed for production.
 
-The staging-fixture reset route is composed only when all three checks match:
-`APP_ENV=staging`, environment identity `test:release-qa`, and database
-identity `m7-release-qa-fixture`. Its exact JSON command contains the displayed
-confirmation phrase and a bounded reason, and it requires CSRF plus
-`Idempotency-Key`. The command revalidates database identity, creates and
-verifies a pre-reset backup, preserves SportsDataIO catalog and import state,
-replaces only deterministic fixture accounts and league-scoped test data,
-checks foreign keys and provider-row counts, records operational audit
-evidence, and invalidates all sessions. The capability is not constructed for
-production or any other database identity.
+The staging-fixture reset route is composed only when all three identity checks
+match: `APP_ENV=staging`, environment identity `test:release-qa`, and database
+identity `m7-release-qa-fixture`. League writes must also be `closed`, scheduled
+jobs must be disabled, and no matchup may be live or in a correction state. Its
+exact JSON command contains the displayed confirmation phrase and a bounded
+reason, and it requires CSRF plus `Idempotency-Key`. The command revalidates
+database identity, creates and verifies a pre-reset backup, preserves
+SportsDataIO catalog and import state, replaces only deterministic fixture
+accounts and league-scoped test data, checks foreign keys and provider-row
+counts, records operational audit evidence, and invalidates all sessions. The
+capability is not constructed for production or any other database identity.
+
+The exact closed staging fixture reset and provider catalog import are the only
+named maintenance exclusions from the roster-writer coordinator registry. The
+catalog import can change effective roster position, so both exclusions require
+closed writes, disabled jobs, and no live or correction matchup. If any
+precondition is false, the operation requires approved bulk post-commit
+legality reconciliation before writes or jobs reopen.
 
 ---
 
@@ -1328,11 +3025,40 @@ Warnings indicate an approved successful outcome requiring attention. They are n
   "leagueId": "opaque-uuid",
   "resourceId": "opaque-uuid",
   "version": 5,
-  "occurredAt": 1784371200000
+  "reasonCode": "roster_changed",
+  "occurredAt": 1784371200000,
+  "related": {
+    "fadId": null,
+    "teamId": "opaque-uuid",
+    "cardId": null,
+    "allocationId": null,
+    "auctionId": null,
+    "recoveryId": null,
+    "nominationQueueId": null,
+    "scheduleRecoveryOperationId": null
+  }
 }
 ```
 
 Events contain invalidation metadata, not complete private records.
+`reasonCode` is a required stable code approved for the event family.
+`resourceId` identifies the authoritative resource named by the event, and
+`version` is that exact resource's authoritative current version in the
+committed domain transaction. It is never the mutable outbox-row version, a
+delivery-attempt counter, a related child-resource version, or a guessed
+fallback. A writer that cannot prove the committed resource version fails
+closed rather than publishing an invented value.
+
+For a `free_agent_draft.changed` allocation event, `resourceId` is the FAD ID,
+`version` is the committed `free_agent_drafts.version`, and
+`related.allocationId` identifies the affected allocation. The allocation ID
+or version never replaces the FAD resource/version pair in that envelope.
+
+`related` is always present with exactly the eight nullable stable IDs shown
+above. A writer populates every applicable ID and uses null for the rest;
+non-FAD event families normally leave the FAD-specific IDs null. No event may
+put a player, Candidate offer, help message, contract value, or active bid in
+this metadata.
 
 Approved event families:
 
@@ -1346,10 +3072,63 @@ trade.changed
 matchup.changed
 standings.changed
 draft.changed
+free_agent_draft.changed
+candidate_card.changed
+candidate_card_help.changed
+fad_nomination_queue.changed
 activity.created
 notification.created
 operations.changed
 ```
+
+The successful Candidate Card opening transaction emits exactly these
+post-commit realtime publications:
+
+* one metadata-only `free_agent_draft.changed/cards_opened` invalidation to the
+  league audience;
+* one metadata-only `activity.created/cards_opened` invalidation to the league
+  audience for the existing `free_agent_draft_started` activity;
+* one metadata-only `candidate_card.changed/card_changed` invalidation per card
+  to that card's team audience; and
+* one metadata-only `notification.created/cards_opened` invalidation per
+  `fad_cards_opened` notification to that notification's exact user audience.
+
+`fad_cards_opened` remains the notification type only; it is never an outbox
+event type. The league-scoped invalidations neither grant Candidate Card access
+nor constitute a card notification. A non-manager sees only the ordinary
+League Activity projection allowed by their membership. Every private card
+read independently reauthorizes the current team/card scope.
+
+The initial-Season-2 setup-exemption authorization transaction publishes
+exactly:
+
+* league-audience `league.changed/league_changed` for the committed league
+  resource/version;
+* league-audience `activity.created/setup_exemption_authorized` for the
+  persisted `fad_setup_exemption_authorized` Activity resource at version `1`;
+  and
+* exact-current-commissioner user-audience
+  `notification.created/setup_exemption_authorized` for the persisted
+  notification resource at version `1`.
+
+All eight `related` IDs are null. The notification's safe copy is exactly
+`Initial Season 2 Free Agent Draft exemption authorized.` Its message data is
+exactly `leagueId`, `seasonId`, `exemptionId`, and destination
+`{kind: commissioner_fad, leagueId, seasonId}`. Its deduplication key is
+`fad_setup_exemption_authorized:<leagueId>:<seasonId>:<exemptionId>:<userId>`.
+The recipient is the active user of the same-league active commissioner
+membership named by `leagues.commissioner_membership_id`, with current
+`commissioner` permission category, an accepted join at or before the command,
+and no ended timestamp. The authorizing platform administrator receives no
+extra copy solely for acting. No private exemption reason enters Activity,
+notification, or realtime metadata.
+
+Before a queued nomination opens, `fad_nomination_queue.changed` with reason
+`nomination_queued` or `nomination_opened` is limited to the nominating team
+audience and any exact protected recovery-authority user audience. It carries
+no player or contract value, and no corresponding league-room FAD or auction
+publication occurs until the auction actually opens. Auction opening then uses
+the normal authorized league-auction publication contract.
 
 Active competing bid values are never emitted.
 
@@ -1440,7 +3219,63 @@ Required test categories:
 * Socket.IO room scoping and reconnect refetch;
 * no event before commit;
 * sanitized errors and operational responses;
-* compatibility-to-target frontend cutover.
+* compatibility-to-target frontend cutover;
+* scheduled Entry Draft-start rollover success, blocker persistence, exact
+  retry identity, and proof that draft selections and trading remain locked
+  until the all-or-none transition commits;
+* selection-versus-timeout-versus-on-clock-trade races with one winner, one
+  fresh clock where applicable, and no partial loser effects;
+* automatic FAD readiness with all-card-or-no-card opening, late-draft
+  whole-Monday schedule recovery, and read-only readiness inspection;
+* caller-transaction-only Entry Draft/no-draft readiness handoff, exact FAD job
+  types, authoritative source validation, exact-trigger deduplication, caller
+  rollback, simulated final-T-108 completion atomicity, no public completion
+  route, immutable attempt snapshots, blocked rollback-then-record behavior,
+  and the canonical inaugural reason;
+* T-036/T-037 exact trigger ownership and T-095 same-occurrence corrective
+  requeue with immutable source-result/generation evidence, no-op states,
+  split-state rollback, two-league isolation, and write-free exact replay;
+* T-127 nullable/empty/exact-seven projection states and independent no-write
+  proofs for T-127 plus internal preflight, with no invented preview route;
+* T-128 blocked-to-blocked one-version acceptance, same-job requeue, immutable
+  response-data hash/replay with current request metadata, safe 404/409/412
+  errors, and later worker blocked-to-running transition;
+* T-129 exact viewer arrays, prepublication count nulling, capability rules,
+  and separation of pre-open versus completion-overrun recovery evidence;
+* schema-31 fresh/upgrade, same-league, immutability, replay, and trigger tests
+  proving that the frozen migration-0030 bytes and every unrelated schema-30
+  object remain unchanged;
+* schema-32 fresh/upgrade proof pins migration `0032` at `27,882` bytes and
+  SHA-256
+  `ec6bf25a00c2a279d5380a11cb99a3f9b8bc22b06e95ff0f2ef58519e786c7f5`,
+  proves that it creates no table or index, preserves migrations 0030/0031,
+  adds only the job-side reclaim guard, and admits only the atomic
+  expired-readiness-lease
+  handoff with unchanged synchronized job/operation counts and start times, a
+  fresh token, stale-token fencing, and injected rollback;
+* schema-33 fresh/upgrade proof preserves migrations `0030` through `0032`,
+  adds only immutable `free_agent_draft_readiness_corrective_requeues`
+  evidence plus the exact T-095 job/readiness guards, and rejects invalid
+  source, generation, version, attempt, blocker, scope, duplicate, mutation,
+  replay, and injected-rollback cases;
+* schema-34 fresh/upgrade proof pins migration `0034` at `1,158` bytes and
+  SHA-256
+  `9347331419ada113707a4e71ef87c578ddd3cd0bd4ddb9578164f08b3307bb36`,
+  preserves the complete schema-33 inventory, and proves the three exact
+  Candidate lookup indexes plus T-133 use of each measured plan;
+* T-133 and authoritative Candidate save apply identical event-bound
+  rights-release re-entry semantics, including a newer unapproved release
+  after an earlier approved release, while the ordered release lookup creates
+  no temporary sort B-tree;
+* Candidate whole-card carried-roster/cap exclusion, candidate-only individual
+  exclusion, and later legal revision;
+* final-hour private nomination queueing, binding starter-bid activation, and
+  queue privacy;
+* restricted-auction strict-improvement eligibility, commissioner-removal
+  recomputation, mandatory fallback, exact fallback floor, and FAD-only
+  equal-chance draw evidence;
+* atomic FAD completion plus Week 1 recovery and matchup/baseline job rejection
+  against incomplete FAD state or a stale schedule version.
 
 ---
 
@@ -1457,6 +3292,13 @@ Required test categories:
 - [x] Transactions commit before events and notifications.
 - [x] Active competing auction bids remain secret from managers and commissioners.
 - [x] Matchup and standings operations remain outside League Activity.
+- [x] T-145 explicitly finalizes one provenance-complete immutable regular-
+  season standings snapshot; reads, rebuilds, and rollovers never synthesize
+  that evidence.
+- [x] A post-finalization T-097 correction and its complete replacement final
+  snapshot commit atomically or not at all.
+- [x] Legacy or incomplete snapshot evidence never satisfies T-145 or season-
+  rollover readiness.
 - [x] Debug and destructive controls are unavailable in production except through approved recovery workflows.
 
 ## Approved API Decisions
@@ -1484,6 +3326,20 @@ Required test categories:
 - [x] Socket.IO authentication uses the same session and authorized rooms.
 - [x] Reconnecting clients refetch authoritative feature data.
 - [x] Target feature endpoint families are approved as catalogued in this document.
+- [x] Continuing-season contract rollover is scheduled at Entry Draft start;
+  neither competition-season end nor a browser command advances contract years.
+- [x] Candidate Cards open automatically and all-or-none after Entry Draft
+  completion or the approved no-draft path; commissioner retry cannot choose
+  opening or schedule parameters.
+- [x] Valid final-hour FAD nominations queue privately for the next fair
+  boundary instead of being rejected.
+- [x] Restricted auctions require a current active improvement; an empty
+  contender set creates the mandatory league-wide fallback without a draw.
+- [x] Equal-chance terminal draws apply only to FAD auction contexts.
+- [x] FAD wins are binding without cap or roster reservation and require no
+  second confirmation at resolution.
+- [x] FAD completion and any required whole-Monday Week 1 recovery commit
+  atomically before matchup and baseline jobs may proceed.
 - [x] Grae approved this document by delegating the technical decisions to Codex.
 - [x] Document status is `APPROVED`.
 
@@ -1519,6 +3375,7 @@ docs/02-rules/
 docs/03-product-specs/
 docs/04-technical-specs/ARCHITECTURE.md
 docs/04-technical-specs/DATA_MODEL.md
+docs/04-technical-specs/FREE_AGENT_DRAFT.md
 docs/04-technical-specs/SECURITY.md
 docs/04-technical-specs/BACKEND_REFACTOR.md
 docs/04-technical-specs/SQLITE_MIGRATION.md

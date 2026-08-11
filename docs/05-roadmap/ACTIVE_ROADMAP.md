@@ -223,7 +223,7 @@ Approved self-service user sign-up is part of User Accounts. It does not grant l
 | M3 | Secure accounts, permissions, leagues, teams, and memberships | `COMPLETE` | Two-league identity and authorization tests pass |
 | M4 | Players, rosters, contracts, cap, retention, and buyouts | `COMPLETE` | Approved roster and cap invariants pass |
 | M5 | Auctions, trades, activity, and notifications | `COMPLETE` | Transaction and concurrency suites pass |
-| M6 | Matchups, statistics, standings, and commissioner recovery | `COMPLETE` | Accelerated season and correction tests pass |
+| M6 | Matchups, statistics, standings, and commissioner recovery | `COMPLETE — ORIGINAL GATE; JULY 29 AMENDMENT REOPENED IN M7` | Accelerated season/correction tests plus amended late-snapshot proof |
 | M7 | Frontend completion, staging release candidate, migration, and launch | `ACTIVE` | Launch checklist and explicit production authority |
 | M8 | Required in-season completion | `DEFERRED` | Delivered before each league-calendar deadline |
 | M9 | Optional and future backlog | `DEFERRED` | Explicit scope promotion by Grae |
@@ -696,7 +696,9 @@ Complete launch-critical statistics, matchup, standings, and commissioner-recove
 2. League and season matchup schedule generation. `M6-02 COMPLETE`
 3. Matchup-week state machine and Monday `4:00 PM Pacific` lock. `M6-03 COMPLETE`
 4. Team-specific locked lineups and scoring baselines. `M6-04 COMPLETE`
-5. Illegal-at-lock and late-legality handling. `M6-05 COMPLETE`
+5. Illegal-at-lock and late-legality handling. `M6-05 COMPLETE` for the
+   original baseline-only contract; the July 29 whole-game exclusion amendment
+   is reopened under the active M7/FAD gate.
 6. Live player result calculation from baseline. `M6-06 COMPLETE`
 7. Result finalization and correction. `M6-07 COMPLETE`
 8. Read-only standings from finalized authoritative results. `M6-08 COMPLETE`
@@ -715,7 +717,8 @@ Matchup and standings schedules, locks, baselines, results, corrections, rollove
 
 Tests prove:
 
-* week 1 is the first full NHL schedule week unless explicitly adjusted;
+* an authorized commissioner or administrator explicitly selects a valid Week
+  1 start, with no fixed-date substitution;
 * pairings are as even as possible;
 * locked player statistics begin at zero for the matchup period;
 * an illegal team scores zero until a legal team-specific baseline is created;
@@ -730,6 +733,12 @@ Tests prove:
 
 Gate result: `COMPLETE` on `2026-07-22`. Detailed evidence is archived in
 `docs/06-work-plans/archive/M6-GATE_SEASON_COMPETITION.md`.
+
+This is the historical result for the original approved contract. The
+2026-07-29 amendment does not rewrite that evidence, but the launch gate is
+open again until a late legal snapshot atomically persists immutable
+player/game exclusion evidence and excludes every already-underway NHL game in
+full, including post-baseline events, under replay and racing attempts.
 
 ---
 
@@ -800,6 +809,319 @@ Launch is permitted only when:
 
 ---
 
+## Free Agent Draft Launch Gate
+
+The core annual Free Agent Draft is launch-critical and must reach its final
+rapid rollover no later than the first Season 2 matchup start.
+
+The approved product specification is:
+
+```text
+docs/03-product-specs/FREE_AGENT_DRAFT.md
+```
+
+The project has now approved:
+
+* the related technical specification, now approved at
+  `docs/04-technical-specs/FREE_AGENT_DRAFT.md`;
+* the contained M7-25 implementation sequence at
+  `docs/06-work-plans/ACTIVE_WORK_PLAN.md`;
+* the Candidate Card, allocation, restricted-auction, rapid-scheduler, privacy,
+  recovery, and migration test strategy embodied by those documents.
+
+`FAD-01` through `FAD-17` are complete locally. `FAD-18` is the sole active
+isolated-staging slice. The
+migration-impact audit, corrective schema-30 boundary, scheduled `T-037`
+rollover, reset/backup rehearsal, and integrated `FAD-01` through `FAD-04` gate
+have passed. `FAD-07` closed after its final `276/276`
+migration/policy/repository/schema/reset gate and independent closure audit.
+`FAD-05` closed after its complete recovery/job/late-lock and migration-freeze
+gates. `FAD-06` closed locally after its final `161/161` auction-family gate
+across `22` suites in `17` files, post-gate `10/10` administration check, and
+fresh full-migration composed GET proof. Independent review's terminal
+player-source P2 was corrected, leaving no remaining P1/P2 issue. FAD-linked
+`T-080` through `T-083` remained fail-closed until their FAD-11 gate. FAD-11
+through FAD-17 have now closed locally; FAD-18 is the sole active isolated-
+staging slice.
+
+FAD-08 closed with the shared internal, transaction-bound readiness-handoff
+primitive, but it did not pull the Entry Draft into M7. The future final
+`T-108` selection or confirmed-forfeiture transaction remains M8 work and owns
+`entry_draft_completed`; there is no standalone/manual Entry Draft completion
+route. The no-draft owners remain unchanged: `T-036` commits
+`no_draft_inaugural`, `T-037` commits `no_draft_initial_season2`, and confirmed
+`T-095` schedule creation may only correctively requeue the same blocked
+inaugural operation/job after supplying its missing schedule prerequisite.
+That T-095 path is protected by additive schema-33 immutable corrective-requeue
+evidence; migrations `0030` through `0032` remain frozen. Migration `0033` is
+pinned at `56,084` bytes and SHA-256
+`93714178a4c89687578ca340afbe69c317239118cb50765838e6123ff6faf7f1`.
+
+The completed FAD-09 migration audit includes index-only migration `0034`,
+immutable Candidate-help result migration `0035`, and immutable provider-
+eligibility occurrence migration `0036`. Migration `0035` is pinned at
+`10,981` bytes and SHA-256
+`cbbaf5322c111f3d13659cf6adc1a5046c8b49ba0ab84c3541d770a1dae3b669`; migration `0036`
+is pinned at `22,871` bytes and SHA-256
+`1351e25758d7192ab804214f0abeb696a9b0a9b3509e81dcd276ac7570fbb1f6`.
+The schema-36 inventory is `129` application tables, `130` including
+the migration ledger, `129` repository-catalog entries, `47` post-reset
+require-empty tables, `82` signed-reset-policy tables, and `69` immutable-
+delete guards.
+
+FAD-10 adds migration `0037_allow_atomic_fad_deadline_allocations.sql`, pinned
+at `4,142` bytes and SHA-256
+`33b8e7c3479f9a3dc64011a29ced6421a5cc59eca62da8b8144cf82b1d0d80b3`,
+for the exact live-deadline-job allocation insert seam. Migration
+`0038_allow_pre_fad12_restricted_scheduling.sql`, pinned at `17,157` bytes and
+SHA-256
+`b4567d087b31ff70dfa2776f2a15e6d22e182600d3dd5e5446a169bb64bb5ac5`,
+keeps exact Candidate ties scheduled for the next complete rapid rollover
+until the later restricted-auction slice. Schema `38` was the FAD-10 local
+target and retained the schema-36 inventory: `129` application tables, `130`
+including the ledger, `129` repository-catalog entries, `47` post-reset
+require-empty tables, `82` signed-reset-policy tables, and `69` immutable-
+delete guards.
+
+FAD-11 adds migration `0039_add_fad_recovery_correction_evidence.sql`, pinned
+at `201,713` bytes and SHA-256
+`a176479f3eb3fc1183c595a68026a2e5b73d6b975b66b6bcab5de4954945ae6f`,
+and migration `0040_allow_atomic_fad_restricted_fallback_overlap.sql`, pinned
+at `9,449` bytes and SHA-256
+`cff71c33b628504d38b53cfe1621363740791c119c5b214d7d11e10f216a5a92`.
+Schema `40` was the FAD-11 local target with `131` application tables, `132`
+including the ledger, and `131` repository-catalog entries.
+
+FAD-12 adds migration
+`0041_allow_fad_auction_resolution_recovery_resume.sql`, pinned at `35,525`
+bytes and SHA-256
+`00d6926934d46089df6581a8c3edc296394ce57958155e36da7d15b2be61111b`;
+migration `0042_use_current_aav_for_restricted_participant_floor.sql`, pinned
+at `9,326` bytes and SHA-256
+`4269c4a0c320364b65d20c01b167ff8738f1a67c7e4d52160e6e2245e201e537`;
+and migration `0043_allow_repeat_fad_auction_resolution_recovery.sql`, pinned
+at `92,011` bytes and SHA-256
+`1623d40ffaa477e3ba0be6bdd7c831f3d16489b53e4befc03eb7aa0e6efa6ae3`.
+Schema `43` was the FAD-12 local target with the same `131` application tables,
+`132` including the ledger, and `131` repository-catalog entries.
+
+FAD-13 adds migration `0044_allow_immediate_fad_open_rapid_starts.sql`, pinned
+at `32,654` bytes and SHA-256
+`79f759030c01281f4a21aeba0584a3681d0ae84982d2b7a48dfcd7a5bf0274ee`;
+migration
+`0045_allow_restart_safe_fad_queued_nomination_activation.sql`, pinned at
+`74,289` bytes and SHA-256
+`cd2a7d3059b6ab0f484267b6999cbadd6db1a86114fcdb67e4220296dca9ae37`;
+migration `0046_bind_fad_open_rapid_starter_edit_limit.sql`, pinned at `18,329`
+bytes and SHA-256
+`78626350a1efa3e76b09f3ba2dc812b135b1e2d19dd2c01d2e973a57a6a884bb`;
+and migration
+`0047_allow_restart_safe_fad_rollover_finalization.sql`, pinned at `14,129`
+bytes and SHA-256
+`bdabbcff52cd87c932c3f2e067d825786fd6dac6354ea4a3a90396ec972b0b2b`.
+Schema `47` was the FAD-13 local target with `131` application tables, `132`
+including the ledger, and `131` repository-catalog entries.
+
+FAD-14 first added trigger-only migration
+`0048_require_canonical_fad_realtime_evidence.sql`, pinned at `73,524` bytes,
+`1,490` lines, and SHA-256
+`c08445d1b3833343f9c276dff3cd9400ebce6e282665179b992f47919feceb21`.
+Schema `48` is the preserved intermediate realtime checkpoint. Trigger-only
+reconciliation migration
+`0049_require_canonical_fad_setup_exemption_publications.sql` is pinned at
+`29,571` bytes, `748` lines, and SHA-256
+`5109baabaeed39e06498c7c26274a41a48edfbbdee958e7dd6b278021a29ebc6`.
+Schema `49` is current locally with the same `131` application tables, `132`
+including the ledger, and `131` repository-catalog entries. Migrations `0023`
+through `0049` have not been applied to shared staging or production.
+
+The composed readiness worker/runtime, carryover opening, T-126 through T-129
+privacy and no-write contracts, and original-receipt T-128 replay after later
+terminal success are complete locally. The final FAD-08 behavior package
+passes `336/336`; the independent schema-33 package passes `64/64`. Shared
+staging and production were not opened or changed.
+
+`FAD-09` is `COMPLETE - LOCAL ONLY (2026-08-08)`. T-130 and T-133 through
+T-139 are jointly exposed in the local target runtime, increasing the target
+endpoint inventory from `102` to `110`. Candidate writes, help, every
+authoritative summer writer, semantic provider revalidation, shared-lease
+worker execution, and deadline reconciliation use the same transaction-bound
+Candidate synchronizer. Outstanding occurrence-bound work is terminalized as
+`deadline_reconciled`, and stale workers are fenced.
+
+Launch defaults are `fad_candidate_write` at `120` per session and `600` per
+league per `15` elapsed minutes, `fad_help_write` at `5` per session and `25`
+per league per elapsed hour, and `fad_operational_write` at `30` per session
+and `120` per league per `15` elapsed minutes. Closure gates pass `60/60`
+provider occurrence/job/deadline tests, `262/262` summer-writer tests, `36/36`
+direct Candidate HTTP-boundary tests, and `66/66` composed-runtime tests. The
+local staging-verifier regression passes `9/9`, and reset bootstrap passes
+`8/8`. No shared staging or production environment was opened or changed.
+
+`FAD-10` is `COMPLETE - LOCAL ONLY (2026-08-09)`. T-131, T-132, and T-140
+are composed and contract-tested locally, increasing the target endpoint
+inventory from `110` to `113`. Durable reminders, exact deadline locking,
+whole-card legality, immutable league-wide publication, pending-result reads,
+independent per-player allocation, and aggregate team results are composed in
+the target runtime. One scheduler cycle orders the allocation coordinator,
+per-player runner, and coordinator again before ordinary auction resolution;
+zero-allocation FADs use the same coordinator-owned direct transition to
+`rapid`. Exact Candidate ties stay scheduled or quarantined for the future
+restricted-auction privacy and activation gate.
+
+The FAD-10 closure matrix passes `200/200` across `23` suites. Separate gates
+pass `4/4` composed-runtime tests, `18/18` coordinator tests, `103/103` shared-
+auction regression tests, and `7/7` post-amendment reminder tests. There is no
+frontend caller, shared-staging deployment or verification, or production
+change at that checkpoint.
+
+`FAD-11` is `COMPLETE - LOCAL ONLY (2026-08-10)`. T-141 through T-144,
+FAD-linked T-080 through T-083 administration, atomic FAD completion, and the
+shared transaction-owned restricted no-improvement fallback are complete
+locally. The target runtime inventory remains `117`. Separate closure gates
+pass `197/197` broader recovery/correction/administration, `96/96` schema/
+runtime, `62/62` ordinary-auction compatibility, and `40/40` complete
+administration-repository tests on Node.js `24.14.1`.
+
+`FAD-12` is `COMPLETE - LOCAL ONLY (2026-08-10)`. Server-derived restricted/
+fallback bidding and reads, current strict improvements, exact-top committed
+draws, no-selection reveals, restricted no-improvement fallback, allocation-
+linked fallback winner/no-winner settlement, normal pricing, winner resources,
+post-commit late-lock, delayed activation, transient reclaim, deterministic
+recovery, repeated T-142 retry, and exact replay are composed through schema
+`43`. The target runtime inventory remains `117`.
+
+Separate exact Node.js `24.14.1` gates pass `52/52` resolver policy/
+persistence/shared fallback, `15/15` application service/runner, `71/71`
+activation/job-repository, `50/50` bid/HTTP/read capability, `170/170`
+ordinary auction/administration compatibility, `303/303` schema-43/current-
+head, and `94/94` final scheduler/runtime/deployment/ordinary compatibility tests. The
+final runtime gate includes `6/6` scheduler-order, `1/1` composed T-083, `3/3`
+FAD ordinary compatibility, `17/17` ordinary resolver/job, `36/36` target-
+runtime, and `31/31` target-deployment tests.
+
+At FAD-12 closure, `FAD-13` became active. Direct and queued open-rapid
+resolution, final-hour private queueing, contiguous extension rollovers, and
+completion recovery remained its scope. FAD-12 rejected those contexts and
+preserved the ordinary resolver and auction paths. No frontend, shared staging,
+or production environment was opened, migrated, deployed, or changed at that
+checkpoint.
+
+`FAD-13` is `COMPLETE - LOCAL ONLY (2026-08-10)`. Immediate and private queued
+starts, restart-safe queued activation, direct/queued rapid resolution,
+allocation-null and no-bid outcomes, contiguous extension finalization and
+recovery, atomic completion and whole-Monday Week 1 recovery, the matchup-start
+guard, and the season-start-plus-FAD-completion ordinary-auction handoff are
+composed locally. The target endpoint inventory remains exactly `117`.
+
+Separate, overlapping Node.js `24.14.1` milestones pass `11/11` start-decision
+policy, `10/10` immediate-start writer, `23/23` FAD start/lifecycle, `12/12`
+ordinary creation compatibility, `125/125` queued activation, `22/22` focused
+allocation-null resolution writer, `18/18` focused resolution service/runner,
+`73/73` broader allocation-null resolution, and `122/122` bid/read
+compatibility. Final gates pass `280/280` schema-47/current-head, `42/42`
+rollover policy/writer/service/runner, `31/31` completion, `77/77` runtime
+composition, and `15/15` matchup-start guard tests. These records overlap and
+are not added into one aggregate total.
+
+`FAD-14` is `COMPLETE - LOCAL ONLY (2026-08-11)`. The exact Activity and
+notification registries, four Candidate Card opening publication sets,
+eight-related-ID envelopes, audience privacy, reconnect authorization, and the
+setup-exemption eleventh-Activity/thirteenth-notification three-publication
+contract are composed locally. The target endpoint inventory remains exactly
+`117` on schema `49`.
+
+Separate pinned Node.js `24.14.1` evidence passes `1,294/1,294` focused core
+tests across `142` suites and `110` unique files, `95/95` production syntax,
+`265/265` schema-49 pin/runtime/reset/release/staging-verifier tests, and
+`189/189` former-failure consolidation tests. The authoritative full backend
+gate records `3,266` tests across `436` suites: `3,264` passed, zero failed,
+cancelled, or todo, and two intentional Windows link-capability skips in
+`sportsDataIoLiveCapabilityArtifactFoundation.test.js`, in about `30m03.603s`.
+
+`FAD-15` and `FAD-16` are `COMPLETE - LOCAL ONLY (2026-08-11)`. Server-directed
+Candidate Card preparation, results, FAD auctions, private queue confirmation,
+commissioner recovery, notification routing, realtime reauthorization, deep-
+link reload, cross-league isolation, keyboard/focus, responsive, and
+accessibility behavior are implemented. Exact Node.js `24.14.1` gates pass
+`316/316` tests across `52` files, lint, production build, dependency-tree
+inspection, and browser-authority verification across `19` compatibility files
+and `154` shipped source files. FAD feature coverage is `87.17%` statements and
+`80.02%` branches.
+
+`FAD-17` is `COMPLETE - LOCAL ONLY (2026-08-11)`. The real disposable two-
+league browser matrix passes `40/40` across five Playwright projects with zero
+retries. Exact backend local acceptance passes `28/28` migration/fixture/reset/
+cutover tests, `49/49` affected resolution service/writer/job tests, and
+`202/202` representative mandatory-package tests with no failure,
+cancellation, or skip. This includes exact schema `22 -> 49` plus fresh schema-
+49/catalog agreement, no-bid later renomination, simultaneous no-reservation
+aggregate wins, absent/disabled nonblocking video, distinct Alpha/Beta Week 1
+and help chronology, GET/preview no-write proof, restart/recovery, privacy, and
+ordinary-auction compatibility. T-076 through T-083 and T-126 through T-144 are
+`LOCAL VERIFIED` from that recorded evidence.
+
+The amendment requires automatic all-or-none Candidate Card readiness,
+server-owned whole-Monday Week 1 recovery, strict whole-card cap exclusion,
+restricted minimums that require a current improvement, league-wide fallback
+when no improvement remains, exact-top FAD draws for open and restricted
+auctions, private final-hour nomination queueing, no-bid unclaimed outcomes,
+no cap/slot reservation, binding aggregate wins, and contiguous rollover
+extensions beyond the initial seven when required.
+
+Grae's continuation instruction authorizes the isolated staging gate. `FAD-18`
+is now the sole active slice, but deployment is blocked until exact clean
+release commits, a real committed provider probe manifest and live paid-source
+observation, isolated staging resource identities and operator access, offsite
+object storage/encryption plus current backup and clean restore, the approved
+reset/import and one schema-49 migration report, and exact release/deploy/
+rollback identities are available. Production remains blocked and unauthorized.
+
+The schema-agnostic maintenance-hold bridge is implemented locally but not
+deployed. FAD-18 now routes through an auxiliary hold-true deploy on the old
+schema-22 path for inherited discovery from a verified private OS-temporary
+copy, then an exact-final-build hold-true deploy for verified backup, clean-
+restore proof at a distinct inactive path, and the complete reset/import at a
+different fresh schema-49 path, including the ordered artifact/bootstrap/
+report/database-identity handoff. Only that same final build may transition
+explicitly to hold `false` in provider `probe` on the new path. The old file
+remains untouched; in-place migration is excluded pending persistent-root
+hardening.
+
+The core gate includes:
+
+* scheduled Entry Draft-start rollover that gates drafting and trading until
+  success, plus the approved no-draft transition for initial Season 2;
+* an empty inaugural league-creation baseline with no prior-season carryovers,
+  approved prospect projection, and later-season locked carryovers;
+* private Candidate Cards opened together by automatic all-or-none readiness,
+  without commissioner-authored FAD opening parameters;
+* explicit commissioner- or administrator-selected first-matchup timing, no
+  fixed annual FAD date, frozen historical FAD clocks, and server-owned
+  whole-Monday recovery before opening or at completion;
+* adaptive commissioner help for the final 48 hours or all remaining time when
+  cards open later;
+* deadline locking, whole-card cap disposition, and league-wide reveal;
+* total-first, AAV-second allocation;
+* restricted minimums and strict improvements, league-wide no-improvement
+  fallback, and exact-top open/restricted FAD draws;
+* seven initial daily rollovers plus required contiguous extensions, private
+  final-hour nomination queueing, no-bid unclaimed outcomes, and binding
+  no-reservation wins;
+* late legal matchup snapshots that atomically persist immutable
+  player/game/start/source exclusion evidence with the baseline, omit an
+  already-underway NHL game in full, and remain idempotent under replay and
+  races;
+* final transition to ordinary weekly auctions only after all FAD paths are
+  terminal.
+
+The presentation video does not block Season 2. It remains optional for Season
+2, and its implementation is required for Season 3 readiness. An individual
+generation failure must still fail safely without delaying results or season
+start.
+
+---
+
 # Part 12 - Milestone M8: Required In-Season Completion
 
 ## Status
@@ -841,10 +1163,16 @@ It includes:
 * automatic best-player-available timeout selection;
 * no skipped picks;
 * immutable completed selections;
+* confirmed commissioner forfeitures;
 * on-clock traded-pick reset;
-* prospect-right creation and approved re-entry.
+* prospect-right creation and approved re-entry;
+* the final `T-108` selection or confirmed-forfeiture transaction atomically
+  making the last pick terminal, marking the draft `Complete`, and invoking the
+  internal `entry_draft_completed` readiness handoff.
 
-The initial Season 2 launch does not require this interface.
+There is no separate manual Entry Draft completion endpoint. The initial Season
+2 launch does not require this interface; FAD-08's internal handoff primitive
+does not change the M8 deferral of the complete Entry Draft.
 
 ---
 
@@ -854,21 +1182,15 @@ Must be complete before the first Season 2 off-season:
 
 * season finalization;
 * historical results;
-* contract-year advancement;
-* contract expiration before the next Entry Draft;
+* competition completion with contract years unchanged and displayed as
+  `Pending Rollover`;
+* automatic contract-year advancement/expiration at the persisted scheduled
+  Entry Draft start, gating draft and trading until success;
 * free-agency conversion;
 * retention and buyout continuation;
 * draft-order inputs;
 * verified season-end snapshot;
 * transition to the next approved operating mode.
-
----
-
-## Future Free Agent Draft
-
-The pre-season Free Agent Draft remains a future update.
-
-It must receive its own approved product and technical specification before implementation. It does not replace the approved weekly auction system.
 
 ---
 
@@ -910,6 +1232,11 @@ Every milestone adds tests at the lowest useful level:
 * frontend component and workflow tests;
 * written manual QA;
 * staging and release smoke tests.
+
+For M7-25, this also requires the recorded historical `0023` through `0029`
+amendment impact dispositions, the resulting verified `0023` through `0049`
+migration set, and the complete 2026-07-29 FAD acceptance package to pass
+locally and in isolated staging before the FAD launch gate can close.
 
 Passing `npm run build` alone is not feature verification.
 
@@ -970,8 +1297,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Complete Grae's independent M7-11 staging review and record any acceptance defects; do not touch production
-Implementation status: M7-01 through M7-11 COMPLETE ON STAGING; USER ACCEPTANCE AND SEPARATE RELEASE GATES REMAIN; PRODUCTION REMAINS BLOCKED
+Action: Continue FAD-18 through its authorized isolated shared-staging gate
+Implementation status: M7-25 ACTIVE / FAD-01 THROUGH FAD-17 COMPLETE LOCALLY / FAD-18 SOLE ACTIVE ISOLATED-STAGING SLICE / SCHEMA 49 LOCAL ONLY / MIGRATIONS 0023-0049 LOCAL ONLY / TARGET ENDPOINT INVENTORY 117 / T-076 THROUGH T-083 AND T-126 THROUGH T-144 LOCAL VERIFIED / FRONTEND 316/316 / PLAYWRIGHT 40/40 ACROSS FIVE PROJECTS WITH ZERO RETRIES / STAGING DEPLOYMENT BLOCKED BY REAL PROVIDER, ISOLATED-RESOURCE, BACKUP-RESTORE, RESET-MIGRATION, CLEAN-COMMIT, AND RELEASE-IDENTITY PREREQUISITES / PRODUCTION UNAUTHORIZED AND BLOCKED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Branches: staging and staging
 ```
@@ -981,9 +1308,12 @@ The governing designs are defined in:
 ```text
 docs/03-product-specs/USER_ACCOUNTS.md
 docs/03-product-specs/LEAGUES_AND_TEAMS.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md
 docs/04-technical-specs/SECURITY.md
+docs/04-technical-specs/FREE_AGENT_DRAFT.md
+docs/06-work-plans/ACTIVE_WORK_PLAN.md
 ```
 
 M2-01 through M2-14 and the external staging gate are complete. M3-01
@@ -1093,7 +1423,9 @@ Expected result:
 * document status is `APPROVED`;
 * roadmap status is `ACTIVE`;
 * M1 and M2 are complete, including the external staging gate;
-* M3 through M6 and their milestone gates are complete locally;
+* M3 through the original M6 gate are complete locally, while the 2026-07-29
+  late-snapshot amendment is reopened and remains part of the active M7/FAD
+  launch gate;
 * M7-01 through M7-11 are complete on the dedicated staging services;
 * M7-11 passed its local automated, migration, reset, hosted desktop/mobile,
   manager workflow, and league-isolation gates, while manual native pointer

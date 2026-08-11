@@ -12,6 +12,10 @@ This product specification consolidates:
 
 Grae approved the Season 2 Trades product specification recorded in this document on 2026-07-18.
 
+Grae approved the FAD carryover-synchronization amendments on 2026-07-27.
+
+Grae approved the Entry Draft pick-trading and rollover-gate amendments on 2026-07-29.
+
 ---
 
 ## Product Purpose
@@ -38,7 +42,7 @@ This document does not define:
 
 * auction bidding or resolution;
 * Entry Draft order or draft-pick creation;
-* the future pre-season Free Agent Draft;
+* Candidate Card allocation and Free Agent Draft rapid auctions;
 * exact roster-lock and matchup snapshot implementation;
 * exact database tables;
 * exact API routes or payloads;
@@ -322,11 +326,30 @@ An Active, Bench, or Injured Reserve player transfers with:
 * the same AAV;
 * the same remaining years;
 * the same expiration;
-* the same active auction buyout-lock end time;
+* the same active free-agent acquisition buyout-lock end time;
 * existing retention records;
 * any new approved retention created by this trade.
 
 The trade does not restart, extend, or replace the contract.
+
+---
+
+## Ownership Tenure Across Transfers
+
+The stable player and contract IDs survive a transfer, but the ownership ID
+does not cross teams. Acceptance atomically closes the source ownership tenure
+at its last committed version and creates a distinct destination ownership at
+version `1`. Prospect-right transfers follow the same rule.
+
+The completed trade preserves an immutable source-to-destination ownership-ID
+mapping for every transferred player or prospect right. Exact idempotent replay
+returns that same mapping without repeating any ownership, contract, history,
+activity, notification, or outbox effect.
+
+A direct reversal closes the destination ownership tenure and creates another
+new source-team ownership at version `1`; it never resurrects either historical
+ownership ID. Commissioner-directed team transfers use the same tenure and
+history rule.
 
 ---
 
@@ -375,13 +398,15 @@ A draft pick must preserve:
 
 * stable pick ID;
 * league and draft identity;
-* draft year or season;
+* permanent draft year or season;
 * round;
-* original team;
+* permanent original team;
 * current owning team;
 * selection status.
 
-Trading changes current ownership only. Original-team history remains unchanged.
+Trading changes current ownership only. Draft year, round, and original team
+never change. The current owner makes the selection at the original team's
+position in the draft order.
 
 ---
 
@@ -393,11 +418,39 @@ An unspent pick may be traded:
 * while that Entry Draft is in progress, until the pick is used;
 * for any already-created future draft.
 
-A pick may be traded any number of times while it remains unspent. Every transfer changes current ownership and preserves original-team and complete ownership history.
+A pick may be traded any number of times while it remains unspent, subject to
+the one-completed-on-clock-trade rule below. Every transfer changes current
+ownership and preserves original-team and complete ownership history.
 
 A used, cancelled, expired, or not-yet-created placeholder pick cannot be traded.
 
 The Entry Draft and Data Model specifications must define when future picks are created and how many future seasons exist.
+
+---
+
+## On-Clock Pick Trading
+
+A pending proposal that contains a pick remains pending when that pick goes on
+the clock. Going on the clock neither reserves the pick nor cancels the
+proposal.
+
+At most one trade containing that pick may complete while the pick is on the
+clock. When that trade completes:
+
+1. current ownership transfers atomically;
+2. the pick records that its one on-clock trade has been used;
+3. every competing proposal made stale by the ownership change is
+   automatically cancelled and recorded;
+4. the new current owner receives a fresh full selection clock.
+
+After that completed on-clock trade, no second proposal containing the pick may
+complete while it remains on the clock.
+
+A committed selection cancels every pending proposal containing that pick. A
+trade acceptance, a manual selection, and a clock-expiry selection receive no
+grace period against one another: the first transaction to commit wins, and
+every losing transaction must revalidate, fail without partial effects, and
+observe the committed result.
 
 ---
 
@@ -456,11 +509,24 @@ The original becomes `Rejected`, shown to managers as declined, even if creation
 
 ## Approved Trading Window
 
-Trading opens at the start of the Entry Draft.
+At the scheduled Entry Draft start, the automatic contract-year rollover runs.
+Trading opens only after that rollover succeeds. Entry Draft preparation may
+occur beforehand, but proposal creation, response, countering, cancellation,
+and completion remain locked while rollover is pending or failed.
 
 Trading closes at the commissioner-configured league trade deadline.
 
-Trading reopens at the start of the next Entry Draft.
+Trading reopens after the successful automatic rollover at the scheduled start
+of the next Entry Draft.
+
+When Candidate Cards are open, a completed trade involving a contracted player
+must update the locked carryover projection on both affected cards. The player
+must not remain on the former team's card, disappear from the receiving team's
+obligations, or receive a rewritten contract.
+
+Any resulting Candidate Card slot conflict is surfaced under the Free Agent
+Draft and Roster specifications and does not silently cancel the completed
+trade.
 
 The deadline belongs to the league, uses the stored league timezone, is calculated by the backend, handles daylight-saving time, and is displayed unambiguously.
 
@@ -620,6 +686,11 @@ Acceptance must atomically:
 9. automatically cancel every other pending proposal made stale by the transfer;
 10. create one completed trade and activity record.
 
+When an accepted trade contains the pick currently on the Entry Draft clock,
+the same transaction must also validate that the pick has not already used its
+one on-clock trade, persist that use, preserve its original-team draft
+position, and grant the new owner a fresh full clock.
+
 Failure rolls back the entire acceptance.
 
 ---
@@ -660,7 +731,9 @@ A pending proposal is automatically cancelled when:
 
 * a selected player or prospect is traded through another authorized correction;
 * selected prospect rights are released or converted incompatibly;
-* a selected draft pick is used, removed, or corrected to another owner;
+* a selected draft pick is used, removed, or corrected to another owner,
+  including immediate cancellation of every pending proposal containing a
+  pick whose selection commits;
 * a team is removed or made inactive;
 * an included contract is corrected so the proposed retention is no longer valid.
 * a selected retention or buyout-penalty obligation changes responsible teams;
@@ -793,6 +866,7 @@ The initial release keeps a simple league-visible trade block where a manager ma
 
 * is informational only;
 * does not create, approve, or alter a trade;
+* does not change roster legality or trigger matchup late-lock evaluation;
 * does not expose private bid or negotiation notes;
 * clears automatically when the player leaves the team;
 * may be removed by the manager or commissioner.
@@ -879,7 +953,17 @@ Tests must cover:
 * signed and unsigned prospects;
 * draft-pick original-team history;
 * repeated draft-pick transfers before and during an Entry Draft;
-* contract AAV, remaining years, and buyout lock transfer;
+* current-owner selection at the permanent original team's draft position;
+* pending proposals surviving the transition onto the clock;
+* one successful on-clock trade, the persisted one-trade limit, and the new
+  owner's fresh full clock;
+* rejection of a second on-clock trade without partial effects;
+* selection cancelling every pending proposal containing the pick;
+* an accepted trade cancelling competing proposals made stale by ownership;
+* trade acceptance versus manual selection and clock-expiry selection with no
+  grace period and first-commit-wins behavior;
+* contract AAV, remaining years, and free-agent acquisition buyout lock
+  transfer;
 * one and chained retention records;
 * whole-obligation retention and buyout-penalty transfers;
 * responsible-team cap and retention-slot changes;
@@ -905,13 +989,13 @@ Tests must cover:
 ## Inherited Approved Rules
 
 - [x] Trading is league-scoped and both teams belong to the same league.
-- [x] Trading opens at Entry Draft start and closes at the commissioner-configured deadline.
-- [x] Trading reopens at the next Entry Draft start.
+- [x] Trading opens only after the automatic rollover succeeds at Entry Draft start and closes at the commissioner-configured deadline.
+- [x] Trading reopens only after the successful automatic rollover at the next Entry Draft start.
 - [x] Proposals expire seven days after creation and cannot be accepted after the trade deadline.
 - [x] Active, Bench, and Injured Reserve players with contracts are tradeable.
 - [x] Prospects and player rights are tradeable and remain prospects after transfer.
-- [x] Draft picks are tradeable and retain original-team history.
-- [x] Contracts transfer without changing AAV, remaining years, expiration, or auction buyout lock.
+- [x] Draft picks permanently retain draft year, round, and original team; the current owner selects at the original team's draft position.
+- [x] Contracts transfer without changing AAV, remaining years, expiration, or free-agent acquisition buyout lock.
 - [x] Approved retained salary may be added and persists for the remaining contract term.
 - [x] Cumulative retention is limited to 50% of original AAV and three active slots per team.
 - [x] Existing retention is unchanged by a later trade or buyout.
@@ -943,7 +1027,11 @@ Tests must cover:
 - [x] A signed prospect that already left Prospects cannot return through a trade.
 - [x] Unspent current-year picks may be traded before or during the Entry Draft.
 - [x] Already-created future picks may be traded.
-- [x] A draft pick may be traded multiple times while unspent and preserves complete ownership history.
+- [x] A draft pick may be traded multiple times while unspent, but at most one trade containing it may complete while it is on the clock.
+- [x] Pending proposals containing a pick remain pending when it goes on the clock.
+- [x] A completed on-clock trade gives the new owner a fresh full clock and records that the pick's one on-clock trade has been used.
+- [x] Selection cancels every pending proposal containing the pick, while a completed trade cancels competing proposals made stale by ownership.
+- [x] Trade acceptance, manual selection, and clock-expiry selection have no grace period; the first transaction to commit wins.
 - [x] Used, cancelled, expired, and not-yet-created placeholder picks cannot be traded.
 - [x] Prospect rights use the Prospect-roster asset and cannot be traded after release, expiry, or conversion.
 - [x] Creating a proposal changes no ownership or cap amount.
@@ -1025,6 +1113,7 @@ docs/03-product-specs/ROSTERS.md
 docs/03-product-specs/CONTRACTS.md
 docs/03-product-specs/AUCTIONS.md
 docs/03-product-specs/ENTRY_DRAFT.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/COMMISSIONER_TOOLS.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md

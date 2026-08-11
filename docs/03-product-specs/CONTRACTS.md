@@ -14,6 +14,10 @@ This product specification consolidates:
 
 Grae approved the Season 2 Contracts product specification recorded in this document on 2026-07-18.
 
+Grae approved the FAD contract and buyout-lock amendments on 2026-07-27.
+
+Grae approved the season-boundary and Entry Draft rollover amendments on 2026-07-29.
+
 ---
 
 ## Product Purpose
@@ -287,7 +291,7 @@ A normal contract may be created through:
 
 * an auction win;
 * an approved fantasy ELC signing;
-* the future pre-season Free Agent Draft;
+* the annual pre-season Free Agent Draft;
 * an explicit commissioner correction or migration needed to repair approved league state.
 
 A roster read, ordinary roster move, trade, page load, or cap calculation may not invent a missing contract.
@@ -311,6 +315,32 @@ On resolution:
 6. The backend creates the required activity record.
 
 The Auctions specification defines bidding and winning rules.
+
+---
+
+## Free Agent Draft Contract
+
+A sole or unique highest Candidate Card offer supplies:
+
+* the original total contract value;
+* the original one-, two-, or three-year term;
+* the initial remaining years.
+
+On automatic allocation:
+
+1. the backend validates the deadline Candidate Card offer;
+2. the exact submitted total and term become the contract;
+3. the backend calculates and rounds AAV;
+4. the backend creates contract, ownership, roster assignment, FAD result, and
+   required activity atomically;
+5. the contract belongs to the upcoming season;
+6. the FAD signing timestamp begins the approved 14-day free-agent signing
+   buyout lock.
+
+Restricted and open rapid-auction contracts follow the Auction contract rules
+and belong to the FAD target upcoming season. The Free Agent Draft
+specification defines Candidate Card ranking, tied-team eligibility, and
+preseason timing.
 
 ---
 
@@ -506,21 +536,24 @@ Managers may buy out an eligible contracted player owned by an assigned team.
 
 Commissioners may buy out an eligible contracted player for any team in their league.
 
-Active, Bench, Injured Reserve, and signed-ELC Prospect players are eligible unless an auction buyout lock applies.
+Active, Bench, Injured Reserve, and signed-ELC Prospect players are eligible
+unless a free-agent acquisition buyout lock applies.
 
 An unsigned prospect has no contract to buy out.
 
-A fantasy ELC has no auction buyout lock and may be bought out immediately.
+A fantasy ELC has no free-agent acquisition buyout lock and may be bought out
+immediately.
 
 ---
 
-## Auction Buyout Lock
+## Free-Agent Acquisition Buyout Lock
 
-A player signed through an auction cannot be bought out for `14 days`.
+A player signed through an auction or direct automatic FAD allocation cannot
+be bought out for `14 days`.
 
 The lock:
 
-* begins from the persisted auction-assignment time;
+* begins from the persisted player-assignment time;
 * belongs to the contract and player acquisition;
 * follows the player through a trade;
 * does not restart after a trade.
@@ -589,20 +622,35 @@ Examples:
 
 ## Rollover Boundary
 
-Contract-year advancement and expiration occur at the end of the league season.
+The competition season ends after the final NHL regular-season game. That
+competition-season boundary does not advance contract years or expire
+contracts.
 
-Every contract held during the season advances or expires in that same end-of-season rollover. This includes a contract created by a midseason auction win; acquisition timing does not delay use of the current contract year.
+From the competition-season boundary until the next successful rollover,
+contract displays keep their current remaining-year count and show
+`Pending Rollover`.
+
+Contract-year advancement and expiration occur automatically at the scheduled
+start of the next Entry Draft. Entry Draft setup, order, eligible-player pool,
+pick ownership, and private manager queues may be prepared before that instant,
+but drafting and trading remain locked until the rollover succeeds.
+
+Every contract held during the completed competition season advances or
+expires in that same Entry Draft-start rollover. This includes a contract
+created by a midseason auction win; acquisition timing does not delay use of
+the completed contract year.
 
 The rollover operation must:
 
 * be backend-controlled;
 * use the league’s season identity;
+* start automatically at the persisted Entry Draft start instant;
 * be idempotent;
 * prevent duplicate year advancement;
 * preserve history;
 * coordinate contracts, retention, buyout penalties, rosters, free agency, and trading state.
 
-At the end-of-season lifecycle boundary, one league-level atomic rollover:
+At the scheduled Entry Draft-start boundary, one league-level atomic rollover:
 
 1. advances contract years, retention, and buyout penalties;
 2. expires eligible contracts and obligations;
@@ -612,7 +660,10 @@ At the end-of-season lifecycle boundary, one league-level atomic rollover:
 6. records expiration history;
 7. records the completed season identity and rollover timestamp.
 
-If any part fails, no contract or obligation in that league advances.
+If any part fails, no contract or obligation in that league advances, drafting
+and trading remain locked, and the commissioner receives an actionable blocker
+list with an idempotent retry control. A successful retry performs the same
+atomic operation once and only then opens drafting and trading.
 
 Managers receive neither a separate in-app notice nor an email notification for upcoming expiration in the initial release.
 
@@ -991,7 +1042,14 @@ Tests must cover:
 Tests must cover:
 
 * one-, two-, and three-year remaining terms;
-* expiration at entry-draft start;
+* competition-season end without year advancement or expiration;
+* current remaining years plus `Pending Rollover` before rollover succeeds;
+* automatic expiration at the persisted Entry Draft start;
+* pre-start draft preparation while drafting and trading remain locked;
+* rollover failure with no partial advancement, an actionable blocker list, and
+  drafting and trading still locked;
+* idempotent commissioner retry and opening drafting and trading only after
+  success;
 * immediate roster removal and free agency;
 * no exclusive re-signing;
 * retention and penalty advancement;
@@ -1004,7 +1062,8 @@ Tests must cover:
 
 # Part 17 — Approval Checklist
 
-Grae approved the following Season 2 Contracts product decisions on 2026-07-18.
+Grae approved the original Season 2 Contracts product decisions on 2026-07-18
+and the FAD-related amendments on 2026-07-27.
 
 ## Approved Contract Foundation
 
@@ -1027,7 +1086,9 @@ Grae approved the following Season 2 Contracts product decisions on 2026-07-18.
 - [x] The fantasy ELC is `$3` over three years for `$1 AAV`.
 - [x] Automatic real-life ELC detection and enforcement are deferred.
 - [x] Trades transfer the existing AAV and remaining years without restart or extension.
-- [x] Contract-year advancement and expiration occur at the end of the league season.
+- [x] The competition season ends after the final NHL regular-season game without advancing contract years.
+- [x] Until rollover succeeds, contracts keep their current remaining-year count and display `Pending Rollover`.
+- [x] Contract-year advancement and expiration occur automatically at the scheduled start of the next Entry Draft.
 - [x] A contract created by a midseason auction still uses that season as its current contract year.
 - [x] Expiration removes the player from the roster and immediately makes the player a free agent.
 - [x] The former team receives no exclusive re-signing opportunity.
@@ -1047,7 +1108,7 @@ Grae approved the following Season 2 Contracts product decisions on 2026-07-18.
 - [x] A buyout eliminates the contract and immediately releases the player to free agency.
 - [x] The annual buyout penalty is 25% of full underlying AAV, rounded to the nearest hundredth.
 - [x] The penalty applies in every remaining year and does not decay.
-- [x] Auction signings have a 14-day buyout lock that follows the player through trade.
+- [x] Auction and direct automatic FAD signings have a 14-day buyout lock that follows the player through trade.
 - [x] A buyout cancels pending trades involving the player.
 
 ## Approved Permission, Cap, and History Rules
@@ -1075,21 +1136,24 @@ Grae approved the following Season 2 Contracts product decisions on 2026-07-18.
 
 ## Contract Creation and Status Decisions
 
-- [x] Contract creation sources are Auction, Fantasy ELC, the future pre-season Free Agent Draft, Commissioner Correction, and Approved Migration.
+- [x] Contract creation sources are Auction, Fantasy ELC, the annual pre-season Free Agent Draft, Commissioner Correction, and Approved Migration.
+- [x] Automatic FAD allocation creates the winning team's exact Candidate Card total and term and begins the 14-day free-agent signing buyout lock.
 - [x] The backend distinguishes `Active`, `Expired`, and `Bought Out`; normal player-contract displays show only active contracts, while buyout cap hits appear in the roster panel’s Buyout area.
 - [x] A traded contract remains `Active`; trade is recorded in ownership and history rather than as a contract status.
 - [x] An administrator-created migration contract must satisfy the same value, term, and AAV rules as a normal contract.
-- [x] Auction-created contracts receive a persisted acquisition timestamp used for the buyout lock.
-- [x] The auction buyout lock expires exactly `14 × 24 hours` after the persisted assignment timestamp.
-- [x] The 14-day auction buyout lock does not apply to a fantasy ELC.
+- [x] Auction- and automatic-FAD-created contracts receive a persisted acquisition timestamp used for the buyout lock.
+- [x] The free-agent acquisition buyout lock expires exactly `14 × 24 hours` after the persisted assignment timestamp.
+- [x] The 14-day free-agent acquisition buyout lock does not apply to a fantasy ELC.
 - [x] A fantasy ELC is otherwise tradeable, retainable, and buyout-eligible like a normal contract.
 
 ## Expiration and Rollover Decisions
 
-- [x] The end-of-season lifecycle boundary processes contract-year advancement and expiration.
+- [x] The scheduled Entry Draft-start lifecycle boundary processes contract-year advancement and expiration.
 - [x] Contract-year advancement, expiration, retention advancement, penalty advancement, roster removal, and free-agency conversion run as one league-level atomic rollover.
 - [x] If any part of the league-level rollover fails, no contract or obligation in that league advances.
-- [x] Managers do not receive a separate in-app notice listing contracts with one year remaining before end-of-season rollover.
+- [x] Entry Draft setup may be prepared before rollover, but drafting and trading remain locked until rollover succeeds.
+- [x] Rollover failure gives the commissioner an actionable blocker list and an idempotent retry control.
+- [x] Managers do not receive a separate in-app notice listing contracts with one year remaining before the scheduled Entry Draft-start rollover.
 - [x] The initial release sends no separate email notification for upcoming contract expiration.
 - [x] Expiration automatically cancels every pending trade involving the expired player.
 - [x] An expired player may enter the normal free-agent auction process as soon as trading and auctions are available under their separate specifications.
@@ -1111,9 +1175,9 @@ Grae approved the following Season 2 Contracts product decisions on 2026-07-18.
 
 ## Buyout Decisions
 
-- [x] Active, Bench, Injured Reserve, and signed-ELC Prospect players are buyout-eligible unless the auction buyout lock applies.
+- [x] Active, Bench, Injured Reserve, and signed-ELC Prospect players are buyout-eligible unless the free-agent acquisition buyout lock applies.
 - [x] A prospect without a contract cannot be bought out.
-- [x] A fantasy ELC may be bought out immediately because it has no auction buyout lock.
+- [x] A fantasy ELC may be bought out immediately because it has no free-agent acquisition buyout lock.
 - [x] Buyout calculation has no low-AAV exemption; a `$1 AAV` contract creates a `$0.25` annual penalty.
 - [x] A buyout requires an `Are you sure?` confirmation.
 - [x] The confirmation shows full underlying AAV, remaining years, annual penalty, total scheduled penalty, existing retention, roster removal, free agency, and pending-trade cancellation.
@@ -1155,7 +1219,9 @@ The rule-approval phase for this product specification is complete because:
 * commissioner correction and activity behaviour are explicit;
 * no unchecked workflow is presented as final behaviour.
 
-The planned Auctions, Trades, Entry Draft, Data Model, API Contracts, Security, Testing Strategy, and migration work must implement these approved workflows.
+The planned Auctions, Trades, Entry Draft, Free Agent Draft, Data Model, API
+Contracts, Security, Testing Strategy, and migration work must implement these
+approved workflows.
 
 Verification must prove contract reads cannot repair, expire, reseed, or overwrite live data.
 
@@ -1174,6 +1240,7 @@ docs/03-product-specs/ROSTERS.md
 docs/03-product-specs/AUCTIONS.md
 docs/03-product-specs/TRADES.md
 docs/03-product-specs/ENTRY_DRAFT.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/COMMISSIONER_TOOLS.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md

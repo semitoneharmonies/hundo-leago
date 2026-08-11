@@ -14,7 +14,19 @@ This product specification consolidates:
 
 Grae approved this specification on 2026-07-18.
 
+Grae approved the FAD lifecycle-handoff amendments on 2026-07-27.
+On 2026-07-29, Grae approved the scheduled Entry Draft-start rollover,
+automatic Candidate Card handoff, and exact on-clock pick-trade race rules.
+On 2026-08-08, Grae clarified the exact event-linked evidence required for
+rights-release re-entry and its downstream Candidate eligibility effect.
+
 The initial Season 2 launch does not include the Entry Draft. Development may occur during the season, but the complete approved system, including the lottery, automatic best-player selection, and private queues, must be ready before the season's Entry Draft is used.
+
+The active FAD work may implement and verify only the shared internal,
+transaction-bound readiness-handoff primitive required by eventual Entry Draft
+completion. That infrastructure does not implement an Entry Draft endpoint,
+selection, forfeiture, queue, or user interface. The complete Entry Draft
+workflow remains deferred to Milestone M8.
 
 ---
 
@@ -40,7 +52,7 @@ The draft must never rely on display names or mutable frontend state to determin
 
 This document does not define:
 
-* the preseason Free Agent Draft planned for a future update;
+* Candidate Card preparation, Free Agent Draft allocation, and rapid auctions;
 * normal free-agent auctions;
 * automatic detection or enforcement of real-life ELC signings;
 * NHL amateur-draft rules;
@@ -162,15 +174,19 @@ Each pick must preserve:
 * unused, used, or forfeited state;
 * the selection created when used.
 
-An unused pick may be traded repeatedly, including while its Entry Draft is in progress, until the pick is used.
+An unused pick may be traded repeatedly, including while its Entry Draft is in
+progress, until the pick is used. A pick may complete at most one trade while
+it is the on-clock pick.
 
 ---
 
 ## Trading Window
 
-Trading opens at the start of the Entry Draft.
+Trading opens only after the automatic contract rollover at the scheduled
+Entry Draft start succeeds.
 
-It remains open until the commissioner-configured trade deadline and reopens at the start of the next Entry Draft.
+It remains open until the commissioner-configured trade deadline and reopens
+only after the next scheduled Entry Draft-start rollover succeeds.
 
 Trade proposals and accepted trades continue to follow the Trades specification.
 
@@ -178,9 +194,16 @@ Trade proposals and accepted trades continue to follow the Trades specification.
 
 ## Contract Rollover
 
-Contract years advance and expiring contracts end during the end-of-season rollover before the next Entry Draft.
+The competition season ends after the final NHL regular-season game, but
+contract years remain unchanged and display as `Pending Rollover` until the
+persisted scheduled start of the next Entry Draft.
 
-The Entry Draft does not itself expire contracts.
+At that scheduled instant, a backend job runs the complete contract,
+ownership, obligation, and season rollover before opening the draft or
+trading. Entry Draft setup, order, eligible-player pool, pick ownership, and
+private queues may be prepared beforehand. If rollover fails, the draft and
+trading remain locked, no partial rollover effect survives, and the
+commissioner receives an exact blocker list plus an idempotent retry action.
 
 An expired player is immediately removed from the roster and becomes a free agent without an exclusive re-signing opportunity.
 
@@ -267,15 +290,31 @@ The backend stores the status explicitly and does not infer it only from the clo
 
 The approved sequence is:
 
-1. the Hundo Leago season ends;
+1. the Hundo Leago competition season ends after the final NHL
+   regular-season game;
 2. official results and standings are finalized;
-3. end-of-season rollover advances contracts and expires eligible contracts;
-4. draft-order inputs are finalized;
-5. the commissioner reviews and confirms the Entry Draft;
-6. the Entry Draft starts and trading reopens;
-7. the draft completes;
-8. the approved team-erase window remains available until the future Free Agent Draft;
-9. preseason preparation continues.
+3. Entry Draft setup, order, eligible pool, pick ownership, private queues,
+   upcoming-season team additions, and draft-order inputs are prepared and
+   finalized while contracts remain `Pending Rollover`;
+4. the commissioner reviews and confirms the scheduled Entry Draft;
+5. at the scheduled start, the backend automatically runs contract-year and
+   season rollover;
+6. only after rollover succeeds, the Entry Draft becomes `Live`, trading
+   opens, and the first unused pick receives its clock;
+7. if rollover fails, draft and trading remain locked until the same
+   idempotent transition succeeds;
+8. the final immutable selection or confirmed commissioner forfeiture makes the
+   last unused pick terminal, marks the draft `Complete`, and commits the
+   durable FAD-readiness handoff in the same transaction;
+9. the approved post-draft team-erasure and team-deactivation window closes as
+   part of the all-or-nothing FAD readiness check;
+10. the server-owned readiness worker advances Week 1 by whole league-local
+    Mondays when necessary to leave a future Candidate deadline and the full
+    seven-day FAD period;
+11. if every FAD prerequisite passes, that worker opens every Candidate Card
+    automatically and simultaneously; otherwise none opens;
+12. FAD processing completes before competition Week 1, moving Week 1 again
+    when processing overruns it.
 
 ## Setup
 
@@ -287,6 +326,11 @@ The setup workflow is:
 4. The commissioner reviews the order, owners, eligible-player pool, date, time, and pick clock.
 5. The system reports missing teams, duplicate positions, invalid owners, spent picks, and unavailable players.
 6. The commissioner confirms the complete setup.
+
+Entry Draft setup confirmation freezes the participating team set for that
+draft. Every normal upcoming-season team addition must finish before
+confirmation; a team may not be added later in the same draft season and
+receive invented or retroactive draft rights.
 7. The draft becomes `Scheduled`.
 
 Setup must save atomically.
@@ -300,6 +344,10 @@ The commissioner sets the Entry Draft date and start time in `America/Vancouver`
 The system shows the local league time and an unambiguous timezone label.
 
 Changing a scheduled time requires explicit confirmation and an in-app league notification.
+
+That persisted instant is also the automatic contract-rollover and
+draft-opening job boundary. Rescheduling must replace the unexecuted occurrence
+atomically and must never execute rollover twice.
 
 ---
 
@@ -454,7 +502,24 @@ A player whose rights were released may appear again only if:
 * the rights are currently unowned; and
 * the player was selected in the immediately preceding Hundo Leago Entry Draft.
 
-The system must not infer eligibility only from a display name or roster absence.
+Both a `fantasy_elc_declined` event and an
+`unsigned_prospect_rights_released` event are blocking release events. To
+approve re-entry for one such event, the confirmed eligibility snapshot must
+contain one `draft_eligible_players` row that:
+
+* belongs to the same league and player as the release event;
+* has `eligibility_reason = rights_release_reentry`;
+* references that exact event through `rights_release_event_id`; and
+* is confirmed strictly after the event occurred.
+
+That evidence clears only the referenced event. A later blocking release event
+requires a new, later confirmed row tied to the new event. A draft or
+superseded snapshot, a confirmation at or before the release, or a row tied to
+a different league, player, or release event does not clear the block.
+
+The system must not infer re-entry eligibility from a display name, unowned
+status, roster absence, or any combination of those facts without the exact
+confirmed release-event evidence.
 
 ---
 
@@ -474,17 +539,22 @@ A post-confirmation eligibility correction is limited to fixing a provable sourc
 
 ## Starting the Draft
 
-At the scheduled start, the commissioner presses `Start Draft`.
+At the persisted scheduled start, the backend automatically executes one
+idempotent transition:
 
-The backend:
+1. revalidate setup, pick ownership, player ownership, source finalization,
+   and rollover prerequisites;
+2. run the complete contract-year and season rollover atomically;
+3. verify the committed rollover evidence;
+4. change the draft to `Live`;
+5. open trading;
+6. place the first unused pick on the clock;
+7. record and broadcast the authoritative state.
 
-1. revalidates setup, pick ownership, and player ownership;
-2. changes the draft to `Live`;
-3. opens trading;
-4. places the first unused pick on the clock;
-5. records and broadcasts the authoritative state.
-
-The draft does not start automatically without commissioner action.
+The draft and trading never open before step 3 succeeds. A failed transition
+leaves them locked and exposes a commissioner blocker list and retry action.
+The retry calls the same idempotent transition and cannot advance contracts or
+open the draft twice.
 
 ---
 
@@ -565,11 +635,21 @@ Unused picks remain tradeable through the normal Trades workflow.
 
 The on-clock behaviour is:
 
+* pending proposals containing the pick remain open when it goes on the clock;
 * an accepted trade changes the pick's current owner atomically;
 * the original team and ownership history remain unchanged;
 * trading an on-clock pick resets the pick to a new five-minute clock;
 * the new owner receives the full reset time;
-* a trade submitted after the pick is used fails without partial transfer.
+* the same pick may complete only one trade while on clock;
+* a completed ownership-changing trade cancels every competing proposal made
+  stale by that ownership change;
+* committing a manual or automatic selection cancels every pending proposal
+  that still contains the pick;
+* a trade submitted after the pick is used fails without partial transfer;
+* an on-clock trade, manual selection, and automatic timeout receive no grace
+  period: whichever transaction commits first wins, while every loser rereads
+  the new authoritative owner, pick, and clock state and leaves no partial
+  effect.
 
 ---
 
@@ -580,13 +660,39 @@ The draft may become `Complete` only when every pick is either:
 * used; or
 * explicitly forfeited by the commissioner after confirmation.
 
-Completion:
+The terminal action is therefore either the final immutable selection or a
+confirmed commissioner forfeiture. The future final `T-108` selection/
+forfeiture transaction owns the complete boundary. In one atomic transaction,
+it makes the last unused pick terminal, marks the draft `Complete`, and invokes
+the shared `entry_draft_completed` readiness-handoff primitive. If that handoff
+cannot persist, neither the terminal pick action nor draft completion commits.
+
+The completion transaction:
 
 * closes selection writes;
 * preserves the immutable board and selection history;
 * leaves created prospect rights on their teams;
 * does not close the trading window;
-* creates the next required off-season state.
+* creates exactly one durable readiness operation and its canonical pending
+  job through the shared handoff primitive.
+
+The handoff does not evaluate readiness or open Candidate Cards inline. Its
+later server-owned worker evaluates the complete FAD opening prerequisites and
+either opens every Candidate Card at the same committed instant or opens none
+and records the exact blocker list. A blocked readiness attempt does not undo
+the already-completed Entry Draft.
+
+There is no standalone or manual Entry Draft completion endpoint. The complete
+`T-108` selection/forfeiture command and Entry Draft interface remain M8 work.
+FAD-08 implements and verifies only the reusable internal handoff primitive and
+its transaction behavior.
+
+If the selected Week 1 would leave the Candidate deadline at or before draft
+completion, the readiness worker's opening transaction advances Week 1 by
+whole league-local Mondays until the deadline is strictly future-facing and the
+full seven-day FAD period fits. The NHL regular-season ending and four fantasy
+playoff weeks do not move; early regular-season matchup weeks are removed and
+the remaining pairings are regenerated fairly.
 
 
 ---
@@ -764,10 +870,24 @@ Tests must cover:
 * current and future pick creation;
 * stable original-team and current-owner history;
 * most-recent NHL draftees, goalies, older prospects, signed ELC players, owned players, released rights, and source-identity corrections;
+* both blocking release-event types, exact same-league/same-player/event-linked
+  re-entry evidence, strictly later confirmation, false evidence from draft or
+  superseded snapshots, and a subsequent release blocking again;
+* unowned status and roster absence never substituting for confirmed
+  rights-release re-entry evidence;
 * every round boundary;
 * manager, commissioner, administrator, public, and cross-league permissions;
 * start, pause, resume, automatic timeout selection, forfeit, and completion;
-* on-clock pick trades;
+* scheduled-start automatic rollover success, blocker failure, idempotent
+  retry, and proof that draft/trading remain locked until success;
+* pending contracts displaying unchanged years as `Pending Rollover`;
+* on-clock pick trades, the one-completed-on-clock-trade limit, fresh full
+  clock, pending-proposal preservation, selection/trade cancellation effects,
+  and trade-versus-manual-selection-versus-timeout commit races with no grace
+  period;
+* automatic all-or-nothing Candidate Card opening at draft completion;
+* late completion advancing Week 1 by whole Mondays while fixing the NHL end
+  and playoff weeks and fairly regenerating the shortened regular schedule;
 * duplicate and concurrent selections;
 * retry and reconnect;
 * prospect-right creation without salary or contract;
@@ -797,13 +917,15 @@ Tests must cover:
 - [x] Released rights may not enter normal free-agent auctions unless later approved.
 - [x] Draft picks and prospect rights are tradeable assets.
 - [x] An unused pick may be traded repeatedly, including during its Entry Draft.
-- [x] A draft pick preserves a stable identity, original team, current owner, and ownership history.
-- [x] Trading opens at the start of the Entry Draft.
+- [x] A draft pick permanently preserves its draft year, round, original team, current owner, and ownership history; the current owner selects at the original team's position.
+- [x] A pick may complete only one trade while it is on the clock.
+- [x] Trading and the Entry Draft open only after the scheduled-start rollover succeeds.
 - [x] A manager may select only for an assigned team.
 - [x] A commissioner may select for any team in the assigned league.
 - [x] Commissioner authority does not cross league boundaries.
-- [x] Contract expiration occurs during end-of-season rollover before the Entry Draft.
-- [x] The Entry Draft does not itself expire contracts.
+- [x] Contract years remain unchanged and visibly pending after the competition season ends until the scheduled Entry Draft start.
+- [x] The scheduled Entry Draft-start transition automatically advances or expires contracts before opening the draft or trading.
+- [x] A rollover failure keeps draft and trading locked and exposes an idempotent commissioner retry with blockers.
 - [x] There are no goalies in Hundo Leago.
 
 ## Approved Lottery and Eligibility Decisions
@@ -836,7 +958,7 @@ Tests must cover:
 - [x] Every authenticated active league member may view the complete setup, live board, selections, and history.
 - [x] The Entry Draft is unavailable to unauthenticated public viewers.
 - [x] Draft statuses are `Setup`, `Scheduled`, `Live`, `Paused`, `Complete`, `Correction Required`, and `Cancelled`.
-- [x] The off-season order is rollover, draft-order finalization, Entry Draft, team-erase window, then preseason preparation.
+- [x] Entry Draft setup may be prepared before rollover; at the scheduled start rollover runs first, then the draft and trading open on success.
 - [x] The commissioner sets the draft date and time in `America/Vancouver`.
 - [x] Rescheduling requires confirmation and an in-app league notification.
 - [x] The commissioner confirms an atomic setup containing order, picks, owners, eligible players, timing, and clock.
@@ -853,8 +975,8 @@ Tests must cover:
 - [x] Eligibility requires a canonical stable player ID, no current league owner, no active league contract, and no conflicting rights-release restriction.
 - [x] Eligibility freezes when draft setup is confirmed.
 - [x] Post-confirmation eligibility changes require an explicit commissioner correction.
-- [x] The commissioner manually starts the scheduled draft after backend revalidation.
-- [x] Starting the Entry Draft reopens trading.
+- [x] The backend automatically starts the scheduled draft only after exact rollover revalidation, execution, and evidence verification.
+- [x] The same successful transition reopens trading and starts the first pick clock.
 - [x] Each pick has a five-minute clock.
 - [x] Pausing freezes the stored remaining time and resuming continues it.
 - [x] A confirmed selection atomically spends the pick, creates prospect rights, records history, and advances the draft.
@@ -863,8 +985,14 @@ Tests must cover:
 - [x] A timeout automatically selects the highest remaining eligible player from the top of the team's ordered list.
 - [x] Automatic best-player-available selection and private persistent queues are required when the Entry Draft is built.
 - [x] An accepted trade of an on-clock pick resets the clock to five minutes for the new owner.
+- [x] Pending proposals remain open when a pick goes on clock; selection cancels them and a completed ownership-changing trade cancels stale competing proposals.
+- [x] An on-clock trade, manual selection, and automatic timeout have no grace period; whichever transaction commits first wins and every loser leaves no partial effect.
 - [x] A draft completes only after every pick is used or explicitly forfeited by the commissioner.
-- [x] Completing the draft closes selections but leaves trading open.
+- [x] The future final T-108 selection or confirmed-forfeiture transaction makes the last unused pick terminal, marks the draft complete, and records the `entry_draft_completed` readiness handoff atomically.
+- [x] A handoff failure rolls back the terminal pick action and draft completion; a later blocked readiness attempt leaves the completed draft intact but opens no Candidate Card and records the blocker list.
+- [x] The readiness handoff does not open cards inline; its later server-owned worker opens every Candidate Card together only when all prerequisites pass.
+- [x] There is no standalone or manual Entry Draft completion endpoint, and FAD-08's internal handoff primitive does not implement the M8 Entry Draft workflow.
+- [x] Late draft completion advances Week 1 by whole Mondays until its Candidate deadline is future-facing and the complete seven-day FAD period fits.
 - [x] No written reason is required for a commissioner draft action; an optional reason is allowed.
 - [x] There is no Entry Draft undo feature.
 - [x] A completed manual or automatic selection cannot be changed.
@@ -902,6 +1030,7 @@ docs/03-product-specs/LEAGUES_AND_TEAMS.md
 docs/03-product-specs/ROSTERS.md
 docs/03-product-specs/CONTRACTS.md
 docs/03-product-specs/TRADES.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/COMMISSIONER_TOOLS.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md

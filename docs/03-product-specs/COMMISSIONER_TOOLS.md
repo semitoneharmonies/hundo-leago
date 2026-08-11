@@ -14,6 +14,10 @@ This product specification consolidates:
 
 Grae approved this specification on 2026-07-18.
 
+Grae approved the FAD readiness and assistance amendments on 2026-07-27.
+
+Grae approved the automatic FAD opening and adaptive-assistance amendments on 2026-07-29.
+
 ---
 
 ## Product Purpose
@@ -169,7 +173,15 @@ Within the assigned league, a commissioner may:
 * reactivate an inactive league membership;
 * edit a team's approved profile fields.
 
-Team erase may occur only after the Entry Draft and before the future Free Agent Draft. It requires commissioner confirmation followed by platform-administrator approval.
+For a season with an Entry Draft, normal upcoming-season team creation closes
+when Entry Draft setup confirmation freezes participating teams. For an
+approved no-draft transition, it closes when the automatic all-or-none
+readiness transition opens Candidate Cards.
+
+Team erase uses a separate window: after Entry Draft completion, or an approved
+no-draft transition, and before the automatic all-or-none readiness transition
+opens Candidate Cards. Team erase requires commissioner confirmation followed
+by platform-administrator approval.
 
 ---
 
@@ -195,6 +207,65 @@ first available slot from authoritative workspace data. Removal and correction
 first select a team, then expose only that team's eligible players or
 contracts. These interface conveniences do not replace backend validation or
 authorize cross-league records.
+
+---
+
+## Automatic Free Agent Draft Opening
+
+Entry Draft completion, or the approved no-draft equivalent, automatically
+starts one all-or-none Candidate Card readiness transition. The transition
+validates:
+
+* the applicable Entry Draft is complete or an approved no-draft transition is
+  recorded;
+* the target season and first-matchup start exist;
+* participating teams and manager assignments are ready;
+* carryover source state is available;
+* the Candidate Card deadline is future-facing and the complete seven-day FAD
+  auction period fits before Week 1, after applying the approved whole-Monday
+  Week 1 adjustment when necessary.
+
+If any prerequisite fails, no Candidate Card opens. The commissioner workspace
+shows the complete actionable blocker list. After approved corrective actions,
+the commissioner may request an idempotent readiness retry, but may not bypass
+a blocker, open only selected cards, or choose a different opening instant.
+
+A successful transition opens every Candidate Card together and freezes the
+participating team set, Candidate Card deadline, and rapid-auction clock as
+historical FAD facts. It is not an ordinary reversible setup toggle. Later team
+changes or a human schedule edit that would rewrite the frozen FAD clock must
+fail. Approved server-owned schedule recovery may move Week 1 to a later
+Monday when required without rewriting those historical FAD timestamps.
+
+---
+
+## Free Agent Draft Assistance
+
+Before the Candidate Card deadline, a commissioner may not view or edit another
+team's private Candidate Card merely because the commissioner can administer
+that team's normal roster.
+
+A commissioner who is also that team's assigned manager retains normal manager
+access to the own managed-team card.
+
+During the final 48 hours, a manager's **Ask commissioner for help** request
+grants the commissioner view and edit access to that team's card until the
+deadline. If cards open with less than 48 hours remaining, the request control
+is available for the entire remaining Candidate Card period.
+
+The commissioner:
+
+* receives a help notification;
+* may edit only the requesting card;
+* uses the same candidate, position, contract, completeness, and stale-write
+  validation as the manager;
+* cannot remove or recontract a carried player;
+* cannot extend the deadline;
+* cannot repair, replace, or legalize the card after the deadline;
+* remains the attributed actor for every edit.
+
+At the deadline, assistance access ends and the card locks with every other
+card.
 
 ---
 
@@ -744,6 +815,10 @@ Tests must cover:
 * manual job retry and duplicate prevention;
 * backup request, restoration approval, rejection, success, and failure;
 * team erase and league destructive-action boundaries;
+* automatic FAD readiness prerequisites, all-or-none opening, blocker
+  visibility, retry, team freeze, and historical clock freeze;
+* Candidate Card privacy before help, scoped help access, actor attribution,
+  adaptive final-48-hour availability, and deadline expiry;
 * notification delivery;
 * secret and raw-data protection;
 * proof that every read-only endpoint remains read-only.
@@ -762,8 +837,14 @@ Tests must cover:
 - [x] A platform administrator needs an active league membership to operate inside a league.
 - [x] Commissioners may not change league settings in the initial release.
 - [x] Commissioners may administer teams and manager assignments within approved boundaries.
-- [x] Team erase is allowed only after the Entry Draft and before the future Free Agent Draft.
+- [x] In a draft season, normal team creation closes at Entry Draft setup confirmation; on a no-draft path it closes when the automatic all-or-none readiness transition opens Candidate Cards.
+- [x] Team erase is allowed only after Entry Draft completion, or an approved no-draft transition, and before the automatic all-or-none readiness transition opens Candidate Cards.
 - [x] Team erase requires commissioner confirmation and platform-administrator approval.
+- [x] Commissioners may view and edit another team's private Candidate Card only after that manager requests help.
+- [x] A commissioner who manages a team may access that own team card through the manager role.
+- [x] Candidate Card help authority is limited to the requesting card, remains attributable, is available for the whole remaining period when cards open with less than 48 hours left, and ends at the deadline.
+- [x] Entry Draft completion, or its approved no-draft equivalent, runs automatic all-or-none Candidate Card readiness; failure opens no cards and exposes blockers for correction and idempotent retry.
+- [x] The commissioner cannot directly open cards or bypass readiness, and only approved server-owned schedule recovery may move Week 1 without rewriting historical FAD timestamps.
 - [x] Commissioners may perform ordinary roster moves and approved roster corrections for any team.
 - [x] Commissioner roster corrections use normal slot, position, cap, and ownership rules.
 - [x] Commissioners may execute buyouts and correct contracts, retentions, and buyout penalties.
@@ -861,6 +942,7 @@ docs/03-product-specs/TRADES.md
 docs/03-product-specs/MATCHUPS.md
 docs/03-product-specs/STANDINGS.md
 docs/03-product-specs/ENTRY_DRAFT.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md
 docs/06-operations/BACKUP_AND_RESTORE.md

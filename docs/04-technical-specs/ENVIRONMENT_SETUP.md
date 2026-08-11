@@ -664,6 +664,7 @@ They must be inventoried during `FE-00`, mapped deliberately where still require
 | `ACCOUNT_EMAIL_DELIVERY_ENABLED` | Yes | Explicit `true` or `false`; controls only the durable account-email worker |
 | `SCHEDULED_JOBS_ENABLED` | Yes | Explicit `true` or `false`; no truthy string coercion |
 | `DEBUG_ROUTES_ENABLED` | Yes | Explicit `true` or `false` |
+| `STAGING_MAINTENANCE_HOLD` | Deployed backend | Exact `false` for ordinary startup; exact `true` only for the authorized schema-agnostic staging bridge |
 | `EMAIL_DELIVERY_MODE` | Yes | `disabled`, `capture`, `sandbox`, `allowlist`, or `send` |
 | `STAGING_EMAIL_RECIPIENT_ALLOWLIST` | Staging allowlist mode only | Comma-separated exact test recipients approved to receive staging account email |
 | `SPORTSDATAIO_NHL_API_KEY` | Staging-only managed secret | SportsDataIO Discovery Lab server credential; never exposed to the browser or logs |
@@ -675,6 +676,17 @@ Whitespace is trimmed. Empty required values are invalid.
 Boolean values accept only `true` or `false`.
 
 Unknown enum values fail startup.
+
+`STAGING_MAINTENANCE_HOLD=true` is valid only with `APP_ENV=staging`,
+`NODE_ENV=production`, closed league writes, disabled scheduled jobs, FAD
+routes, account-email delivery, debug routes, and backup schedule, capture-only
+email, and provider `probe`. The entrypoint selects this hold before importing
+the target/database runtime. It exposes only generic exact-path GET/HEAD
+liveness and readiness; all other requests return maintenance `503`. It opens
+no database and composes no application route, job, Socket.IO, or email. Missing
+or exact `false` preserves ordinary startup; every other value or prerequisite
+drift fails before either runtime. The Blueprint default remains `false`, and
+the hold is staging-only.
 
 ---
 

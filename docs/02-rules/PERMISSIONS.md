@@ -13,6 +13,8 @@ This document consolidates:
 
 Grae approved the Season 2 permission baseline recorded in this document on 2026-07-18.
 
+Grae approved the FAD-related permission amendments on 2026-07-27.
+
 ---
 
 ## Document Purpose
@@ -546,6 +548,23 @@ Passwords, password-reset secrets, session tokens, recovery secrets, and other c
 
 No user, including a commissioner, may view a competing active bid amount or contract term. Commissioner bid-administration authority does not include an active-bid reveal.
 
+For a restricted FAD tie auction, the original Candidate minimum total and term are
+already league-visible through the locked Candidate Cards. That historical
+minimum remains visible. Any later bid or edited total or term is protected as an active
+competing bid and must not be revealed before resolution.
+
+Before the Candidate Card deadline:
+
+* a manager may view only Candidate Cards belonging to assigned teams;
+* commissioner authority by itself may see league-level completion state but
+  not another team's selected players or proposed contracts;
+* a manager's explicit help request grants the commissioner view and edit
+  access to that team's card until the deadline;
+* the help grant does not reveal any other Candidate Card.
+
+After the deadline, every active league member may view every Candidate Card
+in that league as a read-only record.
+
 The frontend and backend must use these same visibility rules.
 
 ---
@@ -633,10 +652,16 @@ The following matrix records the approved Season 2 permission baseline.
 | View private league data | With active league membership | Assigned league | Member league | No |
 | View public league rosters | Yes | Yes | Yes | Yes |
 | Edit league settings | Platform administration only | No in initial release | No | No |
-| Add, rename, deactivate, or remove teams | Yes | Assigned league | No | No |
+| Add an upcoming-season team | Yes, before the applicable Entry Draft setup freeze or, on an approved no-draft path, before automatic FAD readiness opens cards | Assigned league within the same window | No | No |
+| Deactivate or permanently erase a team | Yes, after Entry Draft completion or approved no-draft transition and before automatic FAD readiness opens cards | Assigned league within the same window; platform-administrator approval required | No | No |
+| Rename or edit a team profile | With active league authority | Assigned league | Assigned team where authorized | No |
 | Assign managers to teams | Yes | Assigned league | No | No |
 | Manage a team roster | With active membership and administrative authority | Any team in assigned league | Assigned team | No |
+| View a private Candidate Card before deadline | Assigned team or help-request scope with active membership | Own managed team, or a team that requested help | Assigned team | No |
+| Edit a Candidate Card before deadline | Assigned team or help-request scope with active membership | Own managed team, or a team that requested help | Assigned team | No |
+| View Candidate Cards after deadline | Member league | Assigned league | Member league | No |
 | Submit or edit auction bids | With active membership and administrative authority | Any team in assigned league | Assigned team | No |
+| Bid in a restricted FAD tie auction | Eligible tied team with active membership and authority | Only for an eligible tied team | Assigned team only when eligible | No |
 | Withdraw an auction bid | With active membership and administrative authority | Assigned league | No | No |
 | Resolve auctions manually | With active membership and administrative authority | Assigned league | No | No |
 | Propose, accept, reject, or cancel a trade | With active membership and administrative authority | Any team in assigned league | Assigned team where authorized | No |
@@ -762,6 +787,34 @@ The Entry Draft specification must define:
 * completed-selection immutability;
 * draft-history visibility;
 * how traded pick ownership is authorized and validated.
+
+---
+
+## Free Agent Draft
+
+The Free Agent Draft specification must define:
+
+* manager view and edit authority for assigned Candidate Cards;
+* pre-deadline privacy from other managers and the commissioner;
+* ordinary manager access when the commissioner is also that team's assigned
+  manager;
+* manager-requested commissioner help access during the final 48 hours;
+* commissioner actor attribution for assisted edits;
+* automatic help-grant expiry at the deadline;
+* league-wide read-only Candidate Card visibility after the deadline;
+* open rapid-auction authority;
+* team-scoped restricted tie-auction eligibility;
+* automatic deadline and resolution authority;
+* commissioner retry and correction boundaries.
+
+Broad commissioner roster authority does not override the specific
+pre-deadline Candidate Card privacy rule.
+
+No commissioner confirmation opens Candidate Cards. Entry Draft completion or
+the approved no-draft equivalent invokes automatic all-or-none readiness only
+after the participating team set and first-matchup schedule satisfy the
+approved prerequisites. The readiness commit freezes the FAD team/clock
+snapshot; it does not authorize later user-authored team or clock changes.
 
 ---
 
@@ -992,7 +1045,8 @@ Every meaningful permission must be tested by calling the backend with:
 
 # Part 15 — Approval Checklist
 
-Grae approved the following Season 2 permission decisions on 2026-07-18.
+Grae approved the original Season 2 permission decisions on 2026-07-18 and the
+FAD-related amendments on 2026-07-27.
 
 ## Approved Foundation
 
@@ -1033,7 +1087,7 @@ Grae approved the following Season 2 permission decisions on 2026-07-18.
 
 ## Commissioner
 
-- [x] Commissioners may add, rename, deactivate, and remove teams in their league.
+- [x] Commissioners may add, rename, deactivate, and remove teams in their league only within the approved action-specific lifecycle windows.
 - [x] Commissioners may assign and remove team managers in their league.
 - [x] Commissioners may not change league settings in the initial release.
 - [x] Future commissioner setup options must be limited and may not change during an active season.
@@ -1063,6 +1117,8 @@ Grae approved the following Season 2 permission decisions on 2026-07-18.
 
 - [x] Unauthenticated visitors have read-only access to approved public information.
 - [x] Rosters from every league are public; no other league information is public in the initial release.
+- [x] Before the Candidate Card deadline, commissioner authority may reveal another team's private card only after that team's manager requests help; a commissioner managing their own team retains manager-role access to that card.
+- [x] After the deadline, every active league member may view every league Candidate Card read-only.
 - [x] Every authenticated user in a league may view active auction identity, participants, bid count, deadlines, and only that user’s own bid amount and term.
 - [x] No user, including a commissioner, may view a competing active bid amount or term.
 - [x] Every authenticated user in a league may view resolved bid amounts and terms through League Activity.
@@ -1131,6 +1187,7 @@ docs/03-product-specs/AUCTIONS.md
 docs/03-product-specs/TRADES.md
 docs/03-product-specs/MATCHUPS.md
 docs/03-product-specs/ENTRY_DRAFT.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/COMMISSIONER_TOOLS.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md

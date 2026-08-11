@@ -13,6 +13,15 @@ This product specification consolidates:
 
 Grae approved the Season 2 Auctions product specification recorded in this document on 2026-07-18.
 
+Grae approved the FAD rapid-auction amendments on 2026-07-27. Candidate Card
+tie eligibility was amended on 2026-07-28 to follow the approved
+total-first/AAV-second allocation rule.
+On 2026-07-29, Grae approved the consolidated FAD auction rules: ordinary
+manager edit limits, the 75-minute cooldown, and no-withdrawal rule apply to
+all FAD auctions; exact top FAD ties use an auditable equal-chance draw;
+final-hour nominations queue privately; and ordinary weekly tie rules remain
+unchanged.
+
 ---
 
 ## Product Purpose
@@ -38,7 +47,7 @@ The target workflow must be authoritative on the backend and safe under retries,
 
 This document does not define:
 
-* the future pre-season Free Agent Draft;
+* Candidate Card preparation or automatic Free Agent Draft allocation;
 * Entry Draft selections or prospect-rights acquisition;
 * trade proposal and acceptance workflows;
 * scoring or matchup calculations;
@@ -239,7 +248,13 @@ A bid must preserve:
 
 A team may have only one current bid in an auction. An approved edit changes that bid rather than creating a second current bid.
 
-Historical bid versions must remain recoverable for audit and activity purposes. Managers see only active auctions in the normal Auction interface. Resolved bid details appear in League Activity rather than in the active-auction interface.
+Historical bid versions must remain recoverable for audit and activity
+purposes. Managers see only active auctions in the normal Auction interface.
+Resolved bid details appear in League Activity rather than in the
+active-auction interface. A safe terminal auction summary may remain directly
+addressable for a result notification or commissioner-recovery link, but it
+does not create a browsable resolved-auction history and does not replace
+League Activity's complete submitted-bid and edit history.
 
 ---
 
@@ -307,17 +322,91 @@ The approved weekly interpretation is:
 
 ## Seasonal Closure
 
-All auctions close when the league playoffs begin.
+Ordinary weekly auctions close when the league playoffs begin.
 
-No new auction may start, no team may join or edit an auction, and no weekly auction cycle may operate during the playoffs or off-season.
+No new ordinary weekly auction may start, no team may join or edit an ordinary
+weekly auction, and no weekly auction cycle may operate during the playoffs or
+off-season.
 
 Any auction still active at playoff start is cancelled without a winner and preserved in auction history.
 
-Auctions reopen only after the next season has started and the pre-season Free Agent Draft has completed.
+The annual FAD rapid-auction period is the only approved preseason exception.
+Its daily cadence does not reopen the ordinary weekly schedule.
 
-The league lifecycle and Free Agent Draft specifications must provide the authoritative playoff-start, season-start, and Free Agent Draft completion timestamps.
+Ordinary weekly auctions reopen only after the next season has started and the
+Free Agent Draft has completed following its final rapid rollover.
 
-Every auction-created contract belongs to the season in which the auction resolves. Its current contract year advances or expires at that season’s end even when the player was won in a midseason auction.
+The league lifecycle and Free Agent Draft specifications provide the
+authoritative playoff-start, Candidate Card deadline, rapid-rollover,
+season-start, and FAD-completion timestamps.
+
+Every auction-created contract belongs to the season in which the auction
+resolves. For an FAD rapid auction, the authoritative resolution season is the
+FAD target upcoming season even though the clock is before its first matchup.
+Its current contract year advances or expires during the automatic rollover
+at the scheduled start of the following Entry Draft, not when competition
+ends, even when the player was won in a midseason auction.
+
+---
+
+## FAD Rapid-Auction Exception
+
+During the approved FAD rapid-auction period:
+
+* open rapid auctions use the normal player, bid, blind-visibility, AAV
+  ranking, anti-bluff pricing, contract, assignment, illegality, activity, and
+  recovery rules in this document;
+* open rapid auctions use the ordinary starter allowance of two edits after
+  the opening bid, the ordinary joining-team allowance of one edit after its
+  opening bid, the 75-minute cooldown, and the prohibition on manager
+  withdrawal;
+* restricted tie auctions accept bids only from teams tied on both the highest
+  Candidate Card total and term as recorded by the FAD;
+* the tied Candidate contract is a system-created minimum rather than an
+  active leader or bid; each eligible tied team's first strictly improved
+  submission is its opening bid, after which the ordinary joining-team edit
+  allowance applies;
+* at resolution, only an eligible current active improvement counts; an
+  invalidated or commissioner-removed improvement does not count merely
+  because it was submitted earlier;
+* a valid tied Candidate minimum may be below the normal joining-team minimum,
+  while an active manager improvement must satisfy that minimum;
+* a Candidate minimum creates no cooldown; the ordinary 75-minute cooldown is
+  anchored to the participant's opening improvement and each later permitted
+  edit;
+* original Candidate minimum values remain visible through the locked Candidate Cards,
+  while later edited values remain blind until resolution;
+* every open or restricted FAD auction ranks by current AAV and then shorter
+  term, using an auditable equal-chance draw among the exact remaining
+  top-tied eligible bids;
+* when no restricted participant has an eligible current active improvement
+  at resolution, the restricted auction closes without a winner and the
+  player enters a fresh league-wide 24-hour blind auction with that minimum
+  and no initial leader;
+* the tied floor applies across terms: a bid is at least the floor when its
+  total is higher, or its total is equal and its AAV is at least the tied AAV;
+  a same-total lower-AAV longer term is below the floor. A restricted
+  contender must rank strictly above that floor, while a fallback opening bid
+  may equal it;
+* restricted anti-bluff pricing may not reduce the winner's final total below
+  that team's original tied Candidate total;
+* a player in an unresolved or correction-required FAD allocation state cannot
+  enter an open rapid auction;
+* each normally opened auction resolves at the immediately following 24-hour
+  rapid rollover;
+* a nomination submitted during the final 60 minutes is accepted privately
+  and queued, opens at rollover with the nominator's binding opening bid, and
+  resolves at the following rollover;
+* authorized joining and editing of an existing auction remains open until
+  rollover;
+* an open rapid auction with no eligible bid closes without a winner and
+  returns the player to the unclaimed pool for a later nomination;
+* ordinary weekly auction opening, cutoff, and Sunday resolution times do not
+  apply.
+
+The Free Agent Draft specification defines tied Candidate minimums, participant
+opening-bid/edit rules, restrictions, daily timing, delayed
+restricted-auction recovery, and final transition.
 
 ---
 
@@ -343,8 +432,9 @@ The manager workflow is:
 2. Select a player by stable ID.
 3. Choose a contract term.
 4. enter a total contract value valid for that term;
-5. review AAV and any general illegality warning;
-6. confirm the bid;
+5. review AAV and the warning that simultaneous wins may create an illegal
+   roster because no cap, position, or roster capacity is reserved;
+6. confirm the binding bid and its resolver-time illegality consequence;
 7. create the auction and first bid atomically.
 
 If either the auction or bid cannot be created, neither is saved.
@@ -460,12 +550,27 @@ Ranking compares bid AAV, not total contract value.
 
 Ranking by AAV prevents a longer term from winning merely because its total spans more years. The underlying winning contract still uses the submitted total and term.
 
-The deterministic order is:
+For ordinary weekly auctions, the deterministic order is:
 
 1. highest submitted AAV;
 2. if tied, shorter contract term;
 3. if still tied, earliest original bid timestamp;
 4. if still tied, stable bid ID in ascending order.
+
+For every FAD blind auction, including open rapid and restricted auctions, the
+first two ranking layers are unchanged:
+
+1. highest submitted AAV;
+2. if tied, shorter contract term.
+
+If two or more eligible bids remain exactly tied at the top after those
+layers, the backend performs one auditable equal-chance draw among only those
+bids. Original submission time and stable bid ID give no FAD tie advantage.
+The persisted draw records the exact participant set, approved randomness
+evidence, algorithm/version, selected winner, and resolution operation before
+any contract assignment. Retry and replay use that same evidence and never
+draw again. The draw becomes league-visible with the resolved bid history; it
+does not reveal active bid values before resolution.
 
 ## Anti-Bluff Price
 
@@ -485,7 +590,11 @@ If the calculated total would violate precision, it is rounded up only to the sm
 
 The initial release does not reserve cap room or roster slots for active bids.
 
-A team may bid in multiple auctions and may win results that leave its normal roster illegal. Each completed transaction receives the approved general illegality flag and confirmation behaviour.
+A team may bid in multiple auctions and may win results that leave its normal
+roster illegal. Bid submission or edit, and queued-nomination submission in
+FAD, is the binding confirmation. A scheduled resolver commits every
+otherwise-valid win without a second prompt and returns or publishes the
+resulting general illegality flag afterward.
 
 ---
 
@@ -499,15 +608,20 @@ For each due auction, the backend should:
 2. confirm the auction is active and due;
 3. load current bids and ownership;
 4. validate each bid’s team, actor authority at submission, value, term, and stable references;
-5. rank eligible bids deterministically;
-6. choose the highest eligible bid;
-7. calculate the anti-bluff winning value;
-8. create the contract;
-9. assign the player to the winning team’s Active roster;
-10. calculate the resulting roster and cap legality;
-11. persist the result and activity record atomically;
-12. mark the auction resolved;
-13. return the winning result and any general illegality flag.
+5. for a restricted FAD auction, determine whether at least one eligible
+   current active bid strictly improves its Candidate minimum; if none does, atomically
+   close the restricted auction and create the fresh league-wide 24-hour
+   fallback auction rather than entering generic `No Winner`;
+6. rank eligible bids under the ordinary or FAD-specific tie policy;
+7. choose the highest eligible bid, persisting the one FAD draw first when an
+   exact top tie requires it;
+8. calculate the anti-bluff winning value;
+9. create the contract;
+10. assign the player to the winning team’s Active roster;
+11. calculate the resulting roster and cap legality;
+12. persist the result and activity record atomically;
+13. mark the auction resolved;
+14. return the winning result and any general illegality flag.
 
 No partial contract, ownership, roster, or history write may remain after failure.
 
@@ -517,7 +631,11 @@ No partial contract, ownership, roster, or history write may remain after failur
 
 An auction winner is assigned to the winning team’s Active roster.
 
-If that creates an Active-slot, F/D-ratio, cap, or other normal-roster illegality, the transaction may still complete after the approved general warning and confirmation. The team’s matchup treatment remains controlled by the Monday snapshot rules, not by midweek roster state.
+If that creates an Active-slot, F/D-ratio, cap, or other normal-roster
+illegality, the transaction still completes under the binding confirmation
+recorded with the winning bid. The resolver does not wait for another prompt.
+The team’s matchup treatment remains controlled by the Monday snapshot rules,
+not by midweek roster state.
 
 ---
 
@@ -542,9 +660,15 @@ Skipped invalid bids are preserved in operational audit where required, but thei
 
 ## No-Winner Handling
 
-If no eligible bid remains, the auction becomes `No Winner`.
+If no eligible bid remains, an ordinary or open FAD auction becomes
+`No Winner`.
 
 No contract or roster assignment is created. The outcome is recorded in auction history but not as a completed league transaction.
+
+A restricted FAD auction with no eligible current active improvement never
+uses this generic terminal path. It creates the required fresh league-wide
+fallback auction, including when a prior improvement was later invalidated or
+removed by a commissioner.
 
 ---
 
@@ -584,7 +708,10 @@ A commissioner may remove a specific active bid through an explicit confirmed ac
 
 The removed bid remains in authenticated auction history with actor and timestamp. No written reason is required.
 
-If the last bid is removed, the auction remains active until its scheduled close and then becomes `No Winner`, unless the commissioner explicitly cancels it.
+If the last bid is removed, an ordinary or open FAD auction remains active
+until its scheduled close and then becomes `No Winner`, unless the
+commissioner explicitly cancels it. A restricted FAD auction instead applies
+the zero-eligible-improvement fallback rule at resolution.
 
 ---
 
@@ -624,7 +751,9 @@ Starting, joining, or editing a bid may show a preview that a win could make the
 
 Because other auctions and roster changes can occur before resolution, the preview is advisory.
 
-The completed assignment uses the approved general illegality flag and confirmation model; it does not need to enumerate every illegality in the transaction warning.
+The binding submit/edit confirmation explicitly covers that uncertainty. The
+completed assignment reports the general illegality flag but requires no new
+confirmation and does not need to enumerate every illegality.
 
 ---
 
@@ -753,10 +882,14 @@ Tests must cover:
 * all valid and invalid total-value and term combinations;
 * starter and non-starter edit limits;
 * cooldown boundaries;
+* the same edit limits, cooldown boundaries, and manager-withdrawal rejection
+  in open and restricted FAD auctions;
 * visibility for manager, other league member, commissioner, public viewer, and another league;
 * proof that commissioners cannot reveal competing active bid values;
 * ranking across values and terms;
-* every tie-break layer;
+* every ordinary weekly tie-break layer;
+* exact top ties in both open and restricted FAD auctions using one auditable
+  equal-chance draw with stable replay and no submission-time advantage;
 * anti-bluff calculations and precision;
 * one bidder and many bidders;
 * already-owned and newly-owned players;
@@ -768,8 +901,22 @@ Tests must cover:
 * retry, duplicate job, concurrent request, restart, and partial-failure prevention;
 * commissioner removal, cancellation, recovery, and correction;
 * activity content and absence of matchup or standings history;
-* playoff-start cancellation, playoff and off-season closure, and reopening after season start and Free Agent Draft completion;
-* end-of-season advancement of contracts won midseason;
+* playoff-start cancellation, ordinary weekly playoff and off-season closure,
+  the FAD rapid-auction exception, and reopening after season start and Free
+  Agent Draft completion;
+* private final-hour FAD nomination queueing, automatic opening at rollover,
+  binding nominator bid, and following-rollover resolution;
+* bid/edit/queued-nomination binding illegality confirmation and scheduled
+  resolution without a second prompt, including simultaneous wins that leave
+  the team illegal;
+* zero eligible current active restricted improvements, including an
+  improvement later invalidated or commissioner-removed, always creating the
+  league-wide fallback rather than generic `No Winner`;
+* restricted and fallback floor validation across terms, including higher
+  total, equal-total higher/equal AAV, and same-total lower-AAV rejection;
+* no-bid open FAD closure, return to the unclaimed pool, and later
+  renomination;
+* scheduled next-Entry-Draft-start advancement of contracts won midseason;
 * proof that reads never resolve auctions.
 
 ---
@@ -788,7 +935,7 @@ Tests must cover:
 - [x] Deadlines are backend-calculated, daylight-saving safe, visible, testable, and retry-safe.
 - [x] Already-owned players cannot be assigned as auction winners.
 - [x] Winning assignment creates the approved contract and uses shared roster and cap rules.
-- [x] Transactions that leave the normal roster illegal may complete with a general warning and confirmation.
+- [x] Transactions that leave the normal roster illegal complete under the binding bid-time confirmation; scheduled resolution reports the general warning without a second prompt.
 - [x] Post-lock roster changes do not alter the current matchup snapshot.
 - [x] Auction results create league activity without matchup or standings entries.
 - [x] Public viewers cannot view auctions.
@@ -823,6 +970,7 @@ Tests must cover:
 - [x] After resolution, authenticated league members may view every bid, term, edit, winner, and price paid in League Activity.
 - [x] Bids rank first by highest submitted AAV.
 - [x] Equal AAV is broken by shorter term, earliest original timestamp, then ascending stable bid ID.
+- [x] That earliest-timestamp/stable-ID order applies only to ordinary weekly auctions.
 - [x] With one bidding team, the winner pays its current submitted total and term.
 - [x] With multiple teams, anti-bluff pricing keeps the winner’s term and uses the greater of its lowest offered AAV or highest competing AAV.
 - [x] A winner that defeats an equal competing bid only through a later tie-break pays its current submitted AAV.
@@ -832,21 +980,36 @@ Tests must cover:
 - [x] Resolution skips an invalid or stale bid and considers the next eligible bid.
 - [x] Roster or cap illegality never invalidates a bid or prevents an otherwise valid win.
 - [x] Skipped invalid-bid details remain in operational audit where required but are not shown in League Activity.
-- [x] An auction with no eligible bid becomes `No Winner` and creates no completed transaction.
+- [x] An ordinary or open FAD auction with no eligible bid becomes `No Winner` and creates no completed transaction; a restricted FAD auction uses its mandatory fallback.
 - [x] A player who becomes owned before resolution causes cancellation as no longer available.
 - [x] Separate due auctions resolve independently in stable auction-ID order.
 - [x] One failed auction does not block independent auction resolutions.
 - [x] Manual commissioner resolution is available only after the normal Sunday bid-close instant.
 - [x] Manual and scheduled resolution use the identical winner-selection operation.
-- [x] Removing the last bid leaves the auction active until close, when it becomes `No Winner`, unless explicitly cancelled.
+- [x] Removing the last bid leaves an ordinary or open FAD auction active until close, when it becomes `No Winner`, unless explicitly cancelled; restricted FAD resolution still applies its mandatory fallback.
 - [x] Commissioners may cancel an unresolved auction through a confirmed, logged action.
 - [x] Failed resolution creates no partial effects and may enter `Correction Required`.
 - [x] Commissioner retry uses the same idempotent resolution operation.
 - [x] A completed result is repaired only through an explicit atomic correction preserving original history.
 - [x] A league freeze blocks manager bids but does not stop due scheduled resolution.
-- [x] Auctions close at playoff start and remain closed through the playoffs and off-season.
-- [x] Auctions reopen only after the next season starts and the pre-season Free Agent Draft completes.
-- [x] Contracts won at any point in a season advance or expire at that same season’s end.
+- [x] Ordinary weekly auctions close at playoff start and remain closed through the playoffs and off-season.
+- [x] FAD rapid auctions are the approved preseason exception and normally resolve every 24 hours.
+- [x] Open FAD auctions inherit the ordinary starter/non-starter edit limits, 75-minute cooldown, and manager-withdrawal prohibition.
+- [x] A restricted participant begins with a Candidate minimum but no bid or cooldown; its first strict improvement is its opening bid, after which the ordinary joining-team edit allowance applies.
+- [x] A final-hour FAD nomination is accepted privately and queued, opens at rollover with the nominator's binding opening bid, and resolves at the following rollover.
+- [x] A delayed restricted tie auction never bypasses the 60-minute creation cutoff and follows the FAD recovery rule when no fair rapid rollover remains.
+- [x] Restricted FAD auctions accept bids only from Candidate Card teams tied on both the highest total and term.
+- [x] A restricted Candidate minimum creates no edit cooldown; the ordinary cooldown anchors to opening improvement and later bid activity.
+- [x] Locked Candidate Cards preserve public minimum values while later restricted-auction bids and edits remain blind.
+- [x] An exact top tie in any open or restricted FAD blind auction uses one auditable equal-chance draw rather than ordinary timestamp or bid ID.
+- [x] If no restricted participant has an eligible current active improvement at resolution, including after invalidation or commissioner removal, the player enters a fresh league-wide 24-hour blind auction with no initial leader.
+- [x] The tied contract floor applies across terms by total first and AAV second; a restricted contender must rank strictly above it, while a fallback bid may equal it.
+- [x] An open FAD auction with no eligible bid closes without a winner, returns the player to the unclaimed pool, and may be nominated later.
+- [x] Restricted pricing cannot reduce the winner below the original tied Candidate total.
+- [x] Non-terminal FAD allocation players remain unavailable to open rapid auctions.
+- [x] FAD rapid-auction contracts belong to the FAD target upcoming season.
+- [x] Ordinary weekly auctions reopen only after the next season starts and the Free Agent Draft completes.
+- [x] Contracts won at any point in a season advance or expire only at the scheduled start of the following Entry Draft.
 - [x] The initial release uses in-app status and activity without separate email or push auction notifications.
 - [x] Failed validation that changes no state is operational audit, not a completed league transaction.
 - [x] Grae approves this document as the Season 2 Auctions product specification.
@@ -881,6 +1044,7 @@ docs/02-rules/PERMISSIONS.md
 docs/03-product-specs/LEAGUES_AND_TEAMS.md
 docs/03-product-specs/ROSTERS.md
 docs/03-product-specs/CONTRACTS.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/TRADES.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md

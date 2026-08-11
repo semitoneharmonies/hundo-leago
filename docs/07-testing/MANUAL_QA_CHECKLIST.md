@@ -12,11 +12,16 @@ This testing document defines:
 
 * repeatable manual acceptance testing for local feature work and staging release candidates;
 * the required desktop, mobile, keyboard, responsive, failure, reconnect, and cross-feature checks;
-* launch-critical workflows for accounts, leagues, teams, rosters, contracts, auctions, trades, matchups, standings, commissioner tools, activity, notifications, and recovery;
+* launch-critical workflows for accounts, leagues, teams, rosters, contracts,
+  the Free Agent Draft, auctions, trades, matchups, standings, commissioner
+  tools, activity, notifications, and recovery;
 * evidence, defect, stop, retest, and sign-off rules;
 * manual-testing decisions delegated to and resolved by Codex from the approved project requirements.
 
 Grae delegated the manual-QA decisions and approved adoption of the resulting checklist on 2026-07-18.
+
+Launch-critical FAD acceptance coverage was added on 2026-07-27 and expanded
+for the approved 2026-07-29 decision package.
 
 ---
 
@@ -108,7 +113,7 @@ Initial release QA includes:
 * memberships, commissioner assignment, teams, and managers;
 * players and statistics;
 * rosters, prospects, injured reserve, contracts, cap, retention, and buyouts;
-* auctions and trades;
+* the Free Agent Draft, auctions, and trades;
 * regular-season matchups and standings;
 * commissioner tools;
 * League Activity, Security Audit, and notifications;
@@ -545,25 +550,89 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-CON-006` Contract list excludes expired and bought-out contracts as approved.
 - [ ] `MQ-CON-007` Retention shows AAV and remaining yearly schedule.
 - [ ] `MQ-CON-008` Recipient contract view shows original contract and reduced paid AAV clearly.
-- [ ] `MQ-CON-009` Buyout is unavailable during the 14-day auction-signing lock.
+- [ ] `MQ-CON-009` Buyout is unavailable during the 14-day auction or direct automatic FAD signing lock.
 - [ ] `MQ-CON-010` Buyout confirmation explains player release and 25% full-AAV yearly penalty.
 - [ ] `MQ-CON-011` Completed buyout eliminates contract, releases player, and creates correct penalty.
 - [ ] `MQ-CON-012` Existing retained salary remains unchanged after buyout.
 - [ ] `MQ-CON-013` Pending trades involving bought-out player become cancelled/declined as approved.
 - [ ] `MQ-CON-014` Commissioner correction shows explicit before/after and attribution.
 - [ ] `MQ-CON-015` Cap surfaces agree after retention, buyout, and correction.
+- [ ] `MQ-CON-016` After the final NHL regular-season game, unchanged contract years remain visible with a clear `Pending Rollover` state until the persisted scheduled Entry Draft start.
+- [ ] `MQ-CON-017` The Entry Draft and trading remain locked while scheduled rollover is pending or blocked; the commissioner sees exact blockers and one idempotent retry action.
+- [ ] `MQ-CON-018` Successful scheduled rollover advances or expires each contract and obligation exactly once, releases expired players, preserves valid carryovers, and then unlocks the approved draft/trading state without an intermediate partial view.
 
 ---
 
-# Part 11 - Auctions
+# Part 11 - Free Agent Draft and Auctions
+
+## Candidate Cards and Privacy
+
+- [ ] `MQ-FAD-001` Entry Draft completion or an approved no-draft trigger automatically evaluates readiness and opens every Candidate Card together or opens none; a failed check shows commissioner-safe blockers and offers only the approved retry, never manual opening parameters or a team subset.
+- [ ] `MQ-FAD-002` A league-creation first-season roster starts empty and has no prior-season carryovers; any approved prospect signing or move before the Candidate Card deadline is nevertheless projected into the applicable Candidate position.
+- [ ] `MQ-FAD-003` Each Candidate Card provides `12 F`, `6 D`, and `4` optional Bench slots.
+- [ ] `MQ-FAD-004` Carried-contract entries occupy the correct slots and cannot be removed or recontracted on the Candidate Card.
+- [ ] `MQ-FAD-005` Before the deadline, a manager can read and edit only their own team's Candidate Card, and another manager cannot retrieve its private data through the page or API.
+- [ ] `MQ-FAD-006` A manager can request commissioner help for their exact Candidate Card during the final `48 elapsed hours`; when cards open with less than 48 hours remaining, the help action is available from opening for the entire remaining preparation period.
+- [ ] `MQ-FAD-007` A help request grants the commissioner view/edit access only to that card; commissioner changes use normal validation and are attributed in the audit record.
+- [ ] `MQ-FAD-008` Commissioner assistance ends at the deadline and does not permit removal or modification of locked carried-contract entries.
+
+---
+
+## Candidate Card Deadline and Allocation
+
+- [ ] `MQ-FAD-009` The deadline occurs exactly `168 elapsed hours` before the frozen persisted first-matchup start.
+- [ ] `MQ-FAD-010` At the deadline, every Candidate Card locks automatically, including an incomplete card, and no manager or commissioner can extend or edit it.
+- [ ] `MQ-FAD-011` After the deadline, all league Candidate Cards become read-only and visible to league members.
+- [ ] `MQ-FAD-012` A player requested by one team is assigned to that team on the exact offered contract with the 14-day free-agent acquisition buyout lock.
+- [ ] `MQ-FAD-013` Candidate offers rank first by highest total contract value and then, among equal highest totals, by highest AAV; `$6/2y` defeats `$6/3y`.
+- [ ] `MQ-FAD-014` Only offers tied on both highest total and term create one restricted tie auction for the exact top-tied teams; lower-ranked offers and other teams are excluded.
+- [ ] `MQ-FAD-015` Deadline allocation is atomic and idempotent per player, creates no duplicate ownership or contract, and records assignments and ties in League Activity.
+- [ ] `MQ-FAD-016` Missing Candidate Card entries and unsuccessful requests leave roster holes without blocking valid player assignments.
+
+---
+
+## FAD Rapid-Auction Period
+
+- [ ] `MQ-FAD-017` The initial seven rapid boundaries occur at exact `24 elapsed hour` intervals after the Candidate Card deadline; queued, fallback, delayed, or recovery work creates only contiguous extension boundaries and may move Week 1 rather than shorten a cycle.
+- [ ] `MQ-FAD-018` Managers may open rapid free-agent auctions during the rapid period, subject to player eligibility and the approved auction rules.
+- [ ] `MQ-FAD-019` A restricted tie auction begins only from identical top total-and-term offers, creates each offer as an equal-status Candidate minimum rather than a bid or leader, and gives no team a starter advantage.
+- [ ] `MQ-FAD-020` A Candidate minimum creates no edit count or cooldown; an allowlisted team's opening improvement must meet the ordinary joining minimum and strictly improve the minimum by higher total or equal-total higher AAV, after which the ordinary joining-team one-edit allowance and 75-minute cooldown apply; a same-total lower-AAV longer term is rejected.
+- [ ] `MQ-FAD-021` Only allowlisted tied teams can bid in a restricted tie auction; other league members may view its non-private context but cannot join, manager withdrawal is unavailable, and an opening improvement may receive only the ordinary permitted joining-team edit.
+- [ ] `MQ-FAD-022` Open and restricted FAD auctions rank current bids by highest AAV and then shortest term; an exact remaining top tie uses an auditable equal-chance draw with stable replay, while Candidate allocation remains total-first/AAV-second and an equivalent ordinary weekly tie still uses its existing submission-time and stable-ID rule.
+- [ ] `MQ-FAD-023` Before the final `60 minutes`, a valid rapid nomination opens normally; exactly at and after the cutoff it is accepted privately into a queue, then opens at rollover with the nominator's binding starter bid for resolution at the following rollover, while existing bids and permitted edits remain available until rollover.
+- [ ] `MQ-FAD-024` Rapid resolution is idempotent and creates ownership, contract, normal Active assignment, activity, and notifications together without a second illegality confirmation.
+- [ ] `MQ-FAD-025` FAD completion waits until every active, pending, queued, fallback, delayed, and recovery path is terminal; if completion would be at or after Week 1, the same transaction moves Week 1 and regenerates remaining schedule/jobs before publishing completion.
+- [ ] `MQ-FAD-026` The main navigation shows the FAD workspace while it is active, the roster provides the approved contextual link, and completed cards/results remain available read-only.
+- [ ] `MQ-FAD-027` If the optional league recap video is enabled, it is generated from recorded results, cannot change or delay them, and failure does not block FAD completion or season start.
+- [ ] `MQ-FAD-028` An authorized commissioner or administrator explicitly chooses and persists the first-matchup start; the system does not substitute a fixed annual or NHL-opening-derived date, automatic readiness derives its clock from that choice, advances Week 1 by whole Mondays when Entry Draft completion is late, and freezes the historical FAD clock and participating-team set while still permitting approved atomic server-owned completion recovery to move competition Week 1.
+- [ ] `MQ-FAD-029` A contracted IR player reserves a locked Candidate position without moving off IR or creating an extra opening.
+- [ ] `MQ-FAD-030` A Prospect moved to Active, Bench, or eligible Injured Reserve before the deadline synchronizes as a carryover, while released prospect rights remain excluded without a later eligibility event.
+- [ ] `MQ-FAD-031` Original Candidate minimum values remain visible on locked cards, later bids/edits remain blind, and the final restricted-auction price cannot fall below the original tied total.
+- [ ] `MQ-FAD-032` Correction-required allocation players and players linked to failed or unresolved FAD-auction recovery remain quarantined from rapid and ordinary auctions until explicit terminal recovery, and every rapid-auction contract belongs to the FAD target season.
+- [ ] `MQ-FAD-033` Candidate revision preview and save show the authoritative whole-card maximum-cap projection; the warning remains advisory while editing, and only the deadline transaction decides allocation eligibility from the complete locked card.
+- [ ] `MQ-FAD-034` In a draft season, normal team addition is rejected after Entry Draft setup confirmation; on an approved no-draft path it remains available only until automatic readiness commits, while team erasure uses the separate post-draft/no-draft pre-FAD window.
+- [ ] `MQ-FAD-035` With a controlled clock, a delayed restricted tie auction receives strictly more than `60 minutes` of manager access, retains its allowlist, Candidate minimums, floor, and quarantine, and creates a contiguous rapid extension that moves Week 1 when needed rather than converting to an ordinary weekly auction.
+- [ ] `MQ-FAD-036` In a continuing season, the scheduled Entry Draft-start lifecycle transition atomically advances or expires contracts and obligations, carries or releases ownership, records exact rollover evidence, gates drafting and trading, and exposes exact blockers plus idempotent retry on missing, stale, partial, or ambiguous evidence.
+- [ ] `MQ-FAD-037` At deadline, an over-cap Candidate Card locks as illegal, excludes every new offer, preserves every carryover, publishes the reason, and never receives an arbitrary offer subset or post-deadline repair.
+- [ ] `MQ-FAD-038` At deadline, an incomplete but cap-compliant card locks as incomplete and every individually valid new offer still participates.
+- [ ] `MQ-FAD-039` If no restricted participant has an eligible current active strict improvement at resolution, including after invalidation or commissioner removal, no draw occurs and one fresh league-wide 24-hour fallback opens with the original floor and no initial leader.
+- [ ] `MQ-FAD-040` A fallback bid may equal the original floor but cannot rank below it under total-first/AAV-second comparison; a valid improvement path still uses normal FAD ranking and exact-tie draw behavior.
+- [ ] `MQ-FAD-041` A queued nomination is visible only to the nominating team's current manager and protected recovery authority until opening; another member cannot infer it from UI, responses, errors, realtime events, browser storage, or reconnect behavior.
+- [ ] `MQ-FAD-042` An open rapid auction with no eligible bid closes without a winner and returns the player to the unclaimed pool for a later FAD nomination or ordinary weekly auction.
+- [ ] `MQ-FAD-043` Outstanding FAD bids reserve no cap, position, or roster capacity; bid, edit, and queued-nomination submission is binding confirmation, and a team may win every simultaneous auction even when the resulting roster is illegal.
+- [ ] `MQ-FAD-044` A late Entry Draft advances Week 1 by one and then multiple whole league-local Mondays to the earliest valid start with a future Candidate deadline and complete seven-day FAD period, while NHL-season end and all four playoff weeks remain fixed.
+- [ ] `MQ-FAD-045` Late-draft Week 1 movement atomically regenerates remaining pairings, byes, and unexecuted jobs; when no valid pre-playoff Monday remains, cards stay closed and explicit blocked recovery appears without partial schedule changes.
+- [ ] `MQ-FAD-046` FAD-overrun completion moves Week 1 to the first valid league-local Monday strictly after the completion instant without rewriting locked cards, historical deadlines/rollovers, bids, draws, allocations, or completed results.
+- [ ] `MQ-FAD-047` A restart, retry, or race with matchup start produces either the complete recovered schedule plus FAD completion or neither; incomplete or illegal rosters alone never move Week 1.
+- [ ] `MQ-FAD-048` Every terminal FAD auction reveals and verifies its original draw commitment; exact ties show equal-chance selection evidence, while no-bid, no-improvement, and non-tied results show `selectionUsed = false` with no fabricated selected bid.
 
 ## Visibility and Timing
 
-- [ ] `MQ-AUC-001` Managers see active auctions only in normal auction UI.
+- [ ] `MQ-AUC-001` Ordinary active auctions appear in the normal Auction interface; active FAD rapid auctions are also reachable from the active FAD workspace.
 - [ ] `MQ-AUC-002` Resolved auction results appear in League Activity.
 - [ ] `MQ-AUC-003` Auction creation is available Monday `12:00 AM` through Thursday `11:59 PM` Pacific.
 - [ ] `MQ-AUC-004` Auction creation is unavailable outside that window.
-- [ ] `MQ-AUC-005` Auctions are closed at playoff start and remain closed until after the next season's Free Agent Draft.
+- [ ] `MQ-AUC-005` Ordinary weekly auctions remain closed from playoff start through FAD completion, except for the approved FAD rapid-auction period.
 - [ ] `MQ-AUC-006` User-facing deadlines use Pacific time unambiguously.
 
 ---
@@ -592,7 +661,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-AUC-021` A winning illegal roster is allowed with warning.
 - [ ] `MQ-AUC-022` Manager sees resolved result through activity, not resolved-bid UI.
 - [ ] `MQ-AUC-023` Restart or repeated resolution does not award twice.
-- [ ] `MQ-AUC-024` Mid-season auction contract still expires/rolls at normal season boundary.
+- [ ] `MQ-AUC-024` A midseason auction contract remains `Pending Rollover` after competition ends and advances/expires only in the persisted scheduled Entry Draft-start rollover.
 
 ---
 
@@ -612,7 +681,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-TRD-012` Successful acceptance applies every transfer atomically.
 - [ ] `MQ-TRD-013` Failed acceptance changes nothing.
 - [ ] `MQ-TRD-014` Completing one overlapping proposal cancels or invalidates affected proposals.
-- [ ] `MQ-TRD-015` Trade deadline closes trading and Entry Draft start reopens it.
+- [ ] `MQ-TRD-015` Trade deadline closes trading; the persisted Entry Draft-start occurrence keeps it locked until automatic rollover succeeds, then opens trading and the draft atomically.
 - [ ] `MQ-TRD-016` Resulting illegal roster is allowed with warning where approved.
 - [ ] `MQ-TRD-017` Completed trade appears once in League Activity and sends expected notifications.
 - [ ] `MQ-TRD-018` Cross-league team, player ownership, proposal, and pick IDs fail safely.
@@ -626,7 +695,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 
 ## Schedule and Lock
 
-- [ ] `MQ-MAT-001` Week 1 begins on the first full NHL schedule week unless commissioner-adjusted.
+- [ ] `MQ-MAT-001` An authorized commissioner or administrator explicitly selects and persists a valid Week 1 start; the first full NHL schedule week may be recommended but is not silently chosen or substituted.
 - [ ] `MQ-MAT-002` Pairings are as even as possible.
 - [ ] `MQ-MAT-003` Commissioner can adjust only approved future schedule boundaries/pairings.
 - [ ] `MQ-MAT-004` Current week is chosen by backend time, not browser clock.
@@ -634,6 +703,8 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-MAT-006` Locked matchup roster remains unchanged by normal roster moves after lock.
 - [ ] `MQ-MAT-007` Team illegal at lock scores zero until approved legal baseline creation.
 - [ ] `MQ-MAT-008` Midweek normal-roster illegality after a legal lock does not change that matchup.
+- [ ] `MQ-MAT-026` When a late snapshot is created after one selected player's NHL game has begun, that player/game pair is excluded in full while otherwise eligible players and later games score normally; events recorded after the baseline for the underway game never count.
+- [ ] `MQ-MAT-027` The late roster snapshot, scoring baseline, and immutable player/game exclusion evidence commit atomically and remain idempotent under a repeated or racing legality-restoration attempt.
 
 ---
 
@@ -864,11 +935,11 @@ Before their calendar deadlines:
 - [ ] `MQ-SEA-001` Three playoff rounds use one week, one week, then final two NHL regular-season weeks.
 - [ ] `MQ-SEA-002` Real NHL playoff games do not affect Hundo Leago.
 - [ ] `MQ-SEA-003` Bracket advancement and finalist result are deterministic.
-- [ ] `MQ-SEA-004` End-of-season contract decrement/expiration occurs at approved boundary.
+- [ ] `MQ-SEA-004` Competition ends after the final NHL regular-season game without changing contract years; contracts display `Pending Rollover` until the persisted scheduled Entry Draft start.
 - [ ] `MQ-SEA-005` Expired player is removed and immediately becomes free agent.
 - [ ] `MQ-SEA-006` No expiring player re-sign opportunity appears.
-- [ ] `MQ-SEA-007` Auction contracts end or roll with normal season boundary.
-- [ ] `MQ-SEA-008` Trading reopens at Entry Draft start.
+- [ ] `MQ-SEA-007` Auction contracts advance or expire only in the automatic scheduled Entry Draft-start rollover.
+- [ ] `MQ-SEA-008` Trading and the Entry Draft remain locked at the scheduled start until rollover succeeds; blocker/retry handling leaves no partial opening.
 - [ ] `MQ-SEA-009` Historical season results remain readable.
 - [ ] `MQ-SEA-010` Rollover backup and reconciliation pass.
 
@@ -984,7 +1055,7 @@ Documentation verification:
 
 ```powershell
 Get-Content docs/07-testing/MANUAL_QA_CHECKLIST.md
-Select-String -Path docs/07-testing/MANUAL_QA_CHECKLIST.md -Pattern '^`APPROVED`$','MQ-ENV-001','MQ-ACT-001','MQ-AUC-001','MQ-MAT-001','Required Release Matrix','Exit Gate'
+Select-String -Path docs/07-testing/MANUAL_QA_CHECKLIST.md -Pattern '^`APPROVED`$','MQ-ENV-001','MQ-ACT-001','MQ-FAD-001','MQ-AUC-001','MQ-MAT-001','Required Release Matrix','Exit Gate'
 ```
 
 Expected:
@@ -992,4 +1063,5 @@ Expected:
 * checklist status is approved and active;
 * production is excluded from destructive QA;
 * every run records builds, environment, tester, browser/device, results, and defects;
-* initial-release and deferred feature scopes remain distinct.
+* initial-release and deferred feature scopes remain distinct;
+* the launch-critical Free Agent Draft has explicit privacy, deadline, allocation, rapid-auction, and completion checks.

@@ -1004,19 +1004,75 @@ Matchup and standings processing is not added to League Activity.
 
 # Part 16 - Command Interface
 
-## Target Commands
+## Implemented and Planned Commands
 
-The backend will expose explicit non-interactive operations:
+The backend currently exposes these explicit non-interactive backup and clean-
+restore verification operations. The backup result supplies the exact
+`manifestObjectKey` used by both verification commands:
 
 ```powershell
 npm run db:backup -- --reason manual-platform-operation
-npm run db:backup:verify -- --backup-id <backupId>
-npm run db:restore:plan -- --backup-id <backupId> --incident-id <incidentId>
-npm run db:restore:execute -- --plan-id <planId> --approval-id <approvalId>
-npm run db:restore:verify -- --incident-id <incidentId>
+npm run db:backup:verify -- --manifest-object-key <manifestObjectKey>
+npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <absolute-clean-restore-path>
 ```
 
+The approved restore-plan and authorized restore-execution interfaces remain
+required but are not yet implemented as package commands. Documentation does
+not substitute nonexistent `db:restore:plan` or `db:restore:execute` commands;
+their absence remains a deployment blocker for any restore that would replace
+an authoritative database.
+
 Commissioner requests use an authenticated application service and do not execute shell commands directly.
+
+---
+
+## FAD-18 Provider Capability Command Boundary
+
+The provider capability tools are separate from backup and restore operations
+and do not satisfy the required old-path backup, fresh-path reset/import, or
+clean-restore drill. The four package commands below are milestones, not a
+standalone executable sequence:
+
+```text
+npm run data:discover:sportsdataio-live:staging -- --historical-date YYYY-MM-DD
+npm run release:candidate:preflight
+npm run data:check:sportsdataio-live:staging
+SPORTSDATAIO_NHL_LIVE_MODE=required npm run data:verify:sportsdataio-live:staging
+```
+
+The authoritative order is the
+[FAD-18 hosted staging procedure](../07-testing/release-runs/M7_HOSTED_STAGING_ACCEPTANCE.md#fad-18-live-provider-capability-procedure).
+In summary, the auxiliary bridge first deploys persistently held against the
+old schema-22 path; Render stops the old disk-backed instance before starting
+that replacement. Discovery runs from the attached-service shell, must inherit
+deployed `STAGING_MAINTENANCE_HOLD=true`, never an inline spoof, and opens only
+a verified private OS-temporary copy of the sidecar-free guarded source.
+An operator reviews and commits its exact manifest, and final-candidate
+preflight requires the checked-in hold default `false`. That exact final build
+then deploys once with the persisted hold still `true` for the verified old-
+path backup, exact clean-restore verification at a distinct inactive path, and
+the complete approved fresh schema-49 reset/import at a different path,
+including the ordered verification-artifact, first-admin,
+reset-original-league, migration-report, and database-identity handoff. The old
+schema-22 file remains untouched, and both path/build activation and rollback
+pairs are recorded.
+
+Only after the same final build activates on the verified new path with
+persisted `STAGING_MAINTENANCE_HOLD=false` in `probe` may the provider check
+publish the artifact. Both the check and verifier require closed writes,
+disabled scheduled jobs, FAD routes, account email, debug routes, and backup
+schedule, capture-only email, and hold `false` before provider, manifest, or
+artifact work. The zero-argument verifier runs once from that disk-backed shell
+with required-mode verification configuration through the exact per-process
+invocation above while the deployed service remains in `probe`; it does not
+persist or change service mode. Only after it passes may the same build change
+service mode to `required` and restart, where startup re-verifies before
+database open.
+
+The implemented tools alone do not prove or commit the real manifest, supply
+the credential, isolated database, operator access, object storage, backup,
+restore, release identity, or deploy authority. Missing external prerequisites
+still stop FAD-18, and production remains unauthorized.
 
 ---
 
@@ -1125,18 +1181,18 @@ Get-Content docs/08-operations/BACKUP_AND_RESTORE.md
 Select-String -Path docs/08-operations/BACKUP_AND_RESTORE.md -Pattern '^`APPROVED`$','AES-256-GCM','Recovery-point objective','Commissioner Authority','Production Restore Sequence','Staging Restore Drills'
 ```
 
-Future implementation verification:
+Current implemented-command verification:
 
 ```powershell
 npm run db:backup -- --reason manual-platform-operation
-npm run db:backup:verify -- --backup-id <backupId>
-npm run db:restore:plan -- --backup-id <backupId> --incident-id <incidentId>
-npm run db:restore:verify -- --incident-id <incidentId>
+npm run db:backup:verify -- --manifest-object-key <manifestObjectKey>
+npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <absolute-clean-restore-path>
 ```
 
 Expected:
 
 * backup verification reports SQLite integrity, zero foreign-key violations, and matching checksums;
-* restore planning is read-only;
+* clean restore verification never replaces the authoritative database;
+* the future restore-planning operation must remain read-only;
 * restore verification uses isolated staging or an explicitly authorized maintenance operation;
 * no verification command treats production storage as disposable.

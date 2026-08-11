@@ -6,6 +6,14 @@
 
 Grae approved the Season 2 league-rule baseline recorded in this document on 2026-07-18.
 
+Grae approved the FAD-related rule amendments on 2026-07-27 and amended the
+Candidate Card ranking and tie rule on 2026-07-28.
+On 2026-07-29, Grae approved the complete FAD decision package governing
+auction edits and withdrawal, FAD-only exact-tie draws, late Entry Draft
+Week 1 movement, and post-FAD overrun recovery.
+On 2026-08-08, Grae clarified the event-by-event rights-release evidence
+required before a released player may return to Candidate eligibility.
+
 This document consolidates:
 
 * rules already used during Season 1;
@@ -173,15 +181,25 @@ They must not be hard-coded as permanent limits for every possible league.
 | Team-wide total contract-year limit | `None` | Approved 2026-07-18 |
 | Contract extensions | `Not permitted` | Approved 2026-07-18 |
 | Fantasy ELC | `$3 total over 3 years; $1 AAV` | Approved 2026-07-18 |
-| Free-agent signing buyout lock | `14 days` | Approved 2026-07-18 |
+| Free-agent signing buyout lock | `14 days for auction and direct automatic FAD signings` | Amended 2026-07-27 |
 | Trade-proposal lifetime | `7 days` | Approved 2026-07-18 |
 | Auction rollover | `Sunday at 4:00 PM Pacific` | Approved 2026-07-18 |
 | New-auction opening | `Monday at 12:00 AM Pacific` | Approved 2026-07-18 |
 | New-auction cutoff | `Thursday at 11:59 PM Pacific` | Approved 2026-07-18 |
-| Seasonal auction closure | `Start of playoffs through completion of next season’s Free Agent Draft` | Approved 2026-07-18 |
-| Contract-year rollover | `End of league season` | Approved 2026-07-18 |
+| Ordinary weekly auction closure | `Start of playoffs through completion of next season’s Free Agent Draft; FAD rapid auctions are the approved offseason exception` | Approved 2026-07-27 |
+| Candidate Card deadline | `Exactly 168 elapsed hours before the frozen first-matchup start` | Approved 2026-07-27 |
+| Candidate Card help window | `Final 48 elapsed hours before deadline, or the entire remaining preparation period when cards open later` | Amended 2026-07-29 |
+| Candidate rights-release eligibility | `Each fantasy-ELC decline or unsigned-prospect-rights release blocks Candidate eligibility until later confirmed same-league, same-player re-entry evidence references that exact release event; every later release blocks again` | Clarified 2026-08-08 |
+| FAD rapid-auction rollover | `Every 24 elapsed hours from the Candidate deadline; the initial seventh boundary is selected Week 1, with additional cycles permitted only when required FAD processing moves Week 1` | Amended 2026-07-29 |
+| FAD rapid nomination queue | `A final-60-minute nomination is accepted privately, opens at rollover with its binding opening bid, and resolves at the following rollover` | Amended 2026-07-29 |
+| FAD manager bid controls | `Ordinary starter/non-starter edit limits, 75-minute cooldown, and no manager withdrawal; a restricted participant's first improvement is its opening bid and then uses the ordinary joining-team edit allowance` | Amended 2026-07-29 |
+| FAD auction exact tie | `Auditable equal-chance draw among the exact top-tied eligible bids; ordinary weekly tie rules do not change` | Approved 2026-07-29 |
+| Late Entry Draft Week 1 recovery | `Advance by whole league-local Mondays to the earliest valid Week 1 whose Candidate Card deadline is strictly future-facing and whose complete seven-day FAD auction period fits` | Approved 2026-07-29 |
+| FAD processing overrun | `If FAD completion would be at or after frozen Week 1, atomically move Week 1 and regenerate remaining schedule/jobs before publishing completion, without rewriting historical FAD clocks` | Approved 2026-07-29 |
+| Competition-season end | `After the final NHL regular-season game` | Approved 2026-07-29 |
+| Contract-year rollover | `Automatically at the scheduled start of the next Entry Draft; the draft and trading remain locked until it succeeds` | Amended 2026-07-29 |
 | Weekly roster lock | `Monday at 4:00 PM Pacific` | Approved 2026-07-18 |
-| Regular-season matchup opening | `First full Monday–Sunday week of the NHL regular season` | Approved 2026-07-18 |
+| Regular-season matchup opening | `Valid Week 1 start explicitly chosen by an authorized commissioner or administrator; first full NHL-season week is recommendation only` | Amended 2026-07-28 |
 | Fantasy playoff length | `4 weeks across 3 rounds: 1 week, 1 week, 2 weeks` | Approved 2026-07-18 |
 | Fantasy playoff finish | `Final two weeks of the NHL regular season` | Approved 2026-07-18 |
 | League timezone | `America/Vancouver` | Approved 2026-07-18 |
@@ -541,7 +559,9 @@ Before completion, the system must:
 
 * calculate the resulting roster and cap state;
 * display a general illegality flag;
-* require any normal transaction confirmation defined by the applicable product specification;
+* require any normal transaction confirmation defined by the applicable
+  product specification before accepting a binding command; a later scheduled
+  resolver never pauses for a second confirmation;
 * log the completed transaction.
 
 The backend must not report an illegal result as legal merely because the transaction is permitted to complete.
@@ -555,7 +575,10 @@ When a team has an illegal roster at the normal Monday `4:00 PM Pacific` roster 
 3. The team may make approved adjustments to become legal.
 4. When the roster first becomes legal, the backend records a team-specific scoring-eligible roster snapshot, eligibility time, and scoring baseline.
 5. Only fantasy points earned after that team-specific baseline count for the team in that matchup week.
-6. Points earned before legality was restored are not recovered.
+6. A player whose NHL game was already underway when that late snapshot was
+   created is excluded for that entire NHL game, including events after the
+   late baseline.
+7. Points earned before legality was restored are not recovered.
 
 Once a legal scoring-eligible roster snapshot has been created for the matchup week, later roster adjustments do not affect that matchup. The team’s normal roster may become illegal after its lock without interrupting the locked players’ fantasy-point earnings for the current matchup.
 
@@ -609,9 +632,22 @@ Examples:
 3 years remaining = the current season plus two additional seasons
 ```
 
-Contract-year advancement and expiration are processed at the end of the league season.
+The competition season ends after the final NHL regular-season game.
+Contract-year advancement and expiration do not run at that instant. Until
+the next rollover succeeds, every contract continues to display its existing
+years with a clear `Pending Rollover` state.
 
-Every contract held during that season advances or expires in the same end-of-season rollover, including a contract won in a midseason auction. A midseason acquisition does not delay the use of that contract year.
+The next contract-year rollover runs automatically at the persisted scheduled
+start of that league's next Entry Draft. Entry Draft setup, order, eligible
+pool, pick ownership, and private manager queues may be prepared beforehand,
+but the draft and trading do not open until the rollover transaction succeeds.
+If it fails, both remain locked, no partial contract effect remains, and the
+commissioner receives an exact blocker list plus an idempotent retry action.
+
+Every contract held during the completed season advances or expires in that
+same scheduled Entry Draft-start rollover, including a contract won in a
+midseason auction. A midseason acquisition does not delay the use of that
+contract year.
 
 When a contract expires:
 
@@ -746,7 +782,8 @@ An existing buyout-penalty obligation may be traded as a whole. Its annual amoun
 The free-agent signing restriction is:
 
 ```text
-A player signed through an auction cannot be bought out for 14 days.
+A player signed through an auction or direct automatic FAD allocation cannot
+be bought out for 14 days.
 ```
 
 The buyout lock follows the player if the player is traded during the lock period.
@@ -793,11 +830,159 @@ A validation failure must not partially change league state.
 
 ---
 
+## Free Agent Draft
+
+Every league runs one Free Agent Draft before every season.
+
+Each team receives one Candidate Card containing:
+
+```text
+Active forwards: 12 mandatory slots
+Active defence:   6 mandatory slots
+Bench:            4 optional slots
+```
+
+For a continuing league, Active, Bench, and Injured Reserve players with
+remaining multi-year contracts carry into locked Candidate Card positions or
+projections. An IR projection reserves an Active F or D Candidate position
+without silently moving the player off IR. Managers cannot remove or rewrite
+those ownerships or contracts through the FAD, but may rearrange an eligible
+carryover between compatible Active and position-neutral Bench slots. Bench
+players are cap-exempt and must have no more than `$4 AAV`.
+
+Each `fantasy_elc_declined` or `unsigned_prospect_rights_released` ownership
+event independently blocks that player from Candidate eligibility in its
+league. That event is cleared only by a later `draft_eligible_players` row for
+the same league and player whose `eligibility_reason` is
+`rights_release_reentry`, whose `rights_release_event_id` references that exact
+event, and whose eligibility snapshot was confirmed strictly after the release
+occurred. Evidence for an earlier release does not clear a later one: every
+later release event creates a new block requiring its own later confirmation.
+Unowned status, roster absence, or both are never sufficient to clear a
+release-event block.
+
+The transaction that makes an Entry Draft `Complete` automatically commits one
+durable Candidate Card-readiness handoff. That handoff is part of the same
+atomic completion transaction: if it cannot persist, neither the terminal pick
+action nor draft completion commits. A server-owned readiness worker then opens
+every Candidate Card simultaneously when every FAD prerequisite passes.
+Opening is all-or-nothing: if schedule, participating-team, manager, carryover,
+eligibility, or other setup validation fails, no team's card opens and the
+commissioner receives the blocker list. There is no standalone or manual Entry
+Draft completion endpoint and no separate commissioner confirmation that may
+open only some cards. An approved no-draft transition supplies the equivalent
+opening gate for an inaugural league and the original league's initial Season
+2 when no preceding Entry Draft exists.
+
+If the Entry Draft completes too late for the selected Week 1, the backend
+advances Week 1 by whole Monday-to-Monday league-local intervals before cards
+open. It chooses the earliest otherwise-valid Monday for which the derived
+Candidate Card deadline is strictly after Entry Draft completion and the full
+seven elapsed days from that deadline through the seventh rapid rollover fit
+before Week 1. The NHL regular-season ending and four fantasy playoff weeks
+remain fixed. Each delayed Monday removes an early regular-season matchup week;
+the backend regenerates the remaining pairings and byes as fairly as possible
+and replaces dependent unexecuted job occurrences atomically. It never
+shortens the auction period, backdates a deadline, or silently chooses a
+non-Monday start.
+
+Before the deadline:
+
+* a manager may view and edit only the assigned team's card;
+* another manager may not view the card;
+* commissioner authority by itself may not reveal another team's card unless
+  that team's manager requests help;
+* a help request during the final 48 hours grants the commissioner view and
+  edit access to that card until the deadline;
+* when cards open with less than 48 hours remaining, the help window begins at
+  opening and lasts for the entire remaining preparation period.
+
+The complete Candidate Card must have no unresolved carried-roster structural
+conflict and must be cap compliant under the Candidate Card projection. A
+conflict-free incomplete card may still lock and each individually valid new
+offer may participate. A card with an unresolved carried-roster structural
+conflict or an over-cap projection locks as illegal and none of its new
+Candidate offers participate; carryover ownerships remain owned and the
+published card explains the exclusion. The backend never chooses a subset of
+offers to remove. A manager or help-authorized commissioner may correct the
+card before the deadline, but there is no post-deadline repair.
+
+At the deadline, exactly 168 elapsed hours before the frozen first-matchup
+start, every card locks and becomes read-only to active league members.
+
+Player allocation ranks highest total contract value first. When highest totals
+tie, the highest AAV wins, so the shorter term wins at an equal total. Only
+offers tied on both highest total and term create a restricted tie auction,
+available only to those exact top-tied teams.
+
+The tied Candidate contract is the restricted auction's minimum, not a
+winning leader. It creates no auction bid or cooldown. A tied team's first
+strict improvement is its opening bid; after that submission it receives the
+ordinary joining-team edit allowance and 75-minute cooldown. At least one team
+must leave an eligible current active strictly improved offer at resolution
+for the restricted auction to produce a winner. An offer is above
+the floor when its total is higher, or its total is equal and its AAV is
+higher; a same-total lower-AAV longer term is below the floor. If every
+improvement is absent, invalid, or commissioner-removed at resolution, no
+random winner is selected. The restricted auction closes without a winner and
+the player enters a fresh league-wide blind rapid auction for the following
+24-hour cycle, with the tied contract retained as the minimum and no team
+beginning as leader. In that fallback, a bid may equal the floor, but may not
+rank below it under the same total-first/AAV-second comparison.
+
+After automatic allocation, approved open and restricted FAD auctions normally
+resolve every 24 hours until the FAD is complete. A nomination committed in
+the final 60 minutes before rollover is accepted privately and queued rather
+than rejected. At rollover it opens automatically with the nominator's binding
+opening bid and resolves at the following rollover. Existing auctions remain
+open for authorized bids and edits until rollover. Every FAD auction inherits
+the ordinary
+starter/non-starter manager edit limits, 75-minute edit cooldown, and
+prohibition on manager withdrawal. A restricted participant's first strict
+improvement is its opening bid; later edits use the ordinary joining-team
+allowance and cooldown anchored to that bid activity.
+
+An open rapid auction with no eligible bids closes without a winner and
+returns the player to the unclaimed pool. The player may be nominated again
+during FAD or through ordinary weekly auctions later. Outstanding bids reserve
+no cap, position, or roster capacity; simultaneous bids are independent and
+binding, and a team may win every auction it entered even when the resulting
+roster is illegal. Submission or edit of a bid, and submission of a queued
+nomination, is the manager's binding confirmation of that possibility; the
+scheduled resolver never waits for a second confirmation.
+
+After AAV and term ranking, any exact top tie in an open or restricted FAD
+blind auction is resolved by an auditable equal-chance draw among only those
+exactly tied eligible bids. The ordinary weekly auction's earliest-submission
+and stable-ID tie rules remain unchanged.
+
+Matchups cannot begin until the full seven-day FAD process and any required
+follow-on processing finish. Incomplete or illegal team rosters do not delay
+Week 1, but unfinished FAD processing does. If the proposed durable FAD
+completion instant is at or after the current Week 1 boundary, the same atomic
+completion transaction first moves competition Week 1 to the first
+otherwise-valid league-local Monday strictly after that instant. The NHL
+regular-season end and playoff weeks remain fixed; early regular-season weeks
+are removed, and remaining pairings/byes plus future jobs are regenerated
+before FAD status becomes `Completed`. The completed Candidate Card deadline,
+snapshots, auction rollovers, and FAD history remain unchanged; cards do not
+reopen.
+
+The approved Free Agent Draft specification defines exact carryover,
+eligibility, allocation, tie-auction, rapid-auction, completion, visibility,
+history, recovery, and user-interface behavior.
+
+---
+
 ## Auctions
 
 The Season 2 auction system remains a blind free-agent auction system.
 
 Active competing bid values and contract terms are hidden from managers, other league members, and commissioners. A user may view only that user’s own active bid value and term. Resolved bid details are visible to authenticated league members in League Activity.
+
+In a restricted FAD tie auction, the original Candidate minimum values remain
+visible through the locked Candidate Cards; only later active bid values remain
+blind until resolution.
 
 Cross-feature rules include:
 
@@ -805,7 +990,9 @@ Cross-feature rules include:
 * bids belong to one authorized team in that league;
 * players are identified by stable player ID;
 * an already-owned player cannot be assigned as an auction winner;
-* resolution must be deterministic;
+* ordinary weekly tie resolution must remain deterministic;
+* an FAD exact top tie must use persisted, auditable equal-chance draw
+  evidence so retry and replay return the same winner;
 * resolution must be idempotent;
 * a winning assignment must create or attach the approved contract;
 * the resulting roster and cap state must use the shared legality rules;
@@ -835,17 +1022,25 @@ New-auction cutoff: Thursday at 11:59 PM Pacific
 Auction rollover: Sunday at 4:00 PM Pacific
 ```
 
-Auctions close at playoff start and remain closed through the playoffs and off-season. They reopen only after the next season starts and the pre-season Free Agent Draft is complete.
+Ordinary weekly auctions close at playoff start and remain closed through the
+playoffs and off-season. The approved FAD rapid-auction period is the only
+preseason exception.
+
+Ordinary weekly auctions reopen only after the next season starts and the
+Free Agent Draft is complete following its final rapid rollover.
 
 ---
 
 ## Trades
 
-Trades are open from the start of the entry draft until the league’s commissioner-configured trade deadline.
+Trades are open only after the scheduled Entry Draft-start contract rollover
+succeeds and remain open until the league's commissioner-configured trade
+deadline.
 
 The commissioner sets the trade deadline during league creation.
 
-Trading reopens at the start of the next entry draft.
+Trading and the Entry Draft reopen together after that rollover succeeds. A
+rollover failure keeps both locked.
 
 The trade deadline must be stored as a league setting with the league timezone. It must not be hard-coded globally.
 
@@ -867,7 +1062,22 @@ Cross-feature trade rules include:
 * an active, benched, or injured-reserve player transfers with the existing contract unchanged except for approved retained salary;
 * a prospect acquired from another team’s prospect roster remains a prospect for the receiving team;
 * draft-pick identity and original-team history are preserved when ownership changes;
-* an unspent draft pick may be traded multiple times, including while its Entry Draft is in progress;
+* every draft pick permanently preserves its draft year, round, and original
+  team, while its current owner selects at that original team's draft
+  position;
+* an unspent draft pick may be traded multiple times, including while its
+  Entry Draft is in progress, but may complete at most one trade while it is
+  the on-clock pick;
+* pending proposals containing a pick remain open when that pick goes on the
+  clock;
+* a completed on-clock pick trade gives the new owner one fresh full pick
+  clock;
+* committing the selection cancels every still-pending proposal containing
+  that pick, while a completed competing trade cancels proposals made stale by
+  the ownership change;
+* an on-clock trade, a manual pick selection, and the automatic pick timeout
+  receive no grace period; whichever transaction commits first wins and every
+  loser revalidates against the new state without a partial effect;
 * proposals do not reserve assets, and the same asset may appear in multiple pending proposals;
 * resulting contracts, retained salary, cap usage, and roster state must be validated;
 * acceptance must be atomic and protected against duplicate processing;
@@ -914,9 +1124,38 @@ Code must not assume the server’s local timezone or the browser’s local time
 
 ## Matchup and Playoff Calendar
 
-Regular-season matchups begin with the first full Monday-through-Sunday fantasy week contained in the NHL regular season.
+An authorized commissioner or administrator chooses the first regular-season
+matchup start through the approved schedule workflow. That persisted instant
+starts the Hundo Leago season and anchors the Candidate Card deadline. It must
+satisfy the approved matchup-window constraints. The first full
+Monday-through-Sunday fantasy week contained in the NHL regular season may be
+recommended, but the system does not impose or silently persist it as a fixed
+annual date.
 
-The application automatically creates the regular-season schedule so each team plays every other team equally often or as evenly as the available teams and weeks permit. The commissioner may adjust the generated schedule.
+After that start is selected, the application automatically creates the
+regular-season schedule so each team plays every other team equally often or as
+evenly as the available teams and weeks permit. The commissioner or
+administrator may adjust the generated schedule before automatic Candidate
+Card opening freezes the historical FAD clock. If Entry Draft completion
+leaves the derived Candidate Card deadline at or
+before the completion instant, the backend advances the schedule by whole
+league-local Mondays to the earliest valid Week 1 that leaves that deadline in
+the future and preserves the complete seven-day rapid-auction period.
+
+Candidate Card opening freezes the FAD clock, but it does not authorize
+matchups to begin while FAD processing is unfinished. When the proposed FAD
+completion instant would be at or after the frozen Week 1 start, the same
+server-owned atomic completion transaction moves Week 1 to the first
+otherwise-valid league-local Monday strictly after that instant before it
+publishes FAD completion. The NHL regular-season end and all four playoff
+weeks stay fixed. The delay removes early regular-season matchup weeks, then
+regenerates the remaining pairing and bye sequence as fairly as possible,
+replaces unexecuted jobs, and commits the FAD completion gate atomically. It
+does not rewrite the historical
+Candidate Card deadline or rapid-rollover evidence, reopen cards, or change
+completed FAD results. If no valid pre-playoff Monday remains, the league
+enters explicit correction-required recovery rather than receiving an invalid
+or silently truncated schedule.
 
 Hundo Leago playoffs occupy the final four fantasy scoring weeks of the NHL regular season:
 
@@ -950,6 +1189,10 @@ Only active-roster players are eligible to collect matchup points.
 Benched, injured-reserve, and prospect players do not collect matchup points.
 
 If the roster is illegal at the normal Monday `4:00 PM Pacific` roster lock, the team does not begin collecting points. When the roster becomes legal, the backend records the team-specific snapshot and baseline required by the Temporary Illegality rules in this document.
+
+Any player whose NHL game was already underway when that late snapshot was
+created is excluded for that entire game. A late baseline never awards the
+remaining portion of an in-progress game.
 
 A locked roster must be a persisted snapshot.
 
@@ -1235,7 +1478,9 @@ At minimum, test:
 
 # Part 12 — Approval Checklist
 
-Grae approved the following Season 2 baseline decisions on 2026-07-18.
+Grae approved the original Season 2 baseline decisions on 2026-07-18 and the
+FAD-related amendments on 2026-07-27, 2026-07-28, 2026-07-29, and
+2026-08-08.
 
 ## Core Values
 
@@ -1263,12 +1508,15 @@ Grae approved the following Season 2 baseline decisions on 2026-07-18.
 - [x] Transactions that create an illegal roster may complete with a warning.
 - [x] An illegal team collects no matchup points while illegal.
 - [x] A team that restores legality begins collecting points from a newly persisted team-specific baseline.
+- [x] A late snapshot excludes any player whose NHL game was already underway for that entire game.
 - [x] After a legal scoring roster is locked, later roster adjustments do not affect the current matchup.
 - [x] A normal roster may become illegal after its matchup lock without interrupting the locked players’ scoring.
 
 ## Contracts
 
 - [x] Contracts range from `1` to `3` years.
+- [x] The competition season ends after the final NHL regular-season game, while contract years remain visibly pending until the next scheduled Entry Draft start.
+- [x] Contract rollover runs automatically at the scheduled Entry Draft start; the draft and trading remain locked on failure until an idempotent retry succeeds.
 - [x] Contracts may not be extended.
 - [x] There is no team-wide total contract-year limit.
 - [x] One-year values may use up to two decimal places.
@@ -1277,8 +1525,8 @@ Grae approved the following Season 2 baseline decisions on 2026-07-18.
 - [x] Auction wins create a contract by dividing total winning contract value across the bid years.
 - [x] Trades transfer AAV and remaining years without restarting or extending the contract.
 - [x] Remaining years include the current season.
-- [x] A contract with one year remaining expires after the current season.
-- [x] Contract years advance and eligible contracts expire at the end of the league season.
+- [x] A contract with one year remaining becomes pending after the current competition season and expires at the scheduled start of the next Entry Draft.
+- [x] Contract years advance and eligible contracts expire only during the scheduled Entry Draft-start rollover.
 - [x] A contract won in a midseason auction still uses that season as its current contract year.
 - [x] Expired players are removed from the roster and immediately become free agents.
 - [x] Former teams receive no exclusive re-signing opportunity.
@@ -1303,28 +1551,53 @@ Grae approved the following Season 2 baseline decisions on 2026-07-18.
 - [x] Annual buyout penalty is `25% of AAV`, rounded to the nearest hundredth.
 - [x] The annual penalty applies in each remaining contract year.
 - [x] There is no penalty decay during the remaining contract term.
-- [x] Auction signings have a `14-day` buyout lock.
+- [x] Auction and direct automatic FAD signings have a `14-day` buyout lock.
 - [x] The buyout lock follows the player after a trade.
 - [x] An existing buyout-penalty obligation may be traded as a whole without changing its amount or remaining schedule.
 
 ## Transactions and Timing
 
 - [x] The commissioner sets the league trade deadline during league creation.
-- [x] Trading reopens at the start of the entry draft.
+- [x] Trading and the Entry Draft open only after the scheduled Entry Draft-start contract rollover succeeds.
 - [x] Trade proposals expire after `7 days`.
 - [x] Proposals may not be accepted after the league trade deadline.
 - [x] Buying out a player automatically cancels pending trades involving that player.
 - [x] Active, Bench, and Injured Reserve players, prospects or player rights, draft picks, retention obligations, buyout-penalty obligations, and Future Considerations are tradeable assets.
 - [x] The same asset may appear in multiple pending proposals because proposals do not reserve assets.
 - [x] Unspent draft picks may be traded repeatedly, including during the Entry Draft.
+- [x] A pick permanently preserves draft year, round, and original team; its current owner selects at the original team's position.
+- [x] An on-clock pick may complete at most one on-clock trade, which gives the new owner a fresh full clock.
+- [x] Pending pick proposals remain open when the pick goes on clock; selection cancels them, and a completed competing trade cancels proposals made stale by ownership change.
+- [x] An on-clock trade, manual selection, and automatic timeout have no grace period; the first committed transaction wins.
 - [x] Every completed transaction is recorded in league history.
 - [x] Matchup and standings information is excluded from league activity history.
 - [x] Weekly new-auction opening is Monday at `12:00 AM Pacific`.
 - [x] New-auction cutoff is Thursday at `11:59 PM Pacific`.
 - [x] Auction rollover is Sunday at `4:00 PM Pacific`.
-- [x] Auctions close at playoff start and reopen only after the next season starts and its Free Agent Draft completes.
+- [x] Ordinary weekly auctions close at playoff start and reopen only after the next season starts and its Free Agent Draft completes.
+- [x] Every season uses private Candidate Cards with 12 F, 6 D, and 4 optional Bench positions.
+- [x] Candidate Cards lock exactly 168 elapsed hours before the frozen first-matchup start and become league-wide read-only.
+- [x] The atomic Entry Draft completion transaction records one durable readiness handoff; its later server-owned worker opens all Candidate Cards automatically and simultaneously only when every prerequisite passes, while validation failure opens none.
+- [x] There is no standalone or manual Entry Draft completion endpoint and no commissioner command that opens Candidate Cards directly.
+- [x] Managers may request commissioner card assistance during the final 48 hours, or throughout the entire remaining preparation period when cards open later.
+- [x] Carryover ownership and contracts remain locked, while eligible carryovers may move between compatible Active and position-neutral Bench slots.
+- [x] Each fantasy-ELC decline or unsigned-prospect-rights release independently blocks Candidate eligibility until a later confirmed same-league, same-player `rights_release_reentry` row references that exact release event; unowned status or roster absence alone never clears it, and every later release blocks again.
+- [x] The complete Candidate Card must have no unresolved carried-roster structural conflict and must be cap compliant; either illegality locks the card and excludes all new offers without releasing carryovers or choosing offers arbitrarily.
+- [x] A conflict-free incomplete, cap-compliant card still locks and each individually valid new offer participates.
+- [x] Candidate Card allocation ranks highest total first, then highest AAV; only equal highest totals with equal terms create restricted tie auctions.
+- [x] FAD rapid auctions are the approved preseason exception and normally resolve every 24 elapsed hours.
+- [x] FAD auctions inherit ordinary manager edit limits, the 75-minute cooldown, and the prohibition on manager withdrawal; a restricted participant begins with no bid or cooldown, submits its strict improvement as an opening bid, and then uses the ordinary joining-team edit allowance.
+- [x] Exact top ties in open and restricted FAD blind auctions use an auditable equal-chance draw; ordinary weekly auction tie rules remain unchanged.
+- [x] A restricted Candidate tie produces a winner only when at least one eligible current active bid strictly improves its Candidate minimum; if every improvement is absent, invalid, or commissioner-removed at resolution, the player enters a fresh league-wide 24-hour blind auction with no initial leader.
+- [x] A delayed restricted tie auction cannot bypass the one-hour cutoff and retains its restrictions through the documented recovery path when no fair rapid rollover remains.
+- [x] A final-hour FAD nomination is accepted privately and queued, opens at rollover with the nominator's binding bid, and resolves at the following rollover.
+- [x] An open rapid auction with no bid closes without a winner and returns the player to the unclaimed pool for later nomination.
+- [x] Bid or queued-nomination submission is the binding illegality confirmation; outstanding FAD bids reserve no cap, position, or roster capacity, and every valid winning contract takes effect without a second resolver-time prompt even if the team becomes illegal.
+- [x] A late Entry Draft advances Week 1 by whole league-local Mondays until the Candidate Card deadline is strictly future-facing and the complete seven-day FAD auction period fits.
+- [x] If FAD completion would occur at or after Week 1, the same atomic transaction moves Week 1, regenerates the remaining schedule and jobs, and only then publishes durable FAD completion.
+- [x] Incomplete or illegal rosters do not delay Week 1, but unfinished FAD processing does.
 - [x] Weekly roster lock is Monday at `4:00 PM Pacific`.
-- [x] Regular-season matchups begin with the first full Monday-through-Sunday week of the NHL regular season.
+- [x] An authorized commissioner or administrator explicitly chooses the valid Week 1 start; the first full NHL-season week is only a recommendation, not a fixed system date.
 - [x] The application automatically balances round-robin pairings as evenly as possible.
 - [x] Hundo Leago playoffs use three rounds lasting one week, one week, and two weeks.
 - [x] The two-week Final occupies the final two fantasy scoring weeks of the NHL regular season.
@@ -1368,6 +1641,7 @@ docs/02-rules/PERMISSIONS.md
 docs/03-product-specs/ROSTERS.md
 docs/03-product-specs/CONTRACTS.md
 docs/03-product-specs/AUCTIONS.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/TRADES.md
 docs/03-product-specs/MATCHUPS.md
 docs/03-product-specs/COMMISSIONER_TOOLS.md

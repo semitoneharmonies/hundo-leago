@@ -227,6 +227,228 @@ suite. A focused live NHL refresh is still a manual/provider gate.
 
 Email remains capture-only. Scheduled jobs remain disabled.
 
+## FAD-18 Live-Provider Capability Procedure
+
+This procedure supersedes the focused-refresh note above for the FAD release
+candidate. FAD-17 is complete locally. This FAD-18 procedure remains pending
+until the external resource-isolation, credential, operator-access, and clean
+source prerequisites needed for step 1 pass. Backup, reset/import, migration-
+report, and activation gates occur only at their numbered positions below.
+
+The accepted M7-09 provider evidence above remains historical and does not
+satisfy this FAD-18 capability gate. Complete the following sequence before the
+release candidate changes to persistent `required` mode:
+
+1. Record and deploy the auxiliary bridge commit against the existing
+   schema-22 `DATABASE_PATH` with the persisted Render service value
+   `STAGING_MAINTENANCE_HOLD=true`. Its other exact prerequisites are
+   `APP_ENV=staging`, `NODE_ENV=production`, `LEAGUE_WRITE_MODE=closed`,
+   scheduled jobs, FAD routes, account-email delivery, debug routes, and backup
+   schedule all `false`, `EMAIL_DELIVERY_MODE=capture`, and provider mode
+   `probe`. A Render persistent-disk redeploy stops the old instance before the
+   replacement starts; record both deploy identities and prove the old process
+   no longer holds the disk.
+2. Verify exact-path GET/HEAD liveness and readiness and maintenance `503` for
+   every other request, including `OPTIONS`. The bridge must import and open no
+   target/database runtime and compose no application routes, jobs, Socket.IO,
+   or email. A hold `ready` response means only that the maintenance listener is
+   live, not that the application or database is ready. Confirming the attached
+   Dashboard Shell or SSH session is reachable is an external operator/provider
+   check.
+3. From that disk-backed shell, quiesce the isolated schema-22 database and run
+   exactly:
+
+   ```text
+   npm run data:discover:sportsdataio-live:staging -- --historical-date YYYY-MM-DD
+   ```
+
+   Discovery must inherit the persisted deployed
+   `STAGING_MAINTENANCE_HOLD=true`; do not prefix, spoof, or override that value
+   on the command. It must use only the dedicated paid live key, require and
+   recheck a sidecar-free guarded source, copy the guarded main database to a
+   private OS-temporary snapshot, and open only that copy read-only with
+   `fileMustExist` and `query_only`. Source and copy identity and SHA-256 must
+   agree; the copy must close and be removed before sanitized output is
+   published. Any source drift or cleanup failure blocks with no output. The
+   command makes no shared database or league write and retains no raw provider
+   response.
+4. Have the operator review the sanitized discovery output and commit its exact
+   manifest as
+   `config/provider-capability/sportsdataio-live-probe-v1.json`. Record the
+   manifest commit and semantic SHA-256; do not commit raw provider data or a
+   credential.
+5. From the clean exact final-candidate checkout, run
+   `npm run release:candidate:preflight`. A missing, untracked, invalid,
+   season-mismatched, or build-omitted manifest, or a checked-in
+   `STAGING_MAINTENANCE_HOLD` default other than `false`, blocks activation.
+6. Deploy that exact final commit and build once against the old schema-22 path
+   with the persisted hold still `true`. Re-prove the health-only surface before
+   any disk mutation. From this held final build, create and independently
+   verify the current old-path backup:
+
+   ```text
+   npm run db:backup -- --reason pre-fad-18-fresh-path-activation
+   npm run db:backup:verify -- --manifest-object-key <manifestObjectKey>
+   npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <absolute-distinct-clean-restore-path>
+   ```
+
+   The restore target must be a previously absent, absolute clean path distinct
+   from both the old schema-22 database and the new schema-49 import path. Record
+   the clean-restore path and successful result, then leave it inactive. Do not
+   begin reset/import until all three backup gates pass.
+
+7. Still on that exact held final build, create the approved Season 1
+   reset/import at a distinct, previously absent schema-49 database path beneath
+   the isolated persistent root, then run the exact staging import verifier:
+
+   ```text
+   npm run db:import-staging -- --descriptor <descriptor-path> --source-bundle <bundle> --database <absolute-new-database-path> --reset-manifest <reset-manifest-path> --report <new-import-report-path> --operating-mode <operating-mode>
+   npm run db:verify-staging-import -- --descriptor <descriptor-path> --source-bundle <bundle> --database <absolute-new-database-path> --reset-manifest <reset-manifest-path> --import-report <new-import-report-path> --operating-mode <operating-mode>
+   ```
+
+   The descriptor must bind that exact new path. Keep the old schema-22 file
+   and sidecars untouched. Do not run an in-place `db:migrate`; that path is
+   excluded unless mandatory isolated persistent-root enforcement is first
+   hardened and accepted. Verify the pristine schema `49`, integrity, foreign
+   keys, ledger, and import reconciliation. The import verifier alone is not a
+   runnable activation target.
+
+   Before step 8, complete the exact
+   [Closed-Write Reset Evidence Handoff](../../04-technical-specs/FREE_AGENT_DRAFT.md#closed-write-reset-evidence-handoff)
+   without reordering or omission: publish the reset/import verification
+   artifact with:
+
+   ```text
+   npm run db:publish-reset-import-verification -- --descriptor <descriptor-path> --source-bundle <bundle> --database <absolute-new-database-path> --reset-manifest <reset-manifest-path> --import-report <new-import-report-path> --operating-mode OFFSEASON_RESET
+   ```
+
+   Then run the pinned-
+   Node `scripts/bootstrap-first-platform-administrator.js`; run the pinned-
+   Node `scripts/bootstrap-reset-original-league.js`; run the pinned-Node
+   `scripts/db-commit-reset-migration-report.js`; and only after the exact
+   succeeded report and post-commit continuity proof, initialize the deployed
+   environment identity with:
+
+   ```text
+   npm run db:initialize-environment -- --database <absolute-new-database-path> --persistent-root <absolute-staging-persistent-root> --environment staging --environment-id <staging-environment-id> --database-id <new-database-id> --created-at <approved-created-at> --migrations <absolute-migrations-path>
+   ```
+
+   Use every exact argument, typed confirmation, protected environment input,
+   and pinned Node executable required by the linked handoff; the short names
+   above are sequencing labels, not substitutes for those interfaces. Record
+   both database paths and identities, the backup, reset/import artifact,
+   succeeded migration report, activation path, and path-and-build rollback
+   pair.
+8. Change `DATABASE_PATH` to only the verified new path, persist
+   `STAGING_MAINTENANCE_HOLD=false`, and redeploy the same exact final commit and
+   build in `probe` with every quiescence gate still closed. From its disk-backed
+   service shell, run the zero-argument
+   publisher:
+
+   ```text
+   npm run data:check:sportsdataio-live:staging
+   ```
+
+   The publisher must reject before manifest read, provider fetch, artifact
+   write, or output unless Node mode is `production`, the persisted hold is
+   `false`, writes are closed, scheduled jobs, FAD routes, account-email
+   delivery, debug routes, and backup schedule are disabled, and email is
+   capture-only.
+
+9. While the deployed service remains in `probe`, independently verify the
+   artifact from that same disk-backed shell with the exact per-process
+   invocation:
+
+   ```text
+   SPORTSDATAIO_NHL_LIVE_MODE=required npm run data:verify:sportsdataio-live:staging
+   ```
+
+   The verifier accepts zero package arguments, is staging-only, requires that
+   same normal-probe boundary including persisted hold `false`, disabled debug
+   routes and backup schedule, and capture-only email before artifact read, and
+   does not persist or change the deployed service mode. It is a one-off command
+   in the service shell, not a Render one-off job. Do not change the persistent
+   service mode before this verifier passes.
+10. Only after independent verification passes, change the deployed service's
+   persistent `SPORTSDATAIO_NHL_LIVE_MODE` from `probe` to `required` and
+   restart or redeploy the same commit and build. Startup must independently
+   re-verify the artifact before SQLite opens.
+
+Local-only transition evidence is green under exact Node `24.14.1`: the hold,
+discovery, publisher, and verifier pass `35/35`; the broader nine-file
+entrypoint/Render/preflight/target-runtime/transition matrix passes `125/125`;
+and the six-file provider family discovers `106`, with `104` passing, two
+intentional Windows link-capability skips, and zero fail, cancel, or todo. This
+does not satisfy any numbered external step above.
+
+Do not run discovery or the publisher in build, pre-deploy, Render one-off-job,
+or start-command contexts. Those contexts do not provide the required service
+database and attached-disk boundary.
+
+Complete and retain this record across discovery and before candidate
+deployment:
+
+```text
+Old disk-backed instance/deploy stopped:
+Auxiliary bridge commit/build/deploy identity:
+Auxiliary hold prerequisites and health-only proof:
+Attached-service shell reachability proof:
+Discovery tool commit/build identity:
+Final candidate commit/build identity:
+Final candidate held deploy identity:
+Environment identity:
+Old schema-22 database path/identity:
+Old-path backup manifest object key:
+Clean backup-restore verification path/result:
+New schema-49 database path/identity:
+Reset/import artifact and migration-report identity:
+Activation path-and-build pair:
+Rollback path-and-build pair:
+Configured NHL season:
+Probe NHL season:
+Historical date:
+Probe-manifest SHA-256:
+Manifest commit:
+Release preflight result:
+Dedicated credential version:
+Persisted hold for discovery/final-held work: true
+Persisted hold for candidate activation:       false
+Persistent mode:                probe
+Artifact path:                  /opt/render/project/data/hundo-staging/provider-capability/sportsdataio-live-v1.json
+Writes/jobs/FAD/email:          closed/disabled/disabled/capture
+```
+
+The sanitized receipt must record only the passed status, evidence ID and
+digest, environment/build identity, issued/expiry times, source version, and
+assertion names. Independently verify the artifact on the service and record:
+
+```text
+Evidence ID:
+Evidence SHA-256:
+Issued at:
+Expires at:                     exactly 24 elapsed hours after issue
+Source version:
+Assertions:
+Explicit-zero pair:
+Controlled omission:           rejected as incomplete
+Raw payload retained:          no
+Shared league data changed:    no
+```
+
+Acceptance requires exhaustive current Players and FreeAgents access,
+previous-completed-season totals above the production minimum, exact targeted
+historical schedule and PlayerGame access, `expected_game`, `no_due_game`,
+`no_team`, explicit zero, exact coverage/observation equality, one capture and
+source version, and controlled-omission rejection. Missing credentials,
+unavailable endpoints, incomplete history, or unsupported semantics blocks
+the staging release.
+
+After required-mode startup, record health and safe capability status. Only
+afterward may the broader FAD-18 procedure enable FAD routes and jobs. An
+environment, build, origin, season, manifest, credential, time, digest, or HMAC
+mismatch blocks startup. This procedure never authorizes production;
+production remains unauthorized.
+
 ## Rollback Evidence
 
 * current accepted Netlify staging deploy:

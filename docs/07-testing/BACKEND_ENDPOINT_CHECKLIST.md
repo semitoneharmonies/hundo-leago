@@ -11,12 +11,27 @@
 This testing document defines:
 
 * the exact current 34-route compatibility inventory;
-* the complete approved Season 2 target endpoint catalogue;
+* the approved Season 2 target endpoint catalogue as of its 2026-07-18 design;
 * the evidence required before an endpoint is connected to the frontend, staged, or used in production;
 * authentication, permission, league-isolation, validation, read-only, transaction, idempotency, concurrency, privacy, Socket.IO, and activity checks;
 * technical checklist decisions delegated to and resolved by Codex from the approved project requirements.
 
 Grae delegated the endpoint-checklist decisions and approved adoption of the resulting checklist on 2026-07-18.
+
+The Free Agent Draft product specification approved on 2026-07-27 and amended
+on 2026-07-28 for Candidate Card ranking, tie handling, and the explicitly
+selected first-matchup clock now has the approved
+technical contract at `docs/04-technical-specs/FREE_AGENT_DRAFT.md`. Its exact
+routes are `T-126` through `T-144`; existing auction rows `T-076` through
+`T-083` also require the FAD-context proof defined below.
+The 2026-07-29 FAD decision package replaces manual opening with automatic
+readiness/retry, schedules continuing rollover at Entry Draft start, and adds
+adaptive help, whole-card legality, strict-improvement fallback, FAD-only
+draws, final-hour nomination queueing, and whole-Monday schedule recovery.
+
+The explicit final-standings amendment approved on 2026-07-29 adds `T-145`.
+Its finalization evidence is a required prerequisite for a later-season
+`T-037` rollover and raises the approved target catalogue to 145 routes.
 
 ---
 
@@ -111,6 +126,7 @@ The target catalogue is approved design. A target row marked `PLANNED` does not 
 | `IMPLEMENTED` | Route and application path exist locally |
 | `CONTRACT TESTED` | Request, response, error, permission, and safety tests pass |
 | `FRONTEND CONNECTED` | Approved frontend caller uses the endpoint |
+| `LOCAL VERIFIED` | Integrated disposable-local backend, frontend, privacy, read-only, and browser evidence passes; no staging claim |
 | `STAGING VERIFIED` | Deployed staging contract and security checks pass |
 | `PRODUCTION VERIFIED` | Authorized read-only smoke or real workflow evidence passes |
 | `RETIRED` | Compatibility endpoint is removed after every approved caller moved |
@@ -359,9 +375,9 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-032` | `GET /api/v1/leagues/:leagueId` | Membership authorization, safe active season summary | `PLANNED` |
 | `T-033` | `GET /api/v1/leagues/:leagueId/settings` | Effective settings, member-only, no secret configuration | `PLANNED` |
 | `T-034` | `PATCH /api/v1/leagues/:leagueId/settings` | Platform admin only, commissioners denied, `If-Match`, editable allowlist | `PLANNED` |
-| `T-035` | `PUT /api/v1/leagues/:leagueId/setup/trade-deadline` | Commissioner during Setup only, informational setting, no hidden event | `PLANNED` |
-| `T-036` | `POST /api/v1/leagues/:leagueId/start` | Minimum four teams, invitation readiness, one atomic transition | `PLANNED` |
-| `T-037` | `POST /api/v1/leagues/:leagueId/lifecycle-transitions` | Transition-specific role and state machine, idempotency | `PLANNED` |
+| `T-035` | `PUT /api/v1/leagues/:leagueId/setup/trade-deadline` | Commissioner/member-admin during Setup only, league/settings CAS, durable replay, informational setting, no hidden event | `CONTRACT TESTED` |
+| `T-036` | `POST /api/v1/leagues/:leagueId/start` | Complete settings including stored trade deadline, minimum four teams, invitation/manager readiness, atomic team/season/league transition, durable replay and rollback | `CONTRACT TESTED` |
+| `T-037` | `POST /api/v1/leagues/:leagueId/lifecycle-transitions` | Exact exemption or blocked-scheduled-rollover retry discriminator; retry binds current Entry Draft `If-Match`, durable occurrence and idempotency, while system execution remains job-only; one completed FAD with every initial/extension path terminal, canonical current T-145/T-097 lineage, persisted target calendar, atomic versioned effects plus immutable per-effect manifest; exemption forbids `If-Match` and requires exact member platform-administrator authority, reset report/bootstrap identity, explicit Activity, exact-current-commissioner notification, canonical three-event publication, and no card opening | `CONTRACT TESTED - LOCAL ONLY (FAD-04/FAD-14; 2026-08-11)` |
 | `T-038` | `POST /api/v1/leagues/:leagueId/freeze` | Commissioner, approved write families blocked, activity/audit rules | `PLANNED` |
 | `T-039` | `DELETE /api/v1/leagues/:leagueId/freeze` | Commissioner, exact prior state, idempotent unfreeze | `PLANNED` |
 
@@ -413,7 +429,7 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-064` | `GET /api/v1/public/leagues/:leagueId/teams/:teamId/roster` | Exact public projection, no private fields, no normalization write | `PLANNED` |
 | `T-065` | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | Groups, slots, ownership, contracts, cap and legality reconcile | `PLANNED` |
 | `T-066` | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | Complete authoritative reasons, strictly read-only | `PLANNED` |
-| `T-067` | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Team control, group/slot rules, prospect no-return rule, warning behavior | `PLANNED` |
+| `T-067` | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Team control, group/slot rules, prospect no-return rule, warning behavior; when the move first restores late legality, fresh authoritative NHL game state drives one atomic roster snapshot/baseline/immutable player-game exclusion set, already-underway games are excluded in full, and replay/racing moves converge | `PLANNED` |
 | `T-068` | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/sign` | Drafted/right eligibility, `$3/3y` ELC, off-cap prospect retention | `PLANNED` |
 | `T-069` | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/decline` | Eligible signed prospect and irreversible approved result | `PLANNED` |
 | `T-070` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/prospect-rights/:playerId` | Rights ownership, player release, pending-asset effects | `PLANNED` |
@@ -436,14 +452,33 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 
 | ID | Method and path | Key proof beyond global matrix | Status |
 | --- | --- | --- | --- |
-| `T-076` | `GET /api/v1/leagues/:leagueId/auctions` | Active only, own safe state, no competing values | `PLANNED` |
-| `T-077` | `POST /api/v1/leagues/:leagueId/auctions` | Monday-through-Thursday creation window, eligibility, initiating minimum | `PLANNED` |
-| `T-078` | `GET /api/v1/leagues/:leagueId/auctions/:auctionId` | Timing and own bid only, commissioner sees no bid values | `PLANNED` |
-| `T-079` | `PUT /api/v1/leagues/:leagueId/auctions/:auctionId/bids/mine` | Team control, joining minimum by term, cooldown/edit rules, no withdrawal | `PLANNED` |
-| `T-080` | `PATCH /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner identifies bid without reading stored value/term, logged replacement | `PLANNED` |
-| `T-081` | `DELETE /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner confirmation, stable bid ID, no value disclosure | `PLANNED` |
-| `T-082` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/cancel` | Commissioner confirmation, unresolved only, notification/activity | `PLANNED` |
-| `T-083` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/resolve` | Durable job/recovery authority, anti-bluff price, contract/ownership/activity atomic, one resolution | `PLANNED` |
+| `T-076` | `GET /api/v1/leagues/:leagueId/auctions` | Ordinary/FAD context/filters, bounded opaque-cursor search, per-managed-team `viewerTeams[]`/`startTeams[]`, identity-only commissioner administration, draw commitment and terminal safe result, no competing or queued-nomination values; fresh full-migration authenticated runtime proves exact envelopes, privacy, and no writes | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-077` | `POST /api/v1/leagues/:leagueId/auctions` | Server-derived weekly/open-rapid context and target season; before cutoff opens an auction, at/after cutoff returns the private queued-nomination discriminator with binding starter bid and next-rollover identity; quarantine and no-reservation confirmation | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-078` | `GET /api/v1/leagues/:leagueId/auctions/:auctionId` | Context/timing, immutable restricted public Candidate allowlist plus current removal state, per-managed-team bid/capability rows, identity-only commissioner bid projection, every terminal FAD commitment/reveal with optional exact-tie selection, terminal no-winner/fallback-safe detail, and stable player position after provider conflict/source replacement | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-079` | `PUT /api/v1/leagues/:leagueId/auctions/:auctionId/bids/mine` | Exact team row control; server-derived restricted, allocation-linked fallback, direct, or queued open-rapid context; restricted allowlist and active-participant improvement; ordinary starter/nonstarter edit allowance; current edit limit; 75-minute bid-activity cooldown; total/AAV floor; binding confirmation; no manager withdrawal; and immutable idempotent replay | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-080` | `PATCH /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner/member-admin stable bid administration, actual authority attribution, required bid version/idempotency, no value reveal | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-081` | `DELETE /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Exact confirmation, bid `If-Match`/idempotency, no reveal; restricted bid plus participant removal permanent and allocation linked | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-082` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/cancel` | Exact confirmation, auction `If-Match`/idempotency; restricted cancellation atomically creates FAD correction/recovery and quarantine | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-083` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/resolve` | Due-only `202` trigger with version/idempotency; same scheduler/retry service; atomic FAD draw or no-bid result; restricted strict-improvement winner or no-draw league-wide fallback; direct/queued rapid allocation/event/update and recovery remain atomic | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+
+---
+
+The FAD-11 status records verified FAD-linked administration and durable
+resolution-request boundaries in addition to the ordinary auction contract.
+At that checkpoint, it did not claim scheduled FAD resolution or restricted/
+fallback activation; those were FAD-12/FAD-13 gates. FAD-12 composes and
+verifies restricted and allocation-linked fallback resolution and activation.
+FAD-13 composes immediate and queued starts, queued activation, direct/queued
+open-rapid resolution, rollover finalization, completion, and the ordinary-
+auction handoff.
+
+FAD-06 closure evidence passed `161/161` auction-family tests across `22`
+suites in `17` files. It includes hand-schema repository/projection coverage,
+fresh-full-migration real repository/service/router GET coverage, exact opaque
+cursor paging and response envelopes, own-bid/cross-manager privacy, immutable
+restricted allowlist plus removal-state compatibility, terminal player-source
+replacement durability, and a SQLite `total_changes` proof that both GET routes
+perform no writes.
 
 ---
 
@@ -467,12 +502,188 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-090` | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks` | Persisted schedule only, season/league match, read-only | `PLANNED` |
 | `T-091` | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/current` | Server-authoritative week and boundaries, read-only | `PLANNED` |
 | `T-092` | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId` | Pairings, status, stable IDs, read-only | `PLANNED` |
-| `T-093` | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId/matchups/:matchupId` | Matchup-period G/A/points/FP from zero baseline only | `PLANNED` |
+| `T-093` | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId/matchups/:matchupId` | Matchup-period G/A/points/FP from the applicable zero baseline; a late snapshot exposes safe exclusion state and counts no event from a selected player whose NHL game was already underway, including post-baseline events from that game | `PLANNED` |
 | `T-094` | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/standings` | Finalized results only, approved sorting, no write/rebuild | `PLANNED` |
-| `T-095` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-schedules` | Commissioner before season, balanced schedule, no live-team changes | `PLANNED` |
-| `T-096` | `PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId` | Commissioner future timing/pairing constraints, `If-Match` | `PLANNED` |
-| `T-097` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections` | Commissioner, append version, attributable, no League Activity | `PLANNED` |
-| `T-098` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/rebuilds` | Commissioner recovery, official result versions only, no League Activity | `PLANNED` |
+| `T-095` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-schedules` | Commissioner/member-admin authority, exact explicit NHL/playoff calendar plus `firstWeekStartsAtMs`; `confirmed: false` read-only exact preview; `confirmed: true` season `If-Match`/idempotency and exact `201`; atomically fills an all-null initial/reset calendar or requires an exact later-season match, writes the balanced schedule, and evidence-requeues only the same blocked genuine-inaugural readiness occurrence when that schedule was its missing prerequisite; no fixed-date substitution | `COMPLETE - LOCAL ONLY (2026-07-30); FAD-08 CORRECTIVE COMPOSITION CONTRACT-TESTED LOCALLY` |
+| `T-096` | `PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId` | Commissioner/member-admin exact `shift_week_one` body, Week 1 `If-Match`/idempotency, atomic boundary/job shift; manual movement only before automatic FAD opening, pairing-only actions preserve it, and later whole-Monday late-draft/completion recovery is server-owned rather than a browser override | `COMPLETE - LOCAL ONLY (2026-07-30)` |
+| `T-097` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections` | Commissioner/member-admin, append attributable version; after T-145, replacement canonical snapshot/provenance/notification commits in the same transaction or correction rolls back; no League Activity | `COMPLETE - LOCAL ONLY (2026-07-29)` |
+| `T-098` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/rebuilds` | Commissioner/member-admin recovery, official result versions only, non-final derived snapshots only, never creates or replaces T-145 evidence, no League Activity | `COMPLETE - LOCAL ONLY (2026-07-29)` |
+| `T-145` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/finalizations` | Commissioner/member-admin, season `If-Match`, idempotency, exact result-set hash and typed confirmation; terminal complete sources, immutable final snapshot and links, audit/member notifications/scoped outbox atomic, no League Activity | `COMPLETE - LOCAL ONLY (2026-07-29)` |
+
+---
+
+## T-145 Finalization and Correction Proof
+
+- [x] Exact method/path, season `If-Match`, `Idempotency-Key`, CSRF, JSON
+  content type, 64-character lowercase result-set hash, typed confirmation,
+  and unknown-field rejection pass.
+- [x] Current commissioner and inherited platform administrator with active
+  league membership succeed; manager, inactive membership, other league, and
+  body-supplied authority fail safely.
+- [x] Every regular-season week is terminal and every expected non-bye
+  matchup contributes exactly one current official or corrected result
+  version.
+- [x] Missing, duplicate, pending, void, correction-pending, invalid-total,
+  invalid-outcome, wrong-team, cross-season, and cross-league inputs reject
+  without writes.
+- [x] The submitted canonical result-set hash is recalculated inside the
+  transaction; result-version drift rejects with
+  `STANDINGS_RESULT_SET_CHANGED`.
+- [x] One immutable canonical final snapshot, all participant rows, every
+  exact result-version link, rule/hash/count/finalization evidence, one
+  succeeded standings operation, and one Security Audit event commit.
+- [x] Every active league member receives exactly one deduplicated in-app
+  completion notification, inactive or ended members receive none, and the
+  scoped outbox contains metadata-only invalidation.
+- [x] Exact replay returns the original `201` representation without clock,
+  mutable-season, current-version, notification, outbox, operation, or
+  snapshot writes; changed-payload replay conflicts.
+- [x] Simultaneous fresh finalizations have one winner and no duplicate
+  snapshot, row, link, audit, notification, outbox, or idempotency effect.
+- [x] Failure injection at every snapshot, row, provenance, operation, audit,
+  notification, outbox, season-version, and idempotency seam rolls back the
+  complete transaction.
+- [x] A legacy `final` row, ordinary `current` snapshot, incomplete
+  provenance, wrong hash, stale links, ambiguous canonical designation, or
+  missing succeeded T-145 operation never qualifies.
+- [x] `T-037` returns `SEASON_ROLLOVER_NOT_READY` for missing, stale, legacy,
+  incomplete, or ambiguous finalization evidence and performs no repair,
+  rebuild, finalization, or partial rollover write.
+- [x] After finalization, T-097 atomically commits the corrected official
+  result plus a complete replacement immutable snapshot and provenance, or
+  commits neither; every prior result and snapshot remains preserved.
+- [x] A correction that changes an official row or rank deduplicates one
+  notification per active member; provenance-only replacement sends none.
+- [x] T-098 can rebuild non-final derived snapshots but cannot create,
+  promote, supersede, or replace the canonical T-145 snapshot.
+- [x] T-145, T-097, and T-098 create no League Activity.
+- [x] T-037 creates its approved rollover aggregate, per-expired-contract, and
+  per-auto-cancelled-trade activity only; it never synthesizes matchup or
+  standings activity.
+
+### T-037 Exact Lifecycle-Transition Contract
+
+- [x] The exemption and blocked-scheduled-rollover retry require an `active`
+  or `frozen` league and preserve status/freeze; retry accepts current
+  commissioner/member-admin authority while the one-time exemption accepts
+  member platform-admin authority only. Initial scheduled execution is
+  system-job-only and cannot be invoked through a browser command.
+- [x] The exemption forbids `If-Match`; retry requires the quoted current
+  Entry Draft version, exact failed occurrence identity, and
+  `Idempotency-Key`. The scheduled job is idempotent by persisted occurrence
+  key, and neither path accepts a calendar, completion time, target override,
+  or manual contract-year command.
+- [x] Exact replay is evaluated after current authority but before mutable
+  lifecycle/clock/version state, returns the original `201`, and writes no
+  duplicate result, item, event, activity, audit, notification, or outbox row.
+- [x] Exemption replay after FAD consumption still returns the original
+  `consumed: false, version: 1`; changed key reuse conflicts.
+- [x] Exemption requires exactly one qualifying immutable reset report and the
+  exact original bootstrap league/season/activity/idempotency/audit actor and
+  timestamp projection for `2026` / `20262027`.
+- [x] Exemption requires one active exact current commissioner recipient,
+  applies the absent-or-before-derived-help-window rule, writes the explicit
+  eleventh FAD Activity and thirteenth FAD notification with exact safe copy,
+  destination and deduplication identity, commits only league
+  `league.changed/league_changed`, league
+  `activity.created/setup_exemption_authorized`, and exact-user
+  `notification.created/setup_exemption_authorized`, and never creates or
+  opens a FAD or card.
+- [x] Rollover requires exactly one completed same-season FAD with matching
+  completion marker; every persisted initial or extension FAD rollover,
+  allocation, queued/fallback/recovery path, auction/resolution, scoped job,
+  matchup/result, and trade satisfies the exact terminal or recovered-failure
+  matrices.
+- [x] The current finalization is one complete descendant lineage rooted at
+  the succeeded regular-completion T-145 operation; every T-097 replacement,
+  current result link/hash/count/rule/row/identity, and root is revalidated
+  without repair.
+- [x] The immutable schema-1 source-readiness projection contains the exact
+  closed-set source FAD/finalization lineage plus every validated FAD,
+  auction/bid/resolution, matchup/result, operation, job, and trade row in the
+  normative order; an unknown operation family fails closed.
+- [x] Source-readiness team identities omit only logo bytes, retain null-or-
+  exact byte length/SHA, and independently rehash each non-null raw BLOB.
+  Canonical JSON parsing and Node SHA-256 recomputation reject reordered,
+  duplicate-key, unsafe-number, invalid-Unicode, or hash-mismatched evidence.
+- [x] The rollover root's source FAD, lineage-root/current finalization,
+  snapshot, and standings-operation IDs exactly match the readiness projection;
+  its readiness schema/hash are also bound into the effect-manifest hash and
+  exact `201`/replay representation.
+- [x] Source and persisted target calendars are canonical, nonoverlapping, and
+  not accelerated; the scheduled Entry Draft binds one source season, one
+  planned target season, and one immutable rollover occurrence. A mismatched
+  draft/occurrence/calendar identity rejects without writes.
+- [x] Entry Draft setup, order, pool, picks, and queues may exist before the
+  scheduled occurrence, but selection and every trading command remain locked
+  until rollover succeeds. Failure persists exact blockers and a retry
+  capability without exposing partial contract or season state.
+- [x] The total Rostered/Prospect/contract/retention/buyout matrix holds.
+  Every affected mutable parent advances version/time exactly once; every
+  unversioned year update asserts its exact old predicate and affected count.
+- [x] Expiration releases normal and signed-ELC ownership, carryover preserves
+  every nonseason ownership field, and qualifying proposed trades cancel once
+  with sorted causal asset/item evidence.
+- [x] Migration `0029` preserves released ownership UUIDs in auction
+  resolutions and FAD allocation/history rows without a live ownership FK,
+  while all other table constraints/indexes/triggers/rows remain exact.
+  Rollover hashes and removes every display-order entry referencing a carried
+  or released ownership before the move/delete and leaves no blocking child.
+- [x] The immutable version-1 rollover manifest has one typed item per effect,
+  complete contract/retention/buyout year arrays, complete unchanged
+  cancelled-trade asset/snapshot arrays, exact event/activity links,
+  recomputable payload/root SHA-256, and per-kind totals equal to all nine
+  summary counts.
+- [x] Idempotency completes last. Failure injection at every state, item,
+  event, activity, audit, notification, outbox, root, and completion seam rolls
+  back the entire immediate transaction.
+- [x] Exact retry replay returns the original durable attempt/result without a
+  second effect; a changed occurrence, draft, actor, body, or version conflicts,
+  and a race between scheduled execution and retry commits exactly one result.
+- [x] Later valid Entry Draft/trade/correction/roster descendants preserve
+  historical manifest validity; automatic FAD readiness separately revalidates
+  current live structural state rather than demanding historical byte
+  equality.
+
+### T-097 Exact Correction Contract
+
+- [x] Preview accepts only `{ "confirmed": false }`, requires no mutation
+  headers, returns the exact current result/version projection, and is
+  byte-for-byte read-only.
+- [x] Apply requires quoted result-aggregate `If-Match`, opaque
+  `Idempotency-Key`, exact confirmed scores, optional safe written reason,
+  current commissioner or inherited member-administrator authority, and
+  rejects unknown fields. Omission records the canonical correction-type
+  fallback and remains distinct in the request hash.
+- [x] Exact replay returns the original response after current authority but
+  before mutable matchup/standings reads, clock, or ID generation; changed-key
+  payload conflicts and incomplete evidence fails closed.
+- [x] Before canonical finalization, one transaction appends/selects the
+  attributable result version, writes exact result-correction operation,
+  Security Audit and scoped outbox evidence, completes idempotency last, and
+  creates no canonical standings evidence.
+- [x] After canonical finalization, the same transaction stages a complete
+  replacement generation, supersedes the prior finalization, selects the new
+  result version, inserts the replacement finalization, advances the season,
+  conditionally notifies members, writes audit/outbox, and completes
+  idempotency last.
+- [x] Replacement result-version links differ at exactly one matchup and all
+  other links, identities, rows, hashes, counts, rule versions, and
+  provenance are complete and exact.
+- [x] A completed non-current season can receive the same exact replacement
+  without changing the current-season pointer or borrowing current-season
+  rules; initial T-145 remains current-active-only.
+- [x] Official row/rank change creates one deduplicated notification per
+  active member; provenance-only change creates none.
+- [x] Concurrent corrections have one compare-and-swap winner, and failure
+  injection at every late seam commits neither a result correction nor a
+  standings replacement.
+- [x] Paired matchup/week `correction_required` recovery is restored to
+  `final` before replacement links are inserted; mixed state rejects and any
+  later failure rolls the paired state back.
+- [x] A pre-final exact replay remains null-replacement after later T-145 only
+  when the initial final snapshot links that correction or a direct
+  descendant; an earlier link rejects omitted replacement evidence.
 
 ---
 
@@ -488,10 +699,10 @@ These endpoints are approved in-season work and are not required for the initial
 | `T-102` | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/eligibility-snapshots` | Commissioner import/preview, versioned pool, no live replacement | `PLANNED` |
 | `T-103` | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/eligibility-snapshots/:snapshotId/confirm` | Commissioner, one frozen pool, validation report | `PLANNED` |
 | `T-104` | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/lottery-runs` | Commissioner, secure randomness evidence, two draws, one immutable result | `PLANNED` |
-| `T-105` | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/start` | Commissioner, confirmed order/pool, one transition | `PLANNED` |
+| `T-105` | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/schedule` | Commissioner, confirmed order/pool, persisted start and rollover occurrence; drafting and trading remain locked until scheduled rollover succeeds | `PLANNED` |
 | `T-106` | `GET /api/v1/leagues/:leagueId/entry-drafts/:draftId/queue` | Manager sees only own team queue | `PLANNED` |
 | `T-107` | `PUT /api/v1/leagues/:leagueId/entry-drafts/:draftId/queue` | Own team only, ordered replacement, `If-Match` | `PLANNED` |
-| `T-108` | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/selections` | On-clock manager or timeout job, immutable selection, auto-BPA, clock-reset rules | `PLANNED` |
+| `T-108` | `POST /api/v1/leagues/:leagueId/entry-drafts/:draftId/selections` | On-clock manager, attributable commissioner, or timeout job; immutable selection or confirmed commissioner forfeiture; final terminal pick atomically marks the draft complete and invokes the internal readiness handoff | `PLANNED - M8; FAD-08 INTERNAL HANDOFF PROVEN LOCALLY` |
 
 ---
 
@@ -525,7 +736,492 @@ These endpoints are approved in-season work and are not required for the initial
 
 ---
 
-# Part 18 - Cross-Cutting Contract Matrices
+# Part 18 - Target Free Agent Draft Endpoints
+
+All FAD routes are launch-critical and were initially recorded as `PLANNED`;
+the tables now retain evidence-backed current statuses.
+
+| ID | Method and path | Key proof beyond global matrix | Status |
+| --- | --- | --- | --- |
+| `T-126` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/navigation` | Always-safe current descriptor, multiple managed teams, optional exact season/team roster link, urgency priority, no competitor details, read-only | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-127` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/readiness?seasonId=:seasonId` | Commissioner-only operation plus latest immutable completed-attempt projection, selected and adjusted Week 1 before/after, adaptive clocks, exact three-field public diagnostics, no preflight/preview/retry/schedule/job/card write | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-128` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/readiness/retries` | Commissioner, exact blocked readiness operation `If-Match`/idempotency/confirmation; atomically resets the same job cleanly to pending, records one immutable receipt, advances blocked readiness one version without incrementing its attempt count, accepts no opening or schedule override, and exact replay always returns the stored receipt without writes | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-129` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId` | Viewer-filtered manager/commissioner/member overview, no pre-deadline side channel | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-130` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/private` | Exact team manager or active exact-card help authority, manager-first dual-role precedence, exact 22-slot private DTO, deadline-processing read-only mode, no-store, unauthorized/cross-scope `404`, byte and semantic no-write proof | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-131` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | League member only after publication, immutable safe summaries, no pre-deadline access | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-132` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | League member after publication, original 22 slots/conflicts/offers/outcomes preserved | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-133` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/eligible-players` | Authorized private editor; exact slot/search grammar, 200-code-point normalized search, deterministic order and exact-card/filter-bound cursor, no other-card nomination signal | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-134` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/revision-previews` | Authorized editor, exact add/edit/move/remove projection, ignored concurrency/idempotency headers, byte/table-hash/side-effect read-only proof | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-135` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/slots/:slotKey/candidate` | Exact card `If-Match`/idempotency, authority-before-replay, full player/slot/contract validation, authoritative advisory whole-card cap projection, original `201` replay | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-136` | `PATCH /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Candidate only, authority-before-replay, card `If-Match`, contract/AAV plus advisory whole-card cap projection, carryover locked, safe entry `404` | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-137` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Candidate or compatible carryover, authority-before-replay, compatible open slot, Bench rules, card `If-Match`, atomic card revision plus authoritative roster movement for a carryover | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-138` | `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Candidate only, authority-before-replay, carryover denied, card `If-Match`, idempotency, no body, safe entry `404` | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-139` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Manager adaptive help boundary; normalized optional 500-code-point message, authority-before-replay, exact-card grant, immutable command result/private message, notification/audience atomic, fresh/existing `201`/`200` fidelity | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication, paginated total/AAV/tie evidence; pending rows expose null decisions/ranks and `outcomeCode = pending`; fallback-only winner snapshot nullability; exact FAD auction-type enum; read-only | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-141` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner-safe jobs/allocations/initial and extension rollovers/queued/fallback/schedule-recovery state, no current blind bid or unrelated private content | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-142` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner allowlisted retry only, same service/occurrence, no winner/participant/timing/Week 1 override; `recover_schedule` is absent/rejected and only `complete_fad` may commit the atomic server-owned overrun recovery | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-143` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner locked-snapshot recomputation, complete downstream delta, table-hash read-only proof | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-144` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner reason/confirmation/fingerprint/`If-Match`, deterministic atomic reconciliation, original retained | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+
+### FAD-17 Local Verification Record - 2026-08-11
+
+The status above is backed by exact Node.js `24.14.1` disposable-local evidence:
+`28/28` schema-22-to-49, fresh-schema, repository-catalog, reset/cutover, and
+real two-league fixture tests; `49/49` affected resolution service, real SQLite
+writer, and durable-job tests; and `202/202` representative mandatory-package
+policy, writer, late-lock, and ordinary-auction compatibility tests. All three
+gates have zero failure, cancellation, and skip. The real two-league Playwright
+release matrix passes `40/40` across five desktop/mobile Chromium, Firefox, and
+WebKit projects with zero retries. GET and preview no-write proofs, no-bid later
+renomination, simultaneous unreserved aggregate wins, distinct Week 1/help
+chronology, disabled/nonblocking video, cross-league privacy, reconnect, and
+recovery are included. `LOCAL VERIFIED` does not claim a shared-staging or
+production deployment.
+
+### 2026-07-29 FAD Decision-Package Endpoint Proof
+
+- [x] The internal readiness-handoff primitive requires the caller's active
+  transaction. Caller rollback or either pair-write failure leaves no
+  operation/job; exact trigger replay creates one pair; mismatched source
+  evidence fails closed; route inventory contains no Entry Draft `/complete`
+  or public handoff route.
+- [x] A simulated future final T-108 selection/confirmed-forfeiture transaction
+  commits the terminal pick, Entry Draft `Complete` state, and exact
+  `entry_draft_completed` pair together. The real T-108 endpoint/UI remains M8
+  `PLANNED` and is not falsely counted as FAD-08 implementation.
+- [x] T-036 and T-037 create only their exact inaugural or initial-Season-2
+  readiness pair in their own transaction. Confirmed T-095 creates no new
+  trigger and evidence-requeues only the same blocked/failed genuine-inaugural
+  pair; absent, pending, running, or succeeded state is a no-op, split state
+  rolls T-095 back, and exact replay writes nothing.
+- [x] Automatic readiness is triggered only by committed Entry Draft or
+  approved no-draft evidence. Success creates one FAD, every team/card,
+  carryover projection, initial seven rollovers, and jobs atomically; any
+  blocker creates none of them.
+- [x] `T-127` is byte-for-byte read-only, reads the operation plus latest
+  immutable completed attempt, and returns its blockers, warnings, selected
+  Week 1, adjusted Week 1, adaptive clock, and current retry capability without
+  evaluating readiness. There is no readiness-preview route.
+- [x] Every T-127 blocker and warning is exactly public `{code, message,
+  resourceId}`. The operation's persistence-only blocker mirror remains
+  exactly `{code, field, resourceType, resourceId, message}` and never exposes
+  `field` or `resourceType` through T-127.
+- [x] Every completed readiness worker attempt commits one immutable,
+  canonically hashed blocked or succeeded attempt for its exact operation/job/
+  attempt/version. A real retry that returns identical blockers creates a new
+  attempt; stale attempt or operation evidence fails closed.
+- [x] Fresh pending, blocked-retry, and expired-running readiness claims update
+  the canonical job and operation in one transaction. Counts advance together,
+  except an expired-running handoff preserves both counts and original start
+  times; a live lease cannot be replaced, reclaim requires a fresh fencing
+  token, injected failure rolls both writes back, and no separate completed-
+  attempt row is invented for the abandoned lease.
+- [x] `T-128` reuses the blocked occurrence, accepts no setup path, time,
+  reason, team subset, or schedule field, resets the same canonical job cleanly
+  to `pending`, leaves attempt count unchanged, advances blocked readiness
+  exactly one version, and records one immutable receipt in one transaction.
+  It creates no duplicate FAD, rollover, card, notification, outbox, or job on
+  replay or concurrency; exact replay is write-free and always returns the
+  stored receipt after later blocking or success.
+- [x] Repeated blocked attempts notify the same current commissioner once per
+  season/operation/commissioner; a later replacement commissioner receives one
+  notification under that replacement user's distinct deduplication key.
+- [x] Migration verification covers fresh `1 -> 31` and exact `30 -> 31`, pins
+  migration `0031` at `46,693` bytes and SHA-256
+  `f2c5104f2eb06e261cc902067bd4623b841f2c37a04f73d27487863077b2662a`,
+  preserves frozen migration `0030`, and reproduces the exact schema-31 table,
+  catalog, reset-policy, and delete-guard inventory.
+- [x] Additive migration `0032` leaves migrations `0030` and `0031` unchanged,
+  is pinned at `27,882` bytes with SHA-256
+  `ec6bf25a00c2a279d5380a11cb99a3f9b8bc22b06e95ff0f2ef58519e786c7f5`,
+  creates no table or index, retains that inventory, adds only the job-side
+  reclaim guard, replaces only the readiness forward-update trigger, and passes
+  fresh `1 -> 32` plus exact `31 -> 32` expired-lease-handoff verification.
+- [x] Additive migration `0033` leaves migrations `0030` through `0032`
+  unchanged, adds only immutable
+  `free_agent_draft_readiness_corrective_requeues` evidence and its exact
+  job/readiness guards, and passes fresh plus exact `32 -> 33` verification.
+  Same-league source/result/generation, prior/resulting versions, unchanged
+  attempt/blockers, uniqueness, immutability, every write seam, and exact
+  replay are proved.
+- [x] Index-only migration `0034` leaves every earlier migration identity,
+  application row, table, trigger, view, catalog/reset-policy count, and delete
+  guard unchanged; fresh `1 -> 34` and exact `33 -> 34` advance both schema
+  version authorities, preserve integrity and foreign keys, verify the exact
+  three index definitions including order and partial predicates, and prove
+  the real T-133 release, re-entry, and recovery query plans use them without
+  a temporary ordered-release sort.
+- [x] Additive migration
+  `0035_add_candidate_card_help_command_results.sql` is pinned at `10,981`
+  bytes with SHA-256
+  `cbbaf5322c111f3d13659cf6adc1a5046c8b49ba0ab84c3541d770a1dae3b669`;
+  immutable T-139 created/already-active evidence and exact original status/
+  response replay pass while migrations `0030` through `0034` remain unchanged.
+- [x] Additive migration
+  `0036_add_fad_eligibility_revalidation_occurrences.sql` is pinned at `22,871`
+  bytes with SHA-256
+  `1351e25758d7192ab804214f0abeb696a9b0a9b3509e81dcd276ac7570fbb1f6`.
+  Fresh `1 -> 36` and exact `35 -> 36` reproduce `129` application tables,
+  `130` including the ledger, `129` catalog entries, `47` require-empty tables,
+  `82` signed-policy tables, and `69` delete guards with integrity and foreign
+  keys clean. Exact semantic evidence, pending-job and global
+  `player_catalog_applied` sealing, immutability, and the deadline terminal-job
+  barrier pass.
+- [x] Additive migration `0037_allow_atomic_fad_deadline_allocations.sql` is
+  pinned at `4,142` bytes with SHA-256
+  `33b8e7c3479f9a3dc64011a29ced6421a5cc59eca62da8b8144cf82b1d0d80b3`.
+  Fresh and exact-upgrade proof permits only the deadline-owned pending
+  allocation insert under the live claimed `fad_deadline` occurrence
+  while the FAD remains `cards_open`; fabricated, stale, or unrelated writes
+  remain rejected.
+- [x] Additive migration
+  `0038_allow_pre_fad12_restricted_scheduling.sql` is pinned at `17,157` bytes
+  with SHA-256
+  `b4567d087b31ff70dfa2776f2a15e6d22e182600d3dd5e5446a169bb64bb5ac5`.
+  Fresh and exact-upgrade proof preserves exact Candidate ties as
+  `restricted_scheduled` for the next complete rapid rollover, rejects
+  mismatched or past-due scheduling, and leaves ordinary-auction behavior
+  unchanged. Schema `38` retains `129` application tables, `130` including the
+  ledger, `129` catalog entries, `47` require-empty tables, `82` signed-policy
+  tables, and `69` delete guards.
+- [x] Additive migration `0039_add_fad_recovery_correction_evidence.sql` is
+  pinned at `201,713` bytes with SHA-256
+  `a176479f3eb3fc1183c595a68026a2e5b73d6b975b66b6bcab5de4954945ae6f`.
+  Fresh and exact-upgrade proof covers immutable T-142/T-144 results,
+  recovery/correction causality, queue acceptance, replay, and rollback.
+- [x] Additive migration
+  `0040_allow_atomic_fad_restricted_fallback_overlap.sql` is pinned at `9,449`
+  bytes with SHA-256
+  `cff71c33b628504d38b53cfe1621363740791c119c5b214d7d11e10f216a5a92`.
+  Schema `40` was the FAD-11 local target with `131` application tables, `132`
+  including the ledger, and `131` catalog entries; only the exact transaction-
+  bound restricted-source/fallback overlap and complete target window are
+  admitted.
+- [x] Additive migration
+  `0041_allow_fad_auction_resolution_recovery_resume.sql` is pinned at `35,525`
+  bytes with SHA-256
+  `00d6926934d46089df6581a8c3edc296394ce57958155e36da7d15b2be61111b`.
+  Exact causal recovery, failed auction, private draw, canonical job, retry
+  receipt, and failure evidence are required before a restricted or allocation-
+  linked fallback allocation can resume for T-142 auction-resolution retry.
+- [x] Additive migration
+  `0042_use_current_aav_for_restricted_participant_floor.sql` is pinned at
+  `9,326` bytes with SHA-256
+  `4269c4a0c320364b65d20c01b167ff8738f1a67c7e4d52160e6e2245e201e537`.
+  Restricted participant improvements use the current rounded AAV for their
+  equal-total floor check while preserving the immutable lowest-offered AAV.
+- [x] Additive migration
+  `0043_allow_repeat_fad_auction_resolution_recovery.sql` is pinned at `92,011`
+  bytes with SHA-256
+  `1623d40ffaa477e3ba0be6bdd7c831f3d16489b53e4befc03eb7aa0e6efa6ae3`.
+  Latest matching failure evidence permits exact repeat terminal failure,
+  T-142 resume, delayed fallback, and system-owned semantic recovery resolution
+  without weakening commissioner recovery or ordinary-auction guards. Schema
+  `43` was the FAD-12 local target with `131` application tables, `132`
+  including the ledger, and `131` catalog entries.
+- [x] Late Entry Draft readiness advances Week 1 by one or more whole
+  league-local Mondays to the earliest valid start with a strictly future
+  Candidate deadline and complete seven-day FAD period. Remaining pairings,
+  byes, and unexecuted jobs change in the same transaction; NHL-season end and
+  playoff weeks do not.
+
+FAD-08 local evidence recorded on `2026-08-08`: the behavior selection passed
+`336/336` and the schema selection passed `64/64`, with no failure or skip.
+The repository, service, router, target-runtime, worker, handoff, and migration
+tests use disposable databases; T-126/T-127/T-129 prove no-write reads, and
+T-128 proves original-data/current-request replay with unchanged database bytes
+after terminal readiness success. There is no frontend caller or staging
+deployment at this checkpoint, and production remains untouched.
+
+### 2026-08-08 FAD-09 Internal Candidate Foundation Evidence
+
+- [x] The internal T-130 repository/service/runtime path resolves hidden scope,
+  returns the exact 22-slot private card, enforces manager-first or active
+  exact-card help authority, remains read-only during deadline processing, and
+  passes cross-team/cross-league plus byte/semantic no-write cases.
+- [x] The internal T-133 path implements exact normalized search and card/
+  filter-bound paging, excludes all same-league ownership, contract, release,
+  allocation, recovery, and active-auction signals without revealing another
+  card, and permits re-entry only through a later confirmed exact-event
+  `rights_release_reentry`; a later release blocks again.
+- [x] The internal T-134 path projects all four actions from an unchanged base,
+  uses a deterministic non-persisted add identity, disables every capability
+  with `PREVIEW_ONLY`, projects retained-AAV carryover moves, returns the closed
+  diagnostic order, remains readable during freeze, and proves unchanged
+  bytes, rows, SQLite change count, and side effects.
+- [x] The Candidate repository gate passes `30/30`, Candidate service `16/16`,
+  preview policy `5/5`, composed-runtime assertions `2/2`, and schema-34
+  migration/initial-schema gate `10/10`. At this internal foundation
+  checkpoint the endpoint inventory remained exactly `102`; T-130/T-133/T-134
+  had no routes yet.
+
+### 2026-08-08 FAD-09 Local Closure Evidence
+
+The provider occurrence/job/deadline selection passes `60/60`, the complete
+summer-writer selection passes `262/262`, direct Candidate HTTP passes `36/36`,
+composed runtime passes `66/66`, the local staging verifier passes `9/9`, and
+reset bootstrap passes `8/8`, with no failure or skip. T-130 and T-133 through
+T-139 are composed and contract-tested locally, and the target endpoint
+inventory is exactly `110`. There is no frontend caller or shared-staging
+deployment or verification at this checkpoint, and production remains
+untouched.
+
+- [x] `T-130` returns the exact private Candidate root and 22 ordered slots,
+  manager-first authorization evidence, safe player/editor/help/intervention
+  projections, current cap/completeness and exact capabilities. Manager,
+  dual-role, active-help, former-manager, expired-help, cross-team, and two-
+  league cases prove no private side channel and no database or side effect.
+- [x] At the deadline before publication, `T-130` returns
+  `deadline_processing`/`private_read_only` with denied mutations; `T-133`
+  through `T-138` return `FAD_DEADLINE_PASSED`, and `T-139` returns
+  `FAD_HELP_WINDOW_CLOSED`. All private Candidate paths return
+  `FAD_PHASE_CONFLICT` after publication.
+- [x] `T-133` rejects unknown/duplicate/malformed query, over-200-code-point
+  search, overlong or malformed cursor, and stale/cross-filter/cross-slot/cross-
+  card cursor. Valid search collapses whitespace, trims and matches lowercase,
+  orders normalized name then ID, returns only eligible players, and never
+  reveals a competing card or offer.
+- [x] `T-134` ignores `If-Match` and `Idempotency-Key`, returns the exact
+  projected card/slot and warnings, and proves unchanged bytes, table hashes,
+  SQLite change count, revisions, idempotency, notification, audit, and outbox.
+  Add uses a deterministic non-persisted preview-only UUID; projected version
+  is exactly one greater than the unchanged base version, every projected
+  capability is denied with `PREVIEW_ONLY`, move returns its destination slot,
+  remove returns null, and
+  exact diagnostics are deduplicated and sorted. An authorized preview remains
+  available during a league freeze.
+- [x] `T-135` through `T-138` accept only the exact quoted positive card
+  version and bounded control-free key, revalidate authority before replay,
+  then replay before later phase/version/resource/business checks. Exact replay
+  preserves original `201` or `200` and representation after later changes;
+  changed intent conflicts, and former managers/expired help cannot replay.
+- [x] Candidate add/edit/move/remove and compatible carryover movement return
+  the complete authoritative card. Carryover removal/identity/contract changes
+  remain denied; carryover movement updates its authoritative roster position
+  atomically. Missing and cross-scope entries share
+  `CANDIDATE_CARD_ENTRY_NOT_FOUND`; stale writes expose only current version
+  plus `refetch: true`.
+- [x] `T-139` accepts `{}`, explicit null, whitespace-only-to-null, and a
+  trimmed control-free message through 500 Unicode code points; all malformed,
+  unknown, control-character, and overlong forms fail without effects. Fresh
+  creation atomically persists the request/grant/result/private audit/current-
+  commissioner notification/outbox; a new key for the existing active request
+  returns `200` without mutation, and exact replay retains its original status.
+- [x] Every summer ownership, contract, prospect-right, effective-position,
+  and active-state writer synchronizes affected cards in its own transaction or
+  rolls back. Provider bulk changes create one exact semantic player/open-FAD/
+  source-operation occurrence plus pending shared-lease job, sealed by the
+  global `player_catalog_applied` event; presentation-only and masked changes
+  create none. Shared execution deduplicates/restarts safely, and final deadline
+  reconciliation performs one all-card sync, consumes observed nonterminal jobs
+  as `skipped` with `deadline_reconciled`, fences stale workers, and cannot be
+  bypassed by deadline locking.
+
+### 2026-08-09 FAD-10 Local Closure Evidence
+
+The exact FAD-10 closure matrix passes `200/200` tests across `23` suites.
+Separate recorded gates pass `4/4` composed-runtime tests, `18/18` allocation-
+coordinator tests, `103/103` shared-auction regression tests, and `7/7` post-
+amendment deadline-reminder tests. These counts are separate evidence, not one
+combined aggregate. The local target endpoint inventory is exactly `113`.
+
+- [x] The reminder resolves the current manager/team recipients at execution,
+  deduplicates each occurrence, commits notification/outbox/job state
+  atomically, and creates no overdue reminder.
+- [x] The deadline performs final eligibility reconciliation, locks and
+  revisions every card, expires help, seals every immutable 22-slot snapshot,
+  creates every distinct-player allocation and durable job, changes the root
+  to `deadline_locked`, and publishes all teams or none in one transaction.
+- [x] T-131 and T-132 enforce publication and active-league membership,
+  preserve immutable card history, paginate deterministically, and prove
+  read-only behavior. T-140 immediately exposes pending allocations without
+  an invented decision, winner, rank, resolution, recovery, or draw; pending
+  slot outcomes remain null until durable allocation evidence exists.
+- [x] Each player resolves independently to an exact requested-slot award,
+  scheduled/quarantined exact tie, unclaimed outcome, or explicit
+  `correction_required` recovery. Semantic ownership, contract, auction, slot,
+  and destination races cannot silently award or move the player, and one
+  player's failure does not roll back another result.
+- [x] One scheduler cycle runs allocation coordinator -> per-player allocation
+  -> allocation coordinator before ordinary auction resolution. The first
+  coordinator moves `deadline_locked` to `allocating`, or directly to `rapid`
+  for zero allocations; the second moves `allocating` to `rapid` only after no
+  pending allocation remains and writes one aggregate result notification per
+  current manager/team pair.
+- [x] At FAD-10 closure, exact Candidate ties could not activate before the
+  future restricted-auction privacy/activation gate, FAD-linked T-080 through
+  T-083 remained fail-closed for FAD-11, and T-141 through T-144 remained
+  planned.
+
+There is no frontend caller at this checkpoint. Shared staging was not
+deployed, migrated, or verified, and production was not opened or changed.
+
+### 2026-08-10 FAD-11 Local Closure Evidence
+
+T-141 through T-144 and the FAD-linked T-080 through T-083 administration and
+durable-request contracts are composed and contract-tested locally. The shared
+transaction-owned restricted no-improvement fallback is verified for immediate
+and delayed full-window outcomes, lease/recovery fencing, replay, privacy-safe
+publication timing, same-millisecond collision isolation, and rollback. The
+local target endpoint inventory remains exactly `117`.
+
+Separate gates pass `197/197` broader recovery/correction/administration,
+`96/96` schema/runtime, `62/62` ordinary-auction compatibility, and `40/40`
+complete administration-repository tests on exact Node.js `24.14.1`. At that
+checkpoint, scheduled FAD resolution and restricted/fallback activation
+remained FAD-12/FAD-13 work. There was no frontend caller; shared staging and
+production were not opened, migrated, deployed, or verified.
+
+### 2026-08-10 FAD-12 Local Closure Evidence
+
+FAD-12 composes server-derived restricted and allocation-linked fallback
+manager bidding, immutable idempotent replay, read/edit-limit projection,
+resolution, durable recovery, activation, and scheduler execution. It preserves
+the ordinary auction request hash, policy, resolver, and administration paths.
+The local target endpoint inventory remains exactly `117`.
+
+Separate gates pass `52/52` resolver policy/persistence/shared fallback,
+`15/15` application service/durable runner, `71/71` activation/job repository,
+`50/50` bid/HTTP-boundary/auction-read capability across six suites, `170/170`
+ordinary-auction/administration compatibility, `303/303` schema-43/current-
+head, and `94/94` final scheduler/runtime/deployment/ordinary compatibility on
+exact Node.js `24.14.1`. The `94/94` gate partitions as scheduler `6`, composed
+T-083 runtime `1`, FAD ordinary compatibility `3`, ordinary resolver and job
+`17`, target runtime `36`, and target deployment `31`.
+
+The awaited scheduler order was FAD resolution -> restricted activation ->
+fallback activation -> ordinary resolution -> FAD completion. At that
+checkpoint, direct and queued open-rapid resolution, extension scheduling, and
+completion recovery remained FAD-13 work. No frontend, shared staging, or
+production environment was opened, migrated, deployed, or changed.
+
+### 2026-08-10 FAD-13 Local Closure Evidence
+
+T-077 immediate/private-queued creation, T-079 direct/queued open-rapid bidding,
+and T-083 durable request plus scheduled direct/queued resolution are composed
+and contract-tested locally. Queued activation opens the binding starter at the
+exact rollover for a full following cycle. Rollover finalization ensures
+canonical jobs before shared due/claim/lease/reclaim execution. Completion and
+whole-Monday Week 1 recovery remain atomic, matchup start revalidates
+completion, and ordinary auctions require both season start and FAD completion.
+The local target endpoint inventory remains exactly `117` on schema `47`.
+
+Separate, overlapping Node.js `24.14.1` milestones pass `11/11` start-decision
+policy, `10/10` immediate-start writer, `23/23` FAD start/lifecycle, `12/12`
+ordinary creation compatibility, `125/125` queued activation, `22/22` focused
+allocation-null resolution writer, `18/18` focused resolution service/runner,
+`73/73` broader allocation-null resolution, and `122/122` bid/read
+compatibility. Final gates pass `280/280` schema-47/current-head, `42/42`
+rollover policy/writer/service/runner, `31/31` completion, `77/77` runtime
+composition, and `15/15` matchup-start guard tests. The supporting canonical
+writer-to-shared-JobRepository integration passes `1/1`, the rollover writer
+passes `13/13`, and the shared JobRepository passes `28/28`. These records are
+not added into one aggregate total.
+
+Migrations `0023` through `0047` remain local only at this historical FAD-13
+checkpoint. No frontend, shared staging, or production environment was opened,
+migrated, deployed, or changed.
+
+### 2026-08-11 FAD-14 Local Closure Evidence
+
+The exact eleven-type Activity and thirteen-type notification registries, four
+Candidate Card opening publications, canonical envelopes whose `related`
+object contains exactly `fadId`, `teamId`, `cardId`, `allocationId`,
+`auctionId`, `recoveryId`, `nominationQueueId`, and
+`scheduleRecoveryOperationId`, audience privacy, reconnect reauthorization,
+and setup-exemption exact current-commissioner three-publication contract are
+composed and contract-tested locally. `T-037` is contract-tested locally, and
+the target endpoint inventory remains exactly `117`.
+
+- [x] `0048_require_canonical_fad_realtime_evidence.sql` is pinned at `73,524`
+  bytes, `1,490` lines, and SHA-256
+  `c08445d1b3833343f9c276dff3cd9400ebce6e282665179b992f47919feceb21`;
+  schema `48` is the preserved intermediate realtime checkpoint.
+- [x] `0049_require_canonical_fad_setup_exemption_publications.sql` is pinned
+  at `29,571` bytes, `748` lines, and SHA-256
+  `5109baabaeed39e06498c7c26274a41a48edfbbdee958e7dd6b278021a29ebc6`;
+  schema `49` is current with `131` application tables, `132` including the
+  ledger, and `131` repository-catalog entries.
+- [x] Focused FAD-14 core passes `1,294/1,294` across `142` suites and `110`
+  unique files; production JavaScript syntax passes `95/95`; schema-49 pin,
+  runtime, reset, release, and staging-verifier selection passes `265/265`; and
+  former-failure consolidation passes `189/189` on pinned Node.js `24.14.1`.
+- [x] The authoritative full backend gate records `3,266` tests across `436`
+  suites: `3,264` passed, zero failed, cancelled, or todo, and two intentional
+  Windows link-capability skips (`symlink` and `target`) in
+  `sportsDataIoLiveCapabilityArtifactFoundation.test.js`, in about
+  `30m03.603s`.
+
+Migrations `0023` through `0049` remain local only. No FAD frontend, shared
+staging, or production environment was opened, migrated, deployed, or changed.
+
+- [x] `T-139` accepts before neither opening nor `helpOpensAtMs`, accepts
+  exactly at that instant, and expires exactly at deadline. Opening with less
+  than 48 hours remaining sets `helpOpensAtMs = openedAtMs`.
+- [x] Composed Candidate/help JSON bodies enforce the exact `16 KiB` boundary,
+  and their shared limiter enforces both per-session and per-league ceilings
+  with isolated windows and no-write `429`: `fad_candidate_write` is
+  `120`/session and `600`/league per 15 elapsed minutes, and `fad_help_write`
+  is `5`/session and `25`/league per 60 elapsed minutes. The shared policy also
+  configures `fad_operational_write` at `30`/session and `120`/league per 15
+  elapsed minutes; HTTP composition remains part of each planned operational
+  endpoint's own gate.
+- [x] Candidate preview and mutation endpoints return the signed whole-card
+  cap projection but do not reject an otherwise valid edit merely for being
+  over cap. Deadline evidence excludes all new offers on an over-cap card and
+  retains individually valid offers from an incomplete cap-compliant card.
+- [x] Immediately after publication, T-132 keeps pending Candidate outcomes
+  null and T-140 exposes pending allocations without invented decisions,
+  ranks, winners, auction state, recovery, resolution time, or draw. Processed
+  results derive from immutable events; only fallback-only winners may have a
+  null snapshot entry, and draw auction type is exactly `fad_restricted` or
+  `fad_open_rapid`.
+- [x] `T-077` returns only `auction_opened` before the cutoff and only
+  `nomination_queued` exactly at or after it before rollover. The queued DTO is
+  private to the nominating team/recovery authority and binds the opening bid,
+  opening rollover, following resolution rollover, and no-reservation
+  confirmation. A cross-team collision with a private queue returns only the
+  generic `FAD_ALLOCATION_QUARANTINED` shape and reveals no queue, team,
+  player, bid, or timing cause.
+- [x] `T-079` enforces ordinary starter/non-starter limits for open rapid; a
+  restricted Candidate minimum creates no bid, edit count, or cooldown, while
+  a participant's strict opening improvement receives the ordinary
+  joining-team one-edit allowance and 75-minute bid-activity cooldown; manager
+  withdrawal remains prohibited and the total-first/AAV-second floor covers
+  cross-term cases.
+- [x] `T-083`, scheduler, and recovery invoke one resolver. Restricted
+  resolution requires a current eligible strict improvement; otherwise it
+  records no winner/no draw and creates one fresh league-wide fallback with no
+  leader. Open no-bid resolution returns the player to the unclaimed pool.
+- [x] An exact top FAD tie records one committed/revealed auditable
+  equal-chance draw and stable replay. The same values in an ordinary weekly
+  auction produce the unchanged ordinary tie result. Every other semantic
+  terminal FAD auction also reveals its original commitment; non-tied,
+  no-bid, and no-improvement outcomes use `selectionUsed = false` with no
+  selected bid/team and remain verifiable through `T-140`.
+- [x] Resolution never asks for a second illegality confirmation. Concurrent
+  bids reserve no cap, position, or roster capacity, and every otherwise-valid
+  winner commits even when aggregate wins make the roster illegal.
+- [x] FAD completion requires every active, pending, queued, fallback, delayed,
+  and recovery path terminal. Completion at or after Week 1 moves Week 1 to
+  the first valid Monday strictly after completion and atomically regenerates
+  remaining schedule/jobs before the completion marker, activity,
+  notifications, and outbox publish.
+- [x] Completion recovery preserves locked cards, historical deadlines and
+  rollover instants, bids, draws, allocations, and completed results. No valid
+  pre-playoff Monday, injected failure, restart, replay, or matchup-start race
+  leaves a moved schedule without FAD completion or completion with stale Week
+  1.
+- [x] `T-142` rejects or omits `recover_schedule`; schedule-recovery evidence
+  cannot commit independently and appears only when `complete_fad` also commits
+  completed FAD state, both completion timestamps, the schedule version, and
+  replacement jobs in that same transaction.
+- [x] Incomplete or illegal rosters do not trigger schedule movement; only
+  unfinished FAD processing does.
+
+---
+
+# Part 19 - Cross-Cutting Contract Matrices
 
 ## Authentication Matrix
 
@@ -604,7 +1300,7 @@ Applicable endpoints test:
 
 ---
 
-# Part 19 - Feature Completion Gate
+# Part 20 - Feature Completion Gate
 
 ## Ready for Frontend
 
@@ -664,7 +1360,7 @@ Debug mutation routes are removed rather than promoted to production.
 
 ---
 
-# Part 20 - Checklist Maintenance
+# Part 21 - Checklist Maintenance
 
 ## Update Procedure
 
@@ -709,14 +1405,14 @@ C-024 through C-029 = 6 conditional debug routes
 Target catalogue:
 
 ```text
-T-001 through T-125 = 125 approved target routes
+T-001 through T-145 = 145 approved target routes
 ```
 
 Count changes require a matching API Contracts review.
 
 ---
 
-# Part 21 - Completion Criteria
+# Part 22 - Completion Criteria
 
 The endpoint foundation is complete for initial launch when:
 
@@ -736,6 +1432,15 @@ The endpoint foundation is complete for initial launch when:
 
 Entry Draft rows may remain `PLANNED` for the initial release because that feature is approved for in-season completion.
 
+Free Agent Draft rows `T-126` through `T-144`, plus FAD-context cases for
+`T-076` through `T-083`, may not remain `PLANNED` for launch.
+
+`T-145` is `COMPLETE - LOCAL ONLY` and may not regress to `PLANNED`. It must
+reach `STAGING VERIFIED` before the first official regular-season standings
+finalization or any `T-037` scheduled Entry Draft-start rollover
+occurrence/retry staging verification. T-037 cannot advance beyond local
+contract proof by substituting legacy or rebuilt standings evidence.
+
 ---
 
 # Verification
@@ -744,7 +1449,7 @@ Documentation verification:
 
 ```powershell
 Get-Content docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md
-Select-String -Path docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md -Pattern '^`APPROVED`$','C-034','T-125','GET and HEAD Safety','Compatibility Retirement','Count Verification'
+Select-String -Path docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md -Pattern '^`APPROVED`$','C-034','T-145','Target Free Agent Draft Endpoints','T-145 Finalization and Correction Proof','GET and HEAD Safety','Compatibility Retirement','Count Verification'
 ```
 
 Future compatibility manifest verification:

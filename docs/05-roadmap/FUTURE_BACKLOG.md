@@ -2,11 +2,21 @@
 
 ## Document Status
 
-`IDEAS ONLY — NOT APPROVED FOR IMPLEMENTATION`
+`IDEAS ONLY — NOT APPROVED FOR IMPLEMENTATION EXCEPT EXPLICITLY PROMOTED BOUNDARIES`
 
 This document stores possible future work that must not displace launch-critical, in-season, or otherwise higher-priority development.
 
-An item in this file may be researched, specified, or implemented only after Grae deliberately moves it into the active project scope and roadmap.
+An item in this file may be researched, specified, or implemented only after
+Grae deliberately moves it into the active project scope and roadmap. An
+explicitly identified promoted boundary records approved direction but does
+not approve the remaining implementation ideas around it.
+
+The high-level Free Agent Draft presentation-video direction was promoted on
+`2026-07-27`: it is optional for Season 2, required for Season 3 readiness,
+generated from authoritative initial Candidate Card results, and never allowed
+to alter or delay the FAD. The detailed media, playback, retention, and
+generation ideas below remain unapproved until a later presentation and
+technical design adopts them.
 
 ---
 
@@ -17,7 +27,9 @@ An item in this file may be researched, specified, or implemented only after Gra
 Create one league-specific presentation video for each of these special annual events:
 
 1. **Entry Draft Lottery** — reveal the lottery results and final draft order.
-2. **Pre-season Free Agent Draft** — reveal notable player assignments and contracts after results are finalized.
+2. **Pre-season Free Agent Draft** — reveal notable player assignments,
+   contracts, and restricted-auction storylines after initial Candidate
+   allocation is finalized.
 3. **Season Championship** — present the league trophy to the winning team at season end.
 
 These are presentation features only. They must never calculate, alter, delay, or become authoritative for lottery, draft, contract, standings, playoff, or championship results.
@@ -42,7 +54,7 @@ Possible Free Agent Draft highlights include:
 * notable or highly ranked players;
 * largest contracts by total value or AAV;
 * most-contested players;
-* tied submissions and their tie-break results;
+* tied submissions and unresolved restricted-auction storylines;
 * other noteworthy results calculated from authoritative draft records.
 
 The lottery video may progressively reveal the final pick order.

@@ -15,7 +15,7 @@ This document exists to prevent uncontrolled feature growth.
 
 A feature mentioned in the North Star or future backlog is not automatically approved for immediate development.
 
-Last reviewed: **2026-07-14**
+Last reviewed: **2026-07-28**
 
 ---
 
@@ -70,6 +70,8 @@ Hundo Leago is ready to begin the 2026–27 season when:
 11. Major workflows have written verification procedures.
 12. The team can launch and recover the application without manually editing production data files.
 13. The application can operate without recurring emergency commissioner intervention.
+14. The annual Free Agent Draft reaches its final rapid rollover no later than
+    the first-matchup start.
 
 ---
 
@@ -327,7 +329,11 @@ This is expected to include:
 * buyout consequences;
 * contract history or activity records.
 
-The Contract specification must implement the approved rules that remaining years include the current season and expiration occurs during end-of-season rollover before the next Entry Draft. Expiration removes the player from the roster and returns the player to free agency without exclusive re-signing rights.
+The Contract specification must implement the approved rules that remaining
+years include the current season, remain `Pending Rollover` after competition
+ends, and advance or expire only at the persisted scheduled start of the next
+Entry Draft. Expiration then removes the player from the roster and returns the
+player to free agency without exclusive re-signing rights.
 
 Automatic detection and enforcement of real-life prospect ELC signings is deferred to a future update.
 
@@ -391,7 +397,42 @@ The exact business rules belong in:
 
 `docs/03-product-specs/AUCTIONS.md`
 
-A pre-season Free Agent Draft is planned for a future update and is not required for the initial launch.
+### Free Agent Draft
+
+The annual pre-season Free Agent Draft is launch-critical.
+
+The core Season 2 workflow includes:
+
+* an empty league-creation roster baseline with no inaugural prior-season
+  carryovers, while approved prospect moves still project normally, and locked
+  multi-year contract carryover in later seasons;
+* 12 mandatory forward, 6 mandatory defence, and 4 optional Bench positions;
+* private summer preparation after automatic all-or-none FAD readiness
+  following Entry Draft completion or an approved no-draft transition;
+* manager-requested commissioner help during the final 48 hours, or the entire
+  remaining preparation period when cards open later;
+* an automatic deadline exactly 168 elapsed hours before the frozen
+  first-matchup start;
+* league-wide read-only Candidate Card visibility after the deadline;
+* automatic allocation by highest total contract value and then highest AAV;
+* restricted auctions only for equal highest totals with equal terms, using
+  Candidate minimums that require an active improvement and a league-wide
+  fallback when none remains;
+* seven initial daily rapid-auction boundaries plus contiguous extensions for
+  queued, fallback, delayed, or recovery work;
+* a private final-hour nomination queue rather than last-minute rejection;
+* FAD-only auditable equal-chance draws for exact top auction ties;
+* whole-Monday Week 1 recovery when late Entry Draft or FAD processing makes
+  it necessary;
+* transition to ordinary weekly auctions without guaranteeing every roster is
+  complete or legal.
+
+The exact business rules belong in:
+
+`docs/03-product-specs/FREE_AGENT_DRAFT.md`
+
+The AI-generated FAD presentation video is optional for Season 2. It must not
+block the core FAD, and its implementation is required for Season 3 readiness.
 
 ---
 
@@ -411,7 +452,8 @@ Launch-critical functionality includes:
 * multiple retention records up to a cumulative 50% of original AAV and three retention slots per team;
 * roster players, prospects or player rights, and draft picks as tradeable assets;
 * a commissioner-configured trade deadline set during league creation;
-* reopening of trading at the start of the entry draft;
+* reopening of trading only after the scheduled Entry Draft-start rollover
+  succeeds atomically with draft start;
 * seven-day proposal expiration;
 * automatic cancellation when required;
 * activity logging;
@@ -430,7 +472,8 @@ The buyout system must continue to support:
 * elimination of the bought-out contract;
 * release of the player to free agency;
 * an annual cap penalty of 25% of average annual value in each remaining contract year;
-* a 14-day buyout lock for auction signings that follows the player after a trade;
+* a 14-day buyout lock for auction and direct automatic FAD signings that
+  follows the player after a trade;
 * preservation of existing retained-salary obligations after a buyout;
 * automatic cancellation of pending trades involving the bought-out player;
 * transaction history;
@@ -719,9 +762,10 @@ Before the end of the 2026–27 season, the system must support:
 
 * season finalization;
 * historical results;
-* contract-year advancement;
-* expiring contracts;
-* contract expiration during end-of-season rollover before the next Entry Draft;
+* competition completion without contract-year mutation;
+* `Pending Rollover` contract display after the final NHL regular-season game;
+* contract-year advancement and expiration during the automatic persisted
+  scheduled Entry Draft-start rollover;
 * immediate roster removal and free-agency conversion for expired players;
 * retained obligations;
 * draft-order inputs;

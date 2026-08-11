@@ -14,6 +14,10 @@ This technical specification defines:
 
 Grae delegated the frontend-structure decisions and approved adoption of the resulting design on 2026-07-18.
 
+The approved feature-specific frontend, route, query, privacy, realtime, and
+cache-eviction amendment for the Free Agent Draft is defined at
+`docs/04-technical-specs/FREE_AGENT_DRAFT.md`.
+
 ---
 
 ## Technical Purpose

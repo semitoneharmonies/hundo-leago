@@ -14,6 +14,10 @@ This product specification consolidates:
 
 Grae approved the Season 2 Leagues and Teams product specification recorded in this document on 2026-07-18.
 
+Grae approved the FAD readiness and participating-team amendments on 2026-07-27.
+
+Grae approved the automatic Candidate Card opening amendment on 2026-07-29.
+
 ---
 
 ## Product Purpose
@@ -577,9 +581,19 @@ When the user performs a protected action, the interface and activity record mus
 
 During initial setup, invited users create their own teams after accepting commissioner invitations.
 
-After league startup, a commissioner may create a team within the assigned league.
+After league startup, a commissioner may create a team within the assigned
+league only during an approved season-setup window.
 
 A platform administrator with an active league membership may perform the same action through approved administrative authority.
+
+For a season with an Entry Draft, a normal upcoming-season team creation must
+finish before Entry Draft setup confirmation freezes the draft's participating
+teams. No normal team may be added after that point for the same season because
+it would have missed its draft rights.
+
+For an approved no-draft transition, normal team creation remains available
+only until the automatic all-or-none readiness transition opens every
+Candidate Card.
 
 Creating a team must:
 
@@ -602,6 +616,15 @@ Maximum teams: 20
 An even number of teams is not required.
 
 A team may exist temporarily without a manager during setup.
+
+For an upcoming season, the final participating team set freezes atomically
+when the automatic all-or-none readiness transition opens every Candidate
+Card. No commissioner confirmation or reversible setup toggle opens only some
+cards. A normal team erasure or deactivation must fail from that instant
+through FAD completion and the live season. Normal team creation has already
+closed at the applicable earlier cutoff. Exceptional recovery requires its
+separately approved explicit workflow and does not silently add a team to an
+active draft or schedule.
 
 ---
 
@@ -684,7 +707,8 @@ The action permanently erases the team from the league.
 It may occur only during the approved off-season window:
 
 ```text
-after the entry draft and before the free-agent draft
+after Entry Draft completion, or an approved no-draft transition,
+and before the automatic all-or-none readiness transition opens Candidate Cards
 ```
 
 When the team is erased:
@@ -1292,7 +1316,8 @@ Testing must not require modifying production data.
 
 # Part 17 — Approval Checklist
 
-Grae approved the following Season 2 Leagues and Teams product decisions on 2026-07-18.
+Grae approved the original Season 2 Leagues and Teams product decisions on
+2026-07-18 and the FAD-related amendments on 2026-07-27.
 
 ## Approved Foundation
 
@@ -1360,7 +1385,9 @@ Grae approved the following Season 2 Leagues and Teams product decisions on 2026
 - [x] The template catalog retains the two- and three-stripe even splits and does not duplicate equivalent hockey stripe arrangements.
 - [x] Team colours have no product-level contrast or uniqueness requirement; the interface adds its own neutral identity treatment for readability.
 - [x] Team logos have no product-level file-type, size, dimension, cropping, or fallback requirements.
-- [x] Team deactivation permanently erases the team and may occur only after the entry draft and before the free-agent draft.
+- [x] In a season with an Entry Draft, normal team creation closes when Entry Draft setup confirmation freezes participating teams; on a no-draft path it closes when the automatic all-or-none readiness transition opens Candidate Cards.
+- [x] Team deactivation permanently erases the team only after Entry Draft completion, or an approved no-draft transition, and before the automatic all-or-none readiness transition opens Candidate Cards.
+- [x] The final participating team set freezes when Candidate Cards open; normal team creation has already closed, and erasure and deactivation then remain unavailable through the live season.
 - [x] There is no distinction between team deactivation, removal from competition, and permanent deletion.
 - [x] Team-bound players, contracts, cap obligations, draft assets, pending transactions, matchups, standings, and history are erased; rostered players become free agents.
 
@@ -1436,6 +1463,7 @@ docs/03-product-specs/TRADES.md
 docs/03-product-specs/MATCHUPS.md
 docs/03-product-specs/STANDINGS.md
 docs/03-product-specs/ENTRY_DRAFT.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/COMMISSIONER_TOOLS.md
 docs/04-technical-specs/DATA_MODEL.md
 docs/04-technical-specs/API_CONTRACTS.md

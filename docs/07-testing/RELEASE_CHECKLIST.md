@@ -22,6 +22,9 @@ This testing and operations checklist defines:
 
 Grae delegated the release-checklist decisions and approved adoption of the resulting checklist on 2026-07-18.
 
+Launch-critical FAD release gates were added on 2026-07-27 and expanded for
+the approved 2026-07-29 decision package.
+
 Approval of this template does not mark any release ready.
 
 ---
@@ -286,6 +289,7 @@ An issue is not low merely because the fix is inconvenient.
 - [ ] `RC-SCP-010` User-visible behavior changes have approved rule/product authority.
 - [ ] `RC-SCP-011` Breaking API or data change has explicit compatibility and release order.
 - [ ] `RC-SCP-012` Release notes identify manager, commissioner, and administrator effects.
+- [ ] `RC-SCP-013` The core Free Agent Draft is included as launch-critical; only its Season 2 video may remain optional.
 
 ---
 
@@ -369,6 +373,8 @@ Record output safely.
 - [ ] `RC-DOC-013` Backup and Restore matches artifact format and restore tooling.
 - [ ] `RC-DOC-014` No contradictory unresolved approval item remains.
 - [ ] `RC-DOC-015` Verification commands in changed documents are valid or explicitly future-target commands.
+- [ ] `RC-DOC-016` The approved FAD technical specification, API amendment, data-model amendment, and contained work plan exist before FAD code is accepted.
+- [ ] `RC-DOC-017` The 2026-07-29 FAD decision package is consistent across rules, product/technical contracts, endpoint proof, automated strategy, manual QA, and release gates with no stale manual-opening, final-hour-rejection, or fixed-Week-1 assumption.
 
 ---
 
@@ -443,6 +449,8 @@ npm run test:integration
 - [ ] `RC-TST-031` Clean-path restore and application startup passed.
 - [ ] `RC-TST-032` Session/token, job, outbox, and email post-restore safeguards passed.
 - [ ] `RC-TST-033` Accelerated regular season passed.
+- [ ] `RC-TST-034` The complete `2026-07-29 FAD Decision-Package Matrix` in `TESTING_STRATEGY.md` passed at its assigned domain, repository, service, HTTP, job, migration, browser, privacy, concurrency, and restart layers with no unexplained skip.
+- [ ] `RC-TST-035` Late-legality automation proved authoritative underway-game detection, atomic immutable snapshot/baseline/player-game evidence, full post-baseline event exclusion for that game, idempotent replay, and racing-attempt convergence.
 
 ---
 
@@ -481,6 +489,8 @@ Never copy a prior release's pass without rerunning the applicable exact-commit 
 - [ ] `RC-END-010` Public projections exclude private fields.
 - [ ] `RC-END-011` Debug mutation routes are absent from production configuration.
 - [ ] `RC-END-012` Frontend fallback to retired broad writes is disabled and staging-verified.
+- [ ] `RC-END-013` Every launch-critical FAD endpoint row defined by the later approved technical contract exists and is at least `STAGING VERIFIED`.
+- [ ] `RC-END-014` The complete `2026-07-29 FAD Decision-Package Endpoint Proof` passed, including automatic readiness/retry, adaptive help, queued nominations, strict-improvement fallback, FAD-only draws, server-owned Week 1 recovery, and T-093 whole-game late-snapshot exclusion.
 
 Endpoint checklist evidence:
 
@@ -512,6 +522,9 @@ Evidence location:
 - [ ] `RC-QA-014` Manual QA recommendation is `PASS`.
 - [ ] `RC-QA-015` No critical or high defect remains open.
 - [ ] `RC-QA-016` Every accepted medium/low issue has owner and disposition.
+- [ ] `RC-QA-017` The complete `MQ-FAD-*` lifecycle, privacy, allocation, rapid-auction, navigation, and recovery scope passed.
+- [ ] `RC-QA-018` Manual FAD evidence includes scheduled rollover and draft/trading gate, all-or-none automatic card opening, less-than-48-hour help, over-cap and incomplete-card outcomes, restricted fallback, private final-hour queueing, no-bid/no-reservation behavior, one- and multi-Monday draft delay, and atomic completion-overrun recovery.
+- [ ] `RC-QA-019` `MQ-MAT-026` and `MQ-MAT-027` passed with evidence that an already-underway NHL game is excluded in full and that the late snapshot, baseline, and immutable player/game exclusion set commit atomically under replay and races.
 
 Manual QA run ID:
 
@@ -685,6 +698,7 @@ Known recovery limitation:
 - [ ] `RC-STG-013` Rollback rehearsal uses exact prior frontend/backend candidates.
 - [ ] `RC-STG-014` No staging defect invalidates earlier evidence.
 - [ ] `RC-STG-015` Candidate is frozen against unrelated change.
+- [ ] `RC-STG-016` A controlled-clock two-league staging rehearsal proves the full initial seven-day FAD, one queued or fallback extension, one late-draft Week 1 adjustment, one completion-overrun adjustment, restart/replay safety, and the invariant that roster incompleteness or illegality alone does not move Week 1.
 
 ---
 

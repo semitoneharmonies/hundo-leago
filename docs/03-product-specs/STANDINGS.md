@@ -12,6 +12,12 @@ This product specification consolidates:
 
 Grae approved the standings workflow and delegated the remaining notification-trigger decision on 2026-07-18.
 
+The explicit official-finalization and correction-coupling amendment was
+approved on 2026-07-29. It closes the season-rollover gap by requiring one
+canonical final standings snapshot with exact source-result provenance before
+the scheduled Entry Draft-start rollover can run. Competition-season end does
+not itself run that rollover.
+
 ---
 
 ## Product Purpose
@@ -25,7 +31,7 @@ This specification defines:
 * tied-team rank presentation;
 * current and historical season views;
 * byes, missing results, inactive teams, and corrections;
-* read-only access and commissioner rebuilds;
+* read-only access, explicit finalization, and commissioner rebuilds;
 * interface, failure, and testing requirements.
 
 Standings must never become a second source of truth that drifts from matchup results.
@@ -120,6 +126,7 @@ They cannot edit rows, records, rank, points, or tiebreakers.
 A commissioner may:
 
 * view standings health and source-result information;
+* explicitly finalize complete regular-season standings;
 * preview and run an explicit rebuild;
 * correct source matchup results through the Matchups workflow;
 * recover a failed derived-standings update.
@@ -161,6 +168,7 @@ The standings response preserves:
 * league and season ID;
 * standings-rule version;
 * included result IDs and versions;
+* a canonical hash of the exact included result-version set;
 * expected and finalized matchup counts;
 * weeks counted;
 * generated or last-updated timestamp;
@@ -284,7 +292,8 @@ When an expected matchup lacks an approved final result:
 * the table is marked `Incomplete`;
 * the missing week and matchup are identified;
 * no invented result is added;
-* season completion and playoff-seeding readiness remain blocked.
+* official standings finalization, the scheduled Entry Draft-start rollover,
+  and playoff-seeding readiness remain blocked.
 
 A cancelled matchup remains missing until it receives an approved permanent disposition.
 
@@ -330,18 +339,65 @@ If a persisted cache is added later, it remains replaceable derived data and nor
 
 ---
 
-## Completed-Season Snapshot
+## Official Final Standings Snapshot
 
-At regular-season completion, the backend may persist an immutable standings snapshot containing:
+At regular-season completion, the backend must persist an immutable canonical
+standings snapshot containing:
 
 * league and season IDs;
 * official result-version set;
+* the canonical result-set hash;
 * standings-rule version;
 * every row and official rank;
-* completeness status;
+* expected and included result counts;
+* participant count;
+* `Complete` status;
 * finalization timestamp.
 
-The snapshot remains rebuildable and may be replaced only by an explicit versioned rebuild after an approved result correction.
+The snapshot content and its exact result-version links never change. A newer
+canonical final snapshot may replace it only through the approved atomic
+matchup-result correction workflow. The prior snapshot remains preserved as
+historical evidence.
+
+A snapshot produced by legacy calculation or rebuild behaviour does not
+qualify as the canonical final snapshot unless it carries all required
+provenance and explicit finalization evidence. The system does not infer or
+backfill missing provenance from a legacy row.
+
+---
+
+## Explicit Official Finalization
+
+Official finalization is a separate confirmed action by the current
+commissioner or an inherited platform administrator with active league
+membership. It is not a side effect of:
+
+* viewing standings;
+* weekly matchup rollover;
+* a standings rebuild;
+* competition-season completion or the scheduled Entry Draft-start rollover;
+* application startup, migration, or repair.
+
+The action:
+
+1. verifies that every persisted regular-season week has reached its required
+   terminal state;
+2. verifies that every expected non-bye matchup has exactly one current
+   official or corrected result version;
+3. rejects missing, duplicate, void, pending, cross-league, cross-season, or
+   internally inconsistent results;
+4. binds the request to the current canonical result-set hash;
+5. calculates every participant row and official rank under the season's
+   standings-rule version;
+6. atomically stores the immutable final snapshot, its exact result-version
+   provenance, operation and audit evidence, member notifications, and
+   post-commit invalidation work;
+7. returns the same durable result for an exact retry.
+
+Every active league member receives the one approved in-app completion
+notification from this transaction. No email or push notification is sent.
+The scheduled Entry Draft-start rollover remains blocked until this
+finalization exists and still matches every current official result version.
 
 ---
 
@@ -360,6 +416,11 @@ A commissioner rebuild:
 
 No written reason is required.
 
+A rebuild may create or replace non-final derived standings. It does not create
+the canonical official-final snapshot and cannot replace one after
+finalization. Final-snapshot replacement belongs only to the coupled result
+correction workflow.
+
 ---
 
 # Part 9 — Result Corrections
@@ -376,9 +437,24 @@ Earlier result versions remain in matchup correction history.
 
 For live/current standings calculated on read, the corrected result appears on the next successful read.
 
-For a persisted completed-season snapshot, result correction and a new standings snapshot version complete through one explicit atomic correction workflow.
+After official finalization, result correction and a replacement canonical
+final standings snapshot complete through one explicit atomic correction
+workflow. The result correction may not commit unless the replacement snapshot,
+its complete result-version provenance, operation and audit evidence, required
+member notification, and post-commit invalidation work also commit.
 
-If rebuilding fails, the prior valid snapshot remains available with a stale/correction-pending label.
+Even when corrected totals leave every displayed row and rank unchanged, the
+workflow still creates a new immutable snapshot because the official
+result-version set changed. A member notification is created only when an
+official row or rank changed.
+
+Before official finalization, if an explicitly requested non-final derived
+rebuild fails, the prior valid derived snapshot remains available with a
+stale/correction-pending label.
+
+If replacement-snapshot calculation or persistence fails, the corrected result
+version also rolls back. The previous result version and canonical final
+snapshot remain authoritative.
 
 ---
 
@@ -444,6 +520,7 @@ The page shows:
 * weeks counted;
 * expected and finalized matchup counts;
 * standings-rule version;
+* canonical result-set hash for a complete or finalized result set;
 * generated or last-updated timestamp;
 * `Current`, `Complete`, `Incomplete`, `Stale`, or `Correction Pending` status.
 
@@ -465,7 +542,8 @@ Standings notifications use in-app delivery only.
 
 Standings notifications do not use email or push in the initial release.
 
-All authenticated active league members receive an in-app notification when:
+All authenticated active league members receive a deduplicated in-app
+notification atomically with the authoritative write when:
 
 * the regular-season standings become officially complete; or
 * an approved correction changes any official standings row or rank.
@@ -488,8 +566,10 @@ Standings calculation, viewing, rebuilding, correction propagation, and season s
 Required evidence remains in:
 
 * matchup result and correction records;
-* standings snapshot versions;
-* standings rebuild and operational records.
+* immutable standings snapshot versions and their exact result-version links;
+* standings finalization, rebuild, and operational records;
+* Security Audit, notification, idempotency, and scoped outbox records where
+  the operation requires them.
 
 Normal reads remain read-only.
 
@@ -505,6 +585,11 @@ The backend must reject or report:
 * malformed result totals or outcomes;
 * mismatched W/L/T outcomes;
 * missing scoring- or standings-rule version;
+* a finalization before all regular-season weeks and results are terminal;
+* a finalization request whose result-set hash no longer matches;
+* a second fresh finalization when one canonical final snapshot already exists;
+* a legacy snapshot that lacks exact result-version provenance or explicit
+  finalization evidence;
 * direct row-edit requests;
 * unauthorized rebuilds;
 * a rebuild that would silently omit invalid expected results.
@@ -530,7 +615,18 @@ Tests must cover:
 * current and historical seasons;
 * rule-version isolation;
 * explicit rebuild and failed rebuild;
-* current derived response and completed-season snapshot;
+* current derived response and explicit official finalization;
+* exact result-set hashing and immutable snapshot-to-result-version
+  provenance;
+* exact finalization replay, changed-payload idempotency conflict, stale
+  season version, and simultaneous finalization;
+* missing, duplicate, void, pending, corrected, cross-league, and cross-season
+  result rejection at finalization;
+* legacy snapshots never satisfying official-finalization readiness;
+* the scheduled Entry Draft-start rollover refusing missing, stale, legacy, or
+  ambiguous final standings evidence;
+* post-finalization result correction and replacement snapshot committing
+  atomically, including rollback at every late write seam;
 * league and season isolation;
 * authenticated and public visibility;
 * proof that reads and rebuild previews do not write;
@@ -595,14 +691,25 @@ Tests must cover:
 - [x] Playoff results, qualification cut lines, and bracket state are deferred to the Playoffs specification.
 - [x] The initial backend calculates standings from finalized result versions on each read without persisting a write.
 - [x] A future persisted cache remains replaceable derived data and is never repaired by a read.
-- [x] Regular-season completion may persist an immutable, versioned standings snapshot.
+- [x] Regular-season completion requires one explicitly finalized immutable,
+  versioned canonical standings snapshot before the scheduled Entry
+  Draft-start rollover.
 - [x] A completed-season snapshot identifies its exact result-version set and standings-rule version.
+- [x] The canonical snapshot also preserves the canonical result-set hash,
+  expected and included counts, participant count, and finalization evidence.
+- [x] A legacy snapshot without complete provenance and explicit finalization
+  evidence does not satisfy the finalization or rollover prerequisite.
 - [x] A commissioner rebuild previews inputs and problems, requires confirmation, and changes no matchup result.
 - [x] A rebuild creates a new snapshot version when persistence is required and preserves prior versions.
+- [x] A standings rebuild never creates or replaces the canonical final
+  snapshot.
 - [x] No written reason is required for a standings rebuild.
 - [x] Current derived standings reflect an approved result correction on the next successful read.
 - [x] Completed-season result correction and snapshot rebuilding use one explicit atomic workflow.
-- [x] If rebuilding fails, the prior valid snapshot remains visible with a stale or correction-pending label.
+- [x] After finalization, a corrected result cannot commit without the complete
+  replacement canonical snapshot and provenance committing in the same
+  transaction.
+- [x] If a non-final derived rebuild fails, the prior valid derived snapshot remains visible with a stale or correction-pending label.
 - [x] Standings errors are corrected through source results, schedule disposition, season participation, or approved rules—not direct row edits.
 - [x] The default table shows Rank, Team, GP, W, L, T, PTS, PCT, PF, PA, and DIFF.
 - [x] PCT displays as a percentage with two decimals, including `0.00%` at zero GP.

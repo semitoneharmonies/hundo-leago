@@ -259,6 +259,16 @@ PRAGMA journal_size_limit = 67108864;
 PRAGMA trusted_schema = OFF;
 ```
 
+The staging-only `db-commit-reset-migration-report.js` maintenance command is
+the one approved lock-wait exception. After the ordinary connection factory has
+established and verified the settings above, that command raises
+`busy_timeout` to `60000` milliseconds and reads it back on both its serialized
+zero-row/one-row decision connection and its reopened post-commit verification
+connection. The longer wait remains bounded and exists only so simultaneous
+operators can converge on one commit and one read-only replay while the winner
+performs the complete trusted continuity proof. Ordinary application
+connections remain fixed at `5000` milliseconds.
+
 Reasons:
 
 * foreign keys enforce approved relationships;
@@ -1042,16 +1052,32 @@ Get-Content docs/04-technical-specs/SQLITE_MIGRATION.md
 rg -n "TODO|TBD|NEEDS DECISION|PENDING|\\[ \\]" docs/04-technical-specs/SQLITE_MIGRATION.md
 ```
 
-Implementation verification, once the scripts exist:
+Implemented migration, import, staging-verification, backup, and clean-restore
+verification commands:
 
 ```powershell
 npm test
 npm run db:migrate -- --database .data/test/migration.sqlite3
 npm run db:import-json -- --source-bundle <bundle> --database .data/test/import.sqlite3 --reset-manifest database/reset-manifests/2026-season-1-reset.json --report .data/test/import-report --dry-run
-npm run db:verify -- --database .data/test/import.sqlite3 --source-bundle <bundle> --reset-manifest database/reset-manifests/2026-season-1-reset.json
-npm run db:backup -- --database .data/test/import.sqlite3 --output .data/test/backups
-npm run db:restore-verify -- --backup <backup-file> --target .data/test/restored.sqlite3
+npm run db:verify-staging-import -- --descriptor <descriptor-path> --source-bundle <bundle> --database <absolute-database-path> --reset-manifest <reset-manifest-path> --import-report <import-report-path> --operating-mode <operating-mode>
+npm run db:backup -- --reason manual-platform-operation
+npm run db:backup:verify -- --manifest-object-key <manifestObjectKey>
+npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <absolute-clean-restore-path>
 ```
+
+There is no `db:verify` package command. The implemented import verifier is the
+staging-specific `db:verify-staging-import` interface above and requires its
+complete descriptor and evidence set. The deployed backup command derives the
+database and object-storage destination from validated environment
+configuration and returns the exact `manifestObjectKey` consumed by both
+verification commands. The older `db:backup -- --database ... --output ...`
+and `db:restore-verify -- --backup ...` forms are not the current release
+interface and must not appear in deployment instructions.
+
+The approved `db:restore:plan` and `db:restore:execute` package commands remain
+unimplemented. Verification restores only to the named absolute clean path;
+replacing an authoritative database remains blocked until those interfaces and
+their separate authority exist.
 
 Representative direct checks:
 
@@ -1063,8 +1089,11 @@ Expected result:
 
 * integrity result is `ok`;
 * foreign-key result is an empty array;
-* migration and import commands exit successfully;
+* migration, import, and applicable staging-verification commands exit
+  successfully;
 * source and target reports contain no unresolved blocking reject;
+* the deployed backup emits a `manifestObjectKey`, backup verification passes,
+  and clean restore verification never replaces the authoritative database;
 * no protected source file changes hash.
 
 ---

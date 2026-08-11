@@ -311,7 +311,7 @@ docs/03-product-specs/
 
 Product specifications define **what a feature must do** from the user and league perspective.
 
-The Leagues and Teams, User Accounts, Rosters, Contracts, Auctions, Trades, Matchups, Standings, Entry Draft, and Commissioner Tools specifications are approved. Product-specification paths include:
+The Leagues and Teams, User Accounts, Rosters, Contracts, Auctions, Trades, Matchups, Standings, Entry Draft, Free Agent Draft, and Commissioner Tools specifications are approved. Product-specification paths include:
 
 ```text
 docs/03-product-specs/LEAGUES_AND_TEAMS.md
@@ -323,6 +323,7 @@ docs/03-product-specs/TRADES.md
 docs/03-product-specs/MATCHUPS.md
 docs/03-product-specs/STANDINGS.md
 docs/03-product-specs/ENTRY_DRAFT.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
 docs/03-product-specs/COMMISSIONER_TOOLS.md
 ```
 
@@ -511,6 +512,39 @@ APPROVED
 
 Implementation may begin during the season under the approved deferred schedule and must be complete before the first Season 2 Entry Draft is used.
 
+## Free Agent Draft
+
+The approved specification defines:
+
+* the annual preseason lifecycle and approved no-draft transitions, including
+  the original league's initial Season 2;
+* private Candidate Cards with 12 forward, 6 defence, and 4 optional Bench slots;
+* locked multi-year contract carryover and summer synchronization;
+* manager-requested commissioner view and edit access during the final 48 hours;
+* the commissioner- or administrator-selected first-matchup start, the
+  automatically derived one-week deadline with no fixed annual date,
+  league-wide reveal, total-first/AAV-second allocation, and restricted
+  auctions for equal totals with equal terms;
+* daily rapid auctions, the one-hour creation cutoff, and transition to ordinary weekly auctions;
+* navigation, history, recovery, notifications, validation, testing, and the presentation-video boundary.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+The core Free Agent Draft is required before every season. Its dedicated
+technical specification is approved at
+`docs/04-technical-specs/FREE_AGENT_DRAFT.md`, and its contained implementation
+sequence is approved at `docs/06-work-plans/ACTIVE_WORK_PLAN.md`.
+Implementation is active. `FAD-01` through `FAD-17` are complete locally and
+`FAD-18` is the sole active isolated-staging slice. Deployment remains blocked
+by its named provider, isolated-resource, backup/restore, reset/migration,
+clean-commit, and release-identity prerequisites. Production is unauthorized.
+Its short league-specific AI-generated video is optional for Season 2 and a
+required capability beginning in Season 3.
+
 ## Commissioner Tools
 
 The approved specification defines:
@@ -551,6 +585,7 @@ docs/04-technical-specs/SECURITY.md
 docs/04-technical-specs/BACKEND_REFACTOR.md
 docs/04-technical-specs/SQLITE_MIGRATION.md
 docs/04-technical-specs/FRONTEND_STRUCTURE.md
+docs/04-technical-specs/FREE_AGENT_DRAFT.md
 docs/04-technical-specs/DEPLOYMENT.md
 docs/04-technical-specs/ENVIRONMENT_SETUP.md
 ```
@@ -575,6 +610,9 @@ APPROVED
 
 Implementation must follow it together with the approved Data Model and later specialized technical specifications.
 
+The dedicated approved Free Agent Draft technical specification supplies the
+feature-specific architecture amendment.
+
 ## Data Model
 
 The approved specification defines:
@@ -593,6 +631,11 @@ APPROVED
 
 Implementation must follow it together with Architecture, SQLite Migration, and the applicable feature specifications.
 
+The dedicated approved Free Agent Draft technical specification defines the
+Candidate Card, offer, help, allocation, recovery, rapid-auction, restricted
+participant, draw, and completion additions. Implementation must use its
+additive migration boundary.
+
 ## API Contracts
 
 The approved specification defines:
@@ -601,7 +644,8 @@ The approved specification defines:
 * the `/api/v1` target namespace and league-scoped resource paths;
 * success, error, validation, time, money, pagination, caching, concurrency, and idempotency conventions;
 * secure session-derived authorization and cross-league isolation;
-* target endpoint families for every approved Season 2 feature;
+* target endpoint families for the Season 2 features approved as of its
+  2026-07-18 design;
 * Socket.IO invalidation, compatibility migration, retirement, and contract-test requirements;
 * approved technical decisions delegated to and resolved by Codex.
 
@@ -612,6 +656,44 @@ APPROVED
 ```
 
 Implementation must preserve the documented compatibility behavior during extraction and follow the target contract when each feature moves to `/api/v1`.
+
+The dedicated FAD technical specification adds target routes `T-126` through
+`T-144` and extends the existing auction routes for ordinary, open-rapid, and
+restricted context.
+
+## Free Agent Draft Technical Specification
+
+The approved specification defines:
+
+* the dedicated FAD and Candidate Card module boundary;
+* exact lifecycle, clock, SQLite, status, API, event, frontend, and privacy
+  contracts;
+* transactionally synchronized carryovers and immutable deadline snapshots;
+* total-first/AAV-second per-player allocation;
+* one context-aware auction engine for weekly, open rapid, and restricted
+  auctions;
+* participant seeds, edit rules, original-total floors, and auditable
+  equal-chance draws;
+* durable deadline, allocation, rollover, recovery, and completion jobs;
+* migration, compatibility, staging, and test requirements.
+
+The file is marked:
+
+```text
+APPROVED
+```
+
+Its contained implementation sequence is active at
+`docs/06-work-plans/ACTIVE_WORK_PLAN.md`. FAD-11 recovery, correction,
+FAD-linked auction administration, and shared restricted fallback are complete
+locally. FAD-12 restricted/fallback bidding, draw, resolution, recovery, and
+activation are also complete locally through schema `43`. FAD-13 immediate and
+private queued rapid starts, activation, resolution, contiguous rollovers,
+restart-safe recovery, completion, and ordinary handoff remain the historical
+schema-`47` checkpoint. FAD-14 activity, notifications, metadata-only realtime
+privacy, and the exact setup-exemption Activity/notification/publication
+contract are complete locally through schema `49`. FAD-15 through FAD-17 are
+also complete locally; FAD-18 is the sole active isolated-staging slice.
 
 ## Security
 
@@ -777,14 +859,19 @@ APPROVED
 ACTIVE
 ```
 
-Its current next implementation item is `M7-09`, Isolated Hosted Staging
-Deployment and Acceptance.
+Its current implementation item is `FAD-18`, the authorized isolated shared-
+staging gate in the approved M7-25 Free Agent Draft work plan. `FAD-01` through
+`FAD-17` are complete locally; the target runtime inventory remains `117`,
+schema `49` is current locally, and migrations `0023` through `0049` remain
+local only. No FAD shared-staging or production environment has yet been
+deployed or changed.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
 ## Future Backlog
 
-Stores possible future work that is not currently approved.
+Stores possible future work that is not currently approved, plus any explicitly
+identified high-level boundary promoted into active scope.
 
 Items in the future backlog must not be implemented unless Grae deliberately moves them into the current scope and active roadmap.
 
@@ -816,26 +903,19 @@ Completed plans belong in:
 docs/06-work-plans/archive/
 ```
 
-The approved active work plan is:
+The plan recorded in the active-plan file is:
 
 ```text
-M7-09 - Isolated Hosted Staging Deployment and Acceptance
-Status: ACTIVE
+M7-25 - Annual Free Agent Draft implementation sequence
+Status: ACTIVE - FAD-18 AUTHORIZED ISOLATED SHARED-STAGING GATE
 ```
 
-It defines:
-
-* the exact canonical `E:` repository boundary;
-* the audited frontend and backend M3-M7 candidate scope;
-* Node `24.14.1` and reproducible clean-install gates;
-* complete frontend, backend, characterization, release, and syntax checks;
-* separate staging branches and commits for the two repositories;
-* exact commit, lockfile, schema, and migration identities;
-* staging-branch-only publication with no hosted or production side effect;
-* stop conditions, rollback, and the hosted-staging next-step boundary.
-
-Grae authorized this candidate-freeze and staging-publication step on
-`2026-07-24`.
+The completed M7-24 plan is preserved at
+`docs/06-work-plans/archive/M7-24_TEAM_IDENTITY_TEMPLATE_CATALOG_AND_MANAGER_SETTINGS.md`.
+M7-25 is active under Grae's continue-through-isolated-staging instruction.
+`FAD-18` is the sole active slice after verified local completion of `FAD-17`;
+deployment remains blocked by the exact external prerequisites recorded in the
+active work plan. Production remains unauthorized.
 
 A work plan is used for a contained current task such as:
 
@@ -904,7 +984,10 @@ APPROVED
 The approved active checklist defines:
 
 * all 34 current compatibility route registrations, including the six conditional debug routes;
-* all 125 approved `/api/v1` target endpoints;
+* all 125 pre-FAD `/api/v1` target endpoints approved in the 2026-07-18
+  catalogue;
+* 19 dedicated FAD routes `T-126` through `T-144`, for 144 approved target
+  routes in total;
 * permanent compatibility and target endpoint IDs;
 * characterization, contract, frontend, staging, production, and retirement statuses;
 * authentication, permission, two-league isolation, validation, concurrency, transaction, read-only, privacy, outbox, and Socket.IO proof;
@@ -924,7 +1007,9 @@ The approved active checklist defines:
 * focused, milestone, release, and in-season manual-QA levels;
 * exact run, build, environment, browser/device, fixture, result, defect, and artifact records;
 * a synthetic two-league staging fixture with overlapping names and player pools;
-* launch-critical account, league, roster, contract, auction, trade, matchup, standings, commissioner, activity, notification, and recovery workflows;
+* launch-critical account, league, roster, contract, Free Agent Draft, auction,
+  trade, matchup, standings, commissioner, activity, notification, and recovery
+  workflows;
 * desktop, Firefox, mobile Chromium, WebKit/iOS, physical-mobile, zoom, keyboard, and screen-reader spot checks;
 * failure, concurrency, reconnect, provider, job, backup/restore, retest, and exit gates.
 
@@ -1298,10 +1383,12 @@ docs/03-product-specs/TRADES.md — APPROVED
 docs/03-product-specs/MATCHUPS.md — APPROVED
 docs/03-product-specs/STANDINGS.md — APPROVED
 docs/03-product-specs/ENTRY_DRAFT.md — APPROVED
+docs/03-product-specs/FREE_AGENT_DRAFT.md — APPROVED
 docs/03-product-specs/COMMISSIONER_TOOLS.md — APPROVED
 docs/04-technical-specs/ARCHITECTURE.md — APPROVED
 docs/04-technical-specs/DATA_MODEL.md — APPROVED
 docs/04-technical-specs/API_CONTRACTS.md — APPROVED
+docs/04-technical-specs/FREE_AGENT_DRAFT.md — APPROVED
 docs/04-technical-specs/BACKEND_REFACTOR.md — APPROVED
 docs/04-technical-specs/SQLITE_MIGRATION.md — APPROVED
 docs/04-technical-specs/SECURITY.md — APPROVED
@@ -1309,7 +1396,7 @@ docs/04-technical-specs/FRONTEND_STRUCTURE.md — APPROVED
 docs/04-technical-specs/ENVIRONMENT_SETUP.md — APPROVED
 docs/04-technical-specs/DEPLOYMENT.md — APPROVED
 docs/05-roadmap/ACTIVE_ROADMAP.md — APPROVED / ACTIVE
-docs/06-work-plans/ACTIVE_WORK_PLAN.md — APPROVED / READY TO START
+docs/06-work-plans/ACTIVE_WORK_PLAN.md — APPROVED / ACTIVE - FAD-18
 docs/07-testing/TESTING_STRATEGY.md — APPROVED
 docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md — APPROVED / ACTIVE
 docs/07-testing/MANUAL_QA_CHECKLIST.md — APPROVED / ACTIVE
