@@ -233,6 +233,60 @@ describe("public roster response contract", () => {
 });
 
 describe("authoritative team roster page", () => {
+  it.each([
+    ["private_card", "Build next season's roster"],
+    ["published_card", "View this season's Candidate Card"],
+  ])(
+    "uses the server-authored %s roster descriptor without constructing public-roster access",
+    async (mode, label) => {
+      const data = workspace();
+      const fadId = "10101010-1010-4010-8010-101010101010";
+      const cardId = "20202020-2020-4020-8020-202020202020";
+      const assignmentId = "30303030-3030-4030-8030-303030303030";
+      const httpClient = {
+        request: vi.fn(async (path) => {
+          expect(path).toContain("/free-agent-drafts/navigation");
+          expect(path).toContain(`rosterSeasonId=${seasonId}`);
+          expect(path).toContain(`rosterTeamId=${teamId}`);
+          return {
+            data: {
+              phase: mode === "private_card" ? "cards_open" : "rapid",
+              rosterLinks: [
+                {
+                  mode,
+                  seasonId,
+                  fadId,
+                  teamId,
+                  cardId,
+                  authorizationEvidence:
+                    mode === "private_card"
+                      ? { kind: "manager_assignment", id: assignmentId }
+                      : null,
+                },
+              ],
+            },
+          };
+        }),
+      };
+      renderWithProviders(
+        <TeamRosterPage
+          workspace={data}
+          teams={[data.team]}
+          managerName="League Manager"
+          onTeamChange={() => {}}
+          httpClient={httpClient}
+        />
+      );
+
+      const link = await screen.findByRole("link", { name: label });
+      expect(link).toHaveAttribute(
+        "href",
+        `/leagues/${leagueId}/free-agent-draft/${fadId}/cards/${teamId}`
+      );
+      expect(screen.queryByText(/public Candidate Card/i)).toBeNull();
+    }
+  );
+
   it("shows readable cap components, roster views, and owned picks", async () => {
     const data = workspace();
     const view = renderWithProviders(

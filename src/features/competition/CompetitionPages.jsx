@@ -18,6 +18,7 @@ import {
   visibleLeaguesQuery,
 } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
+import { CommissionerFadPanel } from "../freeAgentDraft/CommissionerFadPanel.jsx";
 import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
@@ -877,6 +878,11 @@ export function CommissionerCompetitionPage() {
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
           <p>Every change requires a fresh preview, matching version, and explicit confirmation.</p>
+          <CommissionerFadPanel
+            leagueId={leagueId}
+            seasonId={seasonId}
+            timeZone={context.league?.timezone}
+          />
           <PreviewAction title="Schedule generation" mutation={scheduleMutation} preview={schedulePreview}
             onPreview={() => scheduleMutation.mutate({ confirmed: false })}
             onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedVersion })} />

@@ -62,9 +62,31 @@ const TeamWorkspacePage = lazyNamed(loadLeaguePages, "TeamWorkspacePage");
 const loadTransactionPages = () =>
   import("./features/transactions/TransactionPages.jsx");
 const ActivityPage = lazyNamed(loadTransactionPages, "ActivityPage");
-const AuctionsPage = lazyNamed(loadTransactionPages, "AuctionsPage");
 const TradeDetailPage = lazyNamed(loadTransactionPages, "TradeDetailPage");
 const TradesPage = lazyNamed(loadTransactionPages, "TradesPage");
+
+const loadAuctionPages = () => import("./features/auctions/AuctionPages.jsx");
+const AuctionsPage = lazyNamed(loadAuctionPages, "AuctionsPage");
+const AuctionDetailPage = lazyNamed(loadAuctionPages, "AuctionDetailPage");
+
+const loadFreeAgentDraftPages = () =>
+  import("./features/freeAgentDraft/FreeAgentDraftPages.jsx");
+const CurrentFreeAgentDraftPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "CurrentFreeAgentDraftPage"
+);
+const FreeAgentDraftPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "FreeAgentDraftPage"
+);
+const FreeAgentDraftResultsPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "FreeAgentDraftResultsPage"
+);
+const CandidateCardPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "CandidateCardPage"
+);
 
 const NotificationsPage = lazyNamed(
   () => import("./features/notifications/NotificationsPage.jsx"),
@@ -1802,6 +1824,26 @@ return (
           element={<PlayerDetailPage />}
         />
         <Route path="/leagues/:leagueId/auctions" element={<AuctionsPage />} />
+        <Route
+          path="/leagues/:leagueId/auctions/:auctionId"
+          element={<AuctionDetailPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/free-agent-draft"
+          element={<CurrentFreeAgentDraftPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/free-agent-draft/:fadId"
+          element={<FreeAgentDraftPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/free-agent-draft/:fadId/results"
+          element={<FreeAgentDraftResultsPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/free-agent-draft/:fadId/cards/:teamId"
+          element={<CandidateCardPage />}
+        />
         <Route path="/leagues/:leagueId/trades" element={<TradesPage />} />
         <Route path="/leagues/:leagueId/trades/:tradeId" element={<TradeDetailPage />} />
         <Route path="/leagues/:leagueId/activity" element={<ActivityPage />} />

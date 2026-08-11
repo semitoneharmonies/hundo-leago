@@ -1,0 +1,547 @@
+.page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.hero {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid color-mix(in srgb, var(--hl-border, #334155) 80%, transparent);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgb(15 23 42 / 96%), rgb(17 24 39 / 92%)),
+    radial-gradient(circle at top right, rgb(59 130 246 / 24%), transparent 45%);
+}
+
+.hero h1,
+.hero h2,
+.hero p {
+  margin: 0;
+}
+
+.heroTop,
+.panelHeader,
+.slotHeader,
+.playerLine,
+.badges,
+.slotActions,
+.editorActions,
+.teamSelector,
+.clockGrid,
+.summaryGrid,
+.readinessActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.heroTop,
+.panelHeader,
+.slotHeader {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.clockGrid,
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.clock,
+.summaryCard {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: 0.75rem;
+  background: rgb(2 6 23 / 44%);
+}
+
+.clock span,
+.summaryCard span,
+.playerLine span,
+.slotStatus span,
+.muted {
+  color: var(--hl-text-muted, #94a3b8);
+}
+
+.clock strong,
+.summaryCard strong {
+  font-size: 1.05rem;
+}
+
+.notice,
+.warning,
+.error,
+.success,
+.pendingConfirmation {
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(148 163 184 / 30%);
+}
+
+.notice {
+  background: rgb(30 41 59 / 70%);
+}
+
+.warning {
+  border-color: rgb(245 158 11 / 65%);
+  background: rgb(120 53 15 / 30%);
+}
+
+.error {
+  border-color: rgb(248 113 113 / 65%);
+  background: rgb(127 29 29 / 28%);
+}
+
+.success {
+  border-color: rgb(74 222 128 / 55%);
+  background: rgb(20 83 45 / 30%);
+}
+
+.pendingConfirmation {
+  border-color: rgb(96 165 250 / 55%);
+  background: rgb(30 64 175 / 22%);
+}
+
+.panel {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.4rem);
+}
+
+.panel h2,
+.panel h3,
+.panel p {
+  margin-top: 0;
+}
+
+.teamSelector {
+  align-items: stretch;
+}
+
+.teamChoice {
+  display: grid;
+  gap: 0.3rem;
+  flex: 1 1 13rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid rgb(148 163 184 / 28%);
+  border-radius: 0.75rem;
+  color: inherit;
+  text-decoration: none;
+  background: rgb(15 23 42 / 56%);
+}
+
+.teamChoice:hover,
+.teamChoice:focus-visible,
+.teamChoiceActive {
+  border-color: var(--hl-accent, #60a5fa);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(96 165 250 / 18%);
+}
+
+.cardLayout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem);
+  align-items: start;
+}
+
+.slots {
+  display: grid;
+  gap: 1rem;
+}
+
+.slotGroup {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.slotGroup h2 {
+  margin: 0;
+}
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 0.75rem;
+}
+
+.slot {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgb(148 163 184 / 26%);
+  border-radius: 0.8rem;
+  background: rgb(15 23 42 / 72%);
+  scroll-margin-top: 6rem;
+}
+
+.slot:focus-visible {
+  outline: 3px solid var(--hl-accent, #60a5fa);
+  outline-offset: 2px;
+}
+
+.slot_empty {
+  border-style: dashed;
+}
+
+.slot_carryover {
+  border-left: 0.3rem solid #94a3b8;
+}
+
+.slot_candidate {
+  border-left: 0.3rem solid #60a5fa;
+}
+
+.slotHeader h3,
+.slotHeader p,
+.emptySlot p,
+.outcome {
+  margin: 0;
+}
+
+.slotKey {
+  display: inline-block;
+  margin-bottom: 0.2rem;
+  color: var(--hl-text-muted, #94a3b8);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.badges > span {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.badges svg,
+.slotActions svg,
+.emptySlot svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.emptySlot {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+}
+
+.playerLine {
+  align-items: flex-start;
+}
+
+.playerLine > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.contractSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.contractSummary div {
+  min-width: 0;
+}
+
+.contractSummary dt {
+  color: var(--hl-text-muted, #94a3b8);
+  font-size: 0.78rem;
+}
+
+.contractSummary dd {
+  margin: 0.15rem 0 0;
+  font-weight: 700;
+}
+
+.slotStatus {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+}
+
+.slotActions,
+.editorActions {
+  align-items: stretch;
+}
+
+.slotActions button,
+.editorActions button {
+  flex: 1 1 8rem;
+}
+
+.sideRail {
+  display: grid;
+  gap: 1rem;
+  position: sticky;
+  top: 5.5rem;
+}
+
+.editor {
+  display: grid;
+  gap: 1rem;
+}
+
+.editor form,
+.fieldGroup,
+.searchResults,
+.diagnostics,
+.readinessTeams {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fieldGroup label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.fieldGroup input,
+.fieldGroup select,
+.editor textarea,
+.searchForm input {
+  width: 100%;
+  min-width: 0;
+}
+
+.searchForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.searchForm label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.searchResults {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.searchResult {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid rgb(148 163 184 / 25%);
+  border-radius: 0.65rem;
+}
+
+.searchResult div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.searchResult[aria-current="true"] {
+  border-color: #60a5fa;
+  background: rgb(30 64 175 / 20%);
+}
+
+.preview {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid rgb(96 165 250 / 45%);
+  border-radius: 0.75rem;
+  background: rgb(30 64 175 / 14%);
+}
+
+.preview h3,
+.preview p,
+.diagnostics p {
+  margin: 0;
+}
+
+.diagnostics {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.readinessTeam {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) repeat(4, auto);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgb(148 163 184 / 20%);
+}
+
+.readinessTeam:last-child {
+  border-bottom: 0;
+}
+
+.confirmationPhrase {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.resultFilters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 18rem) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.resultFilters label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.resultFilters input,
+.resultFilters select {
+  width: 100%;
+  min-width: 0;
+}
+
+.resultList,
+.offerList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.resultCard {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgb(148 163 184 / 26%);
+  border-radius: 0.8rem;
+  background: rgb(15 23 42 / 60%);
+}
+
+.resultCard h3,
+.resultCard p {
+  margin: 0;
+}
+
+.resultEvidence {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.offerRow {
+  display: grid;
+  grid-template-columns: minmax(11rem, 1.3fr) repeat(4, minmax(7rem, auto));
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.7rem;
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: 0.65rem;
+}
+
+.offerRow > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.offerRow span {
+  min-width: 0;
+}
+
+.recoveryItem {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid rgb(148 163 184 / 25%);
+  border-radius: 0.75rem;
+}
+
+.recoveryItem:focus-visible,
+.recoveryItemActive {
+  outline: 3px solid var(--hl-accent, #60a5fa);
+  outline-offset: 2px;
+}
+
+@media (max-width: 56rem) {
+  .cardLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .sideRail {
+    position: static;
+    order: -1;
+  }
+
+  .readinessTeam {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .readinessTeam strong {
+    grid-column: 1 / -1;
+  }
+
+  .resultFilters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .resultFilters button {
+    grid-column: 1 / -1;
+  }
+
+  .offerRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .offerRow > div {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 34rem) {
+  .slotGrid,
+  .clockGrid,
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .contractSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .searchForm {
+    grid-template-columns: 1fr;
+  }
+
+  .slotActions,
+  .editorActions,
+  .teamSelector {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .slotActions button,
+  .editorActions button {
+    width: 100%;
+  }
+
+  .readinessTeam {
+    grid-template-columns: 1fr;
+  }
+
+  .resultFilters,
+  .offerRow {
+    grid-template-columns: 1fr;
+  }
+
+  .resultFilters button,
+  .offerRow > div {
+    grid-column: auto;
+  }
+}

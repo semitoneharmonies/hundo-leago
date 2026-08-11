@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
@@ -14,6 +14,15 @@ import {
 import { leagueKeys } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import {
+  getFreeAgentDraftNotificationListCopy,
+  isFreeAgentDraftNotificationType,
+} from "./notificationContracts.js";
+import {
+  freeAgentDraftDestinationLabel,
+  freeAgentDraftDestinationPath,
+  prepareFreeAgentDraftDestination,
+} from "./notificationDestinations.js";
+import {
   acceptLeagueInvitation,
   declineLeagueInvitation,
   leagueInvitationQuery,
@@ -24,6 +33,9 @@ import {
 } from "./notificationQueries.js";
 
 function message(notification) {
+  if (isFreeAgentDraftNotificationType(notification.type)) {
+    return getFreeAgentDraftNotificationListCopy(notification.type);
+  }
   if (notification.type === "league_invitation_created") {
     return `Invitation to ${notification.messageData.leagueName}`;
   }
@@ -39,6 +51,76 @@ function notificationDestination(notification) {
   return routePaths.tradeAcceptance(
     notification.messageData.leagueId,
     notification.messageData.tradeId
+  );
+}
+
+function FadNotificationDestination({
+  markOne,
+  notification,
+  notificationMessage,
+  timestamp,
+}) {
+  const session = useSession();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [checkingAccess, setCheckingAccess] = useState(false);
+  const [destinationError, setDestinationError] = useState("");
+  const destination = notification.messageData.destination;
+  const path = freeAgentDraftDestinationPath(destination);
+  const destinationLabel = freeAgentDraftDestinationLabel(destination);
+
+  const followDestination = async (event) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      if (notification.readAtMs === null) markOne.mutate(notification.id);
+      return;
+    }
+    event.preventDefault();
+    if (checkingAccess) return;
+    setCheckingAccess(true);
+    setDestinationError("");
+    if (notification.readAtMs === null) markOne.mutate(notification.id);
+    try {
+      const authorizedPath = await prepareFreeAgentDraftDestination({
+        destination,
+        httpClient: session.httpClient,
+        queryClient,
+      });
+      navigate(authorizedPath);
+    } catch (error) {
+      setDestinationError(error.message);
+      setCheckingAccess(false);
+    }
+  };
+
+  return (
+    <>
+      <Link
+        aria-busy={checkingAccess || undefined}
+        className="hl-notification-list__link"
+        to={path}
+        onClick={followDestination}
+      >
+        <span>
+          <strong>{notificationMessage}</strong>
+          {timestamp}
+          <small>
+            {checkingAccess ? "Checking current access..." : destinationLabel}
+          </small>
+        </span>
+        <ChevronRight aria-hidden="true" />
+      </Link>
+      {destinationError && (
+        <p className="hl-form-message is-error" role="alert">
+          {destinationError}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -230,6 +312,9 @@ export function NotificationsPage() {
           <ul className="hl-notification-list">
             {notifications.data.notifications.map((notification) => {
               const destination = notificationDestination(notification);
+              const fadNotification = isFreeAgentDraftNotificationType(
+                notification.type
+              );
               const notificationMessage = message(notification);
               const timestamp = (
                 <time
@@ -251,7 +336,14 @@ export function NotificationsPage() {
                     className="hl-notification-list__indicator"
                     aria-hidden="true"
                   />
-                  {destination ? (
+                  {fadNotification ? (
+                    <FadNotificationDestination
+                      markOne={markOne}
+                      notification={notification}
+                      notificationMessage={notificationMessage}
+                      timestamp={timestamp}
+                    />
+                  ) : destination ? (
                     <Link
                       className="hl-notification-list__link"
                       to={destination}

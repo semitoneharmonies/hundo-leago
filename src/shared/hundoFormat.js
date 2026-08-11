@@ -38,3 +38,28 @@ export function relativeTime(targetMs, now = Date.now()) {
   }
   return formatter.format(Math.round(difference / 60_000), "minute");
 }
+
+export function leagueDateTime(value, timeZone) {
+  if (
+    !Number.isSafeInteger(value) ||
+    typeof timeZone !== "string" ||
+    timeZone.trim() !== timeZone ||
+    timeZone === ""
+  ) {
+    return "Time unavailable";
+  }
+  try {
+    const formatted = new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone,
+      timeZoneName: "short",
+    }).format(new Date(value));
+    return `${formatted} (${timeZone})`;
+  } catch {
+    return "Time unavailable";
+  }
+}

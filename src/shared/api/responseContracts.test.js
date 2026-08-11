@@ -62,6 +62,95 @@ describe("response contracts", () => {
     });
   });
 
+  it("preserves opt-in actions and contract-specific pages without changing default envelopes", () => {
+    const longCursor = "a".repeat(256);
+    const parsed = parseSuccessEnvelope(
+      {
+        data: [],
+        actions: { startTeams: [] },
+        page: { nextCursor: longCursor, hasMore: true },
+        meta: { requestId: "request-auctions" },
+      },
+      {
+        dataKind: "array",
+        actionsKind: "object",
+        validateActions: (actions) =>
+          Object.keys(actions).join("|") === "startTeams" &&
+          Array.isArray(actions.startTeams),
+        validatePage: (page) =>
+          Object.keys(page).sort().join("|") === "hasMore|nextCursor" &&
+          page.nextCursor === longCursor &&
+          page.hasMore === true,
+      }
+    );
+
+    expect(parsed).toEqual({
+      data: [],
+      actions: { startTeams: [] },
+      page: { nextCursor: longCursor, hasMore: true },
+      meta: { requestId: "request-auctions" },
+    });
+    expect(Object.isFrozen(parsed.actions)).toBe(true);
+    expect(() =>
+      parseSuccessEnvelope(
+        {
+          data: [],
+          page: { nextCursor: longCursor, hasMore: true },
+          meta: { requestId: "request-default-page" },
+        },
+        { dataKind: "array" }
+      )
+    ).toThrow("nextCursor");
+    expect(
+      parseSuccessEnvelope(
+        {
+          data: [],
+          actions: { ignoredWithoutOptIn: true },
+          meta: { requestId: "request-existing" },
+        },
+        { dataKind: "array" }
+      )
+    ).toEqual({
+      data: [],
+      meta: { requestId: "request-existing" },
+    });
+  });
+
+  it("fails closed when opt-in actions or page contracts are missing or rejected", () => {
+    const base = {
+      data: [],
+      meta: { requestId: "request-auctions" },
+    };
+    expect(() =>
+      parseSuccessEnvelope(base, {
+        dataKind: "array",
+        actionsKind: "object",
+      })
+    ).toThrow("missing actions");
+    expect(() =>
+      parseSuccessEnvelope(base, {
+        dataKind: "array",
+        validatePage: () => true,
+      })
+    ).toThrow("missing page");
+    expect(() =>
+      parseSuccessEnvelope(
+        { ...base, actions: { extra: true } },
+        {
+          dataKind: "array",
+          actionsKind: "object",
+          validateActions: () => false,
+        }
+      )
+    ).toThrow("actions are invalid");
+    expect(() =>
+      parseSuccessEnvelope(
+        { ...base, page: { nextCursor: "cursor", hasMore: false } },
+        { dataKind: "array", validatePage: () => false }
+      )
+    ).toThrow("page is invalid");
+  });
+
   it("fails visibly for malformed envelopes and resource fields", () => {
     expect(() =>
       parseSuccessEnvelope({ data: [], meta: {} }, { dataKind: "array" })

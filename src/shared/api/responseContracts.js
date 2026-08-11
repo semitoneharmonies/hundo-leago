@@ -33,20 +33,40 @@ function expectedKind(data, kind) {
   return typeof data === kind;
 }
 
-function parsePage(value) {
+function parsePage(value, validatePage) {
   contract(isRecord(value), "page must be an object.");
-  contract(
-    value.nextCursor === null || SAFE_IDENTIFIER.test(value.nextCursor || ""),
-    "page.nextCursor is invalid."
-  );
-  contract(typeof value.hasMore === "boolean", "page.hasMore is invalid.");
+  if (validatePage !== undefined) {
+    contract(typeof validatePage === "function", "validatePage must be a function.");
+    contract(validatePage(value) !== false, "The response page is invalid.");
+  } else {
+    contract(
+      value.nextCursor === null || SAFE_IDENTIFIER.test(value.nextCursor || ""),
+      "page.nextCursor is invalid."
+    );
+    contract(typeof value.hasMore === "boolean", "page.hasMore is invalid.");
+  }
   return Object.freeze({
     nextCursor: value.nextCursor,
     hasMore: value.hasMore,
   });
 }
 
-export function parseSuccessEnvelope(value, { dataKind, validateData } = {}) {
+function freezeTopLevel(value) {
+  if (Array.isArray(value)) return Object.freeze([...value]);
+  if (isRecord(value)) return Object.freeze({ ...value });
+  return value;
+}
+
+export function parseSuccessEnvelope(
+  value,
+  {
+    dataKind,
+    validateData,
+    actionsKind,
+    validateActions,
+    validatePage,
+  } = {}
+) {
   contract(isRecord(value), "The success response must be an object.");
   contract(
     Object.prototype.hasOwnProperty.call(value, "data"),
@@ -57,9 +77,36 @@ export function parseSuccessEnvelope(value, { dataKind, validateData } = {}) {
     `The success response data must be ${dataKind}.`
   );
   const requestId = parseRequestId(value.meta, "meta");
-  const page = Object.prototype.hasOwnProperty.call(value, "page")
-    ? parsePage(value.page)
-    : null;
+  const hasPage = Object.prototype.hasOwnProperty.call(value, "page");
+  contract(
+    validatePage === undefined || hasPage,
+    "The success response is missing page data."
+  );
+  const page = hasPage ? parsePage(value.page, validatePage) : null;
+
+  const actionsRequested =
+    actionsKind !== undefined || validateActions !== undefined;
+  const hasActions = Object.prototype.hasOwnProperty.call(value, "actions");
+  contract(
+    !actionsRequested || hasActions,
+    "The success response is missing actions."
+  );
+  if (actionsRequested) {
+    contract(
+      expectedKind(value.actions, actionsKind),
+      `The success response actions must be ${actionsKind}.`
+    );
+    if (validateActions !== undefined) {
+      contract(
+        typeof validateActions === "function",
+        "validateActions must be a function."
+      );
+      contract(
+        validateActions(value.actions) !== false,
+        "The response actions are invalid."
+      );
+    }
+  }
 
   if (validateData) {
     contract(typeof validateData === "function", "validateData must be a function.");
@@ -69,6 +116,9 @@ export function parseSuccessEnvelope(value, { dataKind, validateData } = {}) {
   return Object.freeze({
     data: value.data,
     meta: Object.freeze({ requestId }),
+    ...(actionsRequested
+      ? { actions: freezeTopLevel(value.actions) }
+      : {}),
     ...(page ? { page } : {}),
   });
 }

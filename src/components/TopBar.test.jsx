@@ -5,6 +5,12 @@ import { renderWithProviders } from "../test/render.jsx";
 import TopBar from "./TopBar.jsx";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
+const fadId = "22222222-2222-4222-8222-222222222222";
+const seasonId = "33333333-3333-4333-8333-333333333333";
+const teamId = "44444444-4444-4444-8444-444444444444";
+const cardId = "55555555-5555-4555-8555-555555555555";
+const assignmentId = "66666666-6666-4666-8666-666666666666";
+const unauthorizedLeagueId = "77777777-7777-4777-8777-777777777777";
 const config = Object.freeze({
   appEnv: "local",
   apiOrigin: "http://localhost:4000",
@@ -21,7 +27,9 @@ function response(data) {
 
 function fetchScenario(
   permissionCategory,
-  effectiveAuthority = permissionCategory
+  effectiveAuthority = permissionCategory,
+  fadNavigation = null,
+  visibleLeagues = null
 ) {
   return vi.fn(async (url) => {
     const path = new URL(url).pathname;
@@ -49,7 +57,7 @@ function fetchScenario(
     if (path === "/api/v1/leagues") {
       return response({
         code: "LEAGUES_FOUND",
-        leagues: [
+        leagues: visibleLeagues || [
           {
             id: leagueId,
             name: "Navigation League",
@@ -67,6 +75,28 @@ function fetchScenario(
         ],
       });
     }
+    if (
+      path ===
+      `/api/v1/leagues/${leagueId}/free-agent-drafts/navigation`
+    ) {
+      return response(
+        fadNavigation || {
+          serverNowMs: 1,
+          timeZone: "America/Vancouver",
+          fadId: null,
+          seasonId: null,
+          phase: "inactive",
+          showMainNavigation: false,
+          candidateDeadlineAtMs: null,
+          nextRolloverAtMs: null,
+          frozenFadFirstMatchupStartsAtMs: null,
+          competitionFirstMatchupStartsAtMs: null,
+          managedCards: [],
+          rosterLinks: [],
+          urgencyCode: "NONE",
+        }
+      );
+    }
     throw new Error(`Unexpected request: ${path}`);
   });
 }
@@ -81,26 +111,35 @@ function socketFactory() {
 
 async function renderTopBar(
   permissionCategory = "manager",
-  effectiveAuthority = permissionCategory
+  effectiveAuthority = permissionCategory,
+  {
+    fadNavigation = null,
+    initialEntry = `/leagues/${leagueId}/standings`,
+    visibleLeagues = null,
+    expectedLogoHref = `/leagues/${leagueId}`,
+  } = {}
 ) {
+  const fetchImpl = fetchScenario(
+    permissionCategory,
+    effectiveAuthority,
+    fadNavigation,
+    visibleLeagues
+  );
   const result = renderWithProviders(<TopBar />, {
-    initialEntries: [`/leagues/${leagueId}/standings`],
+    initialEntries: [initialEntry],
     enableSession: true,
     config,
     sessionOptions: {
-      fetchImpl: fetchScenario(
-        permissionCategory,
-        effectiveAuthority
-      ),
+      fetchImpl,
     },
     socketFactory,
   });
   const logo = await screen.findByRole("link", { name: "Hundo Leago" });
   await waitFor(() =>
-    expect(logo).toHaveAttribute("href", `/leagues/${leagueId}`)
+    expect(logo).toHaveAttribute("href", expectedLogoHref)
   );
   await result.user.click(screen.getByRole("button", { name: "Menu" }));
-  return result;
+  return { ...result, fetchImpl };
 }
 
 describe("top bar navigation", () => {
@@ -160,6 +199,74 @@ describe("top bar navigation", () => {
     }
     expect(screen.queryByRole("link", { name: "Commissioner tools" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Roster operations" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Free Agent Draft" })).toBeNull();
+  });
+
+  it("shows server-directed FAD navigation and keeps nested stable routes active", async () => {
+    await renderTopBar("manager", "manager", {
+      initialEntry: `/leagues/${leagueId}/free-agent-draft/${fadId}/cards/${teamId}`,
+      fadNavigation: {
+        serverNowMs: 1,
+        timeZone: "America/Vancouver",
+        fadId,
+        seasonId,
+        phase: "cards_open",
+        showMainNavigation: true,
+        candidateDeadlineAtMs: 100_000,
+        nextRolloverAtMs: 200_000,
+        frozenFadFirstMatchupStartsAtMs: 300_000,
+        competitionFirstMatchupStartsAtMs: 300_000,
+        managedCards: [
+          {
+            teamId,
+            team: {
+              teamId,
+              name: "Navigation Owls",
+              primaryColour: "#112233",
+              secondaryColour: "#ffffff",
+              tertiaryColour: null,
+              patternTemplate: "solid",
+              logoReference: null,
+            },
+            cardId,
+            managerAssignmentId: assignmentId,
+            cardVersion: 1,
+            lifecycleStatus: "open",
+            completenessCode: "incomplete",
+            missingMandatoryCount: 1,
+            conflictCount: 0,
+            capStatus: "compliant",
+            allocationEligibility: "eligible",
+            helpRequestStatus: "not_requested",
+            urgencyCode: "CARD_INCOMPLETE",
+          },
+        ],
+        rosterLinks: [],
+        urgencyCode: "CARD_INCOMPLETE",
+      },
+    });
+
+    const link = screen.getByRole("link", { name: "Free Agent Draft" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/leagues/${leagueId}/free-agent-draft`
+    );
+    expect(link).toHaveAttribute("aria-current", "page");
+    expect(link).toHaveTextContent("Candidate Card incomplete");
+  });
+
+  it("does not substitute another league on an unauthorized league URL", async () => {
+    const view = await renderTopBar("manager", "manager", {
+      initialEntry: `/leagues/${unauthorizedLeagueId}/free-agent-draft`,
+      expectedLogoHref: "/leagues",
+    });
+
+    expect(screen.queryByRole("link", { name: "Free Agent Draft" })).toBeNull();
+    expect(
+      view.fetchImpl.mock.calls.some(([url]) =>
+        new URL(url).pathname.includes("/free-agent-drafts/navigation")
+      )
+    ).toBe(false);
   });
 
   it("includes commissioner tools only for current commissioner authority", async () => {

@@ -1,8 +1,12 @@
-function segment(value, description) {
+function required(value, description) {
   if (typeof value !== "string" || !value.trim()) {
     throw new TypeError(`${description} is required.`);
   }
-  return encodeURIComponent(value);
+  return value;
+}
+
+function segment(value, description) {
+  return encodeURIComponent(required(value, description));
 }
 
 function tradeAssetQuery({
@@ -49,8 +53,27 @@ export const routePaths = Object.freeze({
       playerId,
       "Player ID"
     )}`,
+  leagueFreeAgentDraft: (leagueId) =>
+    `/leagues/${segment(leagueId, "League ID")}/free-agent-draft`,
+  freeAgentDraft: (leagueId, fadId) =>
+    `${routePaths.leagueFreeAgentDraft(leagueId)}/${segment(
+      fadId,
+      "Free Agent Draft ID"
+    )}`,
+  freeAgentDraftResults: (leagueId, fadId) =>
+    `${routePaths.freeAgentDraft(leagueId, fadId)}/results`,
+  freeAgentDraftCard: (leagueId, fadId, teamId) =>
+    `${routePaths.freeAgentDraft(leagueId, fadId)}/cards/${segment(
+      teamId,
+      "Team ID"
+    )}`,
   leagueAuctions: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/auctions`,
+  auctionDetail: (leagueId, auctionId) =>
+    `${routePaths.leagueAuctions(leagueId)}/${segment(
+      auctionId,
+      "Auction ID"
+    )}`,
   leagueAuctionForPlayer: (leagueId, playerId) =>
     `/leagues/${segment(leagueId, "League ID")}/auctions?playerId=${segment(
       playerId,
@@ -115,6 +138,13 @@ export const routePaths = Object.freeze({
     `/leagues/${segment(leagueId, "League ID")}/security`,
   leagueCommissioner: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/commissioner`,
+  commissionerFadRecovery: (leagueId, fadId, recoveryId) => {
+    const query = new URLSearchParams({
+      fadId: required(fadId, "Free Agent Draft ID"),
+      recoveryId: required(recoveryId, "FAD recovery ID"),
+    });
+    return `${routePaths.leagueCommissioner(leagueId)}?${query}`;
+  },
   leagueCommissionerRoster: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/commissioner/rosters`,
   notifications: "/notifications",

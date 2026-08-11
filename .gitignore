@@ -13,6 +13,13 @@ dist-ssr
 *.local
 /.tools/
 /.netlify/
+/coverage/
+/test-results/
+/playwright-report/
+/blob-report/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
 
 # Editor directories and files
 .vscode/*

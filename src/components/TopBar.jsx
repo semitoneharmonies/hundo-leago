@@ -8,6 +8,7 @@ import {
   BookOpen,
   ChevronDown,
   ClipboardList,
+  ClipboardPen,
   Gavel,
   LayoutDashboard,
   LogOut,
@@ -24,6 +25,7 @@ import { routePaths } from "../app/routePaths.js";
 import { readLeaguePreference } from "../features/leagues/leaguePreference.js";
 import { visibleLeaguesQuery } from "../features/leagues/leagueQueries.js";
 import { notificationsQuery } from "../features/notifications/notificationQueries.js";
+import { freeAgentDraftNavigationQuery } from "../features/freeAgentDraft/freeAgentDraftQueries.js";
 import { useSession } from "../features/session/sessionContext.js";
 import {
   hasCommissionerAuthority,
@@ -49,6 +51,7 @@ function pageLabel(pathname) {
   if (pathname === routePaths.account) return "Account settings";
   if (/\/players\/[^/]+$/.test(pathname)) return "Player detail";
   if (/\/trades\/[^/]+$/.test(pathname)) return "Trade detail";
+  if (/\/free-agent-draft(?:\/|$)/.test(pathname)) return "Free Agent Draft";
   if (/\/teams\/[^/]+\/roster$/.test(pathname)) return "Team roster";
   if (/\/players$/.test(pathname)) return "Players";
   if (/\/auctions$/.test(pathname)) return "Auctions";
@@ -72,9 +75,22 @@ const descriptions = Object.freeze({
   Matchups: "Head-to-head scoring",
   Standings: "Official league table",
   "League activity": "Transactions and moves",
+  "Free Agent Draft": "Preseason Candidate Cards",
   "Commissioner tools": "Authorized administration",
   "Roster operations": "Roster, contract and staging tools",
 });
+
+function fadUrgencyLabel(value) {
+  return {
+    DEADLINE_PROCESSING: "Deadline processing",
+    CARD_CONFLICTED: "Card conflict needs attention",
+    HELP_WINDOW_INCOMPLETE: "Help window open; card incomplete",
+    CARD_INCOMPLETE: "Candidate Card incomplete",
+    RESTRICTED_ACTION_REQUIRED: "Restricted action required",
+    RAPID_AUCTIONS_ACTIVE: "Rapid auctions active",
+    NONE: "Preseason Candidate Cards",
+  }[value] || "Preseason Candidate Cards";
+}
 
 function MenuLink({ icon, label, description, to, active, onSelect }) {
   return (
@@ -120,11 +136,21 @@ function TopBar({ freezeBanner }) {
   });
   const leagues = leaguesQuery.data || [];
   const routeLeagueId = leagueIdFromPathname(location.pathname);
-  const preferredLeagueId = routeLeagueId || readLeaguePreference();
-  const currentLeague =
-    leagues.find(({ id }) => id === preferredLeagueId) ||
-    (leagues.length === 1 ? leagues[0] : null);
+  const preferredLeagueId = readLeaguePreference();
+  const currentLeague = routeLeagueId
+    ? leagues.find(({ id }) => id === routeLeagueId) || null
+    : leagues.find(({ id }) => id === preferredLeagueId) ||
+      (leagues.length === 1 ? leagues[0] : null);
   const leagueId = currentLeague?.id || null;
+  const fadNavigation = useQuery({
+    ...(leagueId
+      ? freeAgentDraftNavigationQuery(session.httpClient, leagueId)
+      : {
+          queryKey: ["free-agent-draft", "navigation", "unselected"],
+          queryFn: () => Promise.resolve(null),
+        }),
+    enabled: session.status === "authenticated" && Boolean(leagueId),
+  });
   const currentPageLabel = pageLabel(location.pathname);
   const unreadCount =
     notificationQuery.data?.notifications?.filter(
@@ -143,6 +169,15 @@ function TopBar({ freezeBanner }) {
     const links = [
       ["Dashboard", routePaths.league(leagueId), LayoutDashboard],
       ["Teams", routePaths.leagueTeams(leagueId), Users],
+      ...(fadNavigation.data?.showMainNavigation
+        ? [[
+            "Free Agent Draft",
+            routePaths.leagueFreeAgentDraft(leagueId),
+            ClipboardPen,
+            true,
+            fadUrgencyLabel(fadNavigation.data.urgencyCode),
+          ]]
+        : []),
       ["Players", routePaths.leaguePlayers(leagueId), Search],
       ["Auctions", routePaths.leagueAuctions(leagueId), Gavel],
       ["Trades", routePaths.leagueTrades(leagueId), ArrowLeftRight],
@@ -163,7 +198,12 @@ function TopBar({ freezeBanner }) {
       ]);
     }
     return links;
-  }, [currentLeague?.membership, leagueId]);
+  }, [
+    currentLeague?.membership,
+    fadNavigation.data?.showMainNavigation,
+    fadNavigation.data?.urgencyCode,
+    leagueId,
+  ]);
 
   function closeMenus() {
     setMenuOpen(false);
@@ -270,14 +310,17 @@ function TopBar({ freezeBanner }) {
                         active={location.pathname === routePaths.leagues}
                         onSelect={closeMenus}
                       />
-                      {leagueLinks.map(([label, to, Icon]) => (
+                      {leagueLinks.map(([label, to, Icon, prefixActive, description]) => (
                         <MenuLink
                           key={label}
                           icon={Icon}
                           label={label}
-                          description={descriptions[label]}
+                          description={description || descriptions[label]}
                           to={to}
-                          active={location.pathname === to}
+                          active={
+                            location.pathname === to ||
+                            (prefixActive && location.pathname.startsWith(`${to}/`))
+                          }
                           onSelect={closeMenus}
                         />
                       ))}

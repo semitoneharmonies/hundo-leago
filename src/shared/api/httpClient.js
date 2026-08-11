@@ -83,6 +83,9 @@ export function createHttpClient({
       signal,
       dataKind,
       validateData,
+      actionsKind,
+      validateActions,
+      validatePage,
     } = {}
   ) {
     if (typeof path !== "string" || !SAFE_PATH.test(path)) {
@@ -186,7 +189,13 @@ export function createHttpClient({
     }
 
     try {
-      return parseSuccessEnvelope(envelope, { dataKind, validateData });
+      return parseSuccessEnvelope(envelope, {
+        dataKind,
+        validateData,
+        actionsKind,
+        validateActions,
+        validatePage,
+      });
     } catch (error) {
       if (error instanceof ResponseContractError) {
         throw applicationDataError(response);

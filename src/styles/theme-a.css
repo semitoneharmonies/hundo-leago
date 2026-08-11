@@ -986,7 +986,7 @@ textarea {
   height: 23px;
   border-radius: var(--hl-radius-sm);
   background: var(--hl-accent);
-  color: #ffffff;
+  color: var(--hl-background);
   font-family: var(--hl-font-display);
   font-size: 0.76rem;
   font-weight: 900;
@@ -4981,7 +4981,12 @@ textarea {
 
 .hl-button--danger {
   border-color: rgb(239 68 68 / 42%);
-  color: #fca5a5;
+  background: var(--hl-destructive);
+  color: var(--hl-background);
+}
+
+.hl-button--danger:hover:not(:disabled) {
+  color: var(--hl-background);
 }
 
 .hl-admin-league-panel {

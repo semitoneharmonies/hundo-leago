@@ -745,6 +745,35 @@ describe("M6-12 authenticated competition pages", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("does not mount FAD readiness without an authoritative current season", async () => {
+    const noSeasonLeague = {
+      ...league("commissioner"),
+      currentSeason: null,
+    };
+    const fetchImpl = baseFetch(
+      (path) => {
+        throw new Error(`Unexpected request: ${path}`);
+      },
+      "commissioner",
+      [noSeasonLeague]
+    );
+    renderPage(
+      `/leagues/${leagueId}/commissioner`,
+      "/leagues/:leagueId/commissioner",
+      <CommissionerCompetitionPage />,
+      fetchImpl
+    );
+
+    expect(
+      await screen.findByText("No active season is configured for this league.")
+    ).toBeInTheDocument();
+    expect(
+      fetchImpl.mock.calls.some(([url]) =>
+        new URL(url).pathname.includes("/free-agent-drafts/readiness")
+      )
+    ).toBe(false);
+  });
+
   it("renders recovery controls for inherited platform-administrator authority", async () => {
     const fetchImpl = baseFetch(
       (path) => {

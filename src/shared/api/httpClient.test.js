@@ -63,6 +63,35 @@ describe("createHttpClient", () => {
     expect(init.body).toBe(JSON.stringify({ name: "Snow Owls" }));
   });
 
+  it("returns opt-in collection actions and contract-specific page data", async () => {
+    const longCursor = "a".repeat(256);
+    const client = createHttpClient({
+      apiOrigin: "https://api.example.test",
+      fetchImpl: vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: [],
+          actions: { startTeams: [] },
+          page: { nextCursor: longCursor, hasMore: true },
+          meta: { requestId: "request-auctions" },
+        })
+      ),
+    });
+
+    await expect(
+      client.request("/api/v1/leagues/league-1/auctions", {
+        dataKind: "array",
+        actionsKind: "object",
+        validateActions: (actions) => Array.isArray(actions.startTeams),
+        validatePage: (page) => page.nextCursor === longCursor,
+      })
+    ).resolves.toEqual({
+      data: [],
+      actions: { startTeams: [] },
+      page: { nextCursor: longCursor, hasMore: true },
+      meta: { requestId: "request-auctions" },
+    });
+  });
+
   it("does not send CSRF on public unsafe requests", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(success({ accepted: true }));
     const client = createHttpClient({
