@@ -3696,10 +3696,39 @@ The hold/discovery/publisher/verifier transition passes `35/35`; the broader
 nine-file entrypoint, Render, preflight, target-runtime, hold, and provider
 matrix passes `125/125`, with zero fail, cancel, skip, or todo.
 
+### Pre-Mutation Hosted Identity Checkpoint - 2026-08-11
+
+A read-only hosting inspection records the current isolated staging rollback
+inputs before any FAD-18 mutation:
+
+```text
+Render workspace:                         tea-d4prbj7diees738tmg90
+Render staging service:                   srv-d9eo2turnols73ekb830
+Render staging disk:                      dsk-d9eo2u6rnols73ekb8t0
+Current live Render rollback deploy:      dep-d9kmv0ijobas73fsp8kg
+Current live Render rollback commit:      fa85e75c904389284a030459cd8a68f452cdac02
+Existing database path:                   /opt/render/project/data/hundo-staging/sqlite/hundo-leago.sqlite3
+Existing database schema:                 22
+Current ready Netlify rollback deploy:    6a6bede0e1742b6b750017cb
+Published frontend source head:           29d4d89ea6def41464fc48b6390e7f567c480039
+Bridge implementation commit:             1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd
+Published backend bridge source head:      26cf9606b8ee1f33efeb9e667cd265f947bc5387
+Auxiliary bridge deploy identity:          pending; not deployed
+Final backend candidate commit/build:      pending provider-manifest commit
+Final candidate held deploy identity:      pending; not deployed
+```
+
+The Render workspace also contains production resources, so every future
+mutation must remain pinned to the exact staging service and disk above.
+Inspection changed no environment value, deploy, disk, database, Netlify site,
+or production resource. The existing deploy/commit remains the pre-FAD staging
+rollback identity; it is not evidence that either published FAD source head was
+deployed.
+
 Deployment remains blocked by these exact prerequisites:
 
-- clean, exact frontend and backend release commits plus release, deploy, prior-
-  deploy, and rollback identities;
+- the operator-reviewed provider-manifest commit, exact final backend candidate,
+  and its release, deploy, prior-deploy, and rollback identities;
 - successful auxiliary-bridge and exact-final-build-held Render deploys on the
   isolated persistent disk, proof that the old instance stopped before each
   replacement, and attached-service shell access;
@@ -3978,9 +4007,11 @@ FAD-17 PLAYWRIGHT: 40/40, FIVE PROJECTS, ZERO RETRIES
 T-076 THROUGH T-083 AND T-126 THROUGH T-144 LOCAL VERIFIED
 FAD-18 LOCAL PREFLIGHT: 156 PASS / 2 INTENTIONAL WINDOWS LINK SKIPS OF 158
 FAD-18 HOLD/PROVIDER TRANSITION: 35/35; PROVIDER FAMILY: 104 PASS / 2 SKIP OF 106
+PUBLISHED SOURCE HEADS: FRONTEND 29D4D89; BACKEND BRIDGE SOURCE 26CF960
+PRE-FAD RENDER ROLLBACK: DEP-D9KMV0IJOBAS73FSP8KG / FA85E75; NO FAD DEPLOY
 FAD-18 DEPLOYMENT BLOCKED BY REAL PROVIDER MANIFEST/LIVE OBSERVATION,
 ISOLATED RESOURCES/OPERATOR/SHELL ACCESS, BRIDGE AND FINAL-HELD DEPLOYS,
 OFFSITE BACKUP/CLEAN RESTORE, FRESH RESET/IMPORT/SCHEMA-49 REPORT,
-CLEAN COMMITS, DATABASE-PATH ACTIVATION, AND DEPLOY/ROLLBACK IDENTITIES
+FINAL BACKEND CANDIDATE, DATABASE-PATH ACTIVATION, AND DEPLOY/ROLLBACK IDENTITIES
 PRODUCTION UNAUTHORIZED, BLOCKED, AND UNTOUCHED
 ```

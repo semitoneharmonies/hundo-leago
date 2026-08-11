@@ -1892,8 +1892,9 @@ API contracts, transaction rules, backend, database, fixture, provider,
 email, jobs, and production remain untouched. The full record is
 `docs/07-testing/release-runs/M7_MOBILE_LAYOUT_POLISH_2026-07-27.md`.
 
-M7-24 team-identity templates are deployed to the dedicated staging services
-for Grae's manual testing. The manager settings page replaces its separate
+At the `2026-07-27` M7-24 checkpoint, team-identity templates were deployed to
+the dedicated staging services for Grae's manual testing. The manager settings
+page replaces its separate
 two-/three-colour choice with a catalog of 35 fixed-count templates: the
 existing two- and three-stripe even splits, 21 deduplicated hockey stripe
 arrangements, and 12 decorative patterns. The selected template exposes
@@ -1903,14 +1904,15 @@ treatment.
 
 Staging migration `0022` completed after creating verified backup
 `backup-v1-5d25e421cf21b9f59342f8fb08b16701311d98729f6fa907ff9b592eeed33b4a`.
-The final backend deploy `dep-d9k4b7favr4c73a5ts8g` is live on schema `22`
-without the temporary migration bridge, and Netlify deploy
-`6a6845cd5e20aa47c911e71b` is ready at
+At that checkpoint, backend deploy `dep-d9k4b7favr4c73a5ts8g` was live on
+schema `22` without the temporary migration bridge, and Netlify deploy
+`6a6845cd5e20aa47c911e71b` was ready at
 `https://staging.hundoleago.com`. Hosted acceptance confirmed all 35 options,
 fixed two-/three-colour switching, the matching preview, and no browser
 console errors without submitting a profile write. The complete frontend
-suite passes `135/135`; the final backend Render build passes `986/986`.
-Exact release evidence is recorded in
+suite passed `135/135`; the final backend Render build passed `986/986`.
+Those identities are historical release evidence, not the current FAD-18
+rollback pair. Exact release evidence is recorded in
 `docs/07-testing/release-runs/M7_TEAM_IDENTITY_TEMPLATES_2026-07-27.md`.
 
 The annual Free Agent Draft product rules were approved on `2026-07-27`, the
@@ -2291,13 +2293,27 @@ T-083 and T-126 through T-144 are therefore `LOCAL VERIFIED`.
 No FAD shared-staging or production environment was opened, migrated, deployed,
 or changed through FAD-17; migrations `0023` through `0049` remain local only.
 
+The `2026-08-11` pre-mutation read-only hosting inspection records the current
+Render staging rollback identity as deploy `dep-d9kmv0ijobas73fsp8kg` at
+backend commit `fa85e75c904389284a030459cd8a68f452cdac02`, still on the existing
+schema-22 database path. The current ready Netlify staging rollback deploy is
+`6a6bede0e1742b6b750017cb`. The published frontend source head inspected was
+`29d4d89ea6def41464fc48b6390e7f567c480039`; the published backend bridge
+implementation plus checksum-fix head was
+`26cf9606b8ee1f33efeb9e667cd265f947bc5387`, whose bridge implementation began
+at `1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd`. Neither source head was
+deployed by that inspection. The final backend candidate remains pending the
+operator-reviewed provider-manifest commit, so no final-candidate commit,
+build, or deploy identity exists yet. No environment, disk, database, or
+production mutation is claimed.
+
 Grae authorized the isolated FAD-18 staging gate, which is now the sole active
-slice. Deployment remains blocked until exact clean release commits exist; the
-real committed SportsDataIO probe manifest and live paid-provider observation
-are available; isolated staging resources and operator access are confirmed;
+slice. Exact published source heads now exist, but deployment remains blocked
+until the real committed SportsDataIO probe manifest and live paid-provider
+observation are available; attached-service operator access is confirmed;
 offsite object storage, encryption, current backup, and clean-restore evidence
-exist; and the approved reset/import, one schema-49 migration report, deploy
-identities, and rollback record are complete.
+exist; and the approved reset/import, one schema-49 migration report, final
+candidate/deploy identities, and rollback record are complete.
 
 The FAD-18 local preflight discovers `158` focused and adjacent tests: `156`
 pass, zero fail, and two intentional Windows link-capability cases skip. It
@@ -2307,8 +2323,9 @@ quiesced Render probe blueprint. This local result does not satisfy any missing
 external provider, resource, backup, restore, reset, deploy, or operator
 evidence.
 
-The FAD-18 staging maintenance-hold bridge is now implemented locally. Exact
-`true` is accepted only for the staging/production-Node, closed-write,
+The FAD-18 staging maintenance-hold bridge is implemented and published to the
+backend `staging` branch but has not been deployed. Exact `true` is accepted
+only for the staging/production-Node, closed-write,
 jobs/FAD/email/debug/backup-disabled, capture-only, provider-probe boundary.
 It dispatches before the target runtime import, opens no database, and exposes
 only generic exact-path GET/HEAD liveness and readiness; every other request is

@@ -239,6 +239,31 @@ The accepted M7-09 provider evidence above remains historical and does not
 satisfy this FAD-18 capability gate. Complete the following sequence before the
 release candidate changes to persistent `required` mode:
 
+### FAD-18 pre-mutation read-only identity checkpoint - 2026-08-11
+
+```text
+Render workspace:                         tea-d4prbj7diees738tmg90
+Render staging service:                   srv-d9eo2turnols73ekb830
+Render staging disk:                      dsk-d9eo2u6rnols73ekb8t0
+Current live Render rollback deploy:      dep-d9kmv0ijobas73fsp8kg
+Current live Render rollback commit:      fa85e75c904389284a030459cd8a68f452cdac02
+Existing schema-22 database path:         /opt/render/project/data/hundo-staging/sqlite/hundo-leago.sqlite3
+Current ready Netlify rollback deploy:    6a6bede0e1742b6b750017cb
+Published frontend source head:           29d4d89ea6def41464fc48b6390e7f567c480039
+Bridge implementation commit:             1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd
+Published backend bridge source head:      26cf9606b8ee1f33efeb9e667cd265f947bc5387
+Auxiliary bridge deployed:                 no
+Final backend candidate:                   pending provider-manifest commit
+Final candidate deployed:                  no
+Environment/disk/database mutation:        none
+Production mutation or authorization:      none
+```
+
+The exact Render staging service and disk above share a workspace with separate
+production resources. Every later mutation must remain pinned to those staging
+identities. This inspection establishes the current pre-FAD rollback point; it
+does not claim that either published FAD source head has been deployed.
+
 1. Record and deploy the auxiliary bridge commit against the existing
    schema-22 `DATABASE_PATH` with the persisted Render service value
    `STAGING_MAINTENANCE_HOLD=true`. Its other exact prerequisites are

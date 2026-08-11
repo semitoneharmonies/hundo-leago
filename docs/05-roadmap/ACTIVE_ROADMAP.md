@@ -1070,15 +1070,26 @@ no cap/slot reservation, binding aggregate wins, and contiguous rollover
 extensions beyond the initial seven when required.
 
 Grae's continuation instruction authorizes the isolated staging gate. `FAD-18`
-is now the sole active slice, but deployment is blocked until exact clean
-release commits, a real committed provider probe manifest and live paid-source
-observation, isolated staging resource identities and operator access, offsite
-object storage/encryption plus current backup and clean restore, the approved
-reset/import and one schema-49 migration report, and exact release/deploy/
+is now the sole active slice. Exact published source heads now exist, but
+deployment remains blocked until a real committed provider probe manifest and
+live paid-source observation, attached-service operator access, offsite object
+storage/encryption plus current backup and clean restore, the approved
+reset/import and one schema-49 migration report, and final release/deploy/
 rollback identities are available. Production remains blocked and unauthorized.
 
-The schema-agnostic maintenance-hold bridge is implemented locally but not
-deployed. FAD-18 now routes through an auxiliary hold-true deploy on the old
+The `2026-08-11` pre-mutation read-only inspection records the existing Render
+staging rollback identity as deploy `dep-d9kmv0ijobas73fsp8kg` at commit
+`fa85e75c904389284a030459cd8a68f452cdac02`. Published source heads are frontend
+`29d4d89ea6def41464fc48b6390e7f567c480039` and backend
+`26cf9606b8ee1f33efeb9e667cd265f947bc5387`; backend bridge implementation
+began at `1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd`. None of those FAD source
+commits has been deployed. The final backend candidate remains pending the
+operator-reviewed provider-manifest commit. This checkpoint changed no Render,
+Netlify, disk, database, or production state.
+
+The schema-agnostic maintenance-hold bridge is implemented and published to the
+backend `staging` branch but is not deployed. FAD-18 now routes through an
+auxiliary hold-true deploy on the old
 schema-22 path for inherited discovery from a verified private OS-temporary
 copy, then an exact-final-build hold-true deploy for verified backup, clean-
 restore proof at a distinct inactive path, and the complete reset/import at a
@@ -1298,7 +1309,7 @@ The current next action is:
 ```text
 Milestone: M7 - Release Candidate and Launch
 Action: Continue FAD-18 through its authorized isolated shared-staging gate
-Implementation status: M7-25 ACTIVE / FAD-01 THROUGH FAD-17 COMPLETE LOCALLY / FAD-18 SOLE ACTIVE ISOLATED-STAGING SLICE / SCHEMA 49 LOCAL ONLY / MIGRATIONS 0023-0049 LOCAL ONLY / TARGET ENDPOINT INVENTORY 117 / T-076 THROUGH T-083 AND T-126 THROUGH T-144 LOCAL VERIFIED / FRONTEND 316/316 / PLAYWRIGHT 40/40 ACROSS FIVE PROJECTS WITH ZERO RETRIES / STAGING DEPLOYMENT BLOCKED BY REAL PROVIDER, ISOLATED-RESOURCE, BACKUP-RESTORE, RESET-MIGRATION, CLEAN-COMMIT, AND RELEASE-IDENTITY PREREQUISITES / PRODUCTION UNAUTHORIZED AND BLOCKED
+Implementation status: M7-25 ACTIVE / FAD-01 THROUGH FAD-17 COMPLETE LOCALLY / FAD-18 SOLE ACTIVE ISOLATED-STAGING SLICE / SCHEMA 49 LOCAL ONLY / MIGRATIONS 0023-0049 LOCAL ONLY / TARGET ENDPOINT INVENTORY 117 / T-076 THROUGH T-083 AND T-126 THROUGH T-144 LOCAL VERIFIED / FRONTEND 316/316 / PLAYWRIGHT 40/40 ACROSS FIVE PROJECTS WITH ZERO RETRIES / SOURCE HEADS PUBLISHED; NO FAD DEPLOY / STAGING DEPLOYMENT BLOCKED BY REAL PROVIDER MANIFEST/LIVE OBSERVATION, OPERATOR/SHELL ACCESS, BACKUP-RESTORE, RESET-MIGRATION, AND FINAL RELEASE/DEPLOY IDENTITIES / PRODUCTION UNAUTHORIZED AND BLOCKED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Branches: staging and staging
 ```
