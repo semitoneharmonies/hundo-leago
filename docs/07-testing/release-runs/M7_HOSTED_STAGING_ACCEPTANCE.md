@@ -393,7 +393,7 @@ does not claim that either published FAD source head has been deployed.
    verify the current old-path backup:
 
    ```text
-   npm run db:backup -- --reason pre-fad-18-fresh-path-activation
+   npm run db:backup -- --reason pre-reset
    npm run db:backup:verify -- --manifest-object-key <manifestObjectKey>
    npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <absolute-distinct-clean-restore-path>
    ```

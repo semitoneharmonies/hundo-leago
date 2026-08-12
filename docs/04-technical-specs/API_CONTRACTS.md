@@ -967,8 +967,8 @@ open Candidate Cards or consume the exemption.
 No GET, FAD readiness retry, migration, manual SQL step, or startup path may
 create that row.
 
-`T-037` is an approved target route and remains `PLANNED`; it is not currently
-composed in the backend. It has two HTTP uses:
+`T-037` is approved, composed, and verified in the backend; its transition
+service owns two HTTP uses:
 
 * `authorize_initial_season2_no_draft`, the one approved initial-transition
   exemption above; and
