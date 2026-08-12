@@ -939,6 +939,14 @@ deadline returns `422 LEAGUE_TRADE_DEADLINE_NOT_FUTURE`; malformed input
 returns `400 LEAGUE_TRADE_DEADLINE_INPUT_INVALID`; and an oversized body
 returns `413 LEAGUE_TRADE_DEADLINE_TOO_LARGE`.
 
+For an ordinary new league, the `T-036` start transaction also creates its
+owned `no_draft_inaugural` readiness operation and pending job. For the exact
+reset-created original league, `T-036` performs the same setup-team,
+sole-season, and league activation but creates no readiness row; `T-037` alone
+creates `no_draft_initial_season2` with the audited exemption. Any partial or
+ambiguous reset report/bootstrap identity makes the complete `T-036` request
+fail with `409 LEAGUE_START_NOT_ALLOWED` and no writes.
+
 The lifecycle-transition route includes the one FAD-specific
 `authorize_initial_season2_no_draft` command defined in
 `docs/04-technical-specs/FREE_AGENT_DRAFT.md`. It requires a platform
@@ -2492,7 +2500,9 @@ defined in `FREE_AGENT_DRAFT.md`. Its `removedWeekIds[]` and
 FAD-08 supplies one internal readiness-handoff primitive that runs only inside
 its caller's existing write transaction. The future final T-108 selection or
 confirmed-forfeiture transaction owns `entry_draft_completed`; T-036 owns
-`no_draft_inaugural`; and T-037 owns `no_draft_initial_season2`. Each caller
+`no_draft_inaugural` for an ordinary genuine-inaugural start; and T-037 owns
+`no_draft_initial_season2`. The exact reset-origin T-036 branch activates the
+league and season without calling the primitive. Each actual handoff caller
 atomically creates or idempotently reuses one exact readiness operation and one
 pending `fad_readiness` job after validating its authoritative source. Caller
 rollback removes both rows, and conflicting trigger evidence fails closed. The
@@ -3268,9 +3278,11 @@ Required test categories:
   rollback, simulated final-T-108 completion atomicity, no public completion
   route, immutable attempt snapshots, blocked rollback-then-record behavior,
   and the canonical inaugural reason;
-* T-036/T-037 exact trigger ownership and T-095 same-occurrence corrective
-  requeue with immutable source-result/generation evidence, no-op states,
-  split-state rollback, two-league isolation, and write-free exact replay;
+* ordinary-inaugural T-036 and initial-Season-2 T-037 exact trigger ownership,
+  reset-origin T-036 activation without a handoff, and T-095 same-occurrence
+  corrective requeue with immutable source-result/generation evidence, no-op
+  states, split-state rollback, two-league isolation, and write-free exact
+  replay;
 * T-127 nullable/empty/exact-seven projection states and independent no-write
   proofs for T-127 plus internal preflight, with no invented preview route;
 * T-128 blocked-to-blocked one-version acceptance, same-job requeue, immutable

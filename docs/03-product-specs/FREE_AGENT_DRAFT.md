@@ -295,13 +295,17 @@ system must record the approved transition reason, must never invent a
 completed Entry Draft, and must commit its durable readiness handoff before the
 server-owned worker can open all cards together.
 
-The approved no-draft transaction ownership remains exact. `T-036` owns the
-`no_draft_inaugural` handoff inside initial league/season activation. `T-037`
-owns the `no_draft_initial_season2` handoff inside the audited exemption and
-lifecycle transaction. If confirmed `T-095` schedule creation supplies the
-missing schedule after that inaugural readiness occurrence has already
-blocked, the same `T-095` transaction may correctively requeue only that same
-operation and canonical job. It never creates a second readiness trigger.
+The approved no-draft transaction ownership remains exact. For an ordinary
+new league, `T-036` owns the `no_draft_inaugural` handoff inside initial
+league/season activation. When `T-036` instead activates the exact
+reset-created original league and initial Season 2, it creates no readiness
+handoff; `T-037` later owns the `no_draft_initial_season2` handoff inside the
+audited exemption and lifecycle transaction. Partial or ambiguous reset-origin
+evidence fails the complete `T-036` transaction closed. If confirmed `T-095`
+schedule creation supplies the missing schedule after a genuine-inaugural
+readiness occurrence has already blocked, the same `T-095` transaction may
+correctively requeue only that same operation and canonical job. It never
+creates a second readiness trigger.
 
 At automatic Candidate Card opening, the backend snapshots:
 
@@ -1690,9 +1694,10 @@ Required tests include:
 * automatic continuing-league opening by the later readiness worker only after
   scheduled-start rollover and every FAD prerequisite pass;
 * absence of a standalone/manual Entry Draft completion or FAD-opening route;
-* T-036 and T-037 creating only their owned exact no-draft triggers, and T-095
-  only requeueing the same blocked inaugural occurrence after confirmed
-  schedule creation;
+* ordinary-inaugural T-036 and initial-Season-2 T-037 creating only their owned
+  exact no-draft triggers, reset-origin T-036 creating none, and T-095 only
+  requeueing the same blocked inaugural occurrence after confirmed schedule
+  creation;
 * team addition before Entry Draft setup confirmation and rejection afterward;
 * no-draft team addition only before automatic opening readiness succeeds;
 * post-draft team erasure or deactivation only before automatic opening;
@@ -1896,7 +1901,7 @@ Required tests include:
 - [x] Scheduled Entry Draft-start rollover must succeed before the Entry Draft opens or Candidate Cards can follow.
 - [x] The future final T-108 selection or confirmed-forfeiture transaction atomically records the `entry_draft_completed` readiness handoff; its later worker opens every Candidate Card together when all prerequisites pass, while a failed readiness check opens none.
 - [x] There is no standalone/manual Entry Draft completion or FAD-opening endpoint; FAD-08 provides only the internal transaction-bound handoff primitive while the complete Entry Draft remains M8-deferred.
-- [x] T-036 owns `no_draft_inaugural`, T-037 owns `no_draft_initial_season2`, and T-095 may only requeue the same blocked inaugural occurrence after confirmed schedule creation.
+- [x] Ordinary-inaugural T-036 owns `no_draft_inaugural`; reset-origin T-036 creates no handoff; T-037 owns `no_draft_initial_season2`; and T-095 may only requeue the same blocked inaugural occurrence after confirmed schedule creation.
 - [x] A legitimate no-draft transition covers an inaugural league and the original league's initial Season 2 transition.
 - [x] In a draft season, normal team addition closes at Entry Draft setup confirmation; on a no-draft path it closes when automatic opening readiness succeeds.
 - [x] Team erasure and deactivation use the separate post-draft or no-draft, pre-opening window and block all cards until finalized.

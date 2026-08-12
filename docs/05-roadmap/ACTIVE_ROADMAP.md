@@ -861,10 +861,11 @@ FAD-08 closed with the shared internal, transaction-bound readiness-handoff
 primitive, but it did not pull the Entry Draft into M7. The future final
 `T-108` selection or confirmed-forfeiture transaction remains M8 work and owns
 `entry_draft_completed`; there is no standalone/manual Entry Draft completion
-route. The no-draft owners remain unchanged: `T-036` commits
-`no_draft_inaugural`, `T-037` commits `no_draft_initial_season2`, and confirmed
-`T-095` schedule creation may only correctively requeue the same blocked
-inaugural operation/job after supplying its missing schedule prerequisite.
+route. The no-draft owners remain exact: ordinary-inaugural `T-036` commits
+`no_draft_inaugural`, reset-origin `T-036` creates no handoff, `T-037` commits
+`no_draft_initial_season2`, and confirmed `T-095` schedule creation may only
+correctively requeue the same blocked inaugural operation/job after supplying
+its missing schedule prerequisite.
 That T-095 path is protected by additive schema-33 immutable corrective-requeue
 evidence; migrations `0030` through `0032` remain frozen. Migration `0033` is
 pinned at `56,084` bytes and SHA-256

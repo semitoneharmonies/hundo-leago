@@ -789,11 +789,12 @@ production deployment.
   commits the terminal pick, Entry Draft `Complete` state, and exact
   `entry_draft_completed` pair together. The real T-108 endpoint/UI remains M8
   `PLANNED` and is not falsely counted as FAD-08 implementation.
-- [x] T-036 and T-037 create only their exact inaugural or initial-Season-2
-  readiness pair in their own transaction. Confirmed T-095 creates no new
-  trigger and evidence-requeues only the same blocked/failed genuine-inaugural
-  pair; absent, pending, running, or succeeded state is a no-op, split state
-  rolls T-095 back, and exact replay writes nothing.
+- [x] Ordinary-inaugural T-036 and initial-Season-2 T-037 create only their
+  exact readiness pair in their own transaction; reset-origin T-036 activates
+  without a pair. Confirmed T-095 creates no new trigger and
+  evidence-requeues only the same blocked/failed genuine-inaugural pair;
+  absent, pending, running, or succeeded state is a no-op, split state rolls
+  T-095 back, and exact replay writes nothing.
 - [x] Automatic readiness is triggered only by committed Entry Draft or
   approved no-draft evidence. Success creates one FAD, every team/card,
   carryover projection, initial seven rollovers, and jobs atomically; any

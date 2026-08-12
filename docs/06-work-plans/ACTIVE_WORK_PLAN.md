@@ -2921,7 +2921,8 @@ There is no commissioner FAD setup command or client-supplied opening clock.
   there is no standalone/manual completion or handoff route;
 - the shared primitive requires the caller's transaction, validates the real
   trigger source, creates one canonical pair, and rolls back with the caller;
-- T-036 and T-037 own their exact no-draft triggers, while confirmed T-095 may
+- ordinary-inaugural T-036 and initial-Season-2 T-037 own their exact no-draft
+  triggers, reset-origin T-036 creates none, and confirmed T-095 may
   evidence/requeue only the same blocked genuine-inaugural occurrence after
   supplying its missing schedule;
 - deadline equals exactly `firstWeekStartsAtMs - 168 elapsed hours`;

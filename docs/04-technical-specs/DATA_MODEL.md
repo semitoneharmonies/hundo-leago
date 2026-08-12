@@ -1540,12 +1540,13 @@ selection, trade, ownership, proposal, queue, or clock effect.
 The final T-108 selection or confirmed-forfeiture transaction that makes the
 last pick terminal changes the Entry Draft to `Complete` and invokes the
 internal `entry_draft_completed` readiness-handoff writer before the same
-transaction commits. T-036 and T-037 own the corresponding inaugural and
-initial-Season-2 no-draft calls. The handoff validates authoritative source
-state and creates or idempotently reuses exactly one operation plus its
-canonical pending job; caller rollback removes both. It does not execute
-readiness, has no route, and cannot be invoked by a standalone manual Entry
-Draft completion command.
+transaction commits. Ordinary-inaugural T-036 owns the inaugural no-draft
+call, while reset-origin T-036 activates without a readiness handoff and T-037
+owns the initial-Season-2 no-draft call. Each actual handoff validates
+authoritative source state and creates or idempotently reuses exactly one
+operation plus its canonical pending job; caller rollback removes both. It
+does not execute readiness, has no route, and cannot be invoked by a
+standalone manual Entry Draft completion command.
 
 The later readiness worker either creates the complete FAD, all participating-
 team snapshots and cards, locked carryovers, seven initial rollover rows,

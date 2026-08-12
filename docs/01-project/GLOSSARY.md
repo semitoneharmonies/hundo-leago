@@ -1252,12 +1252,13 @@ operation and canonical pending job, while the worker later evaluates and
 opens cards.
 
 The future final `T-108` selection or confirmed-forfeiture transaction owns
-`entry_draft_completed`. `T-036` owns `no_draft_inaugural`, and `T-037` owns
-`no_draft_initial_season2`. When confirmed `T-095` schedule creation supplies
-a missing inaugural prerequisite after readiness has blocked, it may only
-requeue that same operation and canonical job. It never creates another
-trigger. None of these boundaries exposes a manual Entry Draft completion or
-FAD-opening endpoint.
+`entry_draft_completed`. Ordinary-inaugural `T-036` owns
+`no_draft_inaugural`; reset-origin `T-036` activates without a readiness
+handoff; and `T-037` owns `no_draft_initial_season2`. When confirmed `T-095`
+schedule creation supplies a missing inaugural prerequisite after readiness
+has blocked, it may only requeue that same operation and canonical job. It
+never creates another trigger. None of these boundaries exposes a manual Entry
+Draft completion or FAD-opening endpoint.
 
 It validates rollover, draft, target-season, first-matchup, participating-team,
 manager, ownership, contract, and carryover prerequisites. When the selected

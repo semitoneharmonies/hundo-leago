@@ -766,9 +766,11 @@ crosses a boundary:
   `entry_draft_completed` operation/job together, while the real T-108 endpoint
   and Entry Draft UI remain M8 `PLANNED`;
 * T-036 genuine-inaugural and T-037 initial-Season-2 exemption transactions
-  create only their exact trigger pair atomically; T-095 never creates a
-  trigger and may only evidence/requeue the same blocked inaugural occurrence
-  after confirmed schedule creation;
+  create only their exact trigger pair atomically; reset-origin T-036 creates
+  none and fails atomically for partial, ambiguous, malformed, or conflicting
+  reset evidence; T-095 never creates a trigger and may only
+  evidence/requeue the same blocked inaugural occurrence after confirmed
+  schedule creation;
 * the resulting Entry Draft or approved no-draft trigger causes FAD readiness
   automatically, opens every team card or none, persists blockers, and exposes
   only an idempotent retry rather than manual opening parameters;

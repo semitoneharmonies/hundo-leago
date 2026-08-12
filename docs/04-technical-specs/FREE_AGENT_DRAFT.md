@@ -1060,12 +1060,15 @@ the `entry_draft_completed` call when it makes the last unused pick terminal
 and changes the Entry Draft to `Complete`. Full T-108 selection, forfeiture,
 timeout, and frontend behavior remain M8-deferred; the FAD-08 primitive is not
 a partial Entry Draft workflow. `T-036` owns `no_draft_inaugural` creation in
-the genuine inaugural league-start transaction, and `T-037` owns
-`no_draft_initial_season2` creation in the original-league exemption/lifecycle
-transaction. Each caller and its operation/job pair commit or roll back
-together. There is no post-commit in-memory handoff, standalone Entry Draft
-completion endpoint, commissioner opening command, startup repair, or GET-side
-creation path.
+the genuine inaugural league-start transaction. Its exact reset-origin branch
+activates the reset-created original league and initial Season 2 but creates no
+readiness operation or job; `T-037` then owns `no_draft_initial_season2`
+creation in the original-league exemption/lifecycle transaction. Partial or
+ambiguous reset-origin evidence fails `T-036` before activation writes. Each
+actual handoff caller and its operation/job pair commit or roll back together.
+There is no post-commit in-memory handoff, standalone Entry Draft completion
+endpoint, commissioner opening command, startup repair, or GET-side creation
+path.
 
 When confirmed `T-095` schedule creation supplies the missing schedule after
 the genuine-inaugural occurrence has already blocked, its same transaction may
@@ -2164,10 +2167,15 @@ requirement may be weakened to avoid the ordering boundary.
    succeed.
 
 The setup/planned bootstrap state does not yet qualify for the no-draft
-exemption. Normal league configuration and the approved `T-036` start
-transition must make that sole season the current active preseason season
-before `authorize_initial_season2_no_draft` can succeed. Neither the handoff
-nor the report writer performs that lifecycle transition.
+exemption. Normal league configuration and the approved `T-036` reset-origin
+start branch must make that sole season the current active preseason season
+before `authorize_initial_season2_no_draft` can succeed. That branch requires
+one exact qualifying reset report plus one exact reset-bootstrap identity,
+fails atomically on partial or ambiguous evidence, and deliberately creates no
+`no_draft_inaugural` readiness row. `T-037` alone creates the
+`no_draft_initial_season2` handoff. The ordinary genuine-inaugural `T-036`
+branch remains unchanged and creates its owned handoff atomically. Neither the
+handoff nor the report writer performs the reset-origin activation.
 
 The full artifact is access-controlled operational evidence and is never
 committed to Git or exposed through League Activity. Artifact publication is

@@ -2160,9 +2160,10 @@ draft. The future final `T-108` selection or confirmed-forfeiture transaction
 owns `entry_draft_completed`; the simulated final caller proves that its
 terminal pick, `Complete` draft state, readiness operation, and canonical
 pending job commit or roll back together. There is no manual completion or
-public handoff route. The real `T-036` and `T-037` transactions own their exact
-no-draft triggers, and confirmed `T-095` schedule creation can only evidence
-and correctively requeue the same blocked genuine-inaugural operation/job.
+public handoff route. Ordinary-inaugural `T-036` and initial-Season-2 `T-037`
+own their exact no-draft triggers; reset-origin `T-036` activates without a
+readiness handoff. Confirmed `T-095` schedule creation can only evidence and
+correctively requeue the same blocked genuine-inaugural operation/job.
 
 FAD-08 also completes the readiness worker and scheduler composition,
 all-or-none carryover/card opening, and the locally composed `T-126` through
