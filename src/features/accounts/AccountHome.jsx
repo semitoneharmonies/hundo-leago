@@ -149,7 +149,8 @@ function SignInForm({ session }) {
   );
 }
 
-function SignUpForm({ httpClient }) {
+function SignUpForm({ session }) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
@@ -183,14 +184,19 @@ function SignUpForm({ httpClient }) {
     setPending(true);
     try {
       intentKeyRef.current ||= createIntentKey("account-signup");
-      await registerAccount(
-        httpClient,
+      const result = await registerAccount(
+        session.httpClient,
         { email, displayName, password, passwordConfirmation },
         intentKeyRef.current
       );
       setPassword("");
       setPasswordConfirmation("");
       intentKeyRef.current = null;
+      if (result.automaticVerification === true) {
+        session.adoptSession(result);
+        navigate(routePaths.leagues, { replace: true });
+        return;
+      }
       setSuccess(
         "If the account request was accepted, check that email for a verification link."
       );
@@ -424,7 +430,7 @@ export function AccountHome() {
       )}
       <div className="hl-auth-grid">
         <SignInForm session={session} />
-        <SignUpForm httpClient={session.httpClient} />
+        <SignUpForm session={session} />
       </div>
       <section className="hl-account-recovery" aria-labelledby="recovery-title">
         <div>

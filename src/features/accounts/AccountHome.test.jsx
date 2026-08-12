@@ -100,6 +100,17 @@ function ResetReceiptHarness() {
   );
 }
 
+function SessionProbe() {
+  const session = useSession();
+  return (
+    <h1>
+      {session.status === "authenticated"
+        ? `Signed in as ${session.user.displayName}`
+        : "No authenticated session"}
+    </h1>
+  );
+}
+
 describe("AccountHome", () => {
   it("keeps account forms hidden while session state is unknown", () => {
     const fetchImpl = vi.fn(() => new Promise(() => {}));
@@ -238,6 +249,79 @@ describe("AccountHome", () => {
     );
     expect(localStorage.length).toBe(0);
     randomUUID.mockRestore();
+  });
+
+  it("adopts the guarded staging session after creating an account", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(noSession())
+      .mockResolvedValueOnce(
+        jsonResponse(
+          {
+            data: {
+              accepted: true,
+              automaticVerification: true,
+              csrfToken: "A".repeat(43),
+              session: {
+                id: "staging-signup-session",
+                userId: "staging-signup-user",
+                status: "active",
+                createdAtMs: 1,
+                lastUsedAtMs: 2,
+                idleExpiresAtMs: 3,
+                absoluteExpiresAtMs: 4,
+                version: 1,
+              },
+              user: {
+                id: "staging-signup-user",
+                displayName: "New Staging Manager",
+                status: "active",
+                version: 1,
+              },
+            },
+            meta: { requestId: "request-staging-sign-up" },
+          },
+          201
+        )
+      );
+    const view = renderWithProviders(
+      <Routes>
+        <Route path="/" element={<AccountHome />} />
+        <Route path="/leagues" element={<SessionProbe />} />
+      </Routes>,
+      {
+        enableSession: true,
+        config,
+        sessionOptions: { fetchImpl },
+      }
+    );
+
+    const signUp = (
+      await screen.findByRole("heading", {
+        name: "Create an account",
+      })
+    ).closest("form");
+    await view.user.type(
+      signUp.querySelector("input[type='email']"),
+      "new.staging@example.test"
+    );
+    await view.user.type(
+      signUp.querySelector("input[type='text']"),
+      "New Staging Manager"
+    );
+    const passwords = signUp.querySelectorAll(
+      "input[type='password']"
+    );
+    await view.user.type(passwords[0], "password value");
+    await view.user.type(passwords[1], "password value");
+    await view.user.keyboard("{Enter}");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Signed in as New Staging Manager",
+      })
+    ).toBeInTheDocument();
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
   it("uses the same generic result for a password-reset request", async () => {

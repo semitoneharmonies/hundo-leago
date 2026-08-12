@@ -5,6 +5,15 @@ function acceptedData(data) {
   return data?.accepted === true;
 }
 
+function registrationData(data) {
+  if (!acceptedData(data)) return false;
+  if (!Object.hasOwn(data, "automaticVerification")) return true;
+  return (
+    data.automaticVerification === true &&
+    validateSessionData(data)
+  );
+}
+
 export function createIntentKey(scope, cryptoImpl = globalThis.crypto) {
   if (
     typeof scope !== "string" ||
@@ -27,7 +36,7 @@ export async function registerAccount(httpClient, input, idempotencyKey) {
     body: input,
     idempotencyKey,
     dataKind: "object",
-    validateData: acceptedData,
+    validateData: registrationData,
   });
   return response.data;
 }
