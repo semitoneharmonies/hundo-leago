@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -43,9 +44,9 @@ import {
 import { publicRosterQuery } from "../rosters/publicRosterQueries.js";
 import {
   activityQuery,
-  auctionsQuery,
   tradesQuery,
 } from "../transactions/transactionQueries.js";
+import { auctionListQuery } from "../auctions/auctionQueries.js";
 import {
   inviteLeagueUser,
   invitableUsersQuery,
@@ -928,29 +929,35 @@ function AuctionsPanel({ leagueId, auctions, pending, error }) {
         <EmptyBlock title="No open auctions" />
       ) : (
         <ul className="hl-compact-list">
-          {auctions.slice(0, 3).map((auction) => (
-            <li key={auction.id}>
-              <div>
-                <StatusBadge>
-                  {auction.player.fullName.slice(0, 1)}
-                </StatusBadge>
-                <span>
-                  <strong>{auction.player.fullName}</strong>
-                  <small>{relativeTime(auction.bidClosesAtMs)}</small>
+          {auctions.slice(0, 3).map((auction) => {
+            const viewerBid =
+              auction.viewerTeams.find(({ bid }) => bid !== null)?.bid || null;
+            const closesAt =
+              auction.sourceKind === "ordinary_weekly"
+                ? auction.resolvesAtMs
+                : auction.targetRolloverAtMs;
+            return (
+              <li key={auction.auctionId}>
+                <div>
+                  <StatusBadge>
+                    {auction.player.fullName.slice(0, 1)}
+                  </StatusBadge>
+                  <span>
+                    <strong>{auction.player.fullName}</strong>
+                    <small>{relativeTime(closesAt)}</small>
+                  </span>
+                </div>
+                <span className="hl-compact-list__value">
+                  {viewerBid ? money(viewerBid.totalValueCents) : "No bid"}
+                  <small>
+                    {viewerBid
+                      ? "Your bid"
+                      : bidderCountLabel(auction.participatingTeamCount)}
+                  </small>
                 </span>
-              </div>
-              <span className="hl-compact-list__value">
-                {auction.ownBid
-                  ? money(auction.ownBid.totalValueCents)
-                  : "No bid"}
-                <small>
-                  {auction.ownBid
-                    ? "Your bid"
-                    : bidderCountLabel(auction.participantCount)}
-                </small>
-              </span>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </Surface>
@@ -1196,10 +1203,15 @@ export function LeagueDashboard({ league, teams, session }) {
     ),
     enabled: enabled && Boolean(managedTeam),
   });
-  const auctions = useQuery({
-    ...auctionsQuery(session.httpClient, leagueId),
+  const auctions = useInfiniteQuery({
+    ...auctionListQuery(session.httpClient, leagueId, {
+      statuses: ["active"],
+      limit: 3,
+    }),
     enabled,
   });
+  const auctionItems =
+    auctions.data?.pages.flatMap((page) => page.items) || [];
   const trades = useQuery({
     ...tradesQuery(session.httpClient, leagueId),
     enabled,
@@ -1282,7 +1294,7 @@ export function LeagueDashboard({ league, teams, session }) {
           <CommissionerLeaguePanel
             leagueId={leagueId}
             teams={teams}
-            auctions={auctions.data || []}
+            auctions={auctionItems}
             trades={trades.data || []}
           />
         ) : (
@@ -1301,7 +1313,7 @@ export function LeagueDashboard({ league, teams, session }) {
         <div className="hl-dashboard__commissioner-content">
           <AuctionsPanel
             leagueId={leagueId}
-            auctions={auctions.data || []}
+            auctions={auctionItems}
             pending={enabled && auctions.isPending}
             error={auctions.error}
           />
@@ -1331,7 +1343,7 @@ export function LeagueDashboard({ league, teams, session }) {
           >
             <AuctionsPanel
               leagueId={leagueId}
-              auctions={auctions.data || []}
+              auctions={auctionItems}
               pending={enabled && auctions.isPending}
               error={auctions.error}
             />
