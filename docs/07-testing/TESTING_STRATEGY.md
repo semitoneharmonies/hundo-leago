@@ -23,6 +23,13 @@ matrix below for scheduled rollover, automatic readiness, adaptive help,
 whole-card legality, auction controls and draws, queued nominations, and
 whole-Monday schedule recovery.
 
+Grae's 2026-08-11 clarification removes paid live-provider capability from FAD
+and Entry Draft testing. Both depend on the persisted player catalogue, not
+statistics. Each season starts all player GP/G/A/NHL-points/FP counters at
+zero. A separate provider-neutral matchup/statistics slice must test four
+scheduled completed-game cumulative refresh runs each evening; exact times and
+implementation are not yet approved or claimed complete.
+
 ### FAD-06 Auction Read Closure Evidence - 2026-08-02
 
 The final local auction-family gate passed `161/161` tests across `22` suites
@@ -1261,7 +1268,9 @@ and `27` post-base migrations, checksum-set SHA-256
 `131` repository-catalog entries, `49` post-reset require-empty tables, valid
 reset-policy coverage, and the quiesced provider-probe blueprint.
 
-The FAD-18 provider-tool addendum is also green. The read-only discovery opens
+The pre-clarification FAD-18 provider-tool addendum was also green. It is
+retained as historical test evidence and is not an active FAD gate. The
+read-only discovery opens
 only an identity- and SHA-verified private OS-temporary copy of a sidecar-free
 guarded source, removes it before output, and fails without output on source
 drift or cleanup failure. Its WAL-mode regression preserves source bytes,
@@ -1275,9 +1284,9 @@ The hold/discovery/publisher/verifier transition package passes `35/35`, and
 the broader nine-file entrypoint, Render, preflight, target-runtime, hold, and
 provider matrix passes `125/125`, both with zero fail, cancel, skip, or todo.
 
-This is local preflight evidence only. The real Git-tracked provider manifest,
-paid live key and signing configuration, isolated database/disk and operator
-access, paid-source observation, offsite backup and clean restore, approved
+This is local preflight evidence only. The provider-independent startup and
+preflight amendment, isolated database/disk and operator access, offsite backup
+and clean restore, approved
 fresh-path reset/import and schema-49 migration report, clean release commits,
 auxiliary-bridge and final-held deploys, attached-service shell reachability,
 database-path activation, and deploy/rollback identities remain required before
@@ -1558,7 +1567,14 @@ Provider adapter tests use recorded synthetic responses for:
 
 Ordinary automated tests do not call the real provider.
 
-The FAD-18 provider sequence is operationally fixed:
+### Superseded FAD-18 SportsDataIO sequence
+
+The following provider sequence and its test inventory are retained only as
+historical evidence of the pre-clarification implementation. They are not
+operationally fixed, must not be executed for FAD-18, and cannot block FAD
+staging acceptance. Every later statement in this historical subsection that a
+credential, manifest, endpoint, observation, artifact, or provider mode blocks
+FAD is superseded by the 2026-08-11 clarification.
 
 The package scripts map discovery to
 `node scripts/discover-sportsdataio-live-capability.js`, retain the existing
@@ -1620,25 +1636,14 @@ provider check and independent verifier are staging-only and require persisted
 disabled scheduled jobs, FAD routes, account-email delivery, debug routes, and
 backup schedule, and capture-only email before any provider, manifest, or
 artifact I/O. The verifier is a one-off disk-backed shell command, not a Render
-one-off job or deployed service-mode change. As part of FAD-18 isolated staging
-acceptance, and before
-FAD routes or jobs are enabled there, the read-only provider capability check
-must use the configured staging live-source credentials and a recorded exact
-required-player and historical-game request.
-Without mutating shared league data, it
-must prove that the source can authoritatively account for every requested
-player, distinguish `expected_game`, `no_due_game`, and `no_team`, return an
-explicit zero-valued row for an expected zero-stat pair, bind coverage and
-observations to one `sourceVersion`, and surface incomplete responses as
-unavailable. It must exercise Players and FreeAgents plus targeted historical
-schedule and PlayerGame access, affirm exact game/start/team values, and prove
-exhaustiveness by failing a controlled omitted required pair. Sanitized
-evidence records the request/response identity sets and historical bindings,
-dispositions, source version, capture time, and pass/fail result; it records no
-credential or raw provider payload. An unavailable endpoint or credential,
-unsupported provider semantic, incomplete historical access, or failed
-capability check blocks staging acceptance rather than enabling a synthetic or
-missing-as-zero fallback.
+one-off job or deployed service-mode change. Under the retired plan, FAD-18
+isolated staging would have used configured live-source credentials and a
+recorded exact required-player and historical-game request. Its intended
+read-only evidence covered exact-set dispositions, explicit-zero pairs,
+source-version binding, targeted historical access, and controlled omissions
+without shared league writes or raw-provider retention. Any provider failure
+stopped only that retired sequence. None of this evidence or provider access is
+part of the active provider-independent FAD-18 acceptance gate.
 
 The command and artifact contract are accepted locally only when tests prove:
 
@@ -1687,10 +1692,49 @@ historical zero-stat PlayerGame while current Players and FreeAgents prove the
 two terminal dispositions. Ordinary automated tests use synthetic captured
 fixtures and never make a real provider call.
 
+### Provider-independent FAD-18 acceptance
+
+Focused amendment tests must prove:
+
+* maintenance hold and ordinary candidate startup validate with live-statistics
+  composition and the complete automatic matchup-occurrence runner disabled and
+  no SportsDataIO manifest, credential, signing secret, provider request,
+  capability artifact, or mode promotion;
+* release preflight does not require the removed provider manifest;
+* retained prior-season rows keep exact source-season identity and cannot
+  affect FAD or Entry Draft; current-season roster/matchup reads never fall back
+  to them, while missing current data remains unavailable pending the separate
+  zero-baseline/provider-neutral implementation;
+* Candidate and Entry Draft catalogue search exposes stable identity, display
+  name, effective position, and eligibility without statistics availability;
+* all FAD card, allocation, rapid/restricted auction, and completion workflows
+  pass with statistics/provider composition absent; and
+* statistics-refresh, baseline, normal-lock, finalization, and matchup-week
+  rollover occurrences remain absent from scheduled-job composition and do not
+  run while the provider-neutral completed-game follow-up is pending; any
+  separately attempted provider-dependent statistics path fails closed and
+  visibly; and
+* FAD, Entry Draft, auction, trade, and outbox workers remain available subject
+  to their own activation and safety gates.
+
+The existing player-page last-season display and missing season filter must be
+recorded as a known frontend gap. No test or document may claim that gap is
+fixed until the separate frontend slice actually passes.
+
 ## Late-Lock Coordinator and Evidence Acceptance
 
-Late-lock implementation is not accepted until focused domain, repository,
-service, job, HTTP, and composition tests prove all of the following:
+This section preserves the pre-clarification provider-specific evidence test
+inventory as historical design input. It is not an active FAD-18 acceptance
+gate and does not authorize immediate external refresh, live-provider
+composition, or the former five-minute game-state read. For the preseason FAD-
+only candidate, late-lock execution and the full automatic matchup-occurrence
+runner are absent. A later provider-neutral work plan must replace or explicitly
+adopt each applicable evidence test before restoring or splitting that runner.
+
+Future late-lock implementation is not accepted until the provider-neutral
+amendment selects its final contract and focused domain, repository, service,
+job, HTTP, and composition tests prove that contract. The historical candidate
+test inventory below was:
 
 * semantic replay reconstructs the committed business evidence and returns the
   existing result when only newly generated child UUIDs differ;
@@ -1728,8 +1772,8 @@ service, job, HTTP, and composition tests prove all of the following:
   `ownershipWitnesses: []`, while unchanged or synthetic ownership witnesses
   are never invented and every supplied witness is still checked exactly;
 * single-team, multiple-ownership, and multi-team fixtures prove that the whole
-  batch is evaluated without duplicate team work and without more than one
-  immediate refresh or evaluation retry;
+  batch is evaluated without duplicate team work and never requests or performs
+  an external statistics refresh;
 * coordinator input-validation, target-read, repository, provider, and
   unexpected runtime failure injection proves the committed roster mutation
   occurs once, is never rerun, compensated, reversed, or rolled back, and
@@ -1743,25 +1787,25 @@ service, job, HTTP, and composition tests prove all of the following:
 * multi-team results aggregate in the exact priority `awaiting_data`,
   `still_illegal`, `completed`, `not_applicable`, and omit `lockId` unless
   exactly one safely identifiable completed lock applies;
-* an immediate stale/unavailable command batch performs at most one live
-  refresh and one evaluation retry in total;
-* the scheduled statistics occurrence handler invokes eligible-lock retry only
-  after successful refresh persistence, while provider or persistence failure
-  invokes no retry and retry failure cannot fail or alter the successful
-  statistics result;
-* the scheduled retry attempts each eligible lock independently, performs no
-  live refresh, never recursively invokes itself, and repeats no roster
-  mutation;
+* a stale or unavailable command batch returns the applicable safe status and
+  performs no external refresh; it may evaluate only from already committed,
+  valid evidence;
+* a future scheduled provider-neutral post-game statistics occurrence invokes
+  eligible-lock retry only after successful refresh persistence, while provider
+  or persistence failure invokes no retry and retry failure cannot fail or
+  alter the successful statistics result;
+* the future scheduled provider-neutral retry attempts each eligible lock
+  independently, performs no external refresh, never recursively invokes
+  itself, and repeats no roster mutation;
 * composition tests name the exact closed staging fixture reset and provider
   catalog import as the only maintenance exclusions, require closed writes,
   disabled jobs, and no live/correction matchup, and reject the exclusion or
   require bulk reconciliation when any precondition is false;
-* a legal normal scheduled lock completes with no affirmative selected-player
-  coverage or fresh game-state call, proving normal-lock behavior is unchanged;
-* sealed coverage produces the exact distinct in-week due-game request for the
-  selected roster, and the separate game-state read rejects missing or extra
-  games, future observations, and observations older than `300000` milliseconds
-  while accepting the exact boundary;
+* a legal normal scheduled lock remains independent of provider coverage once
+  the future automatic matchup runner is deliberately restored or split;
+* the provider-neutral amendment replaces the former sealed-coverage and
+  five-minute game-state-read tests with an approved evidence/freshness matrix
+  before late-lock execution is enabled;
 * compatible-provider statistics and game-state fixtures with deliberately
   different `sourceVersion` values succeed, while incompatible providers fail;
 * use, semantic replay, scoring, and finalization independently recompute the
@@ -1910,7 +1954,8 @@ Staging acceptance adds:
 * two-league workflows;
 * email adapter;
 * scheduled jobs;
-* provider failure;
+* provider failure when the release actually composes a provider; this is not a
+  FAD-18 prerequisite;
 * backup and restore;
 * migration rehearsal;
 * desktop and mobile manual QA.

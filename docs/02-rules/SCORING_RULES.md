@@ -6,6 +6,24 @@
 
 Grae approved the Season 2 scoring-rule baseline recorded in this document on 2026-07-18.
 
+On 2026-08-11, Grae clarified the Season 2 statistics operating model. Every
+player's current-season games played, goals, assists, NHL points, and fantasy
+points initialize to exactly zero at season rollover/start. Season 2 does not
+require in-game statistic delivery; cumulative statistics refresh after games
+finish in four scheduled runs each evening. Prior-season rows are
+historical evidence only and cannot seed current-season scoring. This
+clarification supersedes any requirement below for an immediate live-statistics
+refresh or five-minute live-provider game-state proof. Provider-neutral late-
+lock/scoring design remains disabled and deferred until a separate amendment is
+approved and verified.
+
+For the preseason FAD-only staging candidate, the shared automatic matchup-
+occurrence runner is disabled in full. Statistics refresh, baseline, normal
+lock, finalization, and matchup-week rollover occurrences do not run. FAD, Entry Draft,
+auction, trade, and outbox jobs remain available subject to their own gates. A
+future provider-neutral matchup/statistics slice must restore or split the
+runner before automatic scoring-week processing begins.
+
 This document records:
 
 * scoring boundaries already approved in `LEAGUE_RULES.md`;
@@ -91,7 +109,7 @@ The backend is authoritative for:
 * team scoring eligibility;
 * locked-roster snapshots;
 * scoring baselines;
-* live matchup totals;
+* latest cached provisional matchup totals;
 * finalized matchup results;
 * standings calculations;
 * commissioner corrections;
@@ -409,10 +427,14 @@ Each scored statistic record must be traceable to:
 * the cumulative goals and assists used;
 * the derived fantasy-point value.
 
+The current-season source starts from an authoritative all-zero state. A
+prior-season row may remain queryable as historical data, but it must carry its
+own source season and may never be projected as a current-season total.
+
 The technical specifications must define:
 
-* the statistics provider;
-* refresh scheduling;
+* the provider-neutral statistics-source contract;
+* four scheduled post-game refresh occurrences each evening;
 * retry behaviour;
 * cache format;
 * source timestamps;
@@ -525,7 +547,7 @@ The normal baseline occurs Monday at `1:00 AM Pacific`, before the roster lock.
 
 A legal team’s players ultimately locked Monday at `4:00 PM Pacific` receive eligible points earned after the earlier Monday baseline.
 
-Live preview and finalization must use this same relationship.
+Current preview and finalization must use this same relationship.
 
 ---
 
@@ -551,6 +573,15 @@ The team-specific baseline must:
 
 The product and technical specifications must define how concurrent transactions, statistics refreshes, and scheduled scoring jobs are ordered at the effective timestamp.
 
+The product rule above is retained, but its former immediate live-provider
+implementation is not approved for deployment. Until a provider-neutral
+post-game design proves how late eligibility and whole-game exclusion can be
+reconciled without an in-game feed, late-lock/scoring jobs remain disabled and
+must fail visibly rather than guess from stale or prior-season data. For the
+preseason FAD-only candidate this means the entire shared automatic matchup-
+occurrence runner stays off, including statistics refresh, baseline, normal
+lock, finalization, and matchup-week rollover.
+
 ---
 
 ## Post-Lock Roster Adjustments
@@ -567,11 +598,11 @@ Only an explicit authorized matchup correction may change a persisted current-we
 
 ---
 
-# Part 6 — Live Scoring and Finalization
+# Part 6 — Current Matchup Scoring and Finalization
 
-## Live Matchup Totals
+## Latest Cached Matchup Totals
 
-Live team fantasy points must be calculated from:
+The latest available team fantasy points must be calculated from:
 
 * the persisted scoring-eligible player IDs;
 * the team’s applicable normal or late-lock baseline;
@@ -598,7 +629,9 @@ The calculation must not:
 * use statistics from another NHL season;
 * use a different formula from finalization.
 
-Live totals are provisional until the matchup is finalized.
+Displayed current totals are provisional until the matchup is finalized.
+“Live” in legacy UI wording means the latest successfully cached post-game
+cumulative refresh; it does not promise in-game updates.
 
 ---
 
@@ -616,7 +649,11 @@ The system must distinguish:
 
 These conditions must not all appear as an unexplained zero.
 
-Live scoring may continue from the last valid cache during a temporary refresh failure, but the interface must identify that the displayed total is stale.
+Current scoring may continue from the last valid cache during a temporary
+refresh failure, but the interface must identify that the displayed total is
+stale. Before a player's game has completed, an unchanged zero may be the valid
+current-season state. After a completed game is due for refresh, missing or
+stale data must be distinguished from an earned zero.
 
 Finalization is blocked when:
 
@@ -723,7 +760,7 @@ Regular-season standings must be calculated from finalized matchup results.
 
 They must not be calculated from:
 
-* live provisional matchup totals;
+* provisional matchup totals;
 * the current roster;
 * manually entered frontend values;
 * a mutable standings table with no finalized result records;
@@ -937,7 +974,7 @@ This exclusion includes:
 * schedule creation or change;
 * baseline creation;
 * team lock or late lock;
-* live scoring changes;
+* provisional scoring changes;
 * matchup finalization;
 * rollover;
 * source-statistics corrections affecting matchups;
@@ -995,7 +1032,7 @@ The exact permissions belong in `docs/02-rules/PERMISSIONS.md`.
 The following requests must remain read-only:
 
 * view current matchup;
-* preview live scoring;
+* preview current matchup scoring;
 * view a finalized result;
 * view standings;
 * view scoring configuration;
@@ -1045,7 +1082,7 @@ The backend should expose or use one authoritative scoring service for:
 
 * player totals;
 * baseline snapshots;
-* live matchup previews;
+* current matchup previews;
 * weekly finalization;
 * corrections;
 * test fixtures.
@@ -1218,7 +1255,10 @@ Approved League Rules are included as checked items so their authority remains v
 
 ## Statistics and Corrections
 
-- [x] Live scoring may continue from the last valid cache during a temporary refresh failure.
+- [x] Every new season initializes all player GP/G/A/NHL-points/FP counters to exactly zero; prior-season rows never seed current-season projections.
+- [x] Current matchup scoring may continue from the last valid cache during a temporary refresh failure.
+- [x] Season 2 requires no in-game points feed; completed-game cumulative refreshes run four scheduled times each evening.
+- [x] Paid-provider capability is not a FAD or Entry Draft prerequisite; the provider-neutral matchup/statistics implementation is a separate follow-up.
 - [x] Finalization is blocked when statistics are missing or older than an approved freshness limit.
 - [x] A missing player or missing player ID is reported and is not silently treated as an ordinary zero-point performance.
 - [x] Negative player deltas caused by source corrections are handled by an explicitly approved correction rule rather than an unexplained clamp.

@@ -636,7 +636,26 @@ The production work plan supplies the real path through managed configuration. I
 
 ---
 
-## FAD Live-Provider Capability Gate
+## FAD Provider-Independence Gate
+
+Grae's 2026-08-11 clarification removes live-statistics-provider capability
+from FAD deployment. FAD and Entry Draft use the persisted player catalogue;
+they do not require current, prior-season, or in-game statistics. FAD-18 must
+start with live-statistics composition and the shared automatic matchup-
+occurrence runner disabled in full: statistics refresh, baseline, normal lock,
+finalization, and matchup-week rollover occurrences do not run. FAD, Entry Draft, auction,
+trade, and outbox jobs remain available subject to their own gates. It must not
+require a SportsDataIO paid key, probe manifest, discovery call,
+signed capability artifact, signing secret, or `required` provider mode.
+
+The provider-specific procedure below is retained only as a superseded
+historical design record. Do not execute it for FAD-18. Its former provider
+stop conditions have no current operational effect. The later provider-neutral
+matchup/statistics work
+will define four scheduled completed-game cumulative refresh runs each evening;
+its exact times and implementation are not yet approved or implemented.
+
+### Superseded historical SportsDataIO procedure
 
 The live matchup-statistics credential is dedicated and never falls back to
 the staging-import credential. Deployed configuration sets
@@ -726,9 +745,11 @@ one-off command in the disk-backed service shell, not a Render one-off job and
 not a persistent service-mode change. Do not put the provider check in the
 start command: provider failure must not replace deterministic artifact
 verification or make a disk-backed candidate unavailable during a deployment.
-An unavailable endpoint, credential, database, required semantic, manifest, or
-operator blocks FAD-18. None of these tools enables a fallback, persists a raw
-provider body, changes shared league data, or weakens database safeguards.
+At the time, any unavailable endpoint, credential, database, required semantic,
+manifest, or operator stopped this retired sequence. That condition is not part
+of the active FAD-18 gate. None of these historical tools enabled a fallback,
+persisted a raw provider body, changed shared league data, or weakened database
+safeguards.
 
 The artifact is published atomically on the persistent disk with an exclusive
 owned lock, mode-0700 directory, mode-0600 same-directory temporary file,
@@ -742,13 +763,63 @@ artifact. The operator-reviewed discovery output supplies the exact manifest;
 the exact release must contain it Git-tracked at
 `config/provider-capability/sportsdataio-live-probe-v1.json`, bound to configured
 season `20262027`, probe season `20252026`, and the approved expected-game,
-no-due-game, no-team, and historical zero-stat observations. A missing,
-untracked, invalid, season-mismatched, or build-omitted manifest blocks FAD-18.
-Synthetic test evidence cannot replace the paid-source observation.
+no-due-game, no-team, and historical zero-stat observations. Under the retired
+plan, a missing or invalid manifest stopped that sequence. The active FAD-18
+gate has no manifest or paid-source-observation requirement.
+
+### Amended FAD-18 provider-independent procedure
+
+The active staging sequence retains the schema-agnostic maintenance hold,
+exact source/build identity, verified old-path backup, distinct clean-restore
+proof, fresh-path reset/import, schema-49 migration report, database identity,
+explicit path/build activation pair, and rollback record. It removes every
+provider discovery, manifest, credential, live observation, artifact, and mode-
+promotion step.
+
+Before the held build is treated as a final candidate, code and configuration
+must be amended and tested so release preflight and maintenance hold succeed
+with live-statistics composition and the complete automatic matchup-occurrence
+runner disabled and without the former manifest. The
+same exact final build then performs the approved held backup/reset/migration
+sequence and activates on only the verified new path. Statistics refresh,
+baseline, normal lock, finalization, and matchup-week rollover occurrences remain disabled
+and fail closed; FAD, Entry Draft, auction, trade, and outbox jobs may open only
+after their independent staging acceptance gates pass. This amendment does not
+claim those code/configuration changes or tests are already complete. The later
+provider-neutral matchup/statistics slice must restore or split the runner.
+
+Before any auxiliary-bridge, held-final-candidate, or ordinary-candidate
+startup, delete—not blank—all nine provider variables below from the exact
+Render staging service and every linked Render environment group:
+
+```text
+SPORTSDATAIO_NHL_LIVE_API_KEY
+SPORTSDATAIO_NHL_LIVE_API_ORIGIN
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_SECRET
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_KEY_VERSION
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_ARTIFACT
+SPORTSDATAIO_NHL_LIVE_PROBE_MANIFEST
+SPORTSDATAIO_NHL_API_KEY
+SPORTSDATAIO_NHL_API_ORIGIN
+SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR
+```
+
+Blank dedicated live-provider values still fail disabled-mode backend
+validation, and deleting a service override can reveal a same-named value from
+a linked group. Verify effective resolved absence of all nine names immediately
+before each startup. Record names and absent status only; never log or copy a
+former value. Keep `SPORTSDATAIO_NHL_LIVE_MODE=disabled`, and do not change any
+production service or environment group.
 
 ---
 
 ## Free Agent Draft Schema 22-49 Transition
+
+Within this section, any remaining `probe`, SportsDataIO check/verifier, signed-
+artifact, or provider-mode-promotion step is a superseded historical detail and
+must be skipped under the active provider-independent procedure above. The
+backup, clean-restore, reset/import, schema, identity, activation, and rollback
+steps remain active.
 
 The Free Agent Draft migrations `0023` through `0049` and the schema-49
 runtime form one indivisible deployment boundary from the shared schema-22
@@ -779,25 +850,31 @@ while the following controlled sequence runs:
 
 1. Record the existing schema-22 database path and identity, bridge commit and
    deploy ID, and prior build rollback identity.
-2. Keep deployed `STAGING_MAINTENANCE_HOLD=true` and verify the exact hold
+2. On the exact staging service and every linked staging environment group,
+   delete—not blank—the six dedicated live-provider variables and three legacy
+   import variables listed in the active procedure above. Verify all nine names
+   are absent from the service's effective resolved environment without
+   displaying their former values. Perform this before any held startup.
+3. Keep deployed `STAGING_MAINTENANCE_HOLD=true` and verify the exact hold
    prerequisites and health-only surface.
-3. Run discovery from the attached-service shell with the inherited deployed
-   hold value, review and commit the manifest, and pass release preflight for a
-   final candidate whose Blueprint hold default is `false`.
-4. Deploy that exact final commit and build with the persisted service hold
+4. Run provider-independent release preflight for a final candidate whose
+   Blueprint hold default is `false`, whose live-statistics composition is
+   disabled, whose complete automatic matchup-occurrence runner is omitted,
+   and whose build requires no provider manifest or capability artifact.
+5. Deploy that exact final commit and build with the persisted service hold
    still `true` against the old schema-22 path, and re-prove the health-only
    surface before any disk mutation.
-5. Create and independently verify a current backup of the untouched schema-22
+6. Create and independently verify a current backup of the untouched schema-22
    database. Before reset/import, run
    `npm run db:restore-verify -- --manifest-object-key <manifestObjectKey> --target <absolute-distinct-clean-restore-path>`
    against a previously absent clean path distinct from both database paths;
    record the path and successful result and leave it inactive.
-6. Use the approved staging reset/import flow from that held final build to
+7. Use the approved staging reset/import flow from that held final build to
    create a new schema-49 database at a distinct, previously absent path
    beneath the isolated
    persistent root. The old schema-22 file and sidecars remain untouched; the
    default FAD-18 activation path does not run `db:migrate` against them.
-7. Without leaving the hold, complete the exact
+8. Without leaving the hold, complete the exact
    [Closed-Write Reset Evidence Handoff](FREE_AGENT_DRAFT.md#closed-write-reset-evidence-handoff):
    independently verify the pristine import; publish the reset/import
    verification artifact; run the first-platform-administrator bootstrap; run
@@ -806,7 +883,7 @@ while the following controlled sequence runs:
    environment identity. Use the exact pinned-Node interfaces, typed
    confirmations, and protected inputs in that section; none may be reordered
    or omitted.
-8. Before starting the final runtime, verify the contiguous
+9. Before starting the final runtime, verify the contiguous
    base-22-to-target-49 source (`49` migrations, `27` post-base) and
    checksum-set SHA-256
    `6df4e827296ef3e63a143fb932f557b410511813ea421177afb7908fda15d636`;
@@ -822,39 +899,41 @@ while the following controlled sequence runs:
    league audience for every existing league event, no audience for
    global/account/security/email events, null deduplication keys on existing
    notifications, and no fabricated FAD state.
-9. Record the new database path and identity, exact succeeded import/migration
+10. Record the new database path and identity, exact succeeded import/migration
    report, reconciliation and verification artifacts, and the explicit
    activation and rollback path-and-build pairs.
-10. Change `DATABASE_PATH` to only the verified new path, set deployed
+11. Immediately before ordinary startup, re-verify effective resolved absence
+   of all nine deleted provider/import variable names on the exact staging
+   service and linked groups. Do not log values.
+12. Change `DATABASE_PATH` to only the verified new path, set deployed
    `STAGING_MAINTENANCE_HOLD=false`, and deploy and start only the exact backend
-   artifact verified against schema `49` in provider `probe`, keeping writes,
-   jobs, FAD enablement, email delivery, and the application live adapter
-   closed.
-11. From the disk-backed service shell, run and review the zero-argument
-   `npm run data:check:sportsdataio-live:staging` provider command to publish the
-   sanitized signed artifact and prove controlled omission without changing
-   shared league data. Then run the zero-argument package interface once as
-   `SPORTSDATAIO_NHL_LIVE_MODE=required npm run data:verify:sportsdataio-live:staging`
-   while the deployed service itself remains in `probe`. This per-process
-   staging-only invocation does not persist or change the service mode. Both
-   commands reject before provider, manifest, or artifact I/O unless the
-   persisted hold is `false` and every normal-probe write/job/FAD/email/debug/
-   backup-schedule gate remains quiesced with capture-only email.
-12. Change only the deployed service's provider mode from `probe` to `required`
-     and restart or redeploy the same commit and build. Startup must
-     independently re-verify the artifact before database open and compose
-     exactly one live adapter.
-13. Verify liveness, readiness, database identity, safe capability status,
+   artifact verified against schema `49`, initially keeping writes, all job
+   families, FAD enablement, email delivery, and live-statistics composition
+   closed. The later deliberate reopening enables only the approved FAD, Entry
+   Draft, auction, trade, and outbox families; the automatic matchup runner
+   remains off.
+13. Verify startup and readiness without a SportsDataIO paid key, provider
+   manifest, live observation, signing secret, capability artifact, or provider
+   mode promotion. Verify FAD never consumes statistics and that retained
+   prior-season rows remain labelled with their source season. The complete
+   automatic matchup-occurrence runner remains disabled, covering statistics
+   refresh, baseline, normal lock, finalization, and matchup-week rollover; current-season
+   unavailable/zero projection and deliberate runner restoration/splitting
+   belong to the later follow-up.
+14. Verify liveness, readiness, database identity,
     writer composition, and audience-enforcing publication. An audience-less
     league event must emit nothing and enter its safe retryable failure state.
-14. Verify league, team, and user-room delivery across two isolated leagues,
+15. Verify league, team, and user-room delivery across two isolated leagues,
     including delivery-time suppression of a user whose active membership
     ended after the event was created.
-15. Reconcile pending and interrupted outbox work, then deliberately resume
-    outbox publication, remaining jobs, and league writes in that order.
-16. Record the first accepted post-transition write and verify that its event
+16. Reconcile pending and interrupted outbox work, then deliberately resume
+    outbox publication, FAD, Entry Draft, auction, and trade jobs plus league
+    writes in their approved order. Do not resume any automatic matchup
+    occurrence: statistics refresh, baseline, normal lock, finalization, and
+    matchup-week rollover all remain disabled as one runner.
+17. Record the first accepted post-transition write and verify that its event
     and audience committed together.
-17. Create and independently verify the post-transition staging backup.
+18. Create and independently verify the post-transition staging backup.
 
 Before the first accepted post-transition write, rollback restores the
 recorded old schema-22 path and exact prior backend artifact together; the
@@ -1131,7 +1210,11 @@ While writes remain closed:
 Then:
 
 1. enable outbox and email deliberately;
-2. resume scheduled jobs with occurrence reconciliation;
+2. resume only the scheduled job families approved for the release, with
+   occurrence reconciliation. For the preseason FAD-only candidate, these may
+   include FAD, Entry Draft, auction, trade, and outbox work but never the
+   automatic matchup runner (`statistics_refresh`, `baseline`, `normal_lock`,
+   `finalize`, or matchup-week `rollover`);
 3. reopen writes;
 4. record the first authoritative post-release write;
 5. cross the first-write boundary only when accepted;

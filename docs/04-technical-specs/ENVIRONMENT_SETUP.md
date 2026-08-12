@@ -15,6 +15,15 @@ This technical specification defines:
 
 Grae delegated the environment-setup decisions and approved adoption of the resulting design on 2026-07-18.
 
+Grae's 2026-08-11 clarification removes paid live-statistics-provider setup
+from FAD and Entry Draft deployment. Those features use the persisted player
+catalogue. Zero is the approved semantic baseline for current-season
+statistics; the current runtime does not yet materialize or project that
+baseline consistently. The later provider-neutral matchup/statistics work will
+schedule four completed-game cumulative refresh runs each evening; exact clock
+times, provider setup, and runner restoration/splitting are not yet implemented
+by this document.
+
 ---
 
 ## Technical Purpose
@@ -513,8 +522,8 @@ Default behavior:
 
 ```text
 Email:       capture, sandbox, or allowlist; approved public sign-up testing may use staging send
-NHL data:    recorded fixtures or controlled cache
-Jobs:        disabled unless a scenario enables them
+NHL data:    persisted catalogue plus recorded fixtures or controlled cache; live-statistics composition disabled for FAD
+Jobs:        FAD/Entry Draft/auction/trade/outbox only for the FAD candidate; automatic matchup occurrences disabled
 Debug routes: disabled unless a focused test enables them
 Backups:     staging namespace and staging key only
 ```
@@ -667,9 +676,39 @@ They must be inventoried during `FE-00`, mapped deliberately where still require
 | `STAGING_MAINTENANCE_HOLD` | Deployed backend | Exact `false` for ordinary startup; exact `true` only for the authorized schema-agnostic staging bridge |
 | `EMAIL_DELIVERY_MODE` | Yes | `disabled`, `capture`, `sandbox`, `allowlist`, or `send` |
 | `STAGING_EMAIL_RECIPIENT_ALLOWLIST` | Staging allowlist mode only | Comma-separated exact test recipients approved to receive staging account email |
-| `SPORTSDATAIO_NHL_API_KEY` | Staging-only managed secret | SportsDataIO Discovery Lab server credential; never exposed to the browser or logs |
-| `SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR` | Required when the SportsDataIO staging secret is set | Four-digit start year for the approved last-season dataset |
-| `SPORTSDATAIO_NHL_API_ORIGIN` | Optional staging-only non-secret | Canonical SportsDataIO Discovery Lab NHL fantasy origin; defaults to `https://api.sportsdata.io/api/nhl/fantasy` |
+| `SPORTSDATAIO_NHL_API_KEY` | Legacy staging import only; not required | Historical M7-10 Discovery Lab credential; never exposed to the browser or logs and never used as a FAD or current-season scoring gate |
+| `SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR` | Legacy import only | Four-digit source year for explicitly labelled historical data |
+| `SPORTSDATAIO_NHL_API_ORIGIN` | Legacy import only | Historical M7-10 Discovery Lab origin |
+| `SPORTSDATAIO_NHL_LIVE_MODE` | Deployed FAD candidate | Must remain `disabled`; `probe`/`required` are deferred and cannot gate FAD |
+
+### FAD-only staging provider-variable absence
+
+Before either held or ordinary startup of the exact FAD-only staging candidate,
+the Render operator must delete—not blank—the following nine variables from
+the exact staging service and from every linked Render environment group:
+
+```text
+SPORTSDATAIO_NHL_LIVE_API_KEY
+SPORTSDATAIO_NHL_LIVE_API_ORIGIN
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_SECRET
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_KEY_VERSION
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_ARTIFACT
+SPORTSDATAIO_NHL_LIVE_PROBE_MANIFEST
+SPORTSDATAIO_NHL_API_KEY
+SPORTSDATAIO_NHL_API_ORIGIN
+SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR
+```
+
+Blank values are not equivalent to deletion: disabled-mode backend validation
+rejects even an empty value for the dedicated live-provider variables. Deleting
+only a service override is also insufficient when a linked environment group
+still supplies the name. After deletion, inspect the service's effective
+resolved environment and record only that all nine names are absent; never
+display, copy, log, or retain any former value. Repeat the effective-absence
+check immediately before every held or ordinary candidate startup. Keep
+`SPORTSDATAIO_NHL_LIVE_MODE=disabled`. This operation is limited to the exact
+isolated staging service and its linked staging groups; production remains
+untouched.
 
 Whitespace is trimmed. Empty required values are invalid.
 
@@ -680,7 +719,7 @@ Unknown enum values fail startup.
 `STAGING_MAINTENANCE_HOLD=true` is valid only with `APP_ENV=staging`,
 `NODE_ENV=production`, closed league writes, disabled scheduled jobs, FAD
 routes, account-email delivery, debug routes, and backup schedule, capture-only
-email, and provider `probe`. The entrypoint selects this hold before importing
+email, and live-statistics provider composition disabled. The entrypoint selects this hold before importing
 the target/database runtime. It exposes only generic exact-path GET/HEAD
 liveness and readiness; all other requests return maintenance `503`. It opens
 no database and composes no application route, job, Socket.IO, or email. Missing
@@ -999,6 +1038,15 @@ Rules:
 * durable occurrence and lease records still prevent duplicate execution;
 * a second accidental process must not silently perform the same work.
 
+The preseason FAD-only staging candidate is a narrower scheduler composition,
+not a claim that every job is off. It must omit the shared automatic
+`matchup_occurrences` runner in full, so statistics refresh, baseline, normal
+lock, finalization, and matchup-week rollover occurrences do not execute. FAD, Entry Draft,
+auction, trade, and outbox workers remain available subject to their own gates.
+The current configuration/startup path must be amended and tested to express
+that composition without inventing an undocumented environment variable. A
+future provider-neutral matchup/statistics slice restores or splits the runner.
+
 Disabling scheduling does not erase pending job state.
 
 Account-email delivery is independently controlled by
@@ -1027,18 +1075,42 @@ Production debug routes remain unregistered.
 
 ## NHL Data
 
-The approved M7-10 staging provider is SportsDataIO Discovery Lab. Its key is
-backend-only: no browser asset receives provider credentials or makes
-authoritative provider requests.
+The M7-10 staging environment historically imported a SportsDataIO Discovery
+Lab catalogue and explicitly labelled 2025-26 statistics. That historical key
+is backend-only; no browser asset receives it or makes authoritative provider
+requests. It is not required for FAD-18 and cannot authorize current-season
+scoring.
 
 Environment behavior:
 
 * test uses fixtures;
 * local normally uses fixtures or an explicitly refreshed cache;
-* staging may use the explicit, maintenance-gated SportsDataIO last-season
-  import after its staging-only key is configured;
-* production has no SportsDataIO authorization under M7-10 and the legacy
-  undocumented NHL adapter is not a deployed runtime path.
+* staging may preserve the existing imported catalogue and explicitly labelled
+  historical rows without a new provider call;
+* FAD and Entry Draft read the persisted catalogue and require no statistics
+  key or live feed;
+* production has no SportsDataIO authorization, and live-statistics composition
+  remains disabled while the provider-neutral post-game follow-up is pending.
+
+In the active preseason FAD-only staging candidate, provider disablement is
+paired with complete omission of the automatic matchup-occurrence runner. No
+statistics-refresh, baseline, normal-lock, finalization, or matchup-week rollover occurrence
+runs; the non-matchup FAD, Entry Draft, auction, trade, and outbox workers remain
+available subject to their own gates.
+
+The candidate uses its already persisted catalogue, so neither the six
+dedicated live-provider variables nor the three legacy import variables above
+may remain in the effective Render environment. They must be deleted rather
+than blanked and their name-only absence verified without exposing values.
+
+At season start, the approved semantic current-season GP, goals, assists, NHL
+points, and fantasy points are exactly zero for every player. This document
+does not claim the current runtime materializes or projects those zeros. Prior-
+season rows never fill a missing current-season roster or matchup projection;
+missing current data remains unavailable pending implementation. Future matchup
+statistics use four scheduled evening post-game cumulative refresh runs, but
+exact times, source, and implementation remain follow-up work and are not
+claimed complete here.
 
 The staging importer rejects catalog or statistics responses below 800 players.
 Provider failure must not replace valid cached statistics with empty or partial

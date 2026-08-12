@@ -30,6 +30,18 @@ whole-Monday Week 1 recovery when draft or FAD processing runs late.
 On 2026-08-08, Grae clarified the exact event-linked evidence required to
 restore Candidate eligibility after a fantasy-ELC decline or unsigned
 prospect-rights release.
+On 2026-08-11, Grae clarified the player-data boundary: the FAD is a preseason
+event and requires only the persisted player catalogue, stable identity,
+effective position, and league-scoped eligibility/ownership/contract state.
+Prior-season statistics, current-season statistics, and an in-game/live feed
+are neither Candidate inputs nor FAD deployment prerequisites.
+
+The preseason FAD-only staging candidate disables the shared automatic
+matchup-occurrence runner in full: statistics refresh, baseline, normal lock,
+finalization, and matchup-week rollover occurrences do not run. FAD, Entry Draft, auction,
+trade, and outbox jobs remain available subject to their own gates. A later
+provider-neutral matchup/statistics slice must restore or split the runner
+before automatic matchup processing is enabled.
 
 The core Free Agent Draft is required before every Hundo Leago season,
 including the initial 2026–27 season. The optional presentation video may be
@@ -587,8 +599,11 @@ Each selectable Candidate Card entry contains:
 * created and last-edited timestamps;
 * current version.
 
-Display name, NHL team, age, and statistics are presentation fields and are not
-ownership or allocation keys.
+Display name, NHL team, and age are optional presentation fields and are not
+ownership or allocation keys. Statistics are outside the required Candidate
+Card contract. A card must remain fully searchable, editable, validatable, and
+allocatable when current-season statistics are all zero and no historical
+statistics are available.
 
 ---
 
@@ -630,6 +645,11 @@ or both never clears a release-event block by itself.
 
 Eligibility is checked consistently in Candidate search, when an entry is
 saved, and again at the deadline.
+
+Candidate search reads the persisted catalogue; it does not call a statistics
+provider. A paid provider credential, provider probe manifest, live
+observation, or capability artifact cannot block card opening, FAD allocation,
+rapid auctions, staging acceptance, or FAD completion.
 
 ---
 
@@ -1859,6 +1879,10 @@ Required tests include:
 * countdown and status clarity;
 * read-only historical card fidelity;
 * presentation-video failure never delaying authoritative FAD behavior.
+* all FAD player search, card, allocation, and auction workflows succeeding
+  from the persisted catalogue with no current-season statistics and no live-
+  statistics provider configured, while any retained prior-season rows have no
+  effect on FAD behavior.
 
 ---
 
@@ -1894,6 +1918,9 @@ Required tests include:
 - [x] Bench is cap-exempt and limited to `$4 AAV`.
 - [x] A contracted IR player reserves a Candidate position without a hidden roster move.
 - [x] Each `fantasy_elc_declined` or `unsigned_prospect_rights_released` event blocks Candidate eligibility until a later confirmed same-league, same-player `rights_release_reentry` row references that exact event; unowned status or roster absence alone never clears it, and every later release blocks again.
+- [x] Candidate eligibility and FAD operation require catalogue identity,
+      position, ownership, contract, and eligibility evidence only; player
+      statistics and live-provider capability are not inputs or gates.
 - [x] The complete Candidate Card must have no unresolved carried-roster structural conflict and must be cap compliant.
 - [x] A carried-roster-conflicted or over-cap card locks as illegal, excludes every new offer, preserves every carryover, publishes the reason, and receives no post-deadline repair.
 - [x] Managers cannot view another team's card before the deadline.

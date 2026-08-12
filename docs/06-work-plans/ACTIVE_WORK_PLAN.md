@@ -88,6 +88,39 @@ until the approved isolated staging deployment is finished or Grae asks Codex
 to pause. FAD-11 through FAD-17 have since completed locally. FAD-18 is now the
 sole active isolated-staging slice; production remains unauthorized.
 
+## 2026-08-11 Player-Catalogue and Statistics Amendment
+
+Grae clarified that every player starts Season 2 with exactly zero GP, goals,
+assists, NHL points, and fantasy points. Prior-season statistics may remain as
+historical, migration, or source evidence only; they must not populate current-
+season player, roster, FAD, Entry Draft, matchup, or standings projections.
+
+FAD and Entry Draft require the persisted player catalogue—stable player ID,
+display name, effective position, and applicable eligibility/ownership/
+contract state—not current, live, or historical statistics. The SportsDataIO
+paid key, probe manifest, live observation, signing secret, capability artifact,
+and `required` provider mode are removed from FAD-18. Every contrary provider-
+gate statement later in this plan is a superseded historical record.
+
+A separate provider-neutral matchup/statistics plan will define four scheduled
+completed-game cumulative refresh runs each evening and exact clock times. It
+must also resolve the late-lock design and deliberately restore or split the
+shared automatic matchup-occurrence runner. Until then, statistics refresh,
+baseline, normal lock, finalization, and matchup-week rollover occurrences are disabled
+together for the preseason FAD-only candidate. FAD, Entry Draft, auction,
+trade, and outbox workers remain available subject to their own gates. That
+implementation is not part of FAD-18 and is not claimed complete. The current
+legacy player-page last-season section and season-filter gap likewise remain a
+separate frontend follow-up.
+
+FAD-18 must first amend and test startup, release preflight, the maintenance-
+hold matrix, and hosted acceptance so they work with live-statistics
+composition and the complete automatic matchup-occurrence runner disabled and
+no provider manifest/artifact. Backup, clean restore,
+fresh-path reset/import, schema-49 migration report, isolated resources,
+operator access, release identity, activation, rollback, and production-
+authorization boundaries remain unchanged.
+
 ## Current Continuation Checkpoint - FAD-18 Active after FAD-17 Local Closure
 
 `FAD-01` through `FAD-10` are complete locally. `FAD-08` closed with the
@@ -1300,7 +1333,7 @@ FAD-02 + FAD-04 + FAD-05 + FAD-07 -> FAD-08
 FAD-08 -> FAD-09 -> FAD-10 -> FAD-11 -> FAD-12 -> FAD-13 -> FAD-14
 FAD-06 -> FAD-11, FAD-12, FAD-13
 FAD-14 -> FAD-15 -> FAD-16 -> FAD-17
-FAD-17 + approved reset/evidence boundary -> FAD-18
+FAD-17 + provider-independent preflight amendment + approved reset/evidence boundary -> FAD-18
 ```
 
 Independent prerequisites may be implemented in either order only after the
@@ -1328,7 +1361,7 @@ current slice has stopped and the next slice has been explicitly activated.
 | `FAD-15` | frontend Candidate Card preparation workflow | `COMPLETE - LOCAL ONLY (2026-08-11)` |
 | `FAD-16` | frontend results, auctions, recovery, and notifications | `COMPLETE - LOCAL ONLY (2026-08-11)` |
 | `FAD-17` | integrated local launch-candidate proof | `COMPLETE - LOCAL ONLY (2026-08-11)` |
-| `FAD-18` | authorized isolated shared-staging gate after reset | `ACTIVE; DEPLOYMENT BLOCKED BY NAMED EXTERNAL PREREQUISITES` |
+| `FAD-18` | authorized isolated shared-staging gate after reset | `ACTIVE; PROVIDER GATE REMOVED; AMENDED PREFLIGHT, RESOURCE, BACKUP/RESTORE, RESET/MIGRATION, RELEASE, AND DEPLOY EVIDENCE PENDING` |
 
 `FAD-01` through `FAD-14` are complete locally. `FAD-07` closed after its final
 `276/276` acceptance gate and independent audit. `FAD-06` closed after its
@@ -2299,12 +2332,11 @@ Implement `T-095` and `T-096`:
   leaves scoring and finalization `awaiting_data`;
 - fixed canonical preimage/hash vectors pass, exclusion child insertion after
   sealing fails, and T-141 projects only actual `replacedJobs[]` pairs;
-- the read-only provider-capability command and sanitized evidence contract are
-  locally fail-closed and ready for FAD-18, where isolated staging must prove
-  authoritative `expected_game`, `no_due_game`, `no_team`, explicit-zero,
-  exact-set, and shared-`sourceVersion` semantics without changing shared
-  league data; missing credentials or unsupported semantics blocks staging
-  acceptance;
+- the retired plan recorded a locally fail-closed provider-capability command
+  and sanitized evidence contract for an isolated-staging proof of disposition,
+  explicit-zero, exact-set, and shared-`sourceVersion` semantics; Grae's
+  2026-08-11 clarification removes that command and its provider inputs from
+  FAD-18 acceptance;
 - incomplete or illegal team rosters never trigger schedule recovery; and
 - ordinary manager/commissioner schedule writes that would move historical FAD
   instants fail after card opening.
@@ -2337,7 +2369,16 @@ expanded core audit passes `61/61` across nine suites. Syntax and
 `git diff --check` gates are clean. No shared database, migration execution,
 commit, push, or deployment occurred at this checkpoint.
 
-### Recorded 2026-07-30 Late-Lock Scoring-Source Impact Audit
+### Superseded 2026-07-30 Late-Lock Scoring-Source Impact Audit
+
+> **Superseded for FAD-18:** The live-provider, immediate-refresh, historical-
+> binding, capability-artifact, and paid-credential requirements recorded from
+> this audit through the provider-tool addendum are historical implementation
+> evidence only. Do not execute them as FAD gates. Grae's 2026-08-11 amendment
+> moves provider-neutral completed-game statistics and late-lock reconciliation
+> to a separate follow-up with four scheduled evening refresh runs. FAD uses the
+> persisted player catalogue and proceeds with matchup-statistics composition
+> disabled.
 
 The post-T-096 read-only audit found that the existing target statistics path
 stores only cumulative `player_stat_totals`, while the configured
@@ -2371,7 +2412,7 @@ This is a technical correction to enforce the already-approved scoring
 outcome. It does not change League Rules or permit a whole-week player
 exclusion, partial-game subtraction, or missing-as-zero fallback.
 
-### Recorded 2026-08-01 Player-Game Coverage Integrity Amendment
+### Superseded 2026-08-01 Player-Game Coverage Integrity Amendment
 
 The FAD-05 observation audit found a second missing-as-zero seam: the live
 adapter can return only player/game rows present in the provider response, and
@@ -2399,27 +2440,23 @@ The approved technical integrity correction is:
 - scoring and finalization stay `awaiting_data` when an excluded pair lacks a
   compatible, non-regressed current observation.
 
-Local FAD-05 acceptance requires pure exact-set/disposition/digest vectors,
-migration count/foreign-key/trigger/immutability tests,
-adapter/service/repository rollback and replay tests, late-lock and finalization
-missing-pair tests, and the implemented fail-closed capability-check command
-and sanitized evidence contract specified in Testing Strategy. FAD-18 must
-execute that check with the configured isolated-staging live source and prove
-its actual semantics without shared league writes, synthetic fallback,
-credential disclosure, or raw-payload retention. An unavailable credential or
-unsupported semantic blocks the staging gate.
+At the time, local FAD-05 acceptance included exact-set/disposition/digest,
+migration, adapter/service/repository, late-lock, finalization, and capability-
+check evidence. The retired FAD-18 plan would also have executed the check
+against an isolated-staging live source without shared league writes or raw-
+payload retention. Grae's 2026-08-11 clarification removes that provider check
+and its availability from the active staging gate.
 
-This is a technical integrity clarification of the existing whole-game
-exclusion and absent-is-not-zero rules. It changes no League Rule or product
-outcome. `FAD-05` remains active until the implementation and local gates,
-including the fail-closed capability command, pass. The real-provider execution
-remains a mandatory FAD-18 staging gate, not a prerequisite that blocks
-subsequent local slices. Migration `0030` remains local-only. Its exact final
-inventory and checksum are frozen in the migration evidence above; any later
-migration-byte change voids that freeze and requires the complete package to be
-rerun.
+This was a technical integrity clarification of the existing whole-game
+exclusion and absent-is-not-zero rules. It changed no League Rule or product
+outcome. The later closure record superseded its then-active FAD-05 status, and
+the 2026-08-11 product clarification retired its real-provider FAD-18 gate.
+Migration `0030` remained local-only at this checkpoint. Its exact final
+inventory and checksum were frozen in the migration evidence above; any later
+migration-byte change voided that freeze and required the complete package to
+be rerun.
 
-### Recorded 2026-08-01 Late-Lock Coordination and Replay Defaults
+### Superseded 2026-08-01 Late-Lock Coordination and Replay Defaults
 
 The approved implementation defaults that must be fixed before late-lock
 coding are:
@@ -2531,11 +2568,11 @@ tests must prove:
    regressed source-update time blocks scoring/finalization until exact current
    evidence exists.
 
-These defaults amend the active late-lock implementation boundary only. They do
-not reopen T-095/T-096, change the normal lock, authorize provider fallback,
-or move the real-provider capability proof out of FAD-18.
+These defaults amended the then-current late-lock implementation boundary. They
+did not reopen T-095/T-096, change the normal lock, or authorize provider
+fallback. Their real-provider FAD-18 condition is now retired.
 
-### Recorded 2026-08-01 Historical Player-Game Requirement Amendment
+### Superseded 2026-08-01 Historical Player-Game Requirement Amendment
 
 The pre-coding audit found that a rolling live-provider date window cannot
 retain an excluded NHL game through a two-week Final, a long
@@ -2574,12 +2611,13 @@ player-game coverage requirement schema version `1` is corrected in place:
   `sourceVersion` binds the requested player/game requirements, Players and
   FreeAgents membership, targeted schedules, and normalized PlayerGame rows;
   and
-- the FAD-18 capability gate must prove exhaustive Players, FreeAgents,
-  targeted historical schedule, and targeted PlayerGame access with the real
-  configured credentials before live jobs are enabled.
+- the retired FAD-18 capability gate would have proved exhaustive Players,
+  FreeAgents, targeted historical schedule, and targeted PlayerGame access
+  with configured credentials before enabling live jobs.
 
-FAD-05 cannot close until focused policy, adapter, service, repository,
-late-lock, scoring, finalization, migration, and composition tests prove:
+At the time, FAD-05 could not close until focused policy, adapter, service,
+repository, late-lock, scoring, finalization, migration, and composition tests
+proved:
 
 1. fixed schema-version-1 requirement ordering/hash vectors, exact parent
    identity, duplicate rejection, and required-game subset equality;
@@ -2605,11 +2643,11 @@ its migration-specific gates above. Application behavior gates remain owned by
 FAD-05 and later slices. This amendment changes no deployed compatibility
 contract and authorizes no synthetic fallback.
 
-### Recorded 2026-08-01 Signed Live-Provider Capability Gate
+### Superseded 2026-08-01 Signed Live-Provider Capability Gate
 
-FAD-05 local closure now includes an implemented, fail-closed capability
-command and verifier; the real-provider execution remains in FAD-18. The
-approved contract is:
+This historical checkpoint recorded an implemented, fail-closed capability
+command and verifier plus a later real-provider execution. That execution no
+longer belongs to FAD-18. The retired contract was:
 
 - live mode is exactly `disabled`, `probe`, or `required`;
 - only `SPORTSDATAIO_NHL_LIVE_API_KEY` can bind live evidence; the legacy
@@ -2638,7 +2676,7 @@ approved contract is:
 - `required` synchronously verifies every binding before SQLite open and
   composes exactly one live adapter only after success.
 
-### Recorded 2026-08-11 FAD-18 Provider Tool Addendum
+### Superseded 2026-08-11 FAD-18 Provider Tool Addendum
 
 This addendum records the provider tool interfaces and local evidence only. It
 does not define a shorter deployment path. The authoritative operational order
@@ -2660,14 +2698,12 @@ and filesystem-attack cases, all three composition modes, pre-database startup
 failure, legacy-key isolation, cross-environment rejection, and Render
 blueprint assertions.
 
-The read-only discovery command passes its focused foundation, the
-independent artifact verifier passes its focused `6/6`, and their focused
-combined gate is recorded in the current FAD-18 section. The complete six-file
-provider-capability family is also recorded there. These green local tools do
-not themselves prove or commit the real provider manifest, supply the paid key,
-isolated database, disk, signing configuration, operator access, or release/
-deploy identities. Those external inputs remain FAD-18 blockers. Production
-remains unauthorized.
+The read-only discovery command passed its focused foundation, the independent
+artifact verifier passed its focused `6/6`, and their focused combined gate was
+recorded as historical local evidence. The complete six-file provider-
+capability family remains recorded for provenance only. It neither proves the
+active provider-independent amendment nor supplies any active FAD requirement.
+Production remains unauthorized.
 
 ### FAD-05 Closure Record - 2026-08-01
 
@@ -2712,9 +2748,9 @@ one commit and one read-only replay. The complete stable backend tree then
 passed in one exact Node `24.14.1` bounded-concurrency run: `2,145` tests across
 `337` suites, `2,143` passed, zero failed, and two Windows link-capability
 subtests skipped because symlink/file-link creation was unavailable. Their
-fail-closed paths passed. The real signed SportsDataIO capability execution
-remains an explicit FAD-18 isolated-staging gate; it does not block subsequent
-local slices.
+fail-closed paths passed. At this checkpoint, real signed SportsDataIO
+capability execution was recorded as a later staging gate; Grae's 2026-08-11
+clarification retired it from FAD-18.
 
 No shared database was opened, no staging or production change occurred, and
 no FAD Candidate/auction HTTP route or worker was enabled at this closure.
@@ -3653,11 +3689,10 @@ The externally mutating staging sequence may begin only after:
 5. the stopped old instance, exact hold prerequisites, health-only surface,
    absence of database/application runtime composition, and attached-service
    shell reachability are verified;
-6. the read-only discovery has run from that shell with the deployed hold value
-   inherited rather than overridden, opened only a verified private OS-
-   temporary copy of the sidecar-free guarded source, removed that copy before
-   output, the operator has reviewed and committed its exact sanitized manifest,
-   and final-candidate preflight passes with the checked-in hold default `false`;
+6. provider-independent startup, release preflight, maintenance-hold, and
+   hosted-acceptance amendments pass with live-statistics composition and the
+   complete automatic matchup-occurrence runner disabled, no manifest/artifact
+   requirement, and the checked-in hold default `false`;
 7. that exact final candidate commit and build has been deployed once against
    the old path with the persisted hold still `true` before any disk mutation;
 8. a current backup of the untouched schema-22 database is created and
@@ -3672,9 +3707,10 @@ The externally mutating staging sequence may begin only after:
 10. the old and new database paths and identities, backup, release, deploy,
     prior-deploy, activation, and rollback identities are recorded; and
 11. the same exact final candidate can start on only the new path with
-   `STAGING_MAINTENANCE_HOLD=false` in provider `probe` mode with jobs, FAD
-   enablement, email delivery, league writes, and the application live adapter
-   disabled.
+   `STAGING_MAINTENANCE_HOLD=false`; FAD, Entry Draft, auction, trade, outbox,
+   email, and league-write surfaces remain controlled by their own gates, while
+   live-statistics composition and all five automatic matchup occurrence types
+   remain disabled.
 
 Conditions 1 and 2 are complete locally. The local release preflight proves a
 contiguous base-22-to-target-49 source with `49` migrations (`27` post-base),
@@ -3684,7 +3720,7 @@ migration checksum-set SHA-256
 `89b4eb536aef7c4c6d1519c5311f94c449109a55d8b71d130e5b952a157b49ff`,
 `49` post-reset require-empty tables with policy SHA-256
 `52d2d5ba6faaad9cc877132ad0153d8e52665b8aa0ae05394b685c9e48267808`,
-valid reset-policy coverage, and a quiesced Render probe blueprint. Its focused
+valid reset-policy coverage, and the historical quiesced Render probe blueprint. Its focused
 and adjacent gate discovered `158` tests: `156` passed, zero failed, and two
 intentional Windows link-capability cases skipped; syntax, JSON, source check,
 and whitespace checks pass. The provider discovery tool additionally passes
@@ -3694,7 +3730,9 @@ discovers `106` tests: `104` passed, zero failed, cancelled, or todo, and two
 intentional Windows link-capability skips.
 The hold/discovery/publisher/verifier transition passes `35/35`; the broader
 nine-file entrypoint, Render, preflight, target-runtime, hold, and provider
-matrix passes `125/125`, with zero fail, cancel, skip, or todo.
+matrix passes `125/125`, with zero fail, cancel, skip, or todo. These provider-
+specific results are retained as historical evidence and do not prove the new
+provider-independent amendment, which still requires focused verification.
 
 ### Pre-Mutation Hosted Identity Checkpoint - 2026-08-11
 
@@ -3714,7 +3752,7 @@ Published frontend source head:           29d4d89ea6def41464fc48b6390e7f567c4800
 Bridge implementation commit:             1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd
 Published backend bridge source head:      26cf9606b8ee1f33efeb9e667cd265f947bc5387
 Auxiliary bridge deploy identity:          pending; not deployed
-Final backend candidate commit/build:      pending provider-manifest commit
+Final backend candidate commit/build:      pending provider-independent preflight amendment
 Final candidate held deploy identity:      pending; not deployed
 ```
 
@@ -3727,17 +3765,12 @@ deployed.
 
 Deployment remains blocked by these exact prerequisites:
 
-- the operator-reviewed provider-manifest commit, exact final backend candidate,
-  and its release, deploy, prior-deploy, and rollback identities;
+- the provider-independent startup/preflight amendment, exact final backend
+  candidate, and its release, deploy, prior-deploy, and rollback identities;
 - successful auxiliary-bridge and exact-final-build-held Render deploys on the
   isolated persistent disk, proof that the old instance stopped before each
   replacement, and attached-service shell access;
-- a live discovery against the quiesced isolated staging database, operator
-  review and commit of the real
-  `config/provider-capability/sportsdataio-live-probe-v1.json`, the dedicated
-  paid-provider credential/signing configuration, and a successful disk-backed
-  capability observation plus independent artifact verification;
-- confirmed isolated Render, Netlify, database, disk, provider, secret, test-
+- confirmed isolated Render, Netlify, database, disk, secret, test-
   user, and league resources plus the required operator access;
 - offsite object-storage and encryption configuration, a current encrypted
   backup, and a verified clean restore; and
@@ -3748,11 +3781,12 @@ Deployment remains blocked by these exact prerequisites:
 ### Change
 
 Deploy the schema-agnostic health-only bridge on the existing schema-22 disk,
-run read-only discovery, commit the manifest, and preflight the final candidate.
-Then deploy that exact final build still held, back up the untouched old path,
+then run the amended provider-independent preflight. Deploy that exact final
+build still held, back up the untouched old path,
 verify its restore at a distinct inactive clean path, build and verify the
 approved reset/import at a different fresh schema-49 path, and explicitly
-activate the same final build with the hold `false` in provider `probe`. The in-
+activate the same final build with the hold `false`, live-statistics composition
+disabled, and the entire automatic matchup-occurrence runner omitted. The in-
 place `db:migrate` route is excluded unless its persistent-root enforcement is
 first hardened and accepted. Perform the mandatory amendment
 acceptance package through browser, scheduler, Entry Draft lifecycle, restart,
@@ -3772,35 +3806,32 @@ recovery, migration, schedule, and league-isolation workflows.
   maintenance listener, not application or database readiness;
 - the bridge imports and opens no target/database runtime and composes no
   application route, job, Socket.IO, or email surface;
-- the exact-argument read-only discovery runs first against a private OS-
-  temporary copy of the quiesced, sidecar-free guarded old schema-22 database
-  in `probe`, inherits persisted deployed `STAGING_MAINTENANCE_HOLD=true`, never
-  uses an inline spoof, and removes the copy before output; the operator reviews
-  and commits the sanitized manifest, and final-candidate preflight requires the
-  checked-in hold default `false`;
+- provider-independent preflight requires the checked-in hold default `false`,
+  live-statistics composition and the complete automatic matchup-occurrence
+  runner disabled, and no provider manifest, credential, request, artifact, or
+  mode promotion;
 - the exact final build is then deployed in hold for the verified old-path
   backup and distinct clean-restore proof, fresh-path reset/import, complete
   closed-write evidence/bootstrap/report handoff, and new database identity
   initialization; the old schema-22 file remains untouched, and activation and
   rollback record both database paths and build identities;
 - transition out of the hold is explicit: only the same final build on the
-  verified new schema-49 path starts with the hold `false` in `probe`;
-- the zero-argument dedicated live-provider check passes from the disk-backed
-  service in `probe`, publishes its sanitized 24-hour signed artifact, and
-  controlled omission fails closed without shared league writes; it rejects
-  before manifest/provider/artifact work unless the persisted hold is `false`
-  and every normal-probe gate is quiesced;
-- the zero-argument independent verifier passes once with required-mode
-  verification configuration from the exact per-process invocation
-  `SPORTSDATAIO_NHL_LIVE_MODE=required npm run data:verify:sportsdataio-live:staging`
-  while the service remains in `probe`; the staging-only command requires the
-  same hold-false write/job/FAD/email/debug/backup-schedule boundary with
-  capture-only email before artifact read and does not persist the override;
-- the same backend build then restarts in deployed `required` mode, re-verifies
-  the artifact before database open, and composes one live adapter before any
-  FAD route or job enablement;
-- a restart between every durable job stage converges without duplicate or
-  partial effects;
+  verified new schema-49 path starts with the hold `false`, live-statistics
+  composition disabled, and no automatic statistics-refresh, baseline, normal-
+  lock, finalization, or matchup-week rollover occurrence processing;
+- startup succeeds without a SportsDataIO paid key, provider manifest, live
+  observation, signing secret, capability artifact, or provider-mode promotion;
+- retained prior-season rows preserve their source-season identity, and FAD
+  catalogue/search/card/allocation/auction workflows neither read those rows
+  nor require statistics-provider availability; the separate follow-up owns
+  the approved current-season zero/unavailable projection;
+- FAD, Entry Draft, auction, trade, and outbox workers remain available subject
+  to their own activation/safety gates;
+- all automatic matchup occurrences remain disabled as one runner pending the
+  provider-neutral four-evening-refresh and runner-restoration/splitting work
+  plan;
+- a restart between every enabled non-matchup durable job stage converges
+  without duplicate or partial effects;
 - all applicable endpoint rows reach `STAGING VERIFIED`;
 - the manual QA and release checklists have recorded evidence;
 - exact deploy IDs, commits, backup identity, migration evidence, and rollback
@@ -3850,27 +3881,16 @@ rollback steps must never be inferred away:
 
 ```text
 npm run db:validate-reset
-npm run data:discover:sportsdataio-live:staging -- --historical-date YYYY-MM-DD
 npm run release:candidate:preflight
-npm run data:check:sportsdataio-live:staging
-SPORTSDATAIO_NHL_LIVE_MODE=required npm run data:verify:sportsdataio-live:staging
 npm run release:qa:fixture
 npm run release:qa:local
 npm run release:qa:verify
 ```
 
-The discovery command runs only from a deployed held service, copies the
-sidecar-free guarded old schema-22 database to a verified private OS-temporary
-snapshot, opens only that copy in `probe`, removes it before output, and inherits
-the persisted exact hold value `true`. The provider check runs only after the
-same exact final build
-activates on the verified new schema-49 path with the persisted hold `false`.
-The zero-argument verifier then runs once with required-mode verification
-configuration through the exact per-process prefix above without persisting or
-changing the deployed service mode. Both post-hold commands require hold
-`false`, closed writes, disabled jobs, FAD/email/debug/backup scheduling, and
-capture-only email before any provider, manifest, or artifact I/O. These are
-staged operational gates, not a generic local command bundle.
+The provider-independent preflight must prove that no SportsDataIO manifest,
+credential, observation, signing secret, capability artifact, or required-mode
+startup is needed. The held backup/reset/path-activation steps remain staged
+operational gates, not a generic local command bundle.
 
 Do not run a bare migration command against an ambiguous database. Do not
 claim a command passed unless its output was actually recorded for that slice.
@@ -4006,10 +4026,13 @@ FAD-17 BACKEND ACCEPTANCE: 28/28, 49/49, AND 202/202; NO SKIPS
 FAD-17 PLAYWRIGHT: 40/40, FIVE PROJECTS, ZERO RETRIES
 T-076 THROUGH T-083 AND T-126 THROUGH T-144 LOCAL VERIFIED
 FAD-18 LOCAL PREFLIGHT: 156 PASS / 2 INTENTIONAL WINDOWS LINK SKIPS OF 158
-FAD-18 HOLD/PROVIDER TRANSITION: 35/35; PROVIDER FAMILY: 104 PASS / 2 SKIP OF 106
+FAD-18 HISTORICAL HOLD/PROVIDER TRANSITION: 35/35; PROVIDER FAMILY: 104 PASS / 2 SKIP OF 106; PROVIDER-INDEPENDENT AMENDMENT NOT YET VERIFIED
 PUBLISHED SOURCE HEADS: FRONTEND 29D4D89; BACKEND BRIDGE SOURCE 26CF960
 PRE-FAD RENDER ROLLBACK: DEP-D9KMV0IJOBAS73FSP8KG / FA85E75; NO FAD DEPLOY
-FAD-18 DEPLOYMENT BLOCKED BY REAL PROVIDER MANIFEST/LIVE OBSERVATION,
+SPORTSDATAIO PAID KEY/MANIFEST/LIVE OBSERVATION/ARTIFACT REMOVED FROM FAD GATE
+AUTOMATIC MATCHUP OCCURRENCES DISABLED: STATISTICS REFRESH/BASELINE/NORMAL LOCK/FINALIZATION/ROLLOVER
+FAD/ENTRY DRAFT/AUCTION/TRADE/OUTBOX WORKERS RETAINED SUBJECT TO THEIR OWN GATES
+FAD-18 DEPLOYMENT BLOCKED BY PROVIDER-INDEPENDENT PREFLIGHT AMENDMENT,
 ISOLATED RESOURCES/OPERATOR/SHELL ACCESS, BRIDGE AND FINAL-HELD DEPLOYS,
 OFFSITE BACKUP/CLEAN RESTORE, FRESH RESET/IMPORT/SCHEMA-49 REPORT,
 FINAL BACKEND CANDIDATE, DATABASE-PATH ACTIVATION, AND DEPLOY/ROLLBACK IDENTITIES

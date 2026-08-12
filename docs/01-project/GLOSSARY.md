@@ -17,7 +17,12 @@ These definitions apply across:
 
 When a document uses one of these terms differently, it must clearly state that exception.
 
-Last reviewed: **2026-08-08**
+Last reviewed: **2026-08-11**
+
+Grae's 2026-08-11 statistics clarification means roster mutations never start
+an external statistics refresh. The preseason FAD-only candidate omits the full
+automatic matchup-occurrence runner. Provider-neutral post-game refresh and
+late-lock evidence are deferred work.
 
 ---
 
@@ -979,10 +984,14 @@ The shared, never-rejecting backend service that evaluates whether one
 Committed Roster Mutation Batch makes an illegal normal-lock team eligible for
 a late lock.
 
-It may perform at most one immediate live-data refresh and one evaluation retry
-for the whole command. A failure after the roster commit reports the safe
-`awaiting_data` status without rejecting, reversing, or repeating that commit.
-For a multi-team command, public status priority is `awaiting_data`,
+It never performs or requests an external statistics refresh. It may evaluate
+only from already committed, valid evidence; otherwise it reports the safe
+`awaiting_data`, `still_illegal`, or `not_applicable` status without rejecting,
+reversing, or repeating the roster commit. A later successful scheduled
+provider-neutral post-game refresh may request an isolated retry only after its
+own commit. That retry never starts another refresh or repeats a roster
+mutation, and it does not run in the preseason FAD-only candidate because the
+automatic matchup-occurrence runner is absent. For a multi-team command, public status priority is `awaiting_data`,
 `still_illegal`, `completed`, then `not_applicable`; `lockId` appears only when
 one safely identifiable completed lock applies.
 

@@ -48,6 +48,20 @@ The explicit final-standings amendment approved on 2026-07-29 adds `T-145`.
 It makes one provenance-complete final standings snapshot a required,
 independently confirmed prerequisite for later season rollover.
 
+On 2026-08-11, Grae clarified that FAD and Entry Draft player selection uses
+the persisted catalogue only and does not depend on statistics. Every new
+season's approved semantic baseline is exactly zero current-season GP, goals,
+assists, NHL points, and fantasy points. The current global player API and UI do
+not yet provide the final season-explicit projection; that is a recorded gap,
+not completed behavior. Prior-season statistics require an explicit historical
+season context and never substitute for current-season matchup or roster data.
+Paid SportsDataIO capability is removed from FAD-18; provider-neutral post-game
+statistics is a separate deferred API amendment. The preseason FAD-only
+candidate disables the shared automatic `matchup_occurrences` runner in full,
+so statistics-refresh, baseline, normal-lock, finalization, and matchup-week rollover
+occurrences do not execute. FAD, Entry Draft, auction, trade, and outbox workers
+remain available subject to their own route, authorization, and release gates.
+
 ---
 
 ## Technical Purpose
@@ -1132,7 +1146,6 @@ Security Audit and idempotency evidence atomically. A stale version returns
 |---|---|---|
 | `GET /api/v1/players` | Authenticated | Cursor-paginated player search and filters; `leagueId` plus `auctionEligible=true` returns only auction-eligible players after active-membership authorization |
 | `GET /api/v1/players/:playerId` | Authenticated | Stable player details |
-| `GET /api/v1/players/:playerId/statistics` | Authenticated | Season totals and calculated FP |
 | `GET /api/v1/leagues/:leagueId/players` | League member | Cursor-paginated global player catalog with current selected-league ownership and active-contract summaries |
 | `GET /api/v1/leagues/:leagueId/players/:playerId` | League member | Stable player detail with current selected-league ownership and active-contract summary |
 | `POST /api/v1/operations/players/import` | Platform administrator | Run approved player synchronization |
@@ -1140,6 +1153,28 @@ Security Audit and idempotency evidence atomically. A stale version returns
 | `GET /api/v1/operations/statistics/refreshes/:jobId` | Platform administrator | Read refresh status |
 
 Provider failures do not erase the last valid statistics.
+
+Any future statistics contract requires exact season context before its
+projection can be authoritative. No separate player-statistics endpoint is
+approved or claimed here; historical-stat browsing and its eventual API shape
+are deferred. Current global player reads still expose latest/last-season data,
+and the frontend lacks the required season filter; that is a known follow-up
+gap.
+
+Current-season roster and matchup paths must exclude prior-season rows. Before
+any current-season game, the approved semantic counters are zero. After a
+completed game is due for refresh, absence of current-season data remains
+unavailable or stale and must not be silently converted to zero. A future
+historical-statistics view may request an older season deliberately, but that
+is deferred. FAD and Entry Draft catalogue/search responses require stable
+player ID, display name, effective position, and applicable eligibility state
+only; absence of statistics or provider credentials cannot make the catalogue
+unavailable.
+
+The internal player-game design below is retained for deferred matchup/
+statistics work. It is not composed for the provider-independent FAD-18
+release, and none of its provider capability, historical binding, artifact, or
+credential requirements is a FAD/Entry Draft route prerequisite.
 
 The internal live player-game requirement snapshot remains schema version `1`
 because it is local and unshipped. Its exact shape is `schemaVersion`,
@@ -1213,30 +1248,18 @@ has its own independently digested `sourceVersion`. Late-lock processing
 requires compatible providers across the two lineages, not equal source-version
 strings.
 
-The read-only live-provider capability command is an operator boundary, not an
-HTTP or browser contract. It accepts no league, team, roster, auction, or
-matchup input. The server loads the exact version-controlled probe manifest,
-the configured environment/build/current-season identity, and the dedicated
-live credential. Its only successful durable output is the signed
-`sportsdataio-live` capability artifact specified by
-`FREE_AGENT_DRAFT.md`; stdout and stderr expose only status, evidence ID and
-digest, environment/build identity, issue/expiry times, source version, and
-assertion names.
-
-The live-provider runtime mode is exactly `disabled`, `probe`, or `required`.
-`disabled` and `probe` never compose the live adapter. `required` verifies the
-artifact synchronously before database open and composes one live adapter only
-after every environment, build, origin, season, manifest, credential, time,
-digest, and HMAC binding passes. The staging-import credential is never a
-fallback. Missing or invalid evidence is a startup configuration failure, not
-an `awaiting_data` league response and not permission to use synthetic data.
-
-The offseason-safe command proves current Players and FreeAgents plus previous
-completed-season totals, one exact historical schedule/PlayerGame binding,
-all three coverage dispositions, an explicit-zero observation, exact-set
-equality, and controlled-omission rejection. Raw provider bodies remain
-memory-only. Persisted endpoint proofs contain only scope, status, row count,
-and exact-response-byte SHA-256.
+The previously implemented read-only SportsDataIO capability command is not an
+HTTP/browser contract and is no longer a release requirement for FAD. FAD-18
+starts with live-statistics adapter composition and the complete automatic
+matchup-occurrence runner disabled. It does not require a probe manifest, paid
+credential, signed artifact, or required-mode startup. Statistics refresh,
+baseline, normal lock, finalization, and matchup-week rollover occurrences all stay off;
+FAD, Entry Draft, auction, trade, and outbox workers remain available subject
+to their own gates. A later provider-neutral API/runtime amendment must restore
+or split automatic matchup processing deliberately.
+Those tools may remain unused code until the later provider-neutral statistics
+work decides whether to replace or retire them. No route may silently fall back
+to synthetic or prior-season scoring data.
 
 The league-scoped player reads require current active membership on every
 request and return `404` for another league's private context. They reuse the
@@ -1254,23 +1277,36 @@ write.
 
 The league-scoped collection accepts `query`, `status`, `limit`, `cursor`,
 and `sort`. `limit` remains bounded at `100`. `sort` defaults to `name`;
-`sort=fantasyPoints` orders current statistics from highest to lowest, places
-players without statistics last, and uses normalized player name plus stable
-player ID as deterministic tie breakers. A continuation cursor must be reused
+`sort=fantasyPoints` is existing legacy behavior over the current global
+latest/last-season projection. It is not an authoritative current-season sort.
+An exact-season statistics sort is deferred until an explicit season parameter
+or endpoint is approved and implemented. Legacy sorting places players without
+statistics last and uses normalized player name plus stable player ID as
+deterministic tie breakers. A continuation cursor must be reused
 with the same query, status, and sort. The authenticated Players catalog
 requests one 100-player page at a time in fantasy-points order and follows the
 returned cursor only after the user chooses **Load next 100 players**.
 
-Every non-null player `statistics` projection includes its `provider`. The
-approved staging source is `sportsdataio-discovery-lab`, whose Discovery Lab
-data is labelled last-season data. `release_qa_fixture` is permitted only as
-clearly labelled synthetic Release-QA fixture data; it is never presented as
-provider-sourced NHL data. Player reads prefer SportsDataIO and use the
-fixture source only when SportsDataIO data is absent.
+Every non-null player `statistics` projection includes its source and exact
+season. The prior M7-10 staging source is `sportsdataio-discovery-lab`, whose
+Discovery Lab data is labelled last-season data. `release_qa_fixture` is
+permitted only as clearly labelled synthetic Release-QA fixture data; it is
+never presented as provider-sourced NHL data. Neither source may be projected
+as Season 2 current statistics. The existing frontend's last-season section and
+fantasy-points-first behavior remain a known presentation gap, not proof of a
+current-season API contract.
 
 ---
 
 ## Rosters and Cap
+
+Grae's 2026-08-11 clarification supersedes the fresh live-provider/game-state
+and five-minute mechanism retained later in this section. The whole-game
+exclusion outcome remains approved, but late-lock execution and that evidence
+mechanism are not composed for the preseason FAD-only candidate. A separate
+provider-neutral amendment must define and test the final contract. No roster
+route triggers an external refresh; the candidate's full automatic matchup-
+occurrence runner is absent.
 
 | Method and path | Authorization | Purpose |
 |---|---|---|
@@ -1296,19 +1332,15 @@ fixture source only when SportsDataIO data is absent.
 
 Transaction-created roster illegality returns a warning in the successful command response. It is not represented as a false failed transaction when the approved feature permits completion.
 
-For a late-legality transition, the write path must use authoritative,
-sufficiently fresh NHL game-state evidence. The roster move may commit while
-scoring state reports `awaiting_data`, but scoring eligibility cannot begin
-until one transaction persists the late roster snapshot, applicable baseline,
-and immutable excluded player/game/scheduled-start/snapshot/source-version
-evidence. Replay and racing attempts return that same evidence set. A selected
-player whose game was already underway is excluded for the entire game,
-including events recorded after the late baseline. The required NHL games are
-derived from sealed `expected_game` coverage for the exact selected-player set,
-not from the observation rows returned by the provider. Sealed authoritative
-`no_due_game` and `no_team` dispositions require no game-state row; missing
-coverage or a missing expected observation leaves the late lock
-`awaiting_data` without converting the omission to zero.
+For a late-legality transition, the roster move may commit while scoring state
+reports `awaiting_data`. The future provider-neutral contract must atomically
+persist the late roster snapshot, applicable baseline, and immutable whole-game
+exclusion evidence before scoring eligibility begins. A selected player whose
+game was already underway remains excluded for the entire game, including
+events recorded after the late baseline. The exact schedule, evidence,
+freshness, replay, and missing-data contract is deferred and cannot be inferred
+from the superseded provider clauses below. Missing evidence never becomes
+zero.
 
 Every path that commits a roster mutation invokes one shared, never-rejecting
 post-commit late-lock coordinator through the canonical writer registry. One
@@ -1349,12 +1381,14 @@ safe `lateLock` projection.
 
 After commit, any coordinator input-validation, repository, provider, or
 runtime failure maps to `lateLock.status = "awaiting_data"` and cannot reject
-the successful command. One complete command batch may perform at most one
-server-owned live refresh and one evaluation retry. Only the scheduled
-statistics occurrence handler may start a later global retry, and only after
-its statistics refresh persists successfully. That isolated retry neither
-changes the successful refresh result nor recursively refreshes or repeats a
-roster write.
+the successful command. A roster command never requests or performs an external
+statistics refresh. It evaluates only from already committed valid evidence;
+otherwise it returns the applicable safe status. A later scheduled provider-
+neutral post-game statistics occurrence may start an isolated eligible-lock
+retry only after its refresh persists successfully. That retry neither changes
+the successful refresh result nor recursively refreshes or repeats a roster
+write. The preseason FAD-only candidate omits the complete automatic matchup-
+occurrence runner, so neither that refresh nor retry is composed there.
 
 Every successful roster-mutation response includes exactly this additional
 safe projection:
@@ -1381,7 +1415,9 @@ to an HTTP failure. `still_illegal` means the committed roster remains illegal,
 and `not_applicable` means no late-lock evaluation applies, including when a
 valid lock already exists.
 
-Late-lock idempotency is semantic reconstruction from committed lock,
+The following replay/evidence details record the superseded provider-specific
+design and are non-executable until a provider-neutral amendment explicitly
+replaces or adopts them. Late-lock idempotency was semantic reconstruction from committed lock,
 baseline, coverage, game-state, and exclusion evidence. Freshly generated
 child UUIDs are not compared, but any timestamp, statistics or game-state
 source lineage, selected-roster, sealed-coverage, or exclusion difference is a
@@ -1390,11 +1426,11 @@ internal occurrence. The stored coverage, player-game observation, game-state,
 and exclusion digests are each recomputed from their committed IDs and exact
 children on replay, use, scoring, and finalization.
 
-For a late lock only, sealed affirmative coverage determines the exact
+Under that superseded design, for a late lock only, sealed affirmative coverage determined the exact
 selected-player `expected_game` entries inside the matchup week's
 inclusive-start, exclusive-end scoring window. Their distinct NHL games form
 the exact request to a separate game-state read observed no more than five
-elapsed minutes before the late snapshot; coverage does not itself decide
+elapsed minutes before the late snapshot; coverage did not itself decide
 whether a game is underway. Normal scheduled lock behavior is unchanged and
 does not require affirmative selected-player coverage. Exclusion creation and
 later finalization require exact current `expected_game` coverage and the
@@ -3339,7 +3375,9 @@ Required test categories:
 - [x] FAD wins are binding without cap or roster reservation and require no
   second confirmation at resolution.
 - [x] FAD completion and any required whole-Monday Week 1 recovery commit
-  atomically before matchup and baseline jobs may proceed.
+  atomically before matchup and baseline jobs may proceed. This prerequisite is
+  necessary but not sufficient: the preseason FAD-only staging candidate keeps
+  the shared automatic matchup-occurrence runner disabled.
 - [x] Grae approved this document by delegating the technical decisions to Codex.
 - [x] Document status is `APPROVED`.
 

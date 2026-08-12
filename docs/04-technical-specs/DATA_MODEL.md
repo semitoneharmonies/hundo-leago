@@ -53,6 +53,21 @@ season rollover. The implementation migration must satisfy the logical
 constraints below without treating legacy snapshot rows as equivalent
 evidence.
 
+Grae's 2026-08-11 statistics clarification requires every new season to
+initialize every player's current-season games played, goals, assists, NHL
+points, and fantasy-point hundredths to exactly zero. Prior-season rows remain
+season-scoped history or migration/source evidence only. FAD and Entry Draft
+records depend on catalogue identity, position, and eligibility state, never on
+statistics-provider capability.
+
+The preseason FAD-only staging candidate composes no automatic
+`matchup_occurrences` runner. Statistics-refresh, baseline, normal-lock,
+finalization, and matchup-week rollover occurrences therefore remain persisted as applicable
+but are not claimed or executed by that candidate. FAD, Entry Draft, auction,
+trade, and outbox job state remains available subject to each subsystem's own
+gates. The later provider-neutral matchup/statistics slice must restore or split
+the shared runner without rewriting historical occurrence evidence.
+
 ---
 
 ## Technical Purpose
@@ -206,6 +221,14 @@ The model distinguishes:
 * start and end boundaries.
 
 Completed season data remains queryable and is not overwritten by creating the next season.
+
+Creating or activating a new season establishes the semantic all-zero baseline
+for every persisted player. This document does not claim that current code
+materializes zero rows or already projects that baseline. The provider-neutral
+statistics follow-up must choose and verify the physical representation. Exact-
+season reads must never fall back from missing current-season data to a prior-
+season total; once a completed game is due for refresh, missing data is
+unavailable rather than an earned zero.
 
 ---
 
@@ -1670,11 +1693,25 @@ completeness, schedule fairness, and the canonical
 * source version or timestamp;
 * refresh ID.
 
+The current season's semantic counters begin at exactly zero for games played,
+goals, assists, NHL points, and fantasy-point hundredths. The current
+implementation does not yet create a zero row per player or provide the final
+season-explicit projection contract. A prior-season total may remain stored,
+backed up, restored, migrated, or exposed by a future explicit historical-
+statistics view, but it cannot satisfy a current-season roster, matchup, or
+standings projection. FAD and Entry Draft do not consume statistics at all.
+
 Failed refreshes do not overwrite the last valid totals.
 
 ---
 
-## Live Coverage Requirement Snapshot
+## Deferred Player-Game Coverage Requirement Snapshot
+
+The player-game live-provider model below is retained as unshipped historical
+design evidence. It is not a FAD-18 gate and must remain uncomposed while the
+provider-neutral post-game matchup/statistics follow-up is pending. Any later
+implementation must be reconciled with the approved four-evening completed-
+game refresh cadence before these tables or contracts become authoritative.
 
 The live-refresh requirement snapshot is a derived immutable command value,
 not a new authoritative table. Its still-local schema version `1` contains:
@@ -2559,7 +2596,9 @@ Data-model tests must cover:
   for FAD auctions.
 - [x] FAD completion and any required whole-Monday Week 1 recovery are one
   transaction, preserve removed week/matchup and replaced/cancelled-job
-  evidence, and gate generation-bound matchup and baseline jobs.
+  evidence, and gate generation-bound matchup and baseline jobs. That gate is
+  necessary but not sufficient: the preseason FAD-only staging candidate keeps
+  the shared automatic matchup-occurrence runner disabled.
 - [x] Player statistics store raw integer categories and calculated FP hundredths.
 - [x] Failed stat refreshes never overwrite the last valid totals.
 - [x] Matchup weeks persist every approved boundary rather than recalculating historical timestamps.

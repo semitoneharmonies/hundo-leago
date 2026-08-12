@@ -500,6 +500,11 @@ The system must continue to support:
 
 Player ownership, contracts, auctions, trades, and matchup records must reference stable player IDs.
 
+The preseason Free Agent Draft and the later Entry Draft require the persisted
+player catalogue, including stable identity, display name, effective position,
+and applicable eligibility evidence. Neither draft requires prior-season
+statistics or an in-game/live statistics feed.
+
 ---
 
 ## 17. Statistics
@@ -519,6 +524,26 @@ The launch version must support:
 * use by matchups and player pages.
 
 The system must handle temporary external-data failures without erasing the last valid cache.
+
+At every season rollover or start, the new current season initializes every
+player's games played, goals, assists, NHL points, and fantasy points to
+exactly zero. Prior-season rows may remain as historical or migration evidence,
+but they must never populate current-season FAD, Entry Draft, roster, matchup,
+or standings projections.
+
+Season 2 does not require an in-game points feed. The approved operating model
+refreshes completed-game cumulative statistics in four scheduled runs each
+evening, matching the sufficient Season 1 cadence. Exact clock times and the
+provider-neutral source contract belong to a separate statistics/matchup work
+item. Missing or stale post-game data must remain visible and must not be
+silently converted to an earned zero after a player's game has completed.
+
+The preseason FAD-only staging candidate intentionally disables the shared
+automatic matchup-occurrence runner as one unit. Statistics refresh, baseline,
+normal lock, finalization, and matchup-week rollover occurrences do not run in that
+candidate; FAD, Entry Draft, auction, trade, and outbox jobs remain available
+subject to their own safety gates. A later provider-neutral matchup/statistics
+slice must restore or split automatic matchup processing before season play.
 
 ---
 

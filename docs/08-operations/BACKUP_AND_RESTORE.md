@@ -1026,7 +1026,31 @@ Commissioner requests use an authenticated application service and do not execut
 
 ---
 
-## FAD-18 Provider Capability Command Boundary
+## FAD-18 Provider-Independent Backup Boundary
+
+Grae's 2026-08-11 clarification removes provider capability from FAD-18. The
+active backup/reset/restore sequence contains no SportsDataIO discovery,
+manifest, paid key, provider check, signing secret, artifact verifier, or mode
+promotion. It still requires the exact old-path backup, verified distinct clean
+restore, fresh schema-49 reset/import, database/path/build identity, activation,
+rollback, and post-transition backup evidence. Production remains unauthorized.
+
+The activated preseason FAD-only candidate also omits the shared automatic
+`matchup_occurrences` runner in full. Its `statistics_refresh`, `baseline`,
+`normal_lock`, `finalize`, and matchup-week `rollover` occurrences do not run.
+This does not disable the separate Entry Draft season-rollover, FAD, auction,
+trade, or outbox workers; those remain available subject to their own gates.
+The future provider-neutral matchup/statistics slice must deliberately restore
+or split the runner without weakening backup, activation, or rollback evidence.
+
+The provider-command material below is a superseded historical record only. Do
+not execute those commands for FAD-18, and do not treat any missing provider
+input as a backup, restore, reset, or deployment blocker.
+
+### Superseded historical provider command boundary
+
+Any imperative or blocker wording in this historical subsection is retired and
+is not a current operator instruction.
 
 The provider capability tools are separate from backup and restore operations
 and do not satisfy the required old-path backup, fresh-path reset/import, or
@@ -1041,7 +1065,7 @@ SPORTSDATAIO_NHL_LIVE_MODE=required npm run data:verify:sportsdataio-live:stagin
 ```
 
 The authoritative order is the
-[FAD-18 hosted staging procedure](../07-testing/release-runs/M7_HOSTED_STAGING_ACCEPTANCE.md#fad-18-live-provider-capability-procedure).
+[FAD-18 hosted staging procedure](../07-testing/release-runs/M7_HOSTED_STAGING_ACCEPTANCE.md#fad-18-provider-independent-procedure).
 In summary, the auxiliary bridge first deploys persistently held against the
 old schema-22 path; Render stops the old disk-backed instance before starting
 that replacement. Discovery runs from the attached-service shell, must inherit
@@ -1069,10 +1093,12 @@ persist or change service mode. Only after it passes may the same build change
 service mode to `required` and restart, where startup re-verifies before
 database open.
 
-The implemented tools alone do not prove or commit the real manifest, supply
-the credential, isolated database, operator access, object storage, backup,
-restore, release identity, or deploy authority. Missing external prerequisites
-still stop FAD-18, and production remains unauthorized.
+Under the retired plan, these tools did not supply the manifest, credential,
+isolated database, operator access, object storage, backup, restore, release
+identity, or deploy authority. Provider inputs are no longer FAD-18
+prerequisites. The isolated-resource, operator-access, object-storage, backup,
+restore, release-identity, and deploy-authority gates remain active, and
+production remains unauthorized.
 
 ---
 

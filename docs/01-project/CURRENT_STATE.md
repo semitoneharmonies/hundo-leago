@@ -487,6 +487,43 @@ Statistics are dependent on external NHL data availability.
 
 Off-season player totals may not provide useful live matchup-testing data, so dedicated test fixtures or simulated scoring will be required.
 
+### Season 2 statistics authority clarification - 2026-08-11
+
+Every player begins Season 2 with exactly zero games played, goals, assists,
+NHL points, and fantasy points. Existing 2025-26 SportsDataIO rows may remain
+as migration, source, or historical evidence, but they are not the Season 2
+scoreboard and must not populate current-season FAD, Entry Draft, roster,
+matchup, or standings projections.
+
+This is the approved Season 2 semantic baseline, not a claim that the current
+global player API or frontend already implements season-explicit zero
+projection. Current global player reads still expose labelled last-season data;
+after a completed game is due for refresh, missing current-season data must
+remain unavailable or stale rather than being silently reported as zero.
+
+The FAD and Entry Draft need the persisted player catalogue—stable player ID,
+display name, effective position, and applicable eligibility state—not player
+statistics. A paid SportsDataIO live key, probe manifest, live observation, or
+signed capability artifact is therefore no longer a FAD-18 prerequisite.
+
+Season 2 does not require in-game statistic updates. The approved product
+direction is provider-neutral completed-game cumulative refresh, scheduled four
+times each evening as in Season 1. The provider choice, exact clock times,
+and revised late-lock/scoring evidence design remain a separate matchup/
+statistics implementation slice. For the preseason FAD-only staging candidate,
+the shared `matchup_occurrences` runner is intentionally disabled in full:
+statistics refresh, baseline, normal lock, finalization, and matchup-week rollover
+occurrences do not run. FAD, Entry Draft, auction, trade, and outbox jobs remain
+available subject to their own gates. The current SportsDataIO live adapter is
+also disabled and is not part of FAD acceptance. A future provider-neutral
+matchup/statistics slice must restore or split the runner deliberately.
+
+The current Players and related roster/player presentation still contains
+clearly labelled last-season statistics and fantasy-points-first sorting. That
+is legacy/deferred historical presentation, not current-season authority. A
+separate frontend slice must prevent those rows from being mistaken for Season
+2 totals; this documentation change does not claim that UI work is complete.
+
 ---
 
 ## Matchups
@@ -2302,31 +2339,39 @@ schema-22 database path. The current ready Netlify staging rollback deploy is
 implementation plus checksum-fix head was
 `26cf9606b8ee1f33efeb9e667cd265f947bc5387`, whose bridge implementation began
 at `1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd`. Neither source head was
-deployed by that inspection. The final backend candidate remains pending the
-operator-reviewed provider-manifest commit, so no final-candidate commit,
-build, or deploy identity exists yet. No environment, disk, database, or
-production mutation is claimed.
+deployed by that inspection. The final backend candidate was pending an
+operator-reviewed provider-manifest commit at the time of inspection. Grae's
+later 2026-08-11 clarification removes that manifest from the FAD candidate
+gate, but the provider-independent preflight amendment still requires
+implementation and verification before a new final-candidate identity can be
+claimed. No environment, disk, database, or production mutation is claimed.
 
 Grae authorized the isolated FAD-18 staging gate, which is now the sole active
 slice. Exact published source heads now exist, but deployment remains blocked
-until the real committed SportsDataIO probe manifest and live paid-provider
-observation are available; attached-service operator access is confirmed;
-offsite object storage, encryption, current backup, and clean-restore evidence
-exist; and the approved reset/import, one schema-49 migration report, final
-candidate/deploy identities, and rollback record are complete.
+until attached-service operator access is confirmed; offsite object storage,
+encryption, current backup, and clean-restore evidence exist; and the approved
+reset/import, one schema-49 migration report, final candidate/deploy identities,
+and rollback record are complete. The SportsDataIO probe manifest, paid key,
+live observation, signing configuration, and capability artifact are explicitly
+removed from the FAD-18 blocker set by Grae's 2026-08-11 clarification.
 
 The FAD-18 local preflight discovers `158` focused and adjacent tests: `156`
 pass, zero fail, and two intentional Windows link-capability cases skip. It
 pins a contiguous base-22-to-target-49 migration source, `131` catalog entries,
 `49` post-reset require-empty tables, valid reset-policy coverage, and a
 quiesced Render probe blueprint. This local result does not satisfy any missing
-external provider, resource, backup, restore, reset, deploy, or operator
-evidence.
+resource, backup, restore, reset, deploy, or operator evidence. Its provider-
+tool coverage remains historical implementation evidence only and does not
+create an external-provider prerequisite for FAD.
 
 The FAD-18 staging maintenance-hold bridge is implemented and published to the
 backend `staging` branch but has not been deployed. Exact `true` is accepted
 only for the staging/production-Node, closed-write,
 jobs/FAD/email/debug/backup-disabled, capture-only, provider-probe boundary.
+That provider-probe prerequisite is now a known code/configuration conflict:
+the amended FAD-18 candidate must support the same hold with provider
+composition and the complete automatic matchup-occurrence runner disabled.
+This document does not claim that amendment has been implemented or tested.
 It dispatches before the target runtime import, opens no database, and exposes
 only generic exact-path GET/HEAD liveness and readiness; every other request is
 maintenance `503`. Hold readiness means only that this listener is live, not
@@ -2334,22 +2379,26 @@ that the application or database is ready. Missing or exact `false` preserves
 ordinary startup, and every malformed or drifted hold fails before either
 runtime starts.
 
-The authorized external sequence is now bridge-on-old-schema-22, inherited
-hold-true discovery from a verified private OS-temporary copy of the sidecar-
-free guarded source, operator-reviewed manifest commit, final preflight, exact-
-final-build-held backup plus distinct clean-restore verification, and complete
-fresh-path schema-49 reset/import handoff. Only then may the same build activate
-hold-false in provider `probe` on the new path. The old schema-22 file remains
+The amended external sequence is bridge-on-old-schema-22, final preflight,
+exact-final-build-held backup plus distinct clean-restore verification, and
+complete fresh-path schema-49 reset/import handoff. Provider discovery and a
+manifest commit are omitted. Only then may the same build activate hold-false
+on the new path with provider composition and all automatic matchup occurrences
+disabled while FAD, Entry Draft, auction, trade, and outbox jobs remain
+available subject to their own gates. The old
+schema-22 file remains
 untouched and is paired with the prior build for rollback. No bridge, backup,
 reset/import, deploy, provider call, or shared database action has occurred
 locally.
 
-Exact Node `24.14.1` maintenance-transition tests pass `35/35`: hold `6/6`,
-discovery `14/14`, publisher `9/9`, and independent verifier `6/6`. The broader
-entrypoint, Render, preflight, target-runtime, hold, and provider matrix passes
-`125/125`. The complete six-file provider-capability family discovers `106`
-tests: `104` pass, two intentional Windows link-capability cases skip, and none
-fail, cancel, or remain todo.
+Exact Node `24.14.1` historical maintenance-transition tests pass `35/35`: hold
+`6/6`, discovery `14/14`, publisher `9/9`, and independent verifier `6/6`. The
+historical broader entrypoint, Render, preflight, target-runtime, hold, and
+provider matrix passes `125/125`. The complete six-file provider-capability
+family discovers `106` tests: `104` pass, two intentional Windows link-
+capability cases skip, and none fail, cancel, or remain todo. Those results do
+not prove the new provider-independent FAD startup path; focused amendment tests
+remain required.
 
 Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
 is deployed or enabled in production.

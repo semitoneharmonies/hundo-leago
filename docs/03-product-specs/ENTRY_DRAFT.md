@@ -19,6 +19,15 @@ On 2026-07-29, Grae approved the scheduled Entry Draft-start rollover,
 automatic Candidate Card handoff, and exact on-clock pick-trade race rules.
 On 2026-08-08, Grae clarified the exact event-linked evidence required for
 rights-release re-entry and its downstream Candidate eligibility effect.
+On 2026-08-11, Grae clarified that the Entry Draft needs only the persisted
+player catalogue and eligibility evidence. Prior-season, current-season, and
+in-game statistics are not draft inputs or deployment prerequisites.
+
+For the preseason FAD-only staging candidate, disabling the shared automatic
+matchup-occurrence runner does not disable Entry Draft, FAD, auction, trade, or
+outbox jobs. Statistics refresh, baseline, normal lock, finalization, and
+matchup-week rollover occurrences remain off until the provider-neutral matchup/statistics
+follow-up restores or splits that runner.
 
 The initial Season 2 launch does not include the Entry Draft. Development may occur during the season, but the complete approved system, including the lottery, automatic best-player selection, and private queues, must be ready before the season's Entry Draft is used.
 
@@ -45,6 +54,11 @@ This specification defines:
 * draft visibility, activity, failure handling, and testing.
 
 The draft must never rely on display names or mutable frontend state to determine who owns a pick or player right.
+
+The selectable-player surface may display catalogue fields such as name and
+effective position, but it must not require a statistics provider. A complete
+eligible pool remains usable when every new-season statistic is zero and when
+no historical-statistics view is available.
 
 ---
 
@@ -814,6 +828,12 @@ The frontend must render backend authority and must not independently advance pi
 ---
 
 ## Player Search
+
+Player search is backed by the persisted catalogue. Its minimum player data is
+the stable player ID, display name, effective Hundo Leago position, and exact
+draft-eligibility context. Current or prior-season statistics may not filter,
+rank, authorize, or block a selection. Historical-statistics browsing is a
+separate deferred feature.
 
 The selection view should support:
 

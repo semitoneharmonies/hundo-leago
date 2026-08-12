@@ -218,26 +218,107 @@ Restored schema version:
 The clean restore used a new path and did not replace the live staging
 database.
 
-## Original M7-09 Provider Evidence
+## Original M7-09 Provider Evidence (Superseded)
 
 The hosted verifier intentionally did not trigger an NHL refresh. Operations
-health reported a last-valid 2026-27 statistics refresh. Provider failure
-containment and last-valid preservation remain covered by the full automated
-suite. A focused live NHL refresh is still a manual/provider gate.
+health reported a last-valid 2026-27 statistics refresh. This is retained as
+historical M7-09 evidence only; its former focused-live-refresh gate is retired
+for FAD-18.
 
 Email remains capture-only. Scheduled jobs remain disabled.
 
-## FAD-18 Live-Provider Capability Procedure
+## FAD-18 Provider-Independent Procedure
 
-This procedure supersedes the focused-refresh note above for the FAD release
-candidate. FAD-17 is complete locally. This FAD-18 procedure remains pending
-until the external resource-isolation, credential, operator-access, and clean
-source prerequisites needed for step 1 pass. Backup, reset/import, migration-
-report, and activation gates occur only at their numbered positions below.
+Grae's 2026-08-11 clarification removes the SportsDataIO live-provider
+capability gate from FAD-18. FAD and Entry Draft use the persisted player
+catalogue. Zero is the authoritative semantic baseline for every current-season
+counter, but the current application does not yet materialize or project that
+baseline consistently; that separate frontend/statistics gap cannot make prior-
+season values current. The active hosted procedure requires live-statistics
+composition and the shared automatic matchup-occurrence runner to remain
+disabled in full. Statistics refresh, baseline, normal lock, finalization, and
+matchup-week rollover occurrences do not run; FAD, Entry Draft, auction, trade, and outbox
+workers remain available subject to their own gates. It requires no paid key, probe
+manifest, discovery/provider call, signing secret, capability artifact,
+independent artifact verification, or `required` provider mode.
 
-The accepted M7-09 provider evidence above remains historical and does not
-satisfy this FAD-18 capability gate. Complete the following sequence before the
-release candidate changes to persistent `required` mode:
+The detailed numbered SportsDataIO procedure below is retained only as a
+superseded historical record of the pre-clarification plan. Do not execute its
+provider discovery, manifest, check, verifier, or mode-promotion steps. No
+credential, endpoint, historical binding, or provider semantic in that record
+has any effect on FAD-18.
+
+### Active amended sequence
+
+1. Amend and verify startup, release preflight, maintenance hold, and hosted
+   acceptance with live-statistics composition and the complete automatic
+   matchup-occurrence runner disabled and no provider manifest/artifact
+   requirement.
+2. In the exact Render staging service and every linked staging environment
+   group, delete—not blank—these nine variables:
+
+   ```text
+   SPORTSDATAIO_NHL_LIVE_API_KEY
+   SPORTSDATAIO_NHL_LIVE_API_ORIGIN
+   SPORTSDATAIO_NHL_LIVE_CAPABILITY_SECRET
+   SPORTSDATAIO_NHL_LIVE_CAPABILITY_KEY_VERSION
+   SPORTSDATAIO_NHL_LIVE_CAPABILITY_ARTIFACT
+   SPORTSDATAIO_NHL_LIVE_PROBE_MANIFEST
+   SPORTSDATAIO_NHL_API_KEY
+   SPORTSDATAIO_NHL_API_ORIGIN
+   SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR
+   ```
+
+   Blank dedicated live-provider values still fail disabled-mode backend
+   validation. Deleting only a service override is insufficient if a linked
+   group still supplies the name. Inspect the service's effective resolved
+   environment and record only that all nine names are absent; never display,
+   copy, or log any former value. Keep
+   `SPORTSDATAIO_NHL_LIVE_MODE=disabled`. Complete this check before the held
+   startup, and do not touch production services or groups.
+3. Deploy the exact auxiliary hold build to the exact isolated staging service
+   and disk; prove the old disk-backed instance stopped and the health-only
+   surface opens no application/database runtime.
+4. Preflight and deploy the exact final build still held against the old path.
+5. Create and verify the current encrypted backup and distinct inactive clean
+   restore.
+6. Create and verify the fresh schema-49 reset/import path, complete the ordered
+   reset artifact/bootstrap/migration-report/database-identity handoff, and
+   preserve the old path untouched.
+7. Immediately before ordinary startup, repeat the name-only effective-
+   environment inspection and verify all nine deleted variables remain absent
+   from the exact staging service and linked groups. Do not log values.
+8. Activate the same exact final build on only the new verified path with hold
+   false, live-statistics composition disabled, and no automatic statistics-
+   refresh, baseline, normal-lock, finalization, or matchup-week rollover processing. Keep
+   FAD, Entry Draft, auction, trade, and outbox workers behind their own gates.
+9. Prove retained prior-season rows keep their source-season identity and do
+   not affect FAD catalogue/search/card/allocation/auction/completion workflows.
+   FAD requires no statistics provider. The separate follow-up owns the current-
+   season zero/unavailable projection and legacy player-page season-filter gap.
+10. Keep the complete automatic matchup-occurrence runner disabled; the separate
+   future provider-neutral implementation will run four completed-game
+   cumulative refreshes each evening after exact clock times are approved and
+   will deliberately restore or split baseline, normal-lock, finalization, and
+   rollover processing.
+11. Record resource, build, database path, backup, activation, rollback, QA, and
+   deploy identities. Production remains unauthorized.
+
+### Superseded historical SportsDataIO sequence
+
+The words “must”, “requires”, “blocks”, and “acceptance requires” in this
+subsection describe the retired plan only. They are not current operator
+instructions.
+
+This retired procedure once superseded the original focused-refresh note for a
+FAD release candidate. Its provider credential and source prerequisites no
+longer apply. The active sequence above retains only the resource-isolation,
+operator-access, backup, reset/import, migration-report, activation, and
+rollback gates.
+
+The accepted M7-09 provider evidence above remains historical. The detailed
+sequence below records the retired design and must not be used to promote any
+release candidate to persistent `required` mode:
 
 ### FAD-18 pre-mutation read-only identity checkpoint - 2026-08-11
 
@@ -253,7 +334,7 @@ Published frontend source head:           29d4d89ea6def41464fc48b6390e7f567c4800
 Bridge implementation commit:             1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd
 Published backend bridge source head:      26cf9606b8ee1f33efeb9e667cd265f947bc5387
 Auxiliary bridge deployed:                 no
-Final backend candidate:                   pending provider-manifest commit
+Final backend candidate at checkpoint:     pending provider-manifest commit; dependency later superseded
 Final candidate deployed:                  no
 Environment/disk/database mutation:        none
 Production mutation or authorization:      none
@@ -460,18 +541,17 @@ Raw payload retained:          no
 Shared league data changed:    no
 ```
 
-Acceptance requires exhaustive current Players and FreeAgents access,
-previous-completed-season totals above the production minimum, exact targeted
-historical schedule and PlayerGame access, `expected_game`, `no_due_game`,
-`no_team`, explicit zero, exact coverage/observation equality, one capture and
-source version, and controlled-omission rejection. Missing credentials,
-unavailable endpoints, incomplete history, or unsupported semantics blocks
-the staging release.
+The retired acceptance model expected exhaustive current Players and
+FreeAgents access, previous-completed-season totals, targeted historical
+schedule and PlayerGame access, explicit dispositions and zero rows, exact
+coverage/observation equality, one capture and source version, and controlled-
+omission rejection. Missing provider inputs stopped only that retired model;
+they do not stop the active staging release.
 
-After required-mode startup, record health and safe capability status. Only
-afterward may the broader FAD-18 procedure enable FAD routes and jobs. An
-environment, build, origin, season, manifest, credential, time, digest, or HMAC
-mismatch blocks startup. This procedure never authorizes production;
+The retired plan would then have recorded health and capability status after
+required-mode startup. No active FAD route/job gate depends on that startup or
+its environment, build, origin, season, manifest, credential, time, digest, or
+HMAC checks. This historical procedure never authorized production;
 production remains unauthorized.
 
 ## Rollback Evidence
@@ -1124,7 +1204,7 @@ Hosted manager acceptance confirmed:
 
 * Grae's independent browser retest, including native pointer drag;
 * staging offsite object-storage upload and encrypted clean restore after the
-  staging-only provider target is reviewed; and
+  provider-independent FAD candidate is verified; and
 * separate explicit production authorization and release execution.
 
 Production remains blocked pending those separate gates.

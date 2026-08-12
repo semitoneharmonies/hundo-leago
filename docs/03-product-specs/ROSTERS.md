@@ -16,6 +16,13 @@ Grae approved the Season 2 Rosters product specification recorded in this docume
 
 Grae approved the FAD carryover amendments on 2026-07-27.
 
+On 2026-08-11, Grae clarified that roster mutations never trigger an external
+statistics refresh. The preseason FAD-only candidate omits the full automatic
+matchup-occurrence runner, including statistics refresh, baseline, normal lock,
+finalization, and matchup-week rollover. A later scheduled provider-neutral
+post-game refresh may retry eligible late-lock evaluation only after its own
+successful commit; the exact late-lock evidence design remains deferred.
+
 ---
 
 ## Product Purpose
@@ -607,6 +614,15 @@ must make the separate correcting move.
 
 # Part 9 — Matchup Boundary
 
+The approved late-lock outcome and whole-game exclusion rule remain product
+requirements, but the fresh provider/game-state mechanism described in the
+historical clauses below is superseded by Grae's 2026-08-11 clarification. It
+is not composed for the preseason FAD-only candidate, whose full automatic
+matchup-occurrence runner and late-lock execution are off. A separate provider-
+neutral amendment must define and test the evidence/freshness mechanism before
+late-lock execution is enabled. No clause in this Part authorizes an immediate
+external refresh or the former five-minute game-state read.
+
 ## Normal Lock
 
 The normal matchup roster lock is Monday at `4:00 PM Pacific`, using the league’s `America/Vancouver` timezone.
@@ -624,10 +640,11 @@ When a team is illegal at the normal lock:
 1. No normal scoring-eligible snapshot is created.
 2. The team collects no points while it lacks a legal scoring snapshot.
 3. Normal roster adjustments remain available.
-4. When the roster first becomes legal, the backend verifies sufficiently
-   fresh statistics and NHL game-state evidence, then atomically persists the
-   team-specific snapshot, eligibility time, scoring baseline, and immutable
-   whole-game exclusion evidence.
+4. When the roster first becomes legal, the future provider-neutral late-lock
+   design must atomically persist the team-specific snapshot, eligibility time,
+   scoring baseline, and immutable whole-game exclusion evidence once its
+   approved evidence requirements are satisfied. Until then it remains
+   `awaiting_data` and does not execute in the FAD-only candidate.
 5. Every selected player whose NHL game was already underway at the snapshot
    timestamp is excluded for that entire NHL game, including events recorded
    after the baseline.
@@ -637,7 +654,8 @@ When a team is illegal at the normal lock:
 7. Only otherwise eligible points earned after the baseline count.
 8. Earlier points are not recovered.
 
-The late-lock occurrence is idempotent. An exact replay returns the already
+The following replay details describe the deferred evidence model and are not
+active FAD-only-candidate behavior. Under that future model, the late-lock occurrence is idempotent. An exact replay returns the already
 committed snapshot, baseline, and exclusion set. Concurrent attempts revalidate
 roster legality, snapshot timing, and source version in the transaction so only
 one valid set commits; an equivalent losing attempt returns that committed
@@ -645,7 +663,7 @@ result, while a stale conflicting attempt rejects without a partial snapshot,
 baseline, or exclusion record.
 
 This replay is semantic. The backend reconstructs and verifies the committed
-selected roster, baseline, sealed coverage, fresh game-state decision, and
+selected roster, baseline, sealed coverage, approved game-state decision, and
 exclusions. Differences in newly generated child IDs alone do not create a
 conflict; differences in timestamp, source lineage, selected roster, coverage,
 or exclusions do. Late-lock replay does not require a new request ID.
@@ -680,12 +698,15 @@ receipt, but it never repeats the mutation. Any coordinator validation,
 repository, provider, or runtime failure after commit becomes the safe
 `awaiting_data` result and cannot reject the successful roster command.
 
-One command batch may request at most one immediate live-data refresh and one
-late-lock evaluation retry in total, regardless of how many teams or ownerships
-it changed. A later successful scheduled statistics refresh invokes the retry
-hook only after that refresh commits. The hook is isolated from the successful
-refresh result, retries every eligible illegal normal-lock record, never starts
-another refresh, and never repeats a roster mutation.
+A roster command never requests or performs an external statistics refresh.
+While provider-neutral late-lock evidence remains deferred, the coordinator
+returns the applicable safe `awaiting_data`, `still_illegal`, or
+`not_applicable` result without rejecting the committed mutation. A later
+successful scheduled provider-neutral post-game refresh may invoke an isolated
+late-lock retry hook only after that refresh commits. The hook cannot change the
+refresh result, start another refresh, or repeat a roster mutation. In the
+preseason FAD-only candidate the full automatic matchup-occurrence runner is
+absent, so no such scheduled retry runs there.
 
 The safe late-lock portion of every successful roster-mutation response is
 only:
@@ -710,12 +731,12 @@ applicable state in this exact priority order: `awaiting_data`,
 exactly one safely identifiable completed late lock applies to the whole
 command; it is omitted for every multi-lock or otherwise ambiguous result.
 
-Affirmative coverage for every selected player is a late-lock requirement
-only. It does not alter or delay the normal scheduled lock. For a late lock,
-sealed coverage selects the exact in-week due NHL games, and a separate NHL
-game-state read observed within five elapsed minutes decides which of those
-games are underway. The live-statistics and game-state source versions are
-independent lineages from compatible providers and need not be equal.
+The late-lock product rule remains approved, but its provider-neutral evidence,
+freshness, and whole-game-exclusion mechanism require a separate amendment.
+No current roster command may infer underway games, use the former five-minute
+game-state design, or enable a live provider path. This deferral does not alter
+or delay the approved normal scheduled lock once the future matchup runner is
+deliberately restored or split.
 
 ---
 
@@ -980,19 +1001,16 @@ Tests must cover:
   rerunning or rolling back its committed mutation;
 * deleted-ownership witnesses using their last committed versions and original
   command replay never repeating the mutation;
-* one immediate refresh/retry maximum for the whole command batch, later
-  successful scheduled-refresh retry isolated in the occurrence handler
-  without recursion, and successful mutation responses for every coordinator
-  failure after commit;
+* a roster command never starting an external statistics refresh, a future
+  successful scheduled provider-neutral post-game refresh retrying only after
+  its own commit without recursion, and successful mutation responses for every
+  coordinator failure after commit;
 * deterministic multi-team status aggregation and `lockId` omission unless one
   safely identifiable completed lock applies;
 * exact safe `lateLock` response statuses with no evidence leakage;
 * unchanged normal-lock behavior without an affirmative-coverage prerequisite;
-* exact in-week due-game selection from sealed coverage plus a separate
-  no-more-than-five-minute-old underway-state read;
-* independent compatible statistics/game-state source versions and
-  recomputation of all sealed coverage, player-game, game-state, and exclusion
-  digests;
+* deferred provider-neutral evidence/freshness tests for the approved whole-
+  game exclusion outcome before late-lock execution is enabled;
 * current `expected_game` coverage, exact current observations, and
   non-regressed update lineage for exclusions and finalization;
 * post-lock normal roster changes;

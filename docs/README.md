@@ -512,6 +512,10 @@ APPROVED
 
 Implementation may begin during the season under the approved deferred schedule and must be complete before the first Season 2 Entry Draft is used.
 
+The Entry Draft requires a complete persisted player catalogue with stable
+identity, display name, effective position, and draft-eligibility evidence. It
+does not require current, live, or prior-season player statistics.
+
 ## Free Agent Draft
 
 The approved specification defines:
@@ -540,8 +544,16 @@ technical specification is approved at
 sequence is approved at `docs/06-work-plans/ACTIVE_WORK_PLAN.md`.
 Implementation is active. `FAD-01` through `FAD-17` are complete locally and
 `FAD-18` is the sole active isolated-staging slice. Deployment remains blocked
-by its named provider, isolated-resource, backup/restore, reset/migration,
-clean-commit, and release-identity prerequisites. Production is unauthorized.
+by its isolated-resource, backup/restore, reset/migration, clean-commit, and
+release-identity prerequisites. A paid SportsDataIO key, provider probe
+manifest, live observation, and signed capability artifact are not FAD
+requirements and do not block FAD-18. The FAD uses the persisted player
+catalogue for identity, name, position, and eligibility; player statistics do
+not participate in Candidate Card or allocation decisions. For this preseason
+FAD-only staging candidate, the shared automatic matchup-occurrence runner is
+disabled in full: statistics refresh, baseline, normal lock, finalization, and
+matchup-week rollover do not run. FAD, Entry Draft, auction, trade, and outbox jobs remain
+available subject to their own gates. Production is unauthorized.
 Its short league-specific AI-generated video is optional for Season 2 and a
 required capability beginning in Season 3.
 
@@ -694,6 +706,9 @@ schema-`47` checkpoint. FAD-14 activity, notifications, metadata-only realtime
 privacy, and the exact setup-exemption Activity/notification/publication
 contract are complete locally through schema `49`. FAD-15 through FAD-17 are
 also complete locally; FAD-18 is the sole active isolated-staging slice.
+The 2026-08-11 product clarification separates FAD deployment from all live-
+statistics-provider capability work. Provider-neutral post-game matchup-stat
+refresh is a later statistics/matchup follow-up, not a FAD technical gate.
 
 ## Security
 
@@ -915,7 +930,9 @@ The completed M7-24 plan is preserved at
 M7-25 is active under Grae's continue-through-isolated-staging instruction.
 `FAD-18` is the sole active slice after verified local completion of `FAD-17`;
 deployment remains blocked by the exact external prerequisites recorded in the
-active work plan. Production remains unauthorized.
+active work plan. Those prerequisites no longer include a SportsDataIO paid
+credential, probe manifest, live observation, or capability artifact.
+Production remains unauthorized.
 
 A work plan is used for a contained current task such as:
 

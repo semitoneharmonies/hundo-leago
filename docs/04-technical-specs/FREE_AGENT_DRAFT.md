@@ -37,6 +37,23 @@ notification and retain only normal League Activity visibility. The approved
 opening publications and queued-nomination audiences below carry invalidation
 metadata only and never disclose private card or auction content.
 
+On 2026-08-11, Grae clarified that FAD and Entry Draft require only the
+persisted player catalogue, including stable identity, display name, effective
+position, and applicable eligibility/ownership/contract state. Current,
+prior-season, and in-game statistics are not FAD inputs. A SportsDataIO paid
+key, live probe manifest, live observation, signing secret, or capability
+artifact is not a FAD-18 prerequisite. All later live-provider and immediate
+late-lock-refresh language in this document is superseded for FAD deployment
+and retained only as an unshipped historical matchup design. Provider-neutral
+post-game scoring work is a separate follow-up.
+
+For the preseason FAD-only staging candidate, the shared automatic
+`matchup_occurrences` runner is disabled in full. Statistics refresh, baseline,
+normal lock, finalization, and rollover occurrences do not execute. FAD, Entry
+Draft, auction, trade, and outbox workers remain available subject to their own
+gates. A later provider-neutral matchup/statistics slice must restore or split
+the runner before automatic matchup processing is enabled.
+
 ---
 
 ## Technical Purpose
@@ -160,6 +177,19 @@ the contained implementation work plan:
   and manual durable resolution;
 * context-aware platform-administrator auction authority;
 * the shared multi-year contract-season planner defined below.
+* a persisted player catalogue that supplies stable ID, display name,
+  effective position, and FAD eligibility inputs without a statistics-provider
+  call.
+
+Neither Candidate Card opening nor any FAD route, job, allocation, auction, or
+completion operation may depend on statistics availability. Zero is the
+approved current-season semantic baseline, not an assertion that the current
+runtime already materializes or projects zero rows. FAD ignores statistics,
+keeps live-statistics composition disabled, and runs without the shared
+automatic matchup-occurrence runner. Its `statistics_refresh`, `baseline`,
+`normal_lock`, `finalize`, and matchup-week `rollover` occurrences all remain
+off; the Entry Draft season-rollover, FAD, auction, trade, and outbox workers
+remain available subject to their own gates.
 
 Automatic FAD readiness cannot be composed until its lifecycle and rollover
 prerequisites are composed. Restricted and fallback auctions cannot become
@@ -2482,7 +2512,16 @@ provider exactly. Its `sourceVersion` digest binds the exact requested
 from both Players and FreeAgents, every requested schedule, and every selected
 PlayerGame row.
 
-### Live-Provider Capability Evidence
+### Superseded Live-Provider Capability Evidence (Historical Design Only)
+
+The SportsDataIO contract below records the implementation that existed before
+Grae's 2026-08-11 clarification. It is not an active requirement, it is not
+composed for provider-independent FAD staging, and it cannot block FAD-18. No
+paid credential, probe manifest, provider request, signed artifact, or
+required-mode startup occurs in the amended FAD deployment. The later
+provider-neutral matchup/statistics plan must explicitly replace or retire this
+design before it restores or splits the shared automatic matchup-occurrence
+runner.
 
 Live SportsDataIO composition is controlled by the exact server mode
 `disabled`, `probe`, or `required`. `disabled` has no live credential and does
@@ -2740,7 +2779,12 @@ Each `exclusions[]` item contains exactly `exclusionId`,
 then exclusion ID. A zero-exclusion sealed root is valid when the fresh
 observation proves no selected player's game was underway.
 
-### Approved Late-Lock Runtime Defaults
+### Deferred Late-Lock Runtime Design Record
+
+The runtime defaults below are retained only to document the unshipped
+implementation. They are disabled for the FAD release and are not approved for
+activation until reconciled with the completed-game, four-scheduled-evening-refresh
+model in the Matchups and Scoring Rules documents.
 
 Affirmative selected-player coverage is required only for a late lock. The
 normal scheduled lock keeps its approved behavior and does not acquire a live
@@ -8029,6 +8073,14 @@ Before FAD is launch-ready:
 * restart, delayed-job, recovery, and completion rehearsals pass;
 * endpoint checklist rows reach `STAGING VERIFIED`;
 * manual QA and release evidence are recorded.
+* the persisted player catalogue supplies every Candidate and Entry Draft
+  identity/position/eligibility input without consulting statistics, with
+  live-statistics provider composition and the complete automatic matchup-
+  occurrence runner disabled; the separate statistics follow-up owns
+  implementation of the approved zero-season baseline and deliberate runner
+  restoration/splitting;
+* FAD, Entry Draft, auction, trade, and outbox workers remain available subject
+  to their own activation and safety gates.
 
 No result is reported as passing unless the command or workflow was actually
 run.
@@ -8116,11 +8168,18 @@ run.
   initial/extension rollover and downstream path is terminal.
 - [x] If FAD completion reaches or overruns Week 1, schedule/job recovery and
   FAD completion commit atomically; matchup jobs require the completed FAD
-  gate and matching schedule version.
+  gate and matching schedule version. For the preseason FAD-only candidate,
+  those automatic matchup occurrences remain disabled even after that gate;
+  the future provider-neutral slice must restore or split their runner.
 - [x] FAD completion does not require a full/legal roster. A late legal
   matchup snapshot scores only forward and excludes an already-underway NHL
   game in full.
 - [x] Existing live rows are preserved and no historical FAD is fabricated.
+- [x] Prior-season statistic rows are historical/source evidence only and never
+      populate a new season's player, roster, FAD, Entry Draft, matchup, or
+      standings totals.
+- [x] FAD-18 has no paid-provider credential, probe-manifest, live-observation,
+      or signed-capability-artifact gate.
 - [x] The Season 2 presentation provider may remain disabled and nonblocking.
 - [x] Migrations 0023 through 0029 require pre-staging impact audit and
   amendment plus acceptance evidence for every rule above.

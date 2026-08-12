@@ -19,6 +19,19 @@ This roadmap defines:
 
 Grae delegated the roadmap-sequencing decisions and approved adoption of the resulting roadmap on 2026-07-18.
 
+On 2026-08-11, Grae separated FAD/Entry Draft player-catalogue needs from
+matchup statistics. New-season counters begin at zero; neither draft requires
+statistics or a paid live provider. FAD-18 therefore has no SportsDataIO
+manifest/key/artifact gate. Provider-neutral completed-game cumulative refresh
+with four scheduled evening runs is a later matchup/statistics slice whose
+exact times and implementation remain unapproved and incomplete.
+
+The preseason FAD-only staging candidate disables the shared automatic
+matchup-occurrence runner in full: statistics refresh, baseline, normal lock,
+finalization, and matchup-week rollover occurrences do not run. FAD, Entry Draft, auction,
+trade, and outbox workers remain available subject to their own gates. The
+later provider-neutral slice must restore or split the runner deliberately.
+
 ---
 
 ## Roadmap Purpose
@@ -1071,11 +1084,13 @@ extensions beyond the initial seven when required.
 
 Grae's continuation instruction authorizes the isolated staging gate. `FAD-18`
 is now the sole active slice. Exact published source heads now exist, but
-deployment remains blocked until a real committed provider probe manifest and
-live paid-source observation, attached-service operator access, offsite object
-storage/encryption plus current backup and clean restore, the approved
-reset/import and one schema-49 migration report, and final release/deploy/
-rollback identities are available. Production remains blocked and unauthorized.
+deployment remains blocked until the provider-independent startup/preflight
+amendment is implemented and tested, attached-service operator access exists,
+offsite object storage/encryption plus current backup and clean restore pass,
+the approved reset/import and one schema-49 migration report pass, and final
+release/deploy/rollback identities are available. A SportsDataIO manifest,
+paid credential, live observation, signing secret, and capability artifact are
+not blockers. Production remains blocked and unauthorized.
 
 The `2026-08-11` pre-mutation read-only inspection records the existing Render
 staging rollback identity as deploy `dep-d9kmv0ijobas73fsp8kg` at commit
@@ -1083,19 +1098,23 @@ staging rollback identity as deploy `dep-d9kmv0ijobas73fsp8kg` at commit
 `29d4d89ea6def41464fc48b6390e7f567c480039` and backend
 `26cf9606b8ee1f33efeb9e667cd265f947bc5387`; backend bridge implementation
 began at `1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd`. None of those FAD source
-commits has been deployed. The final backend candidate remains pending the
-operator-reviewed provider-manifest commit. This checkpoint changed no Render,
-Netlify, disk, database, or production state.
+commits has been deployed. The final backend candidate formerly depended on an
+operator-reviewed provider-manifest commit. That dependency is superseded; a
+new final identity remains pending the provider-independent preflight
+amendment. This checkpoint changed no Render, Netlify, disk, database, or
+production state.
 
 The schema-agnostic maintenance-hold bridge is implemented and published to the
 backend `staging` branch but is not deployed. FAD-18 now routes through an
-auxiliary hold-true deploy on the old
-schema-22 path for inherited discovery from a verified private OS-temporary
-copy, then an exact-final-build hold-true deploy for verified backup, clean-
+auxiliary hold-true deploy on the old schema-22 path, then an exact-final-build
+hold-true deploy for verified backup, clean-
 restore proof at a distinct inactive path, and the complete reset/import at a
 different fresh schema-49 path, including the ordered artifact/bootstrap/
 report/database-identity handoff. Only that same final build may transition
-explicitly to hold `false` in provider `probe` on the new path. The old file
+explicitly to hold `false` on the new path with provider composition and the
+complete automatic matchup-occurrence runner disabled. FAD, Entry Draft,
+auction, trade, and outbox workers remain available subject to their own gates.
+The old file
 remains untouched; in-place migration is excluded pending persistent-root
 hardening.
 
@@ -1119,10 +1138,9 @@ The core gate includes:
 * seven initial daily rollovers plus required contiguous extensions, private
   final-hour nomination queueing, no-bid unclaimed outcomes, and binding
   no-reservation wins;
-* late legal matchup snapshots that atomically persist immutable
-  player/game/start/source exclusion evidence with the baseline, omit an
-  already-underway NHL game in full, and remain idempotent under replay and
-  races;
+* persisted player-catalogue search and eligibility with no live-provider
+  dependency; zero is the approved current-season semantic baseline, while the
+  season-explicit projection remains deferred rather than claimed complete;
 * final transition to ordinary weekly auctions only after all FAD paths are
   terminal.
 
@@ -1130,6 +1148,19 @@ The presentation video does not block Season 2. It remains optional for Season
 2, and its implementation is required for Season 3 readiness. An individual
 generation failure must still fail safely without delaying results or season
 start.
+
+### Post-FAD Matchup/Statistics Follow-Up
+
+After FAD staging acceptance, a separate contained work plan must select and
+verify a provider-neutral source for completed-game cumulative statistics. It
+must schedule four evening refresh runs, preserve explicit missing/stale
+states, prevent prior-season rows from entering current-season projections,
+and reconcile the deferred late-lock design before restoring or splitting the
+shared runner. That runner owns statistics refresh, baseline, normal lock,
+finalization, and matchup-week rollover occurrences; none may be enabled accidentally as a
+side effect of enabling another. Historical-statistics browsing and the current
+legacy player-page season-filter gap are not part of FAD and remain deferred
+frontend/product work.
 
 ---
 
@@ -1309,7 +1340,7 @@ The current next action is:
 ```text
 Milestone: M7 - Release Candidate and Launch
 Action: Continue FAD-18 through its authorized isolated shared-staging gate
-Implementation status: M7-25 ACTIVE / FAD-01 THROUGH FAD-17 COMPLETE LOCALLY / FAD-18 SOLE ACTIVE ISOLATED-STAGING SLICE / SCHEMA 49 LOCAL ONLY / MIGRATIONS 0023-0049 LOCAL ONLY / TARGET ENDPOINT INVENTORY 117 / T-076 THROUGH T-083 AND T-126 THROUGH T-144 LOCAL VERIFIED / FRONTEND 316/316 / PLAYWRIGHT 40/40 ACROSS FIVE PROJECTS WITH ZERO RETRIES / SOURCE HEADS PUBLISHED; NO FAD DEPLOY / STAGING DEPLOYMENT BLOCKED BY REAL PROVIDER MANIFEST/LIVE OBSERVATION, OPERATOR/SHELL ACCESS, BACKUP-RESTORE, RESET-MIGRATION, AND FINAL RELEASE/DEPLOY IDENTITIES / PRODUCTION UNAUTHORIZED AND BLOCKED
+Implementation status: M7-25 ACTIVE / FAD-01 THROUGH FAD-17 COMPLETE LOCALLY / FAD-18 SOLE ACTIVE ISOLATED-STAGING SLICE / SCHEMA 49 LOCAL ONLY / MIGRATIONS 0023-0049 LOCAL ONLY / TARGET ENDPOINT INVENTORY 117 / T-076 THROUGH T-083 AND T-126 THROUGH T-144 LOCAL VERIFIED / FRONTEND 316/316 / PLAYWRIGHT 40/40 ACROSS FIVE PROJECTS WITH ZERO RETRIES / SOURCE HEADS PUBLISHED; NO FAD DEPLOY / SPORTSDATAIO PAID KEY, MANIFEST, LIVE OBSERVATION, AND ARTIFACT REMOVED FROM FAD GATE / FULL AUTOMATIC MATCHUP-OCCURRENCE RUNNER DISABLED FOR THE FAD-ONLY CANDIDATE; FAD, ENTRY DRAFT, AUCTION, TRADE, AND OUTBOX WORKERS RETAINED / STAGING DEPLOYMENT BLOCKED BY PROVIDER-INDEPENDENT PREFLIGHT AMENDMENT, OPERATOR/SHELL ACCESS, BACKUP-RESTORE, RESET-MIGRATION, AND FINAL RELEASE/DEPLOY IDENTITIES / PRODUCTION UNAUTHORIZED AND BLOCKED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Branches: staging and staging
 ```

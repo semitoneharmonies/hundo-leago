@@ -17,12 +17,26 @@ Grae approved the FAD clock-freeze amendment on 2026-07-27.
 On 2026-07-29, Grae approved automatic whole-Monday Week 1 recovery for a late
 Entry Draft or unfinished FAD, plus whole-game exclusion for NHL games already
 underway when a late roster snapshot is created.
+On 2026-08-11, Grae clarified that Season 2 starts every player's current-
+season GP, goals, assists, NHL points, and fantasy points at exactly zero and
+does not require an in-game statistics feed. Cumulative player statistics are
+updated after games finish in four scheduled runs each evening. The prior
+SportsDataIO live-capability design and immediate-refresh/five-minute game-state
+requirements are removed from FAD deployment and deferred to a separate
+provider-neutral matchup/statistics design amendment.
+
+The preseason FAD-only staging candidate disables the shared automatic
+matchup-occurrence runner in full. Its statistics-refresh, baseline, normal-
+lock, finalization, and matchup-week rollover occurrences do not run. FAD, Entry Draft,
+auction, trade, and outbox jobs remain available subject to their own gates. A
+future provider-neutral matchup/statistics slice must restore or split that
+runner before automatic matchup processing is enabled.
 
 ---
 
 ## Product Purpose
 
-Hundo Leago needs a league-scoped matchup system that pairs teams into persisted scoring weeks, locks eligible players, calculates live fantasy points, finalizes official results, and provides safe commissioner recovery.
+Hundo Leago needs a league-scoped matchup system that pairs teams into persisted scoring weeks, locks eligible players, calculates the latest valid cumulative fantasy points, finalizes official results, and provides safe commissioner recovery.
 
 This specification defines:
 
@@ -30,7 +44,7 @@ This specification defines:
 * matchup-week identity and states;
 * baselines and roster locks;
 * late legality;
-* live scoring and player breakdowns;
+* current cached scoring and player breakdowns;
 * missing or corrected statistics;
 * finalization and rollover;
 * result correction and audit;
@@ -106,7 +120,7 @@ The backend is authoritative for:
 * week boundaries and status;
 * roster legality and scoring eligibility;
 * source-statistics snapshots;
-* live and final fantasy-point calculations;
+* provisional and final fantasy-point calculations;
 * result versions;
 * rollover and recovery.
 
@@ -124,7 +138,7 @@ A manager may:
 * view the assigned team’s normal roster separately from its persisted matchup snapshot;
 * make approved normal roster adjustments when the team lacks a legal lock.
 
-A manager does not submit a separate matchup lineup and cannot directly edit a baseline, lock, live total, result, or matchup schedule.
+A manager does not submit a separate matchup lineup and cannot directly edit a baseline, lock, provisional total, result, or matchup schedule.
 
 ---
 
@@ -343,7 +357,7 @@ Each matchup preserves:
 * finalized team display context;
 * status;
 * lock and baseline references;
-* live-data health;
+* scoring-data health;
 * official result and correction-version references.
 
 A bye is a week-level assignment, not a fabricated matchup against a placeholder team.
@@ -384,7 +398,7 @@ Empty Active slots contribute zero and do not make the roster illegal by themsel
 
 Bench, Injured Reserve, and Prospect players are excluded.
 
-Affirmative selected-player live coverage is not a normal-lock prerequisite.
+Affirmative selected-player provider coverage is not a normal-lock prerequisite.
 It is required only by the late-lock workflow below, so this rule does not
 delay or otherwise change the approved scheduled normal lock.
 
@@ -444,12 +458,12 @@ change authoritative roster legality.
 The coordinator never reruns, compensates, reverses, or rolls back the
 committed roster mutation, including during original-command replay. Any
 coordinator validation or runtime failure after commit safely reports
-`awaiting_data` and cannot reject the successful command. One command batch may
-trigger at most one server-owned live-statistics refresh and one evaluation
-retry in total. Each later successful scheduled statistics refresh invokes an
-isolated occurrence-handler retry only after the refresh commits; that hook
-cannot change the refresh result, recursively refresh, or repeat a roster
-mutation.
+`awaiting_data` and cannot reject the successful command. A roster command does
+not trigger an external statistics refresh. A later successful scheduled post-
+game refresh may invoke an isolated occurrence-handler retry only after the
+refresh commits; that hook cannot change the refresh result, recursively
+refresh, or repeat a roster mutation. The exact late-lock retry contract
+remains disabled until the provider-neutral follow-up is approved and verified.
 
 The coordinator's safe result is `lateLock` with status `completed`,
 `awaiting_data`, `still_illegal`, or `not_applicable`, plus an optional safe
@@ -462,14 +476,17 @@ priority: `awaiting_data`, then `still_illegal`, then `completed`, then
 `not_applicable`. `lockId` is included only when exactly one safely identifiable
 completed late lock applies; otherwise it is omitted.
 
-The verified sealed coverage manifest selects the exact distinct NHL games
-from the selected roster's `expected_game` entries whose scheduled starts are
-inside this matchup week's inclusive-start, exclusive-end window. A separate
-exact game-state read, observed at or before the snapshot and no more than five
-elapsed minutes earlier, decides which requested games are underway. The
-statistics refresh source version and game-state source version are
-independently digested lineages from compatible providers; they are not
-required to equal one another.
+The previously designed five-minute live game-state read is not an active
+Season 2 deployment requirement. A provider-neutral follow-up must determine
+how the approved whole-game late-lock rule can be evidenced from schedule and
+completed-game data without an in-game points feed. Until that design is
+approved and tested, late-lock scoring remains disabled and explicitly
+`Awaiting Data`; it must not infer underway state or points from stale data.
+
+The digest, retained-game, and provider-lineage rules in the following
+paragraphs are preserved as a historical design record only. They are not an
+active Season 2 runtime or FAD acceptance requirement unless the later
+provider-neutral amendment explicitly adopts them.
 
 Before evidence is used or replayed, and again during scoring and finalization,
 the backend recomputes the sealed coverage, player-game observation,
@@ -509,11 +526,10 @@ still completes, but the late lock remains `Awaiting Data`. The team begins
 scoring only when a fresh baseline and its complete exclusion evidence are
 persisted.
 
-NHL game-state evidence is fresh when it was observed no more than five
-elapsed minutes before the late-snapshot instant. The exact five-minute
-boundary is valid. An observation from the future or older than five minutes
-is invalid, writes no partial late-lock evidence, and leaves the existing
-illegal lock awaiting data.
+The former five-minute NHL game-state freshness constant is superseded. The
+provider-neutral follow-up will define the evidence and freshness boundary for
+late-lock eligibility. No current deployment may treat the removed constant as
+permission to enable the SportsDataIO live path.
 
 No late lock may be created at or after the exclusive week-end boundary.
 
@@ -534,7 +550,7 @@ After a legal lock exists:
 
 ---
 
-# Part 6 — Live Scoring
+# Part 6 — Current Cached Scoring
 
 ## Approved Formula
 
@@ -566,9 +582,12 @@ Empty snapshot slots remain visible as empty and contribute zero.
 
 ---
 
-## Live Refresh
+## Page Refresh
 
-The matchup page polls the read-only live-scoring endpoint every five minutes while open.
+The matchup page may poll its read-only scoring endpoint every five minutes
+while open, but source values change only after a successful scheduled or
+authorized post-game statistics refresh. Browser polling is not an in-game
+provider feed.
 
 A manual Refresh control rereads authoritative matchup data but does not refresh the external statistics source.
 
@@ -578,13 +597,12 @@ The normal manager view does not show the source timestamp or technical `current
 
 ## Freshness Limit
 
-For matchup locking and finalization, the maximum source-cache age is:
-
-```text
-6 hours
-```
-
-Live scoring may continue from the last valid older cache with a prominent stale label. Finalization and late-lock baseline creation are blocked until source data is within the limit.
+Season 2 schedules four completed-game cumulative refresh occurrences
+each evening. Exact clock times and finalization freshness rules must be fixed
+by the provider-neutral matchup/statistics follow-up before scoring jobs are
+enabled. Scoring may display the last valid older cache with a prominent stale
+warning, but finalization and late-lock processing remain blocked when required
+completed-game data is missing or stale.
 
 ---
 
@@ -674,7 +692,7 @@ The league and season remain visibly incomplete while an expected result lacks a
 
 ## Source-Correction Workflow
 
-Before finalization, a valid source refresh may update live totals.
+Before finalization, a valid source refresh may update provisional totals.
 
 After finalization:
 
@@ -722,7 +740,7 @@ The Matchups page defaults to the current week and shows:
 * week number, dates, lock time, and status;
 * all pairings and byes;
 * team identity and current standings record;
-* live or final team FP;
+* provisional or final team FP;
 * selected matchup player breakdown;
 * lock, late-lock, stale-data, and correction status.
 
@@ -761,7 +779,7 @@ It does not require email or push notifications for roster lock, late eligibilit
 
 # Part 10 — Records and Activity Boundary
 
-Schedule changes, baselines, locks, live totals, results, finalization, rollover, failures, retries, and matchup corrections do not create League Activity entries.
+Schedule changes, baselines, locks, provisional totals, results, finalization, rollover, failures, retries, and matchup corrections do not create League Activity entries.
 
 They remain traceable through:
 
@@ -837,16 +855,16 @@ Tests must cover:
   rejecting as conflicts;
 * all roster-mutating paths using one post-commit coordinator without
   repeating or rolling back the mutation;
-* at most one immediate refresh and retry, followed by non-recursive
-  scheduled-refresh retries for eligible illegal normal-lock records;
+* the preseason FAD-only staging candidate proving that all five automatic
+  matchup occurrence types stay disabled together while FAD, Entry Draft,
+  auction, trade, and outbox jobs remain available subject to their gates;
 * safe four-state `lateLock` mutation responses and success preservation while
   evidence is delayed;
 * normal-lock behavior remaining unchanged and independent of affirmative
   selected-player coverage;
-* sealed coverage selecting the exact in-week due-game request and a separate
-  game-state read at the inclusive five-minute freshness boundary deciding
-  underway state;
-* independent compatible statistics and game-state source-version lineages;
+* provider-neutral post-game coverage and late-lock evidence tests defined by
+  the later matchup/statistics slice before the shared runner is restored or
+  split;
 * recomputation of coverage, player-game observation, game-state, and
   exclusion digests at replay, use, scoring, and finalization;
 * current `expected_game` coverage and exact current observation for every
@@ -854,7 +872,7 @@ Tests must cover:
 * traded-away players continuing for the former snapshot and acquired players
   waiting for the next snapshot;
 * post-lock roster changes and illegality;
-* live player and team totals;
+* provisional player and team totals;
 * missing players, failed refreshes, stale cache, and negative deltas;
 * win, loss, tie, zero, and bye outcomes;
 * cancelled and postponed matchups;
@@ -923,7 +941,7 @@ Tests must cover:
 - [x] Automatic Candidate Card opening freezes the historical Candidate deadline and rapid-rollover clock against manager or commissioner edits.
 - [x] Late Entry Draft completion moves Week 1 by whole Mondays until the Candidate deadline is future-facing and the full seven-day FAD period fits.
 - [x] Unfinished FAD processing blocks matchup start; when Week 1 must move, schedule/job regeneration and the completed FAD gate commit in one atomic transaction without rewriting historical FAD clocks.
-- [x] A matchup-start job requires the matching completed FAD gate and schedule version; a simultaneous completion/start race is first-commit-wins with no partial effects.
+- [x] A matchup-start job requires the matching completed FAD gate and schedule version; a simultaneous completion/start race is first-commit-wins with no partial effects. This is necessary, not sufficient: the preseason FAD-only staging candidate still keeps every automatic matchup occurrence disabled.
 - [x] Incomplete or illegal rosters do not delay Week 1.
 - [x] After Week 1 starts, ordinary schedule editing is frozen and changes require a matchup correction.
 - [x] Post-start schedule corrections never silently reassign completed results.
@@ -939,20 +957,22 @@ Tests must cover:
 - [x] The normal baseline operation is idempotent and preserves its original source snapshot.
 - [x] The normal lock atomically persists every legal team’s Active scoring snapshot.
 - [x] A roster transaction that restores legality triggers late-lock evaluation.
-- [x] A late lock, team-specific baseline, and immutable whole-game exclusion evidence are created atomically from sufficiently fresh statistics and NHL game-state evidence.
+- [x] For the preseason FAD-only candidate, the late-lock path and shared automatic matchup-occurrence runner are disabled together: statistics refresh, baseline, normal lock, finalization, and matchup-week rollover do not execute. Provider-neutral evidence and deliberate runner restoration or splitting remain follow-up work.
 - [x] Every selected player whose NHL game was already underway is excluded for that entire game, including post-baseline events, with immutable player ID, NHL game ID, scheduled start, snapshot timestamp, and source/version evidence.
 - [x] Repeated or concurrent late-lock attempts commit exactly one snapshot, baseline, and exclusion set; equivalent replay returns it and stale conflicts leave no partial state.
 - [x] If data is stale, the roster transaction completes but late-lock scoring waits for a fresh persisted baseline.
 - [x] No late lock may be created at or after the exclusive week-end boundary.
 - [x] Matchup player rows show only goals, assists, NHL points, and FP accumulated during that matchup period.
 - [x] Every player begins the matchup display at zero; season totals remain on the Roster page.
+- [x] Every player's current-season GP/G/A/NHL-points/FP counters initialize to exactly zero at season start; prior-season rows never seed matchup totals.
 - [x] Empty scoring slots remain visible and contribute zero.
-- [x] The open Matchups page polls its read-only live-scoring endpoint every five minutes.
+- [x] The open Matchups page may poll its read-only scoring endpoint every five minutes; this does not refresh the provider or promise in-game data.
 - [x] Manual Refresh rereads matchup data but does not refresh the external statistics source.
 - [x] The manager view does not show source timestamps or technical data-state labels.
 - [x] Plain-language delayed-data warnings are shown when necessary, while detailed health remains commissioner-only.
-- [x] The maximum source-cache age for late locking and finalization is six hours.
-- [x] Live scoring may use an older last-valid cache with a prominent plain-language stale warning.
+- [x] Season 2 requires no in-game statistics feed; completed-game cumulative refreshes run four scheduled times each evening.
+- [x] Exact post-game freshness and late-lock evidence remain disabled pending the provider-neutral follow-up.
+- [x] Provisional scoring may use an older last-valid cache with a prominent plain-language stale warning.
 - [x] Missing player data, missing IDs, missing baselines, and negative deltas are not displayed as ordinary zero performances.
 - [x] An unresolved missing-data or negative-delta condition blocks finalization.
 - [x] Finalization uses a source snapshot captured at or after week end containing only events assigned to the completed scoring window.
