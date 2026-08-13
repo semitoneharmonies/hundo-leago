@@ -1061,7 +1061,9 @@ describe("FAD-15 Candidate Card frontend", () => {
       expect(onAuthoritativeCard).toHaveBeenCalledWith(
         expect.objectContaining({ cardVersion: 2 })
       );
-      await waitFor(() => expect(candidateSlot).toHaveFocus());
+      await waitFor(() =>
+        expect(document.querySelector('[data-slot-key="F02"]')).toHaveFocus()
+      );
     }
   );
 
@@ -1127,7 +1129,9 @@ describe("FAD-15 Candidate Card frontend", () => {
     const closeButton = screen.getByRole("button", { name: "Close" });
     closeButton.focus();
     await view.user.keyboard("{Enter}");
-    await waitFor(() => expect(slot).toHaveFocus());
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot-key="F02"]')).toHaveFocus()
+    );
   });
 
   it("sends an explicit exact-card help request and displays its league-timezone expiry", async () => {
@@ -1281,9 +1285,11 @@ describe("FAD-15 Candidate Card frontend", () => {
         maximumBenchAavCents: null,
       },
     };
-    const buildEligibleQueryOptions = () =>
-      infiniteQueryOptions({
-        queryKey: ["eligible-ui-test"],
+    const eligibleFilters = [];
+    const buildEligibleQueryOptions = (slotKey, filters) => {
+      eligibleFilters.push({ slotKey, ...filters });
+      return infiniteQueryOptions({
+        queryKey: ["eligible-ui-test", slotKey, filters.q],
         initialPageParam: null,
         queryFn: async () => ({
           items: [eligibleItem],
@@ -1291,6 +1297,7 @@ describe("FAD-15 Candidate Card frontend", () => {
         }),
         getNextPageParam: () => undefined,
       });
+    };
     const onProtectedFailure = vi.fn();
     const view = renderWithProviders(
       <CandidateCardBuilder
@@ -1306,10 +1313,30 @@ describe("FAD-15 Candidate Card frontend", () => {
 
     expect(document.querySelectorAll("[data-slot-key]")).toHaveLength(22);
     expect(screen.getByText("Locked carryover")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "F01 player" })).toHaveValue(
+      "Locked Carryover"
+    );
+    expect(screen.getByRole("textbox", { name: "F01 player" })).toHaveAttribute(
+      "readonly"
+    );
+    expect(screen.getByRole("textbox", { name: "F01 AAV" })).toHaveValue(
+      "$4.00 AAV"
+    );
+    expect(screen.getByRole("textbox", { name: "F01 years" })).toHaveValue("2");
     const f02 = document.querySelector('[data-slot-key="F02"]');
+    expect(within(f02).getByRole("textbox", { name: "F02 player" })).toHaveValue("");
     const addButton = within(f02).getByRole("button", { name: "Add candidate" });
     addButton.focus();
     await view.user.keyboard("{Enter}");
+    const playerCombobox = screen.getByRole("combobox", { name: "Player" });
+    await view.user.type(playerCombobox, "Eligible");
+    await waitFor(() =>
+      expect(eligibleFilters).toContainEqual({
+        slotKey: "F02",
+        q: "Eligible",
+        limit: 12,
+      })
+    );
     const selectButton = await screen.findByRole("button", {
       name: "Select Eligible Candidate",
     });

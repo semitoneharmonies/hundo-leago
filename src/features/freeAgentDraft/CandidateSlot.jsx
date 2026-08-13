@@ -6,11 +6,11 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { PositionTag, StatusBadge } from "../../components/HundoUi.jsx";
+import { StatusBadge } from "../../components/HundoUi.jsx";
 import styles from "./FreeAgentDraftPage.module.css";
 
 function money(cents) {
-  if (!Number.isSafeInteger(cents)) return "Not set";
+  if (!Number.isSafeInteger(cents)) return "";
   return new Intl.NumberFormat("en-CA", {
     style: "currency",
     currency: "CAD",
@@ -46,6 +46,17 @@ function validationTone(status) {
 export function CandidateSlot({
   slot,
   busy = false,
+  editor = null,
+  editorLabel = "",
+  eligiblePlayerSearch = null,
+  formError = "",
+  preview = null,
+  previewPending = false,
+  commandPending = false,
+  onEditorChange,
+  onPreview,
+  onApplyPreview,
+  onCloseEditor,
   onAdd,
   onEdit,
   onMove,
@@ -54,9 +65,142 @@ export function CandidateSlot({
   const titleId = `candidate-slot-${slot.slotKey}-title`;
   const isEmpty = slot.occupantKind === "empty";
   const isCarryover = slot.occupantKind === "carryover";
+  const canAdd = isEmpty && slot.capabilities.addCandidate.allowed;
   const canMove =
     slot.capabilities.moveCandidate.allowed ||
     slot.capabilities.moveCarryover.allowed;
+  const playerValue = isEmpty ? "" : slot.player.fullName;
+  const moneyValue = isEmpty
+    ? ""
+    : isCarryover
+      ? `${money(slot.aavCents)} AAV`
+      : `${money(slot.totalValueCents)} total`;
+  const yearsValue = isEmpty
+    ? ""
+    : String(isCarryover ? slot.remainingYears : slot.termYears);
+  const isInlineEditor =
+    editor && ["add", "edit"].includes(editor.type);
+
+  if (isInlineEditor) {
+    return (
+      <form
+        id={`candidate-slot-${slot.slotKey}`}
+        className={`${styles.slot} ${styles.slotEditor}`}
+        aria-label={editorLabel}
+        aria-describedby={formError ? "candidate-editor-error" : undefined}
+        data-slot-key={slot.slotKey}
+        onSubmit={onPreview}
+      >
+        <header className={styles.slotHeader}>
+          <span className={styles.slotKey}>{slot.slotKey}</span>
+          <h3>{editor.type === "add" ? "New candidate" : "Edit candidate"}</h3>
+        </header>
+
+        {editor.type === "add" ? (
+          eligiblePlayerSearch
+        ) : (
+          <label className={styles.slotField}>
+            <span>Player</span>
+            <input readOnly value={slot.player.fullName} />
+          </label>
+        )}
+
+        <label className={styles.slotField}>
+          <span>Total value</span>
+          <input
+            aria-label="Total contract value (CAD dollars)"
+            aria-describedby={formError ? "candidate-editor-error" : undefined}
+            inputMode="decimal"
+            placeholder="0.00"
+            value={editor.totalValue}
+            onChange={(event) =>
+              onEditorChange({ totalValue: event.target.value })
+            }
+          />
+        </label>
+
+        <label className={styles.slotField}>
+          <span>Years</span>
+          <select
+            aria-label="Contract term"
+            aria-describedby={formError ? "candidate-editor-error" : undefined}
+            value={editor.termYears}
+            onChange={(event) =>
+              onEditorChange({ termYears: event.target.value })
+            }
+          >
+            <option value="1">1 year</option>
+            <option value="2">2 years</option>
+            <option value="3">3 years</option>
+          </select>
+        </label>
+
+        <div className={styles.slotActions}>
+          <button
+            type="submit"
+            className="hl-button hl-button--primary"
+            disabled={busy}
+          >
+            {previewPending ? "Preparing preview…" : "Preview change"}
+          </button>
+          <button
+            type="button"
+            className="hl-button hl-button--quiet"
+            disabled={busy}
+            onClick={onCloseEditor}
+          >
+            Close
+          </button>
+        </div>
+
+        {formError && (
+          <p
+            id="candidate-editor-error"
+            className={`${styles.error} ${styles.inlineEditorMessage}`}
+            role="alert"
+          >
+            {formError}
+          </p>
+        )}
+
+        {preview && (
+          <section
+            className={`${styles.preview} ${styles.inlineEditorMessage}`}
+            aria-labelledby="candidate-preview-title"
+          >
+            <h3 id="candidate-preview-title">Server revision preview</h3>
+            <p>
+              Projected card version {preview.projectedCard.cardVersion}. Maximum
+              possible cap use: {money(
+                preview.projectedCard.capProjection.maximumPossibleCapCents
+              )}.
+            </p>
+            {preview.warnings.length > 0 && (
+              <ul className={styles.diagnostics}>
+                {preview.warnings.map((diagnostic) => (
+                  <li key={`${diagnostic.code}:${diagnostic.resourceId || "card"}`}>
+                    {diagnostic.message}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              className="hl-button hl-button--primary"
+              disabled={commandPending}
+              onClick={onApplyPreview}
+            >
+              {commandPending ? "Applying…" : "Apply reviewed change"}
+            </button>
+          </section>
+        )}
+      </form>
+    );
+  }
+
+  function openEmptyEditor() {
+    if (canAdd && !busy) onAdd(slot);
+  }
 
   return (
     <article
@@ -67,142 +211,127 @@ export function CandidateSlot({
       data-slot-key={slot.slotKey}
     >
       <header className={styles.slotHeader}>
-        <div>
-          <span className={styles.slotKey}>{slot.slotKey}</span>
-          <h3 id={titleId}>
-            {slot.slotGroup === "F"
-              ? "Forward"
-              : slot.slotGroup === "D"
-                ? "Defence"
-                : "Bench"}
-          </h3>
-        </div>
-        <div className={styles.badges}>
-          <StatusBadge tone={slot.required ? "warning" : "neutral"}>
-            {slot.required ? "Mandatory" : "Optional"}
+        <span className={styles.slotKey}>{slot.slotKey}</span>
+        <h3 id={titleId}>
+          {slot.slotGroup === "F"
+            ? "Forward"
+            : slot.slotGroup === "D"
+              ? "Defence"
+              : "Bench"}
+        </h3>
+        {isCarryover && (
+          <StatusBadge tone="neutral">
+            <LockKeyhole aria-hidden="true" /> Locked carryover
           </StatusBadge>
-          {isCarryover && (
-            <StatusBadge tone="neutral">
-              <LockKeyhole aria-hidden="true" /> Locked carryover
-            </StatusBadge>
-          )}
-        </div>
+        )}
       </header>
 
-      {isEmpty ? (
-        <div className={styles.emptySlot}>
-          <p>Empty {slot.required ? "mandatory" : "optional"} slot</p>
-          {slot.capabilities.addCandidate.allowed && (
-            <button
-              type="button"
-              className="hl-button hl-button--primary"
-              disabled={busy}
-              onClick={() => onAdd(slot)}
-            >
-              <Plus aria-hidden="true" /> Add candidate
-            </button>
-          )}
+      <label className={styles.slotField}>
+        <span>Player</span>
+        <input
+          aria-label={`${slot.slotKey} player`}
+          autoComplete="off"
+          placeholder={canAdd ? "Search eligible players" : "No player"}
+          readOnly
+          value={playerValue}
+          onClick={isEmpty ? openEmptyEditor : undefined}
+          onFocus={isEmpty ? openEmptyEditor : undefined}
+        />
+        {!isEmpty && (
+          <span className={styles.visuallyHidden} aria-hidden="true">
+            {playerValue}
+          </span>
+        )}
+      </label>
+
+      <label className={styles.slotField}>
+        <span>{isCarryover ? "AAV" : "Total value"}</span>
+        <input
+          aria-label={`${slot.slotKey} ${isCarryover ? "AAV" : "total value"}`}
+          inputMode="decimal"
+          placeholder={canAdd ? "$0.00" : "Not set"}
+          readOnly
+          value={moneyValue}
+          onClick={isEmpty ? openEmptyEditor : undefined}
+        />
+      </label>
+
+      <label className={styles.slotField}>
+        <span>Years</span>
+        <input
+          aria-label={`${slot.slotKey} years`}
+          placeholder={canAdd ? "1, 2, or 3" : "—"}
+          readOnly
+          value={yearsValue}
+          onClick={isEmpty ? openEmptyEditor : undefined}
+        />
+      </label>
+
+      <div
+        className={styles.slotActions}
+        role="group"
+        aria-label={`${isEmpty ? slot.slotKey : slot.player.fullName} actions`}
+      >
+        {canAdd && (
+          <button
+            type="button"
+            className="hl-button hl-button--primary"
+            disabled={busy}
+            onClick={() => onAdd(slot)}
+          >
+            <Plus aria-hidden="true" /> Add candidate
+          </button>
+        )}
+        {slot.capabilities.editCandidate.allowed && (
+          <button
+            type="button"
+            className="hl-button hl-button--secondary"
+            disabled={busy}
+            onClick={() => onEdit(slot)}
+          >
+            <Pencil aria-hidden="true" /> Edit contract
+          </button>
+        )}
+        {canMove && (
+          <button
+            type="button"
+            className="hl-button hl-button--secondary"
+            disabled={busy}
+            onClick={() => onMove(slot)}
+          >
+            <ArrowRightLeft aria-hidden="true" /> Move
+          </button>
+        )}
+        {slot.capabilities.removeCandidate.allowed && (
+          <button
+            type="button"
+            className="hl-button hl-button--danger"
+            disabled={busy}
+            onClick={() => onRemove(slot)}
+          >
+            <Trash2 aria-hidden="true" /> Remove
+          </button>
+        )}
+      </div>
+
+      {!isEmpty && (
+        <div className={styles.slotMeta}>
+          <StatusBadge tone={validationTone(slot.validation.status)}>
+            {slot.validation.status === "valid"
+              ? "Valid"
+              : slot.validation.status === "warning"
+                ? "Needs attention"
+                : "Invalid offer"}
+          </StatusBadge>
+          <span>
+            {isCarryover
+              ? `${slot.authoritativeRosterCategory} · ${slot.remainingYears} ${
+                  slot.remainingYears === 1 ? "year" : "years"
+                } remaining`
+              : "Free-agent candidate"}
+          </span>
+          {slot.outcome && <span>Outcome: {outcomeLabel(slot.outcome.code)}</span>}
         </div>
-      ) : (
-        <>
-          <div className={styles.playerLine}>
-            <PositionTag
-              position={slot.player.positionGroup}
-              category={
-                isCarryover
-                  ? slot.authoritativeRosterCategory
-                  : "Free Agent"
-              }
-            />
-            <div>
-              <strong>{slot.player.fullName}</strong>
-              <span>
-                {isCarryover
-                  ? `${slot.authoritativeRosterCategory} · ${slot.remainingYears} ${
-                      slot.remainingYears === 1 ? "year" : "years"
-                    } remaining`
-                  : "Free-agent candidate"}
-              </span>
-            </div>
-          </div>
-
-          <dl className={styles.contractSummary}>
-            <div>
-              <dt>Total value</dt>
-              <dd>{money(slot.totalValueCents)}</dd>
-            </div>
-            <div>
-              <dt>Term</dt>
-              <dd>
-                {slot.termYears} {slot.termYears === 1 ? "year" : "years"}
-              </dd>
-            </div>
-            <div>
-              <dt>AAV</dt>
-              <dd>{money(slot.aavCents)}</dd>
-            </div>
-          </dl>
-
-          <div className={styles.slotStatus}>
-            <StatusBadge tone={validationTone(slot.validation.status)}>
-              {slot.validation.status === "valid"
-                ? "Valid"
-                : slot.validation.status === "warning"
-                  ? "Needs attention"
-                  : "Invalid offer"}
-            </StatusBadge>
-            {slot.validation.codes.length > 0 && (
-              <span>{slot.validation.codes.join(", ").replaceAll("_", " ")}</span>
-            )}
-          </div>
-
-          {slot.outcome && (
-            <p className={styles.outcome}>
-              <strong>Outcome:</strong> {outcomeLabel(slot.outcome.code)}
-            </p>
-          )}
-
-          {(slot.capabilities.editCandidate.allowed ||
-            canMove ||
-            slot.capabilities.removeCandidate.allowed) && (
-            <div
-              className={styles.slotActions}
-              role="group"
-              aria-label={`${slot.player.fullName} actions`}
-            >
-              {slot.capabilities.editCandidate.allowed && (
-                <button
-                  type="button"
-                  className="hl-button hl-button--secondary"
-                  disabled={busy}
-                  onClick={() => onEdit(slot)}
-                >
-                  <Pencil aria-hidden="true" /> Edit contract
-                </button>
-              )}
-              {canMove && (
-                <button
-                  type="button"
-                  className="hl-button hl-button--secondary"
-                  disabled={busy}
-                  onClick={() => onMove(slot)}
-                >
-                  <ArrowRightLeft aria-hidden="true" /> Move
-                </button>
-              )}
-              {slot.capabilities.removeCandidate.allowed && (
-                <button
-                  type="button"
-                  className="hl-button hl-button--danger"
-                  disabled={busy}
-                  onClick={() => onRemove(slot)}
-                >
-                  <Trash2 aria-hidden="true" /> Remove
-                </button>
-              )}
-            </div>
-          )}
-        </>
       )}
     </article>
   );

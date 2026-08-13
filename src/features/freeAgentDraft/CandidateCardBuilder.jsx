@@ -404,17 +404,48 @@ export function CandidateCardBuilder({
               <span className={styles.muted}>{description}</span>
             </div>
             <div className={styles.slotGrid}>
-              {slotsByGroup[group].map((slot) => (
-                <CandidateSlot
-                  key={slot.slotKey}
-                  slot={slot}
-                  busy={busy}
-                  onAdd={(selectedSlot) => openEditor("add", selectedSlot)}
-                  onEdit={(selectedSlot) => openEditor("edit", selectedSlot)}
-                  onMove={(selectedSlot) => openEditor("move", selectedSlot)}
-                  onRemove={(selectedSlot) => openEditor("remove", selectedSlot)}
-                />
-              ))}
+              {slotsByGroup[group].map((slot) => {
+                const activeEditor =
+                  editor?.slot.slotKey === slot.slotKey &&
+                  ["add", "edit"].includes(editor.type)
+                    ? editor
+                    : null;
+                return (
+                  <CandidateSlot
+                    key={slot.slotKey}
+                    slot={slot}
+                    busy={busy}
+                    editor={activeEditor}
+                    editorLabel={activeEditor ? editorTitle(activeEditor) : ""}
+                    eligiblePlayerSearch={
+                      activeEditor?.type === "add" ? (
+                        <EligiblePlayerSearch
+                          key={activeEditor.slot.slotKey}
+                          buildQueryOptions={eligibleOptions}
+                          selectedPlayerId={
+                            activeEditor.selectedPlayer?.player.playerId || null
+                          }
+                          onSelect={(selectedPlayer) =>
+                            updateEditor({ selectedPlayer })
+                          }
+                        />
+                      ) : null
+                    }
+                    formError={activeEditor ? formError : ""}
+                    preview={activeEditor ? preview : null}
+                    previewPending={previewMutation.isPending}
+                    commandPending={commandMutation.isPending}
+                    onEditorChange={updateEditor}
+                    onPreview={requestPreview}
+                    onApplyPreview={applyPreview}
+                    onCloseEditor={closeEditor}
+                    onAdd={(selectedSlot) => openEditor("add", selectedSlot)}
+                    onEdit={(selectedSlot) => openEditor("edit", selectedSlot)}
+                    onMove={(selectedSlot) => openEditor("move", selectedSlot)}
+                    onRemove={(selectedSlot) => openEditor("remove", selectedSlot)}
+                  />
+                );
+              })}
             </div>
           </section>
         ))}
@@ -459,7 +490,7 @@ export function CandidateCardBuilder({
           </p>
         </Surface>
 
-        {editor && (
+        {editor && !["add", "edit"].includes(editor.type) && (
           <Surface
             className={`${styles.panel} ${styles.editor}`}
             aria-labelledby="candidate-editor-title"
