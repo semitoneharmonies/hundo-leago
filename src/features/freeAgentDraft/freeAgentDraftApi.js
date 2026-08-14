@@ -4,6 +4,7 @@ import {
   validateCandidateCardHelp,
   validateCandidateCardMutation,
   validateCandidateCardRevisionPreview,
+  validateCandidateCardSave,
   validateEligibleCandidatePlayers,
   validateFreeAgentDraftAllocationResults,
   validateFreeAgentDraftCorrection,
@@ -24,6 +25,17 @@ const UUID_V4 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const IDEMPOTENCY_KEY = /^[\x21-\x7E]{1,128}$/;
 const SLOT_KEY = /^(?:F(?:0[1-9]|1[0-2])|D0[1-6]|B0[1-4])$/;
+const CANDIDATE_CARD_SLOT_KEYS = Object.freeze([
+  ...Array.from({ length: 12 }, (_, index) =>
+    `F${String(index + 1).padStart(2, "0")}`
+  ),
+  ...Array.from({ length: 6 }, (_, index) =>
+    `D${String(index + 1).padStart(2, "0")}`
+  ),
+  ...Array.from({ length: 4 }, (_, index) =>
+    `B${String(index + 1).padStart(2, "0")}`
+  ),
+]);
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 const part = (value) => encodeURIComponent(value);
 
@@ -485,6 +497,64 @@ async function candidateMutation(httpClient, path, method, body, options) {
     idempotencyKey: command.idempotencyKey,
     dataKind: "object",
     validateData: validateCandidateCardMutation,
+  });
+  return response.data;
+}
+
+function wholeCardDraft(input) {
+  exactInput(input, ["slots"], "Candidate Card save body");
+  if (!Array.isArray(input.slots) || input.slots.length !== 22) {
+    throw new TypeError("Candidate Card save slots are invalid.");
+  }
+  input.slots.forEach((slot, index) => {
+    exactInput(slot, ["slotKey", "candidate"], "Candidate Card save slot");
+    if (slot.slotKey !== CANDIDATE_CARD_SLOT_KEYS[index]) {
+      throw new TypeError("Candidate Card save slot order is invalid.");
+    }
+    if (slot.candidate === null) return;
+    exactInput(
+      slot.candidate,
+      ["playerId", "totalValueCents", "termYears"],
+      "Candidate Card save candidate"
+    );
+    stableId(slot.candidate.playerId, "Candidate Card save player ID");
+    if (
+      slot.candidate.totalValueCents !== null &&
+      (!Number.isSafeInteger(slot.candidate.totalValueCents) ||
+        slot.candidate.totalValueCents < 1)
+    ) {
+      throw new TypeError("Candidate Card save candidate total value is invalid.");
+    }
+    if (
+      slot.candidate.termYears !== null &&
+      (!Number.isSafeInteger(slot.candidate.termYears) ||
+        slot.candidate.termYears < 1 ||
+        slot.candidate.termYears > 3)
+    ) {
+      throw new TypeError("Candidate Card save candidate term is invalid.");
+    }
+  });
+  return input;
+}
+
+export async function saveCandidateCard(
+  httpClient,
+  leagueId,
+  fadId,
+  teamId,
+  input,
+  options
+) {
+  wholeCardDraft(input);
+  const command = writeOptions(options);
+  const response = await httpClient.request(cardPath(leagueId, fadId, teamId), {
+    method: "PUT",
+    authenticated: true,
+    body: input,
+    version: command.version,
+    idempotencyKey: command.idempotencyKey,
+    dataKind: "object",
+    validateData: validateCandidateCardSave,
   });
   return response.data;
 }

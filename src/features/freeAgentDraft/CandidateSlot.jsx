@@ -1,13 +1,24 @@
-import {
-  ArrowRightLeft,
-  LockKeyhole,
-  Pencil,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Check, Clock3, LockKeyhole, X } from "lucide-react";
 
-import { StatusBadge } from "../../components/HundoUi.jsx";
+import { EligiblePlayerSearch } from "./EligiblePlayerSearch.jsx";
 import styles from "./FreeAgentDraftPage.module.css";
+
+const WON_OUTCOMES = new Set([
+  "automatic_win",
+  "restricted_win",
+  "fallback_win",
+]);
+const NOT_WON_OUTCOMES = new Set([
+  "automatic_loss",
+  "restricted_loss",
+  "fallback_loss",
+  "fallback_no_winner",
+  "invalid_offer",
+]);
+const PENDING_OUTCOMES = new Set([
+  "restricted_pending",
+  "fallback_pending",
+]);
 
 function money(cents) {
   if (!Number.isSafeInteger(cents)) return "";
@@ -19,320 +30,212 @@ function money(cents) {
   }).format(cents / 100);
 }
 
-function outcomeLabel(code) {
-  return {
-    carryover: "Carried to the new season",
-    automatic_win: "Automatic allocation won",
-    automatic_loss: "Automatic allocation not won",
-    restricted_pending: "Restricted tie auction pending",
-    restricted_win: "Restricted tie auction won",
-    restricted_loss: "Restricted tie auction not won",
-    fallback_pending: "League-wide fallback auction pending",
-    fallback_win: "Fallback auction won",
-    fallback_loss: "Fallback auction not won",
-    fallback_no_winner: "Fallback auction closed without a winner",
-    invalid_offer: "Offer was ineligible at locking",
-    no_offer: "No offer submitted",
-  }[code] || "Result pending";
+function isIncompleteCandidate(slot) {
+  return (
+    slot.occupantKind === "candidate" &&
+    (slot.totalValueCents === null ||
+      slot.termYears === null ||
+      slot.validation.codes.includes("CANDIDATE_CONTRACT_INCOMPLETE"))
+  );
 }
 
-function validationTone(status) {
-  if (status === "valid") return "success";
-  if (status === "warning") return "warning";
-  if (status === "invalid") return "danger";
-  return "neutral";
+function publishedOutcome(slot) {
+  if (slot.occupantKind === "empty") {
+    return { kind: "neutral", label: "No offer", Icon: null };
+  }
+  if (slot.occupantKind === "carryover") {
+    return { kind: "locked", label: "Carried over", Icon: LockKeyhole };
+  }
+  if (isIncompleteCandidate(slot)) {
+    return { kind: "notWon", label: "Not won — incomplete", Icon: X };
+  }
+  if (WON_OUTCOMES.has(slot.outcome?.code)) {
+    return { kind: "won", label: "Won", Icon: Check };
+  }
+  if (NOT_WON_OUTCOMES.has(slot.outcome?.code)) {
+    return {
+      kind: "notWon",
+      label:
+        slot.outcome.code === "invalid_offer"
+          ? "Not won — invalid offer"
+          : "Not won",
+      Icon: X,
+    };
+  }
+  if (PENDING_OUTCOMES.has(slot.outcome?.code) || slot.outcome === null) {
+    return { kind: "pending", label: "Pending", Icon: Clock3 };
+  }
+  return { kind: "neutral", label: "No offer", Icon: null };
+}
+
+function privateState(slot, rowEditable) {
+  if (slot.occupantKind === "carryover") {
+    return { kind: "locked", label: "Locked carryover", Icon: LockKeyhole };
+  }
+  if (slot.occupantKind === "empty") {
+    return {
+      kind: "neutral",
+      label: rowEditable ? "Open" : "Empty",
+      Icon: null,
+    };
+  }
+  if (isIncompleteCandidate(slot)) {
+    return { kind: "pending", label: "Incomplete", Icon: Clock3 };
+  }
+  if (slot.validation.status === "invalid") {
+    return { kind: "notWon", label: "Invalid", Icon: X };
+  }
+  return {
+    kind: "neutral",
+    label: rowEditable ? "Ready" : "Read only",
+    Icon: null,
+  };
 }
 
 export function CandidateSlot({
   slot,
+  editable = false,
+  published = false,
   busy = false,
-  editor = null,
-  editorLabel = "",
-  eligiblePlayerSearch = null,
-  formError = "",
-  preview = null,
-  previewPending = false,
-  commandPending = false,
-  onEditorChange,
-  onPreview,
-  onApplyPreview,
-  onCloseEditor,
-  onAdd,
-  onEdit,
-  onMove,
-  onRemove,
+  draft = null,
+  rowError = "",
+  buildEligibleQueryOptions,
+  onDraftChange,
 }) {
-  const titleId = `candidate-slot-${slot.slotKey}-title`;
-  const isEmpty = slot.occupantKind === "empty";
   const isCarryover = slot.occupantKind === "carryover";
-  const canAdd = isEmpty && slot.capabilities.addCandidate.allowed;
-  const canMove =
-    slot.capabilities.moveCandidate.allowed ||
-    slot.capabilities.moveCarryover.allowed;
-  const playerValue = isEmpty ? "" : slot.player.fullName;
-  const moneyValue = isEmpty
-    ? ""
+  const rowEditable = editable && !slot.locked && !isCarryover;
+  const draftIncomplete =
+    rowEditable &&
+    Boolean(draft?.playerId) &&
+    (!draft.totalValue || !draft.termYears);
+  const state = published
+    ? publishedOutcome(slot)
+    : draftIncomplete
+      ? { kind: "pending", label: "Incomplete", Icon: Clock3 }
+      : privateState(slot, rowEditable);
+  const StateIcon = state.Icon;
+  const playerName = rowEditable
+    ? draft?.playerName || ""
+    : slot.player?.fullName || "";
+  const cost = rowEditable
+    ? draft?.totalValue || ""
     : isCarryover
       ? `${money(slot.aavCents)} AAV`
-      : `${money(slot.totalValueCents)} total`;
-  const yearsValue = isEmpty
-    ? ""
-    : String(isCarryover ? slot.remainingYears : slot.termYears);
-  const isInlineEditor =
-    editor && ["add", "edit"].includes(editor.type);
-
-  if (isInlineEditor) {
-    return (
-      <form
-        id={`candidate-slot-${slot.slotKey}`}
-        className={`${styles.slot} ${styles.slotEditor}`}
-        aria-label={editorLabel}
-        aria-describedby={formError ? "candidate-editor-error" : undefined}
-        data-slot-key={slot.slotKey}
-        onSubmit={onPreview}
-      >
-        <header className={styles.slotHeader}>
-          <span className={styles.slotKey}>{slot.slotKey}</span>
-          <h3>{editor.type === "add" ? "New candidate" : "Edit candidate"}</h3>
-        </header>
-
-        {editor.type === "add" ? (
-          eligiblePlayerSearch
-        ) : (
-          <label className={styles.slotField}>
-            <span>Player</span>
-            <input readOnly value={slot.player.fullName} />
-          </label>
-        )}
-
-        <label className={styles.slotField}>
-          <span>Total value</span>
-          <input
-            aria-label="Total contract value (CAD dollars)"
-            aria-describedby={formError ? "candidate-editor-error" : undefined}
-            inputMode="decimal"
-            placeholder="0.00"
-            value={editor.totalValue}
-            onChange={(event) =>
-              onEditorChange({ totalValue: event.target.value })
-            }
-          />
-        </label>
-
-        <label className={styles.slotField}>
-          <span>Years</span>
-          <select
-            aria-label="Contract term"
-            aria-describedby={formError ? "candidate-editor-error" : undefined}
-            value={editor.termYears}
-            onChange={(event) =>
-              onEditorChange({ termYears: event.target.value })
-            }
-          >
-            <option value="1">1 year</option>
-            <option value="2">2 years</option>
-            <option value="3">3 years</option>
-          </select>
-        </label>
-
-        <div className={styles.slotActions}>
-          <button
-            type="submit"
-            className="hl-button hl-button--primary"
-            disabled={busy}
-          >
-            {previewPending ? "Preparing preview…" : "Preview change"}
-          </button>
-          <button
-            type="button"
-            className="hl-button hl-button--quiet"
-            disabled={busy}
-            onClick={onCloseEditor}
-          >
-            Close
-          </button>
-        </div>
-
-        {formError && (
-          <p
-            id="candidate-editor-error"
-            className={`${styles.error} ${styles.inlineEditorMessage}`}
-            role="alert"
-          >
-            {formError}
-          </p>
-        )}
-
-        {preview && (
-          <section
-            className={`${styles.preview} ${styles.inlineEditorMessage}`}
-            aria-labelledby="candidate-preview-title"
-          >
-            <h3 id="candidate-preview-title">Server revision preview</h3>
-            <p>
-              Projected card version {preview.projectedCard.cardVersion}. Maximum
-              possible cap use: {money(
-                preview.projectedCard.capProjection.maximumPossibleCapCents
-              )}.
-            </p>
-            {preview.warnings.length > 0 && (
-              <ul className={styles.diagnostics}>
-                {preview.warnings.map((diagnostic) => (
-                  <li key={`${diagnostic.code}:${diagnostic.resourceId || "card"}`}>
-                    {diagnostic.message}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <button
-              type="button"
-              className="hl-button hl-button--primary"
-              disabled={commandPending}
-              onClick={onApplyPreview}
-            >
-              {commandPending ? "Applying…" : "Apply reviewed change"}
-            </button>
-          </section>
-        )}
-      </form>
-    );
-  }
-
-  function openEmptyEditor() {
-    if (canAdd && !busy) onAdd(slot);
-  }
+      : money(slot.totalValueCents);
+  const term = rowEditable
+    ? draft?.termYears || ""
+    : String(isCarryover ? slot.remainingYears || "" : slot.termYears || "");
+  const errorId = `candidate-slot-${slot.slotKey}-error`;
 
   return (
-    <article
-      id={`candidate-slot-${slot.slotKey}`}
-      className={`${styles.slot} ${styles[`slot_${slot.occupantKind}`]}`}
-      aria-labelledby={titleId}
-      tabIndex={-1}
+    <div
+      className={`${styles.compactSlot} ${styles[`slot_${slot.occupantKind}`]}`}
       data-slot-key={slot.slotKey}
     >
-      <header className={styles.slotHeader}>
-        <span className={styles.slotKey}>{slot.slotKey}</span>
-        <h3 id={titleId}>
+      <div className={styles.compactSlotKey}>
+        <strong>{slot.slotKey}</strong>
+        <span>
           {slot.slotGroup === "F"
-            ? "Forward"
+            ? "F"
             : slot.slotGroup === "D"
-              ? "Defence"
+              ? "D"
               : "Bench"}
-        </h3>
-        {isCarryover && (
-          <StatusBadge tone="neutral">
-            <LockKeyhole aria-hidden="true" /> Locked carryover
-          </StatusBadge>
-        )}
-      </header>
+        </span>
+      </div>
 
-      <label className={styles.slotField}>
-        <span>Player</span>
-        <input
-          aria-label={`${slot.slotKey} player`}
-          autoComplete="off"
-          placeholder={canAdd ? "Search eligible players" : "No player"}
-          readOnly
-          value={playerValue}
-          onClick={isEmpty ? openEmptyEditor : undefined}
-          onFocus={isEmpty ? openEmptyEditor : undefined}
-        />
-        {!isEmpty && (
-          <span className={styles.visuallyHidden} aria-hidden="true">
-            {playerValue}
-          </span>
-        )}
-      </label>
-
-      <label className={styles.slotField}>
-        <span>{isCarryover ? "AAV" : "Total value"}</span>
-        <input
-          aria-label={`${slot.slotKey} ${isCarryover ? "AAV" : "total value"}`}
-          inputMode="decimal"
-          placeholder={canAdd ? "$0.00" : "Not set"}
-          readOnly
-          value={moneyValue}
-          onClick={isEmpty ? openEmptyEditor : undefined}
-        />
-      </label>
-
-      <label className={styles.slotField}>
-        <span>Years</span>
-        <input
-          aria-label={`${slot.slotKey} years`}
-          placeholder={canAdd ? "1, 2, or 3" : "—"}
-          readOnly
-          value={yearsValue}
-          onClick={isEmpty ? openEmptyEditor : undefined}
-        />
-      </label>
-
-      <div
-        className={styles.slotActions}
-        role="group"
-        aria-label={`${isEmpty ? slot.slotKey : slot.player.fullName} actions`}
-      >
-        {canAdd && (
-          <button
-            type="button"
-            className="hl-button hl-button--primary"
+      <div className={styles.compactPlayerField}>
+        {rowEditable ? (
+          <EligiblePlayerSearch
+            buildQueryOptions={buildEligibleQueryOptions}
+            value={playerName}
+            selectedPlayerId={draft?.playerId || null}
+            inputLabel={`${slot.slotKey} player name`}
             disabled={busy}
-            onClick={() => onAdd(slot)}
-          >
-            <Plus aria-hidden="true" /> Add candidate
-          </button>
-        )}
-        {slot.capabilities.editCandidate.allowed && (
-          <button
-            type="button"
-            className="hl-button hl-button--secondary"
-            disabled={busy}
-            onClick={() => onEdit(slot)}
-          >
-            <Pencil aria-hidden="true" /> Edit contract
-          </button>
-        )}
-        {canMove && (
-          <button
-            type="button"
-            className="hl-button hl-button--secondary"
-            disabled={busy}
-            onClick={() => onMove(slot)}
-          >
-            <ArrowRightLeft aria-hidden="true" /> Move
-          </button>
-        )}
-        {slot.capabilities.removeCandidate.allowed && (
-          <button
-            type="button"
-            className="hl-button hl-button--danger"
-            disabled={busy}
-            onClick={() => onRemove(slot)}
-          >
-            <Trash2 aria-hidden="true" /> Remove
-          </button>
+            describedBy={rowError ? errorId : undefined}
+            invalid={Boolean(rowError)}
+            onInputChange={(nextName) =>
+              onDraftChange({ playerId: null, playerName: nextName })
+            }
+            onSelect={(selectedPlayer) => {
+              if (!selectedPlayer) return;
+              onDraftChange({
+                playerId: selectedPlayer.player.playerId,
+                playerName: selectedPlayer.player.fullName,
+              });
+            }}
+          />
+        ) : (
+          <>
+            <input
+              aria-label={`${slot.slotKey} player name`}
+              className={styles.compactReadOnlyField}
+              readOnly
+              value={playerName}
+            />
+            {playerName && (
+              <span className={styles.visuallyHidden}>{playerName}</span>
+            )}
+          </>
         )}
       </div>
 
-      {!isEmpty && (
-        <div className={styles.slotMeta}>
-          <StatusBadge tone={validationTone(slot.validation.status)}>
-            {slot.validation.status === "valid"
-              ? "Valid"
-              : slot.validation.status === "warning"
-                ? "Needs attention"
-                : "Invalid offer"}
-          </StatusBadge>
-          <span>
-            {isCarryover
-              ? `${slot.authoritativeRosterCategory} · ${slot.remainingYears} ${
-                  slot.remainingYears === 1 ? "year" : "years"
-                } remaining`
-              : "Free-agent candidate"}
-          </span>
-          {slot.outcome && <span>Outcome: {outcomeLabel(slot.outcome.code)}</span>}
-        </div>
+      <input
+        aria-describedby={rowError ? errorId : undefined}
+        aria-invalid={rowError ? true : undefined}
+        aria-label={`${slot.slotKey} ${isCarryover ? "AAV" : "cost"}`}
+        className={`${styles.compactCostField} ${
+          !rowEditable ? styles.compactReadOnlyField : ""
+        }`}
+        disabled={busy && rowEditable}
+        inputMode="decimal"
+        placeholder={rowEditable ? "Cost" : ""}
+        readOnly={!rowEditable}
+        value={cost}
+        onChange={
+          rowEditable
+            ? (event) => onDraftChange({ totalValue: event.target.value })
+            : undefined
+        }
+      />
+
+      {rowEditable ? (
+        <select
+          aria-describedby={rowError ? errorId : undefined}
+          aria-invalid={rowError ? true : undefined}
+          aria-label={`${slot.slotKey} term`}
+          disabled={busy}
+          className={styles.compactTermField}
+          value={term}
+          onChange={(event) =>
+            onDraftChange({ termYears: event.target.value })
+          }
+        >
+          <option value="">Term</option>
+          <option value="1">1 year</option>
+          <option value="2">2 years</option>
+          <option value="3">3 years</option>
+        </select>
+      ) : (
+        <input
+          aria-label={`${slot.slotKey} term`}
+          className={`${styles.compactTermField} ${styles.compactReadOnlyField}`}
+          readOnly
+          value={term}
+        />
       )}
-    </article>
+
+      <span
+        className={`${styles.compactSlotState} ${styles[`compactSlotState_${state.kind}`]}`}
+      >
+        {StateIcon && <StateIcon aria-hidden="true" />}
+        {state.label}
+      </span>
+
+      {rowError && (
+        <p id={errorId} className={styles.compactRowError} role="alert">
+          {rowError}
+        </p>
+      )}
+    </div>
   );
 }

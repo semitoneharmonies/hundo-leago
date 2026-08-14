@@ -596,12 +596,20 @@ Each selectable Candidate Card entry contains:
 * stable player ID;
 * effective league position;
 * requested Active F, Active D, or Bench slot;
-* proposed total contract value;
-* proposed term of one, two, or three years;
-* calculated AAV;
+* proposed total contract value, which may remain empty while the card is
+  being prepared;
+* proposed term of one, two, or three years, which may remain empty while the
+  card is being prepared;
+* calculated AAV when both contract fields are present;
 * current eligibility and validation state;
 * created and last-edited timestamps;
 * current version.
+
+A manager may save a selected player before entering the proposed total,
+term, or both. The saved row remains an incomplete private-card draft rather
+than an FAD offer until both contract fields form a valid contract. An
+incomplete row never creates a bid, player ownership, or contract merely
+because the Candidate Card deadline arrives.
 
 Display name, NHL team, and age are optional presentation fields and are not
 ownership or allocation keys. Statistics are outside the required Candidate
@@ -817,8 +825,17 @@ Before the deadline, an authorized manager or help-authorized commissioner may:
 * change term;
 * correct an invalid entry.
 
-Every save must validate the complete changed entry and reject stale writes
-without overwriting a newer revision.
+The primary Candidate Card edit is one atomic whole-card save. An authorized
+editor may change any number of editable rows and press one **Save** control;
+the backend either persists the complete requested card draft or none of it.
+There are no row-level save, submit, or lock-in controls.
+
+Every save must validate every changed player and every contract field that is
+present, preserve incomplete rows as incomplete drafts, and reject stale
+writes without overwriting a newer card draft. A row containing a complete
+contract must pass the normal Candidate offer rules before it can become an
+allocatable offer. Carryover rows remain locked and cannot be changed by the
+whole-card save.
 
 ---
 
@@ -1428,6 +1445,20 @@ in the main navigation.
 
 ## Candidate Card Presentation
 
+The Candidate Card uses one compact vertical form with exactly:
+
+```text
+12 Forward rows
+ 6 Defence rows
+ 4 Bench rows
+```
+
+Each row presents three primary fields in columns: player name, proposed total
+cost, and term. Player name uses the approved eligible-player autocomplete.
+One Save control appears at the top of the card and saves every changed
+editable row together. A manager may leave any editable row empty and may save
+a selected player while cost, term, or both remain empty.
+
 The Candidate Card must clearly distinguish:
 
 * locked carryover players;
@@ -1464,6 +1495,11 @@ The result view must make it possible to understand:
 * which players entered restricted tie auctions;
 * which positions remain empty;
 * final contracts after automatic or auction resolution.
+
+The published card preserves incomplete saved rows as non-participating
+historical requests. They must be visibly identified as incomplete and not
+won; they must not be rewritten as valid offers or silently removed from what
+the team saved.
 
 The original card must not be rewritten to look as though the manager requested
 only the players eventually won.

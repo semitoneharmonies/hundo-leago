@@ -54,6 +54,50 @@ Draft, auction, trade, and outbox workers remain available subject to their own
 gates. A later provider-neutral matchup/statistics slice must restore or split
 the runner before automatic matchup processing is enabled.
 
+On 2026-08-13, Grae replaced the row-command Candidate Card experience with a
+compact whole-card draft. This amendment is controlling wherever the older
+complete-entry-only or row-save language below conflicts with it:
+
+* the private card remains exactly 12 Forward, 6 Defence, and 4 Bench slots;
+* target route `T-146`,
+  `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId`,
+  replaces the complete 22-slot editable card draft atomically;
+* the exact request body is `{ slots }`, where `slots` contains each canonical
+  slot once and each item is `{ slotKey, candidate }`;
+* `candidate` is either `null` or exactly
+  `{ playerId, totalValueCents, termYears }`; a selected player is required for
+  a non-null candidate, while total and term are independently nullable during
+  preparation;
+* `If-Match` carries the current quoted positive card version and
+  `Idempotency-Key` carries one whole-card intent; one successful changed save
+  advances the card version once and records one `candidate_card_saved`
+  revision plus one scoped invalidation publication;
+* every accepted new whole-card intent records one revision, including a
+  logical no-op, while an idempotent replay returns that original result and a
+  stale non-replay returns the normal precondition failure;
+* the server validates all 22 rows before writing, rejects duplicate players,
+  validates present money/term fields, rechecks player eligibility and slot
+  compatibility, and commits every row or none;
+* carryover occupants are server-owned. Their request item must have
+  `candidate: null`; the save verifies and preserves them and cannot remove,
+  replace, recontract, or move them;
+* a candidate whose total, term, or both are null persists with null AAV,
+  `eligibility_status = invalid`, and
+  `validation_code = CANDIDATE_CONTRACT_INCOMPLETE`;
+* only a candidate with both fields present and a valid derived AAV is an
+  allocatable offer. Incomplete candidates remain visible when the card locks,
+  copy into the immutable snapshot, receive an explicit invalid/not-won
+  historical outcome, and never create ownership or a contract;
+* additive migration 0050 rebuilds `candidate_card_entries`,
+  `candidate_card_revisions`, and `candidate_card_snapshot_entries` under the
+  approved foreign-key-rebuild protocol. It preserves all schema-49 rows,
+  permits the nullable incomplete-candidate state, and adds the card-wide
+  revision action without weakening complete-offer, carryover, actor,
+  lifecycle, or immutable-history checks;
+* T-135 through T-138 remain compatible transitional commands, but the compact
+  frontend uses the whole-card PUT and exposes no row-level save, preview,
+  submit, or lock-in control.
+
 ---
 
 ## Technical Purpose

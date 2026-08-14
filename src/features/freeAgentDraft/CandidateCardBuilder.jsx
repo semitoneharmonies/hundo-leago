@@ -5,15 +5,10 @@ import { StatusBadge, Surface } from "../../components/HundoUi.jsx";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { leagueDateTime } from "../../shared/hundoFormat.js";
 import {
-  addCandidateCardCandidate,
-  editCandidateCardCandidate,
-  moveCandidateCardEntry,
-  previewCandidateCardRevision,
-  removeCandidateCardCandidate,
   requestCandidateCardHelp,
+  saveCandidateCard,
 } from "./freeAgentDraftApi.js";
 import { CandidateSlot } from "./CandidateSlot.jsx";
-import { EligiblePlayerSearch } from "./EligiblePlayerSearch.jsx";
 import styles from "./FreeAgentDraftPage.module.css";
 
 function money(cents) {
@@ -38,16 +33,6 @@ function parseCents(value) {
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
 }
 
-function actionScope(type) {
-  return `candidate-${type}`;
-}
-
-function focusSlot(slotKey) {
-  globalThis.requestAnimationFrame?.(() => {
-    document.getElementById(`candidate-slot-${slotKey}`)?.focus();
-  });
-}
-
 function cardWarning(card) {
   if (card.allocationEligibility === "excluded_structural_conflict") {
     return "This card has a carried-roster structural conflict. If it remains when cards lock, every new Candidate offer will be excluded.";
@@ -59,33 +44,112 @@ function cardWarning(card) {
     card.completeness.code === "incomplete" &&
     card.capStatus === "compliant"
   ) {
-    return "The card is incomplete, but each individually valid filled offer will still participate if the card remains free of structural conflicts and within cap.";
+    return "Incomplete rows are saved as drafts. Only rows with a valid player, cost, and term participate when the card locks.";
   }
   return null;
 }
 
-function editorTitle(editor) {
-  if (editor.type === "add") {
-    return `Add a candidate to ${editor.slot.slotKey}`;
-  }
-  if (editor.type === "edit") {
-    return `Edit ${editor.slot.player.fullName}`;
-  }
-  if (editor.type === "move") {
-    return `Move ${editor.slot.player.fullName}`;
-  }
-  return `Remove ${editor.slot.player.fullName}`;
+function draftRows(card) {
+  return Object.fromEntries(
+    card.slots.map((slot) => [
+      slot.slotKey,
+      slot.occupantKind === "candidate"
+        ? {
+            playerId: slot.player.playerId,
+            playerName: slot.player.fullName,
+            totalValue: centsInput(slot.totalValueCents),
+            termYears:
+              slot.termYears === null ? "" : String(slot.termYears),
+          }
+        : {
+            playerId: null,
+            playerName: "",
+            totalValue: "",
+            termYears: "",
+          },
+    ])
+  );
 }
 
-function initialEditor(type, slot) {
-  return {
-    type,
-    slot,
-    selectedPlayer: null,
-    totalValue: type === "edit" ? centsInput(slot.totalValueCents) : "",
-    termYears: type === "edit" ? String(slot.termYears) : "1",
-    destinationSlotKey: "",
-  };
+function mergeTouchedDraftRows(card, currentDrafts, touchedSlots) {
+  const merged = draftRows(card);
+  for (const slotKey of touchedSlots) {
+    if (currentDrafts[slotKey]) {
+      merged[slotKey] = currentDrafts[slotKey];
+    }
+  }
+  return merged;
+}
+
+function focusFirstInvalidRow(slotKey) {
+  const focus = () =>
+    document
+      .querySelector(
+        `[data-slot-key="${slotKey}"] [aria-invalid="true"]`
+      )
+      ?.focus();
+  if (typeof globalThis.requestAnimationFrame === "function") {
+    globalThis.requestAnimationFrame(focus);
+  } else {
+    focus();
+  }
+}
+
+function wholeCardInput(card, drafts) {
+  const errors = {};
+  const usedPlayers = new Map();
+  const slots = card.slots.map((slot) => {
+    if (slot.occupantKind === "carryover" || slot.locked) {
+      return { slotKey: slot.slotKey, candidate: null };
+    }
+
+    const draft = drafts[slot.slotKey];
+    const playerName = draft.playerName.trim();
+    const totalValue = draft.totalValue.trim();
+    const termYears = draft.termYears;
+    const hasAnyValue = playerName !== "" || totalValue !== "" || termYears !== "";
+    if (!hasAnyValue) {
+      return { slotKey: slot.slotKey, candidate: null };
+    }
+    if (!draft.playerId) {
+      errors[slot.slotKey] =
+        "Choose a player from the suggestions, or clear this row.";
+      return { slotKey: slot.slotKey, candidate: null };
+    }
+
+    let totalValueCents = null;
+    if (totalValue !== "") {
+      totalValueCents = parseCents(totalValue);
+      if (totalValueCents === null) {
+        errors[slot.slotKey] =
+          "Cost must be a positive amount with no more than two decimal places.";
+      }
+    }
+
+    const parsedTerm = termYears === "" ? null : Number(termYears);
+    if (parsedTerm !== null && ![1, 2, 3].includes(parsedTerm)) {
+      errors[slot.slotKey] = "Term must be one, two, or three years.";
+    }
+
+    const duplicateSlot = usedPlayers.get(draft.playerId);
+    if (duplicateSlot) {
+      errors[duplicateSlot] = "A player may appear only once on the card.";
+      errors[slot.slotKey] = "A player may appear only once on the card.";
+    } else {
+      usedPlayers.set(draft.playerId, slot.slotKey);
+    }
+
+    return {
+      slotKey: slot.slotKey,
+      candidate: {
+        playerId: draft.playerId,
+        totalValueCents,
+        termYears: parsedTerm,
+      },
+    };
+  });
+
+  return { input: { slots }, errors };
 }
 
 export function CandidateCardBuilder({
@@ -96,207 +160,101 @@ export function CandidateCardBuilder({
   onAuthoritativeCard,
   onProtectedFailure,
 }) {
-  const [editor, setEditor] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [intentKey, setIntentKey] = useState(null);
+  const [drafts, setDrafts] = useState(() => draftRows(card));
+  const [baseVersion, setBaseVersion] = useState(card.cardVersion);
+  const [dirty, setDirty] = useState(false);
+  const [touchedSlots, setTouchedSlots] = useState(() => new Set());
+  const [rowErrors, setRowErrors] = useState({});
   const [formError, setFormError] = useState("");
-  const [helpError, setHelpError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [helpError, setHelpError] = useState("");
   const [helpMessage, setHelpMessage] = useState("");
+  const editable =
+    card.visibilityMode === "private_editable" &&
+    card.capabilities.editCard.allowed;
+  const cardIdentity = `${card.leagueId}:${card.seasonId}:${card.fadId}:${card.teamId}:${card.cardId}`;
+  const [observedCard, setObservedCard] = useState(() => ({
+    source: card,
+    cardIdentity,
+    cardVersion: card.cardVersion,
+    editable,
+  }));
+  const authoritativeCardChanged =
+    observedCard.source !== card ||
+    observedCard.cardIdentity !== cardIdentity ||
+    observedCard.cardVersion !== card.cardVersion ||
+    observedCard.editable !== editable;
 
-  const eligibleOptions = useCallback(
-    (filters) =>
-      buildEligibleQueryOptions(editor?.slot.slotKey || "F01", filters),
-    [buildEligibleQueryOptions, editor?.slot.slotKey]
-  );
+  if (authoritativeCardChanged) {
+    const identityChanged = observedCard.cardIdentity !== cardIdentity;
+    const becameReadOnly = observedCard.editable && !editable;
 
-  function clearPreview() {
-    setPreview(null);
-    setIntentKey(null);
-    setFormError("");
-    setStatusMessage("");
-  }
+    setObservedCard({
+      source: card,
+      cardIdentity,
+      cardVersion: card.cardVersion,
+      editable,
+    });
 
-  function updateEditor(patch) {
-    setEditor((current) => ({ ...current, ...patch }));
-    clearPreview();
-  }
+    // A stale save keeps the local draft dirty, but an authoritative refetch
+    // must still advance the version used by the next whole-card PUT.
+    setBaseVersion(card.cardVersion);
 
-  function openEditor(type, slot) {
-    setEditor(initialEditor(type, slot));
-    setPreview(null);
-    setIntentKey(null);
-    setFormError("");
-    setStatusMessage("");
-  }
-
-  function closeEditor() {
-    const slotKey = editor?.slot.slotKey;
-    setEditor(null);
-    setPreview(null);
-    setIntentKey(null);
-    setFormError("");
-    if (slotKey) focusSlot(slotKey);
-  }
-
-  function buildAction() {
-    if (!editor) return null;
-    if (editor.type === "remove") {
-      return { type: "remove", entryId: editor.slot.entryId };
-    }
-    if (editor.type === "move") {
-      if (!editor.destinationSlotKey) {
-        setFormError("Choose a destination slot.");
-        return null;
-      }
-      return {
-        type: "move",
-        entryId: editor.slot.entryId,
-        slotKey: editor.destinationSlotKey,
-      };
-    }
-    const totalValueCents = parseCents(editor.totalValue);
-    const termYears = Number(editor.termYears);
-    if (totalValueCents === null) {
-      setFormError("Enter a positive total contract value with no more than two decimal places.");
-      return null;
-    }
-    if (![1, 2, 3].includes(termYears)) {
-      setFormError("Choose a term of one, two, or three years.");
-      return null;
-    }
-    if (editor.type === "add") {
-      if (!editor.selectedPlayer) {
-        setFormError("Choose an eligible player.");
-        return null;
-      }
-      return {
-        type: "add",
-        slotKey: editor.slot.slotKey,
-        playerId: editor.selectedPlayer.player.playerId,
-        totalValueCents,
-        termYears,
-      };
-    }
-    return {
-      type: "edit",
-      entryId: editor.slot.entryId,
-      totalValueCents,
-      termYears,
-    };
-  }
-
-  const previewMutation = useMutation({
-    mutationFn: (action) =>
-      previewCandidateCardRevision(
-        httpClient,
-        card.leagueId,
-        card.fadId,
-        card.teamId,
-        action
-      ),
-    onSuccess: (result, action) => {
-      try {
-        setIntentKey(createIdempotencyKey(actionScope(action.type)));
-      } catch (error) {
-        setPreview(null);
-        setFormError(error.message);
-        return;
-      }
-      setPreview(result);
-      setFormError("");
-      setStatusMessage("Preview ready. Review the server projection before applying it.");
-    },
-    onError: (error) => {
-      setPreview(null);
-      setIntentKey(null);
-      setFormError(error.message || "The revision preview could not be prepared.");
-      onProtectedFailure?.(error);
-    },
-  });
-
-  const commandMutation = useMutation({
-    mutationFn: async ({ action, idempotencyKey }) => {
-      const options = {
-        version: card.cardVersion,
-        idempotencyKey,
-      };
-      if (action.type === "add") {
-        return addCandidateCardCandidate(
-          httpClient,
-          card.leagueId,
-          card.fadId,
-          card.teamId,
-          action.slotKey,
-          {
-            playerId: action.playerId,
-            totalValueCents: action.totalValueCents,
-            termYears: action.termYears,
-          },
-          options
-        );
-      }
-      if (action.type === "edit") {
-        return editCandidateCardCandidate(
-          httpClient,
-          card.leagueId,
-          card.fadId,
-          card.teamId,
-          action.entryId,
-          {
-            totalValueCents: action.totalValueCents,
-            termYears: action.termYears,
-          },
-          options
-        );
-      }
-      if (action.type === "move") {
-        return moveCandidateCardEntry(
-          httpClient,
-          card.leagueId,
-          card.fadId,
-          card.teamId,
-          action.entryId,
-          { slotKey: action.slotKey },
-          options
-        );
-      }
-      return removeCandidateCardCandidate(
-        httpClient,
-        card.leagueId,
-        card.fadId,
-        card.teamId,
-        action.entryId,
-        options
+    if (identityChanged || becameReadOnly || !dirty) {
+      setDrafts(draftRows(card));
+    } else {
+      setDrafts((current) =>
+        mergeTouchedDraftRows(card, current, touchedSlots)
       );
-    },
-    onSuccess: (result, { action }) => {
-      const originalSlotKey = editor?.slot.slotKey;
-      const changedSlot = result.changedEntryId
-        ? result.card.slots.find(
-            (slot) => slot.entryId === result.changedEntryId
-          )
-        : null;
-      setEditor(null);
-      setPreview(null);
-      setIntentKey(null);
+    }
+
+    if (identityChanged || becameReadOnly) {
+      setDirty(false);
+      setTouchedSlots(new Set());
+      setRowErrors({});
       setFormError("");
-      setStatusMessage("Candidate Card updated from the authoritative server response.");
+      setStatusMessage("");
+      setHelpError("");
+      setHelpMessage("");
+    }
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: ({ input, idempotencyKey, version }) =>
+      saveCandidateCard(
+        httpClient,
+        card.leagueId,
+        card.fadId,
+        card.teamId,
+        input,
+        { version, idempotencyKey }
+      ),
+    onSuccess: (result) => {
+      setDrafts(draftRows(result.card));
+      setBaseVersion(result.card.cardVersion);
+      setDirty(false);
+      setTouchedSlots(new Set());
+      setRowErrors({});
+      setFormError("");
+      setStatusMessage(
+        result.changedEntryIds.length === 0
+          ? "Candidate Card saved. No rows changed."
+          : `Candidate Card saved. ${result.changedEntryIds.length} ${
+              result.changedEntryIds.length === 1 ? "row" : "rows"
+            } changed.`
+      );
       onAuthoritativeCard(result.card);
-      focusSlot(changedSlot?.slotKey || action.slotKey || originalSlotKey);
     },
     onError: (error) => {
       if (
         error.status === 412 ||
         error.code === "CANDIDATE_CARD_PRECONDITION_FAILED"
       ) {
-        setPreview(null);
-        setIntentKey(null);
         setFormError(
-          "This card changed before your update was applied. Your safe form values are still here. Review the refreshed card, preview again, and then resubmit."
+          "This card changed before your save was applied. Your entries are still here. Review the refreshed card and save again."
         );
       } else {
-        setFormError(error.message || "The Candidate Card could not be updated.");
+        setFormError(error.message || "The Candidate Card could not be saved.");
       }
       onProtectedFailure?.(error);
     },
@@ -329,17 +287,71 @@ export function CandidateCardBuilder({
     },
   });
 
-  function requestPreview(event) {
-    event.preventDefault();
-    const action = buildAction();
-    if (!action) return;
+  const slotsByGroup = useMemo(
+    () => ({
+      F: card.slots.filter(({ slotGroup }) => slotGroup === "F"),
+      D: card.slots.filter(({ slotGroup }) => slotGroup === "D"),
+      B: card.slots.filter(({ slotGroup }) => slotGroup === "B"),
+    }),
+    [card.slots]
+  );
+
+  const eligibleOptionsFor = useCallback(
+    (slotKey) => (filters) => buildEligibleQueryOptions(slotKey, filters),
+    [buildEligibleQueryOptions]
+  );
+
+  function updateDraft(slotKey, patch) {
+    setDrafts((current) => {
+      const nextRow = { ...current[slotKey], ...patch };
+      if (
+        Object.hasOwn(patch, "playerName") &&
+        patch.playerName.trim() === ""
+      ) {
+        nextRow.playerId = null;
+        nextRow.playerName = "";
+        nextRow.totalValue = "";
+        nextRow.termYears = "";
+      }
+      return { ...current, [slotKey]: nextRow };
+    });
+    setDirty(true);
+    setTouchedSlots((current) => {
+      if (current.has(slotKey)) return current;
+      const next = new Set(current);
+      next.add(slotKey);
+      return next;
+    });
+    setStatusMessage("");
     setFormError("");
-    previewMutation.mutate(action);
+    setRowErrors((current) => {
+      if (!Object.hasOwn(current, slotKey)) return current;
+      const next = { ...current };
+      delete next[slotKey];
+      return next;
+    });
   }
 
-  function applyPreview() {
-    if (!preview || !intentKey) return;
-    commandMutation.mutate({ action: preview.action, idempotencyKey: intentKey });
+  function saveCard(event) {
+    event.preventDefault();
+    if (!editable || saveMutation.isPending) return;
+    const { input, errors } = wholeCardInput(card, drafts);
+    if (Object.keys(errors).length > 0) {
+      setRowErrors(errors);
+      setFormError("Fix the highlighted rows before saving the card.");
+      focusFirstInvalidRow(Object.keys(errors)[0]);
+      return;
+    }
+    let idempotencyKey;
+    try {
+      idempotencyKey = createIdempotencyKey("candidate-card-save");
+    } catch (error) {
+      setFormError(error.message);
+      return;
+    }
+    setRowErrors({});
+    setFormError("");
+    saveMutation.mutate({ input, idempotencyKey, version: baseVersion });
   }
 
   function requestHelp(event) {
@@ -352,112 +364,27 @@ export function CandidateCardBuilder({
       setHelpError(error.message);
       return;
     }
-    const message = helpMessage.trim();
-    helpMutation.mutate({ message, idempotencyKey });
+    helpMutation.mutate({
+      message: helpMessage.trim(),
+      idempotencyKey,
+    });
   }
 
   const warning = cardWarning(card);
-  const slotsByGroup = useMemo(
-    () => ({
-      F: card.slots.filter(({ slotGroup }) => slotGroup === "F"),
-      D: card.slots.filter(({ slotGroup }) => slotGroup === "D"),
-      B: card.slots.filter(({ slotGroup }) => slotGroup === "B"),
-    }),
-    [card.slots]
-  );
-  const busy =
-    previewMutation.isPending ||
-    commandMutation.isPending ||
-    helpMutation.isPending;
+  const busy = saveMutation.isPending || helpMutation.isPending;
 
   return (
-    <div className={styles.cardLayout}>
-      <div className={styles.slots}>
-        {warning && (
-          <p className={styles.warning} role="status">
-            <strong>Candidate Card warning:</strong> {warning}
-          </p>
-        )}
-        {statusMessage && (
-          <p className={styles.success} role="status">
-            {statusMessage}
-          </p>
-        )}
-        {formError && !editor && (
-          <p className={styles.error} role="alert">
-            {formError}
-          </p>
-        )}
-
-        {[
-          ["F", "Forwards", "12 mandatory slots"],
-          ["D", "Defence", "6 mandatory slots"],
-          ["B", "Bench", "4 optional neutral slots"],
-        ].map(([group, title, description]) => (
-          <section
-            className={styles.slotGroup}
-            aria-labelledby={`candidate-${group}-slots`}
-            key={group}
-          >
-            <div className={styles.panelHeader}>
-              <h2 id={`candidate-${group}-slots`}>{title}</h2>
-              <span className={styles.muted}>{description}</span>
-            </div>
-            <div className={styles.slotGrid}>
-              {slotsByGroup[group].map((slot) => {
-                const activeEditor =
-                  editor?.slot.slotKey === slot.slotKey &&
-                  ["add", "edit"].includes(editor.type)
-                    ? editor
-                    : null;
-                return (
-                  <CandidateSlot
-                    key={slot.slotKey}
-                    slot={slot}
-                    busy={busy}
-                    editor={activeEditor}
-                    editorLabel={activeEditor ? editorTitle(activeEditor) : ""}
-                    eligiblePlayerSearch={
-                      activeEditor?.type === "add" ? (
-                        <EligiblePlayerSearch
-                          key={activeEditor.slot.slotKey}
-                          buildQueryOptions={eligibleOptions}
-                          selectedPlayerId={
-                            activeEditor.selectedPlayer?.player.playerId || null
-                          }
-                          onSelect={(selectedPlayer) =>
-                            updateEditor({ selectedPlayer })
-                          }
-                        />
-                      ) : null
-                    }
-                    formError={activeEditor ? formError : ""}
-                    preview={activeEditor ? preview : null}
-                    previewPending={previewMutation.isPending}
-                    commandPending={commandMutation.isPending}
-                    onEditorChange={updateEditor}
-                    onPreview={requestPreview}
-                    onApplyPreview={applyPreview}
-                    onCloseEditor={closeEditor}
-                    onAdd={(selectedSlot) => openEditor("add", selectedSlot)}
-                    onEdit={(selectedSlot) => openEditor("edit", selectedSlot)}
-                    onMove={(selectedSlot) => openEditor("move", selectedSlot)}
-                    onRemove={(selectedSlot) => openEditor("remove", selectedSlot)}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        ))}
-      </div>
-
-      <aside className={styles.sideRail} aria-label="Candidate Card controls">
-        <Surface className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <p className="hl-eyebrow">Authoritative projection</p>
-              <h2>Card status</h2>
-            </div>
+    <div className={styles.candidateWorkspace}>
+      <form className={styles.compactCardForm} onSubmit={saveCard}>
+        <Surface className={styles.candidateToolbar}>
+          <div>
+            <p className="hl-eyebrow">22-slot Candidate Card</p>
+            <h2>{editable ? "Build your card" : "Candidate Card"}</h2>
+            <p className={styles.muted}>
+              Cost and term may be left blank and completed in a later save.
+            </p>
+          </div>
+          <div className={styles.candidateToolbarActions}>
             <StatusBadge
               tone={
                 card.allocationEligibility === "eligible"
@@ -469,8 +396,17 @@ export function CandidateCardBuilder({
                 ? "Allocation eligible"
                 : "Offers at risk"}
             </StatusBadge>
+            {editable && (
+              <button
+                type="submit"
+                className="hl-button hl-button--primary"
+                disabled={!dirty || saveMutation.isPending}
+              >
+                {saveMutation.isPending ? "Saving…" : "Save Candidate Card"}
+              </button>
+            )}
           </div>
-          <dl className={styles.contractSummary}>
+          <dl className={styles.compactCardSummary}>
             <div>
               <dt>Maximum cap use</dt>
               <dd>{money(card.capProjection.maximumPossibleCapCents)}</dd>
@@ -484,230 +420,134 @@ export function CandidateCardBuilder({
               <dd>{card.completeness.missingMandatoryCount}</dd>
             </div>
           </dl>
-          <p>
-            Cap status: <strong>{card.capStatus === "compliant" ? "Within cap" : "Over cap"}</strong>.
-            These values come from the server and are not recalculated here.
-          </p>
         </Surface>
 
-        {editor && !["add", "edit"].includes(editor.type) && (
-          <Surface
-            className={`${styles.panel} ${styles.editor}`}
-            aria-labelledby="candidate-editor-title"
-          >
-            <div className={styles.panelHeader}>
-              <h2 id="candidate-editor-title">{editorTitle(editor)}</h2>
-              <button
-                type="button"
-                className="hl-button hl-button--quiet"
-                disabled={busy}
-                onClick={closeEditor}
-              >
-                Close
-              </button>
-            </div>
-
-            <form
-              aria-labelledby="candidate-editor-title"
-              aria-describedby={formError ? "candidate-editor-error" : undefined}
-              onSubmit={requestPreview}
-            >
-              {editor.type === "add" && (
-                <EligiblePlayerSearch
-                  key={editor.slot.slotKey}
-                  buildQueryOptions={eligibleOptions}
-                  selectedPlayerId={
-                    editor.selectedPlayer?.player.playerId || null
-                  }
-                  onSelect={(selectedPlayer) =>
-                    updateEditor({ selectedPlayer })
-                  }
-                />
-              )}
-
-              {(editor.type === "add" || editor.type === "edit") && (
-                <div className={styles.fieldGroup}>
-                  <label>
-                    Total contract value (CAD dollars)
-                    <input
-                      inputMode="decimal"
-                      value={editor.totalValue}
-                      aria-describedby={formError ? "candidate-editor-error" : undefined}
-                      onChange={(event) =>
-                        updateEditor({ totalValue: event.target.value })
-                      }
-                    />
-                  </label>
-                  <label>
-                    Contract term
-                    <select
-                      value={editor.termYears}
-                      aria-describedby={formError ? "candidate-editor-error" : undefined}
-                      onChange={(event) =>
-                        updateEditor({ termYears: event.target.value })
-                      }
-                    >
-                      <option value="1">1 year</option>
-                      <option value="2">2 years</option>
-                      <option value="3">3 years</option>
-                    </select>
-                  </label>
-                  {editor.selectedPlayer && (
-                    <p className={styles.muted}>
-                      Server limits: minimum total is {money(
-                        editor.selectedPlayer.contractLimits
-                          .minimumTotalValueCentsByTerm[editor.termYears]
-                      )} for this term
-                      {editor.selectedPlayer.contractLimits.maximumBenchAavCents
-                        ? `; Bench AAV limit is ${money(
-                            editor.selectedPlayer.contractLimits.maximumBenchAavCents
-                          )}`
-                        : ""}.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {editor.type === "move" && (
-                <label className={styles.fieldGroup}>
-                  Destination slot
-                  <select
-                    value={editor.destinationSlotKey}
-                    aria-describedby={formError ? "candidate-editor-error" : undefined}
-                    onChange={(event) =>
-                      updateEditor({ destinationSlotKey: event.target.value })
-                    }
-                  >
-                    <option value="">Choose a slot</option>
-                    {card.slots
-                      .filter(({ slotKey }) => slotKey !== editor.slot.slotKey)
-                      .map((slot) => (
-                        <option key={slot.slotKey} value={slot.slotKey}>
-                          {slot.slotKey} · {slot.occupantKind === "empty" ? "empty" : "occupied"}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              )}
-
-              {editor.type === "remove" && (
-                <p>
-                  Preview removing <strong>{editor.slot.player.fullName}</strong> from
-                  this Candidate Card. Nothing changes until you apply the preview.
-                </p>
-              )}
-
-              {formError && (
-                <p id="candidate-editor-error" className={styles.error} role="alert">
-                  {formError}
-                </p>
-              )}
-
-              <div className={styles.editorActions}>
-                <button
-                  type="submit"
-                  className="hl-button hl-button--secondary"
-                  disabled={busy}
-                >
-                  {previewMutation.isPending ? "Preparing preview…" : "Preview change"}
-                </button>
-              </div>
-            </form>
-
-            {preview && (
-              <section className={styles.preview} aria-labelledby="candidate-preview-title">
-                <h3 id="candidate-preview-title">Server revision preview</h3>
-                <p>
-                  Projected card version {preview.projectedCard.cardVersion}. Maximum
-                  possible cap use: {money(
-                    preview.projectedCard.capProjection.maximumPossibleCapCents
-                  )}.
-                </p>
-                {preview.warnings.length > 0 && (
-                  <ul className={styles.diagnostics}>
-                    {preview.warnings.map((diagnostic) => (
-                      <li key={`${diagnostic.code}:${diagnostic.resourceId || "card"}`}>
-                        {diagnostic.message}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <button
-                  type="button"
-                  className={
-                    editor.type === "remove"
-                      ? "hl-button hl-button--danger"
-                      : "hl-button hl-button--primary"
-                  }
-                  disabled={commandMutation.isPending}
-                  onClick={applyPreview}
-                >
-                  {commandMutation.isPending ? "Applying…" : "Apply reviewed change"}
-                </button>
-              </section>
-            )}
-          </Surface>
+        {warning && (
+          <p className={styles.warning} role="status">
+            <strong>Candidate Card:</strong> {warning}
+          </p>
+        )}
+        {!editable && (
+          <p className={styles.notice} role="status">
+            This Candidate Card is read only.
+          </p>
+        )}
+        {statusMessage && (
+          <p className={styles.success} role="status">
+            {statusMessage}
+          </p>
+        )}
+        {formError && (
+          <p className={styles.error} role="alert">
+            {formError}
+          </p>
         )}
 
-        {card.capabilities.requestHelp.allowed && (
-          <Surface
-            className={styles.panel}
-            as="section"
-            aria-labelledby="candidate-help-title"
-          >
+        <div className={styles.compactCard} aria-label="Candidate Card rows">
+          <div className={styles.compactColumnHeader} aria-hidden="true">
+            <span>Slot</span>
+            <span>Player name</span>
+            <span>Cost</span>
+            <span>Term</span>
+            <span>Status</span>
+          </div>
+          {[
+            ["F", "Forwards", "12 rows"],
+            ["D", "Defence", "6 rows"],
+            ["B", "Bench", "4 rows"],
+          ].map(([group, title, description]) => (
+            <section
+              className={styles.compactSlotGroup}
+              aria-labelledby={`candidate-${group}-slots`}
+              key={group}
+            >
+              <div className={styles.compactGroupHeading}>
+                <h3 id={`candidate-${group}-slots`}>{title}</h3>
+                <span>{description}</span>
+              </div>
+              {slotsByGroup[group].map((slot) => (
+                <CandidateSlot
+                  key={slot.slotKey}
+                  slot={slot}
+                  editable={editable}
+                  busy={busy}
+                  draft={drafts[slot.slotKey]}
+                  rowError={rowErrors[slot.slotKey] || ""}
+                  buildEligibleQueryOptions={eligibleOptionsFor(slot.slotKey)}
+                  onDraftChange={(patch) => updateDraft(slot.slotKey, patch)}
+                />
+              ))}
+            </section>
+          ))}
+        </div>
+      </form>
+
+      {card.capabilities.requestHelp.allowed && (
+        <Surface
+          className={styles.compactHelpPanel}
+          as="section"
+          aria-labelledby="candidate-help-title"
+        >
+          <div>
             <h2 id="candidate-help-title">Ask the commissioner for help</h2>
             <p>
-              This grants the current commissioner view-and-edit access only to
-              this card until the deadline.
+              This grants the current commissioner access only to this card
+              until the deadline.
             </p>
-            <form
-              className={styles.editor}
-              aria-labelledby="candidate-help-title"
-              aria-describedby={helpError ? "candidate-help-error" : undefined}
-              onSubmit={requestHelp}
-            >
-              <label>
-                Private message (optional)
-                <textarea
-                  rows="4"
-                  maxLength={500}
-                  value={helpMessage}
-                  aria-describedby={helpError ? "candidate-help-error" : undefined}
-                  onChange={(event) => {
-                    setHelpMessage(event.target.value);
-                    setHelpError("");
-                  }}
-                />
-              </label>
-              {helpError && (
-                <p id="candidate-help-error" className={styles.error} role="alert">
-                  {helpError}
-                </p>
-              )}
-              <button
-                type="submit"
-                className="hl-button hl-button--secondary"
-                disabled={helpMutation.isPending}
+          </div>
+          <form
+            aria-labelledby="candidate-help-title"
+            aria-describedby={helpError ? "candidate-help-error" : undefined}
+            onSubmit={requestHelp}
+          >
+            <label>
+              Private message (optional)
+              <textarea
+                aria-describedby={helpError ? "candidate-help-error" : undefined}
+                rows="2"
+                maxLength={500}
+                value={helpMessage}
+                onChange={(event) => {
+                  setHelpMessage(event.target.value);
+                  setHelpError("");
+                }}
+              />
+            </label>
+            {helpError && (
+              <p
+                id="candidate-help-error"
+                className={styles.error}
+                role="alert"
               >
-                {helpMutation.isPending ? "Sending request…" : "Request commissioner help"}
-              </button>
-            </form>
-          </Surface>
-        )}
+                {helpError}
+              </p>
+            )}
+            <button
+              type="submit"
+              className="hl-button hl-button--secondary"
+              disabled={helpMutation.isPending}
+            >
+              {helpMutation.isPending
+                ? "Sending request…"
+                : "Request commissioner help"}
+            </button>
+          </form>
+        </Surface>
+      )}
 
-        {card.helpContext && (
-          <Surface className={styles.panel}>
+      {card.helpContext && (
+        <Surface className={styles.compactHelpPanel}>
+          <div>
             <h2>Commissioner help</h2>
-            <StatusBadge tone={card.helpContext.status === "active" ? "success" : "neutral"}>
-              {card.helpContext.status === "active" ? "Active" : "Expired"}
-            </StatusBadge>
             <p>{card.helpContext.message || "No private message was included."}</p>
-            <small>
-              Requested by {card.helpContext.requestedByDisplayName}
-            </small>
-          </Surface>
-        )}
-      </aside>
+          </div>
+          <StatusBadge
+            tone={card.helpContext.status === "active" ? "success" : "neutral"}
+          >
+            {card.helpContext.status === "active" ? "Active" : "Expired"}
+          </StatusBadge>
+        </Surface>
+      )}
     </div>
   );
 }

@@ -48,6 +48,10 @@ The explicit final-standings amendment approved on 2026-07-29 adds `T-145`.
 It makes one provenance-complete final standings snapshot a required,
 independently confirmed prerequisite for later season rollover.
 
+On 2026-08-13, Grae approved the atomic whole-card Candidate Card save as
+`T-146`. It adds one route to the approved target catalogue without changing
+the existing `T-145` standings-finalization identity.
+
 On 2026-08-11, Grae clarified that FAD and Entry Draft player selection uses
 the persisted catalogue only and does not depend on statistics. Every new
 season's approved semantic baseline is exactly zero current-season GP, goals,
@@ -2390,6 +2394,7 @@ defined by `docs/04-technical-specs/FREE_AGENT_DRAFT.md`.
 | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | League member after publication | List published card summaries |
 | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | League member after publication | Read one immutable published card |
 | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/eligible-players` | Authorized private editor | Search server-confirmed candidates for one slot |
+| `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId` | Authorized private editor | Atomically save the complete 22-slot Candidate Card draft |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/revision-previews` | Authorized private editor | Preview one revision without writes |
 | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/slots/:slotKey/candidate` | Authorized private editor | Add one candidate |
 | `PATCH /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Authorized private editor | Edit one candidate offer |
@@ -2423,7 +2428,7 @@ accepts no query. Unknown, partial, duplicate, or malformed query shapes are
 membership; platform role without active membership grants no inherited
 commissioner access.
 
-T-130 and T-134 through T-139 accept no query. T-133 accepts only required
+T-130, T-134 through T-139, and T-146 accept no query. T-133 accepts only required
 `slotKey` plus optional `q`, `cursor`, and `limit`. Search text collapses
 whitespace, trims, lowercases for matching, and is limited to 200 Unicode code
 points; deterministic order is normalized player name then player ID. Its
@@ -2432,9 +2437,37 @@ to the exact card, slot, normalized search, and limit. Cursor or query mismatch
 is `400`. T-134 is a read-only preview and ignores supplied concurrency or
 idempotency headers. T-135 through T-138 require an exactly quoted positive
 integer card `If-Match` plus a trimmed, control-free 1-through-128-code-point
-`Idempotency-Key`. T-139 requires that same key form and forbids `If-Match`.
+`Idempotency-Key`. T-146 requires the same two headers and treats them as one
+whole-card intent. T-139 requires that same key form and forbids `If-Match`.
 Its body may be `{}`, `{ "message": null }`, or one trimmed control-free string
 of at most 500 Unicode code points; whitespace-only normalizes to null.
+
+T-146 has the exact body `{ "slots": [...] }`. `slots` contains exactly 22
+items in canonical `F01` through `F12`, `D01` through `D06`, and `B01` through
+`B04` order. Every item is exactly `{ "slotKey": string, "candidate": value }`.
+`candidate` is either null or exactly
+`{ "playerId": uuid, "totalValueCents": positive-integer-or-null,
+"termYears": 1-or-2-or-3-or-null }`. A null candidate means the editable slot
+is empty. A non-null candidate with either contract field absent is a saved
+incomplete row, has null AAV, does not participate in allocation, and remains
+visible in locked history. A carryover slot requires `candidate: null`; the
+server preserves its authoritative carryover occupant and rejects any attempt
+to replace or recontract it. Duplicate, missing, extra, out-of-order, or
+unknown slots and unknown object fields are `400`. Player duplication,
+position incompatibility, ineligibility, invalid present monetary precision,
+and invalid complete contracts use the normal safe Candidate validation
+errors. The server validates the entire desired card before one immediate
+transaction replaces it, so no prefix of the request can persist.
+
+Every newly accepted T-146 intent advances `cardVersion` once, records one
+`candidate_card_saved` revision, and returns exactly
+`{ card, revisionId, changedEntryIds }`; `changedEntryIds` is canonically
+sorted and may be empty for a logical no-op. Replaying the same idempotency key
+and request hash returns its original result without another version or
+revision. Reusing the key for a
+different request is `409 IDEMPOTENCY_KEY_REUSED`. A stale non-replay is
+`412 CANDIDATE_CARD_PRECONDITION_FAILED` with the current version/refetch
+detail and no write.
 
 Every FAD JSON request body is limited to `16 KiB`; an oversized body returns
 `413 FREE_AGENT_DRAFT_REQUEST_TOO_LARGE` before domain work. Eligible-player
@@ -2443,7 +2476,7 @@ FAD writes must satisfy both ceilings in their shared limiter profile:
 
 | Profile and routes | Per session | Per league | Window |
 | --- | ---: | ---: | ---: |
-| `fad_candidate_write`, T-135 through T-138 | `120` | `600` | `15 elapsed minutes` |
+| `fad_candidate_write`, T-135 through T-138 and T-146 | `120` | `600` | `15 elapsed minutes` |
 | `fad_help_write`, T-139 | `5` | `25` | `60 elapsed minutes` |
 | `fad_operational_write`, FAD operational commands | `30` | `120` | `15 elapsed minutes` |
 

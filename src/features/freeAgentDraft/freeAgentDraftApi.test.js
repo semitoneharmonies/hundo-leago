@@ -20,6 +20,7 @@ import {
   removeCandidateCardCandidate,
   requestCandidateCardHelp,
   retryFreeAgentDraftReadiness,
+  saveCandidateCard,
 } from "./freeAgentDraftApi.js";
 
 const IDS = Object.freeze({
@@ -296,6 +297,43 @@ describe("FAD API boundary", () => {
     });
     expect(httpClient.request.mock.calls[4][1]).not.toHaveProperty("version");
     expect(httpClient.request.mock.calls.every(([, options]) => options.authenticated)).toBe(true);
+  });
+
+  it("saves the exact 22-slot whole card at the card root with nullable partial terms", async () => {
+    const httpClient = client({ card: true });
+    const slotKeys = [
+      ...Array.from({ length: 12 }, (_, index) => `F${String(index + 1).padStart(2, "0")}`),
+      ...Array.from({ length: 6 }, (_, index) => `D${String(index + 1).padStart(2, "0")}`),
+      ...Array.from({ length: 4 }, (_, index) => `B${String(index + 1).padStart(2, "0")}`),
+    ];
+    const input = {
+      slots: slotKeys.map((slotKey, index) => ({
+        slotKey,
+        candidate:
+          index === 0
+            ? {
+                playerId: IDS.player,
+                totalValueCents: null,
+                termYears: null,
+              }
+            : null,
+      })),
+    };
+
+    await saveCandidateCard(httpClient, "league", "fad", "team", input, {
+      version: 7,
+      idempotencyKey: "candidate-card-save:uuid",
+    });
+
+    expect(httpClient.request).toHaveBeenCalledWith(
+      "/api/v1/leagues/league/free-agent-drafts/fad/candidate-cards/team",
+      expect.objectContaining({
+        method: "PUT",
+        body: input,
+        version: 7,
+        idempotencyKey: "candidate-card-save:uuid",
+      })
+    );
   });
 
   it("fails before transport for setup-like retry fields and malformed write controls", async () => {

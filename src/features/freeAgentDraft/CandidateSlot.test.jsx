@@ -1,118 +1,179 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { CandidateSlot } from "./CandidateSlot.jsx";
 
-function capabilities(overrides = {}) {
+function capabilities() {
   return {
     addCandidate: { allowed: false },
     editCandidate: { allowed: false },
     moveCandidate: { allowed: false },
     moveCarryover: { allowed: false },
     removeCandidate: { allowed: false },
-    ...overrides,
   };
 }
 
-function emptySlot(overrides = {}) {
+function slot(overrides = {}) {
   return {
-    slotKey: "B01",
-    slotGroup: "B",
-    required: false,
+    slotKey: "F01",
+    slotGroup: "F",
+    required: true,
     occupantKind: "empty",
+    locked: false,
+    player: null,
+    totalValueCents: null,
+    termYears: null,
+    aavCents: null,
+    remainingYears: null,
+    validation: { status: "valid", codes: [] },
+    outcome: null,
     capabilities: capabilities(),
     ...overrides,
   };
 }
 
-describe("CandidateSlot variants", () => {
-  it("labels an unavailable optional bench slot without offering an add action", () => {
+describe("CandidateSlot compact rows", () => {
+  it("renders one editable name/cost/term row with no row-level action", () => {
+    const onDraftChange = vi.fn();
     render(
-      <CandidateSlot
-        slot={emptySlot()}
-        onAdd={vi.fn()}
-        onEdit={vi.fn()}
-        onMove={vi.fn()}
-        onRemove={vi.fn()}
-      />
+      <QueryClientProvider client={new QueryClient()}>
+        <CandidateSlot
+          slot={slot()}
+          editable
+          draft={{
+            playerId: null,
+            playerName: "",
+            totalValue: "",
+            termYears: "",
+          }}
+          buildEligibleQueryOptions={() => ({
+            queryKey: ["eligible"],
+            queryFn: async () => ({ items: [], page: { hasMore: false } }),
+            initialPageParam: null,
+            getNextPageParam: () => undefined,
+          })}
+          onDraftChange={onDraftChange}
+        />
+      </QueryClientProvider>
     );
 
-    expect(screen.getByRole("heading", { name: "Bench" })).toBeVisible();
-    expect(screen.getByText("Optional")).toBeVisible();
-    expect(screen.getByText("Empty optional slot")).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Add candidate" })
-    ).not.toBeInTheDocument();
-  });
-
-  it("offers the exact mandatory defence slot to the add callback", () => {
-    const onAdd = vi.fn();
-    const slot = emptySlot({
-      slotKey: "D01",
-      slotGroup: "D",
-      required: true,
-      capabilities: capabilities({ addCandidate: { allowed: true } }),
+    expect(screen.getByRole("combobox", { name: "F01 player name" })).toBeEnabled();
+    fireEvent.change(screen.getByRole("textbox", { name: "F01 cost" }), {
+      target: { value: "30" },
     });
-    render(
-      <CandidateSlot
-        slot={slot}
-        onAdd={onAdd}
-        onEdit={vi.fn()}
-        onMove={vi.fn()}
-        onRemove={vi.fn()}
-      />
-    );
-
-    expect(screen.getByRole("heading", { name: "Defence" })).toBeVisible();
-    expect(screen.getByText("Mandatory")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Add candidate" }));
-    expect(onAdd).toHaveBeenCalledWith(slot);
+    fireEvent.change(screen.getByRole("combobox", { name: "F01 term" }), {
+      target: { value: "3" },
+    });
+    expect(onDraftChange).toHaveBeenCalledWith({ totalValue: "30" });
+    expect(onDraftChange).toHaveBeenCalledWith({ termYears: "3" });
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
-  it("renders a multi-year carryover warning and permits only its server-authorized move", () => {
-    const onMove = vi.fn();
-    const slot = {
-      slotKey: "D02",
-      slotGroup: "D",
-      required: true,
-      occupantKind: "carryover",
-      player: {
-        playerId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        fullName: "Locked Defence Player",
-        positionGroup: "D",
-      },
-      authoritativeRosterCategory: "Active",
-      remainingYears: 2,
-      totalValueCents: 1_200,
-      termYears: 2,
-      aavCents: 600,
-      validation: { status: "warning", codes: ["CAP_WARNING"] },
-      outcome: { code: "carryover" },
-      capabilities: capabilities({ moveCarryover: { allowed: true } }),
-    };
+  it("associates a row validation error with name, cost, and term", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <CandidateSlot
+          slot={slot()}
+          editable
+          draft={{
+            playerId: null,
+            playerName: "Connor",
+            totalValue: "",
+            termYears: "",
+          }}
+          rowError="Choose a player from the suggestions, or clear this row."
+          buildEligibleQueryOptions={() => ({
+            queryKey: ["eligible-error"],
+            queryFn: async () => ({ items: [], page: { hasMore: false } }),
+            initialPageParam: null,
+            getNextPageParam: () => undefined,
+          })}
+          onDraftChange={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+
+    const error = screen.getByRole("alert");
+    for (const field of [
+      screen.getByRole("combobox", { name: "F01 player name" }),
+      screen.getByRole("textbox", { name: "F01 cost" }),
+      screen.getByRole("combobox", { name: "F01 term" }),
+    ]) {
+      expect(field).toHaveAttribute("aria-describedby", error.id);
+      expect(field).toHaveAttribute("aria-invalid", "true");
+    }
+  });
+
+  it("keeps carryover fields locked regardless of edit mode", () => {
     render(
       <CandidateSlot
-        slot={slot}
-        onAdd={vi.fn()}
-        onEdit={vi.fn()}
-        onMove={onMove}
-        onRemove={vi.fn()}
+        editable
+        slot={slot({
+          occupantKind: "carryover",
+          locked: true,
+          player: { playerId: "player", fullName: "Locked Player" },
+          totalValueCents: 1_200,
+          termYears: 3,
+          aavCents: 400,
+          remainingYears: 2,
+          outcome: { code: "carryover" },
+        })}
       />
     );
 
+    expect(screen.getByRole("textbox", { name: "F01 player name" })).toHaveValue(
+      "Locked Player"
+    );
+    expect(screen.getByRole("textbox", { name: "F01 AAV" })).toHaveValue(
+      "$4.00 AAV"
+    );
+    expect(screen.getByRole("textbox", { name: "F01 term" })).toHaveValue("2");
     expect(screen.getByText("Locked carryover")).toBeVisible();
-    expect(screen.getByText(/2 years remaining/)).toBeVisible();
-    expect(screen.getByText("Needs attention")).toBeVisible();
-    expect(screen.getByText("CAP WARNING")).toBeVisible();
-    expect(screen.getByText(/Carried to the new season/)).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Edit contract" })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Remove" })
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Move" }));
-    expect(onMove).toHaveBeenCalledWith(slot);
+  });
+
+  it.each([
+    ["automatic_win", "Won"],
+    ["automatic_loss", "Not won"],
+    ["restricted_pending", "Pending"],
+  ])("announces the published %s result as %s", (code, label) => {
+    render(
+      <CandidateSlot
+        published
+        slot={slot({
+          occupantKind: "candidate",
+          player: { playerId: "player", fullName: "Requested Player" },
+          totalValueCents: 3_000,
+          termYears: 3,
+          aavCents: 1_000,
+          outcome: { code },
+        })}
+      />
+    );
+
+    expect(screen.getByText(label)).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "F01 player name" })).toHaveValue(
+      "Requested Player"
+    );
+  });
+
+  it("explicitly marks an incomplete published request as not won", () => {
+    render(
+      <CandidateSlot
+        published
+        slot={slot({
+          occupantKind: "candidate",
+          player: { playerId: "player", fullName: "Incomplete Player" },
+          validation: {
+            status: "invalid",
+            codes: ["CANDIDATE_CONTRACT_INCOMPLETE"],
+          },
+          outcome: { code: "invalid_offer" },
+        })}
+      />
+    );
+
+    expect(screen.getByText("Not won — incomplete")).toBeVisible();
   });
 });

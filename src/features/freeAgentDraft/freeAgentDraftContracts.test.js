@@ -5,6 +5,7 @@ import {
   validateCandidateCardHelp,
   validateCandidateCardMutation,
   validateCandidateCardRevisionPreview,
+  validateCandidateCardSave,
   validateEligibleCandidatePlayers,
   validateFreeAgentDraftAllocationResults,
   validateFreeAgentDraftNavigation,
@@ -650,7 +651,99 @@ describe("FAD frontend response contracts", () => {
       revisionId: IDS.revision,
       changedEntryId: null,
     })).toBe(true);
+    expect(validateCandidateCardSave({
+      card,
+      revisionId: IDS.revision,
+      changedEntryIds: [IDS.secondEntry],
+    })).toBe(true);
     expect(validateCandidateCardHelp(help)).toBe(true);
+  });
+
+  it("accepts a private player-only row and requires its incomplete validation evidence", () => {
+    const card = privateCard();
+    card.slots[0] = {
+      ...card.slots[0],
+      occupantKind: "candidate",
+      entryId: IDS.secondEntry,
+      entryVersion: 1,
+      player: player(),
+      totalValueCents: null,
+      termYears: null,
+      aavCents: null,
+      validation: {
+        status: "invalid",
+        codes: ["CANDIDATE_CONTRACT_INCOMPLETE"],
+      },
+      lastEditedAtMs: 100,
+      lastEditedBy: {
+        userId: IDS.user,
+        displayName: "Ada Manager",
+        authority: "manager",
+      },
+    };
+    expect(validatePrivateCandidateCard(card)).toBe(true);
+
+    const missingEvidence = structuredClone(card);
+    missingEvidence.slots[0].validation = { status: "invalid", codes: [] };
+    expect(() => validatePrivateCandidateCard(missingEvidence)).toThrow(
+      /incomplete contract validation/u
+    );
+  });
+
+  it("rejects an incomplete marker on complete private, save, and published rows", () => {
+    function contradictoryCompleteSlot(baseSlot, { published = false } = {}) {
+      return {
+        ...baseSlot,
+        occupantKind: "candidate",
+        entryId: IDS.secondEntry,
+        entryVersion: 1,
+        player: player(),
+        totalValueCents: 300,
+        termYears: 3,
+        aavCents: 100,
+        validation: {
+          status: "invalid",
+          codes: ["CANDIDATE_CONTRACT_INCOMPLETE"],
+        },
+        outcome: published
+          ? {
+              code: "invalid_offer",
+              allocationId: null,
+              auctionId: null,
+            }
+          : null,
+        lastEditedAtMs: 100,
+        lastEditedBy: {
+          userId: IDS.user,
+          displayName: "Ada Manager",
+          authority: "manager",
+        },
+      };
+    }
+
+    const privateProjection = privateCard();
+    privateProjection.slots[0] = contradictoryCompleteSlot(
+      privateProjection.slots[0]
+    );
+    expect(() => validatePrivateCandidateCard(privateProjection)).toThrow(
+      /complete contract validation is inconsistent/u
+    );
+    expect(() =>
+      validateCandidateCardSave({
+        card: privateProjection,
+        revisionId: IDS.revision,
+        changedEntryIds: [IDS.secondEntry],
+      })
+    ).toThrow(/complete contract validation is inconsistent/u);
+
+    const publishedProjection = publishedCard();
+    publishedProjection.slots[0] = contradictoryCompleteSlot(
+      publishedProjection.slots[0],
+      { published: true }
+    );
+    expect(() => validatePublishedCandidateCard(publishedProjection)).toThrow(
+      /complete contract validation is inconsistent/u
+    );
   });
 
   it("rejects extra fields, evidence mismatches, private history, and incomplete slot sets", () => {

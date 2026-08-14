@@ -409,15 +409,35 @@ export function PublishedCandidateCardView({
           <div className={styles.summaryCard}><span>Commissioner interventions</span><strong>{card.commissionerInterventions.length}</strong></div>
         </div>
       </Surface>
-      <div className={styles.slots}>
+      <div className={styles.compactCard} aria-label="Published Candidate Card rows">
+        <div className={styles.compactColumnHeader} aria-hidden="true">
+          <span>Slot</span>
+          <span>Player name</span>
+          <span>Cost</span>
+          <span>Term</span>
+          <span>Result</span>
+        </div>
         {groups.map(([group, label]) => (
-          <section className={styles.slotGroup} aria-labelledby={`published-${group}-slots`} key={group}>
-            <h2 id={`published-${group}-slots`}>{label}</h2>
-            <div className={styles.slotGrid}>
-              {card.slots.filter((slot) => slot.slotGroup === group).map((slot) => (
-                <CandidateSlot key={slot.slotKey} slot={slot} busy />
-              ))}
+          <section
+            className={styles.compactSlotGroup}
+            aria-labelledby={`published-${group}-slots`}
+            key={group}
+          >
+            <div className={styles.compactGroupHeading}>
+              <h2 id={`published-${group}-slots`}>{label}</h2>
+              <span>
+                {group === "F" ? "12 rows" : group === "D" ? "6 rows" : "4 rows"}
+              </span>
             </div>
+            {card.slots
+              .filter((slot) => slot.slotGroup === group)
+              .map((slot) => (
+                <CandidateSlot
+                  key={slot.slotKey}
+                  slot={slot}
+                  published
+                />
+              ))}
           </section>
         ))}
       </div>

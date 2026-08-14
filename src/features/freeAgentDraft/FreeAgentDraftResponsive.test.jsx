@@ -1,16 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
-
-import { CandidateSlot } from "./CandidateSlot.jsx";
+import { describe, expect, it } from "vitest";
 
 const stylesheet = readFileSync(
-  resolve(
-    "src/features/freeAgentDraft/FreeAgentDraftPage.module.css"
-  ),
+  resolve("src/features/freeAgentDraft/FreeAgentDraftPage.module.css"),
   "utf8"
 );
 const compactCss = stylesheet.slice(
@@ -21,100 +15,22 @@ const tabletCss = stylesheet.slice(
   stylesheet.indexOf("@media (max-width: 34rem)")
 );
 
-function editableCandidateSlot() {
-  return {
-    slotKey: "F02",
-    slotGroup: "F",
-    required: true,
-    occupantKind: "candidate",
-    player: {
-      playerId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-      fullName: "Narrow Layout Candidate",
-      positionGroup: "F",
-    },
-    authoritativeRosterCategory: null,
-    remainingYears: null,
-    totalValueCents: 600,
-    termYears: 1,
-    aavCents: 600,
-    validation: { status: "valid", codes: [] },
-    outcome: null,
-    capabilities: {
-      addCandidate: { allowed: false },
-      editCandidate: { allowed: true },
-      moveCandidate: { allowed: true },
-      moveCarryover: { allowed: false },
-      removeCandidate: { allowed: true },
-    },
-  };
-}
-
-describe("FAD-15 compact Candidate Card actions", () => {
-  it("keeps every slot action in the narrow DOM and keyboard tab order", async () => {
-    const previousWidth = window.innerWidth;
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      value: 320,
-    });
-    const user = userEvent.setup();
-    render(
-      <CandidateSlot
-        slot={editableCandidateSlot()}
-        onAdd={vi.fn()}
-        onEdit={vi.fn()}
-        onMove={vi.fn()}
-        onRemove={vi.fn()}
-      />
+describe("compact Candidate Card responsive layout", () => {
+  it("uses the five-column desktop row without action-button columns", () => {
+    expect(stylesheet).toMatch(
+      /\.compactColumnHeader,\s*\.compactSlot\s*{[^}]*grid-template-columns:[^}]*4\.2rem[^}]*11rem[^}]*6\.5rem[^}]*5\.8rem[^}]*8\.5rem/s
     );
-
-    const slot = document.querySelector('[data-slot-key="F02"]');
-    const actions = within(slot).getByRole("group", {
-      name: "Narrow Layout Candidate actions",
-    });
-    const buttons = within(actions).getAllByRole("button");
-    expect(buttons.map((button) => button.textContent.trim())).toEqual([
-      "Edit contract",
-      "Move",
-      "Remove",
-    ]);
-    for (const button of buttons) {
-      expect(button).toBeVisible();
-      expect(button).toBeEnabled();
-      await user.tab();
-      expect(button).toHaveFocus();
-    }
-
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      value: previousWidth,
-    });
-    expect(screen.getByText("Narrow Layout Candidate")).toBeInTheDocument();
+    expect(stylesheet).toMatch(/\.compactRowError\s*{[^}]*grid-column:\s*2 \/ -1;/s);
   });
 
-  it("collapses grids and gives compact action controls a full-width reachable row", () => {
-    expect(stylesheet).toMatch(
-      /\.resultEvidence\s*{[^}]*min-width:\s*0;/s
-    );
-    expect(compactCss).toMatch(
-      /\.slotGrid,\s*\.clockGrid,\s*\.summaryGrid\s*{\s*grid-template-columns:\s*1fr;/
-    );
-    expect(compactCss).toMatch(
-      /\.slotActions,\s*\.editorActions,\s*\.teamSelector\s*{\s*display:\s*grid;\s*grid-template-columns:\s*1fr;/
-    );
-    expect(compactCss).toMatch(
-      /\.slotActions button,\s*\.editorActions button\s*{\s*width:\s*100%;/
-    );
+  it("keeps compact rows usable on tablet and phone widths", () => {
     expect(tabletCss).toMatch(
-      /\.resultFilters\s*{\s*grid-template-columns:\s*1fr 1fr;/
+      /\.compactColumnHeader,\s*\.compactSlot\s*{[^}]*grid-template-columns:/s
     );
-    expect(tabletCss).toMatch(
-      /\.offerRow\s*{\s*grid-template-columns:\s*1fr 1fr;/
-    );
+    expect(compactCss).toMatch(/\.candidateToolbar\s*{\s*grid-template-columns:\s*1fr;/);
+    expect(compactCss).toMatch(/\.compactColumnHeader\s*{\s*display:\s*none;/);
     expect(compactCss).toMatch(
-      /\.resultFilters,\s*\.offerRow\s*{\s*grid-template-columns:\s*1fr;/
-    );
-    expect(compactCss).toMatch(
-      /\.resultFilters button,\s*\.offerRow > div\s*{\s*grid-column:\s*auto;/
+      /\.compactSlot\s*{[^}]*grid-template-columns:\s*3\.35rem minmax\(0, 1fr\) 5\.5rem;/s
     );
   });
 });

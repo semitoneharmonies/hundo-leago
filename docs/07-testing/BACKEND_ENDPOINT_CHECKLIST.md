@@ -33,6 +33,10 @@ The explicit final-standings amendment approved on 2026-07-29 adds `T-145`.
 Its finalization evidence is a required prerequisite for a later-season
 `T-037` rollover and raises the approved target catalogue to 145 routes.
 
+The atomic whole-card Candidate Card amendment approved on 2026-08-13 adds
+`T-146` and raises the approved target catalogue to 146 routes. `T-145`
+remains the distinct standings-finalization route.
+
 ---
 
 ## Testing Purpose
@@ -762,6 +766,7 @@ the tables now retain evidence-backed current statuses.
 | `T-142` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner allowlisted retry only, same service/occurrence, no winner/participant/timing/Week 1 override; `recover_schedule` is absent/rejected and only `complete_fad` may commit the atomic server-owned overrun recovery | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
 | `T-143` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner locked-snapshot recomputation, complete downstream delta, table-hash read-only proof | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
 | `T-144` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner reason/confirmation/fingerprint/`If-Match`, deterministic atomic reconciliation, original retained | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-146` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId` | Authorized private editor; exact canonical 22-slot body, one card `If-Match` and idempotency intent, atomic whole-card replacement, nullable incomplete Candidate contract fields, server-owned carryover preservation, one version/revision advance, and no partial writes | `LOCAL VERIFIED - WHOLE-CARD AMENDMENT (2026-08-13)` |
 
 ### FAD-17 Local Verification Record - 2026-08-11
 
@@ -1406,7 +1411,7 @@ C-024 through C-029 = 6 conditional debug routes
 Target catalogue:
 
 ```text
-T-001 through T-145 = 145 approved target routes
+T-001 through T-146 = 146 approved target routes
 ```
 
 Count changes require a matching API Contracts review.
@@ -1434,7 +1439,8 @@ The endpoint foundation is complete for initial launch when:
 Entry Draft rows may remain `PLANNED` for the initial release because that feature is approved for in-season completion.
 
 Free Agent Draft rows `T-126` through `T-144`, plus FAD-context cases for
-`T-076` through `T-083`, may not remain `PLANNED` for launch.
+`T-076` through `T-083`, and atomic whole-card save `T-146` may not remain
+`PLANNED` for launch.
 
 `T-145` is `COMPLETE - LOCAL ONLY` and may not regress to `PLANNED`. It must
 reach `STAGING VERIFIED` before the first official regular-season standings
@@ -1450,7 +1456,7 @@ Documentation verification:
 
 ```powershell
 Get-Content docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md
-Select-String -Path docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md -Pattern '^`APPROVED`$','C-034','T-145','Target Free Agent Draft Endpoints','T-145 Finalization and Correction Proof','GET and HEAD Safety','Compatibility Retirement','Count Verification'
+Select-String -Path docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md -Pattern '^`APPROVED`$','C-034','T-145','T-146','Target Free Agent Draft Endpoints','T-145 Finalization and Correction Proof','GET and HEAD Safety','Compatibility Retirement','Count Verification'
 ```
 
 Future compatibility manifest verification:

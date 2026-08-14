@@ -823,16 +823,38 @@ function candidateSlot(value, index, location, { published }) {
   stableId(value.entryId, `${location}.entryId`);
   safeInteger(value.entryVersion, `${location}.entryVersion`, { positive: true });
   safePlayer(value.player, `${location}.player`);
-  safeInteger(value.totalValueCents, `${location}.totalValueCents`, { positive: true });
-  safeInteger(value.termYears, `${location}.termYears`, { positive: true });
-  safeInteger(value.aavCents, `${location}.aavCents`, { positive: true });
   safeInteger(value.lastEditedAtMs, `${location}.lastEditedAtMs`);
   lastEditor(value.lastEditedBy, `${location}.lastEditedBy`);
   if (value.occupantKind === "carryover") {
+    safeInteger(value.totalValueCents, `${location}.totalValueCents`, { positive: true });
+    safeInteger(value.termYears, `${location}.termYears`, { positive: true });
+    contract(value.termYears <= 3, `${location}.termYears is invalid.`);
+    safeInteger(value.aavCents, `${location}.aavCents`, { positive: true });
     oneOf(value.authoritativeRosterCategory, ["Active", "Bench", "Injured Reserve"], `${location}.authoritativeRosterCategory`);
     safeInteger(value.remainingYears, `${location}.remainingYears`, { positive: true });
     contract(value.locked === true, `${location}.locked is invalid for a carryover.`);
   } else {
+    nullableInteger(value.totalValueCents, `${location}.totalValueCents`, { positive: true });
+    nullableInteger(value.termYears, `${location}.termYears`, { positive: true });
+    if (value.termYears !== null) {
+      contract(value.termYears <= 3, `${location}.termYears is invalid.`);
+    }
+    const contractComplete =
+      value.totalValueCents !== null && value.termYears !== null;
+    if (contractComplete) {
+      safeInteger(value.aavCents, `${location}.aavCents`, { positive: true });
+      contract(
+        !value.validation.codes.includes("CANDIDATE_CONTRACT_INCOMPLETE"),
+        `${location} complete contract validation is inconsistent.`
+      );
+    } else {
+      contract(value.aavCents === null, `${location}.aavCents must be null for an incomplete contract.`);
+      contract(
+        value.validation.status === "invalid" &&
+          value.validation.codes.includes("CANDIDATE_CONTRACT_INCOMPLETE"),
+        `${location} incomplete contract validation is inconsistent.`
+      );
+    }
     contract(value.authoritativeRosterCategory === null && value.remainingYears === null, `${location} candidate roster fields are invalid.`);
     contract(value.locked === false, `${location}.locked is invalid for a candidate.`);
   }
@@ -2101,6 +2123,30 @@ export function validateCandidateCardMutation(data) {
   validatePrivateCandidateCard(data.card);
   stableId(data.revisionId, "Candidate Card mutation.revisionId");
   nullableId(data.changedEntryId, "Candidate Card mutation.changedEntryId");
+  return true;
+}
+
+export function validateCandidateCardSave(data) {
+  exact(
+    data,
+    ["card", "revisionId", "changedEntryIds"],
+    "Candidate Card save"
+  );
+  validatePrivateCandidateCard(data.card);
+  stableId(data.revisionId, "Candidate Card save.revisionId");
+  contract(
+    Array.isArray(data.changedEntryIds),
+    "Candidate Card save.changedEntryIds is invalid."
+  );
+  data.changedEntryIds.forEach((entryId, index) =>
+    stableId(entryId, `Candidate Card save.changedEntryIds[${index}]`)
+  );
+  contract(
+    new Set(data.changedEntryIds).size === data.changedEntryIds.length &&
+      data.changedEntryIds.join("|") ===
+        [...data.changedEntryIds].sort().join("|"),
+    "Candidate Card save.changedEntryIds must be unique and canonically sorted."
+  );
   return true;
 }
 
