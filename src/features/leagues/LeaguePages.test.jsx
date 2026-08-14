@@ -434,7 +434,7 @@ describe("league selection", () => {
       })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Members and invitations" })
+      screen.getByRole("heading", { name: "Members and team access" })
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Managed roster" })

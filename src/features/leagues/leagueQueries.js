@@ -137,6 +137,31 @@ export async function removeLeagueMembership(
   ).data;
 }
 
+export async function removeTeamManagerAssignment(
+  httpClient,
+  leagueId,
+  teamId,
+  assignmentId,
+  expectedVersion,
+  idempotencyKey
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${encodeURIComponent(
+        leagueId
+      )}/teams/${encodeURIComponent(teamId)}/manager-assignment`,
+      {
+        method: "DELETE",
+        authenticated: true,
+        body: { assignmentId },
+        version: expectedVersion,
+        idempotencyKey,
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
 export async function createLeague(
   httpClient,
   name,

@@ -112,6 +112,8 @@ export function validateTeam(value) {
   if (value.currentManager !== null) {
     contract(
       typeof value.currentManager === "object" &&
+        typeof value.currentManager.assignmentId === "string" &&
+        value.currentManager.assignmentId.length > 0 &&
         typeof value.currentManager.userId === "string" &&
         typeof value.currentManager.displayName === "string" &&
         Number.isSafeInteger(value.currentManager.version),

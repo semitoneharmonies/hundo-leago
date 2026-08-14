@@ -53,6 +53,7 @@ import {
   leagueKeys,
   leagueMembershipsQuery,
   removeLeagueMembership,
+  removeTeamManagerAssignment,
 } from "./leagueQueries.js";
 import { bidderCountLabel } from "./dashboardLabels.js";
 import { createIntentKey } from "../accounts/accountApi.js";
@@ -538,7 +539,7 @@ function CommissionerLeaguePanel({
   );
 }
 
-function CommissionerMembersPanel({ league, teams, session }) {
+export function CommissionerMembersPanel({ league, teams, session }) {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState("");
   const [teamId, setTeamId] = useState("");
@@ -602,6 +603,26 @@ function CommissionerMembersPanel({ league, teams, session }) {
     },
     onError: () => setMessage(""),
   });
+  const unassignMutation = useMutation({
+    mutationFn: (team) =>
+      removeTeamManagerAssignment(
+        session.httpClient,
+        league.id,
+        team.id,
+        team.currentManager.assignmentId,
+        team.currentManager.version,
+        createIntentKey("team-manager-unassign")
+      ),
+    onSuccess: async (_result, team) => {
+      setMessage(
+        `${team.currentManager.displayName} was unassigned from ${team.name}. Their league membership and other team assignments are unchanged.`
+      );
+      await queryClient.invalidateQueries({
+        queryKey: leagueKeys.teams(league.id),
+      });
+    },
+    onError: () => setMessage(""),
+  });
 
   return (
     <Surface
@@ -610,7 +631,7 @@ function CommissionerMembersPanel({ league, teams, session }) {
     >
       <PanelHeading
         eyebrow="League access"
-        title="Members and invitations"
+        title="Members and team access"
         id="commissioner-members-title"
       />
       <form
@@ -669,6 +690,61 @@ function CommissionerMembersPanel({ league, teams, session }) {
           {inviteMutation.isPending ? "Sending…" : "Invite user"}
         </button>
       </form>
+      <section
+        className="hl-commissioner-access-section"
+        aria-labelledby="commissioner-team-managers-title"
+      >
+        <div className="hl-commissioner-access-heading">
+          <h3 id="commissioner-team-managers-title">Team managers</h3>
+          <p>
+            Unassigning one team keeps the user in the league and preserves
+            their other team assignments.
+          </p>
+        </div>
+        <ul className="hl-commissioner-member-list">
+          {teams.map((team) => (
+            <li key={team.id}>
+              <span>
+                <strong>{team.name}</strong>
+                <small>
+                  {team.currentManager
+                    ? `Managed by ${team.currentManager.displayName}`
+                    : "No manager assigned"}
+                </small>
+              </span>
+              {team.currentManager ? (
+                <button
+                  type="button"
+                  className="hl-button hl-button--danger"
+                  aria-label={`Unassign ${team.currentManager.displayName} from ${team.name}`}
+                  disabled={unassignMutation.isPending}
+                  onClick={() => {
+                    if (
+                      globalThis.confirm(
+                        `Unassign ${team.currentManager.displayName} from ${team.name}? They will remain a member of ${league.name} and keep any other team assignments.`
+                      )
+                    ) {
+                      setMessage("");
+                      unassignMutation.mutate(team);
+                    }
+                  }}
+                >
+                  {unassignMutation.isPending &&
+                  unassignMutation.variables?.id === team.id
+                    ? "Unassigning..."
+                    : "Unassign"}
+                </button>
+              ) : (
+                <StatusBadge tone="neutral">Unassigned</StatusBadge>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <div className="hl-commissioner-access-heading">
+        <h3>League members</h3>
+        <p>Removing a member also ends all of their team assignments.</p>
+      </div>
       {memberships.isPending ? (
         <LoadingBlock>Loading league members…</LoadingBlock>
       ) : memberships.isError ? (
@@ -710,7 +786,7 @@ function CommissionerMembersPanel({ league, teams, session }) {
                   >
                     {membership.status === "invited"
                       ? "Cancel invitation"
-                      : "Remove"}
+                      : "Remove from league"}
                   </button>
                 )}
               </li>
@@ -719,10 +795,16 @@ function CommissionerMembersPanel({ league, teams, session }) {
         </ul>
       )}
       {message && <p className="hl-form-message">{message}</p>}
-      {(inviteMutation.error || removeMutation.error) && (
+      {(inviteMutation.error ||
+        removeMutation.error ||
+        unassignMutation.error) && (
         <ErrorBlock
-          error={inviteMutation.error || removeMutation.error}
-          fallback="The league membership change could not be completed."
+          error={
+            inviteMutation.error ||
+            removeMutation.error ||
+            unassignMutation.error
+          }
+          fallback="The league access change could not be completed."
         />
       )}
     </Surface>

@@ -4948,6 +4948,35 @@ textarea {
   border-bottom: 1px solid var(--hl-border);
 }
 
+.hl-commissioner-access-section {
+  border-bottom: 1px solid var(--hl-border);
+}
+
+.hl-commissioner-access-heading {
+  display: grid;
+  gap: 3px;
+  padding: 14px 14px 6px;
+}
+
+.hl-commissioner-access-heading h3,
+.hl-commissioner-access-heading p {
+  margin: 0;
+}
+
+.hl-commissioner-access-heading h3 {
+  font-size: 0.72rem;
+}
+
+.hl-commissioner-access-heading p {
+  color: var(--hl-muted-foreground);
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+
+.hl-commissioner-access-section .hl-commissioner-member-list {
+  padding-top: 2px;
+}
+
 .hl-commissioner-member-list {
   display: grid;
   margin: 0;
