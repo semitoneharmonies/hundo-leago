@@ -304,16 +304,18 @@ function offer(value, fields, location, { enforceBidMinimum = true } = {}) {
   integer(value.termYears, `${location}.termYears`, { positive: true });
   contract(value.termYears <= 3, `${location}.termYears is invalid.`);
   integer(value.totalValueCents, `${location}.totalValueCents`, { positive: true });
+  const aavCents = integer(value.aavCents, `${location}.aavCents`, { positive: true });
+  const aavFirstContract =
+    aavCents >= 100 &&
+    aavCents % 25 === 0 &&
+    value.totalValueCents === aavCents * value.termYears;
+  const legacyContract =
+    value.totalValueCents >= value.termYears * 100 &&
+    (value.termYears === 1 || value.totalValueCents % 100 === 0) &&
+    aavCents === roundedAavCents(value.totalValueCents, value.termYears);
   contract(
-    !enforceBidMinimum ||
-      (value.totalValueCents >= value.termYears * 100 &&
-        (value.termYears === 1 || value.totalValueCents % 100 === 0)),
-    `${location}.totalValueCents is invalid.`
-  );
-  contract(
-    integer(value.aavCents, `${location}.aavCents`, { positive: true }) ===
-      roundedAavCents(value.totalValueCents, value.termYears),
-    `${location}.aavCents is inconsistent.`
+    !enforceBidMinimum || aavFirstContract || legacyContract,
+    `${location} contract values are inconsistent.`
   );
   return value;
 }

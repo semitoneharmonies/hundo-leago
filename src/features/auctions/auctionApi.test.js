@@ -234,7 +234,7 @@ describe("auction API boundary", () => {
     const body = {
       playerId: IDS.player,
       teamId: IDS.team,
-      totalValueCents: 600,
+      aavCents: 300,
       termYears: 2,
       bindingIllegalityConfirmed: true,
     };
@@ -269,7 +269,7 @@ describe("auction API boundary", () => {
     const joinClient = client({ data: bidResult(), meta: { requestId: "request-join" } });
     const input = {
       teamId: IDS.team,
-      totalValueCents: 600,
+      aavCents: 300,
       termYears: 2,
       bindingIllegalityConfirmed: true,
     };
@@ -287,7 +287,7 @@ describe("auction API boundary", () => {
       editClient,
       IDS.league,
       IDS.auction,
-      { ...input, totalValueCents: 700 },
+      { ...input, aavCents: 350 },
       { version: 1, idempotencyKey: "fad-bid:edit" }
     );
     expect(editClient.request.mock.calls[0][1]).toMatchObject({
@@ -306,7 +306,7 @@ describe("auction API boundary", () => {
         {
           playerId: IDS.player,
           teamId: IDS.team,
-          totalValueCents: 600,
+          aavCents: 300,
           termYears: 2,
           bindingIllegalityConfirmed: false,
         },
@@ -346,7 +346,7 @@ describe("auction API boundary", () => {
     const editClient = client({ data: editedAuction });
     const editBody = {
       teamId: IDS.team,
-      totalValueCents: 700,
+      aavCents: 350,
       termYears: 2,
     };
     await editAuctionBidAsCommissioner(
@@ -459,7 +459,7 @@ describe("auction API boundary", () => {
         IDS.bid,
         {
           teamId: IDS.team,
-          totalValueCents: 600,
+          aavCents: 300,
           termYears: 2,
           currentValueCents: 500,
         },

@@ -1601,6 +1601,17 @@ ownership, and roster assignment without a second confirmation, even when
 concurrent wins make the aggregate roster illegal. Managers have no
 bid-withdrawal endpoint.
 
+Every ordinary or FAD auction offer command accepts `aavCents` and
+`termYears`, with any existing team/player/confirmation fields required by the
+specific route. `aavCents` must be a safe integer at least `100` and divisible
+by `25`; `termYears` is `1`, `2`, or `3`. The backend derives
+`totalValueCents = aavCents * termYears` and rejects a client-supplied total as
+an unknown field. Start and join floors are evaluated against that derived
+total. Safe own-bid and terminal result DTOs continue returning all three
+values. Auction ordering is derived total descending, then AAV descending,
+followed by the existing context-specific deterministic or committed-draw tie
+rule.
+
 For a restricted FAD auction, only a valid current active bid that ranks
 strictly above that team's immutable Candidate minimum is a contender.
 Commissioner bid removal also permanently marks the linked restricted
@@ -2446,17 +2457,20 @@ T-146 has the exact body `{ "slots": [...] }`. `slots` contains exactly 22
 items in canonical `F01` through `F12`, `D01` through `D06`, and `B01` through
 `B04` order. Every item is exactly `{ "slotKey": string, "candidate": value }`.
 `candidate` is either null or exactly
-`{ "playerId": uuid, "totalValueCents": positive-integer-or-null,
+`{ "playerId": uuid, "aavCents": positive-integer-or-null,
 "termYears": 1-or-2-or-3-or-null }`. A null candidate means the editable slot
 is empty. A non-null candidate with either contract field absent is a saved
-incomplete row, has null AAV, does not participate in allocation, and remains
+incomplete row, has null derived total, does not participate in allocation, and remains
 visible in locked history. A carryover slot requires `candidate: null`; the
 server preserves its authoritative carryover occupant and rejects any attempt
 to replace or recontract it. Duplicate, missing, extra, out-of-order, or
 unknown slots and unknown object fields are `400`. Player duplication,
-position incompatibility, ineligibility, invalid present monetary precision,
-and invalid complete contracts use the normal safe Candidate validation
-errors. The server validates the entire desired card before one immediate
+position incompatibility, ineligibility, present AAV below `100`, present AAV
+not divisible by `25`, a completed Bench offer above `400` AAV cents, an
+authoritative projected cap above `10000` cents, and other invalid complete
+contracts use the normal safe Candidate validation errors. The server derives
+each completed row's `totalValueCents` exactly as AAV times term and validates
+the entire desired card before one immediate
 transaction replaces it, so no prefix of the request can persist.
 
 Every newly accepted T-146 intent advances `cardVersion` once, records one

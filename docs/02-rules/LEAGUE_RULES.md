@@ -13,6 +13,9 @@ auction edits and withdrawal, FAD-only exact-tie draws, late Entry Draft
 Week 1 movement, and post-FAD overrun recovery.
 On 2026-08-08, Grae clarified the event-by-event rights-release evidence
 required before a released player may return to Candidate eligibility.
+On 2026-08-14, Grae changed manager-created Candidate Card and auction offers
+to AAV-first entry in exact `$0.25` increments, with total contract value
+derived from AAV and term. Those offers rank total value first and AAV second.
 
 This document consolidates:
 
@@ -212,20 +215,19 @@ The approval checklist near the end of this document records the completed decis
 
 Contract values, bids, average annual values, retained salary, buyout penalties, and cap totals use the following approved precision rules:
 
-* A one-year contract bid may contain up to two decimal places.
-* The total contract value bid for a two-year or three-year contract must be a whole number.
-* Average annual value may contain up to two decimal places.
-* Average annual value is calculated as total contract value divided by contract years.
-* A calculated average annual value is rounded to the nearest hundredth.
+* A manager-created Candidate Card or auction offer enters average annual value.
+* Entered AAV must be an exact `$0.25` increment and at least `$1.00`.
+* Total contract value is calculated exactly as AAV multiplied by contract years.
+* Historical contracts retain their original approved total and AAV precision.
 * Retained salary and buyout penalties are calculated from average annual value and rounded to the nearest hundredth.
 * Stored and displayed cap amounts must not contain more than two decimal places.
 
 Examples:
 
 ```text
-1 year at $4.25 total = $4.25 AAV
-2 years at $9 total = $4.50 AAV
-3 years at $10 total = $3.33 AAV after rounding
+1 year at $4.25 AAV = $4.25 total
+2 years at $4.50 AAV = $9.00 total
+3 years at $3.25 AAV = $9.75 total
 ```
 
 The technical specifications must define one decimal implementation that avoids inconsistent floating-point results.
@@ -659,13 +661,21 @@ When a contract expires:
 
 An expired contract may not be extended or renewed in place. Any later contract must be created through an approved free-agent process.
 
-The approved normal non-ELC minimum is `$1 AAV` per contract year:
+The approved normal non-ELC minimum is `$1 AAV` per contract year. A manager-
+created Candidate Card or auction offer enters AAV directly, and that AAV must
+be an exact whole-dollar, `$0.25`, `$0.50`, or `$0.75` amount:
 
 ```text
-1 year = at least $1 total
-2 years = at least $2 total
-3 years = at least $3 total
+1 year at $1 AAV = at least $1 total
+2 years at $1 AAV = at least $2 total
+3 years at $1 AAV = at least $3 total
 ```
+
+For those offers, original total contract value is calculated exactly as AAV
+multiplied by original term. The backend does not accept a client-supplied
+total or round a manager-entered AAV to a permitted increment. Historical
+contracts created under an earlier approved precision rule remain valid and
+must not be rewritten merely because the offer-entry rule changed.
 
 There is no separate monetary maximum, and three years remains the maximum term.
 
@@ -681,18 +691,18 @@ The Contract specification defines:
 
 An auction bid includes:
 
-* total contract value;
+* AAV in an exact `$0.25` increment;
 * contract length of one, two, or three years.
 
 When an auction is won:
 
-1. The approved total contract value becomes the contract’s original total value.
-2. Average annual value is calculated by dividing total contract value by contract length.
-3. Average annual value is rounded to the nearest hundredth.
+1. Total contract value is calculated as submitted AAV multiplied by contract length.
+2. The calculated total becomes the contract's original total value.
+3. Submitted or anti-bluff-adjusted AAV becomes the contract AAV.
 4. The winning team receives the player and the resulting contract.
 5. The transaction and contract creation are recorded in activity history.
 
-The total contract value for a two-year or three-year auction bid must be a whole number. A one-year bid may use up to two decimal places.
+The backend rejects a bid below `$1 AAV` or outside the approved `$0.25` increments.
 
 ---
 
@@ -1519,10 +1529,9 @@ FAD-related amendments on 2026-07-27, 2026-07-28, 2026-07-29, and
 - [x] Contract rollover runs automatically at the scheduled Entry Draft start; the draft and trading remain locked on failure until an idempotent retry succeeds.
 - [x] Contracts may not be extended.
 - [x] There is no team-wide total contract-year limit.
-- [x] One-year values may use up to two decimal places.
-- [x] Two-year and three-year total contract values and bids must be whole numbers.
-- [x] AAV is total contract value divided by contract years and rounded to the nearest hundredth.
-- [x] Auction wins create a contract by dividing total winning contract value across the bid years.
+- [x] Manager-created Candidate Card and auction AAV uses exact `$0.25` increments and is at least `$1`.
+- [x] Total contract value is calculated as AAV multiplied by contract years.
+- [x] Auction wins preserve the submitted or anti-bluff-adjusted AAV and its backend-derived total.
 - [x] Trades transfer AAV and remaining years without restarting or extending the contract.
 - [x] Remaining years include the current season.
 - [x] A contract with one year remaining becomes pending after the current competition season and expires at the scheduled start of the next Entry Draft.

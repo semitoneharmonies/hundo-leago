@@ -35,7 +35,7 @@ function slot(overrides = {}) {
 }
 
 describe("CandidateSlot compact rows", () => {
-  it("renders one editable name/cost/term row with no row-level action", () => {
+  it("renders one editable name/AAV/term/total row with no row-level action", () => {
     const onDraftChange = vi.fn();
     render(
       <QueryClientProvider client={new QueryClient()}>
@@ -45,7 +45,7 @@ describe("CandidateSlot compact rows", () => {
           draft={{
             playerId: null,
             playerName: "",
-            totalValue: "",
+            aav: "",
             termYears: "",
           }}
           buildEligibleQueryOptions={() => ({
@@ -60,18 +60,19 @@ describe("CandidateSlot compact rows", () => {
     );
 
     expect(screen.getByRole("combobox", { name: "F01 player name" })).toBeEnabled();
-    fireEvent.change(screen.getByRole("textbox", { name: "F01 cost" }), {
-      target: { value: "30" },
+    fireEvent.change(screen.getByRole("textbox", { name: "F01 AAV" }), {
+      target: { value: "10.25" },
     });
     fireEvent.change(screen.getByRole("combobox", { name: "F01 term" }), {
       target: { value: "3" },
     });
-    expect(onDraftChange).toHaveBeenCalledWith({ totalValue: "30" });
+    expect(onDraftChange).toHaveBeenCalledWith({ aav: "10.25" });
     expect(onDraftChange).toHaveBeenCalledWith({ termYears: "3" });
+    expect(screen.getByRole("textbox", { name: "F01 total contract value" })).toHaveValue("");
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
-  it("associates a row validation error with name, cost, and term", () => {
+  it("associates a row validation error with name, AAV, and term", () => {
     render(
       <QueryClientProvider client={new QueryClient()}>
         <CandidateSlot
@@ -80,7 +81,7 @@ describe("CandidateSlot compact rows", () => {
           draft={{
             playerId: null,
             playerName: "Connor",
-            totalValue: "",
+            aav: "",
             termYears: "",
           }}
           rowError="Choose a player from the suggestions, or clear this row."
@@ -98,12 +99,39 @@ describe("CandidateSlot compact rows", () => {
     const error = screen.getByRole("alert");
     for (const field of [
       screen.getByRole("combobox", { name: "F01 player name" }),
-      screen.getByRole("textbox", { name: "F01 cost" }),
+      screen.getByRole("textbox", { name: "F01 AAV" }),
       screen.getByRole("combobox", { name: "F01 term" }),
     ]) {
       expect(field).toHaveAttribute("aria-describedby", error.id);
       expect(field).toHaveAttribute("aria-invalid", "true");
     }
+  });
+
+  it("derives a read-only total from AAV and term", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <CandidateSlot
+          slot={slot()}
+          editable
+          draft={{
+            playerId: "player",
+            playerName: "Connor McDavid",
+            aav: "10.25",
+            termYears: "3",
+          }}
+          buildEligibleQueryOptions={() => ({
+            queryKey: ["eligible-total"],
+            queryFn: async () => ({ items: [], page: { hasMore: false } }),
+            initialPageParam: null,
+            getNextPageParam: () => undefined,
+          })}
+          onDraftChange={vi.fn()}
+        />
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByRole("textbox", { name: "F01 total contract value" }))
+      .toHaveValue("$30.75");
   });
 
   it("keeps carryover fields locked regardless of edit mode", () => {
@@ -127,7 +155,7 @@ describe("CandidateSlot compact rows", () => {
       "Locked Player"
     );
     expect(screen.getByRole("textbox", { name: "F01 AAV" })).toHaveValue(
-      "$4.00 AAV"
+      "$4.00"
     );
     expect(screen.getByRole("textbox", { name: "F01 term" })).toHaveValue("2");
     expect(screen.getByText("Locked carryover")).toBeVisible();

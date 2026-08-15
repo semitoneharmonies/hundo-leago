@@ -107,7 +107,7 @@ export function CandidateSlot({
   const draftIncomplete =
     rowEditable &&
     Boolean(draft?.playerId) &&
-    (!draft.totalValue || !draft.termYears);
+    (!draft.aav || !draft.termYears);
   const state = published
     ? publishedOutcome(slot)
     : draftIncomplete
@@ -117,14 +117,17 @@ export function CandidateSlot({
   const playerName = rowEditable
     ? draft?.playerName || ""
     : slot.player?.fullName || "";
-  const cost = rowEditable
-    ? draft?.totalValue || ""
-    : isCarryover
-      ? `${money(slot.aavCents)} AAV`
-      : money(slot.totalValueCents);
+  const aav = rowEditable ? draft?.aav || "" : money(slot.aavCents);
   const term = rowEditable
     ? draft?.termYears || ""
     : String(isCarryover ? slot.remainingYears || "" : slot.termYears || "");
+  const draftAavCents = rowEditable && draft?.aav ? Number(draft.aav) * 100 : null;
+  const draftTermYears = rowEditable && draft?.termYears ? Number(draft.termYears) : null;
+  const derivedTotal =
+    Number.isSafeInteger(draftAavCents) && [1, 2, 3].includes(draftTermYears)
+      ? money(draftAavCents * draftTermYears)
+      : "";
+  const total = rowEditable ? derivedTotal : money(slot.totalValueCents);
   const errorId = `candidate-slot-${slot.slotKey}-error`;
 
   return (
@@ -182,18 +185,20 @@ export function CandidateSlot({
       <input
         aria-describedby={rowError ? errorId : undefined}
         aria-invalid={rowError ? true : undefined}
-        aria-label={`${slot.slotKey} ${isCarryover ? "AAV" : "cost"}`}
+        aria-label={`${slot.slotKey} AAV`}
         className={`${styles.compactCostField} ${
           !rowEditable ? styles.compactReadOnlyField : ""
         }`}
         disabled={busy && rowEditable}
         inputMode="decimal"
-        placeholder={rowEditable ? "Cost" : ""}
+        min={rowEditable ? "1" : undefined}
+        step={rowEditable ? "0.25" : undefined}
+        placeholder={rowEditable ? "AAV" : ""}
         readOnly={!rowEditable}
-        value={cost}
+        value={aav}
         onChange={
           rowEditable
-            ? (event) => onDraftChange({ totalValue: event.target.value })
+            ? (event) => onDraftChange({ aav: event.target.value })
             : undefined
         }
       />
@@ -223,6 +228,13 @@ export function CandidateSlot({
           value={term}
         />
       )}
+
+      <input
+        aria-label={`${slot.slotKey} total contract value`}
+        className={`${styles.compactTotalField} ${styles.compactReadOnlyField}`}
+        readOnly
+        value={total}
+      />
 
       <span
         className={`${styles.compactSlotState} ${styles[`compactSlotState_${state.kind}`]}`}

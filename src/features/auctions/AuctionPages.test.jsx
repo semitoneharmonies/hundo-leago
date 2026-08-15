@@ -510,9 +510,10 @@ describe("FAD-16 auction pages", () => {
     await view.user.type(playerInput, "ada");
     await screen.findByRole("option", { name: /Ada Player/ });
     await view.user.keyboard("{ArrowDown}{Enter}");
-    const dollars = screen.getByLabelText("Total contract value (dollars)");
-    await view.user.clear(dollars);
-    await view.user.type(dollars, "4.00");
+    const aav = screen.getByLabelText("AAV (dollars per year)");
+    await view.user.clear(aav);
+    await view.user.type(aav, "4.00");
+    expect(screen.getByLabelText("Total contract value")).toHaveValue("4.00");
     expect(screen.getByRole("button", { name: "Start or queue auction" })).toBeDisabled();
     await view.user.click(
       screen.getByRole("checkbox", { name: /I understand this bid is binding/i })
@@ -523,7 +524,7 @@ describe("FAD-16 auction pages", () => {
     expect(startBody).toEqual({
       teamId: IDS.team,
       playerId: IDS.player,
-      totalValueCents: 400,
+      aavCents: 400,
       termYears: 1,
       bindingIllegalityConfirmed: true,
     });
@@ -601,7 +602,7 @@ describe("FAD-16 auction pages", () => {
       expect(startBody).toEqual({
         teamId: IDS.team,
         playerId: IDS.player,
-        totalValueCents: 100,
+        aavCents: 100,
         termYears: 1,
       });
     });
@@ -633,7 +634,7 @@ describe("FAD-16 auction pages", () => {
       expect(submitted).toEqual({
         body: {
           teamId: IDS.team,
-          totalValueCents: 600,
+          aavCents: 300,
           termYears: 2,
         },
         version: 1,
@@ -775,7 +776,7 @@ describe("FAD-16 auction pages", () => {
       name: /replace active sealed bid for Administrative Competitor/i,
     });
     await view.user.click(replace);
-    await view.user.type(screen.getByLabelText("Replacement total (dollars)"), "5.00");
+    await view.user.type(screen.getByLabelText("Replacement AAV (dollars per year)"), "5.00");
     await view.user.selectOptions(screen.getByLabelText("Replacement term"), "3");
     await view.user.click(screen.getByRole("button", { name: "Replace sealed bid" }));
     expect(await screen.findByText(/sealed bid replacement was accepted/i)).toBeInTheDocument();
@@ -794,18 +795,18 @@ describe("FAD-16 auction pages", () => {
     expect(screen.queryByText(/sealed bid replacement was accepted/i)).not.toBeInTheDocument();
 
     await view.user.click(remountedReplace);
-    await view.user.type(screen.getByLabelText("Replacement total (dollars)"), "99.00");
+    await view.user.type(screen.getByLabelText("Replacement AAV (dollars per year)"), "99.00");
     await view.user.click(screen.getByRole("button", {
       name: "Begin auction reauthorization",
     }));
-    expect(screen.queryByLabelText("Replacement total (dollars)")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Replacement AAV (dollars per year)")).not.toBeInTheDocument();
     await view.user.click(screen.getByRole("button", {
       name: "Finish auction reauthorization",
     }));
     await view.user.click(await screen.findByRole("button", {
       name: /replace active sealed bid for Administrative Competitor/i,
     }));
-    expect(screen.getByLabelText("Replacement total (dollars)")).toHaveValue(null);
+    expect(screen.getByLabelText("Replacement AAV (dollars per year)")).toHaveValue(null);
   });
 
   it("renders every viewer team and submits only an eligible team’s own FAD bid", async () => {
@@ -861,7 +862,7 @@ describe("FAD-16 auction pages", () => {
     expect(submitted).toEqual({
       body: {
         teamId: IDS.team,
-        totalValueCents: 500,
+        aavCents: 175,
         termYears: 3,
         bindingIllegalityConfirmed: true,
       },
@@ -945,7 +946,7 @@ describe("FAD-16 auction pages", () => {
       name: /replace active sealed bid for Administrative Competitor/i,
     });
     await view.user.click(replaceTrigger);
-    const replacement = screen.getByLabelText("Replacement total (dollars)");
+    const replacement = screen.getByLabelText("Replacement AAV (dollars per year)");
     expect(replacement).toHaveFocus();
     expect(replacement).toHaveValue(null);
     expect(document.body).not.toHaveTextContent(IDS.bidTwo);
@@ -954,7 +955,7 @@ describe("FAD-16 auction pages", () => {
     await waitFor(() => expect(replaceTrigger).toHaveFocus());
 
     await view.user.click(replaceTrigger);
-    const retryValue = screen.getByLabelText("Replacement total (dollars)");
+    const retryValue = screen.getByLabelText("Replacement AAV (dollars per year)");
     await view.user.type(retryValue, "5.00");
     await view.user.selectOptions(screen.getByLabelText("Replacement term"), "3");
     await view.user.click(screen.getByRole("button", { name: "Replace sealed bid" }));
@@ -969,7 +970,7 @@ describe("FAD-16 auction pages", () => {
     expect(editRequests[1]).toMatchObject({
       body: {
         teamId: IDS.teamFour,
-        totalValueCents: 500,
+        aavCents: 500,
         termYears: 3,
       },
       idempotencyKey: `auction-admin-edit:${IDS.intent}`,
@@ -1245,9 +1246,9 @@ describe("FAD-16 auction pages", () => {
       "/leagues/:leagueId/auctions/:auctionId",
       <AuctionDetailPage />
     );
-    const dollars = await screen.findByLabelText("Total contract value (dollars)");
-    await view.user.clear(dollars);
-    await view.user.type(dollars, "9.00");
+    const aav = await screen.findByLabelText("AAV (dollars per year)");
+    await view.user.clear(aav);
+    await view.user.type(aav, "9.00");
     expect(screen.getByRole("button", { name: "Update my bid" })).toBeDisabled();
     await view.user.click(
       screen.getByRole("checkbox", { name: /I understand this bid is binding/i })
@@ -1256,8 +1257,8 @@ describe("FAD-16 auction pages", () => {
     await screen.findByText(/entered amount and term were preserved/i);
     const conflictAlert = screen.getByRole("alert");
     expect(conflictAlert).toHaveFocus();
-    expect(dollars).toHaveAttribute("aria-describedby", conflictAlert.id);
-    expect(dollars).toHaveValue(9);
+    expect(aav).toHaveAttribute("aria-describedby", conflictAlert.id);
+    expect(aav).toHaveValue(9);
     expect(versions).toEqual([1]);
 
     await view.user.click(screen.getByRole("button", { name: "Update my bid" }));

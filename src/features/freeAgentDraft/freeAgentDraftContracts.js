@@ -836,19 +836,31 @@ function candidateSlot(value, index, location, { published }) {
   } else {
     nullableInteger(value.totalValueCents, `${location}.totalValueCents`, { positive: true });
     nullableInteger(value.termYears, `${location}.termYears`, { positive: true });
+    nullableInteger(value.aavCents, `${location}.aavCents`, { positive: true });
     if (value.termYears !== null) {
       contract(value.termYears <= 3, `${location}.termYears is invalid.`);
     }
     const contractComplete =
-      value.totalValueCents !== null && value.termYears !== null;
+      value.aavCents !== null && value.termYears !== null;
     if (contractComplete) {
-      safeInteger(value.aavCents, `${location}.aavCents`, { positive: true });
+      contract(value.aavCents >= 100 && value.aavCents % 25 === 0, `${location}.aavCents is invalid.`);
+      contract(
+        value.totalValueCents === value.aavCents * value.termYears,
+        `${location}.totalValueCents is inconsistent.`
+      );
       contract(
         !value.validation.codes.includes("CANDIDATE_CONTRACT_INCOMPLETE"),
         `${location} complete contract validation is inconsistent.`
       );
     } else {
-      contract(value.aavCents === null, `${location}.aavCents must be null for an incomplete contract.`);
+      contract(
+        value.totalValueCents === null ||
+          (value.aavCents === null && value.termYears === null),
+        `${location}.totalValueCents is invalid for an incomplete contract.`
+      );
+      if (value.aavCents !== null) {
+        contract(value.aavCents >= 100 && value.aavCents % 25 === 0, `${location}.aavCents is invalid.`);
+      }
       contract(
         value.validation.status === "invalid" &&
           value.validation.codes.includes("CANDIDATE_CONTRACT_INCOMPLETE"),
@@ -1080,10 +1092,16 @@ function allocationContract(value, location) {
   const expectedAavCents =
     Math.floor(value.totalValueCents / value.termYears) +
     ((value.totalValueCents % value.termYears) * 2 >= value.termYears ? 1 : 0);
-  contract(
+  const aavFirstContract =
+    value.aavCents >= 100 &&
+    value.aavCents % 25 === 0 &&
+    value.totalValueCents === value.aavCents * value.termYears;
+  const legacyContract =
     value.totalValueCents >= value.termYears * 100 &&
-      (value.termYears === 1 || value.totalValueCents % 100 === 0) &&
-      value.aavCents === expectedAavCents,
+    (value.termYears === 1 || value.totalValueCents % 100 === 0) &&
+    value.aavCents === expectedAavCents;
+  contract(
+    aavFirstContract || legacyContract,
     `${location} contract values are inconsistent.`
   );
   return true;
@@ -2061,8 +2079,8 @@ function previewAction(value, location) {
   contract(record(value), `${location} must be an object.`);
   oneOf(value.type, ["add", "edit", "move", "remove"], `${location}.type`);
   const fieldsByType = {
-    add: ["type", "slotKey", "playerId", "totalValueCents", "termYears"],
-    edit: ["type", "entryId", "totalValueCents", "termYears"],
+    add: ["type", "slotKey", "playerId", "aavCents", "termYears"],
+    edit: ["type", "entryId", "aavCents", "termYears"],
     move: ["type", "entryId", "slotKey"],
     remove: ["type", "entryId"],
   };
@@ -2070,7 +2088,10 @@ function previewAction(value, location) {
   if ("slotKey" in value) contract(SLOT_KEYS.includes(value.slotKey), `${location}.slotKey is invalid.`);
   if ("playerId" in value) stableId(value.playerId, `${location}.playerId`);
   if ("entryId" in value) stableId(value.entryId, `${location}.entryId`);
-  if ("totalValueCents" in value) safeInteger(value.totalValueCents, `${location}.totalValueCents`, { positive: true });
+  if ("aavCents" in value) {
+    safeInteger(value.aavCents, `${location}.aavCents`, { positive: true });
+    contract(value.aavCents >= 100 && value.aavCents % 25 === 0, `${location}.aavCents is invalid.`);
+  }
   if ("termYears" in value) {
     safeInteger(value.termYears, `${location}.termYears`, { positive: true });
     contract(value.termYears <= 3, `${location}.termYears is invalid.`);

@@ -51,6 +51,7 @@ import {
   auctionListQuery,
 } from "./auctionQueries.js";
 import {
+  auctionTotalPreview,
   capabilityMessage,
   initialAuctionOffer,
   sourceLabel,
@@ -255,6 +256,20 @@ function FadBindingConfirmation({ checked, describedBy, disabled, id, onChange }
   );
 }
 
+function TotalContractPreview({ aav, describedBy, term }) {
+  return (
+    <label>
+      Total contract value (calculated)
+      <input
+        aria-describedby={describedBy}
+        aria-label="Total contract value"
+        readOnly
+        value={auctionTotalPreview(aav, term)}
+      />
+    </label>
+  );
+}
+
 function PlayerCombobox({
   client,
   describedBy,
@@ -392,7 +407,7 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
   const [teamId, setTeamId] = useState("");
   const [playerSearch, setPlayerSearch] = useState("");
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [total, setTotal] = useState("1.00");
+  const [aav, setAav] = useState("1.00");
   const [term, setTerm] = useState("1");
   const [confirmed, setConfirmed] = useState(false);
   const [clientError, setClientError] = useState(null);
@@ -477,11 +492,11 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
       if (isFad && !confirmed) {
         throw new Error("Confirm the binding FAD bid and possible roster illegality.");
       }
-      const offer = validateAuctionOffer(total, term, { action: "start" });
+      const offer = validateAuctionOffer(aav, term, { action: "start" });
       const body = {
         teamId: selectedStartTeam.teamId,
         playerId: selectedPlayer.id,
-        totalValueCents: offer.totalValueCents,
+        aavCents: offer.aavCents,
         termYears: offer.termYears,
         ...(isFad ? { bindingIllegalityConfirmed: true } : {}),
       };
@@ -558,17 +573,17 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
               setSelectedPlayer={setSelectedPlayer}
             />
             <label>
-              Total contract value (dollars)
+              AAV (dollars per year)
               <input
                 aria-describedby={feedbackId}
                 type="number"
                 inputMode="decimal"
-                min={term === "1" ? "1.00" : term}
-                step={term === "1" ? "0.01" : "1"}
+                min="1.00"
+                step="0.25"
                 required
-                value={total}
+                value={aav}
                 onChange={(event) => {
-                  setTotal(event.target.value);
+                  setAav(event.target.value);
                   setClientError(null);
                   mutation.reset();
                 }}
@@ -590,6 +605,11 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
                 <option value="3">3 years</option>
               </select>
             </label>
+            <TotalContractPreview
+              aav={aav}
+              describedBy={feedbackId}
+              term={term}
+            />
           </div>
           <p className={styles.searchAuthority} id={searchAuthorityId}>
             Player search is a convenience catalog filter, not FAD eligibility
@@ -995,7 +1015,7 @@ export function AuctionsPage() {
 function BidEditor({ auction, context, leagueId, viewerTeam }) {
   const queryClient = useQueryClient();
   const initial = initialAuctionOffer(auction, viewerTeam);
-  const [total, setTotal] = useState(initial.total);
+  const [aav, setAav] = useState(initial.aav);
   const [term, setTerm] = useState(initial.term);
   const [confirmed, setConfirmed] = useState(false);
   const [clientError, setClientError] = useState(null);
@@ -1053,7 +1073,7 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
       if (isFad && !confirmed) {
         throw new Error("Confirm the binding FAD bid and possible roster illegality.");
       }
-      const offer = validateAuctionOffer(total, term, {
+      const offer = validateAuctionOffer(aav, term, {
         action,
         sourceKind: auction.sourceKind,
         fadOrigin: auction.fadOrigin,
@@ -1061,7 +1081,7 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
       });
       const body = {
         teamId: viewerTeam.teamId,
-        totalValueCents: offer.totalValueCents,
+        aavCents: offer.aavCents,
         termYears: offer.termYears,
         ...(isFad ? { bindingIllegalityConfirmed: true } : {}),
       };
@@ -1092,16 +1112,17 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
         <legend>{hasBid ? "Edit your sealed bid" : "Join with a sealed bid"}</legend>
         <div className={styles.formGrid}>
           <label>
-            Total contract value (dollars)
+            AAV (dollars per year)
             <input
               aria-describedby={feedbackId}
               type="number"
               inputMode="decimal"
-              step={term === "1" ? "0.01" : "1"}
+              min="1.00"
+              step="0.25"
               required
-              value={total}
+              value={aav}
               onChange={(event) => {
-                setTotal(event.target.value);
+                setAav(event.target.value);
                 setClientError(null);
                 setConflictMessage(null);
                 mutation.reset();
@@ -1125,6 +1146,11 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
               <option value="3">3 years</option>
             </select>
           </label>
+          <TotalContractPreview
+            aav={aav}
+            describedBy={feedbackId}
+            term={term}
+          />
         </div>
         {isFad && (
           <FadBindingConfirmation
@@ -1202,7 +1228,7 @@ function bidStatusLabel(status) {
 function CommissionerAdministrationPanel({ auction, context, leagueId }) {
   const queryClient = useQueryClient();
   const [editor, setEditor] = useState(null);
-  const [total, setTotal] = useState("");
+  const [aav, setAav] = useState("");
   const [term, setTerm] = useState("1");
   const [confirmed, setConfirmed] = useState(false);
   const [clientError, setClientError] = useState(null);
@@ -1332,7 +1358,7 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
   function openEditor(kind, event, bid = null) {
     returnFocusRef.current = event.currentTarget;
     setEditor({ kind, bidId: bid?.bidId ?? null });
-    setTotal("");
+    setAav("");
     setTerm("1");
     setConfirmed(false);
     setClientError(null);
@@ -1357,7 +1383,7 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
       if (!selectedBid?.capabilities.adminEditBid.allowed) {
         throw new Error("The server does not currently allow this bid replacement.");
       }
-      const offer = validateAuctionOffer(total, term, {
+      const offer = validateAuctionOffer(aav, term, {
         action: "edit",
         sourceKind: auction.sourceKind,
         fadOrigin: auction.fadOrigin,
@@ -1370,7 +1396,7 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
         bid: selectedBid,
         body: {
           teamId: selectedBid.teamId,
-          totalValueCents: offer.totalValueCents,
+          aavCents: offer.aavCents,
           termYears: offer.termYears,
         },
         version: selectedBid.version,
@@ -1520,17 +1546,18 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
             </p>
             <div className={styles.formGrid}>
               <label>
-                Replacement total (dollars)
+                Replacement AAV (dollars per year)
                 <input
                   ref={editorFocusRef}
                   aria-describedby={`${sealedNoticeId} ${feedbackId}`}
                   type="number"
                   inputMode="decimal"
-                  step={term === "1" ? "0.01" : "1"}
+                  min="1.00"
+                  step="0.25"
                   required
-                  value={total}
+                  value={aav}
                   onChange={(event) => {
-                    setTotal(event.target.value);
+                    setAav(event.target.value);
                     setClientError(null);
                     setConflictMessage(null);
                     mutation.reset();
@@ -1554,6 +1581,11 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
                   <option value="3">3 years</option>
                 </select>
               </label>
+              <TotalContractPreview
+                aav={aav}
+                describedBy={`${sealedNoticeId} ${feedbackId}`}
+                term={term}
+              />
             </div>
             <div className={styles.actions}>
               <button className="hl-button hl-button--primary">
@@ -1634,8 +1666,8 @@ function DrawEvidence({ auction }) {
         </p>
       ) : reveal?.selectionUsed ? (
         <p>
-          {reveal.orderedBidIds.length} bids remained exactly tied after AAV and
-          term ranking. The server used one equal-chance draw and persisted the
+          {reveal.orderedBidIds.length} bids remained exactly tied after total
+          value and AAV ranking. The server used one equal-chance draw and persisted the
           selected result before assignment.
         </p>
       ) : reveal ? (

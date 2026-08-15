@@ -169,9 +169,9 @@ function validateContractTerms(input, fields, description) {
     !Number.isSafeInteger(input.termYears) ||
     input.termYears < 1 ||
     input.termYears > 3 ||
-    !Number.isSafeInteger(input.totalValueCents) ||
-    input.totalValueCents < input.termYears * 100 ||
-    (input.termYears > 1 && input.totalValueCents % 100 !== 0)
+    !Number.isSafeInteger(input.aavCents) ||
+    input.aavCents < 100 ||
+    input.aavCents % 25 !== 0
   ) {
     throw new TypeError(`${description} contract is invalid.`);
   }
@@ -185,9 +185,9 @@ function startBody(input) {
         "playerId",
         "teamId",
         "termYears",
-        "totalValueCents",
+        "aavCents",
       ]
-    : ["playerId", "teamId", "termYears", "totalValueCents"];
+    : ["playerId", "teamId", "termYears", "aavCents"];
   validateContractTerms(input, fields, "Auction start body");
   stableId(input.playerId, "Auction player ID");
   stableId(input.teamId, "Auction team ID");
@@ -202,8 +202,8 @@ function startBody(input) {
 
 function bidBody(input) {
   const fields = Object.hasOwn(input || {}, "bindingIllegalityConfirmed")
-    ? ["bindingIllegalityConfirmed", "teamId", "termYears", "totalValueCents"]
-    : ["teamId", "termYears", "totalValueCents"];
+    ? ["bindingIllegalityConfirmed", "teamId", "termYears", "aavCents"]
+    : ["teamId", "termYears", "aavCents"];
   validateContractTerms(input, fields, "Auction bid body");
   stableId(input.teamId, "Auction team ID");
   if (
@@ -218,7 +218,7 @@ function bidBody(input) {
 function administrationBidBody(input) {
   validateContractTerms(
     input,
-    ["teamId", "termYears", "totalValueCents"],
+    ["teamId", "termYears", "aavCents"],
     "Auction commissioner bid body"
   );
   stableId(input.teamId, "Auction team ID");

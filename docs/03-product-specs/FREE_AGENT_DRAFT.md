@@ -33,6 +33,9 @@ prospect-rights release.
 On 2026-08-11, Grae clarified the player-data boundary: the FAD is a preseason
 event and requires only the persisted player catalogue, stable identity,
 effective position, and league-scoped eligibility/ownership/contract state.
+On 2026-08-14, Grae changed Candidate offers to AAV-first entry in exact
+`$0.25` increments, with a server-derived total, save-time contract and cap
+blocking, and an Active-AAV summary on the Candidate Card.
 Prior-season statistics, current-season statistics, and an in-game/live feed
 are neither Candidate inputs nor FAD deployment prerequisites.
 
@@ -345,7 +348,7 @@ This period is intentionally long so managers may:
 * research players;
 * review statistics;
 * plan positions and Bench use;
-* choose total contract values and terms;
+* choose AAV values and terms while reviewing calculated totals;
 * review possible cap outcomes;
 * revise their choices;
 * ask the commissioner for help during the approved help window.
@@ -537,8 +540,8 @@ The post-deadline view includes:
 
 * carried players;
 * nominated free agents;
-* proposed total values and terms;
-* calculated AAV;
+* entered AAV values and terms;
+* calculated total values;
 * the requested Candidate Card position;
 * won, lost, tied, pending-auction, invalid, or unresolved outcome;
 * the final contract and owning team when resolved.
@@ -596,16 +599,16 @@ Each selectable Candidate Card entry contains:
 * stable player ID;
 * effective league position;
 * requested Active F, Active D, or Bench slot;
-* proposed total contract value, which may remain empty while the card is
+* proposed AAV, which may remain empty while the card is
   being prepared;
 * proposed term of one, two, or three years, which may remain empty while the
   card is being prepared;
-* calculated AAV when both contract fields are present;
+* calculated total contract value when both contract fields are present;
 * current eligibility and validation state;
 * created and last-edited timestamps;
 * current version.
 
-A manager may save a selected player before entering the proposed total,
+A manager may save a selected player before entering the proposed AAV,
 term, or both. The saved row remains an incomplete private-card draft rather
 than an FAD offer until both contract fields form a valid contract. An
 incomplete row never creates a bid, player ownership, or contract merely
@@ -671,17 +674,16 @@ A proposed Candidate Card contract follows the normal contract rules:
 
 * one-, two-, or three-year term;
 * at least `$1 AAV` for every contract year;
-* one-year totals may use up to two decimal places;
-* two- and three-year totals must be whole-dollar values;
+* AAV entered directly in exact `$0.25` increments;
 * no separate monetary maximum;
-* AAV equals original total divided by original term, rounded to the nearest
-  hundredth using the approved rule.
+* total contract value equals AAV multiplied by term with no rounding.
 
 A selectable Bench entry must also satisfy the approved `$4 AAV` Bench limit.
 
-The frontend must show total value, term, and calculated AAV together. It must
-identify total as the primary Candidate Card ranking value and AAV as the
-secondary equal-total ranking value.
+The frontend must show player, entered AAV, term, and calculated total value in
+four compact columns. It must identify calculated total as the primary
+Candidate Card ranking value and AAV as the secondary equal-total ranking
+value.
 
 ---
 
@@ -695,6 +697,11 @@ The card must separately show:
 * complete Candidate Card cap usage assuming every new offer is won;
 * current carried obligations;
 * exact over-cap or structural-illegality blockers.
+
+At the top of the card, the frontend shows the read-only total AAV of every
+Active F and D entry, the `$100` Active cap, and the separately identified
+cap-exempt Bench AAV. The authoritative cap projection still includes any
+other approved cap-counting obligations.
 
 Bench players are position-neutral, cap-exempt, and limited to `$4 AAV`.
 Active-player AAV plus retained salary, buyout penalties, and every other
@@ -821,7 +828,7 @@ Before the deadline, an authorized manager or help-authorized commissioner may:
 * add an eligible free agent to an open compatible position;
 * remove a selectable candidate;
 * move a selectable candidate to another compatible open position;
-* change total contract value;
+* change AAV;
 * change term;
 * correct an invalid entry.
 
@@ -836,6 +843,13 @@ writes without overwriting a newer card draft. A row containing a complete
 contract must pass the normal Candidate offer rules before it can become an
 allocatable offer. Carryover rows remain locked and cannot be changed by the
 whole-card save.
+
+The backend rejects the complete whole-card save when any completed offer is
+below `$1 AAV`, is not an exact `$0.25` increment, or places a Bench player
+above `$4 AAV`. It also rejects the save when the authoritative projected cap
+usage for Active F and D entries plus other cap-counting obligations exceeds
+`$100`. A player-only row or a row missing AAV or term remains a permitted
+incomplete draft and contributes no proposed AAV until both fields are present.
 
 ---
 
@@ -942,8 +956,8 @@ Candidate Card allocation uses this order:
 2. if two or more top offers have the same total, highest AAV;
 3. if the top offers have the same total and term, a restricted tie auction.
 
-Because AAV is total value divided by term, a shorter term produces the higher
-AAV when totals are equal.
+Because total is AAV multiplied by term, a shorter term produces the higher AAV
+when totals are equal.
 
 Examples:
 
@@ -962,8 +976,8 @@ A lower total never defeats a higher total because of AAV.
 When exactly one valid team requested an eligible player:
 
 * that team wins the player;
-* the exact proposed total and term create the contract;
-* the backend calculates AAV;
+* the exact proposed AAV and term create the contract;
+* the backend calculates total contract value;
 * the player is assigned to the requested Candidate Card position;
 * the signing begins the approved 14-day free-agent signing buyout lock;
 * ownership, contract, roster, result, and activity effects are saved
@@ -1453,8 +1467,10 @@ The Candidate Card uses one compact vertical form with exactly:
  4 Bench rows
 ```
 
-Each row presents three primary fields in columns: player name, proposed total
-cost, and term. Player name uses the approved eligible-player autocomplete.
+Each row presents four primary fields in columns: player name, proposed AAV,
+term, and calculated total contract value. Player name uses the approved
+eligible-player autocomplete. Total is read-only and remains empty until AAV
+and term are both present.
 One Save control appears at the top of the card and saves every changed
 editable row together. A manager may leave any editable row empty and may save
 a selected player while cost, term, or both remain empty.
@@ -1464,9 +1480,10 @@ The Candidate Card must clearly distinguish:
 * locked carryover players;
 * editable free-agent candidates;
 * mandatory and optional positions;
-* total contract value;
+* entered AAV;
 * term;
-* calculated AAV;
+* calculated total contract value;
+* total Active AAV and authoritative projected cap use;
 * validation;
 * maximum possible cap use;
 * missing positions;

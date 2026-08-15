@@ -237,15 +237,18 @@ Remaining years include the current season.
 
 ---
 
-## Total Contract Value
+## AAV and Total Contract Value
 
 Total contract value means the complete value across the original contract term.
 
-Precision is:
+For a new manager-created Candidate Card or auction offer:
 
-* a one-year total may use up to two decimal places;
-* a two-year total must be a whole number;
-* a three-year total must be a whole number.
+* the manager enters AAV, not total value;
+* AAV must use exact `$0.25` increments;
+* AAV must be at least `$1.00`;
+* the manager chooses a one-, two-, or three-year term;
+* the backend calculates original total value as exact AAV multiplied by term;
+* the client displays that calculated total before the offer is saved or bid.
 
 Every normal non-ELC contract requires at least `$1 AAV` for each contract year.
 
@@ -259,24 +262,30 @@ The minimum original total values are therefore:
 
 There is no separate monetary maximum. The maximum term is three years, and oversized values remain subject to cap legality and transaction warnings.
 
+Historical contracts created under an earlier approved precision rule retain
+their original total and AAV. This input amendment does not round or rewrite
+existing contract evidence.
+
 ---
 
 ## Average Annual Value
 
-AAV is:
+AAV for a new manager-created Candidate Card or auction contract is the exact
+entered amount. Original total is:
 
 ```text
-original total contract value ÷ original contract term
+AAV × original contract term
 ```
 
-AAV is rounded to the nearest hundredth.
+AAV is stored in integer cents and must be divisible by 25 for those new
+offers. No division or rounding is required to create the contract.
 
 Examples:
 
 ```text
-1 year at $4.25 total = $4.25 AAV
-2 years at $9 total = $4.50 AAV
-3 years at $10 total = $3.33 AAV
+1 year at $4.25 AAV = $4.25 total
+2 years at $4.50 AAV = $9.00 total
+3 years at $3.25 AAV = $9.75 total
 ```
 
 AAV does not change merely because remaining years decrease.
@@ -302,14 +311,14 @@ A roster read, ordinary roster move, trade, page load, or cap calculation may no
 
 An auction bid supplies:
 
-* total contract value;
+* AAV in an approved `$0.25` increment;
 * one-, two-, or three-year term.
 
 On resolution:
 
-1. The winning total becomes the original total contract value.
+1. The backend-derived winning total becomes the original total contract value.
 2. The bid term becomes the original term and initial remaining years.
-3. The backend calculates and rounds AAV.
+3. The submitted or anti-bluff-adjusted AAV becomes the contract AAV.
 4. The backend creates the contract and player ownership atomically.
 5. The backend records the auction signing timestamp used by the buyout lock.
 6. The backend creates the required activity record.
@@ -322,15 +331,18 @@ The Auctions specification defines bidding and winning rules.
 
 A sole or unique highest Candidate Card offer supplies:
 
-* the original total contract value;
+* the proposed AAV in an approved `$0.25` increment;
 * the original one-, two-, or three-year term;
 * the initial remaining years.
+
+The backend-derived AAV-times-term value becomes the original total contract
+value.
 
 On automatic allocation:
 
 1. the backend validates the deadline Candidate Card offer;
-2. the exact submitted total and term become the contract;
-3. the backend calculates and rounds AAV;
+2. the exact submitted AAV and term become the contract;
+3. the backend-derived AAV-times-term total becomes the original total;
 4. the backend creates contract, ownership, roster assignment, FAD result, and
    required activity atomically;
 5. the contract belongs to the upcoming season;
@@ -1071,9 +1083,9 @@ and the FAD-related amendments on 2026-07-27.
 - [x] Contracts may not be extended.
 - [x] There is no team-wide total contract-year limit.
 - [x] Remaining years include the current season.
-- [x] One-year total values may use up to two decimal places.
-- [x] Two-year and three-year total values and auction bids must be whole numbers.
-- [x] AAV is original total value divided by original term and rounded to the nearest hundredth.
+- [x] Manager-created Candidate Card and auction AAV uses exact `$0.25` increments and is at least `$1`.
+- [x] Total contract value is calculated as AAV multiplied by original term.
+- [x] Historical contracts retain their original approved total and AAV without rewriting.
 - [x] Every normally owned Active, Bench, or Injured Reserve player has one league-specific contract.
 - [x] Unsigned prospects have no salary and no normal contract.
 - [x] A signed prospect may retain the fantasy ELC while remaining cap-exempt in Prospects.

@@ -110,10 +110,12 @@ function writeOptions(options) {
 function contractTerms(input, fields, description) {
   exactInput(input, fields, description);
   if (
-    "totalValueCents" in input &&
-    (!Number.isSafeInteger(input.totalValueCents) || input.totalValueCents < 1)
+    "aavCents" in input &&
+    (!Number.isSafeInteger(input.aavCents) ||
+      input.aavCents < 100 ||
+      input.aavCents % 25 !== 0)
   ) {
-    throw new TypeError(`${description} total value is invalid.`);
+    throw new TypeError(`${description} AAV is invalid.`);
   }
   if (
     "termYears" in input &&
@@ -128,8 +130,8 @@ function contractTerms(input, fields, description) {
 
 function previewAction(action) {
   const fields = {
-    add: ["type", "slotKey", "playerId", "totalValueCents", "termYears"],
-    edit: ["type", "entryId", "totalValueCents", "termYears"],
+    add: ["type", "slotKey", "playerId", "aavCents", "termYears"],
+    edit: ["type", "entryId", "aavCents", "termYears"],
     move: ["type", "entryId", "slotKey"],
     remove: ["type", "entryId"],
   }[action?.type];
@@ -139,7 +141,7 @@ function previewAction(action) {
   }
   if ("playerId" in action) stableId(action.playerId, "Candidate Card preview player ID");
   if ("entryId" in action) stableId(action.entryId, "Candidate Card preview entry ID");
-  if ("totalValueCents" in action || "termYears" in action) {
+  if ("aavCents" in action || "termYears" in action) {
     contractTerms(action, fields, "Candidate Card preview action");
   }
   return action;
@@ -514,16 +516,17 @@ function wholeCardDraft(input) {
     if (slot.candidate === null) return;
     exactInput(
       slot.candidate,
-      ["playerId", "totalValueCents", "termYears"],
+      ["playerId", "aavCents", "termYears"],
       "Candidate Card save candidate"
     );
     stableId(slot.candidate.playerId, "Candidate Card save player ID");
     if (
-      slot.candidate.totalValueCents !== null &&
-      (!Number.isSafeInteger(slot.candidate.totalValueCents) ||
-        slot.candidate.totalValueCents < 1)
+      slot.candidate.aavCents !== null &&
+      (!Number.isSafeInteger(slot.candidate.aavCents) ||
+        slot.candidate.aavCents < 100 ||
+        slot.candidate.aavCents % 25 !== 0)
     ) {
-      throw new TypeError("Candidate Card save candidate total value is invalid.");
+      throw new TypeError("Candidate Card save candidate AAV is invalid.");
     }
     if (
       slot.candidate.termYears !== null &&
@@ -573,7 +576,7 @@ export function addCandidateCardCandidate(
   }
   contractTerms(
     input,
-    ["playerId", "totalValueCents", "termYears"],
+    ["playerId", "aavCents", "termYears"],
     "Candidate Card add body"
   );
   stableId(input.playerId, "Candidate Card player ID");
@@ -598,7 +601,7 @@ export function editCandidateCardCandidate(
   stableId(entryId, "Candidate Card entry ID");
   contractTerms(
     input,
-    ["totalValueCents", "termYears"],
+    ["aavCents", "termYears"],
     "Candidate Card edit body"
   );
   return candidateMutation(

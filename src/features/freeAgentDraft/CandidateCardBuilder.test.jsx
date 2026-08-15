@@ -112,7 +112,12 @@ function card(overrides = {}) {
     allocationEligibility: "eligible",
     capStatus: "compliant",
     completeness: { code: "incomplete", missingMandatoryCount: 18 },
-    capProjection: { maximumPossibleCapCents: 0, capLimitCents: 10_000 },
+    capProjection: {
+      maximumPossibleCapCents: 0,
+      capLimitCents: 10_000,
+      carriedActivePlayerAmountCents: 0,
+      carriedCapUsageCents: 0,
+    },
     slots: SLOT_KEYS.map(emptySlot),
     capabilities: {
       editCard: { allowed: true, reasonCode: null },
@@ -148,6 +153,7 @@ function renderBuilder(candidateCard, httpClient = { request: vi.fn() }) {
     onAuthoritativeCard,
     onProtectedFailure,
     rerenderCard: (nextCard) => rendered.rerender(view(nextCard)),
+    unmount: rendered.unmount,
   };
 }
 
@@ -198,11 +204,61 @@ describe("CandidateCardBuilder whole-card form", () => {
       slotKey: "F01",
       candidate: {
         playerId: "11111111-1111-4111-8111-111111111111",
-        totalValueCents: null,
+        aavCents: null,
         termYears: null,
       },
     });
     expect(options.body.slots[1]).toEqual({ slotKey: "F02", candidate: null });
+  });
+
+  it("shows the live AAV and total while blocking illegal AAV, Bench, and cap saves", async () => {
+    const httpClient = { request: vi.fn() };
+    const { unmount } = renderBuilder(card(), httpClient);
+    fireEvent.click(screen.getByRole("button", { name: "Choose player for F01 player name" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "F01 AAV" }), {
+      target: { value: "10.25" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "F01 term" }), {
+      target: { value: "3" },
+    });
+    expect(screen.getByRole("textbox", { name: "F01 total contract value" }))
+      .toHaveValue("$30.75");
+
+    fireEvent.change(screen.getByRole("textbox", { name: "F01 AAV" }), {
+      target: { value: "1.10" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Candidate Card" }));
+    expect(await screen.findByText(/25-cent increments/i)).toBeVisible();
+    expect(httpClient.request).not.toHaveBeenCalled();
+    unmount();
+
+    const benchClient = { request: vi.fn() };
+    const benchView = renderBuilder(card(), benchClient);
+    fireEvent.click(screen.getByRole("button", { name: "Choose player for B01 player name" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "B01 AAV" }), {
+      target: { value: "4.25" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Candidate Card" }));
+    expect(await screen.findByText(/Bench AAV cannot exceed \$4\.00/i)).toBeVisible();
+    expect(benchClient.request).not.toHaveBeenCalled();
+    benchView.unmount();
+
+    const capClient = { request: vi.fn() };
+    renderBuilder(card({
+      capProjection: {
+        maximumPossibleCapCents: 9_500,
+        capLimitCents: 10_000,
+        carriedActivePlayerAmountCents: 9_500,
+        carriedCapUsageCents: 9_500,
+      },
+    }), capClient);
+    fireEvent.click(screen.getByRole("button", { name: "Choose player for F01 player name" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "F01 AAV" }), {
+      target: { value: "5.25" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Candidate Card" }));
+    expect(await screen.findByText(/above the \$100\.00 limit/i)).toBeVisible();
+    expect(capClient.request).not.toHaveBeenCalled();
   });
 
   it("preserves a dirty draft after 412 and retries with the refreshed version", async () => {
@@ -254,7 +310,7 @@ describe("CandidateCardBuilder whole-card form", () => {
             slotKey: "F01",
             candidate: {
               playerId: "11111111-1111-4111-8111-111111111111",
-              totalValueCents: null,
+              aavCents: null,
               termYears: null,
             },
           },
@@ -262,7 +318,7 @@ describe("CandidateCardBuilder whole-card form", () => {
             slotKey: "F02",
             candidate: {
               playerId: "99999999-9999-4999-8999-999999999999",
-              totalValueCents: 1_200,
+              aavCents: 600,
               termYears: 2,
             },
           },

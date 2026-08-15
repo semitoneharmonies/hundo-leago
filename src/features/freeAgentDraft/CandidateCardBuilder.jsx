@@ -57,14 +57,14 @@ function draftRows(card) {
         ? {
             playerId: slot.player.playerId,
             playerName: slot.player.fullName,
-            totalValue: centsInput(slot.totalValueCents),
+            aav: centsInput(slot.aavCents),
             termYears:
               slot.termYears === null ? "" : String(slot.termYears),
           }
         : {
             playerId: null,
             playerName: "",
-            totalValue: "",
+            aav: "",
             termYears: "",
           },
     ])
@@ -98,6 +98,7 @@ function focusFirstInvalidRow(slotKey) {
 function wholeCardInput(card, drafts) {
   const errors = {};
   const usedPlayers = new Map();
+  let proposedActiveAavCents = 0;
   const slots = card.slots.map((slot) => {
     if (slot.occupantKind === "carryover" || slot.locked) {
       return { slotKey: slot.slotKey, candidate: null };
@@ -105,9 +106,9 @@ function wholeCardInput(card, drafts) {
 
     const draft = drafts[slot.slotKey];
     const playerName = draft.playerName.trim();
-    const totalValue = draft.totalValue.trim();
+    const aav = draft.aav.trim();
     const termYears = draft.termYears;
-    const hasAnyValue = playerName !== "" || totalValue !== "" || termYears !== "";
+    const hasAnyValue = playerName !== "" || aav !== "" || termYears !== "";
     if (!hasAnyValue) {
       return { slotKey: slot.slotKey, candidate: null };
     }
@@ -117,12 +118,16 @@ function wholeCardInput(card, drafts) {
       return { slotKey: slot.slotKey, candidate: null };
     }
 
-    let totalValueCents = null;
-    if (totalValue !== "") {
-      totalValueCents = parseCents(totalValue);
-      if (totalValueCents === null) {
+    let aavCents = null;
+    if (aav !== "") {
+      aavCents = parseCents(aav);
+      if (aavCents === null || aavCents < 100 || aavCents % 25 !== 0) {
         errors[slot.slotKey] =
-          "Cost must be a positive amount with no more than two decimal places.";
+          "AAV must be at least $1.00 and use whole-dollar or 25-cent increments.";
+      } else if (slot.slotGroup === "B" && aavCents > 400) {
+        errors[slot.slotKey] = "Bench AAV cannot exceed $4.00.";
+      } else if (slot.slotGroup === "F" || slot.slotGroup === "D") {
+        proposedActiveAavCents += aavCents;
       }
     }
 
@@ -143,13 +148,22 @@ function wholeCardInput(card, drafts) {
       slotKey: slot.slotKey,
       candidate: {
         playerId: draft.playerId,
-        totalValueCents,
+        aavCents,
         termYears: parsedTerm,
       },
     };
   });
 
-  return { input: { slots }, errors };
+  const projectedCapCents =
+    card.capProjection.carriedCapUsageCents + proposedActiveAavCents;
+  const capError =
+    projectedCapCents > card.capProjection.capLimitCents
+      ? `Projected cap use is ${money(projectedCapCents)}, above the ${money(
+          card.capProjection.capLimitCents
+        )} limit.`
+      : "";
+
+  return { input: { slots }, errors, capError, proposedActiveAavCents, projectedCapCents };
 }
 
 export function CandidateCardBuilder({
@@ -310,7 +324,7 @@ export function CandidateCardBuilder({
       ) {
         nextRow.playerId = null;
         nextRow.playerName = "";
-        nextRow.totalValue = "";
+        nextRow.aav = "";
         nextRow.termYears = "";
       }
       return { ...current, [slotKey]: nextRow };
@@ -335,11 +349,15 @@ export function CandidateCardBuilder({
   function saveCard(event) {
     event.preventDefault();
     if (!editable || saveMutation.isPending) return;
-    const { input, errors } = wholeCardInput(card, drafts);
+    const { input, errors, capError } = wholeCardInput(card, drafts);
     if (Object.keys(errors).length > 0) {
       setRowErrors(errors);
       setFormError("Fix the highlighted rows before saving the card.");
       focusFirstInvalidRow(Object.keys(errors)[0]);
+      return;
+    }
+    if (capError) {
+      setFormError(capError);
       return;
     }
     let idempotencyKey;
@@ -372,6 +390,10 @@ export function CandidateCardBuilder({
 
   const warning = cardWarning(card);
   const busy = saveMutation.isPending || helpMutation.isPending;
+  const liveProjection = wholeCardInput(card, drafts);
+  const liveActivePlayerAavCents =
+    card.capProjection.carriedActivePlayerAmountCents +
+    liveProjection.proposedActiveAavCents;
 
   return (
     <div className={styles.candidateWorkspace}>
@@ -381,7 +403,7 @@ export function CandidateCardBuilder({
             <p className="hl-eyebrow">22-slot Candidate Card</p>
             <h2>{editable ? "Build your card" : "Candidate Card"}</h2>
             <p className={styles.muted}>
-              Cost and term may be left blank and completed in a later save.
+              AAV and term may be left blank and completed in a later save.
             </p>
           </div>
           <div className={styles.candidateToolbarActions}>
@@ -408,12 +430,14 @@ export function CandidateCardBuilder({
           </div>
           <dl className={styles.compactCardSummary}>
             <div>
-              <dt>Maximum cap use</dt>
-              <dd>{money(card.capProjection.maximumPossibleCapCents)}</dd>
+              <dt>Active player AAV</dt>
+              <dd>{money(liveActivePlayerAavCents)}</dd>
             </div>
             <div>
-              <dt>Cap limit</dt>
-              <dd>{money(card.capProjection.capLimitCents)}</dd>
+              <dt>Projected cap use</dt>
+              <dd>
+                {money(liveProjection.projectedCapCents)} / {money(card.capProjection.capLimitCents)}
+              </dd>
             </div>
             <div>
               <dt>Mandatory missing</dt>
@@ -447,8 +471,9 @@ export function CandidateCardBuilder({
           <div className={styles.compactColumnHeader} aria-hidden="true">
             <span>Slot</span>
             <span>Player name</span>
-            <span>Cost</span>
+            <span>AAV</span>
             <span>Term</span>
+            <span>Total</span>
             <span>Status</span>
           </div>
           {[

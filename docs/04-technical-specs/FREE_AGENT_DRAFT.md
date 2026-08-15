@@ -65,8 +65,8 @@ complete-entry-only or row-save language below conflicts with it:
 * the exact request body is `{ slots }`, where `slots` contains each canonical
   slot once and each item is `{ slotKey, candidate }`;
 * `candidate` is either `null` or exactly
-  `{ playerId, totalValueCents, termYears }`; a selected player is required for
-  a non-null candidate, while total and term are independently nullable during
+  `{ playerId, aavCents, termYears }`; a selected player is required for
+  a non-null candidate, while AAV and term are independently nullable during
   preparation;
 * `If-Match` carries the current quoted positive card version and
   `Idempotency-Key` carries one whole-card intent; one successful changed save
@@ -81,10 +81,10 @@ complete-entry-only or row-save language below conflicts with it:
 * carryover occupants are server-owned. Their request item must have
   `candidate: null`; the save verifies and preserves them and cannot remove,
   replace, recontract, or move them;
-* a candidate whose total, term, or both are null persists with null AAV,
+* a candidate whose AAV, term, or both are null persists with null total,
   `eligibility_status = invalid`, and
   `validation_code = CANDIDATE_CONTRACT_INCOMPLETE`;
-* only a candidate with both fields present and a valid derived AAV is an
+* only a candidate with both fields present and a valid derived total is an
   allocatable offer. Incomplete candidates remain visible when the card locks,
   copy into the immutable snapshot, receive an explicit invalid/not-won
   historical outcome, and never create ownership or a contract;
@@ -97,6 +97,20 @@ complete-entry-only or row-save language below conflicts with it:
 * T-135 through T-138 remain compatible transitional commands, but the compact
   frontend uses the whole-card PUT and exposes no row-level save, preview,
   submit, or lock-in control.
+
+On 2026-08-14, Grae amended the controlling money contract for Candidate Cards
+and auctions:
+
+* manager and commissioner offer commands accept `aavCents` plus `termYears`,
+  never a client-supplied total;
+* present AAV is at least `100` cents and divisible by `25`;
+* when both fields are present, the backend derives
+  `totalValueCents = aavCents * termYears` exactly;
+* Candidate whole-card saves reject a completed Bench offer above `400` AAV
+  cents or an authoritative projected cap above `10000` cents;
+* Candidate and auction result DTOs continue returning AAV, term, and derived
+  total together;
+* Candidate allocation and every auction rank total first and AAV second.
 
 ---
 
@@ -4015,6 +4029,13 @@ The Candidate Card API exposes one `capProjection` object containing exactly
 `maximumCapSpaceCents` is a signed integer and is negative when the maximum
 winning outcome exceeds the cap.
 
+The same projection is a save-time invariant. A whole-card save whose
+authoritative `maximumPossibleCapCents` exceeds `capLimitCents` fails without a
+version, revision, entry, idempotency, activity, or outbox write. This hard
+block applies after all 22 requested rows, locked carryovers, retained salary,
+and buyout penalties are evaluated together. Incomplete rows contribute no
+proposed AAV until both AAV and term are present.
+
 ---
 
 ## Candidate Cap Warning
@@ -4216,7 +4237,7 @@ Existing auction joins and edits remain available until, but not including,
 rollover.
 
 Open rapid auctions otherwise use ordinary auction rules, including starter
-and joining edit behavior, AAV ranking, anti-bluff pricing, blind values,
+and joining edit behavior, total-first/AAV-second ranking, anti-bluff pricing, blind values,
 contract completion, and legality treatment. Every start, join, edit, and
 queued nomination body carries the binding no-reservation/possible-illegality
 confirmation. Resolution never requests a second confirmation.
@@ -4314,14 +4335,16 @@ generic `no_winner` handling.
 
 Restricted ranking is:
 
-1. highest current AAV;
-2. shortest current term;
+1. highest current derived total;
+2. highest current AAV;
 3. the committed auditable equal-chance draw.
 
-Ordinary anti-bluff pricing runs against valid competing bids. The final total
-is then raised, when necessary, to the smallest term-valid amount satisfying:
+Ordinary anti-bluff pricing runs against valid competing bids. The required
+price is the greater of the winner's lowest valid offered total and the highest
+competing total. The final AAV is then raised, when necessary, to the smallest
+25-cent increment for the winner's term satisfying:
 
-* the ordinary required winning AAV; and
+* that required price; and
 * the winner's original total-first/AAV-second floor.
 
 Resolution uses the common atomic auction completion path and then changes the
@@ -4456,7 +4479,7 @@ hard-code commissioner authority after authorization.
 ```json
 {
   "teamId": "opaque-uuid",
-  "totalValueCents": 600,
+  "aavCents": 300,
   "termYears": 2
 }
 ```
@@ -5933,7 +5956,7 @@ Add:
 ```json
 {
   "playerId": "opaque-uuid",
-  "totalValueCents": 600,
+  "aavCents": 300,
   "termYears": 2
 }
 ```
@@ -5942,7 +5965,7 @@ Edit:
 
 ```json
 {
-  "totalValueCents": 900,
+  "aavCents": 300,
   "termYears": 3
 }
 ```
@@ -5965,7 +5988,7 @@ Revision preview accepts exactly one of these four discriminated bodies:
     "type": "add",
     "slotKey": "F04",
     "playerId": "opaque-uuid",
-    "totalValueCents": 600,
+    "aavCents": 300,
     "termYears": 2
   }
 }
@@ -5976,7 +5999,7 @@ Revision preview accepts exactly one of these four discriminated bodies:
   "action": {
     "type": "edit",
     "entryId": "opaque-uuid",
-    "totalValueCents": 900,
+    "aavCents": 300,
     "termYears": 3
   }
 }

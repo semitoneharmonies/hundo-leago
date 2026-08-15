@@ -245,7 +245,7 @@ describe("FAD API boundary", () => {
       "fad",
       "team",
       "F04",
-      { playerId: IDS.player, totalValueCents: 600, termYears: 2 },
+      { playerId: IDS.player, aavCents: 300, termYears: 2 },
       writeOptions
     );
     await editCandidateCardCandidate(
@@ -254,7 +254,7 @@ describe("FAD API boundary", () => {
       "fad",
       "team",
       IDS.entry,
-      { totalValueCents: 900, termYears: 3 },
+      { aavCents: 300, termYears: 3 },
       writeOptions
     );
     await moveCandidateCardEntry(
@@ -313,7 +313,7 @@ describe("FAD API boundary", () => {
           index === 0
             ? {
                 playerId: IDS.player,
-                totalValueCents: null,
+                aavCents: null,
                 termYears: null,
               }
             : null,
@@ -358,7 +358,7 @@ describe("FAD API boundary", () => {
         "fad",
         "team",
         "F13",
-        { playerId: IDS.player, totalValueCents: 600, termYears: 2 },
+        { playerId: IDS.player, aavCents: 300, termYears: 2 },
         { version: 1, idempotencyKey: "candidate:uuid" }
       )
     ).toThrow("slot key");

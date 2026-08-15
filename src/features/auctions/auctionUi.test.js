@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   auctionAavCents,
+  auctionTotalPreview,
   initialAuctionOffer,
   validateAuctionOffer,
 } from "./auctionUi.js";
@@ -11,26 +12,30 @@ describe("auction UI offer guidance", () => {
     expect(auctionAavCents(1_000, 3)).toBe(333);
     expect(auctionAavCents(1_001, 3)).toBe(334);
     expect(
-      validateAuctionOffer("2.00", "2", { action: "start" })
-    ).toEqual({ totalValueCents: 200, termYears: 2, aavCents: 100 });
+      validateAuctionOffer("1.25", "2", { action: "start" })
+    ).toEqual({ totalValueCents: 250, termYears: 2, aavCents: 125 });
     expect(() =>
-      validateAuctionOffer("2.00", "2", { action: "join" })
+      validateAuctionOffer("1.25", "2", { action: "join" })
     ).toThrow("minimum joining");
     expect(
-      validateAuctionOffer("2.00", "2", {
+      validateAuctionOffer("1.25", "2", {
         action: "edit",
         sourceKind: "ordinary_weekly",
       })
-    ).toEqual({ totalValueCents: 200, termYears: 2, aavCents: 100 });
+    ).toEqual({ totalValueCents: 250, termYears: 2, aavCents: 125 });
     expect(() =>
-      validateAuctionOffer("3.50", "2", { action: "start" })
-    ).toThrow("whole dollars");
+      validateAuctionOffer("1.10", "2", { action: "start" })
+    ).toThrow("25-cent increments");
+    expect(() =>
+      validateAuctionOffer("0.75", "3", { action: "start" })
+    ).toThrow("at least $1.00");
+    expect(auctionTotalPreview("10.25", "3")).toBe("30.75");
   });
 
   it("distinguishes a strict restricted improvement from an equal fallback floor", () => {
     const floor = { totalValueCents: 500, termYears: 2, aavCents: 250 };
     expect(() =>
-      validateAuctionOffer("5.00", "2", {
+      validateAuctionOffer("2.50", "2", {
         action: "join",
         sourceKind: "fad_restricted",
         fadOrigin: "candidate_tie_restricted",
@@ -46,7 +51,7 @@ describe("auction UI offer guidance", () => {
       })
     ).toEqual({ totalValueCents: 500, termYears: 1, aavCents: 500 });
     expect(
-      validateAuctionOffer("5.00", "2", {
+      validateAuctionOffer("2.50", "2", {
         action: "join",
         sourceKind: "fad_open_rapid",
         fadOrigin: "restricted_no_improvement_fallback",
@@ -54,7 +59,7 @@ describe("auction UI offer guidance", () => {
       })
     ).toEqual({ totalValueCents: 500, termYears: 2, aavCents: 250 });
     expect(() =>
-      validateAuctionOffer("5.00", "3", {
+      validateAuctionOffer("4.75", "1", {
         action: "join",
         sourceKind: "fad_open_rapid",
         fadOrigin: "restricted_no_improvement_fallback",
@@ -76,12 +81,12 @@ describe("auction UI offer guidance", () => {
         },
         { bid: null }
       )
-    ).toEqual({ total: "5.00", term: "3" });
+    ).toEqual({ aav: "1.75", term: "3" });
     expect(
       initialAuctionOffer(
         { sourceKind: "fad_open_rapid", minimumContract: null },
-        { bid: { totalValueCents: 625, termYears: 1 } }
+        { bid: { totalValueCents: 625, termYears: 1, aavCents: 625 } }
       )
-    ).toEqual({ total: "6.25", term: "1" });
+    ).toEqual({ aav: "6.25", term: "1" });
   });
 });

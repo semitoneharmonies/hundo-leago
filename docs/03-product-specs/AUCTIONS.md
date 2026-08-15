@@ -21,6 +21,9 @@ manager edit limits, the 75-minute cooldown, and no-withdrawal rule apply to
 all FAD auctions; exact top FAD ties use an auditable equal-chance draw;
 final-hour nominations queue privately; and ordinary weekly tie rules remain
 unchanged.
+On 2026-08-14, Grae changed every manager and commissioner auction offer to
+AAV-first entry in exact `$0.25` increments. The backend derives total value,
+and total contract value now ranks before AAV in ordinary and FAD auctions.
 
 ---
 
@@ -237,9 +240,9 @@ A bid must preserve:
 * auction ID and league ID;
 * bidding team ID;
 * submitting actor ID;
-* total contract value;
+* entered AAV;
 * contract term of one, two, or three years;
-* calculated AAV preview;
+* calculated total contract value;
 * original submission timestamp;
 * latest edit timestamp;
 * edit count;
@@ -430,9 +433,9 @@ The manager workflow is:
 
 1. Search the approved league player pool.
 2. Select a player by stable ID.
-3. Choose a contract term.
-4. enter a total contract value valid for that term;
-5. review AAV and the warning that simultaneous wins may create an illegal
+3. Enter an AAV in an exact `$0.25` increment.
+4. Choose a contract term.
+5. Review the calculated total contract value and the warning that simultaneous wins may create an illegal
    roster because no cap, position, or roster capacity is reserved;
 6. confirm the binding bid and its resolver-time illegality consequence;
 7. create the auction and first bid atomically.
@@ -443,20 +446,21 @@ If either the auction or bid cannot be created, neither is saved.
 
 ## Bid Minimums
 
-Minimum starting totals follow the approved `$1 AAV per year` contract minimum:
+Minimum starting AAV follows the approved `$1 AAV per year` contract minimum:
 
 ```text
-1 year: $1 total
-2 years: $2 total
-3 years: $3 total
+1 year: $1.00 AAV = $1.00 total
+2 years: $1.00 AAV = $2.00 total
+3 years: $1.00 AAV = $3.00 total
 ```
 
-Minimum joining totals are:
+Existing joining-total floors remain. Because AAV is entered in `$0.25`
+increments, the lowest legal joining offers are:
 
 ```text
-1 year: $1.50 total
-2 years: $3 total
-3 years: $5 total
+1 year: $1.50 AAV = $1.50 total
+2 years: $1.50 AAV = $3.00 total
+3 years: $1.75 AAV = $5.25 total
 ```
 
 A joining team does not need to exceed a visible or hidden current bid because each team states its own maximum willingness to pay.
@@ -475,23 +479,24 @@ Submitting again is an edit subject to the edit limit and cooldown. It does not 
 
 ## Approved Contract Precision
 
-Bid total value follows the approved contract rules:
+Auction AAV follows the approved contract rules:
 
-* one-year totals may use up to two decimal places;
-* two-year and three-year totals must be whole numbers;
+* AAV is entered directly and must be an exact `$0.25` increment;
+* AAV must be at least `$1.00`;
 * the maximum contract term is three years;
 * there is no separate monetary maximum;
-* AAV is total value divided by term and rounded to the nearest hundredth using half-up rounding.
+* total value is calculated as AAV multiplied by term with no rounding.
 
 Examples:
 
 ```text
-$1 over 1 year   = $1.00 AAV
-$2 over 2 years  = $1.00 AAV
-$10 over 3 years = $3.33 AAV
+$1.00 AAV over 1 year  = $1.00 total
+$1.50 AAV over 2 years = $3.00 total
+$3.25 AAV over 3 years = $9.75 total
 ```
 
-`$1 over 2 years` is invalid because it is below the `$1 AAV per year` minimum.
+`$0.75 AAV` is invalid because it is below the minimum. `$1.10 AAV` is invalid
+because it is not an approved `$0.25` increment.
 
 ---
 
@@ -499,7 +504,7 @@ $10 over 3 years = $3.33 AAV
 
 An edit may:
 
-* increase or decrease total value;
+* increase or decrease AAV;
 * change the contract term;
 * preserve the bid’s original submission timestamp for tie-breaking;
 * preserve the lowest valid AAV the team offered for anti-bluff pricing;
@@ -546,22 +551,21 @@ Commissioner authority to edit or remove a bid does not reveal its value. A comm
 
 ## Ranking Value
 
-Ranking compares bid AAV, not total contract value.
-
-Ranking by AAV prevents a longer term from winning merely because its total spans more years. The underlying winning contract still uses the submitted total and term.
+Ranking compares backend-derived total contract value first. If totals are
+equal, it compares submitted AAV second.
 
 For ordinary weekly auctions, the deterministic order is:
 
-1. highest submitted AAV;
-2. if tied, shorter contract term;
+1. highest calculated total contract value;
+2. if tied, highest submitted AAV;
 3. if still tied, earliest original bid timestamp;
 4. if still tied, stable bid ID in ascending order.
 
 For every FAD blind auction, including open rapid and restricted auctions, the
 first two ranking layers are unchanged:
 
-1. highest submitted AAV;
-2. if tied, shorter contract term.
+1. highest calculated total contract value;
+2. if tied, highest submitted AAV.
 
 If two or more eligible bids remain exactly tied at the top after those
 layers, the backend performs one auditable equal-chance draw among only those
@@ -576,15 +580,17 @@ does not reveal active bid values before resolution.
 
 The anti-bluff rule applies only to the winning team:
 
-* if only one team bid, the winner pays its current submitted total and term;
+* if only one team bid, the winner pays its current submitted AAV and term;
 * if multiple teams bid, the winner keeps its submitted term;
-* the winning AAV becomes the greater of:
-  * the winner’s lowest valid AAV offered during that auction; or
-  * the highest competing AAV;
+* the price-paid total is based on the greater of the winner's lowest valid
+  total offered during that auction or the highest competing total;
+* the backend rounds that required price upward only by selecting the smallest
+  approved `$0.25` AAV for the winner's term whose derived total is at least the
+  required price;
 * when the highest competing bid tied the winner and lost only on a later tie-break, the winner pays its own current submitted AAV;
-* the final total is winning AAV multiplied by the winning term and must remain valid for that term’s precision rules.
+* final total is final AAV multiplied by the winning term.
 
-If the calculated total would violate precision, it is rounded up only to the smallest total valid for that term that produces at least the required winning AAV.
+The anti-bluff calculation never produces a sub-`$1` or non-quarter AAV.
 
 ## No Cross-Auction Budget Reservation
 
@@ -940,7 +946,7 @@ Tests must cover:
 - [x] Auction results create league activity without matchup or standings entries.
 - [x] Public viewers cannot view auctions.
 - [x] Read-only requests never resolve or mutate auctions.
-- [x] One-year totals may use two decimals; two- and three-year totals are whole numbers.
+- [x] Manager and commissioner bid AAV uses exact `$0.25` increments.
 - [x] Contracts require at least `$1 AAV` per year and have a maximum term of three years.
 
 ## Approved Auction Decisions
@@ -955,10 +961,10 @@ Tests must cover:
 - [x] New auctions may start through Thursday at `11:59:59.999 PM` and close Friday at `12:00:00.000 AM`.
 - [x] Existing-auction bidding closes exactly Sunday at `4:00:00 PM`.
 - [x] A pre-cutoff auction belongs to the immediately following Sunday resolution cycle.
-- [x] Starting-bid minimums are `$1`, `$2`, and `$3` total for one-, two-, and three-year bids.
-- [x] Joining-bid minimums are `$1.50`, `$3`, and `$5` total for one-, two-, and three-year bids.
+- [x] Starting-bid minimum AAV is `$1` for every permitted term.
+- [x] Joining-total floors remain `$1.50`, `$3`, and `$5`; quarter-AAV entry makes the lowest legal three-year join `$5.25` total.
 - [x] Joining teams do not have to exceed another team’s current bid.
-- [x] A bid includes total value and a one-, two-, or three-year term.
+- [x] A bid includes AAV and a one-, two-, or three-year term; the backend derives total value.
 - [x] A bid edit may increase or decrease value and may change term.
 - [x] An edit preserves the original bid timestamp and bidder’s lowest valid offered AAV.
 - [x] The auction starter receives two edits after the original bid.
@@ -968,13 +974,13 @@ Tests must cover:
 - [x] Active auctions hide competing values and terms while showing the player, participants, bid count, deadlines, and viewer’s own bid.
 - [x] Commissioners cannot view active bid values or terms, including through administrative reveal.
 - [x] After resolution, authenticated league members may view every bid, term, edit, winner, and price paid in League Activity.
-- [x] Bids rank first by highest submitted AAV.
-- [x] Equal AAV is broken by shorter term, earliest original timestamp, then ascending stable bid ID.
+- [x] Bids rank first by highest backend-derived total and then highest submitted AAV.
+- [x] An ordinary exact total-and-AAV tie is broken by earliest original timestamp, then ascending stable bid ID.
 - [x] That earliest-timestamp/stable-ID order applies only to ordinary weekly auctions.
-- [x] With one bidding team, the winner pays its current submitted total and term.
-- [x] With multiple teams, anti-bluff pricing keeps the winner’s term and uses the greater of its lowest offered AAV or highest competing AAV.
+- [x] With one bidding team, the winner pays its current submitted AAV and term.
+- [x] With multiple teams, anti-bluff pricing keeps the winner’s term and uses the greater of its lowest offered total or highest competing total.
 - [x] A winner that defeats an equal competing bid only through a later tie-break pays its current submitted AAV.
-- [x] An anti-bluff total is rounded up only to the smallest term-valid total preserving the required winning AAV.
+- [x] Anti-bluff pricing rounds upward only to the smallest quarter-AAV for the winner's term whose derived total meets the required price.
 - [x] Active bids do not reserve cap room or roster slots.
 - [x] A valid win assigns the player to the Active roster.
 - [x] Resolution skips an invalid or stale bid and considers the next eligible bid.
