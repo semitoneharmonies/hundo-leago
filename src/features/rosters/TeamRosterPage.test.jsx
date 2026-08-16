@@ -258,13 +258,17 @@ describe("authoritative team roster page", () => {
 
   it("shows readable cap components, roster views, and owned picks", async () => {
     const data = workspace();
+    data.team.logoReference = "/api/v1/team-logos/target-owls";
     const view = renderWithProviders(
       <TeamRosterPage
         workspace={data}
         teams={[data.team]}
         managerName="League Manager"
         onTeamChange={() => {}}
-        httpClient={{ request: async () => ({ data: {} }) }}
+        httpClient={{
+          request: async () => ({ data: {} }),
+          resourceUrl: (reference) => `https://api.example.test${reference}`,
+        }}
       />
     );
 
@@ -352,12 +356,13 @@ describe("authoritative team roster page", () => {
       within(draftPickRegion)
         .getAllByRole("columnheader")
         .map(({ textContent }) => textContent)
-    ).toEqual(["Year", "R1", "R2", "R3", "R4"]);
+    ).toEqual(["Round", "2026-27", "2027-28"]);
     expect(
       within(draftPickRegion)
         .getAllByRole("rowheader")
         .map(({ textContent }) => textContent)
-    ).toEqual(["2026-27", "2027-28"]);
+    ).toEqual(["R1", "R2", "R3", "R4"]);
+    expect(draftPickRegion.querySelectorAll("img")).toHaveLength(2);
 
     await view.user.click(
       screen.getByRole("button", { name: /Hockey lines/ })

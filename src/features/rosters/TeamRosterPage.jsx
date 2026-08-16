@@ -970,24 +970,24 @@ function DraftPicks({
           <table className="hl-draft-pick-matrix">
             <thead>
               <tr>
-                <th scope="col">Year</th>
-                {rounds.map((round) => (
-                  <th scope="col" key={round}>
-                    R{round}
+                <th scope="col">Round</th>
+                {seasons.map((season) => (
+                  <th scope="col" key={season.id}>
+                    {season.label}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {seasons.map((season) => (
-                <tr key={season.id}>
-                  <th scope="row">{season.label}</th>
-                  {rounds.map((round) => {
+              {rounds.map((round) => (
+                <tr key={round}>
+                  <th scope="row">R{round}</th>
+                  {seasons.map((season) => {
                     const roundPicks = season.picks.filter(
                       (pick) => pick.round === round
                     );
                     return (
-                      <td key={round}>
+                      <td key={season.id}>
                         <span className="hl-draft-pick-cell">
                           {roundPicks.length > 0
                             ? roundPicks.map(pickMark)
