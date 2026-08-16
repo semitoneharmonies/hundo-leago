@@ -173,13 +173,16 @@ function OverviewHero({
   overview,
   observedAtClientMs,
   title = "Free Agent Draft",
+  headingId = "fad-page-title",
+  headingLevel = "h1",
 }) {
+  const Heading = headingLevel;
   return (
     <header className={styles.hero}>
       <div className={styles.heroTop}>
         <div>
           <p className="hl-eyebrow">Annual preseason workflow</p>
-          <h1 id="fad-page-title">{title}</h1>
+          <Heading id={headingId}>{title}</Heading>
         </div>
         <StatusBadge tone={overview.phase === "completed" ? "success" : "warning"}>
           {phaseLabel(overview.phase)}
@@ -249,6 +252,277 @@ function InactiveDraft({ league }) {
         </p>
       </Surface>
     </>
+  );
+}
+
+function DraftTypeNavigation({ leagueId, selected }) {
+  return (
+    <nav className={styles.draftTabs} aria-label="Draft type">
+      <Link
+        className={`${styles.draftTab} ${
+          selected === "free-agent" ? styles.draftTabActive : ""
+        }`}
+        aria-current={selected === "free-agent" ? "page" : undefined}
+        to={routePaths.leagueFreeAgentDrafts(leagueId)}
+      >
+        <strong>Free Agent Draft</strong>
+        <span>Candidate Cards and allocation results</span>
+      </Link>
+      <Link
+        className={`${styles.draftTab} ${
+          selected === "entry" ? styles.draftTabActive : ""
+        }`}
+        aria-current={selected === "entry" ? "page" : undefined}
+        to={routePaths.leagueEntryDrafts(leagueId)}
+      >
+        <strong>Entry Draft</strong>
+        <span>Coming soon</span>
+      </Link>
+    </nav>
+  );
+}
+
+function FreeAgentDraftPreparationContent({
+  fadId,
+  leagueId,
+  observedAtClientMs,
+  overview,
+  embedded = false,
+}) {
+  return (
+    <>
+      <OverviewHero
+        overview={overview}
+        observedAtClientMs={observedAtClientMs}
+        headingId={embedded ? "free-agent-draft-title" : "fad-page-title"}
+        headingLevel={embedded ? "h2" : "h1"}
+      />
+      <Surface
+        className={styles.panel}
+        aria-labelledby="managed-candidate-cards-title"
+      >
+        <div className={styles.panelHeader}>
+          <div>
+            <p className="hl-eyebrow">Private team workspaces</p>
+            <h2 id="managed-candidate-cards-title">Candidate Cards</h2>
+          </div>
+          <StatusBadge>{overview.viewer.managedCards.length} managed</StatusBadge>
+        </div>
+        {overview.viewer.managedCards.length === 0 ? (
+          <p>
+            No Candidate Card is available through a current manager
+            assignment. Commissioner help access appears only after a team
+            requests it.
+          </p>
+        ) : (
+          <div className={styles.teamSelector}>
+            {overview.viewer.managedCards.map((managedCard) => (
+              <Link
+                className={styles.teamChoice}
+                key={managedCard.teamId}
+                to={routePaths.draftFreeAgentCard(
+                  leagueId,
+                  fadId,
+                  managedCard.teamId
+                )}
+              >
+                <strong>{managedCard.team.name}</strong>
+                <span>{managedCard.missingMandatoryCount} mandatory slots missing</span>
+                <small>{managedCard.capStatus === "compliant" ? "Within cap" : "Over cap"}</small>
+              </Link>
+            ))}
+          </div>
+        )}
+      </Surface>
+
+      {overview.viewer.commissionerCards.length > 0 && (
+        <Surface
+          className={styles.panel}
+          aria-labelledby="commissioner-help-cards-title"
+        >
+          <p className="hl-eyebrow">Commissioner help</p>
+          <h2 id="commissioner-help-cards-title">Team requests</h2>
+          <div className={styles.teamSelector}>
+            {overview.viewer.commissionerCards.map((candidateCard) =>
+              candidateCard.openPrivateCard.allowed ? (
+                <Link
+                  className={styles.teamChoice}
+                  key={candidateCard.teamId}
+                  to={routePaths.draftFreeAgentCard(
+                    leagueId,
+                    fadId,
+                    candidateCard.teamId
+                  )}
+                >
+                  <strong>{candidateCard.team.name}</strong>
+                  <span>Scoped help access active</span>
+                  <small>{candidateCard.missingMandatoryCount} mandatory slots missing</small>
+                </Link>
+              ) : (
+                <div className={styles.teamChoice} key={candidateCard.teamId}>
+                  <strong>{candidateCard.team.name}</strong>
+                  <span>No active help access</span>
+                </div>
+              )
+            )}
+          </div>
+        </Surface>
+      )}
+    </>
+  );
+}
+
+function FreeAgentDraftResultsExperience({
+  context,
+  fadId,
+  leagueId,
+  observedAtClientMs,
+  overview,
+  privacyEpoch,
+  embedded = false,
+}) {
+  return (
+    <>
+      <OverviewHero
+        overview={overview}
+        observedAtClientMs={observedAtClientMs}
+        title="Free Agent Draft results"
+        headingId={embedded ? "free-agent-draft-title" : "fad-page-title"}
+        headingLevel={embedded ? "h2" : "h1"}
+      />
+      <Surface className={styles.panel}>
+        <h2>Published history</h2>
+        <p>
+          Browse every team&apos;s immutable Candidate Card and the authoritative
+          allocation outcome for every requested player. No draft content can
+          be edited from this results view.
+        </p>
+      </Surface>
+      <FreeAgentDraftResultsContent
+        key={`${privacyEpoch}:${leagueId}:${fadId}`}
+        httpClient={context.session.httpClient}
+        leagueId={leagueId}
+        fadId={fadId}
+        timeZone={overview.timeZone}
+      />
+    </>
+  );
+}
+
+function DraftsFreeAgentArea({ context, leagueId }) {
+  const realtime = useRealtime();
+  const navigation = useQuery({
+    ...freeAgentDraftNavigationQuery(context.session.httpClient, leagueId),
+    enabled:
+      context.session.status === "authenticated" && Boolean(context.league),
+  });
+  const fadId = navigation.data?.fadId || null;
+  const overview = useQuery({
+    ...(fadId
+      ? freeAgentDraftOverviewQuery(context.session.httpClient, leagueId, fadId)
+      : {
+          queryKey: ["league", leagueId, "free-agent-draft", "drafts-area-empty"],
+          queryFn: () => Promise.resolve(null),
+        }),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league) &&
+      Boolean(fadId),
+  });
+
+  if (navigation.isPending) {
+    return <Surface><LoadingBlock>Loading Free Agent Draft status…</LoadingBlock></Surface>;
+  }
+  if (navigation.isError) {
+    return (
+      <Surface>
+        <ErrorBlock
+          error={navigation.error}
+          fallback="Free Agent Draft status could not be loaded."
+        />
+      </Surface>
+    );
+  }
+  if (navigation.data.fadId === null) {
+    return (
+      <Surface className={styles.panel}>
+        <p className="hl-eyebrow">Free Agent Draft</p>
+        <h2>No active Free Agent Draft</h2>
+        <p>
+          Candidate Cards become available automatically after the Entry Draft
+          or approved no-draft transition finishes and readiness succeeds.
+        </p>
+      </Surface>
+    );
+  }
+  if (realtime.status === "reauthorizing") {
+    return <Surface><LoadingBlock>Reauthorizing league-only draft information…</LoadingBlock></Surface>;
+  }
+  if (overview.isPending) {
+    return <Surface><LoadingBlock>Loading Free Agent Draft…</LoadingBlock></Surface>;
+  }
+  if (overview.isError) {
+    return (
+      <Surface>
+        <ErrorBlock
+          error={overview.error}
+          fallback="The Free Agent Draft could not be loaded."
+        />
+      </Surface>
+    );
+  }
+  return PREPARATION_PHASES.has(overview.data.phase) ? (
+    <FreeAgentDraftPreparationContent
+      embedded
+      fadId={navigation.data.fadId}
+      leagueId={leagueId}
+      observedAtClientMs={overview.dataUpdatedAt}
+      overview={overview.data}
+    />
+  ) : (
+    <FreeAgentDraftResultsExperience
+      embedded
+      context={context}
+      fadId={navigation.data.fadId}
+      leagueId={leagueId}
+      observedAtClientMs={overview.dataUpdatedAt}
+      overview={overview.data}
+      privacyEpoch={realtime.privacyEpoch}
+    />
+  );
+}
+
+export function DraftsPage() {
+  const { draftType, leagueId } = useParams();
+  const context = useFadContext(leagueId);
+  const selected = draftType || "free-agent";
+
+  if (!new Set(["free-agent", "entry"]).has(selected)) {
+    return <Navigate replace to={routePaths.leagueDrafts(leagueId)} />;
+  }
+
+  return (
+    <FadGate context={context} title="Drafts">
+      <PageHeading
+        eyebrow={context.league?.name || "League"}
+        title="Drafts"
+        description="Live draft work and permanent league draft results live together here."
+        id="fad-page-title"
+      />
+      <DraftTypeNavigation leagueId={leagueId} selected={selected} />
+      {selected === "entry" ? (
+        <Surface className={styles.panel}>
+          <p className="hl-eyebrow">Entry Draft</p>
+          <h2>Entry Draft is coming soon</h2>
+          <p>
+            No Entry Draft data or workflow has been added yet. This section is
+            reserved so both league draft types have one durable home.
+          </p>
+        </Surface>
+      ) : (
+        <DraftsFreeAgentArea context={context} leagueId={leagueId} />
+      )}
+    </FadGate>
   );
 }
 
@@ -330,85 +604,12 @@ export function FreeAgentDraftPage() {
           to={routePaths.freeAgentDraftResults(leagueId, fadId)}
         />
       ) : (
-        <>
-          <OverviewHero
-            overview={overview.data}
-            observedAtClientMs={overview.dataUpdatedAt}
-          />
-          <Surface
-            className={styles.panel}
-            aria-labelledby="managed-candidate-cards-title"
-          >
-            <div className={styles.panelHeader}>
-              <div>
-                <p className="hl-eyebrow">Private team workspaces</p>
-                <h2 id="managed-candidate-cards-title">Candidate Cards</h2>
-              </div>
-              <StatusBadge>
-                {overview.data.viewer.managedCards.length} managed
-              </StatusBadge>
-            </div>
-            {overview.data.viewer.managedCards.length === 0 ? (
-              <p>
-                No Candidate Card is available through a current manager
-                assignment. Commissioner help access appears only after a team
-                requests it.
-              </p>
-            ) : (
-              <div className={styles.teamSelector}>
-                {overview.data.viewer.managedCards.map((managedCard) => (
-                  <Link
-                    className={styles.teamChoice}
-                    key={managedCard.teamId}
-                    to={routePaths.freeAgentDraftCard(
-                      leagueId,
-                      fadId,
-                      managedCard.teamId
-                    )}
-                  >
-                    <strong>{managedCard.team.name}</strong>
-                    <span>{managedCard.missingMandatoryCount} mandatory slots missing</span>
-                    <small>{managedCard.capStatus === "compliant" ? "Within cap" : "Over cap"}</small>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </Surface>
-
-          {overview.data.viewer.commissionerCards.length > 0 && (
-            <Surface
-              className={styles.panel}
-              aria-labelledby="commissioner-help-cards-title"
-            >
-              <p className="hl-eyebrow">Commissioner help</p>
-              <h2 id="commissioner-help-cards-title">Team requests</h2>
-              <div className={styles.teamSelector}>
-                {overview.data.viewer.commissionerCards.map((candidateCard) =>
-                  candidateCard.openPrivateCard.allowed ? (
-                    <Link
-                      className={styles.teamChoice}
-                      key={candidateCard.teamId}
-                      to={routePaths.freeAgentDraftCard(
-                        leagueId,
-                        fadId,
-                        candidateCard.teamId
-                      )}
-                    >
-                      <strong>{candidateCard.team.name}</strong>
-                      <span>Scoped help access active</span>
-                      <small>{candidateCard.missingMandatoryCount} mandatory slots missing</small>
-                    </Link>
-                  ) : (
-                    <div className={styles.teamChoice} key={candidateCard.teamId}>
-                      <strong>{candidateCard.team.name}</strong>
-                      <span>No active help access</span>
-                    </div>
-                  )
-                )}
-              </div>
-            </Surface>
-          )}
-        </>
+        <FreeAgentDraftPreparationContent
+          fadId={fadId}
+          leagueId={leagueId}
+          observedAtClientMs={overview.dataUpdatedAt}
+          overview={overview.data}
+        />
       )}
     </FadGate>
   );
@@ -793,8 +994,8 @@ export function CandidateCardPage() {
             teamId={teamId}
           />
           <p className="hl-page-backlink">
-            <Link to={routePaths.freeAgentDraftResults(leagueId, fadId)}>
-              Back to Free Agent Draft results
+            <Link to={routePaths.leagueFreeAgentDrafts(leagueId)}>
+              Back to Drafts
             </Link>
           </p>
         </>
@@ -869,7 +1070,7 @@ export function CandidateCardPage() {
                     managedCard.teamId === teamId ? styles.teamChoiceActive : ""
                   }`}
                   aria-current={managedCard.teamId === teamId ? "page" : undefined}
-                  to={routePaths.freeAgentDraftCard(
+                  to={routePaths.draftFreeAgentCard(
                     leagueId,
                     fadId,
                     managedCard.teamId
@@ -895,8 +1096,8 @@ export function CandidateCardPage() {
             teamId={teamId}
           />
           <p className="hl-page-backlink">
-            <Link to={routePaths.freeAgentDraft(leagueId, fadId)}>
-              Back to Free Agent Draft
+            <Link to={routePaths.leagueFreeAgentDrafts(leagueId)}>
+              Back to Drafts
             </Link>
           </p>
         </>
@@ -932,28 +1133,14 @@ export function FreeAgentDraftResultsPage() {
       ) : PREPARATION_PHASES.has(overview.data.phase) ? (
         <Navigate replace to={routePaths.freeAgentDraft(leagueId, fadId)} />
       ) : (
-        <>
-          <OverviewHero
-            overview={overview.data}
-            observedAtClientMs={overview.dataUpdatedAt}
-            title="Free Agent Draft results"
-          />
-          <Surface className={styles.panel}>
-            <h2>Published history</h2>
-            <p>
-              Published cards and allocation results below come only from the
-              immutable history and result endpoints. This route never reuses a
-              private Candidate Card response.
-            </p>
-          </Surface>
-          <FreeAgentDraftResultsContent
-            key={`${realtime.privacyEpoch}:${leagueId}:${fadId}`}
-            httpClient={context.session.httpClient}
-            leagueId={leagueId}
-            fadId={fadId}
-            timeZone={overview.data.timeZone}
-          />
-        </>
+        <FreeAgentDraftResultsExperience
+          context={context}
+          fadId={fadId}
+          leagueId={leagueId}
+          observedAtClientMs={overview.dataUpdatedAt}
+          overview={overview.data}
+          privacyEpoch={realtime.privacyEpoch}
+        />
       )}
     </FadGate>
   );

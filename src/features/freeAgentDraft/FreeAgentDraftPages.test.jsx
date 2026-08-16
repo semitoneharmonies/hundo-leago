@@ -17,6 +17,7 @@ import { CandidateCardBuilder } from "./CandidateCardBuilder.jsx";
 import {
   CandidateCardPage,
   CurrentFreeAgentDraftPage,
+  DraftsPage,
   FreeAgentDraftPage,
   FreeAgentDraftResultsPage,
 } from "./FreeAgentDraftPages.jsx";
@@ -702,6 +703,170 @@ function renderRoute({
   );
 }
 
+function completedOverview() {
+  const data = publishedOverview();
+  return {
+    ...data,
+    status: "completed",
+    phase: "completed",
+    allocationCompletedAtMs: data.serverNowMs - 2_000,
+    nextRolloverAtMs: null,
+    completedAtMs: data.serverNowMs - 1_000,
+    counts: {
+      ...data.counts,
+      allocationsPending: 0,
+      rolloversCompleted: 7,
+    },
+  };
+}
+
+function completedNavigation() {
+  return {
+    ...navigation({ managedCards: [] }),
+    phase: "completed",
+    nextRolloverAtMs: null,
+    urgencyCode: "NONE",
+  };
+}
+
+function renderDraftsRoute(fetchImpl, path = routePaths.leagueDrafts(leagueId)) {
+  return renderWithProviders(
+    <RealtimeContext.Provider value={{ status: "disconnected", privacyEpoch: 0 }}>
+      <Routes>
+        <Route path="/leagues/:leagueId/drafts" element={<DraftsPage />} />
+        <Route path="/leagues/:leagueId/drafts/:draftType" element={<DraftsPage />} />
+        <Route
+          path="/leagues/:leagueId/drafts/free-agent/:fadId/cards/:teamId"
+          element={<CandidateCardPage />}
+        />
+      </Routes>
+    </RealtimeContext.Provider>,
+    {
+      initialEntries: [path],
+      enableSession: true,
+      config,
+      sessionOptions: { fetchImpl },
+    }
+  );
+}
+
+describe("league Drafts area", () => {
+  it("keeps the open Free Agent Draft editor reachable from the permanent area", async () => {
+    const requests = [];
+    const fetchImpl = baseFetch((parsed) => {
+      requests.push(parsed.pathname);
+      if (parsed.pathname.endsWith("/free-agent-drafts/navigation")) {
+        return envelope(navigation({ rosterLinks: [descriptor()] }));
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        return envelope(overview());
+      }
+      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/private`)) {
+        return envelope(candidateCard());
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    const view = renderDraftsRoute(fetchImpl);
+
+    expect(await screen.findByRole("heading", { name: "Drafts" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Free Agent Draft/ })).toHaveAttribute(
+      "href",
+      routePaths.leagueFreeAgentDrafts(leagueId)
+    );
+    expect(screen.getByRole("link", { name: /Entry Draft/ })).toHaveTextContent(
+      "Coming soon"
+    );
+    const cardLink = await screen.findByRole("link", { name: /Candidate Owls/ });
+    expect(cardLink).toHaveAttribute(
+      "href",
+      routePaths.draftFreeAgentCard(leagueId, fadId, teamId)
+    );
+    expect(screen.queryByText("Published Candidate Cards")).toBeNull();
+
+    await view.user.click(cardLink);
+    expect(
+      await screen.findByRole("button", { name: "Save Candidate Card" })
+    ).toBeInTheDocument();
+    expect(
+      requests.some((pathname) => pathname.endsWith(`/candidate-cards/${teamId}/private`))
+    ).toBe(true);
+  });
+
+  it("shows completed authoritative results and opens every card read-only inside Drafts", async () => {
+    const requests = [];
+    const fetchImpl = baseFetch((parsed) => {
+      requests.push(parsed.pathname);
+      if (parsed.pathname.endsWith("/free-agent-drafts/navigation")) {
+        return envelope(completedNavigation());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        return envelope(completedOverview());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
+        return collectionEnvelope([publishedSummary()]);
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        return collectionEnvelope([pendingAllocationResult()]);
+      }
+      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
+        return envelope(publishedCandidateCard());
+      }
+      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
+        return envelope(teamsFound());
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    const view = renderDraftsRoute(
+      fetchImpl,
+      routePaths.leagueFreeAgentDrafts(leagueId)
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Free Agent Draft results" })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/authoritative allocation outcome/i)).toBeInTheDocument();
+    const cardLink = await screen.findByRole("link", { name: /Candidate Owls/ });
+    expect(cardLink).toHaveAttribute(
+      "href",
+      routePaths.draftFreeAgentCard(leagueId, fadId, teamId)
+    );
+
+    await view.user.click(cardLink);
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Published Candidate Card",
+      })
+    ).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-slot-key]")).toHaveLength(22);
+    expect(screen.queryByRole("button", { name: /save|help|move|remove/i })).toBeNull();
+    expect(screen.getByRole("link", { name: "Back to Drafts" })).toHaveAttribute(
+      "href",
+      routePaths.leagueFreeAgentDrafts(leagueId)
+    );
+    expect(
+      requests.some((pathname) => pathname.endsWith(`/candidate-cards/${teamId}/private`))
+    ).toBe(false);
+  });
+
+  it("labels Entry Draft as unavailable without inventing a data request", async () => {
+    const fetchImpl = baseFetch((parsed) => {
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderDraftsRoute(fetchImpl, routePaths.leagueEntryDrafts(leagueId));
+
+    expect(
+      await screen.findByRole("heading", { name: "Entry Draft is coming soon" })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/No Entry Draft data or workflow has been added/i)).toBeInTheDocument();
+    expect(
+      fetchImpl.mock.calls.some(([url]) =>
+        new URL(url).pathname.includes("/free-agent-drafts")
+      )
+    ).toBe(false);
+  });
+});
+
 describe("FAD-15 Candidate Card frontend", () => {
   it("resolves the current route from T-126 to the one authorized stable card", async () => {
     const fetchImpl = baseFetch((parsed) => {
@@ -1208,7 +1373,7 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     expect(await screen.findByRole("heading", { name: "Allocation results" })).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: /Candidate Owls/ })).toHaveAttribute(
       "href",
-      routePaths.freeAgentDraftCard(leagueId, fadId, teamId)
+      routePaths.draftFreeAgentCard(leagueId, fadId, teamId)
     );
     expect(screen.getByRole("status", { name: "" })).toHaveTextContent(
       /No decision, winner, rank, restricted result, fallback result, recovery status, resolution time, or draw has been inferred/i

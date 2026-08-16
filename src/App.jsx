@@ -73,6 +73,7 @@ const CurrentFreeAgentDraftPage = lazyNamed(
   loadFreeAgentDraftPages,
   "CurrentFreeAgentDraftPage"
 );
+const DraftsPage = lazyNamed(loadFreeAgentDraftPages, "DraftsPage");
 const FreeAgentDraftPage = lazyNamed(
   loadFreeAgentDraftPages,
   "FreeAgentDraftPage"
@@ -1825,6 +1826,18 @@ return (
         <Route
           path="/leagues/:leagueId/auctions/:auctionId"
           element={<AuctionDetailPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/drafts"
+          element={<DraftsPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/drafts/:draftType"
+          element={<DraftsPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/drafts/free-agent/:fadId/cards/:teamId"
+          element={<CandidateCardPage />}
         />
         <Route
           path="/leagues/:leagueId/free-agent-draft"

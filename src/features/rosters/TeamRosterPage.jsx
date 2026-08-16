@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowLeftRight,
@@ -21,7 +21,6 @@ import {
   TableScroll,
 } from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
-import { freeAgentDraftNavigationQuery } from "../freeAgentDraft/freeAgentDraftQueries.js";
 import {
   buyOutRosterContract,
   moveRosterPlayer,
@@ -1017,13 +1016,6 @@ export function TeamRosterPage({
 }) {
   const queryClient = useQueryClient();
   const { cap, league, season, team } = workspace;
-  const fadNavigation = useQuery(
-    freeAgentDraftNavigationQuery(httpClient, league.id, {
-      rosterSeasonId: season.id,
-      rosterTeamId: team.id,
-    })
-  );
-  const candidateCardDescriptor = fadNavigation.data?.rosterLinks?.[0] || null;
   const legality = workspace.legality ?? { legal: true, reasons: [] };
   const [view, setView] = useState("table");
   const [activePlayers, setActivePlayers] = useState(() =>
@@ -1383,39 +1375,6 @@ export function TeamRosterPage({
           </div>
         </div>
       </header>
-
-      {!fadNavigation.isPending && !fadNavigation.isError && (
-        <section
-          className="hl-surface hl-roster-fad-link"
-          aria-labelledby="roster-fad-link-title"
-        >
-          <p className="hl-eyebrow">Free Agent Draft</p>
-          <h2 id="roster-fad-link-title">Season Candidate Card</h2>
-          {candidateCardDescriptor ? (
-            <p>
-              <Link
-                className="hl-button hl-button--secondary"
-                to={routePaths.freeAgentDraftCard(
-                  league.id,
-                  candidateCardDescriptor.fadId,
-                  candidateCardDescriptor.teamId
-                )}
-              >
-                {candidateCardDescriptor.mode === "private_card"
-                  ? "Build next season's roster"
-                  : "View this season's Candidate Card"}
-              </Link>
-            </p>
-          ) : fadNavigation.data.phase === "inactive" ? (
-            <p>
-              Next season&apos;s Candidate Card opens when preseason FAD setup is
-              complete.
-            </p>
-          ) : (
-            <p>No Candidate Card link is authorized for this season and team.</p>
-          )}
-        </section>
-      )}
 
       <section className="hl-roster-cap" aria-labelledby="cap-summary-title">
         <div className="hl-section-title">

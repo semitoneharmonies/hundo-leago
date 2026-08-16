@@ -2,8 +2,20 @@ import { describe, expect, it } from "vitest";
 
 import { routePaths } from "./routePaths.js";
 
-describe("FAD route paths", () => {
-  it("builds stable current, detail, result, card, auction, and recovery routes", () => {
+describe("draft and FAD route paths", () => {
+  it("builds stable draft-area, legacy FAD, auction, and recovery routes", () => {
+    expect(routePaths.leagueDrafts("league/1")).toBe(
+      "/leagues/league%2F1/drafts"
+    );
+    expect(routePaths.leagueFreeAgentDrafts("league/1")).toBe(
+      "/leagues/league%2F1/drafts/free-agent"
+    );
+    expect(routePaths.leagueEntryDrafts("league/1")).toBe(
+      "/leagues/league%2F1/drafts/entry"
+    );
+    expect(routePaths.draftFreeAgentCard("league/1", "fad 2", "team/3")).toBe(
+      "/leagues/league%2F1/drafts/free-agent/fad%202/cards/team%2F3"
+    );
     expect(routePaths.leagueFreeAgentDraft("league/1")).toBe(
       "/leagues/league%2F1/free-agent-draft"
     );
@@ -25,6 +37,8 @@ describe("FAD route paths", () => {
   });
 
   it.each([
+    ["leagueDrafts", [" "]],
+    ["draftFreeAgentCard", ["league", "fad", ""]],
     ["leagueFreeAgentDraft", [" "]],
     ["freeAgentDraft", ["league", ""]],
     ["freeAgentDraftCard", ["league", "fad", ""]],

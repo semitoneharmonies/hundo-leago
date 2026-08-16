@@ -180,6 +180,7 @@ describe("top bar navigation", () => {
     const expected = {
       Dashboard: `/leagues/${leagueId}`,
       Teams: `/leagues/${leagueId}/teams`,
+      Drafts: `/leagues/${leagueId}/drafts`,
       Players: `/leagues/${leagueId}/players`,
       Auctions: `/leagues/${leagueId}/auctions`,
       Trades: `/leagues/${leagueId}/trades`,
@@ -202,7 +203,7 @@ describe("top bar navigation", () => {
     expect(screen.queryByRole("link", { name: "Free Agent Draft" })).toBeNull();
   });
 
-  it("shows server-directed FAD navigation and keeps nested stable routes active", async () => {
+  it("keeps the permanent Drafts area active on legacy FAD routes and retains live urgency", async () => {
     await renderTopBar("manager", "manager", {
       initialEntry: `/leagues/${leagueId}/free-agent-draft/${fadId}/cards/${teamId}`,
       fadNavigation: {
@@ -246,10 +247,10 @@ describe("top bar navigation", () => {
       },
     });
 
-    const link = screen.getByRole("link", { name: "Free Agent Draft" });
+    const link = screen.getByRole("link", { name: "Drafts" });
     expect(link).toHaveAttribute(
       "href",
-      `/leagues/${leagueId}/free-agent-draft`
+      `/leagues/${leagueId}/drafts`
     );
     expect(link).toHaveAttribute("aria-current", "page");
     expect(link).toHaveTextContent("Candidate Card incomplete");
@@ -261,7 +262,7 @@ describe("top bar navigation", () => {
       expectedLogoHref: "/leagues",
     });
 
-    expect(screen.queryByRole("link", { name: "Free Agent Draft" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Drafts" })).toBeNull();
     expect(
       view.fetchImpl.mock.calls.some(([url]) =>
         new URL(url).pathname.includes("/free-agent-drafts/navigation")

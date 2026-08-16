@@ -51,7 +51,8 @@ function pageLabel(pathname) {
   if (pathname === routePaths.account) return "Account settings";
   if (/\/players\/[^/]+$/.test(pathname)) return "Player detail";
   if (/\/trades\/[^/]+$/.test(pathname)) return "Trade detail";
-  if (/\/free-agent-draft(?:\/|$)/.test(pathname)) return "Free Agent Draft";
+  if (/\/drafts(?:\/|$)/.test(pathname)) return "Drafts";
+  if (/\/free-agent-draft(?:\/|$)/.test(pathname)) return "Drafts";
   if (/\/teams\/[^/]+\/roster$/.test(pathname)) return "Team roster";
   if (/\/players$/.test(pathname)) return "Players";
   if (/\/auctions$/.test(pathname)) return "Auctions";
@@ -75,7 +76,7 @@ const descriptions = Object.freeze({
   Matchups: "Head-to-head scoring",
   Standings: "Official league table",
   "League activity": "Transactions and moves",
-  "Free Agent Draft": "Preseason Candidate Cards",
+  Drafts: "Free Agent and Entry Drafts",
   "Commissioner tools": "Authorized administration",
   "Roster operations": "Roster, contract and staging tools",
 });
@@ -169,15 +170,15 @@ function TopBar({ freezeBanner }) {
     const links = [
       ["Dashboard", routePaths.league(leagueId), LayoutDashboard],
       ["Teams", routePaths.leagueTeams(leagueId), Users],
-      ...(fadNavigation.data?.showMainNavigation
-        ? [[
-            "Free Agent Draft",
-            routePaths.leagueFreeAgentDraft(leagueId),
-            ClipboardPen,
-            true,
-            fadUrgencyLabel(fadNavigation.data.urgencyCode),
-          ]]
-        : []),
+      [
+        "Drafts",
+        routePaths.leagueDrafts(leagueId),
+        ClipboardPen,
+        true,
+        fadNavigation.data?.showMainNavigation
+          ? fadUrgencyLabel(fadNavigation.data.urgencyCode)
+          : "Free Agent and Entry Drafts",
+      ],
       ["Players", routePaths.leaguePlayers(leagueId), Search],
       ["Auctions", routePaths.leagueAuctions(leagueId), Gavel],
       ["Trades", routePaths.leagueTrades(leagueId), ArrowLeftRight],
@@ -319,7 +320,14 @@ function TopBar({ freezeBanner }) {
                           to={to}
                           active={
                             location.pathname === to ||
-                            (prefixActive && location.pathname.startsWith(`${to}/`))
+                            (prefixActive && location.pathname.startsWith(`${to}/`)) ||
+                            (label === "Drafts" &&
+                              location.pathname.startsWith(
+                                `${routePaths.leagueFreeAgentDraft(leagueId)}/`
+                              )) ||
+                            (label === "Drafts" &&
+                              location.pathname ===
+                                routePaths.leagueFreeAgentDraft(leagueId))
                           }
                           onSelect={closeMenus}
                         />

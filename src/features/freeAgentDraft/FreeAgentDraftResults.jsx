@@ -211,7 +211,7 @@ function PublishedCards({ httpClient, leagueId, fadId }) {
               <Link
                 className={styles.teamChoice}
                 key={summary.snapshotId}
-                to={routePaths.freeAgentDraftCard(leagueId, fadId, summary.teamId)}
+                to={routePaths.draftFreeAgentCard(leagueId, fadId, summary.teamId)}
               >
                 <strong>{summary.team.name}</strong>
                 <span>{summary.counts.carryovers} carryovers · {summary.counts.candidates} requested candidates</span>

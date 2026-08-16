@@ -53,6 +53,17 @@ export const routePaths = Object.freeze({
       playerId,
       "Player ID"
     )}`,
+  leagueDrafts: (leagueId) =>
+    `/leagues/${segment(leagueId, "League ID")}/drafts`,
+  leagueFreeAgentDrafts: (leagueId) =>
+    `${routePaths.leagueDrafts(leagueId)}/free-agent`,
+  leagueEntryDrafts: (leagueId) =>
+    `${routePaths.leagueDrafts(leagueId)}/entry`,
+  draftFreeAgentCard: (leagueId, fadId, teamId) =>
+    `${routePaths.leagueFreeAgentDrafts(leagueId)}/${segment(
+      fadId,
+      "Free Agent Draft ID"
+    )}/cards/${segment(teamId, "Team ID")}`,
   leagueFreeAgentDraft: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/free-agent-draft`,
   freeAgentDraft: (leagueId, fadId) =>
