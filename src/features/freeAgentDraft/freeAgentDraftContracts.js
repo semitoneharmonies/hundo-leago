@@ -779,6 +779,21 @@ function publishedOutcome(value, location) {
   return true;
 }
 
+function fadOfferContractValuesCompatible(totalValueCents, termYears, aavCents) {
+  const expectedLegacyAavCents =
+    Math.floor(totalValueCents / termYears) +
+    ((totalValueCents % termYears) * 2 >= termYears ? 1 : 0);
+  const aavFirstContract =
+    aavCents >= 100 &&
+    aavCents % 25 === 0 &&
+    totalValueCents === aavCents * termYears;
+  const preservedLegacyContract =
+    totalValueCents >= termYears * 100 &&
+    (termYears === 1 || totalValueCents % 100 === 0) &&
+    aavCents === expectedLegacyAavCents;
+  return aavFirstContract || preservedLegacyContract;
+}
+
 function candidateSlot(value, index, location, { published }) {
   exact(
     value,
@@ -843,10 +858,13 @@ function candidateSlot(value, index, location, { published }) {
     const contractComplete =
       value.aavCents !== null && value.termYears !== null;
     if (contractComplete) {
-      contract(value.aavCents >= 100 && value.aavCents % 25 === 0, `${location}.aavCents is invalid.`);
       contract(
-        value.totalValueCents === value.aavCents * value.termYears,
-        `${location}.totalValueCents is inconsistent.`
+        fadOfferContractValuesCompatible(
+          value.totalValueCents,
+          value.termYears,
+          value.aavCents
+        ),
+        `${location} contract values are inconsistent.`
       );
       contract(
         !value.validation.codes.includes("CANDIDATE_CONTRACT_INCOMPLETE"),
@@ -1089,19 +1107,12 @@ function allocationContract(value, location) {
   safeInteger(value.termYears, `${location}.termYears`, { positive: true });
   contract(value.termYears <= 3, `${location}.termYears is invalid.`);
   safeInteger(value.aavCents, `${location}.aavCents`, { positive: true });
-  const expectedAavCents =
-    Math.floor(value.totalValueCents / value.termYears) +
-    ((value.totalValueCents % value.termYears) * 2 >= value.termYears ? 1 : 0);
-  const aavFirstContract =
-    value.aavCents >= 100 &&
-    value.aavCents % 25 === 0 &&
-    value.totalValueCents === value.aavCents * value.termYears;
-  const legacyContract =
-    value.totalValueCents >= value.termYears * 100 &&
-    (value.termYears === 1 || value.totalValueCents % 100 === 0) &&
-    value.aavCents === expectedAavCents;
   contract(
-    aavFirstContract || legacyContract,
+    fadOfferContractValuesCompatible(
+      value.totalValueCents,
+      value.termYears,
+      value.aavCents
+    ),
     `${location} contract values are inconsistent.`
   );
   return true;

@@ -690,6 +690,35 @@ describe("FAD frontend response contracts", () => {
     );
   });
 
+  it("accepts a preserved legacy total-first Candidate Card row", () => {
+    const card = privateCard();
+    card.slots[0] = {
+      ...card.slots[0],
+      occupantKind: "candidate",
+      entryId: IDS.secondEntry,
+      entryVersion: 1,
+      player: player(),
+      totalValueCents: 4_000,
+      termYears: 3,
+      aavCents: 1_333,
+      validation: { status: "valid", codes: [] },
+      lastEditedAtMs: 100,
+      lastEditedBy: {
+        userId: IDS.user,
+        displayName: "Ada Manager",
+        authority: "manager",
+      },
+    };
+
+    expect(validatePrivateCandidateCard(card)).toBe(true);
+
+    const inconsistent = structuredClone(card);
+    inconsistent.slots[0].aavCents = 1_334;
+    expect(() => validatePrivateCandidateCard(inconsistent)).toThrow(
+      /contract values are inconsistent/u
+    );
+  });
+
   it("rejects an incomplete marker on complete private, save, and published rows", () => {
     function contradictoryCompleteSlot(baseSlot, { published = false } = {}) {
       return {
