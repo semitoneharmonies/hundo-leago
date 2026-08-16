@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -119,7 +119,7 @@ describe("account and team settings", () => {
               secondaryColour: null,
               tertiaryColour: null,
               patternTemplate: "even-two",
-              logoReference: null,
+              logoReference: `/api/v1/leagues/${leagueId}/teams/${teamId}/logo`,
               createdAtMs: 1,
               updatedAtMs: 1,
               version: teamVersion,
@@ -152,7 +152,7 @@ describe("account and team settings", () => {
             secondaryColour: teamPatch.secondaryColour,
             tertiaryColour: teamPatch.tertiaryColour,
             patternTemplate: teamPatch.patternTemplate,
-            logoReference: null,
+            logoReference: `/api/v1/leagues/${leagueId}/teams/${teamId}/logo`,
             version: teamVersion,
           },
         });
@@ -189,6 +189,12 @@ describe("account and team settings", () => {
     expect(screen.getByLabelText("Colour 1")).toHaveValue("#16324f");
     expect(screen.getByLabelText("Colour 2")).toHaveValue("#f7f7f7");
     expect(screen.queryByLabelText("Colour 3")).not.toBeInTheDocument();
+    const logo = document.querySelector(".hl-account-team-mark img");
+    expect(logo).toHaveAttribute(
+      "src",
+      `http://localhost:4000/api/v1/leagues/${leagueId}/teams/${teamId}/logo`
+    );
+    expect(logo).toHaveAttribute("crossorigin", "use-credentials");
 
     const displayName = screen.getByLabelText("Display name");
     await view.user.clear(displayName);
@@ -216,6 +222,15 @@ describe("account and team settings", () => {
         name: "Leopard preview using 3 colours",
       })
     ).toBeInTheDocument();
+    fireEvent.input(screen.getByLabelText("Colour 1"), {
+      target: { value: "#112233" },
+    });
+    fireEvent.input(screen.getByLabelText("Colour 2"), {
+      target: { value: "#aabbcc" },
+    });
+    fireEvent.input(screen.getByLabelText("Colour 3"), {
+      target: { value: "#445566" },
+    });
     const teamNameInput = screen.getByLabelText("Team name");
     await view.user.clear(teamNameInput);
     await view.user.type(teamNameInput, "Updated Ravens");
@@ -225,9 +240,9 @@ describe("account and team settings", () => {
     await waitFor(() => {
       expect(teamPatch).toMatchObject({
         name: "Updated Ravens",
-        primaryColour: "#16324f",
-        secondaryColour: "#f7f7f7",
-        tertiaryColour: "#f97316",
+        primaryColour: "#112233",
+        secondaryColour: "#aabbcc",
+        tertiaryColour: "#445566",
         patternTemplate: "leopard",
       });
     });

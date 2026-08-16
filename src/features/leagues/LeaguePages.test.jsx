@@ -158,7 +158,7 @@ function fetchScenario(
               status: "active",
               primaryColour: null,
               secondaryColour: null,
-              logoReference: null,
+              logoReference: `/api/v1/leagues/${leagueOneId}/teams/${teamId}/logo`,
               createdAtMs: 1,
               updatedAtMs: 1,
               version: 1,
@@ -203,7 +203,7 @@ function fetchScenario(
             name: "Target Owls",
             primaryColour: null,
             secondaryColour: null,
-            logoReference: null,
+            logoReference: `/api/v1/leagues/${leagueOneId}/teams/${teamId}/logo`,
             version: 1,
           },
           players: [
@@ -415,6 +415,14 @@ describe("league selection", () => {
     expect(screen.getByText("Your team")).toHaveClass(
       "hl-teams-index__managed-badge"
     );
+    const logo = screen
+      .getByRole("link", { name: "Target Owls" })
+      .querySelector("img");
+    expect(logo).toHaveAttribute(
+      "src",
+      `http://localhost:4000/api/v1/leagues/${leagueOneId}/teams/${teamId}/logo`
+    );
+    expect(logo).toHaveAttribute("crossorigin", "use-credentials");
   });
 
   it("does not give a commissioner an implicit dashboard team", async () => {

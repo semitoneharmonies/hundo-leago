@@ -850,6 +850,7 @@ function HockeyLines({
 
 function DraftPicks({
   canOffer,
+  httpClient,
   leagueId,
   picks,
   requestingTeamId,
@@ -919,7 +920,11 @@ function DraftPicks({
         style={teamColourStyle(originalTeam)}
       >
         {originalTeam.logoReference ? (
-          <img src={originalTeam.logoReference} alt="" />
+          <img
+            src={httpClient.resourceUrl(originalTeam.logoReference)}
+            crossOrigin="use-credentials"
+            alt=""
+          />
         ) : (
           <span aria-hidden="true">
             {originalTeam.name.slice(0, 2).toUpperCase()}
@@ -1340,7 +1345,11 @@ export function TeamRosterPage({
         <div className="hl-roster-identity">
           <div className="hl-team-logo">
             {team.logoReference ? (
-              <img src={team.logoReference} alt={`${team.name} logo`} />
+              <img
+                src={httpClient.resourceUrl(team.logoReference)}
+                crossOrigin="use-credentials"
+                alt={`${team.name} logo`}
+              />
             ) : (
               <span aria-hidden="true">
                 {team.name.slice(0, 2).toUpperCase()}
@@ -1571,6 +1580,7 @@ export function TeamRosterPage({
 
       <DraftPicks
         canOffer={workspace.canManage}
+        httpClient={httpClient}
         leagueId={league.id}
         picks={workspace.draftPicks}
         requestingTeamId={requestingTeam?.id || null}

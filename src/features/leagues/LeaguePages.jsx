@@ -398,7 +398,13 @@ export function LeagueTeamsPage() {
                             aria-hidden="true"
                           >
                             {team.logoReference ? (
-                              <img src={team.logoReference} alt="" />
+                              <img
+                                src={session.httpClient.resourceUrl(
+                                  team.logoReference
+                                )}
+                                crossOrigin="use-credentials"
+                                alt=""
+                              />
                             ) : (
                               team.name.slice(0, 2).toUpperCase()
                             )}

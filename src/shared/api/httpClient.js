@@ -204,5 +204,12 @@ export function createHttpClient({
     }
   }
 
-  return Object.freeze({ request });
+  function resourceUrl(path) {
+    if (typeof path !== "string" || !SAFE_PATH.test(path)) {
+      throw clientError("The resource path is invalid.");
+    }
+    return `${origin}${path}`;
+  }
+
+  return Object.freeze({ request, resourceUrl });
 }

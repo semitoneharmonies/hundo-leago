@@ -106,17 +106,17 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
     removeLogo;
 
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (draft) => {
       const input = {
-        name: name.trim(),
-        patternTemplate: selectedPattern.id,
-        primaryColour,
-        secondaryColour,
+        name: draft.name,
+        patternTemplate: draft.patternTemplate,
+        primaryColour: draft.primaryColour,
+        secondaryColour: draft.secondaryColour,
         tertiaryColour:
-          selectedPattern.colourCount === 3 ? tertiaryColour : null,
+          draft.colourCount === 3 ? draft.tertiaryColour : null,
       };
-      if (removeLogo) input.logo = null;
-      else if (logoFile) input.logo = await fileBase64(logoFile);
+      if (draft.removeLogo) input.logo = null;
+      else if (draft.logoFile) input.logo = await fileBase64(draft.logoFile);
       return updateTeamProfile(
         httpClient,
         leagueId,
@@ -148,7 +148,16 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
       onSubmit={(event) => {
         event.preventDefault();
         setMessage("");
-        mutation.mutate();
+        mutation.mutate({
+          colourCount: selectedPattern.colourCount,
+          logoFile,
+          name: name.trim(),
+          patternTemplate: selectedPattern.id,
+          primaryColour,
+          removeLogo,
+          secondaryColour,
+          tertiaryColour,
+        });
       }}
     >
       <div className="hl-account-team-form__heading">
@@ -158,7 +167,11 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
           aria-hidden="true"
         >
           {team.logoReference ? (
-            <img src={team.logoReference} alt="" />
+            <img
+              src={httpClient.resourceUrl(team.logoReference)}
+              crossOrigin="use-credentials"
+              alt=""
+            />
           ) : (
             name.slice(0, 2).toUpperCase()
           )}
@@ -206,7 +219,7 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
             <input
               type="color"
               value={primaryColour}
-              onChange={(event) =>
+              onInput={(event) =>
                 setPrimaryColourOverride(event.target.value)
               }
             />
@@ -216,7 +229,7 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
             <input
               type="color"
               value={secondaryColour}
-              onChange={(event) =>
+              onInput={(event) =>
                 setSecondaryColourOverride(event.target.value)
               }
             />
@@ -227,7 +240,7 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
               <input
                 type="color"
                 value={tertiaryColour}
-                onChange={(event) =>
+                onInput={(event) =>
                   setTertiaryColourOverride(event.target.value)
                 }
               />

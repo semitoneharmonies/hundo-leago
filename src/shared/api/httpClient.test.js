@@ -15,6 +15,20 @@ function success(data, requestId = "request-1") {
 }
 
 describe("createHttpClient", () => {
+  it("resolves trusted API resource paths against the configured origin", () => {
+    const client = createHttpClient({
+      apiOrigin: "https://api.example.test",
+      fetchImpl: vi.fn(),
+    });
+
+    expect(client.resourceUrl("/api/v1/leagues/league-1/logo")).toBe(
+      "https://api.example.test/api/v1/leagues/league-1/logo"
+    );
+    expect(() => client.resourceUrl("https://other.example.test/logo")).toThrow(
+      "The resource path is invalid."
+    );
+  });
+
   it("sends credentials and Accept on reads without inventing a body", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(success([]));
     const signal = new AbortController().signal;
