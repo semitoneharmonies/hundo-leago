@@ -97,6 +97,7 @@ function focusFirstInvalidRow(slotKey) {
 
 function wholeCardInput(card, drafts) {
   const errors = {};
+  const aavErrors = {};
   const usedPlayers = new Map();
   let proposedActiveAavCents = 0;
   const slots = card.slots.map((slot) => {
@@ -112,18 +113,25 @@ function wholeCardInput(card, drafts) {
     if (!hasAnyValue) {
       return { slotKey: slot.slotKey, candidate: null };
     }
+
+    const aavCents = aav === "" ? null : parseCents(aav);
+    if (
+      aav !== "" &&
+      (aavCents === null || aavCents < 100 || aavCents % 25 !== 0)
+    ) {
+      aavErrors[slot.slotKey] =
+        "AAV must be at least $1.00 and use whole-dollar or 25-cent increments.";
+    }
+
     if (!draft.playerId) {
       errors[slot.slotKey] =
         "Choose a player from the suggestions, or clear this row.";
       return { slotKey: slot.slotKey, candidate: null };
     }
 
-    let aavCents = null;
     if (aav !== "") {
-      aavCents = parseCents(aav);
-      if (aavCents === null || aavCents < 100 || aavCents % 25 !== 0) {
-        errors[slot.slotKey] =
-          "AAV must be at least $1.00 and use whole-dollar or 25-cent increments.";
+      if (aavErrors[slot.slotKey]) {
+        errors[slot.slotKey] = aavErrors[slot.slotKey];
       } else if (slot.slotGroup === "B" && aavCents > 400) {
         errors[slot.slotKey] = "Bench AAV cannot exceed $4.00.";
       } else if (slot.slotGroup === "F" || slot.slotGroup === "D") {
@@ -163,7 +171,14 @@ function wholeCardInput(card, drafts) {
         )} limit.`
       : "";
 
-  return { input: { slots }, errors, capError, proposedActiveAavCents, projectedCapCents };
+  return {
+    input: { slots },
+    errors,
+    aavErrors,
+    capError,
+    proposedActiveAavCents,
+    projectedCapCents,
+  };
 }
 
 export function CandidateCardBuilder({
@@ -391,6 +406,7 @@ export function CandidateCardBuilder({
   const warning = cardWarning(card);
   const busy = saveMutation.isPending || helpMutation.isPending;
   const liveProjection = wholeCardInput(card, drafts);
+  const hasLiveAavErrors = Object.keys(liveProjection.aavErrors).length > 0;
   const liveActivePlayerAavCents =
     card.capProjection.carriedActivePlayerAmountCents +
     liveProjection.proposedActiveAavCents;
@@ -422,7 +438,7 @@ export function CandidateCardBuilder({
               <button
                 type="submit"
                 className="hl-button hl-button--primary"
-                disabled={!dirty || saveMutation.isPending}
+                disabled={!dirty || saveMutation.isPending || hasLiveAavErrors}
               >
                 {saveMutation.isPending ? "Saving…" : "Save Candidate Card"}
               </button>
@@ -497,7 +513,11 @@ export function CandidateCardBuilder({
                   editable={editable}
                   busy={busy}
                   draft={drafts[slot.slotKey]}
-                  rowError={rowErrors[slot.slotKey] || ""}
+                  rowError={
+                    liveProjection.aavErrors[slot.slotKey] ||
+                    rowErrors[slot.slotKey] ||
+                    ""
+                  }
                   buildEligibleQueryOptions={eligibleOptionsFor(slot.slotKey)}
                   onDraftChange={(patch) => updateDraft(slot.slotKey, patch)}
                 />

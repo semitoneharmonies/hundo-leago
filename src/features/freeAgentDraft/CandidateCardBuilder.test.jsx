@@ -227,9 +227,19 @@ describe("CandidateCardBuilder whole-card form", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "F01 AAV" }), {
       target: { value: "1.10" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save Candidate Card" }));
-    expect(await screen.findByText(/25-cent increments/i)).toBeVisible();
+    expect(screen.getByText(/25-cent increments/i)).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "F01 AAV" })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "Save Candidate Card" })).toBeDisabled();
     expect(httpClient.request).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "F01 AAV" }), {
+      target: { value: "1.25" },
+    });
+    expect(screen.queryByText(/25-cent increments/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save Candidate Card" })).toBeEnabled();
     unmount();
 
     const benchClient = { request: vi.fn() };
@@ -259,6 +269,38 @@ describe("CandidateCardBuilder whole-card form", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save Candidate Card" }));
     expect(await screen.findByText(/above the \$100\.00 limit/i)).toBeVisible();
     expect(capClient.request).not.toHaveBeenCalled();
+  });
+
+  it("flags a preserved legacy AAV immediately until it is changed to a quarter-dollar value", () => {
+    const legacySlots = SLOT_KEYS.map((slotKey) =>
+      slotKey === "F01"
+        ? candidateSlot(slotKey, {
+            totalValueCents: 4_000,
+            termYears: 3,
+            aavCents: 1_333,
+          })
+        : emptySlot(slotKey)
+    );
+    const httpClient = { request: vi.fn() };
+    renderBuilder(card({ slots: legacySlots }), httpClient);
+
+    const aavInput = screen.getByRole("textbox", { name: "F01 AAV" });
+    const saveButton = screen.getByRole("button", { name: "Save Candidate Card" });
+    expect(aavInput).toHaveValue("13.33");
+    expect(aavInput).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText(/25-cent increments/i)).toBeVisible();
+    expect(document.querySelector('[data-slot-key="F01"]')).toHaveTextContent(
+      "Invalid"
+    );
+    expect(saveButton).toBeDisabled();
+
+    fireEvent.change(aavInput, { target: { value: "13.25" } });
+    expect(aavInput).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByText(/25-cent increments/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "F01 total contract value" }))
+      .toHaveValue("$39.75");
+    expect(saveButton).toBeEnabled();
+    expect(httpClient.request).not.toHaveBeenCalled();
   });
 
   it("preserves a dirty draft after 412 and retries with the refreshed version", async () => {

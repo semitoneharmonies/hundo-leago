@@ -110,9 +110,11 @@ export function CandidateSlot({
     (!draft.aav || !draft.termYears);
   const state = published
     ? publishedOutcome(slot)
-    : draftIncomplete
-      ? { kind: "pending", label: "Incomplete", Icon: Clock3 }
-      : privateState(slot, rowEditable);
+    : rowError
+      ? { kind: "notWon", label: "Invalid", Icon: X }
+      : draftIncomplete
+        ? { kind: "pending", label: "Incomplete", Icon: Clock3 }
+        : privateState(slot, rowEditable);
   const StateIcon = state.Icon;
   const playerName = rowEditable
     ? draft?.playerName || ""
