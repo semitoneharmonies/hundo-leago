@@ -1,6 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
-function RouteStatePage({ title, message, actionLabel = "Return home" }) {
+function RouteStatePage({
+  title,
+  message,
+  actionLabel = "Return home",
+  reloadCurrentPage = false,
+}) {
+  const location = useLocation();
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
   return (
     <main
       className="hl-page hl-page--narrow"
@@ -10,9 +17,15 @@ function RouteStatePage({ title, message, actionLabel = "Return home" }) {
         <p className="hl-eyebrow">Navigation</p>
         <h1 id="route-state-title">{title}</h1>
         <p>{message}</p>
-        <Link className="hl-button hl-button--primary" to="/">
-          {actionLabel}
-        </Link>
+        {reloadCurrentPage ? (
+          <a className="hl-button hl-button--primary" href={currentPath}>
+            {actionLabel}
+          </a>
+        ) : (
+          <Link className="hl-button hl-button--primary" to="/">
+            {actionLabel}
+          </Link>
+        )}
       </section>
     </main>
   );
@@ -30,8 +43,10 @@ export function NotFoundPage() {
 export function RouteErrorPage() {
   return (
     <RouteStatePage
-      title="This page could not be displayed"
-      message="Please return home and try again. No league data was changed."
+      title="This page needs to reload"
+      message="Hundo Leago could not finish loading this page. Reload to use the current application version. No league data was changed."
+      actionLabel="Reload page"
+      reloadCurrentPage
     />
   );
 }

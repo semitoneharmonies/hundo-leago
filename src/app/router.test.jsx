@@ -47,10 +47,15 @@ describe("application routes", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "This page could not be displayed",
+        name: "This page needs to reload",
       })
     ).toBeInTheDocument();
     expect(screen.queryByText("private implementation detail")).toBeNull();
+    expect(screen.getByRole("link", { name: "Reload page" })).toHaveAttribute(
+      "href",
+      "/broken"
+    );
+    expect(screen.queryByRole("link", { name: "Return home" })).toBeNull();
     consoleError.mockRestore();
   });
 });

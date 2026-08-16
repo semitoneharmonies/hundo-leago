@@ -31,12 +31,10 @@ import {
 } from "./leagueUtils";
 import { Route } from "react-router-dom";
 import { AccountHome } from "./features/accounts/AccountHome.jsx";
+import { loadLazyNamedRoute } from "./shared/lazyRoute.js";
 
 function lazyNamed(loadModule, exportName) {
-  return lazy(async () => {
-    const loadedModule = await loadModule();
-    return { default: loadedModule[exportName] };
-  });
+  return lazy(() => loadLazyNamedRoute({ loadModule, exportName }));
 }
 
 const loadAccountActions = () =>
