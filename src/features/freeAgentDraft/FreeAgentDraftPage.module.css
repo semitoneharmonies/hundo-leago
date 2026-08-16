@@ -836,19 +836,23 @@
   min-width: 0;
 }
 
-.resultList,
+.resultList {
+  display: grid;
+  gap: 0.5rem;
+}
+
 .offerList {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .resultCard {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.55rem;
   min-width: 0;
-  padding: 1rem;
+  padding: 0.7rem 0.8rem;
   border: 1px solid rgb(148 163 184 / 26%);
-  border-radius: 0.8rem;
+  border-radius: 0.7rem;
   background: rgb(15 23 42 / 60%);
 }
 
@@ -857,25 +861,101 @@
   margin: 0;
 }
 
+.resultCardHeader {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.resultPlayer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.6rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.resultPlayer span {
+  color: var(--hl-text-muted, #94a3b8);
+  font-size: 0.82rem;
+}
+
+.resultSummary {
+  display: grid;
+  grid-template-columns:
+    minmax(6.5rem, 0.65fr) minmax(10rem, 1.35fr)
+    repeat(3, minmax(6rem, 0.7fr));
+  gap: 0.45rem 0.8rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgb(148 163 184 / 18%);
+  border-radius: 0.55rem;
+  background: rgb(2 6 23 / 24%);
+}
+
+.resultSummary > div {
+  min-width: 0;
+}
+
+.resultSummary dt {
+  color: var(--hl-text-muted, #94a3b8);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.resultSummary dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.resultObtained {
+  color: var(--hl-success, #86efac);
+}
+
+.resultDisclosure {
+  padding-top: 0.1rem;
+}
+
+.resultDisclosure summary {
+  color: var(--hl-text-muted, #94a3b8);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.resultDisclosure[open] summary {
+  margin-bottom: 0.55rem;
+}
+
 .resultEvidence {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.45rem;
   min-width: 0;
+}
+
+.resultDetailLabel {
+  color: var(--hl-text-muted, #94a3b8);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .offerRow {
   display: grid;
   grid-template-columns: minmax(11rem, 1.3fr) repeat(4, minmax(7rem, auto));
-  gap: 0.6rem;
+  gap: 0.45rem 0.6rem;
   align-items: center;
-  padding: 0.7rem;
+  padding: 0.55rem 0.65rem;
   border: 1px solid rgb(148 163 184 / 22%);
-  border-radius: 0.65rem;
-}
-
-.offerRow > div {
-  display: grid;
-  gap: 0.15rem;
+  border-radius: 0.55rem;
 }
 
 .offerRow span {
@@ -943,11 +1023,19 @@
     grid-column: 1 / -1;
   }
 
-  .offerRow {
-    grid-template-columns: 1fr 1fr;
+  .resultSummary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .offerRow > div {
+  .resultWinningTeam {
+    grid-column: span 2;
+  }
+
+  .offerRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .offerRow > strong {
     grid-column: 1 / -1;
   }
 }
@@ -1054,7 +1142,19 @@
   }
 
   .resultFilters button,
-  .offerRow > div {
+  .offerRow > strong {
     grid-column: auto;
+  }
+
+  .resultCardHeader {
+    align-items: flex-start;
+  }
+
+  .resultSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resultWinningTeam {
+    grid-column: 1 / -1;
   }
 }

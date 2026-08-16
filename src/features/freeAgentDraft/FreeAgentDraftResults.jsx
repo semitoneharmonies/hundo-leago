@@ -9,7 +9,6 @@ import {
   StatusBadge,
   Surface,
 } from "../../components/HundoUi.jsx";
-import { leagueDateTime } from "../../shared/hundoFormat.js";
 import { leagueTeamsQuery } from "../leagues/leagueQueries.js";
 import { CandidateSlot } from "./CandidateSlot.jsx";
 import {
@@ -47,24 +46,6 @@ function statusLabel(status) {
   return RESULT_STATUSES.find(([value]) => value === status)?.[1] || "Unavailable";
 }
 
-function decisionLabel(code) {
-  return {
-    sole_valid_offer: "Only valid offer",
-    highest_total: "Highest total contract value",
-    highest_equal_total_aav: "Highest AAV among equal totals",
-    exact_total_and_term_tie: "Exact total and term tie",
-    no_valid_offer: "No valid offer",
-    invalid_snapshot: "Invalid locked snapshot",
-    candidate_card_structural_conflict: "Card-wide structural conflict",
-    candidate_card_over_cap: "Card-wide cap exclusion",
-    restricted_auction_result: "Restricted auction result",
-    restricted_no_improvement_fallback: "Restricted auction moved to fallback",
-    fallback_open_result: "Fallback auction result",
-    fallback_open_no_winner: "Fallback closed without a winner",
-    corrected: "Corrected from the locked snapshot",
-  }[code] || "Decision not yet recorded";
-}
-
 function offerOutcomeLabel(code) {
   return {
     pending: "Pending — no rank assigned",
@@ -90,93 +71,179 @@ function fallbackExplanation(fallback) {
   return "No winner was assigned by the authoritative auction result.";
 }
 
-function AllocationResult({ result, teamNames, timeZone }) {
+function allocationOutcome(result) {
+  if (result.status === "pending") return "Pending";
+  if (result.winner) return "Obtained";
+  if (result.status === "correction_required") return "Correction required";
+  return "Not obtained";
+}
+
+function AllocationResult({ result, teamNames }) {
   const titleId = `fad-allocation-${result.allocationId}`;
   const pending = result.status === "pending";
   const winnerName = result.winner ? teamNames.get(result.winner.teamId) : null;
+  const otherOffers = result.winner
+    ? result.rankedOffers.filter(
+        (offer) => offer.snapshotEntryId !== result.winner.snapshotEntryId
+      )
+    : result.rankedOffers;
+  const hasMoreDetail =
+    otherOffers.length > 0 ||
+    result.restricted !== null ||
+    result.fallback !== null ||
+    result.draws.length > 0;
   return (
     <article className={styles.resultCard} aria-labelledby={titleId}>
-      <div className={styles.panelHeader}>
-        <div>
-          <p className="hl-eyebrow">{result.player.positionGroup === "F" ? "Forward" : "Defence"}</p>
+      <div className={styles.resultCardHeader}>
+        <div className={styles.resultPlayer}>
           <h3 id={titleId}>{result.player.fullName}</h3>
+          <span>{result.player.positionGroup === "F" ? "Forward" : "Defence"}</span>
         </div>
-        <StatusBadge tone={pending ? "warning" : result.status === "correction_required" ? "danger" : "neutral"}>
+        <StatusBadge
+          tone={
+            pending
+              ? "warning"
+              : result.status === "correction_required"
+                ? "danger"
+                : result.winner
+                  ? "success"
+                  : "neutral"
+          }
+        >
           {statusLabel(result.status)}
         </StatusBadge>
       </div>
 
-      {pending ? (
-        <p className={styles.pendingConfirmation} role="status">
-          Allocation is pending. No decision, winner, rank, restricted result,
-          fallback result, recovery status, resolution time, or draw has been
-          inferred.
-        </p>
-      ) : (
-        <p>
-          Decision: <strong>{decisionLabel(result.decisionCode)}</strong>
-          {result.resolvedAtMs !== null
-            ? ` · ${leagueDateTime(result.resolvedAtMs, timeZone)}`
-            : ""}
-        </p>
-      )}
-
-      <div className={styles.offerList} aria-label={`${result.player.fullName} locked offers`}>
-        {result.rankedOffers.map((offer) => (
-          <div className={styles.offerRow} key={offer.snapshotEntryId}>
-            <div>
-              <strong>{offer.team.name}</strong>
-              <span>{offer.slotKey}</span>
-            </div>
-            <span>{money(offer.totalValueCents)} total</span>
-            <span>{offer.termYears} {offer.termYears === 1 ? "year" : "years"}</span>
-            <span>{money(offer.aavCents)} AAV</span>
-            <span>
-              {pending || offer.rank === null ? "No rank" : `Rank ${offer.rank}`}
-              {` · ${offerOutcomeLabel(offer.outcomeCode)}`}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {result.winner && (
-        <p className={styles.success}>
-          Winner: <strong>{winnerName}</strong>. Winning contract: {money(result.winner.totalValueCents)} over {result.winner.termYears} {result.winner.termYears === 1 ? "year" : "years"} ({money(result.winner.aavCents)} AAV), assigned to {result.winner.slotKey}.
-        </p>
-      )}
-      {result.restricted && (
-        <p>
-          Restricted path: <strong>{result.restricted.status.replaceAll("_", " ")}</strong>.
-          Candidate values shown above are immutable minimums, not active bids or leaders.
-        </p>
-      )}
-      {result.fallback && (
-        <div className={styles.resultEvidence}>
-          <p>
-            Fallback path: <strong>{result.fallback.status.replaceAll("_", " ")}</strong>.
-            {` The league-wide floor was ${money(result.fallback.minimumTotalValueCents)} total value.`}
-          </p>
-          {fallbackExplanation(result.fallback) && (
-            <p className={styles.pendingConfirmation}>
-              {fallbackExplanation(result.fallback)}
-            </p>
-          )}
+      <dl
+        className={styles.resultSummary}
+        aria-label={`${result.player.fullName} allocation summary`}
+      >
+        <div>
+          <dt>Outcome</dt>
+          <dd className={result.winner ? styles.resultObtained : undefined}>
+            {allocationOutcome(result)}
+          </dd>
         </div>
+        {result.winner && (
+          <>
+            <div className={styles.resultWinningTeam}>
+              <dt>Winning team</dt>
+              <dd>{winnerName}</dd>
+            </div>
+            <div>
+              <dt>Total</dt>
+              <dd>{money(result.winner.totalValueCents)}</dd>
+            </div>
+            <div>
+              <dt>Term</dt>
+              <dd>
+                {result.winner.termYears}{" "}
+                {result.winner.termYears === 1 ? "year" : "years"}
+              </dd>
+            </div>
+            <div>
+              <dt>AAV</dt>
+              <dd>{money(result.winner.aavCents)}</dd>
+            </div>
+          </>
+        )}
+      </dl>
+
+      {pending && (
+        <p className={styles.pendingConfirmation} role="status">
+          Allocation is pending. No winner or contract has been recorded.
+        </p>
       )}
-      {result.draws.length > 0 && (
-        <details>
-          <summary>Terminal draw evidence ({result.draws.length})</summary>
-          <ul className={styles.diagnostics}>
-            {result.draws.map((draw) => (
-              <li key={draw.auctionId}>
-                {draw.auctionType === "fad_restricted" ? "Restricted" : "Open rapid"} auction — {draw.drawReveal?.selectionUsed
-                  ? `${teamNames.get(draw.drawReveal.selectedTeamId)} was selected by the committed equal-chance draw`
-                  : draw.drawReveal
-                    ? "no random selection was used because there was no exact top tie"
-                    : "correction is required before the draw can be revealed"}.
-              </li>
-            ))}
-          </ul>
+
+      {hasMoreDetail && (
+        <details className={styles.resultDisclosure}>
+          <summary>
+            More allocation detail
+            {otherOffers.length > 0
+              ? ` · ${otherOffers.length} ${
+                  result.winner ? "other" : "locked"
+                } ${otherOffers.length === 1 ? "offer" : "offers"}`
+              : ""}
+          </summary>
+          <div className={styles.resultEvidence}>
+            {otherOffers.length > 0 && (
+              <>
+                <p className={styles.resultDetailLabel}>
+                  {result.winner ? "Other locked offers" : "Locked offers"}
+                </p>
+                <div
+                  className={styles.offerList}
+                  aria-label={`${result.player.fullName} ${
+                    result.winner ? "other locked offers" : "locked offers"
+                  }`}
+                >
+                  {otherOffers.map((offer) => (
+                    <div className={styles.offerRow} key={offer.snapshotEntryId}>
+                      <strong>{offer.team.name}</strong>
+                      <span>{money(offer.totalValueCents)} total</span>
+                      <span>
+                        {offer.termYears}{" "}
+                        {offer.termYears === 1 ? "year" : "years"}
+                      </span>
+                      <span>{money(offer.aavCents)} AAV</span>
+                      <span>
+                        {pending || offer.rank === null ? "No rank" : `Rank ${offer.rank}`}
+                        {` · ${offerOutcomeLabel(offer.outcomeCode)}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {result.restricted && (
+              <p>
+                Restricted path:{" "}
+                <strong>{result.restricted.status.replaceAll("_", " ")}</strong>.
+                Candidate values are immutable minimums, not active bids or leaders.
+              </p>
+            )}
+            {result.fallback && (
+              <>
+                <p>
+                  Fallback path:{" "}
+                  <strong>{result.fallback.status.replaceAll("_", " ")}</strong>.
+                  {` The league-wide floor was ${money(
+                    result.fallback.minimumTotalValueCents
+                  )} total value.`}
+                </p>
+                {fallbackExplanation(result.fallback) && (
+                  <p className={styles.pendingConfirmation}>
+                    {fallbackExplanation(result.fallback)}
+                  </p>
+                )}
+              </>
+            )}
+            {result.draws.length > 0 && (
+              <>
+                <p className={styles.resultDetailLabel}>
+                  Terminal draw evidence ({result.draws.length})
+                </p>
+                <ul className={styles.diagnostics}>
+                  {result.draws.map((draw) => (
+                    <li key={draw.auctionId}>
+                      {draw.auctionType === "fad_restricted"
+                        ? "Restricted"
+                        : "Open rapid"}{" "}
+                      auction —{` `}
+                      {draw.drawReveal?.selectionUsed
+                        ? `${teamNames.get(
+                            draw.drawReveal.selectedTeamId
+                          )} was selected by the committed equal-chance draw`
+                        : draw.drawReveal
+                          ? "no random selection was used because there was no exact top tie"
+                          : "correction is required before the draw can be revealed"}
+                      .
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
         </details>
       )}
     </article>
@@ -277,7 +344,6 @@ export function FreeAgentDraftAllocationResults({
   httpClient,
   leagueId,
   fadId,
-  timeZone,
 }) {
   const [searchInput, setSearchInput] = useState("");
   const [statusInput, setStatusInput] = useState("");
@@ -362,7 +428,6 @@ export function FreeAgentDraftAllocationResults({
                 key={result.allocationId}
                 result={result}
                 teamNames={teamNames}
-                timeZone={timeZone}
               />
             ))}
           </div>

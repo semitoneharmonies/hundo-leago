@@ -1193,8 +1193,8 @@ export function FreeAgentDraftAllocationResultsPage() {
             <p className="hl-eyebrow">Detailed result history</p>
             <h2>Authoritative allocation decisions</h2>
             <p>
-              This read-only view contains the complete offer rankings, contract
-              values, decision reasons, winners, and terminal draw evidence.
+              This read-only view contains every player outcome, winning contract,
+              competing locked offers, auction path, and terminal draw evidence.
             </p>
             <p>
               <Link

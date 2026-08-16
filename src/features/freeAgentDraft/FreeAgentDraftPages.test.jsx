@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { infiniteQueryOptions } from "@tanstack/react-query";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -528,6 +528,46 @@ function pendingAllocationResult() {
     draws: [],
     recoveryStatus: null,
     resolvedAtMs: null,
+  };
+}
+
+function automaticAllocationResult() {
+  return {
+    allocationId: helpId,
+    allocationVersion: 1,
+    player: { playerId, fullName: "Automatic Player", positionGroup: "D" },
+    status: "automatic_award",
+    decisionCode: "sole_valid_offer",
+    rankedOffers: [
+      {
+        snapshotEntryId: entryId,
+        teamId,
+        team: team(),
+        slotKey: "D03",
+        totalValueCents: 1_200,
+        termYears: 3,
+        aavCents: 400,
+        valid: true,
+        validationCode: null,
+        rank: 1,
+        outcomeCode: "winner",
+      },
+    ],
+    winner: {
+      teamId,
+      snapshotEntryId: entryId,
+      contractId,
+      ownershipId,
+      slotKey: "D03",
+      totalValueCents: 1_200,
+      termYears: 3,
+      aavCents: 400,
+    },
+    restricted: null,
+    fallback: null,
+    draws: [],
+    recoveryStatus: null,
+    resolvedAtMs: 2_000,
   };
 }
 
@@ -1459,7 +1499,7 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
       routePaths.draftFreeAgentCard(leagueId, fadId, teamId)
     );
     expect(screen.getByRole("status", { name: "" })).toHaveTextContent(
-      /No decision, winner, rank, restricted result, fallback result, recovery status, resolution time, or draw has been inferred/i
+      /Allocation is pending\. No winner or contract has been recorded\./i
     );
     expect(screen.getByText(/No rank/)).toBeInTheDocument();
     expect(screen.queryByText(/Winning contract/)).toBeNull();
@@ -1502,11 +1542,51 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     );
   });
 
+  it("renders a terminal allocation as one compact accessible winner summary", async () => {
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        return envelope(publishedOverview());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        return collectionEnvelope([automaticAllocationResult()]);
+      }
+      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
+        return envelope(teamsFound());
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderRoute({
+      path: routePaths.draftFreeAgentAllocationResults(leagueId, fadId),
+      route: "/leagues/:leagueId/drafts/free-agent/:fadId/results",
+      element: <FreeAgentDraftAllocationResultsPage />,
+      fetchImpl,
+    });
+
+    const heading = await screen.findByRole("heading", {
+      name: "Automatic Player",
+    });
+    const card = heading.closest("article");
+    const summary = within(card).getByLabelText(
+      "Automatic Player allocation summary"
+    );
+
+    expect(within(card).getByText("Defence")).toBeInTheDocument();
+    expect(within(card).getByText("Automatic award")).toBeInTheDocument();
+    expect(within(summary).getByText("Obtained")).toBeInTheDocument();
+    expect(within(summary).getByText("Candidate Owls")).toBeInTheDocument();
+    expect(within(summary).getByText("$12.00")).toBeInTheDocument();
+    expect(within(summary).getByText("3 years")).toBeInTheDocument();
+    expect(within(summary).getByText("$4.00")).toBeInTheDocument();
+    expect(within(card).getAllByText("Candidate Owls")).toHaveLength(1);
+    expect(card).not.toHaveTextContent(/Decision:|Only valid offer|Winner:|D03/);
+    expect(card.querySelector("details")).toBeNull();
+  });
+
   it.each([
     [
       "a fallback winner from the current authorized team projection",
       fallbackWinnerAllocationResult(),
-      /Winner: Fallback Foxes/,
+      /Fallback Foxes/,
     ],
     [
       "an authoritative fallback no-winner result",
