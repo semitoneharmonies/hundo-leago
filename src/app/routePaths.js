@@ -64,6 +64,11 @@ export const routePaths = Object.freeze({
       fadId,
       "Free Agent Draft ID"
     )}/cards/${segment(teamId, "Team ID")}`,
+  draftFreeAgentAllocationResults: (leagueId, fadId) =>
+    `${routePaths.leagueFreeAgentDrafts(leagueId)}/${segment(
+      fadId,
+      "Free Agent Draft ID"
+    )}/results`,
   leagueFreeAgentDraft: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/free-agent-draft`,
   freeAgentDraft: (leagueId, fadId) =>

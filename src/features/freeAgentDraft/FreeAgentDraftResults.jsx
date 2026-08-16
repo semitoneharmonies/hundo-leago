@@ -183,11 +183,38 @@ function AllocationResult({ result, teamNames, timeZone }) {
   );
 }
 
-function PublishedCards({ httpClient, leagueId, fadId }) {
+function outcomeCounts(summary) {
+  return {
+    obtained:
+      summary.outcomeCounts.automaticWins +
+      summary.outcomeCounts.restrictedWins +
+      summary.outcomeCounts.fallbackWins,
+    notObtained:
+      summary.outcomeCounts.losses +
+      summary.outcomeCounts.fallbackNoWinner +
+      summary.outcomeCounts.invalidOffers,
+    pending:
+      summary.outcomeCounts.restrictedPending +
+      summary.outcomeCounts.fallbackPending,
+  };
+}
+
+export function PublishedCandidateCards({ httpClient, leagueId, fadId }) {
   const cards = useInfiniteQuery(
     publishedCandidateCardsQuery(httpClient, leagueId, fadId)
   );
   const summaries = cards.data?.pages.flatMap((page) => page.items) || [];
+  const totals = summaries.reduce(
+    (combined, summary) => {
+      const counts = outcomeCounts(summary);
+      return {
+        obtained: combined.obtained + counts.obtained,
+        notObtained: combined.notObtained + counts.notObtained,
+        pending: combined.pending + counts.pending,
+      };
+    },
+    { obtained: 0, notObtained: 0, pending: 0 }
+  );
 
   return (
     <Surface className={styles.panel} as="section" aria-labelledby="published-candidate-cards-title">
@@ -196,7 +223,7 @@ function PublishedCards({ httpClient, leagueId, fadId }) {
           <p className="hl-eyebrow">Immutable team history</p>
           <h2 id="published-candidate-cards-title">Published Candidate Cards</h2>
         </div>
-        {!cards.isPending && !cards.isError && <StatusBadge>{summaries.length} loaded</StatusBadge>}
+        {!cards.isPending && !cards.isError && <StatusBadge>{summaries.length} teams</StatusBadge>}
       </div>
       {cards.isPending ? (
         <LoadingBlock>Loading published Candidate Cards…</LoadingBlock>
@@ -206,20 +233,29 @@ function PublishedCards({ httpClient, leagueId, fadId }) {
         <p>No published Candidate Cards were returned.</p>
       ) : (
         <>
+          <p className={styles.compactOutcomeSummary}>
+            <strong>{totals.obtained} obtained</strong>
+            <span>{totals.notObtained} not obtained</span>
+            {totals.pending > 0 && <span>{totals.pending} pending</span>}
+          </p>
           <div className={styles.teamSelector}>
-            {summaries.map((summary) => (
-              <Link
-                className={styles.teamChoice}
-                key={summary.snapshotId}
-                to={routePaths.draftFreeAgentCard(leagueId, fadId, summary.teamId)}
-              >
-                <strong>{summary.team.name}</strong>
-                <span>{summary.counts.carryovers} carryovers · {summary.counts.candidates} requested candidates</span>
-                <small>
-                  {summary.outcomeCounts.automaticWins + summary.outcomeCounts.restrictedWins + summary.outcomeCounts.fallbackWins} wins · {summary.outcomeCounts.losses} losses
-                </small>
-              </Link>
-            ))}
+            {summaries.map((summary) => {
+              const counts = outcomeCounts(summary);
+              return (
+                <Link
+                  className={styles.teamChoice}
+                  key={summary.snapshotId}
+                  to={routePaths.draftFreeAgentCard(leagueId, fadId, summary.teamId)}
+                >
+                  <strong>{summary.team.name}</strong>
+                  <span>{summary.counts.carryovers} carryovers · {summary.counts.candidates} requested candidates</span>
+                  <small>
+                    {counts.obtained} obtained · {counts.notObtained} not obtained
+                    {counts.pending > 0 ? ` · ${counts.pending} pending` : ""}
+                  </small>
+                </Link>
+              );
+            })}
           </div>
           {cards.hasNextPage && (
             <button
@@ -237,7 +273,7 @@ function PublishedCards({ httpClient, leagueId, fadId }) {
   );
 }
 
-export function FreeAgentDraftResultsContent({
+export function FreeAgentDraftAllocationResults({
   httpClient,
   leagueId,
   fadId,
@@ -273,8 +309,6 @@ export function FreeAgentDraftResultsContent({
   }
 
   return (
-    <>
-      <PublishedCards httpClient={httpClient} leagueId={leagueId} fadId={fadId} />
       <Surface className={styles.panel} as="section" aria-labelledby="allocation-results-title">
         <div className={styles.panelHeader}>
           <div>
@@ -345,6 +379,18 @@ export function FreeAgentDraftResultsContent({
           </button>
         )}
       </Surface>
+  );
+}
+
+export function FreeAgentDraftResultsContent(props) {
+  return (
+    <>
+      <PublishedCandidateCards
+        httpClient={props.httpClient}
+        leagueId={props.leagueId}
+        fadId={props.fadId}
+      />
+      <FreeAgentDraftAllocationResults {...props} />
     </>
   );
 }

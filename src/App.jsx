@@ -82,6 +82,10 @@ const FreeAgentDraftResultsPage = lazyNamed(
   loadFreeAgentDraftPages,
   "FreeAgentDraftResultsPage"
 );
+const FreeAgentDraftAllocationResultsPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "FreeAgentDraftAllocationResultsPage"
+);
 const CandidateCardPage = lazyNamed(
   loadFreeAgentDraftPages,
   "CandidateCardPage"
@@ -1838,6 +1842,10 @@ return (
         <Route
           path="/leagues/:leagueId/drafts/free-agent/:fadId/cards/:teamId"
           element={<CandidateCardPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/drafts/free-agent/:fadId/results"
+          element={<FreeAgentDraftAllocationResultsPage />}
         />
         <Route
           path="/leagues/:leagueId/free-agent-draft"

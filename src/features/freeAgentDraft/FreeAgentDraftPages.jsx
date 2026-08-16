@@ -17,7 +17,9 @@ import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { CandidateCardBuilder } from "./CandidateCardBuilder.jsx";
 import {
+  FreeAgentDraftAllocationResults,
   FreeAgentDraftResultsContent,
+  PublishedCandidateCards,
   PublishedCandidateCardView,
 } from "./FreeAgentDraftResults.jsx";
 import {
@@ -175,8 +177,50 @@ function OverviewHero({
   title = "Free Agent Draft",
   headingId = "fad-page-title",
   headingLevel = "h1",
+  compact = false,
 }) {
   const Heading = headingLevel;
+  const timing = (
+    <div className={styles.clockGrid}>
+      <ServerClock
+        serverNowMs={overview.serverNowMs}
+        serverObservedAtClientMs={observedAtClientMs}
+        targetMs={overview.candidateDeadlineAtMs}
+        label="Candidate Card deadline"
+        timeZone={overview.timeZone}
+      />
+      {overview.nextRolloverAtMs !== null && (
+        <ServerClock
+          serverNowMs={overview.serverNowMs}
+          serverObservedAtClientMs={observedAtClientMs}
+          targetMs={overview.nextRolloverAtMs}
+          label="Next rapid rollover"
+          timeZone={overview.timeZone}
+        />
+      )}
+      <div className={styles.clock}>
+        <span>FAD-anchoring Week 1</span>
+        <strong>
+          {leagueDateTime(
+            overview.frozenFadFirstMatchupStartsAtMs,
+            overview.timeZone
+          )}
+        </strong>
+      </div>
+      {overview.competitionFirstMatchupStartsAtMs !==
+        overview.frozenFadFirstMatchupStartsAtMs && (
+        <div className={styles.clock}>
+          <span>Current competition Week 1</span>
+          <strong>
+            {leagueDateTime(
+              overview.competitionFirstMatchupStartsAtMs,
+              overview.timeZone
+            )}
+          </strong>
+        </div>
+      )}
+    </div>
+  );
   return (
     <header className={styles.hero}>
       <div className={styles.heroTop}>
@@ -192,45 +236,12 @@ function OverviewHero({
         Timing, phase, cap, eligibility, and action permissions shown here come
         from the league server.
       </p>
-      <div className={styles.clockGrid}>
-        <ServerClock
-          serverNowMs={overview.serverNowMs}
-          serverObservedAtClientMs={observedAtClientMs}
-          targetMs={overview.candidateDeadlineAtMs}
-          label="Candidate Card deadline"
-          timeZone={overview.timeZone}
-        />
-        {overview.nextRolloverAtMs !== null && (
-          <ServerClock
-            serverNowMs={overview.serverNowMs}
-            serverObservedAtClientMs={observedAtClientMs}
-            targetMs={overview.nextRolloverAtMs}
-            label="Next rapid rollover"
-            timeZone={overview.timeZone}
-          />
-        )}
-        <div className={styles.clock}>
-          <span>FAD-anchoring Week 1</span>
-          <strong>
-            {leagueDateTime(
-              overview.frozenFadFirstMatchupStartsAtMs,
-              overview.timeZone
-            )}
-          </strong>
-        </div>
-        {overview.competitionFirstMatchupStartsAtMs !==
-          overview.frozenFadFirstMatchupStartsAtMs && (
-          <div className={styles.clock}>
-            <span>Current competition Week 1</span>
-            <strong>
-              {leagueDateTime(
-                overview.competitionFirstMatchupStartsAtMs,
-                overview.timeZone
-              )}
-            </strong>
-          </div>
-        )}
-      </div>
+      {compact ? (
+        <details className={styles.timingDisclosure}>
+          <summary>Draft timing details</summary>
+          {timing}
+        </details>
+      ) : timing}
     </header>
   );
 }
@@ -380,6 +391,7 @@ function FreeAgentDraftResultsExperience({
   overview,
   privacyEpoch,
   embedded = false,
+  compact = false,
 }) {
   return (
     <>
@@ -389,22 +401,55 @@ function FreeAgentDraftResultsExperience({
         title="Free Agent Draft results"
         headingId={embedded ? "free-agent-draft-title" : "fad-page-title"}
         headingLevel={embedded ? "h2" : "h1"}
+        compact={compact}
       />
       <Surface className={styles.panel}>
-        <h2>Published history</h2>
+        <h2>{compact ? "Team results" : "Published history"}</h2>
         <p>
           Browse every team&apos;s immutable Candidate Card and the authoritative
           allocation outcome for every requested player. No draft content can
           be edited from this results view.
         </p>
       </Surface>
-      <FreeAgentDraftResultsContent
-        key={`${privacyEpoch}:${leagueId}:${fadId}`}
-        httpClient={context.session.httpClient}
-        leagueId={leagueId}
-        fadId={fadId}
-        timeZone={overview.timeZone}
-      />
+      {compact ? (
+        <>
+          <PublishedCandidateCards
+            key={`${privacyEpoch}:${leagueId}:${fadId}:cards`}
+            httpClient={context.session.httpClient}
+            leagueId={leagueId}
+            fadId={fadId}
+          />
+          <Surface className={styles.panel} as="section" aria-labelledby="allocation-details-title">
+            <div className={styles.panelHeader}>
+              <div>
+                <p className="hl-eyebrow">Detailed result history</p>
+                <h2 id="allocation-details-title">Player-by-player allocations</h2>
+              </div>
+              <StatusBadge>Read only</StatusBadge>
+            </div>
+            <p>
+              Open the full authoritative offer rankings, winning contracts,
+              and allocation decisions only when you need that level of detail.
+            </p>
+            <p>
+              <Link
+                className="hl-button hl-button--secondary"
+                to={routePaths.draftFreeAgentAllocationResults(leagueId, fadId)}
+              >
+                View player-by-player results
+              </Link>
+            </p>
+          </Surface>
+        </>
+      ) : (
+        <FreeAgentDraftResultsContent
+          key={`${privacyEpoch}:${leagueId}:${fadId}`}
+          httpClient={context.session.httpClient}
+          leagueId={leagueId}
+          fadId={fadId}
+          timeZone={overview.timeZone}
+        />
+      )}
     </>
   );
 }
@@ -482,6 +527,7 @@ function DraftsFreeAgentArea({ context, leagueId }) {
   ) : (
     <FreeAgentDraftResultsExperience
       embedded
+      compact
       context={context}
       fadId={navigation.data.fadId}
       leagueId={leagueId}
@@ -1100,6 +1146,72 @@ export function CandidateCardPage() {
               Back to Drafts
             </Link>
           </p>
+        </>
+      )}
+    </FadGate>
+  );
+}
+
+export function FreeAgentDraftAllocationResultsPage() {
+  const { leagueId, fadId } = useParams();
+  const context = useFadContext(leagueId);
+  const realtime = useRealtime();
+  const overview = useQuery({
+    ...freeAgentDraftOverviewQuery(context.session.httpClient, leagueId, fadId),
+    enabled:
+      context.session.status === "authenticated" && Boolean(context.league),
+  });
+
+  return (
+    <FadGate context={context} title="Player-by-player allocation results">
+      {realtime.status === "reauthorizing" ? (
+        <Surface>
+          <LoadingBlock>Reauthorizing league-only allocation results…</LoadingBlock>
+        </Surface>
+      ) : overview.isPending ? (
+        <Surface>
+          <LoadingBlock>Loading allocation results…</LoadingBlock>
+        </Surface>
+      ) : overview.isError ? (
+        <Surface>
+          <ErrorBlock
+            error={overview.error}
+            fallback="The Free Agent Draft could not be loaded."
+          />
+        </Surface>
+      ) : PREPARATION_PHASES.has(overview.data.phase) ? (
+        <Navigate replace to={routePaths.leagueFreeAgentDrafts(leagueId)} />
+      ) : (
+        <>
+          <OverviewHero
+            compact
+            overview={overview.data}
+            observedAtClientMs={overview.dataUpdatedAt}
+            title="Player-by-player allocation results"
+          />
+          <Surface className={styles.panel}>
+            <p className="hl-eyebrow">Detailed result history</p>
+            <h2>Authoritative allocation decisions</h2>
+            <p>
+              This read-only view contains the complete offer rankings, contract
+              values, decision reasons, winners, and terminal draw evidence.
+            </p>
+            <p>
+              <Link
+                className="hl-button hl-button--secondary"
+                to={routePaths.leagueFreeAgentDrafts(leagueId)}
+              >
+                Back to team results
+              </Link>
+            </p>
+          </Surface>
+          <FreeAgentDraftAllocationResults
+            key={`${realtime.privacyEpoch}:${leagueId}:${fadId}:allocations`}
+            httpClient={context.session.httpClient}
+            leagueId={leagueId}
+            fadId={fadId}
+            timeZone={overview.data.timeZone}
+          />
         </>
       )}
     </FadGate>

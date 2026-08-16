@@ -16,6 +16,9 @@ describe("draft and FAD route paths", () => {
     expect(routePaths.draftFreeAgentCard("league/1", "fad 2", "team/3")).toBe(
       "/leagues/league%2F1/drafts/free-agent/fad%202/cards/team%2F3"
     );
+    expect(routePaths.draftFreeAgentAllocationResults("league/1", "fad 2")).toBe(
+      "/leagues/league%2F1/drafts/free-agent/fad%202/results"
+    );
     expect(routePaths.leagueFreeAgentDraft("league/1")).toBe(
       "/leagues/league%2F1/free-agent-draft"
     );
@@ -39,6 +42,7 @@ describe("draft and FAD route paths", () => {
   it.each([
     ["leagueDrafts", [" "]],
     ["draftFreeAgentCard", ["league", "fad", ""]],
+    ["draftFreeAgentAllocationResults", ["league", ""]],
     ["leagueFreeAgentDraft", [" "]],
     ["freeAgentDraft", ["league", ""]],
     ["freeAgentDraftCard", ["league", "fad", ""]],

@@ -18,6 +18,7 @@ import {
   CandidateCardPage,
   CurrentFreeAgentDraftPage,
   DraftsPage,
+  FreeAgentDraftAllocationResultsPage,
   FreeAgentDraftPage,
   FreeAgentDraftResultsPage,
 } from "./FreeAgentDraftPages.jsx";
@@ -739,6 +740,10 @@ function renderDraftsRoute(fetchImpl, path = routePaths.leagueDrafts(leagueId)) 
           path="/leagues/:leagueId/drafts/free-agent/:fadId/cards/:teamId"
           element={<CandidateCardPage />}
         />
+        <Route
+          path="/leagues/:leagueId/drafts/free-agent/:fadId/results"
+          element={<FreeAgentDraftAllocationResultsPage />}
+        />
       </Routes>
     </RealtimeContext.Provider>,
     {
@@ -803,7 +808,23 @@ describe("league Drafts area", () => {
         return envelope(completedOverview());
       }
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
-        return collectionEnvelope([publishedSummary()]);
+        const summary = publishedSummary();
+        return collectionEnvelope([
+          {
+            ...summary,
+            outcomeCounts: {
+              ...summary.outcomeCounts,
+              automaticWins: 1,
+              restrictedWins: 2,
+              fallbackWins: 3,
+              losses: 4,
+              fallbackNoWinner: 1,
+              invalidOffers: 2,
+              restrictedPending: 1,
+              fallbackPending: 1,
+            },
+          },
+        ]);
       }
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
         return collectionEnvelope([pendingAllocationResult()]);
@@ -824,8 +845,26 @@ describe("league Drafts area", () => {
     expect(
       await screen.findByRole("heading", { name: "Free Agent Draft results" })
     ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Team results" })).toBeInTheDocument();
     expect(screen.getByText(/authoritative allocation outcome/i)).toBeInTheDocument();
+    const timing = screen.getByText("Draft timing details").closest("details");
+    expect(timing).not.toHaveAttribute("open");
+    expect(
+      screen.getByRole("link", { name: "View player-by-player results" })
+    ).toHaveAttribute(
+      "href",
+      routePaths.draftFreeAgentAllocationResults(leagueId, fadId)
+    );
+    expect(screen.queryByRole("heading", { name: "Allocation results" })).toBeNull();
+    expect(
+      requests.some((pathname) =>
+        pathname.endsWith(`/free-agent-drafts/${fadId}/results`)
+      )
+    ).toBe(false);
     const cardLink = await screen.findByRole("link", { name: /Candidate Owls/ });
+    expect(screen.getByText("6 obtained", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("7 not obtained", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("2 pending", { exact: true })).toBeInTheDocument();
     expect(cardLink).toHaveAttribute(
       "href",
       routePaths.draftFreeAgentCard(leagueId, fadId, teamId)
@@ -846,6 +885,50 @@ describe("league Drafts area", () => {
     );
     expect(
       requests.some((pathname) => pathname.endsWith(`/candidate-cards/${teamId}/private`))
+    ).toBe(false);
+  });
+
+  it("loads exhaustive allocation history only after deliberate selection", async () => {
+    const requests = [];
+    const fetchImpl = baseFetch((parsed) => {
+      requests.push(parsed.pathname);
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        return envelope(completedOverview());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        return collectionEnvelope([pendingAllocationResult()]);
+      }
+      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
+        return envelope(teamsFound());
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderDraftsRoute(
+      fetchImpl,
+      routePaths.draftFreeAgentAllocationResults(leagueId, fadId)
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Player-by-player allocation results",
+      })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Allocation results" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Pending Player")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to team results" })).toHaveAttribute(
+      "href",
+      routePaths.leagueFreeAgentDrafts(leagueId)
+    );
+    expect(
+      requests.some((pathname) =>
+        pathname.endsWith(`/free-agent-drafts/${fadId}/results`)
+      )
+    ).toBe(true);
+    expect(
+      requests.some((pathname) => pathname.endsWith("/candidate-cards"))
     ).toBe(false);
   });
 
