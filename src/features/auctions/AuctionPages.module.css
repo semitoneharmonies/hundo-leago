@@ -1,6 +1,7 @@
 .page {
   display: grid;
   gap: 1.25rem;
+  min-width: 0;
 }
 
 .panel,
