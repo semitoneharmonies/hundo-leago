@@ -25,3 +25,8 @@
   for = "/index.html"
   [headers.values]
     Cache-Control = "no-store"
+
+[[headers]]
+  for = "/leagues/*"
+  [headers.values]
+    Cache-Control = "no-store"

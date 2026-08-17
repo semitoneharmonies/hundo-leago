@@ -609,10 +609,17 @@ export function LeagueStandingsPage() {
     ...standingsQuery(context.session.httpClient, leagueId, context.seasonId),
     enabled,
   });
+  const teams = useQuery({
+    ...leagueTeamsQuery(context.session.httpClient, leagueId),
+    enabled: context.session.status === "authenticated" && Boolean(context.league),
+  });
+  const currentTeams = new Map(
+    (teams.data || []).map((team) => [team.id, team])
+  );
   return (
     <CompetitionGate context={context} title="Standings">
-      {standings.isPending ? <Surface><LoadingBlock>Loading official standings…</LoadingBlock></Surface>
-        : standings.isError ? <ErrorMessage error={standings.error} />
+      {standings.isPending || teams.isPending ? <Surface><LoadingBlock>Loading official standings…</LoadingBlock></Surface>
+        : standings.isError || teams.isError ? <ErrorMessage error={standings.error || teams.error} />
           : (
             <>
               <Health health={standings.data.health} />
@@ -626,9 +633,18 @@ export function LeagueStandingsPage() {
                         <th>T</th><th>PTS</th><th>PCT</th><th>PF</th><th>PA</th><th>DIFF</th>
                       </tr>
                     </thead>
-                    <tbody>{standings.data.rows.map((item) => (
-                      <tr key={item.teamId}>
-                        <td>{item.rank}</td><th scope="row">{item.teamDisplayName}</th>
+                    <tbody>{standings.data.rows.map((item) => {
+                      const team = currentTeams.get(item.teamId) || null;
+                      return (
+                      <tr
+                        className="hl-standings-team-row"
+                        key={item.teamId}
+                        style={{
+                          "--standings-primary": team?.primaryColour || "#16324f",
+                          "--standings-secondary": team?.secondaryColour || "#f7f7f7",
+                        }}
+                      >
+                        <td>{item.rank}</td><th scope="row">{team?.name || item.teamDisplayName}</th>
                         <td>{item.gamesPlayed}</td><td>{item.wins}</td><td>{item.losses}</td>
                         <td>{item.ties}</td><td>{item.standingsPoints}</td>
                         <td>{points(item.pointsPercentageHundredths)}%</td>
@@ -636,7 +652,8 @@ export function LeagueStandingsPage() {
                         <td>{points(item.fantasyPointsAgainstHundredths)}</td>
                         <td>{points(item.fantasyPointsDifferentialHundredths)}</td>
                       </tr>
-                    ))}</tbody>
+                      );
+                    })}</tbody>
                   </table>
                 </TableScroll>
                 </Surface>

@@ -20,6 +20,7 @@ import {
 const UUID_V4 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SLOT_KEY = /^(?:F(?:0[1-9]|1[0-2])|D0[1-6]|B0[1-4])$/;
+const DEADLINE_PROCESSING_REFETCH_MS = 2_000;
 
 function identifier(value, description) {
   if (typeof value !== "string" || !UUID_V4.test(value)) {
@@ -253,6 +254,10 @@ export function freeAgentDraftOverviewQuery(httpClient, leagueId, fadId) {
       return data;
     },
     meta: commonMeta(leagueId),
+    refetchInterval: (query) =>
+      query.state.data?.phase === "deadline_processing"
+        ? DEADLINE_PROCESSING_REFETCH_MS
+        : false,
     staleTime: 5_000,
   });
 }

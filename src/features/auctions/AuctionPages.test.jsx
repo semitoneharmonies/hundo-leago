@@ -1162,6 +1162,8 @@ describe("FAD-16 auction pages", () => {
       "/leagues/:leagueId/auctions/:auctionId",
       <AuctionDetailPage />
     );
+    expect(await screen.findByText(/2 bids placed/i)).toBeInTheDocument();
+    expect(screen.queryByText("Original eligible Candidate-tie teams")).not.toBeInTheDocument();
     expect(await screen.findByText(/cooldown is still active/i)).toBeInTheDocument();
     expect(screen.getByText(/used every manager edit/i)).toBeInTheDocument();
     expect(screen.getAllByText("Removed from restricted participation")).toHaveLength(2);

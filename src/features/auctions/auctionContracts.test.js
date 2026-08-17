@@ -305,6 +305,14 @@ describe("auction response contracts", () => {
     expect(validateAuctionCollection([ordinaryActive(), resolvedFad()])).toBe(true);
   });
 
+  it("accepts a restricted manager projection with the eligible-team identities hidden", () => {
+    const auction = restrictedActive();
+    auction.eligibleTeams = [];
+
+    expect(validateAuction(auction)).toBe(true);
+    expect(auction.viewerTeams[0].participantStatus).toBe("active");
+  });
+
   it("keeps restricted minimums distinct from bids and rejects leaked administrative values", () => {
     const auction = restrictedActive();
     auction.administrativeBids = [

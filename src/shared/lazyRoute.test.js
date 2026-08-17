@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  buildLazyRouteReloadUrl,
   isLazyRouteLoadError,
   loadLazyNamedRoute,
 } from "./lazyRoute.js";
@@ -17,6 +18,17 @@ function memoryStorage(initial = {}) {
 const marker = "hundo:lazy-route-reload:v1:LeagueSelectionPage";
 
 describe("lazy route recovery", () => {
+  it("builds a cache-busted hard-navigation URL without losing the route", () => {
+    expect(
+      buildLazyRouteReloadUrl(
+        "https://staging.hundoleago.com/leagues/league-1/drafts/free-agent?tab=results#players",
+        1723900000000
+      )
+    ).toBe(
+      "https://staging.hundoleago.com/leagues/league-1/drafts/free-agent?tab=results&_hundo_reload=1723900000000#players"
+    );
+  });
+
   it("recognizes deployed route-chunk load failures", () => {
     expect(
       isLazyRouteLoadError(
@@ -28,6 +40,11 @@ describe("lazy route recovery", () => {
     expect(isLazyRouteLoadError(new Error("private render failure"))).toBe(
       false
     );
+    expect(
+      isLazyRouteLoadError(
+        new Error("Unable to preload CSS for /assets/AuctionPages-old.css")
+      )
+    ).toBe(true);
   });
 
   it("hard reloads once when an old tab cannot load its route chunk", async () => {

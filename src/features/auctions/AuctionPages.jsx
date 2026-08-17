@@ -809,7 +809,8 @@ function AuctionCard({ auction, leagueId, timeZone }) {
         </StatusBadge>
       </div>
       <p>
-        {auction.bidCount} sealed {auction.bidCount === 1 ? "bid" : "bids"} from {auction.participatingTeamCount} participating {auction.participatingTeamCount === 1 ? "team" : "teams"}. Competing values remain hidden while active.
+        {auction.bidCount} {auction.bidCount === 1 ? "bid" : "bids"} placed.
+        Bidder identities and competing values remain hidden while active.
       </p>
       <AuctionTiming auction={auction} timeZone={timeZone} />
       <MinimumNotice auction={auction} />
@@ -1761,7 +1762,9 @@ function AuctionDetailContent({ auction, context, leagueId }) {
           </StatusBadge>
         </div>
         <p>
-          {auction.bidCount} sealed {auction.bidCount === 1 ? "bid" : "bids"} from {auction.participatingTeamCount} participating {auction.participatingTeamCount === 1 ? "team" : "teams"}. Only each currently authorized team’s own value is shown here while active.
+          {auction.bidCount} {auction.bidCount === 1 ? "bid" : "bids"} placed.
+          Bidder identities remain hidden; only each currently authorized
+          team’s own value is shown here while active.
         </p>
         <AuctionTiming auction={auction} timeZone={timeZone} />
         {auction.sourceKind !== "ordinary_weekly" && auction.status === "active" && (
@@ -1772,21 +1775,6 @@ function AuctionDetailContent({ auction, context, leagueId }) {
           </p>
         )}
         <MinimumNotice auction={auction} />
-        {auction.sourceKind === "fad_restricted" && (
-          <div className={styles.eligibleTeams}>
-            <strong>Original eligible Candidate-tie teams</strong>
-            <ul>
-              {auction.eligibleTeams.map((team) => (
-                <li key={team.teamId}>{teamName(team)}</li>
-              ))}
-            </ul>
-            <small>
-              This public allowlist does not imply that a team currently has a
-              bid or remains active; current managed-team eligibility below is
-              server-provided.
-            </small>
-          </div>
-        )}
       </Surface>
       <Surface className={styles.panel} aria-labelledby="managed-team-actions-title">
         <div className={styles.panelHeader}>

@@ -42,6 +42,7 @@ import {
   standingsQuery,
 } from "../competition/competitionQueries.js";
 import { publicRosterQuery } from "../rosters/publicRosterQueries.js";
+import { TradeBlockPanel } from "../transactions/TradeBlockPanel.jsx";
 import {
   activityQuery,
   tradesQuery,
@@ -1439,6 +1440,14 @@ export function LeagueDashboard({ league, teams, session }) {
           </aside>
         </div>
       )}
+
+      <TradeBlockPanel
+        enabled={enabled}
+        httpClient={session.httpClient}
+        leagueId={leagueId}
+        showTradesLink
+        teams={teams}
+      />
 
       <ActivityPanel
         leagueId={leagueId}

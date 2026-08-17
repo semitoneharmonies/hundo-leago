@@ -1,4 +1,5 @@
 const ROUTE_RELOAD_PREFIX = "hundo:lazy-route-reload:v1:";
+const ROUTE_RELOAD_QUERY_PARAM = "_hundo_reload";
 
 function browserSessionStorage() {
   try {
@@ -9,13 +10,23 @@ function browserSessionStorage() {
 }
 
 function browserReload() {
-  globalThis.location?.reload();
+  const currentUrl = globalThis.location?.href;
+  if (!currentUrl || typeof globalThis.location?.replace !== "function") {
+    throw new Error("A browser navigation is required to reload this route.");
+  }
+  globalThis.location.replace(buildLazyRouteReloadUrl(currentUrl));
+}
+
+export function buildLazyRouteReloadUrl(currentUrl, nonce = Date.now()) {
+  const reloadUrl = new URL(currentUrl);
+  reloadUrl.searchParams.set(ROUTE_RELOAD_QUERY_PARAM, String(nonce));
+  return reloadUrl.href;
 }
 
 export function isLazyRouteLoadError(error) {
   if (!(error instanceof Error)) return false;
   if (error.name === "ChunkLoadError") return true;
-  return /(?:failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed|loading chunk .+ failed)/i.test(
+  return /(?:failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed|loading chunk .+ failed|unable to preload css)/i.test(
     error.message
   );
 }

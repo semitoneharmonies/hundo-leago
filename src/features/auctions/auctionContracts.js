@@ -378,7 +378,9 @@ function viewerTeams(value, sourceKind, eligibleIds, location) {
         `${rowLocation}.eligible is inconsistent.`
       );
       contract(
-        row.participantStatus === null || eligibleIds.has(row.teamId),
+        row.participantStatus === null ||
+          eligibleIds.size === 0 ||
+          eligibleIds.has(row.teamId),
         `${rowLocation}.participantStatus is inconsistent.`
       );
     } else {

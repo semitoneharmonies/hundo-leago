@@ -695,7 +695,7 @@ describe("M6-12 authenticated competition pages", () => {
         sourceResultVersion: 1,
         rows: [{
           teamId: homeId,
-          teamDisplayName: "Complete Team",
+          teamDisplayName: "Original Team Name",
           rank: 1,
           gamesPlayed: 1,
           wins: 1,
@@ -709,10 +709,19 @@ describe("M6-12 authenticated competition pages", () => {
         }],
         health: health("fresh"),
       });
+      if (path === `/api/v1/leagues/${leagueId}/teams`) return envelope({
+        code: "TEAMS_FOUND",
+        teams: [leagueTeam(homeId, "Current Team Name", "#112233", "#ddeeff")],
+      });
       throw new Error(`Unexpected request: ${path}`);
     });
     renderPage(`/leagues/${leagueId}/standings`, "/leagues/:leagueId/standings", <LeagueStandingsPage />, fetchImpl);
-    const row = await screen.findByRole("row", { name: /Complete Team/ });
+    const row = await screen.findByRole("row", { name: /Current Team Name/ });
+    expect(screen.queryByText("Original Team Name")).not.toBeInTheDocument();
+    expect(row).toHaveStyle({
+      "--standings-primary": "#112233",
+      "--standings-secondary": "#ddeeff",
+    });
     expect(
       screen.getByRole("region", { name: "League standings" })
     ).toHaveAttribute("tabindex", "0");
@@ -730,6 +739,10 @@ describe("M6-12 authenticated competition pages", () => {
       if (path === `${prefix}/standings`) return envelope({
         code: "MATCHUP_STANDINGS_FOUND", leagueId, seasonId, finalizedResultCount: 0,
         sourceResultVersion: 0, rows: [], health: health("fresh"),
+      });
+      if (path === `/api/v1/leagues/${leagueId}/teams`) return envelope({
+        code: "TEAMS_FOUND",
+        teams: [],
       });
       throw new Error(`Unexpected request: ${path}`);
     });

@@ -127,9 +127,14 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
       );
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: leagueKeys.detail(leagueId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.detail(leagueId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.teams(leagueId),
+        }),
+      ]);
       setNameOverride(null);
       setPrimaryColourOverride(null);
       setSecondaryColourOverride(null);

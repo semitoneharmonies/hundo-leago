@@ -2943,12 +2943,80 @@ textarea {
 }
 
 .hl-status-history li {
+  display: grid;
+  gap: 3px;
   padding: 9px 0;
   border-bottom: 1px solid var(--hl-border);
   color: var(--hl-muted-foreground);
   font-family: var(--hl-font-mono);
   font-size: 0.57rem;
-  text-transform: capitalize;
+}
+
+.hl-trade-block {
+  display: grid;
+  gap: 10px;
+}
+
+.hl-trade-block__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hl-trade-block__heading h2,
+.hl-trade-block__heading p,
+.hl-trade-block > p {
+  margin: 0;
+}
+
+.hl-trade-block__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hl-trade-block__list li {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--trade-block-primary) 45%, var(--hl-border));
+  border-radius: var(--hl-radius-md);
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--trade-block-primary) 24%, var(--hl-card)),
+    color-mix(in srgb, var(--trade-block-secondary) 10%, var(--hl-card)) 50%,
+    var(--hl-card)
+  );
+}
+
+.hl-trade-block__list a {
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.hl-trade-block__list a:hover strong {
+  color: var(--hl-accent);
+}
+
+.hl-trade-block__list span,
+.hl-trade-block__empty {
+  color: var(--hl-muted-foreground);
+  font-size: 0.6rem;
+}
+
+.hl-status-history strong {
+  color: var(--hl-foreground);
+  font-family: var(--hl-font-body);
+  font-size: 0.63rem;
+}
+
+.hl-status-history time {
+  color: var(--hl-muted-foreground);
 }
 
 .hl-activity-timeline li {
@@ -3303,8 +3371,90 @@ textarea {
   text-align: center;
 }
 
+.hl-standings-table tbody .hl-standings-team-row {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--standings-primary) 34%, var(--hl-card)) 0%,
+    color-mix(in srgb, var(--standings-secondary) 18%, var(--hl-card)) 32%,
+    var(--hl-card) 76%
+  );
+  color: var(--hl-foreground);
+}
+
+.hl-activity-timeline > .hl-activity-entry {
+  margin: 5px 0;
+  border: 1px solid var(--hl-border);
+  border-radius: var(--hl-radius-md);
+  background: var(--hl-panel);
+}
+
+.hl-activity-timeline > .hl-activity-entry--trade {
+  border-color: color-mix(in srgb, #22c55e 45%, var(--hl-border));
+  background: color-mix(in srgb, #22c55e 9%, var(--hl-panel));
+}
+
+.hl-activity-timeline > .hl-activity-entry--auction {
+  border-color: color-mix(in srgb, #eab308 48%, var(--hl-border));
+  background: color-mix(in srgb, #eab308 10%, var(--hl-panel));
+}
+
+.hl-activity-timeline > .hl-activity-entry--buyout {
+  border-color: color-mix(in srgb, #a855f7 48%, var(--hl-border));
+  background: color-mix(in srgb, #a855f7 10%, var(--hl-panel));
+}
+
+.hl-activity-timeline > .hl-activity-entry--commissioner {
+  border-color: color-mix(in srgb, #06b6d4 48%, var(--hl-border));
+  background: color-mix(in srgb, #06b6d4 9%, var(--hl-panel));
+}
+
+.hl-activity-timeline > .hl-activity-entry--team,
+.hl-activity-timeline > .hl-activity-entry--competition {
+  border-color: color-mix(in srgb, #3b82f6 42%, var(--hl-border));
+  background: color-mix(in srgb, #3b82f6 8%, var(--hl-panel));
+}
+
+.hl-activity-filter {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.hl-activity-filter h2 {
+  margin: 0;
+  font-family: var(--hl-font-display);
+}
+
+.hl-activity-assets {
+  display: grid;
+  gap: 5px;
+  margin-top: 5px;
+  color: var(--hl-muted-foreground);
+  font-size: 0.6rem;
+}
+
+.hl-activity-assets > span {
+  color: var(--hl-foreground);
+  font-weight: 700;
+}
+
+.hl-activity-assets ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.hl-activity-assets li {
+  display: list-item;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .hl-standings-table tbody tr:first-child > * {
-  background: rgba(249, 115, 22, 0.035);
+  box-shadow: inset 0 1px rgba(249, 115, 22, 0.24);
 }
 
 .hl-standings-note {

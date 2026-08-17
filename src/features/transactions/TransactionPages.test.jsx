@@ -232,6 +232,7 @@ describe("M5-11 authenticated transaction pages", () => {
     });
     renderPage(`/leagues/${leagueId}/trades`, "/leagues/:leagueId/trades", <TradesPage />, fetchImpl);
     expect(await screen.findByRole("heading", { name: "New trade proposal" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "League trade block" })).toBeInTheDocument();
     expect(screen.getAllByRole("option", { name: "Retention" })).toHaveLength(2);
     expect(screen.getByText("No proposals in this view.")).toBeInTheDocument();
   });
@@ -643,10 +644,10 @@ describe("M5-11 authenticated transaction pages", () => {
     const audit = within(entry);
 
     expect(audit.getByText("Managed Team")).toBeInTheDocument();
-    expect(audit.getByText("Technical record")).toBeInTheDocument();
-    expect(audit.getByText("Commissioner roster corrected")).toBeInTheDocument();
-    expect(audit.getByText("Commissioner")).toBeInTheDocument();
-    expect(audit.getByText(assetId)).toBeInTheDocument();
+    expect(audit.queryByText("Technical record")).not.toBeInTheDocument();
+    expect(audit.queryByText("Authority")).not.toBeInTheDocument();
+    expect(audit.queryByText("Activity ID")).not.toBeInTheDocument();
+    expect(entry).toHaveClass("hl-activity-entry--commissioner");
     expect(audit.getByText(/Roster category: Active/)).toBeInTheDocument();
     expect(audit.getByText(/Roster category: Bench/)).toBeInTheDocument();
     expect(audit.getByText("TEAM ROSTER ILLEGAL")).toBeInTheDocument();
@@ -674,5 +675,81 @@ describe("M5-11 authenticated transaction pages", () => {
     ]) {
       expect(entry).not.toHaveTextContent(hiddenValue);
     }
+  });
+
+  it("summarizes trade participants and moved assets, then filters by event type", async () => {
+    const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/activity`) return envelope({
+        code: "LEAGUE_ACTIVITY_FOUND",
+        activity: [
+          {
+            id: assetId,
+            leagueId,
+            seasonId,
+            type: "trade_completed",
+            actor: { userId: actorUserId, authority: "manager" },
+            teamId: teamA,
+            playerId: null,
+            related: { type: "trade", id: tradeId },
+            summary: "Trade completed.",
+            reason: null,
+            metadata: {
+              proposingTeamId: teamB,
+              receivingTeamId: teamA,
+              assets: [{
+                id: ownershipId,
+                assetType: "contract",
+                sourceTeamId: teamB,
+                destinationTeamId: teamA,
+                executionSnapshot: { player: { name: "Current Player Name" } },
+              }],
+            },
+            occurredAtMs: 1,
+          },
+          {
+            id: auctionId,
+            leagueId,
+            seasonId,
+            type: "auction_resolved",
+            actor: { userId: null, authority: "system" },
+            teamId: null,
+            playerId: playerSearchId,
+            related: { type: "auction", id: auctionId },
+            summary: "Auction won and contract assigned.",
+            reason: null,
+            metadata: null,
+            occurredAtMs: 2,
+          },
+        ],
+        page: { limit: 25, nextCursor: null },
+      });
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const view = renderPage(
+      `/leagues/${leagueId}/activity`,
+      "/leagues/:leagueId/activity",
+      <ActivityPage />,
+      fetchImpl
+    );
+
+    const trade = await screen.findByText(
+      "Managed Team accepted a trade from Other Team."
+    );
+    expect(trade.closest("li")).toHaveClass("hl-activity-entry--trade");
+    expect(
+      screen.getByText(
+        "Current Player Name moved from Other Team to Managed Team."
+      )
+    ).toBeInTheDocument();
+
+    await view.user.selectOptions(
+      screen.getByRole("combobox", { name: "Event type" }),
+      "auction"
+    );
+    expect(screen.queryByText(/accepted a trade/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Auction won and contract assigned.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Auction won and contract assigned.").closest("li")
+    ).toHaveClass("hl-activity-entry--auction");
   });
 });

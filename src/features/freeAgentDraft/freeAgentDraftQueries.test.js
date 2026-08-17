@@ -87,6 +87,26 @@ describe("FAD query keys and options", () => {
     })).toBe("next");
   });
 
+  it("polls only while deadline publication is still processing", () => {
+    const overview = freeAgentDraftOverviewQuery(
+      httpClient(),
+      IDS.league,
+      IDS.fad
+    );
+
+    expect(
+      overview.refetchInterval({
+        state: { data: { phase: "deadline_processing" } },
+      })
+    ).toBe(2_000);
+    expect(
+      overview.refetchInterval({ state: { data: { phase: "allocating" } } })
+    ).toBe(false);
+    expect(
+      overview.refetchInterval({ state: { data: { phase: "completed" } } })
+    ).toBe(false);
+  });
+
   it("keeps private cards separate from history and binds exact authorization metadata", () => {
     const client = httpClient();
     const privateQuery = privateCandidateCardQuery(

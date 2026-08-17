@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -392,6 +392,12 @@ describe("league selection", () => {
       "--team-secondary": "#f7f7f7",
     });
     expect(screen.getByText(/managed by you/i)).toBeInTheDocument();
+    const tradeBlock = screen
+      .getByRole("heading", { name: "League trade block" })
+      .closest("section");
+    expect(
+      within(tradeBlock).getByText("No players are on the trade block right now.")
+    ).toBeInTheDocument();
   });
 
   it("renders a distinct teams index with roster links", async () => {

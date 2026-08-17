@@ -44,6 +44,7 @@ import {
   tradesQuery,
   transactionKeys,
 } from "./transactionQueries.js";
+import { TradeBlockPanel } from "./TradeBlockPanel.jsx";
 
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
 const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" };
@@ -145,7 +146,84 @@ function activityMetadataRows(metadata) {
   return rows;
 }
 
-function ActivityEntry({ item, teamName }) {
+const ACTIVITY_FILTERS = Object.freeze([
+  ["all", "All events"],
+  ["trade", "Trades"],
+  ["auction", "Auctions"],
+  ["buyout", "Buyouts"],
+  ["commissioner", "Commissioner edits"],
+  ["team", "Teams and rosters"],
+  ["competition", "Competition and drafts"],
+  ["other", "Other events"],
+]);
+
+function activityCategory(type) {
+  const value = String(type || "").toLowerCase();
+  if (value.includes("trade")) return "trade";
+  if (value.includes("auction")) return "auction";
+  if (value.includes("buyout")) return "buyout";
+  if (value.includes("commissioner") || value.includes("correction")) {
+    return "commissioner";
+  }
+  if (value.includes("team") || value.includes("roster") || value.includes("ownership")) {
+    return "team";
+  }
+  if (value.includes("matchup") || value.includes("standings") || value.includes("draft")) {
+    return "competition";
+  }
+  return "other";
+}
+
+function namedTeam(teamNames, teamId, fallback = "A team") {
+  return typeof teamId === "string" ? teamNames.get(teamId) || fallback : fallback;
+}
+
+function activityTitle(item, teamNames) {
+  const metadata = item.metadata || {};
+  if (activityCategory(item.type) !== "trade") return item.summary;
+  const proposing = namedTeam(teamNames, metadata.proposingTeamId, "The proposing team");
+  const receiving = namedTeam(teamNames, metadata.receivingTeamId, "the receiving team");
+  switch (item.type) {
+    case "trade_proposal_created":
+      return `${proposing} sent a trade proposal to ${receiving}.`;
+    case "trade_proposal_rejected":
+      return `${receiving} declined a trade proposal from ${proposing}.`;
+    case "trade_proposal_cancelled":
+      return `${proposing} cancelled its trade proposal to ${receiving}.`;
+    case "trade_completed":
+      return `${receiving} accepted a trade from ${proposing}.`;
+    case "trade_proposal_expired":
+      return `The trade proposal from ${proposing} to ${receiving} expired.`;
+    default:
+      return item.summary;
+  }
+}
+
+function activityAssetMovements(item, teamNames) {
+  if (activityCategory(item.type) !== "trade" || !Array.isArray(item.metadata?.assets)) {
+    return [];
+  }
+  return item.metadata.assets.flatMap((asset) => {
+    if (!asset || typeof asset !== "object") return [];
+    const snapshot = asset.executionSnapshot || asset.snapshot || asset.proposalSnapshot || {};
+    const type = asset.assetType || asset.type || "asset";
+    const playerName = snapshot.player?.name || snapshot.player?.fullName || null;
+    const title = playerName ||
+      (type === "draft_pick"
+        ? `${snapshot.targetSeasonLabel || "Future"} Round ${snapshot.roundNumber || "?"} pick`
+        : type.includes("future_consideration")
+          ? "Future Considerations"
+          : activityWords(type));
+    const source = namedTeam(teamNames, asset.sourceTeamId, "one team");
+    const destination = namedTeam(teamNames, asset.destinationTeamId, "another team");
+    return [`${title} moved from ${source} to ${destination}.`];
+  });
+}
+
+function ActivityEntry({ item, teamNames }) {
+  const teamName = namedTeam(teamNames, item.teamId, null);
+  const category = activityCategory(item.type);
+  const assets = activityAssetMovements(item, teamNames);
   const rows = [
     ...(teamName ? [["Team", teamName]] : []),
     ...activityMetadataRows(item.metadata).filter(
@@ -154,10 +232,10 @@ function ActivityEntry({ item, teamName }) {
     ...(item.reason ? [["Reason", item.reason]] : []),
   ];
   return (
-    <li>
+    <li className={`hl-activity-entry hl-activity-entry--${category}`}>
       <span aria-hidden="true" />
       <div>
-        <strong>{item.summary}</strong>
+        <strong>{activityTitle(item, teamNames)}</strong>
         <time
           className="hl-activity-time"
           dateTime={new Date(item.occurredAtMs).toISOString()}
@@ -172,25 +250,12 @@ function ActivityEntry({ item, teamName }) {
             </div>
           ))}
         </dl>}
-        <details className="hl-technical-details">
-          <summary>Technical record</summary>
-          <dl style={activityDetails}>
-            <div style={activityDetailRow}>
-              <dt style={activityDetailTerm}>Action</dt>
-              <dd style={activityDetailValue}>{activityWords(item.type)}</dd>
-            </div>
-            <div style={activityDetailRow}>
-              <dt style={activityDetailTerm}>Authority</dt>
-              <dd style={activityDetailValue}>
-                {activityWords(item.actor.authority)}
-              </dd>
-            </div>
-            <div style={activityDetailRow}>
-              <dt style={activityDetailTerm}>Activity ID</dt>
-              <dd style={activityDetailValue}>{item.id}</dd>
-            </div>
-          </dl>
-        </details>
+        {assets.length > 0 && (
+          <div className="hl-activity-assets">
+            <span>Assets moved</span>
+            <ul>{assets.map((asset) => <li key={asset}>{asset}</li>)}</ul>
+          </div>
+        )}
       </div>
     </li>
   );
@@ -976,6 +1041,12 @@ export function TradesPage() {
   return (
     <LeaguePageState context={context} title="Trades">
       <NewTradeForm context={context} leagueId={leagueId} />
+      <TradeBlockPanel
+        enabled={context.session.status === "authenticated" && Boolean(context.league?.currentSeason) && !context.teams.isPending}
+        httpClient={context.session.httpClient}
+        leagueId={leagueId}
+        teams={context.teams.data || []}
+      />
       <label className="hl-field hl-compact-filter">Status <select value={status} onChange={(e) => setStatus(e.target.value)}><option value="pending">Pending</option><option value="all">All non-expired</option></select></label>
       {trades.isPending ? <Surface><LoadingBlock>Loading trades…</LoadingBlock></Surface> : trades.isError ? <ErrorMessage error={trades.error} /> : visible.length === 0 ? <Surface><EmptyBlock title="No proposals in this view." /></Surface> : (
         <Surface><ul className="hl-trade-list">{visible.map((trade) => {
@@ -1167,6 +1238,26 @@ function AcceptancePreview({ preview }) {
   );
 }
 
+function tradeHistorySummary(event, proposal) {
+  switch (event.type) {
+    case "proposal_created":
+      return `${proposal.proposingTeam.name} sent the proposal to ${proposal.receivingTeam.name}.`;
+    case "proposal_accepted":
+      return `${proposal.receivingTeam.name} accepted the proposal.`;
+    case "proposal_rejected":
+      return `${proposal.receivingTeam.name} declined the proposal.`;
+    case "proposal_cancelled":
+      return `${proposal.proposingTeam.name} cancelled the proposal.`;
+    case "proposal_expired":
+      return "The proposal expired without being accepted.";
+    case "proposal_completed":
+    case "trade_completed":
+      return "The trade completed and its assets moved.";
+    default:
+      return activityWords(event.type);
+  }
+}
+
 export function TradeDetailPage() {
   const { leagueId, tradeId } = useParams();
   const [searchParams] = useSearchParams();
@@ -1257,7 +1348,12 @@ export function TradeDetailPage() {
           <ErrorMessage error={previewReversal.error || recovery.error} />
         </div>}
         <h3>Status history</h3>
-        <ol className="hl-status-history">{proposal.history.map((event) => <li key={event.id}>{event.type.replaceAll("_", " ")} · {time(event.occurredAtMs)}</li>)}</ol>
+        <ol className="hl-status-history">{proposal.history.map((event) => (
+          <li key={event.id}>
+            <strong>{tradeHistorySummary(event, proposal)}</strong>
+            <time dateTime={new Date(event.occurredAtMs).toISOString()}>{time(event.occurredAtMs)}</time>
+          </li>
+        ))}</ol>
       </Surface>}
       <p className="hl-page-backlink"><Link to={routePaths.leagueTrades(leagueId)}>Back to trades</Link></p>
     </LeaguePageState>
@@ -1268,6 +1364,7 @@ export function ActivityPage() {
   const { leagueId } = useParams();
   const context = useLeagueContext(leagueId);
   const [cursor, setCursor] = useState(null);
+  const [eventFilter, setEventFilter] = useState("all");
   const activity = useQuery({
     ...activityQuery(context.session.httpClient, leagueId, cursor),
     enabled: context.session.status === "authenticated" && Boolean(context.league),
@@ -1275,10 +1372,24 @@ export function ActivityPage() {
   const teamNames = new Map(
     (context.teams.data || []).map((team) => [team.id, team.name])
   );
+  const visibleActivity = (activity.data?.activity || []).filter(
+    (item) => eventFilter === "all" || activityCategory(item.type) === eventFilter
+  );
   return (
     <LeaguePageState context={context} title="League Activity">
+      <Surface className="hl-activity-filter" aria-labelledby="activity-filter-title">
+        <h2 id="activity-filter-title">Filter league events</h2>
+        <label className="hl-field">
+          Event type
+          <select value={eventFilter} onChange={(event) => setEventFilter(event.target.value)}>
+            {ACTIVITY_FILTERS.map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+      </Surface>
       {activity.isPending ? <Surface><LoadingBlock>Loading activity…</LoadingBlock></Surface> : activity.isError ? <ErrorMessage error={activity.error} /> : <>
-        {activity.data.activity.length === 0 ? <Surface><EmptyBlock title="No activity on this page" /></Surface> : <Surface><ol className="hl-activity-timeline">{activity.data.activity.map((item) => <ActivityEntry key={item.id} item={item} teamName={teamNames.get(item.teamId) || null} />)}</ol></Surface>}
+        {visibleActivity.length === 0 ? <Surface><EmptyBlock title={activity.data.activity.length === 0 ? "No activity on this page" : "No events match this filter"} /></Surface> : <Surface><ol className="hl-activity-timeline">{visibleActivity.map((item) => <ActivityEntry key={item.id} item={item} teamNames={teamNames} />)}</ol></Surface>}
         <div className="hl-pagination">
         {activity.data.page.nextCursor && <button className="hl-button hl-button--quiet" onClick={() => setCursor(activity.data.page.nextCursor)}>Next page</button>}
         {cursor && <button className="hl-button hl-button--quiet" onClick={() => setCursor(null)}>First page</button>}
