@@ -17,6 +17,7 @@ import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { CandidateCardBuilder } from "./CandidateCardBuilder.jsx";
 import {
+  ActiveRestrictedTies,
   FreeAgentDraftAllocationResults,
   FreeAgentDraftResultsContent,
   PublishedCandidateCards,
@@ -403,6 +404,49 @@ function FreeAgentDraftResultsExperience({
         headingLevel={embedded ? "h2" : "h1"}
         compact={compact}
       />
+      {overview.phase === "rapid" && (
+        <>
+          <Surface
+            className={`${styles.panel} ${styles.rapidActionPanel}`}
+            as="section"
+            aria-labelledby="rapid-roster-title"
+          >
+            <div className={styles.panelHeader}>
+              <div>
+                <p className="hl-eyebrow">Fill remaining roster spots</p>
+                <h2 id="rapid-roster-title">Open rapid auctions</h2>
+              </div>
+              <StatusBadge tone="success">Open</StatusBadge>
+            </div>
+            <p>
+              You may nominate any eligible, unclaimed player during the rapid
+              phase—even if that player was not on a Candidate Card. A player
+              still in an unresolved allocation or restricted-tie path cannot
+              be nominated into an open rapid auction.
+            </p>
+            <div className={styles.rapidActions}>
+              <Link
+                className="hl-button hl-button--primary"
+                to={routePaths.leagueAuctions(leagueId)}
+              >
+                Nominate or join a rapid auction
+              </Link>
+              <Link
+                className="hl-button hl-button--secondary"
+                to={routePaths.leaguePlayers(leagueId)}
+              >
+                Browse players
+              </Link>
+            </div>
+          </Surface>
+          <ActiveRestrictedTies
+            key={`${privacyEpoch}:${leagueId}:${fadId}:restricted-ties`}
+            httpClient={context.session.httpClient}
+            leagueId={leagueId}
+            fadId={fadId}
+          />
+        </>
+      )}
       <Surface className={styles.panel}>
         <h2>{compact ? "Team results" : "Published history"}</h2>
         <p>

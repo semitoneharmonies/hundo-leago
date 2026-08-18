@@ -188,6 +188,19 @@
   margin: 0;
 }
 
+.rapidNominationGuide,
+.actionHint {
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgb(96 165 250 / 45%);
+  border-radius: 0.7rem;
+  background: rgb(30 64 175 / 16%);
+}
+
+.actionHint {
+  color: var(--hl-text-muted, #cbd5e1);
+}
+
 .confirmation {
   padding: 0.9rem;
   border: 1px solid rgb(245 158 11 / 62%);

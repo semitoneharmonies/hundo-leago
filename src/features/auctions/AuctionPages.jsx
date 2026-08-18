@@ -415,6 +415,7 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
   const confirmationId = useId();
   const feedbackId = useId();
   const searchAuthorityId = useId();
+  const actionHintId = useId();
   const prefilledPlayerId = searchParams.get("playerId");
   const validPrefill = UUID_V4.test(prefilledPlayerId || "");
   const prefilledPlayer = useQuery({
@@ -524,6 +525,13 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
     : openedAuctionId
       ? "The auction and your opening bid were accepted."
       : null;
+  const actionHint = !selectedStartTeam?.startAuction.allowed
+    ? null
+    : !selectedPlayer
+      ? "Select a player from the search results to continue."
+      : isFad && !confirmed
+        ? "Check the binding confirmation above to enable Start or queue auction."
+        : null;
 
   return (
     <Surface className={styles.panel} aria-labelledby="start-auction-title">
@@ -617,6 +625,13 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
             quarantine, FAD timing, team authority, contract rules, and the
             binding confirmation.
           </p>
+          {isFad && (
+            <p className={styles.rapidNominationGuide}>
+              <strong>Candidate Card not required.</strong>{" "}
+              An eligible, unclaimed player may be nominated during the rapid
+              phase even if the player did not appear on any Candidate Card.
+            </p>
+          )}
           {selectedStartTeam?.sourceKind === "fad_open_rapid" && (
             <>
               <div className={styles.timingNotice}>
@@ -655,8 +670,14 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
               {capabilityMessage(selectedStartTeam?.startAuction.reasonCode)}
             </p>
           )}
+          {actionHint && (
+            <p className={styles.actionHint} id={actionHintId} role="status">
+              {actionHint}
+            </p>
+          )}
           <div className={styles.actions}>
             <button
+              aria-describedby={actionHint ? actionHintId : feedbackId}
               className="hl-button hl-button--primary"
               disabled={
                 mutation.isPending ||

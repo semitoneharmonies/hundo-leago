@@ -78,10 +78,74 @@ function allocationOutcome(result) {
   return "Not obtained";
 }
 
-function AllocationResult({ result, teamNames }) {
+function managerLabel(team) {
+  return team.currentManager?.displayName || "No manager assigned";
+}
+
+function RestrictedTieParticipants({ participantTeamIds, teamDetails }) {
+  return (
+    <ul className={styles.restrictedParticipantList}>
+      {participantTeamIds.map((teamId) => {
+        const team = teamDetails.get(teamId);
+        return (
+          <li key={teamId}>
+            <strong>{team.name}</strong>
+            <span>Manager: {managerLabel(team)}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function RestrictedTieSummary({ leagueId, result, teamDetails, compact = false }) {
+  const restricted = result.restricted;
+  if (!restricted || restricted.participantTeamIds.length === 0) return null;
+
+  return (
+    <div className={styles.restrictedTieSummary}>
+      <div className={styles.restrictedTieHeader}>
+        <div>
+          <strong>{compact ? result.player.fullName : "Restricted Candidate tie"}</strong>
+          <span>
+            {money(restricted.minimumTotalValueCents)} over {restricted.minimumTermYears}{" "}
+            {restricted.minimumTermYears === 1 ? "year" : "years"} ·{" "}
+            {money(restricted.minimumAavCents)} AAV minimum
+          </span>
+        </div>
+        <StatusBadge tone="warning">
+          {restricted.status.replaceAll("_", " ")}
+        </StatusBadge>
+      </div>
+      <p>
+        Only the tied teams below may bid. Their Candidate Card offer is a
+        minimum, not an active bid or current leader; a manager must improve it
+        to contend.
+      </p>
+      <RestrictedTieParticipants
+        participantTeamIds={restricted.participantTeamIds}
+        teamDetails={teamDetails}
+      />
+      {restricted.auctionId && (
+        <p className={styles.restrictedTieAction}>
+          <Link
+            className="hl-button hl-button--secondary"
+            to={routePaths.auctionDetail(leagueId, restricted.auctionId)}
+          >
+            View restricted auction
+          </Link>
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AllocationResult({ leagueId, result, teamDetails }) {
   const titleId = `fad-allocation-${result.allocationId}`;
   const pending = result.status === "pending";
-  const winnerName = result.winner ? teamNames.get(result.winner.teamId) : null;
+  const winnerName = result.winner
+    ? teamDetails.get(result.winner.teamId)?.name
+    : null;
   const otherOffers = result.winner
     ? result.rankedOffers.filter(
         (offer) => offer.snapshotEntryId !== result.winner.snapshotEntryId
@@ -155,6 +219,12 @@ function AllocationResult({ result, teamNames }) {
         </p>
       )}
 
+      <RestrictedTieSummary
+        leagueId={leagueId}
+        result={result}
+        teamDetails={teamDetails}
+      />
+
       {hasMoreDetail && (
         <details className={styles.resultDisclosure}>
           <summary>
@@ -195,13 +265,6 @@ function AllocationResult({ result, teamNames }) {
                 </div>
               </>
             )}
-            {result.restricted && (
-              <p>
-                Restricted path:{" "}
-                <strong>{result.restricted.status.replaceAll("_", " ")}</strong>.
-                Candidate values are immutable minimums, not active bids or leaders.
-              </p>
-            )}
             {result.fallback && (
               <>
                 <p>
@@ -231,9 +294,9 @@ function AllocationResult({ result, teamNames }) {
                         : "Open rapid"}{" "}
                       auction —{` `}
                       {draw.drawReveal?.selectionUsed
-                        ? `${teamNames.get(
-                            draw.drawReveal.selectedTeamId
-                          )} was selected by the committed equal-chance draw`
+                        ? `${teamDetails.get(
+                          draw.drawReveal.selectedTeamId
+                          )?.name} was selected by the committed equal-chance draw`
                         : draw.drawReveal
                           ? "no random selection was used because there was no exact top tie"
                           : "correction is required before the draw can be revealed"}
@@ -340,6 +403,91 @@ export function PublishedCandidateCards({ httpClient, leagueId, fadId }) {
   );
 }
 
+export function ActiveRestrictedTies({ httpClient, leagueId, fadId }) {
+  const results = useInfiniteQuery(
+    freeAgentDraftResultsQuery(httpClient, leagueId, fadId, {
+      status: "restricted_active",
+      limit: 100,
+    })
+  );
+  const teams = useQuery(leagueTeamsQuery(httpClient, leagueId));
+  const allocations = results.data?.pages.flatMap((page) => page.items) || [];
+  const teamDetails = new Map(
+    (teams.data || []).map((leagueTeam) => [leagueTeam.id, leagueTeam])
+  );
+  const unresolvedTeamIdentity = allocations.some((result) =>
+    result.restricted?.participantTeamIds.some(
+      (teamId) => !teamDetails.has(teamId)
+    )
+  );
+
+  return (
+    <Surface
+      className={styles.panel}
+      as="section"
+      aria-labelledby="active-restricted-ties-title"
+    >
+      <div className={styles.panelHeader}>
+        <div>
+          <p className="hl-eyebrow">Candidate Card ties</p>
+          <h2 id="active-restricted-ties-title">Active restricted ties</h2>
+        </div>
+        {!results.isPending && !results.isError && (
+          <StatusBadge tone={allocations.length > 0 ? "warning" : "neutral"}>
+            {allocations.length} active
+          </StatusBadge>
+        )}
+      </div>
+      <p>
+        These players had an exact top Candidate Card tie. Only the listed
+        teams and managers are eligible to bid in each restricted auction.
+      </p>
+      {results.isPending || teams.isPending ? (
+        <LoadingBlock>Loading active ties and eligible managers…</LoadingBlock>
+      ) : results.isError ? (
+        <ErrorBlock
+          error={results.error}
+          fallback="Active restricted ties could not be loaded."
+        />
+      ) : teams.isError ? (
+        <ErrorBlock
+          error={teams.error}
+          fallback="Current manager identities could not be confirmed. Active ties remain hidden."
+        />
+      ) : unresolvedTeamIdentity ? (
+        <p className="hl-form-message is-error" role="alert">
+          An eligible tied team could not be resolved from the current
+          authorized league team list. Active ties remain hidden.
+        </p>
+      ) : allocations.length === 0 ? (
+        <p>No restricted Candidate Card ties are active.</p>
+      ) : (
+        <div className={styles.restrictedTieList}>
+          {allocations.map((result) => (
+            <RestrictedTieSummary
+              compact
+              key={result.allocationId}
+              leagueId={leagueId}
+              result={result}
+              teamDetails={teamDetails}
+            />
+          ))}
+        </div>
+      )}
+      {results.hasNextPage && (
+        <button
+          type="button"
+          className="hl-button hl-button--secondary"
+          disabled={results.isFetchingNextPage}
+          onClick={() => results.fetchNextPage()}
+        >
+          {results.isFetchingNextPage ? "Loading more…" : "Load more active ties"}
+        </button>
+      )}
+    </Surface>
+  );
+}
+
 export function FreeAgentDraftAllocationResults({
   httpClient,
   leagueId,
@@ -353,16 +501,19 @@ export function FreeAgentDraftAllocationResults({
   );
   const teams = useQuery(leagueTeamsQuery(httpClient, leagueId));
   const allocations = results.data?.pages.flatMap((page) => page.items) || [];
-  const teamNames = new Map(
-    (teams.data || []).map((leagueTeam) => [leagueTeam.id, leagueTeam.name])
+  const teamDetails = new Map(
+    (teams.data || []).map((leagueTeam) => [leagueTeam.id, leagueTeam])
   );
   const unresolvedTeamIdentity = allocations.some(
     (result) =>
-      (result.winner !== null && !teamNames.has(result.winner.teamId)) ||
+      (result.winner !== null && !teamDetails.has(result.winner.teamId)) ||
+      result.restricted?.participantTeamIds.some(
+        (teamId) => !teamDetails.has(teamId)
+      ) ||
       result.draws.some(
         (draw) =>
           Boolean(draw.drawReveal?.selectedTeamId) &&
-          !teamNames.has(draw.drawReveal.selectedTeamId)
+          !teamDetails.has(draw.drawReveal.selectedTeamId)
       )
   );
 
@@ -426,8 +577,9 @@ export function FreeAgentDraftAllocationResults({
             {allocations.map((result) => (
               <AllocationResult
                 key={result.allocationId}
+                leagueId={leagueId}
                 result={result}
-                teamNames={teamNames}
+                teamDetails={teamDetails}
               />
             ))}
           </div>

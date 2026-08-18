@@ -492,6 +492,13 @@ describe("FAD-16 auction pages", () => {
     expect(
       screen.getByText(/convenience catalog filter, not FAD eligibility authority/i)
     ).toBeInTheDocument();
+    expect(screen.getByText(/Candidate Card not required/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/did not appear on any Candidate Card/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Select a player from the search results to continue/i)
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/America\/Vancouver/).length).toBeGreaterThanOrEqual(2);
     expect(
       screen.getByText("Aug 12, 2026, 11:00 a.m. PDT (America/Vancouver)")
@@ -510,6 +517,9 @@ describe("FAD-16 auction pages", () => {
     await view.user.type(playerInput, "ada");
     await screen.findByRole("option", { name: /Ada Player/ });
     await view.user.keyboard("{ArrowDown}{Enter}");
+    expect(
+      screen.getByText(/Check the binding confirmation above to enable/i)
+    ).toBeInTheDocument();
     const aav = screen.getByLabelText("AAV (dollars per year)");
     await view.user.clear(aav);
     await view.user.type(aav, "4.00");

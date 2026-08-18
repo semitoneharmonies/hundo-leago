@@ -117,6 +117,17 @@
   color: var(--hl-text-muted, #94a3b8);
 }
 
+.rapidActionPanel {
+  border: 1px solid rgb(45 212 191 / 45%);
+  background: rgb(15 118 110 / 13%);
+}
+
+.rapidActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .notice,
 .warning,
 .error,
@@ -934,6 +945,68 @@
   margin-bottom: 0.55rem;
 }
 
+.restrictedTieList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.restrictedTieSummary {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid rgb(245 158 11 / 50%);
+  border-radius: 0.7rem;
+  background: rgb(120 53 15 / 18%);
+}
+
+.restrictedTieSummary p {
+  margin: 0;
+}
+
+.restrictedTieHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.restrictedTieHeader > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.restrictedTieHeader span,
+.restrictedParticipantList span {
+  color: var(--hl-text-muted, #94a3b8);
+  font-size: 0.82rem;
+}
+
+.restrictedParticipantList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.restrictedParticipantList li {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgb(148 163 184 / 24%);
+  border-radius: 0.55rem;
+  background: rgb(2 6 23 / 28%);
+}
+
+.restrictedTieAction {
+  justify-self: start;
+}
+
 .resultEvidence {
   display: grid;
   gap: 0.45rem;
@@ -1122,9 +1195,14 @@
 
   .slotActions,
   .editorActions,
-  .teamSelector {
+  .teamSelector,
+  .rapidActions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .rapidActions > * {
+    width: 100%;
   }
 
   .slotActions button,

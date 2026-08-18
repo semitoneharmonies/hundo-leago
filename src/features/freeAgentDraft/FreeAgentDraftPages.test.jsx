@@ -115,12 +115,19 @@ function team(id = teamId, name = "Candidate Owls") {
   };
 }
 
-function leagueTeam(id = teamId, name = "Candidate Owls") {
+function leagueTeam(id = teamId, name = "Candidate Owls", managerName = null) {
   return {
     id,
     leagueId,
     name,
-    currentManager: null,
+    currentManager: managerName
+      ? {
+          assignmentId: id,
+          userId: id,
+          displayName: managerName,
+          version: 1,
+        }
+      : null,
     version: 1,
   };
 }
@@ -587,6 +594,33 @@ function terminalOffer(id, idTeam, name) {
   };
 }
 
+function activeRestrictedAllocationResult() {
+  return {
+    allocationId: helpId,
+    allocationVersion: 2,
+    player: { playerId, fullName: "Tied Star", positionGroup: "F" },
+    status: "restricted_active",
+    decisionCode: "exact_total_and_term_tie",
+    rankedOffers: [
+      terminalOffer(entryId, teamId, "Candidate Owls"),
+      terminalOffer(revisionId, secondTeamId, "Second Team"),
+    ],
+    winner: null,
+    restricted: {
+      auctionId: restrictedAuctionId,
+      status: "open",
+      participantTeamIds: [teamId, secondTeamId],
+      minimumTotalValueCents: 600,
+      minimumTermYears: 2,
+      minimumAavCents: 300,
+    },
+    fallback: null,
+    draws: [],
+    recoveryStatus: null,
+    resolvedAtMs: null,
+  };
+}
+
 function noSelectionDraw(auctionId, auctionType) {
   return {
     auctionId,
@@ -770,6 +804,30 @@ function completedNavigation() {
   };
 }
 
+function rapidOverview() {
+  const data = publishedOverview();
+  return {
+    ...data,
+    status: "rapid",
+    phase: "rapid",
+    allocationCompletedAtMs: data.serverNowMs - 2_000,
+    counts: {
+      ...data.counts,
+      allocationsPending: 0,
+      restrictedPending: 1,
+      rapidAuctionsOpen: 1,
+    },
+  };
+}
+
+function rapidNavigation() {
+  return {
+    ...navigation({ managedCards: [] }),
+    phase: "rapid",
+    urgencyCode: "RAPID_AUCTIONS_ACTIVE",
+  };
+}
+
 function renderDraftsRoute(fetchImpl, path = routePaths.leagueDrafts(leagueId)) {
   return renderWithProviders(
     <RealtimeContext.Provider value={{ status: "disconnected", privacyEpoch: 0 }}>
@@ -926,6 +984,65 @@ describe("league Drafts area", () => {
     expect(
       requests.some((pathname) => pathname.endsWith(`/candidate-cards/${teamId}/private`))
     ).toBe(false);
+  });
+
+  it("shows rapid nomination rules and every active tie participant and manager", async () => {
+    const resultRequests = [];
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname.endsWith("/free-agent-drafts/navigation")) {
+        return envelope(rapidNavigation());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        return envelope(rapidOverview());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
+        return collectionEnvelope([publishedSummary()]);
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        resultRequests.push(parsed);
+        return collectionEnvelope([activeRestrictedAllocationResult()]);
+      }
+      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
+        return envelope(
+          teamsFound([
+            leagueTeam(teamId, "Candidate Owls", "Manager A"),
+            leagueTeam(secondTeamId, "Second Team", "Manager B"),
+          ])
+        );
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderDraftsRoute(
+      fetchImpl,
+      routePaths.leagueFreeAgentDrafts(leagueId)
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Open rapid auctions" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/even if that player was not on a Candidate Card/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Nominate or join a rapid auction" })
+    ).toHaveAttribute("href", routePaths.leagueAuctions(leagueId));
+    expect(
+      await screen.findByRole("heading", { name: "Active restricted ties" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Tied Star")).toBeInTheDocument();
+    expect(screen.getByText("Manager: Manager A")).toBeInTheDocument();
+    expect(screen.getByText("Manager: Manager B")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "View restricted auction" })
+    ).toHaveAttribute(
+      "href",
+      routePaths.auctionDetail(leagueId, restrictedAuctionId)
+    );
+    expect(resultRequests).toHaveLength(1);
+    expect(resultRequests[0].searchParams.get("status")).toBe(
+      "restricted_active"
+    );
+    expect(resultRequests[0].searchParams.get("limit")).toBe("100");
   });
 
   it("loads exhaustive allocation history only after deliberate selection", async () => {
@@ -1580,6 +1697,39 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     expect(within(card).getAllByText("Candidate Owls")).toHaveLength(1);
     expect(card).not.toHaveTextContent(/Decision:|Only valid offer|Winner:|D03/);
     expect(card.querySelector("details")).toBeNull();
+  });
+
+  it("keeps restricted tie participants and managers visible without opening details", async () => {
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        return envelope(rapidOverview());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        return collectionEnvelope([activeRestrictedAllocationResult()]);
+      }
+      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
+        return envelope(
+          teamsFound([
+            leagueTeam(teamId, "Candidate Owls", "Manager A"),
+            leagueTeam(secondTeamId, "Second Team", "Manager B"),
+          ])
+        );
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderDraftsRoute(
+      fetchImpl,
+      routePaths.draftFreeAgentAllocationResults(leagueId, fadId)
+    );
+
+    const heading = await screen.findByRole("heading", { name: "Tied Star" });
+    const card = heading.closest("article");
+    const details = card.querySelector("details");
+    expect(details).not.toHaveAttribute("open");
+    expect(within(card).getByText("Restricted Candidate tie")).toBeVisible();
+    expect(within(card).getByText("Manager: Manager A")).toBeVisible();
+    expect(within(card).getByText("Manager: Manager B")).toBeVisible();
+    expect(within(card).getByText(/minimum, not an active bid/i)).toBeVisible();
   });
 
   it.each([
