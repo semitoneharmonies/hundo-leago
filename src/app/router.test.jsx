@@ -51,10 +51,9 @@ describe("application routes", () => {
       })
     ).toBeInTheDocument();
     expect(screen.queryByText("private implementation detail")).toBeNull();
-    expect(screen.getByRole("link", { name: "Reload page" })).toHaveAttribute(
-      "href",
-      "/broken"
-    );
+    expect(
+      screen.getByRole("link", { name: "Reload page" }).getAttribute("href")
+    ).toMatch(/^\/broken\?_hundo_reload=\d+$/);
     expect(screen.queryByRole("link", { name: "Return home" })).toBeNull();
     consoleError.mockRestore();
   });

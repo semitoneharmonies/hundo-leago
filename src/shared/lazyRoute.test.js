@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  buildLazyRouteReloadPath,
   buildLazyRouteReloadUrl,
   isLazyRouteLoadError,
   loadLazyNamedRoute,
@@ -26,6 +27,17 @@ describe("lazy route recovery", () => {
       )
     ).toBe(
       "https://staging.hundoleago.com/leagues/league-1/drafts/free-agent?tab=results&_hundo_reload=1723900000000#players"
+    );
+  });
+
+  it("builds a cache-busted same-origin path for recovery links", () => {
+    expect(
+      buildLazyRouteReloadPath(
+        "/leagues/league-1/drafts/free-agent?tab=results#players",
+        1723900000000
+      )
+    ).toBe(
+      "/leagues/league-1/drafts/free-agent?tab=results&_hundo_reload=1723900000000#players"
     );
   });
 

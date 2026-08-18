@@ -23,6 +23,12 @@ export function buildLazyRouteReloadUrl(currentUrl, nonce = Date.now()) {
   return reloadUrl.href;
 }
 
+export function buildLazyRouteReloadPath(currentPath, nonce = Date.now()) {
+  const reloadUrl = new URL(currentPath, "https://hundo.invalid");
+  reloadUrl.searchParams.set(ROUTE_RELOAD_QUERY_PARAM, String(nonce));
+  return `${reloadUrl.pathname}${reloadUrl.search}${reloadUrl.hash}`;
+}
+
 export function isLazyRouteLoadError(error) {
   if (!(error instanceof Error)) return false;
   if (error.name === "ChunkLoadError") return true;
