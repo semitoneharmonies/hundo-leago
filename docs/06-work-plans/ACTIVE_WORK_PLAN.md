@@ -8,6 +8,18 @@
 
 `ACTIVE - FAD-18 AUTHORIZED ISOLATED SHARED-STAGING GATE`
 
+## 2026-08-18 Staging UX and Nomination Amendment
+
+The approved Free Agent Draft results, Candidate Card history, Auctions, and
+Players manager-UX amendment is implemented and verified on the existing
+staging environment. Schema `52` permits valid nominations after the Candidate
+Card deadline while preserving server authorization, contract, roster, cap,
+quarantine, timing, fairness, audit, and recovery controls. The full release
+evidence, exact commits, backup/restore proof, deployment identities, and hosted
+verification are recorded in
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
+Production remains untouched and unauthorized.
+
 ## Fresh-Chat Handoff
 
 The former FAD-11 safe-checkpoint handoff is retained at

@@ -14,7 +14,19 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-08-11**
+Last reviewed: **2026-08-18**
+
+---
+
+## 2026-08-18 Staging Release
+
+The selected-team Free Agent Draft results, simplified Candidate Card history,
+post-deadline auction nomination policy, restricted-tie manager privacy and
+inline actions, and authoritative Players team filtering are deployed and
+verified in staging on schema `52`. The release record is
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
+
+Production was not changed.
 
 ---
 
