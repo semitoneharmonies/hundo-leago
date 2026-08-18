@@ -1,3 +1,5 @@
+/* Keep manager auction styles on a fresh immutable asset after the staging UX rollout. */
+
 .page {
   display: grid;
   gap: 1.25rem;
