@@ -1488,7 +1488,7 @@ describe("FAD-16 auction pages", () => {
       "/leagues/:leagueId/auctions/:auctionId",
       <AuctionDetailPage />
     );
-    expect(await screen.findByText(/authoritative result requires commissioner recovery/i)).toBeInTheDocument();
+    expect(await screen.findByText(/needs commissioner review/i)).toBeInTheDocument();
     expect(screen.getByText("Reveal pending")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to auctions" })).toHaveAttribute(
       "href",

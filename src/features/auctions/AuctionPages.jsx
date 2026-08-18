@@ -696,8 +696,8 @@ function TerminalSummary({ auction }) {
   if (auction.status === "no_winner" && auction.sourceKind === "fad_restricted") {
     return (
       <p>
-        No eligible active improvement remained. The restricted auction closed
-        without a winner and the server creates its fresh league-wide fallback.
+        No eligible improvement was placed. The player moves to an open
+        auction for the league.
       </p>
     );
   }
@@ -710,7 +710,7 @@ function TerminalSummary({ auction }) {
     );
   }
   if (auction.status === "correction_required") {
-    return <p>The authoritative result requires commissioner recovery.</p>;
+    return <p>This auction needs commissioner review.</p>;
   }
   return <p>This auction ended without assigning the player.</p>;
 }
@@ -892,7 +892,7 @@ function AuctionsPrivateContent({ context, leagueId }) {
               </EmptyBlock>
             </Surface>
           ) : (
-            <section className={styles.cardGrid} aria-label="Auction results">
+            <section className={styles.cardGrid} aria-label="Active auctions">
               {items.map((auction) => (
                 <AuctionCard
                   auction={auction}
