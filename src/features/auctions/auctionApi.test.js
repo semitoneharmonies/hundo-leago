@@ -226,7 +226,7 @@ describe("auction API boundary", () => {
     );
   });
 
-  it("sends the binding FAD confirmation for both direct and queued starts", async () => {
+  it("sends the simplified contract for both direct and queued starts", async () => {
     const directClient = client({
       data: { kind: "auction_opened", auction: fadAuction(), queuedNomination: null },
       meta: { requestId: "request-direct" },
@@ -236,7 +236,6 @@ describe("auction API boundary", () => {
       teamId: IDS.team,
       aavCents: 300,
       termYears: 2,
-      bindingIllegalityConfirmed: true,
     };
     await expect(
       startAuction(directClient, IDS.league, body, {
@@ -271,7 +270,6 @@ describe("auction API boundary", () => {
       teamId: IDS.team,
       aavCents: 300,
       termYears: 2,
-      bindingIllegalityConfirmed: true,
     };
     await putMyAuctionBid(joinClient, IDS.league, IDS.auction, input, {
       version: null,
@@ -297,7 +295,7 @@ describe("auction API boundary", () => {
     });
   });
 
-  it("fails before transport for false confirmation, unknown filters, and invalid contexts", async () => {
+  it("fails before transport for obsolete confirmation, unknown filters, and invalid contexts", async () => {
     const httpClient = client({});
     await expect(
       startAuction(
@@ -308,11 +306,11 @@ describe("auction API boundary", () => {
           teamId: IDS.team,
           aavCents: 300,
           termYears: 2,
-          bindingIllegalityConfirmed: false,
+          bindingIllegalityConfirmed: true,
         },
         { idempotencyKey: "fad-start:false" }
       )
-    ).rejects.toThrow("confirmation");
+    ).rejects.toThrow("invalid");
     expect(() => normalizeAuctionFilters({ status: ["active"] })).toThrow("filters");
     expect(() =>
       normalizeAuctionFilters({ sourceKind: "ordinary_weekly", fadId: IDS.fad })

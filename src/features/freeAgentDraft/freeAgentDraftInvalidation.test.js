@@ -203,6 +203,7 @@ describe("FAD realtime invalidation matrix", () => {
       ["league", leagueId, "free-agent-draft", fadId, "history-card"],
       ["league", leagueId, "free-agent-draft", fadId, "results"],
       freeAgentDraftKeys.overview(leagueId, fadId),
+      ["league", leagueId, "players"],
       ["league", leagueId, "free-agent-draft", "navigation"],
     ]);
   });

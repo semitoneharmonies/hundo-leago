@@ -62,4 +62,25 @@ describe("league player catalog queries", () => {
     expect(request.mock.calls[0][0]).toContain("sort=name");
     expect(result.page.hasMore).toBe(true);
   });
+
+  it("sends a selected team to the server before pagination", async () => {
+    const teamId = "22222222-2222-4222-8222-222222222222";
+    const request = vi.fn(async () => ({
+      data: [],
+      page: { nextCursor: null, hasMore: false },
+    }));
+    const query = leaguePlayerInfiniteQuery(
+      { request },
+      leagueId,
+      { teamId }
+    );
+
+    await query.queryFn({
+      pageParam: null,
+      signal: new AbortController().signal,
+    });
+
+    expect(request.mock.calls[0][0]).toContain(`teamId=${teamId}`);
+    expect(query.queryKey).toContain(teamId);
+  });
 });

@@ -23,6 +23,7 @@ import {
   FreeAgentDraftResultsPage,
 } from "./FreeAgentDraftPages.jsx";
 import { freeAgentDraftKeys } from "./freeAgentDraftQueries.js";
+import { validatePublishedCandidateCard } from "./freeAgentDraftContracts.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 const seasonId = "22222222-2222-4222-8222-222222222222";
@@ -37,13 +38,7 @@ const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const playerId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const entryId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const revisionId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
-const fallbackWinnerTeamId = "abababab-abab-4bab-8bab-abababababab";
 const restrictedAuctionId = "12121212-1212-4212-8212-121212121212";
-const fallbackAuctionId = "13131313-1313-4313-8313-131313131313";
-const winningBidId = "14141414-1414-4414-8414-141414141414";
-const otherBidId = "15151515-1515-4515-8515-151515151515";
-const contractId = "16161616-1616-4616-8616-161616161616";
-const ownershipId = "17171717-1717-4717-8717-171717171717";
 const config = Object.freeze({
   appEnv: "local",
   apiOrigin: "http://localhost:4000",
@@ -115,12 +110,21 @@ function team(id = teamId, name = "Candidate Owls") {
   };
 }
 
-function leagueTeam(id = teamId, name = "Candidate Owls") {
+function leagueTeam(id = teamId, name = "Candidate Owls", currentManager = null) {
   return {
     id,
     leagueId,
     name,
-    currentManager: null,
+    currentManager,
+    version: 1,
+  };
+}
+
+function currentManager() {
+  return {
+    assignmentId,
+    userId,
+    displayName: "FAD Manager",
     version: 1,
   };
 }
@@ -456,13 +460,13 @@ function publishedCandidateCard() {
   };
 }
 
-function publishedSummary() {
+function publishedSummary(summaryTeam = team()) {
   return {
     leagueId,
     seasonId,
     fadId,
-    teamId,
-    team: team(),
+    teamId: summaryTeam.teamId,
+    team: summaryTeam,
     snapshotId: revisionId,
     lockedCardVersion: 1,
     lifecycleStatus: "locked_incomplete",
@@ -494,199 +498,58 @@ function publishedSummary() {
       mode: "published_card",
       seasonId,
       fadId,
-      teamId,
+      teamId: summaryTeam.teamId,
       cardId,
     },
   };
 }
 
-function pendingAllocationResult() {
-  return {
-    allocationId: helpId,
-    allocationVersion: 1,
-    player: { playerId, fullName: "Pending Player", positionGroup: "F" },
-    status: "pending",
-    decisionCode: null,
-    rankedOffers: [
+function publishedResultsCard(
+  resultTeam = team(),
+  results = [
+    ["F01", "Won Player", "automatic_win", null],
+    ["F02", "Tied Player", "restricted_pending", restrictedAuctionId],
+    ["F03", "Not Won Player", "automatic_loss", null],
+  ]
+) {
+  const card = publishedCandidateCard();
+  const resultSlots = new Map(
+    results.map(([slotKey, fullName, code, auctionId], index) => [
+      slotKey,
       {
-        snapshotEntryId: entryId,
-        teamId,
-        team: team(),
-        slotKey: "F02",
-        totalValueCents: 600,
-        termYears: 1,
-        aavCents: 600,
-        valid: true,
-        validationCode: null,
-        rank: null,
-        outcomeCode: "pending",
-      },
-    ],
-    winner: null,
-    restricted: null,
-    fallback: null,
-    draws: [],
-    recoveryStatus: null,
-    resolvedAtMs: null,
-  };
-}
-
-function automaticAllocationResult() {
-  return {
-    allocationId: helpId,
-    allocationVersion: 1,
-    player: { playerId, fullName: "Automatic Player", positionGroup: "D" },
-    status: "automatic_award",
-    decisionCode: "sole_valid_offer",
-    rankedOffers: [
-      {
-        snapshotEntryId: entryId,
-        teamId,
-        team: team(),
-        slotKey: "D03",
-        totalValueCents: 1_200,
-        termYears: 3,
-        aavCents: 400,
-        valid: true,
-        validationCode: null,
-        rank: 1,
-        outcomeCode: "winner",
-      },
-    ],
-    winner: {
-      teamId,
-      snapshotEntryId: entryId,
-      contractId,
-      ownershipId,
-      slotKey: "D03",
-      totalValueCents: 1_200,
-      termYears: 3,
-      aavCents: 400,
-    },
-    restricted: null,
-    fallback: null,
-    draws: [],
-    recoveryStatus: null,
-    resolvedAtMs: 2_000,
-  };
-}
-
-function terminalOffer(id, idTeam, name) {
-  return {
-    snapshotEntryId: id,
-    teamId: idTeam,
-    team: team(idTeam, name),
-    slotKey: "F02",
-    totalValueCents: 600,
-    termYears: 2,
-    aavCents: 300,
-    valid: true,
-    validationCode: null,
-    rank: 1,
-    outcomeCode: "restricted_tied",
-  };
-}
-
-function noSelectionDraw(auctionId, auctionType) {
-  return {
-    auctionId,
-    auctionType,
-    drawCommitment: "a".repeat(64),
-    drawReveal: {
-      algorithmVersion: 1,
-      nonceHex: "b".repeat(64),
-      selectionUsed: false,
-      orderedBidIds: [],
-      counter: null,
-      digestHex: null,
-      selectedIndex: null,
-      selectedBidId: null,
-      selectedTeamId: null,
-    },
-  };
-}
-
-function fallbackNoWinnerAllocationResult() {
-  return {
-    allocationId: helpId,
-    allocationVersion: 7,
-    player: { playerId, fullName: "Unclaimed Player", positionGroup: "F" },
-    status: "fallback_open_resolved",
-    decisionCode: "fallback_open_no_winner",
-    rankedOffers: [
-      terminalOffer(entryId, teamId, "Candidate Owls"),
-      terminalOffer(revisionId, secondTeamId, "Second Team"),
-    ],
-    winner: null,
-    restricted: {
-      auctionId: restrictedAuctionId,
-      status: "no_winner",
-      participantTeamIds: [teamId, secondTeamId],
-      minimumTotalValueCents: 600,
-      minimumTermYears: 2,
-      minimumAavCents: 300,
-    },
-    fallback: {
-      auctionId: fallbackAuctionId,
-      status: "no_winner",
-      minimumTotalValueCents: 600,
-      winningBidId: null,
-      contractId: null,
-      ownershipId: null,
-      noWinnerReason: "no_winner",
-    },
-    draws: [
-      noSelectionDraw(restrictedAuctionId, "fad_restricted"),
-      noSelectionDraw(fallbackAuctionId, "fad_open_rapid"),
-    ],
-    recoveryStatus: "resolved",
-    resolvedAtMs: 2_000,
-  };
-}
-
-function fallbackWinnerAllocationResult() {
-  const result = fallbackNoWinnerAllocationResult();
-  return {
-    ...result,
-    player: { ...result.player, fullName: "Fallback Winner" },
-    decisionCode: "fallback_open_result",
-    winner: {
-      teamId: fallbackWinnerTeamId,
-      snapshotEntryId: null,
-      contractId,
-      ownershipId,
-      slotKey: "F02",
-      totalValueCents: 700,
-      termYears: 1,
-      aavCents: 700,
-    },
-    fallback: {
-      ...result.fallback,
-      status: "resolved",
-      winningBidId,
-      contractId,
-      ownershipId,
-      noWinnerReason: null,
-    },
-    draws: [
-      result.draws[0],
-      {
-        auctionId: fallbackAuctionId,
-        auctionType: "fad_open_rapid",
-        drawCommitment: "a".repeat(64),
-        drawReveal: {
-          algorithmVersion: 1,
-          nonceHex: "b".repeat(64),
-          selectionUsed: true,
-          orderedBidIds: [winningBidId, otherBidId],
-          counter: 0,
-          digestHex: "c".repeat(64),
-          selectedIndex: 0,
-          selectedBidId: winningBidId,
-          selectedTeamId: fallbackWinnerTeamId,
+        ...emptySlot(slotKey),
+        occupantKind: "candidate",
+        entryId: `ccccccc${index}-cccc-4ccc-8ccc-ccccccccccc${index}`,
+        entryVersion: 1,
+        player: {
+          playerId: `bbbbbbb${index}-bbbb-4bbb-8bbb-bbbbbbbbbbb${index}`,
+          fullName,
+          positionGroup: slotKey[0],
+        },
+        totalValueCents: 300 * (index + 1),
+        termYears: index + 1,
+        aavCents: 300,
+        lastEditedAtMs: 2,
+        lastEditedBy: {
+          userId,
+          displayName: "FAD Manager",
+          authority: "manager",
+        },
+        outcome: { code, allocationId: helpId, auctionId },
+        capabilities: {
+          addCandidate: denied("PHASE_CLOSED"),
+          editCandidate: denied("PHASE_CLOSED"),
+          moveCandidate: denied("PHASE_CLOSED"),
+          moveCarryover: denied("PHASE_CLOSED"),
+          removeCandidate: denied("PHASE_CLOSED"),
         },
       },
-    ],
+    ])
+  );
+  return {
+    ...card,
+    teamId: resultTeam.teamId,
+    slots: slotKeys().map((slotKey) => resultSlots.get(slotKey) || emptySlot(slotKey)),
   };
 }
 
@@ -837,7 +700,7 @@ describe("league Drafts area", () => {
     ).toBe(true);
   });
 
-  it("shows completed authoritative results and opens every card read-only inside Drafts", async () => {
+  it("shows one selected team's results and opens the original card read-only inside Drafts", async () => {
     const requests = [];
     const fetchImpl = baseFetch((parsed) => {
       requests.push(parsed.pathname);
@@ -848,32 +711,13 @@ describe("league Drafts area", () => {
         return envelope(completedOverview());
       }
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
-        const summary = publishedSummary();
-        return collectionEnvelope([
-          {
-            ...summary,
-            outcomeCounts: {
-              ...summary.outcomeCounts,
-              automaticWins: 1,
-              restrictedWins: 2,
-              fallbackWins: 3,
-              losses: 4,
-              fallbackNoWinner: 1,
-              invalidOffers: 2,
-              restrictedPending: 1,
-              fallbackPending: 1,
-            },
-          },
-        ]);
-      }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
-        return collectionEnvelope([pendingAllocationResult()]);
+        return collectionEnvelope([publishedSummary()]);
       }
       if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
-        return envelope(publishedCandidateCard());
+        return envelope(publishedResultsCard());
       }
       if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(teamsFound());
+        return envelope(teamsFound([leagueTeam(teamId, "Candidate Owls", currentManager())]));
       }
       throw new Error(`Unexpected request: ${parsed.pathname}`);
     });
@@ -886,25 +730,18 @@ describe("league Drafts area", () => {
       await screen.findByRole("heading", { name: "Free Agent Draft results" })
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Team results" })).toBeInTheDocument();
-    expect(screen.getByText(/authoritative allocation outcome/i)).toBeInTheDocument();
-    const timing = screen.getByText("Draft timing details").closest("details");
-    expect(timing).not.toHaveAttribute("open");
-    expect(
-      screen.getByRole("link", { name: "View player-by-player results" })
-    ).toHaveAttribute(
-      "href",
-      routePaths.draftFreeAgentAllocationResults(leagueId, fadId)
-    );
-    expect(screen.queryByRole("heading", { name: "Allocation results" })).toBeNull();
+    expect(await screen.findByText("Won Player")).toBeInTheDocument();
+    expect(screen.getByText("Tied Player")).toBeInTheDocument();
+    expect(screen.getByText("Not Won Player")).toBeInTheDocument();
+    expect(screen.getByText("Tie — action required")).toBeInTheDocument();
+    expect(screen.queryByText(/Pending/)).toBeNull();
+    expect(screen.queryByText(/authoritative|immutable|server/i)).toBeNull();
     expect(
       requests.some((pathname) =>
         pathname.endsWith(`/free-agent-drafts/${fadId}/results`)
       )
     ).toBe(false);
-    const cardLink = await screen.findByRole("link", { name: /Candidate Owls/ });
-    expect(screen.getByText("6 obtained", { exact: true })).toBeInTheDocument();
-    expect(screen.getByText("7 not obtained", { exact: true })).toBeInTheDocument();
-    expect(screen.getByText("2 pending", { exact: true })).toBeInTheDocument();
+    const cardLink = screen.getByRole("link", { name: "View original Candidate Card" });
     expect(cardLink).toHaveAttribute(
       "href",
       routePaths.draftFreeAgentCard(leagueId, fadId, teamId)
@@ -917,7 +754,7 @@ describe("league Drafts area", () => {
         name: "Published Candidate Card",
       })
     ).toBeInTheDocument();
-    expect(document.querySelectorAll("[data-slot-key]")).toHaveLength(22);
+    expect(document.querySelectorAll("[data-slot-key]")).toHaveLength(3);
     expect(screen.queryByRole("button", { name: /save|help|move|remove/i })).toBeNull();
     expect(screen.getByRole("link", { name: "Back to Drafts" })).toHaveAttribute(
       "href",
@@ -928,15 +765,18 @@ describe("league Drafts area", () => {
     ).toBe(false);
   });
 
-  it("loads exhaustive allocation history only after deliberate selection", async () => {
+  it("keeps the legacy allocation URL on the same selected-team experience", async () => {
     const requests = [];
     const fetchImpl = baseFetch((parsed) => {
       requests.push(parsed.pathname);
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
         return envelope(completedOverview());
       }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
-        return collectionEnvelope([pendingAllocationResult()]);
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
+        return collectionEnvelope([publishedSummary()]);
+      }
+      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
+        return envelope(publishedResultsCard());
       }
       if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
         return envelope(teamsFound());
@@ -951,25 +791,23 @@ describe("league Drafts area", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "Player-by-player allocation results",
+        name: "Free Agent Draft results",
       })
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: "Allocation results" })
+      await screen.findByRole("heading", { name: "Team results" })
     ).toBeInTheDocument();
-    expect(screen.getByText("Pending Player")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to team results" })).toHaveAttribute(
-      "href",
-      routePaths.leagueFreeAgentDrafts(leagueId)
-    );
+    expect(await screen.findByText("Won Player")).toBeInTheDocument();
+    expect(screen.getByLabelText("Search players")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Allocation status")).toBeNull();
     expect(
       requests.some((pathname) =>
         pathname.endsWith(`/free-agent-drafts/${fadId}/results`)
       )
-    ).toBe(true);
+    ).toBe(false);
     expect(
       requests.some((pathname) => pathname.endsWith("/candidate-cards"))
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("labels Entry Draft as unavailable without inventing a data request", async () => {
@@ -1374,10 +1212,10 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
         return envelope(publishedOverview());
       }
       if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
-        return envelope(publishedCandidateCard());
+        return envelope(publishedResultsCard());
       }
       if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(teamsFound());
+        return envelope(teamsFound([leagueTeam(teamId, "Candidate Owls", currentManager())]));
       }
       throw new Error(`Unexpected request: ${parsed.pathname}`);
     });
@@ -1385,10 +1223,17 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     renderRoute({ fetchImpl });
 
     expect(await screen.findByRole("heading", { name: "Published Candidate Card" })).toBeInTheDocument();
-    expect(await screen.findByText("Published Carryover")).toBeInTheDocument();
-    expect(screen.getByText("Published Candidate")).toBeInTheDocument();
-    expect(screen.getByText(/Candidate Owls · Immutable locked request/)).toBeInTheDocument();
-    expect(document.querySelectorAll("[data-slot-key]")).toHaveLength(22);
+    expect(await screen.findByText("Won Player")).toBeInTheDocument();
+    expect(screen.getByText("Candidate Owls")).toBeInTheDocument();
+    expect(screen.getByText("Original card")).toBeInTheDocument();
+    expect(screen.queryByText(/Immutable locked request/)).toBeNull();
+    expect(document.querySelectorAll("[data-slot-key]")).toHaveLength(3);
+    expect(screen.getByLabelText("F02 AAV")).toHaveValue("$3.00");
+    expect(screen.getByLabelText("F02 total contract value")).toHaveValue("$6.00");
+    expect(screen.getByRole("link", { name: "Place bid" })).toHaveAttribute(
+      "href",
+      routePaths.leagueAuctionFocus(leagueId, restrictedAuctionId)
+    );
     expect(screen.queryByRole("button", { name: /candidate|carryover|move|remove|help/i })).toBeNull();
     expect(
       requests.some((request) =>
@@ -1460,29 +1305,38 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     expect(await screen.findByText("Published Candidate")).toBeInTheDocument();
   });
 
-  it("keeps pending allocation evidence uninvented and normalizes keyboard-applied filters and cursors", async () => {
-    const resultRequests = [];
+  it("maps the selected managed team's Candidate Card to won, not won, and actionable tie results", async () => {
+    expect(validatePublishedCandidateCard(publishedResultsCard())).toBe(true);
+    const historyRequests = [];
+    const managedOverview = publishedOverview();
+    managedOverview.viewer.managedCards = [managedCard()];
     const fetchImpl = baseFetch((parsed) => {
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
-        return envelope(publishedOverview());
+        return envelope(managedOverview);
       }
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
-        return collectionEnvelope([publishedSummary()]);
-      }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
-        resultRequests.push(parsed);
-        if (parsed.searchParams.get("cursor") === "next-results") {
-          return collectionEnvelope([]);
-        }
-        return collectionEnvelope(
-          [pendingAllocationResult()],
-          parsed.searchParams.get("status")
-            ? { nextCursor: null, hasMore: false }
-            : { nextCursor: "next-results", hasMore: true }
-        );
+        return collectionEnvelope([
+          publishedSummary(team(secondTeamId, "Second Team")),
+          publishedSummary(),
+        ]);
       }
       if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(teamsFound());
+        return envelope(teamsFound([
+          leagueTeam(secondTeamId, "Second Team"),
+          leagueTeam(teamId, "Candidate Owls", currentManager()),
+        ]));
+      }
+      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
+        historyRequests.push(teamId);
+        return envelope(publishedResultsCard());
+      }
+      if (parsed.pathname.endsWith(`/candidate-cards/${secondTeamId}/history`)) {
+        historyRequests.push(secondTeamId);
+        return envelope(
+          publishedResultsCard(team(secondTeamId, "Second Team"), [
+            ["F01", "Other Team Player", "automatic_loss", null],
+          ])
+        );
       }
       throw new Error(`Unexpected request: ${parsed.pathname}`);
     });
@@ -1493,178 +1347,25 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
       fetchImpl,
     });
 
-    expect(await screen.findByRole("heading", { name: "Allocation results" })).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: /Candidate Owls/ })).toHaveAttribute(
+    const teamPicker = await screen.findByLabelText("Team");
+    expect(teamPicker).toHaveValue(teamId);
+    expect(await screen.findByText("Won Player")).toBeInTheDocument();
+    const totals = screen.getByLabelText("Candidate Owls result totals");
+    expect(within(totals).getByText("Signed").nextSibling).toHaveTextContent("1");
+    expect(within(totals).getByText("Not won").nextSibling).toHaveTextContent("1");
+    expect(within(totals).getByText("Tied").nextSibling).toHaveTextContent("1");
+    expect(screen.getByText("Tie — action required")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Place bid" })).toHaveAttribute(
       "href",
-      routePaths.draftFreeAgentCard(leagueId, fadId, teamId)
+      routePaths.leagueAuctionFocus(leagueId, restrictedAuctionId)
     );
-    expect(screen.getByRole("status", { name: "" })).toHaveTextContent(
-      /Allocation is pending\. No winner or contract has been recorded\./i
-    );
-    expect(screen.getByText(/No rank/)).toBeInTheDocument();
-    expect(screen.queryByText(/Winning contract/)).toBeNull();
-    expect(screen.queryByText(/Rank 1/)).toBeNull();
+    expect(screen.queryByText(/Pending|immutable|server/i)).toBeNull();
 
-    const loadMore = screen.getByRole("button", {
-      name: "Load more allocation results",
-    });
-    loadMore.focus();
-    await view.user.keyboard("{Enter}");
-    await waitFor(() =>
-      expect(
-        resultRequests.some(
-          (request) => request.searchParams.get("cursor") === "next-results"
-        )
-      ).toBe(true)
-    );
-
-    await view.user.type(
-      screen.getByLabelText("Search player name"),
-      "  Pending   Player  "
-    );
-    await view.user.selectOptions(
-      screen.getByLabelText("Allocation status"),
-      "correction_required"
-    );
-    const apply = screen.getByRole("button", { name: "Apply filters" });
-    apply.focus();
-    await view.user.keyboard("{Enter}");
-
-    await waitFor(() =>
-      expect(
-        resultRequests.some(
-          (request) =>
-            request.searchParams.get("q") === "pending player" &&
-            request.searchParams.get("status") === "correction_required" &&
-            request.searchParams.get("limit") === "50"
-        )
-      ).toBe(true)
-    );
-  });
-
-  it("renders a terminal allocation as one compact accessible winner summary", async () => {
-    const fetchImpl = baseFetch((parsed) => {
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
-        return envelope(publishedOverview());
-      }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
-        return collectionEnvelope([automaticAllocationResult()]);
-      }
-      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(teamsFound());
-      }
-      throw new Error(`Unexpected request: ${parsed.pathname}`);
-    });
-    renderRoute({
-      path: routePaths.draftFreeAgentAllocationResults(leagueId, fadId),
-      route: "/leagues/:leagueId/drafts/free-agent/:fadId/results",
-      element: <FreeAgentDraftAllocationResultsPage />,
-      fetchImpl,
-    });
-
-    const heading = await screen.findByRole("heading", {
-      name: "Automatic Player",
-    });
-    const card = heading.closest("article");
-    const summary = within(card).getByLabelText(
-      "Automatic Player allocation summary"
-    );
-
-    expect(within(card).getByText("Defence")).toBeInTheDocument();
-    expect(within(card).getByText("Automatic award")).toBeInTheDocument();
-    expect(within(summary).getByText("Obtained")).toBeInTheDocument();
-    expect(within(summary).getByText("Candidate Owls")).toBeInTheDocument();
-    expect(within(summary).getByText("$12.00")).toBeInTheDocument();
-    expect(within(summary).getByText("3 years")).toBeInTheDocument();
-    expect(within(summary).getByText("$4.00")).toBeInTheDocument();
-    expect(within(card).getAllByText("Candidate Owls")).toHaveLength(1);
-    expect(card).not.toHaveTextContent(/Decision:|Only valid offer|Winner:|D03/);
-    expect(card.querySelector("details")).toBeNull();
-  });
-
-  it.each([
-    [
-      "a fallback winner from the current authorized team projection",
-      fallbackWinnerAllocationResult(),
-      /Fallback Foxes/,
-    ],
-    [
-      "an authoritative fallback no-winner result",
-      fallbackNoWinnerAllocationResult(),
-      /returned to the unclaimed pool and may be nominated again/i,
-    ],
-  ])("renders %s without exposing stable IDs", async (_label, allocation, expected) => {
-    const fetchImpl = baseFetch((parsed) => {
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
-        return envelope(publishedOverview());
-      }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
-        return collectionEnvelope([]);
-      }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
-        return collectionEnvelope([allocation]);
-      }
-      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(
-          teamsFound([
-            leagueTeam(),
-            leagueTeam(secondTeamId, "Second Team"),
-            leagueTeam(fallbackWinnerTeamId, "Fallback Foxes"),
-          ])
-        );
-      }
-      throw new Error(`Unexpected request: ${parsed.pathname}`);
-    });
-    renderRoute({
-      path: routePaths.freeAgentDraftResults(leagueId, fadId),
-      route: "/leagues/:leagueId/free-agent-draft/:fadId/results",
-      element: <FreeAgentDraftResultsPage />,
-      fetchImpl,
-    });
-
-    const resultCard = await screen.findByRole("heading", {
-      name: allocation.player.fullName,
-    });
-    expect(resultCard.closest("article")).toHaveTextContent(expected);
-    expect(resultCard.closest("article")).toHaveTextContent(
-      /league-wide floor was \$6\.00/i
-    );
-    if (allocation.winner) {
-      expect(resultCard.closest("article")).toHaveTextContent(
-        /Fallback Foxes was selected by the committed equal-chance draw/i
-      );
-    }
-    expect(document.body).not.toHaveTextContent(fallbackWinnerTeamId);
-  });
-
-  it("fails closed when a terminal winner cannot be resolved to an authorized team name", async () => {
-    const fetchImpl = baseFetch((parsed) => {
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
-        return envelope(publishedOverview());
-      }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
-        return collectionEnvelope([]);
-      }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
-        return collectionEnvelope([fallbackWinnerAllocationResult()]);
-      }
-      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(teamsFound([leagueTeam(), leagueTeam(secondTeamId, "Second Team")]));
-      }
-      throw new Error(`Unexpected request: ${parsed.pathname}`);
-    });
-    renderRoute({
-      path: routePaths.freeAgentDraftResults(leagueId, fadId),
-      route: "/leagues/:leagueId/free-agent-draft/:fadId/results",
-      element: <FreeAgentDraftResultsPage />,
-      fetchImpl,
-    });
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /winning team could not be resolved/i
-    );
-    expect(screen.queryByText("Fallback Winner")).toBeNull();
-    expect(document.body).not.toHaveTextContent(fallbackWinnerTeamId);
+    await view.user.selectOptions(teamPicker, secondTeamId);
+    expect(await screen.findByText("Other Team Player")).toBeInTheDocument();
+    expect(screen.getAllByText("Not won")).toHaveLength(2);
+    expect(screen.queryByRole("link", { name: "Place bid" })).toBeNull();
+    expect(historyRequests).toEqual([teamId, secondTeamId]);
   });
 
   it("withholds and remounts published result evidence across realtime reauthorization", async () => {
@@ -1673,13 +1374,13 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
         return envelope(publishedOverview());
       }
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
-        return collectionEnvelope([]);
+        return collectionEnvelope([publishedSummary()]);
       }
-      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
-        return collectionEnvelope([pendingAllocationResult()]);
+      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
+        return envelope(publishedResultsCard());
       }
       if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(teamsFound());
+        return envelope(teamsFound([leagueTeam(teamId, "Candidate Owls", currentManager())]));
       }
       throw new Error(`Unexpected request: ${parsed.pathname}`);
     });
@@ -1718,15 +1419,15 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
       sessionOptions: { fetchImpl },
     });
 
-    expect(await screen.findByText("Pending Player")).toBeInTheDocument();
-    await view.user.type(screen.getByLabelText("Search player name"), "private filter");
+    expect(await screen.findByText("Won Player")).toBeInTheDocument();
+    await view.user.type(screen.getByLabelText("Search players"), "private filter");
     await view.user.click(screen.getByRole("button", { name: "Reauthorize results" }));
-    expect(screen.queryByText("Pending Player")).toBeNull();
+    expect(screen.queryByText("Won Player")).toBeNull();
     expect(screen.getByText(/Reauthorizing league-only Free Agent Draft results/i)).toBeInTheDocument();
     await view.user.click(
       screen.getByRole("button", { name: "Finish results reauthorization" })
     );
-    expect(await screen.findByText("Pending Player")).toBeInTheDocument();
-    expect(screen.getByLabelText("Search player name")).toHaveValue("");
+    expect(await screen.findByText("Won Player")).toBeInTheDocument();
+    expect(screen.getByLabelText("Search players")).toHaveValue("");
   });
 });

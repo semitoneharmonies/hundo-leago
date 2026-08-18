@@ -36,6 +36,12 @@ effective position, and league-scoped eligibility/ownership/contract state.
 On 2026-08-14, Grae changed Candidate offers to AAV-first entry in exact
 `$0.25` increments, with a server-derived total, save-time contract and cap
 blocking, and an Active-AAV summary on the Candidate Card.
+On 2026-08-17, Grae approved the compact selected-team results and Auctions
+redesign. Manager results use only `Signed`, `Not won`, and an eligible
+participant's actionable `Tie`; post-deadline open-player nominations are
+available while allocation and restricted ties continue; unrelated restricted
+ties stay private; and server-recorded submission remains binding without a
+manager confirmation checkbox.
 Prior-season statistics, current-season statistics, and an in-game/live feed
 are neither Candidate inputs nor FAD deployment prerequisites.
 
@@ -1207,6 +1213,12 @@ Queued final-hour nominations, restricted no-improvement fallbacks, or
 recoverable processing may require additional daily cycles; matchups wait and
 Week 1 moves by whole Mondays when those cycles overrun it.
 
+As soon as that deadline passes, every otherwise-authorized team may nominate
+an eligible unclaimed player even while automatic allocation, restricted ties,
+or earlier rapid auctions are still resolving. The backend continues to block
+players with a non-terminal allocation, ownership, quarantine, or conflicting
+auction state. A player did not need to appear on any Candidate Card.
+
 It does not guarantee a full or legal roster.
 
 ---
@@ -1232,9 +1244,10 @@ on manager withdrawal.
 Simultaneous bids are independent and binding. Outstanding bids reserve no
 cap, position capacity, or roster slot, and a team may win every auction it
 entered even when the combined result makes its roster illegal. Every valid
-winning contract takes effect; the manager legalizes afterward. Each bid,
-edit, or queued nomination submission is the binding confirmation of that
-possibility, and scheduled resolution never pauses for another prompt.
+winning contract takes effect; the manager legalizes afterward. The backend
+records each accepted bid, edit, or queued nomination as the binding
+submission; the manager interface requires no separate checkbox, and scheduled
+resolution never pauses for another prompt.
 
 Every open or restricted rapid-auction contract belongs to the FAD's target
 upcoming season, even though resolution occurs before the first matchup. Its
@@ -1502,16 +1515,25 @@ keyboard-accessible controls.
 
 Every league Candidate Card becomes read-only at the deadline.
 
-The result view must make it possible to understand:
+The manager result view is one selected-team experience. It defaults to a team
+managed by the current user, provides a league-team selector for inspecting any
+team, shows `Signed`, `Not won`, and `Tied` totals, and offers simple player-name
+search. It does not show a second league-wide allocation feed or technical
+allocation-status filter.
 
-* what each team requested;
-* what each team carried;
-* each proposed contract;
-* which team won each player;
-* whether total value or the equal-total AAV comparison decided the result;
-* which players entered restricted tie auctions;
-* which positions remain empty;
-* final contracts after automatic or auction resolution.
+For the selected team, each requested player maps to exactly one manager result:
+
+* `Signed` when that team won and holds the resulting contract;
+* `Not won` when that team lost, including when another set of teams is still
+  resolving a restricted tie;
+* `Tie — action required` only when that team remains an eligible participant
+  in the restricted tiebreak and the current user manages it.
+
+Manager results never show generic `Pending`. A restricted tie is absent from
+the Auctions list and result actions for a nonparticipant. A participant sees
+only the eligible team or teams they currently manage, never the other tie
+participants or their bidding detail. Commissioner and internal audit evidence
+remain available through their authorized surfaces.
 
 The published card preserves incomplete saved rows as non-participating
 historical requests. They must be visibly identified as incomplete and not
@@ -1519,7 +1541,11 @@ won; they must not be rewritten as valid offers or silently removed from what
 the team saved.
 
 The original card must not be rewritten to look as though the manager requested
-only the players eventually won.
+only the players eventually won. Its manager-facing history groups the original
+requested-player rows by Forward, Defence, and Bench and keeps their submitted
+AAV, term, and calculated total. Carried obligations remain preserved in
+authoritative roster and FAD history without adding empty or carryover rows to
+this requested-player view.
 
 ---
 

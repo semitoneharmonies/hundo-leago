@@ -117,6 +117,19 @@
   align-items: end;
 }
 
+.searchFilter {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.searchFilter label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
 .formGrid label,
 .filterGrid label,
 .playerPicker > label {
@@ -279,6 +292,30 @@
   background: rgb(15 23 42 / 68%);
 }
 
+.focusedCard {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgb(251 191 36 / 20%);
+}
+
+.compactTiming {
+  color: var(--hl-text-muted, #94a3b8);
+  font-size: 0.9rem;
+}
+
+.compactOwnBid {
+  margin: 0;
+}
+
+.inlineBid {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.2rem;
+}
+
+.inlineBid .bidEditor {
+  padding-top: 0.65rem;
+}
+
 .card h2 a {
   color: inherit;
   text-decoration-thickness: 0.08em;
@@ -373,6 +410,7 @@
 @media (max-width: 42rem) {
   .formGrid,
   .filterGrid,
+  .searchFilter,
   .timingGrid,
   .bidGrid,
   .resultGrid,

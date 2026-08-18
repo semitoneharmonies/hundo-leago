@@ -164,7 +164,8 @@ describe("CandidateSlot compact rows", () => {
   it.each([
     ["automatic_win", "Won"],
     ["automatic_loss", "Not won"],
-    ["restricted_pending", "Pending"],
+    ["restricted_pending", "Tie"],
+    ["fallback_pending", "Not won"],
   ])("announces the published %s result as %s", (code, label) => {
     render(
       <CandidateSlot

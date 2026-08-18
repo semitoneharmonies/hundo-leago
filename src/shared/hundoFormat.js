@@ -63,3 +63,25 @@ export function leagueDateTime(value, timeZone) {
     return "Time unavailable";
   }
 }
+
+export function shortLeagueDateTime(value, timeZone) {
+  if (
+    !Number.isSafeInteger(value) ||
+    typeof timeZone !== "string" ||
+    timeZone.trim() !== timeZone ||
+    timeZone === ""
+  ) {
+    return "Time unavailable";
+  }
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone,
+    }).format(new Date(value));
+  } catch {
+    return "Time unavailable";
+  }
+}

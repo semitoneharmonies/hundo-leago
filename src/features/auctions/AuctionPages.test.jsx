@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Route, Routes } from "react-router-dom";
-import { screen, waitFor } from "@testing-library/react";
+import { Route, Routes, useLocation } from "react-router-dom";
+import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sessionHarness = vi.hoisted(() => ({
@@ -76,6 +76,43 @@ function player() {
     playerId: IDS.player,
     fullName: "Ada Player",
     positionGroup: "F",
+  };
+}
+
+function leaguePlayerDetail() {
+  return {
+    id: IDS.player,
+    firstName: "Ada",
+    lastName: "Player",
+    fullName: "Ada Player",
+    birthDate: "1997-01-02",
+    status: "active",
+    provider: {
+      provider: "nhl",
+      sourcePosition: "C",
+      normalizedPosition: "F",
+      nhlTeamAbbreviation: "VAN",
+      active: true,
+      sourceVersion: "2026-08-11",
+      effectiveAtMs: 1,
+    },
+    statistics: {
+      provider: "sportsdataio-discovery-lab",
+      nhlSeasonKey: "20252026",
+      gamesPlayed: 82,
+      goals: 20,
+      assists: 30,
+      nhlPoints: 50,
+      fantasyPointsHundredths: 8_000,
+      sourceUpdatedAtMs: 1,
+    },
+    league: {
+      id: IDS.league,
+      ownership: null,
+      activeContract: null,
+    },
+    version: 1,
+    externalIds: [],
   };
 }
 
@@ -329,7 +366,7 @@ function bidReceipt(version = 1) {
   };
 }
 
-function leagueResponse() {
+function leagueResponse(permissionCategory = "commissioner") {
   return {
     data: {
       code: "LEAGUES_FOUND",
@@ -342,7 +379,7 @@ function leagueResponse() {
           currentSeason: null,
           membership: {
             id: IDS.membership,
-            permissionCategory: "manager",
+            permissionCategory,
             status: "active",
             version: 1,
           },
@@ -428,6 +465,15 @@ function renderPage(path, route, element, { onPrivacyBoundary } = {}) {
   );
 }
 
+function LocationProbe() {
+  const location = useLocation();
+  return (
+    <output data-testid="location">
+      {location.pathname}{location.search}
+    </output>
+  );
+}
+
 beforeEach(() => {
   vi.stubGlobal("crypto", {
     randomUUID: vi.fn(() => IDS.intent),
@@ -440,7 +486,70 @@ afterEach(() => {
 });
 
 describe("FAD-16 auction pages", () => {
-  it("uses start-team capabilities, keyboard player selection, binding confirmation, and a private queued receipt", async () => {
+  it("hides a single managed team selector and preselects a player from Start auction navigation", async () => {
+    sessionHarness.request.mockImplementation(async (path) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path.startsWith(`/api/v1/leagues/${IDS.league}/auctions?`)) {
+        return listResponse(null, [startTeam(IDS.team, "Snow Owls")]);
+      }
+      if (path === `/api/v1/leagues/${IDS.league}/players/${IDS.player}`) {
+        return { data: leaguePlayerDetail() };
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    renderPage(
+      `/leagues/${IDS.league}/auctions?playerId=${IDS.player}`,
+      "/leagues/:leagueId/auctions",
+      <AuctionsPage />
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Start an auction" })
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Team")).not.toBeInTheDocument();
+    expect(await screen.findByRole("combobox", { name: "Player" })).toHaveValue(
+      "Ada Player"
+    );
+    expect(
+      screen.getByRole("button", { name: "Nominate player" })
+    ).toBeEnabled();
+  });
+
+  it("redirects a manager restricted-tie deep link to the focused Auctions item", async () => {
+    sessionHarness.request.mockImplementation(async (path) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}`) {
+        return { data: restrictedAuction() };
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route
+          path="/leagues/:leagueId/auctions/:auctionId"
+          element={<AuctionDetailPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/auctions"
+          element={<LocationProbe />}
+        />
+      </Routes>,
+      {
+        initialEntries: [
+          `/leagues/${IDS.league}/auctions/${IDS.auction}`,
+        ],
+        enableSession: false,
+      }
+    );
+
+    expect(await screen.findByTestId("location")).toHaveTextContent(
+      `/leagues/${IDS.league}/auctions?auctionId=${IDS.auction}`
+    );
+  });
+
+  it("uses start-team capabilities, keyboard player selection, and server-side binding confirmation without a checkbox", async () => {
     const starts = [
       startTeam(IDS.team, "Snow Owls"),
       startTeam(IDS.teamTwo, "Ice Foxes", denied("PHASE_CLOSED")),
@@ -487,53 +596,42 @@ describe("FAD-16 auction pages", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Ada Player" })).toBeInTheDocument();
-    expect(screen.getByText("Candidate minimum")).toBeInTheDocument();
-    expect(screen.getByText(/not a bid or leader/i)).toBeInTheDocument();
+    expect(screen.getByText("Minimum offer")).toBeInTheDocument();
     expect(
-      screen.getByText(/convenience catalog filter, not FAD eligibility authority/i)
-    ).toBeInTheDocument();
-    expect(screen.getAllByText(/America\/Vancouver/).length).toBeGreaterThanOrEqual(2);
-    expect(
-      screen.getByText("Aug 12, 2026, 11:00 a.m. PDT (America/Vancouver)")
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ada Player" })).toHaveAttribute(
-      "href",
-      `/leagues/${IDS.league}/auctions/${IDS.auction}`
-    );
+      screen.queryByText(/convenience catalog filter|America\/Vancouver/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Ada Player" })).not.toBeInTheDocument();
 
     await view.user.selectOptions(screen.getByLabelText("Team"), IDS.teamTwo);
-    expect(screen.getByRole("button", { name: "Start or queue auction" })).toBeDisabled();
-    expect(screen.getByText(/closed in the current league phase/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nominate player" })).toBeDisabled();
+    expect(screen.getByText(/isn’t available right now/i)).toBeInTheDocument();
     await view.user.selectOptions(screen.getByLabelText("Team"), IDS.team);
 
-    const playerInput = screen.getByRole("combobox", { name: "Player" });
+    const startPanel = screen.getByRole("heading", { name: "Start an auction" }).closest("section");
+    const playerInput = within(startPanel).getByRole("combobox", { name: "Player" });
     await view.user.type(playerInput, "ada");
     await screen.findByRole("option", { name: /Ada Player/ });
     await view.user.keyboard("{ArrowDown}{Enter}");
-    const aav = screen.getByLabelText("AAV (dollars per year)");
+    const aav = within(startPanel).getByLabelText("AAV (dollars per year)");
     await view.user.clear(aav);
     await view.user.type(aav, "4.00");
-    expect(screen.getByLabelText("Total contract value")).toHaveValue("4.00");
-    expect(screen.getByRole("button", { name: "Start or queue auction" })).toBeDisabled();
-    await view.user.click(
-      screen.getByRole("checkbox", { name: /I understand this bid is binding/i })
-    );
-    await view.user.click(screen.getByRole("button", { name: "Start or queue auction" }));
+    expect(within(startPanel).getByLabelText("Total contract value")).toHaveValue("4.00");
+    expect(screen.queryByRole("checkbox", { name: /binding/i })).not.toBeInTheDocument();
+    await view.user.click(within(startPanel).getByRole("button", { name: "Nominate player" }));
 
-    expect(await screen.findByText(/Private receipt: Ada Player is queued for Snow Owls/i)).toHaveFocus();
+    expect(await screen.findByText(/Ada Player is queued for Snow Owls/i)).toHaveFocus();
     expect(startBody).toEqual({
       teamId: IDS.team,
       playerId: IDS.player,
       aavCents: 400,
       termYears: 1,
-      bindingIllegalityConfirmed: true,
     });
 
     await view.user.click(
       screen.getByRole("button", { name: "Begin auction reauthorization" })
     );
     expect(
-      screen.queryByText(/Private receipt: Ada Player is queued for Snow Owls/i)
+      screen.queryByText(/Ada Player is queued for Snow Owls/i)
     ).not.toBeInTheDocument();
     expect(screen.getByText(/Reauthorizing private auction access/i)).toBeInTheDocument();
     await view.user.click(
@@ -541,7 +639,7 @@ describe("FAD-16 auction pages", () => {
     );
     expect(await screen.findByRole("heading", { name: "Ada Player" })).toBeInTheDocument();
     expect(
-      screen.queryByText(/Private receipt: Ada Player is queued for Snow Owls/i)
+      screen.queryByText(/Ada Player is queued for Snow Owls/i)
     ).not.toBeInTheDocument();
   });
 
@@ -640,6 +738,37 @@ describe("FAD-16 auction pages", () => {
         version: 1,
       });
     });
+  });
+
+  it("redirects an inaccessible legacy auction detail link to Auctions", async () => {
+    sessionHarness.request.mockImplementation(async (path) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}`) {
+        throw Object.assign(new Error("Auction not found."), { status: 404 });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    renderWithProviders(
+      <Routes>
+        <Route
+          path="/leagues/:leagueId/auctions/:auctionId"
+          element={<AuctionDetailPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/auctions"
+          element={<h1>Auctions redirected</h1>}
+        />
+      </Routes>,
+      {
+        initialEntries: [`/leagues/${IDS.league}/auctions/${IDS.auction}`],
+        enableSession: false,
+      }
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Auctions redirected" })
+    ).toBeInTheDocument();
   });
 
   it("withholds stale manager bid DOM across an authorization epoch and preserves other-league caches", async () => {
@@ -847,16 +976,14 @@ describe("FAD-16 auction pages", () => {
     expect(await screen.findByRole("heading", { name: "Snow Owls" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ice Foxes" })).toBeInTheDocument();
     expect(screen.getAllByText("Not eligible")).toHaveLength(2);
-    expect(screen.getByText(/must actively submit a strict improvement/i)).toBeInTheDocument();
+    expect(screen.getByText("Minimum offer")).toBeInTheDocument();
     expect(screen.getByText(/not an eligible participant/i)).toBeInTheDocument();
     expect(screen.getByText("Administrative Competitor")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /replace active sealed bid for Administrative Competitor/i })).toBeInTheDocument();
     expect(screen.queryByText(/Administrative Competitor.*\$99\.99/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /withdraw/i })).not.toBeInTheDocument();
 
-    await view.user.click(
-      screen.getByRole("checkbox", { name: /I understand this bid is binding/i })
-    );
+    expect(screen.queryByRole("checkbox", { name: /binding/i })).not.toBeInTheDocument();
     await view.user.click(screen.getByRole("button", { name: "Join auction" }));
     expect(await screen.findByText(/opening bid was accepted/i)).toBeInTheDocument();
     expect(submitted).toEqual({
@@ -864,7 +991,6 @@ describe("FAD-16 auction pages", () => {
         teamId: IDS.team,
         aavCents: 175,
         termYears: 3,
-        bindingIllegalityConfirmed: true,
       },
       version: undefined,
     });
@@ -1195,9 +1321,8 @@ describe("FAD-16 auction pages", () => {
       "/leagues/:leagueId/auctions/:auctionId",
       <AuctionDetailPage />
     );
-    expect(await screen.findByText("Fallback floor")).toBeInTheDocument();
-    expect(screen.getByText(/league-wide fresh auction with no initial leader/i)).toBeInTheDocument();
-    expect(screen.getByText(/first bid may equal this floor/i)).toBeInTheDocument();
+    expect(await screen.findByText("Minimum offer")).toBeInTheDocument();
+    expect(screen.queryByText(/league-wide fresh auction|first bid may equal/i)).not.toBeInTheDocument();
   });
 
   it("refetches after a 412, preserves safe input, and retries with the new bid version", async () => {
@@ -1251,10 +1376,8 @@ describe("FAD-16 auction pages", () => {
     const aav = await screen.findByLabelText("AAV (dollars per year)");
     await view.user.clear(aav);
     await view.user.type(aav, "9.00");
-    expect(screen.getByRole("button", { name: "Update my bid" })).toBeDisabled();
-    await view.user.click(
-      screen.getByRole("checkbox", { name: /I understand this bid is binding/i })
-    );
+    expect(screen.getByRole("button", { name: "Update my bid" })).toBeEnabled();
+    expect(screen.queryByRole("checkbox", { name: /binding/i })).not.toBeInTheDocument();
     await view.user.click(screen.getByRole("button", { name: "Update my bid" }));
     await screen.findByText(/entered amount and term were preserved/i);
     const conflictAlert = screen.getByRole("alert");

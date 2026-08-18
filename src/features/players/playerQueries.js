@@ -41,7 +41,7 @@ export const playerKeys = Object.freeze({
     cursor,
     sort,
   ],
-  leagueInfinite: ({ leagueId, query, status, limit, sort }) => [
+  leagueInfinite: ({ leagueId, query, status, limit, sort, teamId }) => [
     "league",
     leagueId,
     "players",
@@ -50,6 +50,7 @@ export const playerKeys = Object.freeze({
     status,
     limit,
     sort,
+    teamId,
   ],
   leagueDetail: (leagueId, playerId) => [
     "league",
@@ -191,6 +192,7 @@ export function leaguePlayerInfiniteQuery(
     status = "active",
     limit = 100,
     sort = "fantasyPoints",
+    teamId = null,
   } = {}
 ) {
   return infiniteQueryOptions({
@@ -200,6 +202,7 @@ export function leaguePlayerInfiniteQuery(
       status,
       limit,
       sort,
+      teamId,
     }),
     initialPageParam: null,
     queryFn: async ({ pageParam, signal }) => {
@@ -208,6 +211,7 @@ export function leaguePlayerInfiniteQuery(
         status,
         limit: String(limit),
         sort,
+        ...(teamId ? { teamId } : {}),
         ...(pageParam ? { cursor: pageParam } : {}),
       });
       const response = await httpClient.request(

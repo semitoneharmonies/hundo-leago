@@ -95,6 +95,11 @@ export const routePaths = Object.freeze({
       playerId,
       "Player ID"
     )}`,
+  leagueAuctionFocus: (leagueId, auctionId) =>
+    `${routePaths.leagueAuctions(leagueId)}?auctionId=${segment(
+      auctionId,
+      "Auction ID"
+    )}`,
   leagueTrades: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/trades`,
   leagueTradeForAsset: (leagueId, assetType, assetId) =>

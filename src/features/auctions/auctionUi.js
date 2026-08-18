@@ -143,8 +143,8 @@ export function capabilityMessage(reasonCode) {
   return {
     NOT_AUTHORIZED: "You are not authorized to take this action for that team.",
     HELP_NOT_GRANTED: "Commissioner help access does not authorize this action.",
-    PHASE_CLOSED: "This action is closed in the current league phase.",
-    DEADLINE_PASSED: "The server deadline for this action has passed.",
+    PHASE_CLOSED: "This action isn’t available right now.",
+    DEADLINE_PASSED: "This auction is no longer accepting changes.",
     LEAGUE_FROZEN: "League transaction writes are currently frozen.",
     SLOT_LOCKED: "The related Candidate slot is locked.",
     SLOT_OCCUPIED: "The related Candidate slot is already occupied.",

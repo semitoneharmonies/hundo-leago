@@ -15,11 +15,6 @@ const NOT_WON_OUTCOMES = new Set([
   "fallback_no_winner",
   "invalid_offer",
 ]);
-const PENDING_OUTCOMES = new Set([
-  "restricted_pending",
-  "fallback_pending",
-]);
-
 function money(cents) {
   if (!Number.isSafeInteger(cents)) return "";
   return new Intl.NumberFormat("en-CA", {
@@ -62,8 +57,11 @@ function publishedOutcome(slot) {
       Icon: X,
     };
   }
-  if (PENDING_OUTCOMES.has(slot.outcome?.code) || slot.outcome === null) {
-    return { kind: "pending", label: "Pending", Icon: Clock3 };
+  if (slot.outcome?.code === "restricted_pending") {
+    return { kind: "tie", label: "Tie", Icon: Clock3 };
+  }
+  if (slot.outcome?.code === "fallback_pending" || slot.outcome === null) {
+    return { kind: "notWon", label: "Not won", Icon: X };
   }
   return { kind: "neutral", label: "No offer", Icon: null };
 }

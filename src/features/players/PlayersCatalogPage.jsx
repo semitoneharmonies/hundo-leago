@@ -16,6 +16,7 @@ import {
   leagueTeamsQuery,
   visibleLeaguesQuery,
 } from "../leagues/leagueQueries.js";
+import { auctionListQuery } from "../auctions/auctionQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import {
   leaguePlayerInfiniteQuery,
@@ -164,12 +165,16 @@ export function PlayersCatalogPage() {
   });
   const [comparedIds, setComparedIds] = useState(() => new Set());
   const deferredSearchInput = useDeferredValue(searchInput.trim());
+  const selectedTeamId = ownership.startsWith("team:")
+    ? ownership.slice(5)
+    : null;
   const players = useInfiniteQuery({
     ...leaguePlayerInfiniteQuery(session.httpClient, leagueId, {
       query,
       status: "active",
       limit: 100,
       sort: "fantasyPoints",
+      teamId: selectedTeamId,
     }),
     enabled: session.status === "authenticated" && Boolean(league),
   });
@@ -190,6 +195,15 @@ export function PlayersCatalogPage() {
     ...leagueTeamsQuery(session.httpClient, leagueId),
     enabled: session.status === "authenticated" && Boolean(league),
   });
+  const auctionActions = useInfiniteQuery({
+    ...auctionListQuery(session.httpClient, leagueId, { limit: 1 }),
+    enabled: session.status === "authenticated" && Boolean(league),
+  });
+  const canStartAuction = Boolean(
+    auctionActions.data?.pages.some((page) =>
+      page.actions.startTeams.some(({ startAuction }) => startAuction.allowed)
+    )
+  );
 
   const loadedPlayers = useMemo(() => {
     const playersById = new Map();
@@ -613,7 +627,7 @@ export function PlayersCatalogPage() {
                           <HockeyStickIcon />
                           <span>Favourites</span>
                         </button>
-                        {!player.league.ownership && (
+                        {!player.league.ownership && canStartAuction && (
                           <Link
                             className="hl-player-action hl-player-auction-action"
                             to={routePaths.leagueAuctionForPlayer(

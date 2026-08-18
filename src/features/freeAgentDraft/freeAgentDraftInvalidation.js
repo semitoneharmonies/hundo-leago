@@ -308,6 +308,7 @@ function rosterOrContractActions(envelope) {
   }
   const scope = related.fadId;
   return [
+    invalidate(["league", leagueId, "players"]),
     invalidateWhere((query) =>
       privateCandidateQuery(query, leagueId, scope, related.teamId)
     ),
@@ -328,7 +329,11 @@ function freeAgentDraftActions(envelope) {
     return commonCurrentActions(leagueId, fadId);
   }
   if (reasonCode === "allocation_changed") {
-    return [...resultActions(leagueId, fadId), invalidate(navigationPrefix(leagueId))];
+    return [
+      ...resultActions(leagueId, fadId),
+      invalidate(["league", leagueId, "players"]),
+      invalidate(navigationPrefix(leagueId)),
+    ];
   }
   if (reasonCode === "fallback_opened") {
     return [

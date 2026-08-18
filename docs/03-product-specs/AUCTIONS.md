@@ -24,6 +24,10 @@ unchanged.
 On 2026-08-14, Grae changed every manager and commissioner auction offer to
 AAV-first entry in exact `$0.25` increments. The backend derives total value,
 and total contract value now ranks before AAV in ordinary and FAD auctions.
+On 2026-08-17, Grae approved post-deadline nomination during FAD allocation,
+participant-only restricted-tie manager visibility, inline restricted bidding,
+and removal of the manager confirmation checkbox while preserving the same
+server-recorded binding, validation, audit, and resolution safety.
 
 ---
 
@@ -395,6 +399,9 @@ During the approved FAD rapid-auction period:
   that team's original tied Candidate total;
 * a player in an unresolved or correction-required FAD allocation state cannot
   enter an open rapid auction;
+* once the Candidate Card deadline passes, an authorized team may nominate any
+  otherwise-eligible unclaimed player while allocation, restricted ties, and
+  rapid auctions continue; Candidate Card appearance is not required;
 * each normally opened auction resolves at the immediately following 24-hour
   rapid rollover;
 * a nomination submitted during the final 60 minutes is accepted privately
@@ -435,12 +442,13 @@ The manager workflow is:
 2. Select a player by stable ID.
 3. Enter an AAV in an exact `$0.25` increment.
 4. Choose a contract term.
-5. Review the calculated total contract value and the warning that simultaneous wins may create an illegal
-   roster because no cap, position, or roster capacity is reserved;
-6. confirm the binding bid and its resolver-time illegality consequence;
-7. create the auction and first bid atomically.
+5. Review the calculated total contract value when useful.
+6. Submit the auction and first bid atomically.
 
 If either the auction or bid cannot be created, neither is saved.
+The server revalidates league phase, authority, ownership, quarantine, player
+eligibility, offer, term, roster, and cap rules and records an accepted
+submission as binding. The client sends no confirmation flag.
 
 ---
 
@@ -536,10 +544,15 @@ A commissioner may edit or remove a bid despite manager edit limits and cooldown
 
 The approved visibility model is:
 
-* while an auction is `Active`, league members may see the player, participating teams, bid count, their own bid value and term, and deadlines;
+* while an ordinary or open rapid auction is `Active`, league members may see
+  the player, participating teams, bid count, their own bid value and term, and
+  deadlines;
 * competing values and terms remain hidden while active;
 * commissioners cannot view active bid values or contract terms, including through an administrative reveal;
-* managers see only active auctions in the Auction interface;
+* managers see active ordinary/open auctions plus only those active restricted
+  ties in which a team they currently manage is an eligible participant;
+* a restricted-tie manager projection contains only the eligible managed team
+  or teams and never another participant's identity or bid detail;
 * after resolution, every authenticated league member may view every submitted bid value, term, edit history, winning bid, and price paid in League Activity;
 * public viewers see no auction information.
 
@@ -598,7 +611,8 @@ The initial release does not reserve cap room or roster slots for active bids.
 
 A team may bid in multiple auctions and may win results that leave its normal
 roster illegal. Bid submission or edit, and queued-nomination submission in
-FAD, is the binding confirmation. A scheduled resolver commits every
+FAD, is a server-recorded binding acceptance and does not require a client
+confirmation field or checkbox. A scheduled resolver commits every
 otherwise-valid win without a second prompt and returns or publishes the
 resulting general illegality flag afterward.
 
@@ -757,9 +771,9 @@ Starting, joining, or editing a bid may show a preview that a win could make the
 
 Because other auctions and roster changes can occur before resolution, the preview is advisory.
 
-The binding submit/edit confirmation explicitly covers that uncertainty. The
-completed assignment reports the general illegality flag but requires no new
-confirmation and does not need to enumerate every illegality.
+The backend's binding submit/edit record explicitly covers that uncertainty.
+The completed assignment reports the general illegality flag but requires no
+new confirmation and does not need to enumerate every illegality.
 
 ---
 
@@ -912,7 +926,7 @@ Tests must cover:
   Agent Draft completion;
 * private final-hour FAD nomination queueing, automatic opening at rollover,
   binding nominator bid, and following-rollover resolution;
-* bid/edit/queued-nomination binding illegality confirmation and scheduled
+* bid/edit/queued-nomination server-recorded binding acceptance and scheduled
   resolution without a second prompt, including simultaneous wins that leave
   the team illegal;
 * zero eligible current active restricted improvements, including an
@@ -941,7 +955,7 @@ Tests must cover:
 - [x] Deadlines are backend-calculated, daylight-saving safe, visible, testable, and retry-safe.
 - [x] Already-owned players cannot be assigned as auction winners.
 - [x] Winning assignment creates the approved contract and uses shared roster and cap rules.
-- [x] Transactions that leave the normal roster illegal complete under the binding bid-time confirmation; scheduled resolution reports the general warning without a second prompt.
+- [x] Transactions that leave the normal roster illegal complete under the server-recorded binding bid; scheduled resolution reports the general warning without a second prompt or client checkbox.
 - [x] Post-lock roster changes do not alter the current matchup snapshot.
 - [x] Auction results create league activity without matchup or standings entries.
 - [x] Public viewers cannot view auctions.

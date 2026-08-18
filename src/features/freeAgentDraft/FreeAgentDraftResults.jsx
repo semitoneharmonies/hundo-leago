@@ -12,25 +12,10 @@ import {
 import { leagueTeamsQuery } from "../leagues/leagueQueries.js";
 import { CandidateSlot } from "./CandidateSlot.jsx";
 import {
-  freeAgentDraftResultsQuery,
   publishedCandidateCardQuery,
   publishedCandidateCardsQuery,
 } from "./freeAgentDraftQueries.js";
 import styles from "./FreeAgentDraftPage.module.css";
-
-const RESULT_STATUSES = Object.freeze([
-  ["", "All allocation states"],
-  ["pending", "Pending"],
-  ["automatic_award", "Automatic award"],
-  ["restricted_scheduled", "Restricted auction scheduled"],
-  ["restricted_active", "Restricted auction active"],
-  ["restricted_fallback_open", "Fallback auction open"],
-  ["restricted_resolved", "Restricted result resolved"],
-  ["fallback_open_resolved", "Fallback result resolved"],
-  ["no_valid_offer", "No valid offer"],
-  ["invalid", "Invalid snapshot"],
-  ["correction_required", "Correction required"],
-]);
 
 function money(cents) {
   if (!Number.isSafeInteger(cents)) return "Not available";
@@ -42,288 +27,202 @@ function money(cents) {
   }).format(cents / 100);
 }
 
-function statusLabel(status) {
-  return RESULT_STATUSES.find(([value]) => value === status)?.[1] || "Unavailable";
-}
+const TEAM_WINS = new Set([
+  "automatic_win",
+  "restricted_win",
+  "fallback_win",
+]);
 
-function offerOutcomeLabel(code) {
-  return {
-    pending: "Pending — no rank assigned",
-    winner: "Winner",
-    lost_lower_total: "Lost on total contract value",
-    lost_lower_aav: "Lost on equal-total AAV",
-    restricted_tied: "Restricted tie participant",
-    invalid: "Invalid offer",
-  }[code] || "Outcome unavailable";
-}
-
-function fallbackExplanation(fallback) {
-  if (fallback.status !== "no_winner") return null;
-  if (fallback.noWinnerReason === "no_winner") {
-    return "No eligible bid won. The player returned to the unclaimed pool and may be nominated again.";
+function managerResult(slot) {
+  if (TEAM_WINS.has(slot.outcome?.code)) {
+    return { code: "won", label: "Signed", tone: "success" };
   }
-  if (fallback.noWinnerReason === "player_unavailable") {
-    return "No winner was assigned because the player was no longer available.";
+  if (slot.outcome?.code === "restricted_pending") {
+    return { code: "tie", label: "Tie", tone: "warning" };
   }
-  if (fallback.noWinnerReason === "season_closed") {
-    return "No winner was assigned because the season was closed.";
-  }
-  return "No winner was assigned by the authoritative auction result.";
+  return { code: "not_won", label: "Not won", tone: "neutral" };
 }
 
-function allocationOutcome(result) {
-  if (result.status === "pending") return "Pending";
-  if (result.winner) return "Obtained";
-  if (result.status === "correction_required") return "Correction required";
-  return "Not obtained";
-}
+function SelectedTeamResults({
+  fadId,
+  httpClient,
+  leagueId,
+  managedTeamIds,
+  summary,
+}) {
+  const [search, setSearch] = useState("");
+  const history = useQuery(
+    publishedCandidateCardQuery(httpClient, leagueId, fadId, summary.teamId)
+  );
 
-function AllocationResult({ result, teamNames }) {
-  const titleId = `fad-allocation-${result.allocationId}`;
-  const pending = result.status === "pending";
-  const winnerName = result.winner ? teamNames.get(result.winner.teamId) : null;
-  const otherOffers = result.winner
-    ? result.rankedOffers.filter(
-        (offer) => offer.snapshotEntryId !== result.winner.snapshotEntryId
-      )
-    : result.rankedOffers;
-  const hasMoreDetail =
-    otherOffers.length > 0 ||
-    result.restricted !== null ||
-    result.fallback !== null ||
-    result.draws.length > 0;
+  if (history.isPending) {
+    return <LoadingBlock>Loading {summary.team.name}&apos;s results…</LoadingBlock>;
+  }
+  if (history.isError) {
+    return (
+      <ErrorBlock
+        error={history.error}
+        fallback={`${summary.team.name}'s results could not be loaded.`}
+      />
+    );
+  }
+
+  const candidates = history.data.slots
+    .filter((slot) => slot.occupantKind === "candidate" && slot.player)
+    .map((slot) => ({ ...slot, result: managerResult(slot) }));
+  const normalizedSearch = search.trim().toLocaleLowerCase("en-CA");
+  const visible = candidates.filter((slot) =>
+    normalizedSearch === "" ||
+    slot.player.fullName.toLocaleLowerCase("en-CA").includes(normalizedSearch)
+  );
+  const totals = candidates.reduce(
+    (counts, slot) => ({
+      ...counts,
+      [slot.result.code]: counts[slot.result.code] + 1,
+    }),
+    { won: 0, not_won: 0, tie: 0 }
+  );
+  const canAct = managedTeamIds.includes(summary.teamId);
+
   return (
-    <article className={styles.resultCard} aria-labelledby={titleId}>
-      <div className={styles.resultCardHeader}>
-        <div className={styles.resultPlayer}>
-          <h3 id={titleId}>{result.player.fullName}</h3>
-          <span>{result.player.positionGroup === "F" ? "Forward" : "Defence"}</span>
-        </div>
-        <StatusBadge
-          tone={
-            pending
-              ? "warning"
-              : result.status === "correction_required"
-                ? "danger"
-                : result.winner
-                  ? "success"
-                  : "neutral"
-          }
-        >
-          {statusLabel(result.status)}
-        </StatusBadge>
-      </div>
-
-      <dl
-        className={styles.resultSummary}
-        aria-label={`${result.player.fullName} allocation summary`}
-      >
-        <div>
-          <dt>Outcome</dt>
-          <dd className={result.winner ? styles.resultObtained : undefined}>
-            {allocationOutcome(result)}
-          </dd>
-        </div>
-        {result.winner && (
-          <>
-            <div className={styles.resultWinningTeam}>
-              <dt>Winning team</dt>
-              <dd>{winnerName}</dd>
-            </div>
-            <div>
-              <dt>Total</dt>
-              <dd>{money(result.winner.totalValueCents)}</dd>
-            </div>
-            <div>
-              <dt>Term</dt>
-              <dd>
-                {result.winner.termYears}{" "}
-                {result.winner.termYears === 1 ? "year" : "years"}
-              </dd>
-            </div>
-            <div>
-              <dt>AAV</dt>
-              <dd>{money(result.winner.aavCents)}</dd>
-            </div>
-          </>
-        )}
+    <div className={styles.selectedTeamResults}>
+      <dl className={styles.teamResultTotals} aria-label={`${summary.team.name} result totals`}>
+        <div><dt>Signed</dt><dd>{totals.won}</dd></div>
+        <div><dt>Not won</dt><dd>{totals.not_won}</dd></div>
+        <div><dt>Tied</dt><dd>{totals.tie}</dd></div>
       </dl>
-
-      {pending && (
-        <p className={styles.pendingConfirmation} role="status">
-          Allocation is pending. No winner or contract has been recorded.
-        </p>
-      )}
-
-      {hasMoreDetail && (
-        <details className={styles.resultDisclosure}>
-          <summary>
-            More allocation detail
-            {otherOffers.length > 0
-              ? ` · ${otherOffers.length} ${
-                  result.winner ? "other" : "locked"
-                } ${otherOffers.length === 1 ? "offer" : "offers"}`
-              : ""}
-          </summary>
-          <div className={styles.resultEvidence}>
-            {otherOffers.length > 0 && (
-              <>
-                <p className={styles.resultDetailLabel}>
-                  {result.winner ? "Other locked offers" : "Locked offers"}
-                </p>
-                <div
-                  className={styles.offerList}
-                  aria-label={`${result.player.fullName} ${
-                    result.winner ? "other locked offers" : "locked offers"
-                  }`}
-                >
-                  {otherOffers.map((offer) => (
-                    <div className={styles.offerRow} key={offer.snapshotEntryId}>
-                      <strong>{offer.team.name}</strong>
-                      <span>{money(offer.totalValueCents)} total</span>
-                      <span>
-                        {offer.termYears}{" "}
-                        {offer.termYears === 1 ? "year" : "years"}
-                      </span>
-                      <span>{money(offer.aavCents)} AAV</span>
-                      <span>
-                        {pending || offer.rank === null ? "No rank" : `Rank ${offer.rank}`}
-                        {` · ${offerOutcomeLabel(offer.outcomeCode)}`}
-                      </span>
-                    </div>
-                  ))}
+      <div className={styles.teamResultTools}>
+        <label>
+          Search players
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </label>
+        <Link
+          className="hl-button hl-button--quiet"
+          to={routePaths.draftFreeAgentCard(leagueId, fadId, summary.teamId)}
+        >
+          View original Candidate Card
+        </Link>
+      </div>
+      {visible.length === 0 ? (
+        <p>No players match this search.</p>
+      ) : (
+        <ul className={styles.teamResultList}>
+          {visible.map((slot) => {
+            const actionable =
+              canAct &&
+              slot.result.code === "tie" &&
+              Boolean(slot.outcome?.auctionId);
+            return (
+              <li key={slot.entryId || slot.slotKey}>
+                <div>
+                  <strong>{slot.player.fullName}</strong>
+                  <span>
+                    {money(slot.aavCents)} AAV · {slot.termYears} {slot.termYears === 1 ? "year" : "years"}
+                  </span>
                 </div>
-              </>
-            )}
-            {result.restricted && (
-              <p>
-                Restricted path:{" "}
-                <strong>{result.restricted.status.replaceAll("_", " ")}</strong>.
-                Candidate values are immutable minimums, not active bids or leaders.
-              </p>
-            )}
-            {result.fallback && (
-              <>
-                <p>
-                  Fallback path:{" "}
-                  <strong>{result.fallback.status.replaceAll("_", " ")}</strong>.
-                  {` The league-wide floor was ${money(
-                    result.fallback.minimumTotalValueCents
-                  )} total value.`}
-                </p>
-                {fallbackExplanation(result.fallback) && (
-                  <p className={styles.pendingConfirmation}>
-                    {fallbackExplanation(result.fallback)}
-                  </p>
-                )}
-              </>
-            )}
-            {result.draws.length > 0 && (
-              <>
-                <p className={styles.resultDetailLabel}>
-                  Terminal draw evidence ({result.draws.length})
-                </p>
-                <ul className={styles.diagnostics}>
-                  {result.draws.map((draw) => (
-                    <li key={draw.auctionId}>
-                      {draw.auctionType === "fad_restricted"
-                        ? "Restricted"
-                        : "Open rapid"}{" "}
-                      auction —{` `}
-                      {draw.drawReveal?.selectionUsed
-                        ? `${teamNames.get(
-                            draw.drawReveal.selectedTeamId
-                          )} was selected by the committed equal-chance draw`
-                        : draw.drawReveal
-                          ? "no random selection was used because there was no exact top tie"
-                          : "correction is required before the draw can be revealed"}
-                      .
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
-        </details>
+                <div className={styles.teamResultAction}>
+                  <StatusBadge tone={slot.result.tone}>
+                    {actionable ? "Tie — action required" : slot.result.label}
+                  </StatusBadge>
+                  {actionable && (
+                    <Link
+                      className="hl-button hl-button--secondary"
+                      to={routePaths.leagueAuctionFocus(leagueId, slot.outcome.auctionId)}
+                    >
+                      Place bid
+                    </Link>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </article>
+    </div>
   );
 }
 
-function outcomeCounts(summary) {
-  return {
-    obtained:
-      summary.outcomeCounts.automaticWins +
-      summary.outcomeCounts.restrictedWins +
-      summary.outcomeCounts.fallbackWins,
-    notObtained:
-      summary.outcomeCounts.losses +
-      summary.outcomeCounts.fallbackNoWinner +
-      summary.outcomeCounts.invalidOffers,
-    pending:
-      summary.outcomeCounts.restrictedPending +
-      summary.outcomeCounts.fallbackPending,
-  };
-}
-
-export function PublishedCandidateCards({ httpClient, leagueId, fadId }) {
+export function PublishedCandidateCards({
+  httpClient,
+  leagueId,
+  fadId,
+  currentUserId,
+}) {
   const cards = useInfiniteQuery(
     publishedCandidateCardsQuery(httpClient, leagueId, fadId)
   );
-  const summaries = cards.data?.pages.flatMap((page) => page.items) || [];
-  const totals = summaries.reduce(
-    (combined, summary) => {
-      const counts = outcomeCounts(summary);
-      return {
-        obtained: combined.obtained + counts.obtained,
-        notObtained: combined.notObtained + counts.notObtained,
-        pending: combined.pending + counts.pending,
-      };
-    },
-    { obtained: 0, notObtained: 0, pending: 0 }
-  );
+  const teams = useQuery(leagueTeamsQuery(httpClient, leagueId));
+  const summaries = (cards.data?.pages.flatMap((page) => page.items) || [])
+    .slice()
+    .sort(
+      (left, right) =>
+        left.team.name.localeCompare(right.team.name, "en-CA") ||
+        left.teamId.localeCompare(right.teamId)
+    );
+  const managedTeamIds = (teams.data || [])
+    .filter(({ currentManager }) => currentManager?.userId === currentUserId)
+    .sort(
+      (left, right) =>
+        left.name.localeCompare(right.name, "en-CA") || left.id.localeCompare(right.id)
+    )
+    .map(({ id }) => id);
+  const defaultTeamId = managedTeamIds.find((teamId) =>
+    summaries.some((summary) => summary.teamId === teamId)
+  ) || null;
+  const [chosenTeamId, setChosenTeamId] = useState("");
+  const selectedTeamId = summaries.some(({ teamId }) => teamId === chosenTeamId)
+    ? chosenTeamId
+    : summaries.some(({ teamId }) => teamId === defaultTeamId)
+      ? defaultTeamId
+      : summaries[0]?.teamId || "";
+  const selectedSummary =
+    summaries.find(({ teamId }) => teamId === selectedTeamId) || null;
 
   return (
     <Surface className={styles.panel} as="section" aria-labelledby="published-candidate-cards-title">
       <div className={styles.panelHeader}>
         <div>
-          <p className="hl-eyebrow">Immutable team history</p>
-          <h2 id="published-candidate-cards-title">Published Candidate Cards</h2>
+          <h2 id="published-candidate-cards-title">Team results</h2>
         </div>
-        {!cards.isPending && !cards.isError && <StatusBadge>{summaries.length} teams</StatusBadge>}
+        {summaries.length > 0 && (
+          <label className={styles.teamResultPicker}>
+            Team
+            <select
+              value={selectedTeamId}
+              onChange={(event) => setChosenTeamId(event.target.value)}
+            >
+              {summaries.map((summary) => (
+                <option key={summary.teamId} value={summary.teamId}>
+                  {summary.team.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
-      {cards.isPending ? (
+      {cards.isPending || teams.isPending ? (
         <LoadingBlock>Loading published Candidate Cards…</LoadingBlock>
       ) : cards.isError ? (
         <ErrorBlock error={cards.error} fallback="Published Candidate Cards could not be loaded." />
+      ) : teams.isError ? (
+        <ErrorBlock error={teams.error} fallback="Team management could not be confirmed." />
       ) : summaries.length === 0 ? (
-        <p>No published Candidate Cards were returned.</p>
+        <p>No team results are available yet.</p>
       ) : (
         <>
-          <p className={styles.compactOutcomeSummary}>
-            <strong>{totals.obtained} obtained</strong>
-            <span>{totals.notObtained} not obtained</span>
-            {totals.pending > 0 && <span>{totals.pending} pending</span>}
-          </p>
-          <div className={styles.teamSelector}>
-            {summaries.map((summary) => {
-              const counts = outcomeCounts(summary);
-              return (
-                <Link
-                  className={styles.teamChoice}
-                  key={summary.snapshotId}
-                  to={routePaths.draftFreeAgentCard(leagueId, fadId, summary.teamId)}
-                >
-                  <strong>{summary.team.name}</strong>
-                  <span>{summary.counts.carryovers} carryovers · {summary.counts.candidates} requested candidates</span>
-                  <small>
-                    {counts.obtained} obtained · {counts.notObtained} not obtained
-                    {counts.pending > 0 ? ` · ${counts.pending} pending` : ""}
-                  </small>
-                </Link>
-              );
-            })}
-          </div>
+          {selectedSummary && (
+            <SelectedTeamResults
+              fadId={fadId}
+              httpClient={httpClient}
+              leagueId={leagueId}
+              managedTeamIds={managedTeamIds}
+              summary={selectedSummary}
+            />
+          )}
           {cards.hasNextPage && (
             <button
               type="button"
@@ -331,7 +230,7 @@ export function PublishedCandidateCards({ httpClient, leagueId, fadId }) {
               disabled={cards.isFetchingNextPage}
               onClick={() => cards.fetchNextPage()}
             >
-              {cards.isFetchingNextPage ? "Loading more…" : "Load more Candidate Cards"}
+              {cards.isFetchingNextPage ? "Loading more…" : "Load more teams"}
             </button>
           )}
         </>
@@ -340,131 +239,12 @@ export function PublishedCandidateCards({ httpClient, leagueId, fadId }) {
   );
 }
 
-export function FreeAgentDraftAllocationResults({
-  httpClient,
-  leagueId,
-  fadId,
-}) {
-  const [searchInput, setSearchInput] = useState("");
-  const [statusInput, setStatusInput] = useState("");
-  const [filters, setFilters] = useState({ q: "", status: null });
-  const results = useInfiniteQuery(
-    freeAgentDraftResultsQuery(httpClient, leagueId, fadId, filters)
-  );
-  const teams = useQuery(leagueTeamsQuery(httpClient, leagueId));
-  const allocations = results.data?.pages.flatMap((page) => page.items) || [];
-  const teamNames = new Map(
-    (teams.data || []).map((leagueTeam) => [leagueTeam.id, leagueTeam.name])
-  );
-  const unresolvedTeamIdentity = allocations.some(
-    (result) =>
-      (result.winner !== null && !teamNames.has(result.winner.teamId)) ||
-      result.draws.some(
-        (draw) =>
-          Boolean(draw.drawReveal?.selectedTeamId) &&
-          !teamNames.has(draw.drawReveal.selectedTeamId)
-      )
-  );
-
-  function applyFilters(event) {
-    event.preventDefault();
-    setFilters({
-      q: searchInput,
-      status: statusInput || null,
-    });
-  }
-
-  return (
-      <Surface className={styles.panel} as="section" aria-labelledby="allocation-results-title">
-        <div className={styles.panelHeader}>
-          <div>
-            <p className="hl-eyebrow">Player-by-player result history</p>
-            <h2 id="allocation-results-title">Allocation results</h2>
-          </div>
-          {!results.isPending && !results.isError && <StatusBadge>{allocations.length} loaded</StatusBadge>}
-        </div>
-        <form className={styles.resultFilters} aria-label="Filter allocation results" onSubmit={applyFilters}>
-          <label>
-            Search player name
-            <input
-              type="search"
-              maxLength={200}
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-            />
-          </label>
-          <label>
-            Allocation status
-            <select value={statusInput} onChange={(event) => setStatusInput(event.target.value)}>
-              {RESULT_STATUSES.map(([value, label]) => (
-                <option key={value || "all"} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
-          <button type="submit" className="hl-button hl-button--secondary">
-            Apply filters
-          </button>
-        </form>
-
-        {results.isPending || teams.isPending ? (
-          <LoadingBlock>Loading allocation results and current team identities…</LoadingBlock>
-        ) : results.isError ? (
-          <ErrorBlock error={results.error} fallback="Allocation results could not be loaded." />
-        ) : teams.isError ? (
-          <ErrorBlock
-            error={teams.error}
-            fallback="Current league team identities could not be confirmed. Results remain hidden."
-          />
-        ) : unresolvedTeamIdentity ? (
-          <p className="hl-form-message is-error" role="alert">
-            A winning team could not be resolved from the current authorized league team list. Results remain hidden.
-          </p>
-        ) : allocations.length === 0 ? (
-          <p>No allocation results match these filters.</p>
-        ) : (
-          <div className={styles.resultList}>
-            {allocations.map((result) => (
-              <AllocationResult
-                key={result.allocationId}
-                result={result}
-                teamNames={teamNames}
-              />
-            ))}
-          </div>
-        )}
-
-        {results.hasNextPage && (
-          <button
-            type="button"
-            className="hl-button hl-button--secondary"
-            disabled={results.isFetchingNextPage}
-            onClick={() => results.fetchNextPage()}
-          >
-            {results.isFetchingNextPage ? "Loading more…" : "Load more allocation results"}
-          </button>
-        )}
-      </Surface>
-  );
-}
-
-export function FreeAgentDraftResultsContent(props) {
-  return (
-    <>
-      <PublishedCandidateCards
-        httpClient={props.httpClient}
-        leagueId={props.leagueId}
-        fadId={props.fadId}
-      />
-      <FreeAgentDraftAllocationResults {...props} />
-    </>
-  );
-}
-
 export function PublishedCandidateCardView({
   httpClient,
   leagueId,
   fadId,
   teamId,
+  currentUserId,
 }) {
   const history = useQuery(
     publishedCandidateCardQuery(httpClient, leagueId, fadId, teamId)
@@ -497,28 +277,21 @@ export function PublishedCandidateCardView({
     ["D", "Defence"],
     ["B", "Bench"],
   ];
+  const candidateSlots = card.slots.filter(
+    (slot) => slot.occupantKind === "candidate" && slot.player
+  );
+  const managedByViewer = cardTeam.currentManager?.userId === currentUserId;
   return (
     <>
       <Surface className={styles.panel} as="section" aria-labelledby="published-card-history-title">
         <div className={styles.panelHeader}>
           <div>
-            <p className="hl-eyebrow">{cardTeam.name} · Immutable locked request</p>
+            <p className="hl-eyebrow">{cardTeam.name}</p>
             <h2 id="published-card-history-title">Published Candidate Card</h2>
           </div>
-          <StatusBadge tone={card.allocationEligibility === "eligible" ? "success" : "warning"}>
-            {card.allocationEligibility === "eligible" ? "Allocation eligible" : "Offers excluded"}
-          </StatusBadge>
+          <StatusBadge>Original card</StatusBadge>
         </div>
-        <p>
-          This is the original 22-slot locked card. Later wins, losses, auctions,
-          and corrections appear as outcomes without rewriting what the team requested.
-        </p>
-        <div className={styles.summaryGrid}>
-          <div className={styles.summaryCard}><span>Maximum cap use</span><strong>{money(card.capProjection.maximumPossibleCapCents)}</strong></div>
-          <div className={styles.summaryCard}><span>Carried cap use</span><strong>{money(card.capProjection.carriedCapUsageCents)}</strong></div>
-          <div className={styles.summaryCard}><span>Missing mandatory</span><strong>{card.completeness.missingMandatoryCount}</strong></div>
-          <div className={styles.summaryCard}><span>Commissioner interventions</span><strong>{card.commissionerInterventions.length}</strong></div>
-        </div>
+        <p>Original offers and their final team results.</p>
       </Surface>
       <div className={styles.compactCard} aria-label="Published Candidate Card rows">
         <div className={styles.compactColumnHeader} aria-hidden="true">
@@ -526,9 +299,14 @@ export function PublishedCandidateCardView({
           <span>Player name</span>
           <span>Cost</span>
           <span>Term</span>
+          <span>Total</span>
           <span>Result</span>
         </div>
-        {groups.map(([group, label]) => (
+        {groups.filter(([group]) =>
+          candidateSlots.some((slot) => slot.slotGroup === group)
+        ).map(([group, label]) => {
+          const groupSlots = candidateSlots.filter((slot) => slot.slotGroup === group);
+          return (
           <section
             className={styles.compactSlotGroup}
             aria-labelledby={`published-${group}-slots`}
@@ -536,34 +314,36 @@ export function PublishedCandidateCardView({
           >
             <div className={styles.compactGroupHeading}>
               <h2 id={`published-${group}-slots`}>{label}</h2>
-              <span>
-                {group === "F" ? "12 rows" : group === "D" ? "6 rows" : "4 rows"}
-              </span>
+              <span>{groupSlots.length} requested</span>
             </div>
-            {card.slots
-              .filter((slot) => slot.slotGroup === group)
-              .map((slot) => (
+            {groupSlots.map((slot) => {
+              const actionable =
+                managedByViewer &&
+                slot.outcome?.code === "restricted_pending" &&
+                Boolean(slot.outcome.auctionId);
+              return (
+              <div className={styles.publishedCandidateRow} key={slot.slotKey}>
                 <CandidateSlot
-                  key={slot.slotKey}
                   slot={slot}
                   published
                 />
-              ))}
+                {actionable && (
+                  <div className={styles.publishedCandidateAction}>
+                    <Link
+                      className="hl-button hl-button--secondary"
+                      to={routePaths.leagueAuctionFocus(leagueId, slot.outcome.auctionId)}
+                    >
+                      Place bid
+                    </Link>
+                  </div>
+                )}
+              </div>
+              );
+            })}
           </section>
-        ))}
+          );
+        })}
       </div>
-      {card.commissionerInterventions.length > 0 && (
-        <Surface className={styles.panel} as="section" aria-labelledby="published-interventions-title">
-          <h2 id="published-interventions-title">Commissioner interventions</h2>
-          <ul className={styles.diagnostics}>
-            {card.commissionerInterventions.map((intervention) => (
-              <li key={intervention.revisionId}>
-                {intervention.actorDisplayName} — {intervention.action.replaceAll("_", " ")}
-              </li>
-            ))}
-          </ul>
-        </Surface>
-      )}
     </>
   );
 }

@@ -179,39 +179,23 @@ function validateContractTerms(input, fields, description) {
 }
 
 function startBody(input) {
-  const fields = Object.hasOwn(input || {}, "bindingIllegalityConfirmed")
-    ? [
-        "bindingIllegalityConfirmed",
-        "playerId",
-        "teamId",
-        "termYears",
-        "aavCents",
-      ]
-    : ["playerId", "teamId", "termYears", "aavCents"];
-  validateContractTerms(input, fields, "Auction start body");
+  validateContractTerms(
+    input,
+    ["playerId", "teamId", "termYears", "aavCents"],
+    "Auction start body"
+  );
   stableId(input.playerId, "Auction player ID");
   stableId(input.teamId, "Auction team ID");
-  if (
-    Object.hasOwn(input, "bindingIllegalityConfirmed") &&
-    input.bindingIllegalityConfirmed !== true
-  ) {
-    throw new TypeError("The binding FAD auction confirmation is invalid.");
-  }
   return input;
 }
 
 function bidBody(input) {
-  const fields = Object.hasOwn(input || {}, "bindingIllegalityConfirmed")
-    ? ["bindingIllegalityConfirmed", "teamId", "termYears", "aavCents"]
-    : ["teamId", "termYears", "aavCents"];
-  validateContractTerms(input, fields, "Auction bid body");
+  validateContractTerms(
+    input,
+    ["teamId", "termYears", "aavCents"],
+    "Auction bid body"
+  );
   stableId(input.teamId, "Auction team ID");
-  if (
-    Object.hasOwn(input, "bindingIllegalityConfirmed") &&
-    input.bindingIllegalityConfirmed !== true
-  ) {
-    throw new TypeError("The binding FAD auction confirmation is invalid.");
-  }
   return input;
 }
 

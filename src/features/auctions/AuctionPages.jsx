@@ -28,7 +28,12 @@ import {
   Surface,
 } from "../../components/HundoUi.jsx";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
-import { leagueDateTime, money } from "../../shared/hundoFormat.js";
+import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
+import {
+  leagueDateTime,
+  money,
+  shortLeagueDateTime,
+} from "../../shared/hundoFormat.js";
 import { useRealtime } from "../../shared/realtime/realtimeContext.js";
 import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import {
@@ -232,30 +237,6 @@ function FormFeedback({ error, fallback, id, message, focusKey }) {
   return null;
 }
 
-function FadBindingConfirmation({ checked, describedBy, disabled, id, onChange }) {
-  return (
-    <div className={styles.confirmation}>
-      <label htmlFor={id}>
-        <input
-          id={id}
-          type="checkbox"
-          aria-describedby={describedBy}
-          checked={checked}
-          disabled={disabled}
-          onChange={(event) => onChange(event.target.checked)}
-        />
-        <span>
-          I understand this bid is binding. No cap space, roster slot,
-          position slot, player ownership, or other auction capacity is
-          reserved. Every otherwise-valid win completes independently, even
-          if the combined results make my roster illegal, and the resolver
-          will not ask me again.
-        </span>
-      </label>
-    </div>
-  );
-}
-
 function TotalContractPreview({ aav, describedBy, term }) {
   return (
     <label>
@@ -409,12 +390,9 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [aav, setAav] = useState("1.00");
   const [term, setTerm] = useState("1");
-  const [confirmed, setConfirmed] = useState(false);
   const [clientError, setClientError] = useState(null);
   const [prefillConsumed, setPrefillConsumed] = useState(false);
-  const confirmationId = useId();
   const feedbackId = useId();
-  const searchAuthorityId = useId();
   const prefilledPlayerId = searchParams.get("playerId");
   const validPrefill = UUID_V4.test(prefilledPlayerId || "");
   const prefilledPlayer = useQuery({
@@ -445,7 +423,6 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
           result.auction
         );
       }
-      setConfirmed(false);
       setPlayerSearch("");
       setSelectedPlayer(null);
       await Promise.all([
@@ -489,16 +466,12 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
       if (!selectedPlayer || selectedPlayer.fullName !== playerSearch) {
         throw new Error("Select a player from the available search results.");
       }
-      if (isFad && !confirmed) {
-        throw new Error("Confirm the binding FAD bid and possible roster illegality.");
-      }
       const offer = validateAuctionOffer(aav, term, { action: "start" });
       const body = {
         teamId: selectedStartTeam.teamId,
         playerId: selectedPlayer.id,
         aavCents: offer.aavCents,
         termYears: offer.termYears,
-        ...(isFad ? { bindingIllegalityConfirmed: true } : {}),
       };
       setClientError(null);
       mutation.mutate({
@@ -518,9 +491,9 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
     ? result.queuedNomination
     : null;
   const successMessage = queued
-    ? `Private receipt: ${queued.player.fullName} is queued for ${teamName(
+    ? `${queued.player.fullName} is queued for ${teamName(
         selectedStartTeam?.team
-      )} with a binding opening bid of ${money(queued.totalValueCents)} over ${queued.termYears} ${queued.termYears === 1 ? "year" : "years"}. Only that team’s current manager can see the receipt before the server opens the next rapid-auction cycle.`
+      )} at ${money(queued.aavCents)} AAV for ${queued.termYears} ${queued.termYears === 1 ? "year" : "years"}.`
     : openedAuctionId
       ? "The auction and your opening bid were accepted."
       : null;
@@ -529,39 +502,37 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
     <Surface className={styles.panel} aria-labelledby="start-auction-title">
       <div className={styles.panelHeader}>
         <div>
-          <p className="hl-eyebrow">Server-authorized action</p>
           <h2 id="start-auction-title">Start an auction</h2>
         </div>
       </div>
       {startTeams.length === 0 ? (
-        <p>
-          The server did not return a team context that can start an auction.
-        </p>
+        <p>Nominations aren&apos;t available for your teams right now.</p>
       ) : (
         <form className={styles.form} onSubmit={submit} noValidate>
           <div className={styles.formGrid}>
-            <label>
-              Team
-              <select
-                aria-describedby={feedbackId}
-                value={selectedStartTeam?.teamId || ""}
-                onChange={(event) => {
-                  setTeamId(event.target.value);
-                  setConfirmed(false);
-                  setClientError(null);
-                  mutation.reset();
-                }}
-              >
-                {startTeams.map((team) => (
-                  <option key={team.teamId} value={team.teamId}>
-                    {teamName(team.team)} — {team.sourceKind === "fad_open_rapid" ? "FAD rapid" : "weekly"}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {startTeams.length > 1 && (
+              <label>
+                Team
+                <select
+                  aria-describedby={feedbackId}
+                  value={selectedStartTeam?.teamId || ""}
+                  onChange={(event) => {
+                    setTeamId(event.target.value);
+                    setClientError(null);
+                    mutation.reset();
+                  }}
+                >
+                  {startTeams.map((team) => (
+                    <option key={team.teamId} value={team.teamId}>
+                      {teamName(team.team)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <PlayerCombobox
               client={context.session.httpClient}
-              describedBy={`${searchAuthorityId} ${feedbackId}`}
+              describedBy={feedbackId}
               leagueId={leagueId}
               playerSearch={playerSearch}
               selectedPlayer={selectedPlayer}
@@ -611,44 +582,13 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
               term={term}
             />
           </div>
-          <p className={styles.searchAuthority} id={searchAuthorityId}>
-            Player search is a convenience catalog filter, not FAD eligibility
-            authority. On submission, the server rechecks player ownership and
-            quarantine, FAD timing, team authority, contract rules, and the
-            binding confirmation.
-          </p>
           {selectedStartTeam?.sourceKind === "fad_open_rapid" && (
-            <>
-              <div className={styles.timingNotice}>
-                <strong>Rapid-auction timing</strong>
-                <span>
-                  Target rollover: {leagueDateTime(
-                    selectedStartTeam.targetRolloverAtMs,
-                    context.league.timezone
-                  )}
-                </span>
-                <span>
-                  Private queue boundary: {leagueDateTime(
-                    selectedStartTeam.creationCutoffAtMs,
-                    context.league.timezone
-                  )}
-                </span>
-                <small>
-                  At or after that boundary, the server accepts a new nomination
-                  privately and opens it at rollover for the following cycle.
-                </small>
-              </div>
-              <FadBindingConfirmation
-                checked={confirmed}
-                describedBy={feedbackId}
-                disabled={mutation.isPending}
-                id={confirmationId}
-                onChange={(value) => {
-                  setConfirmed(value);
-                  setClientError(null);
-                }}
-              />
-            </>
+            <p className={styles.timingNotice}>
+              Next rollover: {shortLeagueDateTime(
+                selectedStartTeam.targetRolloverAtMs,
+                context.league.timezone
+              )}
+            </p>
           )}
           {!selectedStartTeam?.startAuction.allowed && (
             <p className={styles.denied}>
@@ -661,14 +601,13 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
               disabled={
                 mutation.isPending ||
                 !selectedPlayer ||
-                !selectedStartTeam?.startAuction.allowed ||
-                (isFad && !confirmed)
+                !selectedStartTeam?.startAuction.allowed
               }
             >
               {mutation.isPending
                 ? "Submitting…"
                 : isFad
-                  ? "Start or queue auction"
+                  ? "Nominate player"
                   : "Start auction"}
             </button>
             {openedAuctionId && (
@@ -694,55 +633,41 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
 
 function MinimumNotice({ auction }) {
   if (auction.minimumContract === null) return null;
-  const fallback = auction.fadOrigin === "restricted_no_improvement_fallback";
   return (
     <div className={styles.minimumNotice}>
-      <strong>{fallback ? "Fallback floor" : "Candidate minimum"}</strong>
+      <strong>Minimum offer</strong>
       <span>
         {money(auction.minimumContract.totalValueCents)} over {auction.minimumContract.termYears} {auction.minimumContract.termYears === 1 ? "year" : "years"} · {money(auction.minimumContract.aavCents)} AAV
       </span>
-      <small>
-        {fallback
-          ? "This is a league-wide fresh auction with no initial leader. A first bid may equal this floor but cannot rank below it."
-          : "This is the original tied Candidate commitment, not a bid or leader. An eligible team must actively submit a strict improvement to contend."}
-      </small>
     </div>
   );
 }
 
 function AuctionTiming({ auction, timeZone }) {
+  const target = auction.sourceKind === "ordinary_weekly"
+    ? auction.resolvesAtMs
+    : auction.targetRolloverAtMs;
   return (
-    <dl className={styles.timingGrid}>
-      <div>
-        <dt>Opened</dt>
-        <dd>{leagueDateTime(auction.openedAtMs, timeZone)}</dd>
-      </div>
-      <div>
-        <dt>{auction.sourceKind === "ordinary_weekly" ? "Resolves" : "Target rollover"}</dt>
-        <dd>
-          {leagueDateTime(
-            auction.sourceKind === "ordinary_weekly"
-              ? auction.resolvesAtMs
-              : auction.targetRolloverAtMs,
-            timeZone
-          )}
-        </dd>
-      </div>
-      {auction.creationCutoffAtMs !== null && (
-        <div>
-          <dt>New-nomination queue boundary</dt>
-          <dd>{leagueDateTime(auction.creationCutoffAtMs, timeZone)}</dd>
-        </div>
-      )}
-    </dl>
+    <p className={styles.compactTiming}>
+      {auction.status === "active" ? "Closes" : "Closed"} {shortLeagueDateTime(target, timeZone)}
+    </p>
   );
 }
 
-function OwnBidSummary({ viewerTeam, timeZone }) {
+function OwnBidSummary({ compact = false, viewerTeam, timeZone }) {
   if (!viewerTeam.bid) {
     return <p>No bid from this managed team.</p>;
   }
   const bid = viewerTeam.bid;
+  if (compact) {
+    return (
+      <p className={styles.compactOwnBid}>
+        <strong>Your bid for {teamName(viewerTeam.team)}:</strong>{" "}
+        {money(bid.aavCents)} AAV · {bid.termYears}{" "}
+        {bid.termYears === 1 ? "year" : "years"} · {money(bid.totalValueCents)} total
+      </p>
+    );
+  }
   return (
     <div className={styles.ownBid}>
       <strong>Your sealed bid for {teamName(viewerTeam.team)}</strong>
@@ -790,81 +715,85 @@ function TerminalSummary({ auction }) {
   return <p>This auction ended without assigning the player.</p>;
 }
 
-function AuctionCard({ auction, leagueId, timeZone }) {
+function AuctionCard({ auction, context, focused, leagueId, timeZone }) {
   const ownBids = auction.viewerTeams.filter((viewerTeam) => viewerTeam.bid !== null);
+  const eligibleTeams = auction.viewerTeams.filter((viewerTeam) => viewerTeam.eligible);
+  const restricted = auction.sourceKind === "fad_restricted";
+  const actionRequired = restricted && auction.status === "active" && eligibleTeams.length > 0;
   return (
-    <article className={styles.card} aria-labelledby={`auction-${auction.auctionId}`}>
+    <article
+      className={`${styles.card} ${focused ? styles.focusedCard : ""}`}
+      aria-labelledby={`auction-title-${auction.auctionId}`}
+      id={`auction-${auction.auctionId}`}
+    >
       <div className={styles.cardHeader}>
         <div>
-          <p className="hl-eyebrow">{sourceLabel(auction)}</p>
-          <h2 id={`auction-${auction.auctionId}`}>
-            <Link to={routePaths.auctionDetail(leagueId, auction.auctionId)}>
-              {auction.player.fullName}
-            </Link>
+          <p className="hl-eyebrow">{actionRequired ? "Action required" : sourceLabel(auction)}</p>
+          <h2 id={`auction-title-${auction.auctionId}`}>
+            {restricted ? auction.player.fullName : (
+              <Link to={routePaths.auctionDetail(leagueId, auction.auctionId)}>
+                {auction.player.fullName}
+              </Link>
+            )}
           </h2>
           <span>{auction.player.positionGroup}</span>
         </div>
-        <StatusBadge tone={statusTone(auction.status)}>
-          {statusLabel(auction.status)}
+        <StatusBadge tone={actionRequired ? "warning" : statusTone(auction.status)}>
+          {actionRequired ? "Tie — bid needed" : statusLabel(auction.status)}
         </StatusBadge>
       </div>
-      <p>
-        {auction.bidCount} {auction.bidCount === 1 ? "bid" : "bids"} placed.
-        Bidder identities and competing values remain hidden while active.
-      </p>
       <AuctionTiming auction={auction} timeZone={timeZone} />
       <MinimumNotice auction={auction} />
-      {ownBids.map((viewerTeam) => (
+      {!restricted && ownBids.map((viewerTeam) => (
         <OwnBidSummary
+          compact
           key={viewerTeam.teamId}
           viewerTeam={viewerTeam}
           timeZone={timeZone}
         />
       ))}
+      {actionRequired && eligibleTeams.map((viewerTeam) => (
+        <div className={styles.inlineBid} key={viewerTeam.teamId}>
+          {eligibleTeams.length > 1 && <h3>{teamName(viewerTeam.team)}</h3>}
+          <BidEditor
+            auction={auction}
+            context={context}
+            leagueId={leagueId}
+            viewerTeam={viewerTeam}
+          />
+        </div>
+      ))}
       <TerminalSummary auction={auction} />
-      <Link
-        className="hl-text-link"
-        to={routePaths.auctionDetail(leagueId, auction.auctionId)}
-      >
-        View auction details
-      </Link>
+      {!restricted && (
+        <Link
+          className="hl-text-link"
+          to={routePaths.auctionDetail(leagueId, auction.auctionId)}
+        >
+          View auction details
+        </Link>
+      )}
     </article>
   );
 }
 
 function AuctionFilters({
   appliedSearch,
-  fadLinked,
   onApplySearch,
   search,
   setSearch,
-  setSourceKind,
-  sourceKind,
 }) {
   return (
     <Surface className={styles.filters} aria-labelledby="auction-filters-title">
-      <h2 id="auction-filters-title">Auction view</h2>
+      <h2 id="auction-filters-title">Active auctions</h2>
       <form
-        className={styles.filterGrid}
+        className={styles.searchFilter}
         onSubmit={(event) => {
           event.preventDefault();
           onApplySearch(search);
         }}
       >
         <label>
-          Auction context
-          <select
-            value={sourceKind}
-            onChange={(event) => setSourceKind(event.target.value)}
-          >
-            <option value="all">All contexts</option>
-            {!fadLinked && <option value="ordinary_weekly">Weekly auctions</option>}
-            <option value="fad_open_rapid">FAD rapid and fallback</option>
-            <option value="fad_restricted">Restricted Candidate ties</option>
-          </select>
-        </label>
-        <label>
-          Player search
+          Search players
           <input
             maxLength={200}
             type="search"
@@ -875,7 +804,6 @@ function AuctionFilters({
         <button className="hl-button hl-button--secondary">Search</button>
       </form>
       {appliedSearch && <p>Showing player matches for “{appliedSearch}”.</p>}
-      {fadLinked && <p>This list is scoped to the linked Free Agent Draft.</p>}
     </Surface>
   );
 }
@@ -885,28 +813,21 @@ function AuctionsPrivateContent({ context, leagueId }) {
   const linkedFadId = UUID_V4.test(searchParams.get("fadId") || "")
     ? searchParams.get("fadId")
     : null;
-  const initialSource = [
-    "ordinary_weekly",
-    "fad_open_rapid",
-    "fad_restricted",
-  ].includes(searchParams.get("sourceKind"))
-    ? searchParams.get("sourceKind")
-    : "all";
-  const [sourceKind, setSourceKind] = useState(
-    linkedFadId && initialSource === "ordinary_weekly" ? "all" : initialSource
-  );
+  const focusedAuctionId = UUID_V4.test(searchParams.get("auctionId") || "")
+    ? searchParams.get("auctionId")
+    : null;
   const initialSearch = safeAuctionSearch(searchParams.get("q") || "");
   const [search, setSearch] = useState(initialSearch);
   const [appliedSearch, setAppliedSearch] = useState(initialSearch);
   const safeLeagueId = UUID_V4.test(leagueId || "") ? leagueId : EMPTY_ID;
   const filters = useMemo(
     () => ({
-      sourceKind: sourceKind === "all" ? null : sourceKind,
+      sourceKind: null,
       fadId: linkedFadId,
       q: appliedSearch,
       limit: 25,
     }),
-    [appliedSearch, linkedFadId, sourceKind]
+    [appliedSearch, linkedFadId]
   );
   const auctions = useInfiniteQuery({
     ...auctionListQuery(context.session.httpClient, safeLeagueId, filters),
@@ -914,17 +835,30 @@ function AuctionsPrivateContent({ context, leagueId }) {
       context.session.status === "authenticated" && Boolean(context.league),
   });
   const items = useMemo(
-    () => auctions.data?.pages.flatMap((page) => page.items) || [],
+    () => (auctions.data?.pages.flatMap((page) => page.items) || []).filter(
+      (auction) =>
+        auction.sourceKind !== "fad_restricted" ||
+        auction.viewerTeams.some((viewerTeam) => viewerTeam.eligible)
+    ),
     [auctions.data]
   );
   const startTeams = auctions.data?.pages[0]?.actions.startTeams || [];
+
+  useEffect(() => {
+    if (!focusedAuctionId || !items.some(({ auctionId }) => auctionId === focusedAuctionId)) {
+      return;
+    }
+    globalThis.document
+      .getElementById(`auction-${focusedAuctionId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusedAuctionId, items]);
 
   return (
     <>
       <PageHeading
         eyebrow={context.league?.name}
         title="Auctions"
-        description="Server-authorized sealed bidding for weekly auctions and Free Agent Draft rapid cycles. Only your own bid values are shown while an auction is active."
+        description="Nominate an available player or manage a tie that needs your bid."
         id="auction-page-title"
       />
       {auctions.isPending ? (
@@ -947,17 +881,14 @@ function AuctionsPrivateContent({ context, leagueId }) {
           />
           <AuctionFilters
             appliedSearch={appliedSearch}
-            fadLinked={linkedFadId !== null}
             onApplySearch={setAppliedSearch}
             search={search}
             setSearch={setSearch}
-            setSourceKind={setSourceKind}
-            sourceKind={sourceKind}
           />
           {items.length === 0 ? (
             <Surface>
               <EmptyBlock title="No active auctions">
-                The server returned no auctions for this view.
+                There are no auctions that need your attention.
               </EmptyBlock>
             </Surface>
           ) : (
@@ -965,6 +896,8 @@ function AuctionsPrivateContent({ context, leagueId }) {
               {items.map((auction) => (
                 <AuctionCard
                   auction={auction}
+                  context={context}
+                  focused={auction.auctionId === focusedAuctionId}
                   key={auction.auctionId}
                   leagueId={leagueId}
                   timeZone={context.league.timezone}
@@ -1018,15 +951,12 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
   const initial = initialAuctionOffer(auction, viewerTeam);
   const [aav, setAav] = useState(initial.aav);
   const [term, setTerm] = useState(initial.term);
-  const [confirmed, setConfirmed] = useState(false);
   const [clientError, setClientError] = useState(null);
   const [conflictMessage, setConflictMessage] = useState(null);
-  const confirmationId = useId();
   const feedbackId = useId();
   const hasBid = viewerTeam.bid !== null;
   const capability = hasBid ? viewerTeam.edit : viewerTeam.join;
   const action = hasBid ? "edit" : "join";
-  const isFad = auction.sourceKind !== "ordinary_weekly";
   const mutation = useMutation({
     gcTime: 0,
     mutationFn: ({ body, idempotencyKey, version }) =>
@@ -1038,7 +968,6 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
         { idempotencyKey, version }
       ),
     onSuccess: async () => {
-      setConfirmed(false);
       setConflictMessage(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: auctionKeys.root(leagueId) }),
@@ -1071,9 +1000,6 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
   function submit(event) {
     event.preventDefault();
     try {
-      if (isFad && !confirmed) {
-        throw new Error("Confirm the binding FAD bid and possible roster illegality.");
-      }
       const offer = validateAuctionOffer(aav, term, {
         action,
         sourceKind: auction.sourceKind,
@@ -1084,7 +1010,6 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
         teamId: viewerTeam.teamId,
         aavCents: offer.aavCents,
         termYears: offer.termYears,
-        ...(isFad ? { bindingIllegalityConfirmed: true } : {}),
       };
       setClientError(null);
       setConflictMessage(null);
@@ -1153,21 +1078,9 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
             term={term}
           />
         </div>
-        {isFad && (
-          <FadBindingConfirmation
-            checked={confirmed}
-            describedBy={feedbackId}
-            disabled={mutation.isPending}
-            id={confirmationId}
-            onChange={(value) => {
-              setConfirmed(value);
-              setClientError(null);
-            }}
-          />
-        )}
         <button
           className="hl-button hl-button--primary"
-          disabled={mutation.isPending || (isFad && !confirmed)}
+          disabled={mutation.isPending}
         >
           {mutation.isPending
             ? "Submitting…"
@@ -1848,6 +1761,8 @@ function AuctionDetailPrivateContent({ auctionId, context, leagueId }) {
         <Surface>
           <LoadingBlock>Loading authoritative auction detail…</LoadingBlock>
         </Surface>
+      ) : auction.isError && auction.error?.status === 404 ? (
+        <Navigate replace to={routePaths.leagueAuctions(leagueId)} />
       ) : auction.isError ? (
         <>
           <PageHeading
@@ -1862,6 +1777,12 @@ function AuctionDetailPrivateContent({ auctionId, context, leagueId }) {
             />
           </Surface>
         </>
+      ) : auction.data.sourceKind === "fad_restricted" &&
+        !hasCommissionerAuthority(context.league.membership) ? (
+        <Navigate
+          replace
+          to={routePaths.leagueAuctionFocus(leagueId, auction.data.auctionId)}
+        />
       ) : (
         <AuctionDetailContent
           auction={auction.data}

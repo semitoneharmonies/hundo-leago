@@ -25,15 +25,44 @@ const config = {
   buildId: null,
 };
 
-function envelope(data, { page } = {}) {
+function envelope(data, { actions, page } = {}) {
   return new Response(
     JSON.stringify({
       data,
+      ...(actions ? { actions } : {}),
       ...(page ? { page } : {}),
       meta: { requestId: "request-1" },
     }),
     { status: 200, headers: { "Content-Type": "application/json" } }
   );
+}
+
+function auctionActions(allowed = true) {
+  return {
+    startTeams: [
+      {
+        teamId: teamA,
+        team: {
+          teamId: teamA,
+          name: "Alpha Team",
+          primaryColour: "#16324f",
+          secondaryColour: "#f7f7f7",
+          tertiaryColour: null,
+          patternTemplate: "solid",
+          logoReference: null,
+        },
+        sourceKind: "fad_open_rapid",
+        fadId: seasonId,
+        fadRolloverId: null,
+        targetRolloverAtMs: null,
+        creationCutoffAtMs: null,
+        startAuction: {
+          allowed,
+          reasonCode: allowed ? null : "PHASE_CLOSED",
+        },
+      },
+    ],
+  };
 }
 
 function session() {
@@ -188,7 +217,8 @@ describe("league player catalog", () => {
       }),
     ];
     const fetchImpl = vi.fn(async (url) => {
-      const path = new URL(url).pathname;
+      const parsed = new URL(url);
+      const path = parsed.pathname;
       if (path === "/api/v1/session") return envelope(session());
       if (path === "/api/v1/leagues") {
         return envelope({ code: "LEAGUES_FOUND", leagues: [league()] });
@@ -200,7 +230,19 @@ describe("league player catalog", () => {
         });
       }
       if (path === `/api/v1/leagues/${leagueId}/players`) {
-        return envelope(players, {
+        const teamId = parsed.searchParams.get("teamId");
+        const selectedPlayers = teamId
+          ? players.filter(
+              (candidate) => candidate.league.ownership?.team.id === teamId
+            )
+          : players;
+        return envelope(selectedPlayers, {
+          page: { nextCursor: null, hasMore: false },
+        });
+      }
+      if (path === `/api/v1/leagues/${leagueId}/auctions`) {
+        return envelope([], {
+          actions: auctionActions(true),
           page: { nextCursor: null, hasMore: false },
         });
       }
@@ -289,6 +331,10 @@ describe("league player catalog", () => {
       "Owned Player",
       "Draft Prospect",
     ]);
+    expect(within(table).getByRole("link", { name: "Start auction" })).toHaveAttribute(
+      "href",
+      `/leagues/${leagueId}/auctions?playerId=${freeAgentId}`
+    );
     const nameSearch = screen.getByRole("searchbox", {
       name: "Search by player name",
     });
@@ -326,8 +372,9 @@ describe("league player catalog", () => {
 
     await view.user.selectOptions(assignmentFilter, `team:${teamB}`);
     expect(
-      within(table).getByRole("rowheader", { name: "Draft Prospect" })
+      await screen.findByRole("rowheader", { name: "Draft Prospect" })
     ).toBeInTheDocument();
+    table = screen.getByRole("table");
     expect(
       within(table).queryByRole("rowheader", { name: "Free Agent" })
     ).not.toBeInTheDocument();
@@ -390,6 +437,12 @@ describe("league player catalog", () => {
           { page: { nextCursor: null, hasMore: false } }
         );
       }
+      if (pathname === `/api/v1/leagues/${leagueId}/auctions`) {
+        return envelope([], {
+          actions: auctionActions(false),
+          page: { nextCursor: null, hasMore: false },
+        });
+      }
       throw new Error(`Unexpected request: ${pathname}`);
     });
     const view = renderWithProviders(
@@ -414,6 +467,7 @@ describe("league player catalog", () => {
       screen.queryByRole("rowheader", { name: "Second Page Player" })
     ).not.toBeInTheDocument();
     expect(playerPageRequests).toBe(1);
+    expect(screen.queryByRole("link", { name: "Start auction" })).toBeNull();
 
     await view.user.click(
       screen.getByRole("button", { name: "Load next 100 players" })

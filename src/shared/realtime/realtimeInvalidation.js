@@ -331,6 +331,9 @@ export function realtimeInvalidationActions(envelope) {
       );
     }
   }
+  if (["roster.changed", "contract.changed"].includes(envelope.type)) {
+    actions.push(invalidate(["league", envelope.leagueId, "players"]));
+  }
 
   return Object.freeze(actions);
 }
