@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 
+import { buildLazyRouteReloadPath } from "../shared/lazyRoute.js";
+
 function RouteStatePage({
   title,
   message,
@@ -8,6 +10,9 @@ function RouteStatePage({
 }) {
   const location = useLocation();
   const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const reloadPath = reloadCurrentPage
+    ? buildLazyRouteReloadPath(currentPath)
+    : currentPath;
   return (
     <main
       className="hl-page hl-page--narrow"
@@ -18,7 +23,7 @@ function RouteStatePage({
         <h1 id="route-state-title">{title}</h1>
         <p>{message}</p>
         {reloadCurrentPage ? (
-          <a className="hl-button hl-button--primary" href={currentPath}>
+          <a className="hl-button hl-button--primary" href={reloadPath}>
             {actionLabel}
           </a>
         ) : (
