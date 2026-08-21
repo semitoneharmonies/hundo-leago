@@ -8,6 +8,8 @@ import {
   validateCandidateCardSave,
   validateEligibleCandidatePlayers,
   validateFreeAgentDraftAllocationResults,
+  validateFreeAgentDraftCorrection,
+  validateFreeAgentDraftCorrectionPreview,
   validateFreeAgentDraftNavigation,
   validateFreeAgentDraftOverview,
   validateFreeAgentDraftPage,
@@ -45,6 +47,8 @@ const IDS = Object.freeze({
   fallbackAuction: id(21),
   contract: id(22),
   ownership: id(23),
+  correction: id(24),
+  activity: id(25),
 });
 
 function allowed() {
@@ -257,6 +261,107 @@ function fallbackNoWinnerResult() {
   };
 }
 
+function automaticAwardResult({ redacted = false } = {}) {
+  const monetary = redacted
+    ? { totalValueCents: null, termYears: null, aavCents: null }
+    : { totalValueCents: 600, termYears: 2, aavCents: 300 };
+  return {
+    allocationId: IDS.allocation,
+    allocationVersion: 8,
+    player: player(),
+    status: "automatic_award",
+    decisionCode: "highest_total",
+    rankedOffers: [
+      {
+        ...rankedOfferFor(),
+        ...monetary,
+        outcomeCode: "winner",
+      },
+    ],
+    winner: {
+      teamId: IDS.team,
+      snapshotEntryId: IDS.snapshot,
+      contractId: IDS.contract,
+      ownershipId: IDS.ownership,
+      slotKey: "F01",
+      ...monetary,
+    },
+    restricted: null,
+    fallback: null,
+    draws: [],
+    recoveryStatus: null,
+    resolvedAtMs: 2_000,
+  };
+}
+
+function allocationDecisionFrom(result) {
+  return {
+    status: result.status,
+    decisionCode: result.decisionCode,
+    rankedOffers: result.rankedOffers,
+    winner: result.winner,
+    restricted: result.restricted,
+    recoveryStatus: result.recoveryStatus,
+  };
+}
+
+function emptyCorrectionSummary() {
+  return {
+    status: null,
+    team: null,
+    player: null,
+    contractId: null,
+    ownershipId: null,
+    auctionId: null,
+    totalValueCents: null,
+    termYears: null,
+    aavCents: null,
+    rosterCategory: null,
+  };
+}
+
+function correctionPreviewProjection() {
+  const decision = allocationDecisionFrom(automaticAwardResult({ redacted: true }));
+  return {
+    allocationId: IDS.allocation,
+    allocationVersion: 8,
+    previewFingerprint: "a".repeat(64),
+    reversible: true,
+    currentDecision: structuredClone(decision),
+    recomputedDecision: structuredClone(decision),
+    deltas: [
+      {
+        resourceType: "contract",
+        resourceId: null,
+        action: "create",
+        beforeVersion: null,
+        afterSummary: emptyCorrectionSummary(),
+      },
+    ],
+    warnings: [],
+    blockers: [],
+    confirmationText: "APPLY FAD CORRECTION",
+  };
+}
+
+function correctionProjection() {
+  return {
+    correctionId: IDS.correction,
+    allocation: automaticAwardResult({ redacted: true }),
+    appliedDeltas: [
+      {
+        resourceType: "activity",
+        resourceId: IDS.activity,
+        action: "append",
+        beforeVersion: null,
+        afterSummary: emptyCorrectionSummary(),
+      },
+    ],
+    activityId: IDS.activity,
+    completedAtMs: 2_100,
+  };
+}
+
 function slotKeys() {
   return [
     ...Array.from({ length: 12 }, (_, index) => `F${String(index + 1).padStart(2, "0")}`),
@@ -344,30 +449,28 @@ function privateCard({ preview = false } = {}) {
   };
 }
 
-function publishedCard() {
-  const card = privateCard({ preview: true });
-  card.cardVersion = 7;
-  card.phase = "rapid";
-  card.visibilityMode = "published_history";
-  card.accessReason = "published_league_history";
-  card.authorizationEvidence = null;
-  card.lifecycleStatus = "locked_incomplete";
-  card.capabilities = {
-    editCard: denied(),
-    requestHelp: denied(),
-    viewPublishedHistory: allowed(),
+function selectedTeamResult({
+  status = "signed",
+  offer = { totalValueCents: 600, aavCents: 300, termYears: 2 },
+  tieAuctionId = null,
+} = {}) {
+  return {
+    player: player(),
+    status,
+    offer,
+    tieAuctionId,
   };
-  card.slots = card.slots.map((item) => ({
-    ...item,
-    capabilities: {
-      addCandidate: denied(),
-      editCandidate: denied(),
-      moveCandidate: denied(),
-      moveCarryover: denied(),
-      removeCandidate: denied(),
-    },
-  }));
-  return card;
+}
+
+function publishedCard() {
+  return {
+    leagueId: IDS.league,
+    seasonId: IDS.season,
+    fadId: IDS.fad,
+    teamId: IDS.team,
+    team: team(),
+    results: [selectedTeamResult()],
+  };
 }
 
 function descriptor() {
@@ -578,33 +681,11 @@ describe("FAD frontend response contracts", () => {
       fadId: IDS.fad,
       teamId: IDS.team,
       team: team(),
-      snapshotId: IDS.snapshot,
-      lockedCardVersion: 7,
       lifecycleStatus: "locked_incomplete",
-      completeness: history.completeness,
-      capStatus: "compliant",
-      allocationEligibility: "eligible",
-      allocationExclusionReason: null,
-      maximumPossibleCapCents: 0,
-      carriedCapUsageCents: 0,
-      counts: { carryovers: 0, candidates: 0, emptyMandatory: 18, emptyBench: 4, conflicts: 0 },
       outcomeCounts: {
-        automaticWins: 0,
-        restrictedPending: 0,
-        restrictedWins: 0,
-        fallbackPending: 0,
-        fallbackWins: 0,
-        fallbackNoWinner: 0,
-        losses: 0,
-        invalidOffers: 0,
-      },
-      commissionerInterventionCount: 0,
-      historyDescriptor: {
-        mode: "published_card",
-        seasonId: IDS.season,
-        fadId: IDS.fad,
-        teamId: IDS.team,
-        cardId: IDS.card,
+        signed: 1,
+        notWon: 2,
+        tied: 3,
       },
     };
     const eligible = [{
@@ -719,7 +800,7 @@ describe("FAD frontend response contracts", () => {
     );
   });
 
-  it("rejects an incomplete marker on complete private, save, and published rows", () => {
+  it("rejects an incomplete marker on complete private and saved rows", () => {
     function contradictoryCompleteSlot(baseSlot, { published = false } = {}) {
       return {
         ...baseSlot,
@@ -765,13 +846,32 @@ describe("FAD frontend response contracts", () => {
       })
     ).toThrow(/complete contract validation is inconsistent/u);
 
-    const publishedProjection = publishedCard();
-    publishedProjection.slots[0] = contradictoryCompleteSlot(
-      publishedProjection.slots[0],
-      { published: true }
+  });
+
+  it("accepts redacted T-132 rows and rejects legacy card/audit fields from T-131/T-132", () => {
+    const history = publishedCard();
+    history.results[0].offer = null;
+    expect(validatePublishedCandidateCard(history)).toBe(true);
+
+    const historyLeak = structuredClone(history);
+    historyLeak.slots = [];
+    expect(() => validatePublishedCandidateCard(historyLeak)).toThrow(
+      /invalid shape/u
     );
-    expect(() => validatePublishedCandidateCard(publishedProjection)).toThrow(
-      /complete contract validation is inconsistent/u
+
+    const summary = {
+      leagueId: IDS.league,
+      seasonId: IDS.season,
+      fadId: IDS.fad,
+      teamId: IDS.team,
+      team: team(),
+      lifecycleStatus: "locked_complete",
+      outcomeCounts: { signed: 1, notWon: 0, tied: 0 },
+    };
+    expect(validatePublishedCandidateCardSummaries([summary])).toBe(true);
+    summary.snapshotId = IDS.snapshot;
+    expect(() => validatePublishedCandidateCardSummaries([summary])).toThrow(
+      /invalid shape/u
     );
   });
 
@@ -787,7 +887,7 @@ describe("FAD frontend response contracts", () => {
     );
 
     expect(() => validatePublishedCandidateCard(privateCard())).toThrow(
-      "visibilityMode"
+      "invalid shape"
     );
 
     const missingSlot = privateCard();
@@ -795,42 +895,146 @@ describe("FAD frontend response contracts", () => {
     expect(() => validatePrivateCandidateCard(missingSlot)).toThrow("slots");
   });
 
-  it("accepts the authoritative fallback no-winner result and rejects invented T-140 cross-field evidence", () => {
-    const noWinner = fallbackNoWinnerResult();
-    expect(validateFreeAgentDraftAllocationResults([noWinner])).toBe(true);
+  it("accepts only the exact final T-140 selected-team result row", () => {
+    const results = [
+      selectedTeamResult(),
+      selectedTeamResult({ status: "not_won", offer: null }),
+      selectedTeamResult({
+        status: "tied",
+        offer: { totalValueCents: 600, aavCents: 300, termYears: 2 },
+        tieAuctionId: IDS.restrictedAuction,
+      }),
+    ];
+    expect(validateFreeAgentDraftAllocationResults(results)).toBe(true);
 
-    const badAav = structuredClone(noWinner);
-    badAav.rankedOffers[0].aavCents = 301;
-    expect(() => validateFreeAgentDraftAllocationResults([badAav])).toThrow(
-      ResponseContractError
+    const auditLeak = structuredClone(results[0]);
+    auditLeak.allocationId = IDS.allocation;
+    expect(() => validateFreeAgentDraftAllocationResults([auditLeak])).toThrow(
+      /invalid shape/u
     );
 
-    const duplicateTeam = structuredClone(noWinner);
-    duplicateTeam.rankedOffers[1].teamId = IDS.team;
-    duplicateTeam.rankedOffers[1].team = team();
-    expect(() => validateFreeAgentDraftAllocationResults([duplicateTeam])).toThrow(
-      /duplicate evidence/u
+    const pending = structuredClone(results[0]);
+    pending.status = "pending";
+    expect(() => validateFreeAgentDraftAllocationResults([pending])).toThrow(
+      /status/u
     );
 
-    const inventedWinner = structuredClone(noWinner);
-    inventedWinner.winner = {
-      teamId: IDS.team,
-      snapshotEntryId: IDS.snapshot,
-      contractId: IDS.contract,
-      ownershipId: IDS.ownership,
-      slotKey: "F01",
+    const inventedAction = structuredClone(results[0]);
+    inventedAction.tieAuctionId = IDS.restrictedAuction;
+    expect(() => validateFreeAgentDraftAllocationResults([inventedAction])).toThrow(
+      /tieAuctionId/u
+    );
+
+    const redactedAction = selectedTeamResult({
+      status: "tied",
+      offer: null,
+      tieAuctionId: IDS.restrictedAuction,
+    });
+    expect(() => validateFreeAgentDraftAllocationResults([redactedAction])).toThrow(
+      /tieAuctionId/u
+    );
+  });
+
+  it("accepts only null or complete T-140 offers", () => {
+    expect(
+      validateFreeAgentDraftAllocationResults([
+        selectedTeamResult({ status: "not_won", offer: null }),
+        selectedTeamResult(),
+      ])
+    ).toBe(true);
+
+    const partialOffer = selectedTeamResult({
+      offer: { totalValueCents: 600, aavCents: null, termYears: 2 },
+    });
+    expect(() => validateFreeAgentDraftAllocationResults([partialOffer])).toThrow(
+      /aavCents/u
+    );
+
+    const auditOffer = selectedTeamResult();
+    auditOffer.offer.rank = 1;
+    expect(() => validateFreeAgentDraftAllocationResults([auditOffer])).toThrow(
+      /invalid shape/u
+    );
+  });
+
+  it("accepts external-redacted T-143/T-144 projections and rejects partial-null money", () => {
+    const preview = correctionPreviewProjection();
+    const correction = correctionProjection();
+    expect(validateFreeAgentDraftCorrectionPreview(preview)).toBe(true);
+    expect(validateFreeAgentDraftCorrection(correction)).toBe(true);
+
+    const completePreview = correctionPreviewProjection();
+    for (const decision of [
+      completePreview.currentDecision,
+      completePreview.recomputedDecision,
+    ]) {
+      Object.assign(decision.rankedOffers[0], {
+        totalValueCents: 600,
+        termYears: 2,
+        aavCents: 300,
+      });
+      Object.assign(decision.winner, {
+        totalValueCents: 600,
+        termYears: 2,
+        aavCents: 300,
+      });
+    }
+    Object.assign(completePreview.deltas[0].afterSummary, {
       totalValueCents: 600,
       termYears: 2,
       aavCents: 300,
-    };
-    expect(() => validateFreeAgentDraftAllocationResults([inventedWinner])).toThrow(
-      /winner/u
+    });
+    expect(() => validateFreeAgentDraftCorrectionPreview(completePreview)).toThrow(
+      /fully redacted/u
     );
 
-    const duplicateDraw = structuredClone(noWinner);
-    duplicateDraw.draws[1].auctionId = IDS.restrictedAuction;
-    expect(() => validateFreeAgentDraftAllocationResults([duplicateDraw])).toThrow(
-      /duplicate auction evidence/u
+    const completeCorrection = correctionProjection();
+    completeCorrection.allocation = automaticAwardResult();
+    Object.assign(completeCorrection.appliedDeltas[0].afterSummary, {
+      totalValueCents: 600,
+      termYears: 2,
+      aavCents: 300,
+    });
+    expect(() => validateFreeAgentDraftCorrection(completeCorrection)).toThrow(
+      /fully redacted/u
+    );
+
+    const partialPreviewDecision = structuredClone(preview);
+    partialPreviewDecision.recomputedDecision.rankedOffers[0].aavCents = 300;
+    expect(() =>
+      validateFreeAgentDraftCorrectionPreview(partialPreviewDecision)
+    ).toThrow(/fully redacted/u);
+
+    const partialPreviewDelta = structuredClone(preview);
+    partialPreviewDelta.deltas[0].afterSummary.totalValueCents = 600;
+    expect(() =>
+      validateFreeAgentDraftCorrectionPreview(partialPreviewDelta)
+    ).toThrow(/fully redacted/u);
+
+    const partialCorrection = structuredClone(correction);
+    partialCorrection.allocation.winner.termYears = 2;
+    expect(() => validateFreeAgentDraftCorrection(partialCorrection)).toThrow(
+      /fully redacted/u
+    );
+
+    const redactedFallback = fallbackNoWinnerResult();
+    redactedFallback.rankedOffers.forEach((offer) => {
+      offer.totalValueCents = null;
+      offer.termYears = null;
+      offer.aavCents = null;
+    });
+    redactedFallback.restricted.minimumTotalValueCents = null;
+    redactedFallback.restricted.minimumTermYears = null;
+    redactedFallback.restricted.minimumAavCents = null;
+    redactedFallback.fallback.minimumTotalValueCents = null;
+    const fallbackCorrection = correctionProjection();
+    fallbackCorrection.allocation = redactedFallback;
+    expect(validateFreeAgentDraftCorrection(fallbackCorrection)).toBe(true);
+
+    const leakedFallback = structuredClone(fallbackCorrection);
+    leakedFallback.allocation.fallback.minimumTotalValueCents = 600;
+    expect(() => validateFreeAgentDraftCorrection(leakedFallback)).toThrow(
+      /must be redacted/u
     );
   });
 

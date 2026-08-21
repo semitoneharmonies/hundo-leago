@@ -213,6 +213,22 @@ audit receipt, and return an exact zero-write replay for the same release.
 Afterward, the preview must report no mutation required before migrations
 `0053` and `0054` are applied.
 
+The same held, exact physical staging database must pass the exhaustive
+read-only public-receipt privacy gate before reconciliation/migration and again
+after migration:
+
+```text
+npm run db:scan:fad-public-receipts:staging -- --database '<absolute database path>' --environment staging --persistent-root '<absolute persistent root>'
+```
+
+That command scans every persisted T-082 auction-cancellation result and every
+T-144 allocation-correction result, validates canonical response/hash/identity
+evidence, executes the current all-null projector plus strict public validator
+for each legacy full-money FAD allocation, reports null/no-FAD T-082 results,
+fails the process for malformed unsafe receipts, and proves identical SQLite
+`total_changes()` before and after. It never rewrites immutable evidence and
+its findings contain only stable IDs and reason codes.
+
 No script or migration in this plan may open, repair, reset, or otherwise
 modify production data. The user must be warned again before any later
 production correction of Beta League or another protected membership record.

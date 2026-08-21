@@ -88,9 +88,9 @@ function rankedOffer(outcomeCode = "restricted_tied") {
     teamId,
     team: team(),
     slotKey: "F02",
-    totalValueCents: 600,
-    termYears: 1,
-    aavCents: 600,
+    totalValueCents: null,
+    termYears: null,
+    aavCents: null,
     valid: true,
     validationCode: null,
     rank: 1,
@@ -105,9 +105,9 @@ function winner() {
     contractId,
     ownershipId,
     slotKey: "F02",
-    totalValueCents: 600,
-    termYears: 1,
-    aavCents: 600,
+    totalValueCents: null,
+    termYears: null,
+    aavCents: null,
   };
 }
 
@@ -660,6 +660,7 @@ describe("FAD-16 commissioner recovery and correction", () => {
       screen.getByText("Create roster spot for Corrected Player for Recovery Owls")
     ).toBeInTheDocument();
     expect(screen.queryByText(/roster_entry/)).not.toBeInTheDocument();
+    expect(correctionForm).not.toHaveTextContent(/\$6\.00|AAV|1 year/iu);
     expect(
       within(correctionForm).getByLabelText("Correction reason")
     ).toHaveFocus();
@@ -702,6 +703,7 @@ describe("FAD-16 commissioner recovery and correction", () => {
       /Correction committed.*automatic award/i
     );
     expect(committed).toHaveFocus();
+    expect(committed).not.toHaveTextContent(/\$6\.00|AAV|1 year/iu);
     await view.user.click(screen.getByRole("button", { name: "Close correction" }));
     await waitFor(() => expect(correctionTrigger).toHaveFocus());
   });

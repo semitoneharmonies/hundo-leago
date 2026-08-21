@@ -83,6 +83,9 @@ export function SessionProvider({
 }) {
   const queryClient = useQueryClient();
   const bootstrapInProgressRef = useRef(true);
+  const privateCleanupRef = useRef(Promise.resolve());
+  const stateRef = useRef(UNKNOWN_SESSION);
+  const transitionRef = useRef(0);
   const [state, setState] = useState(UNKNOWN_SESSION);
   const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
   const [httpController] = useState(() =>
@@ -90,37 +93,65 @@ export function SessionProvider({
   );
   const httpClient = httpController.httpClient;
 
+  const commitState = useCallback((nextState) => {
+    stateRef.current = nextState;
+    setState(nextState);
+  }, []);
+
+  const clearPrivateCache = useCallback(() => {
+    const cleanup = privateCleanupRef.current
+      .catch(() => {})
+      .then(() => clearPrivateQueries(queryClient));
+    privateCleanupRef.current = cleanup;
+    return cleanup;
+  }, [queryClient]);
+
   const clearAuthentication = useCallback(
     async (notice = null, receipt = null) => {
+      transitionRef.current += 1;
       httpController.clearCsrfToken();
-      setState(
+      commitState(
         unauthenticatedSession(
           notice,
           sanitizeStagingResetReceipt(receipt, { appEnv, notice })
         )
       );
-      await clearPrivateQueries(queryClient);
+      await clearPrivateCache();
     },
-    [appEnv, httpController, queryClient]
+    [appEnv, clearPrivateCache, commitState, httpController]
   );
 
   const consumeStagingResetReceipt = useCallback(() => {
-    setState((current) => {
-      if (
-        current.status !== "unauthenticated" ||
-        current.stagingResetReceipt === null
-      ) {
-        return current;
-      }
-      return unauthenticatedSession(null, null);
-    });
-  }, []);
+    const current = stateRef.current;
+    if (
+      current.status === "unauthenticated" &&
+      current.stagingResetReceipt !== null
+    ) {
+      commitState(unauthenticatedSession(null, null));
+    }
+  }, [commitState]);
 
-  const adoptSession = useCallback((data) => {
-    validateSessionData(data);
-    httpController.setCsrfToken(data.csrfToken);
-    setState(authenticatedSession(data));
-  }, [httpController]);
+  const adoptSession = useCallback(
+    async (data) => {
+      validateSessionData(data);
+      const transition = ++transitionRef.current;
+      const current = stateRef.current;
+      const replacesAuthenticatedUser =
+        current.status === "authenticated" && current.user.id !== data.user.id;
+
+      if (replacesAuthenticatedUser) {
+        await clearPrivateCache();
+      } else {
+        await privateCleanupRef.current;
+      }
+      if (transition !== transitionRef.current) return false;
+
+      httpController.setCsrfToken(data.csrfToken);
+      commitState(authenticatedSession(data));
+      return true;
+    },
+    [clearPrivateCache, commitState, httpController]
+  );
 
   useEffect(() => {
     httpController.setOnUnauthorized(() =>
@@ -137,8 +168,8 @@ export function SessionProvider({
     bootstrapInProgressRef.current = true;
 
     bootstrapSession(httpClient, { signal: controller.signal })
-      .then((data) => {
-        if (active) adoptSession(data);
+      .then(async (data) => {
+        if (active) await adoptSession(data);
       })
       .catch((error) => {
         if (!active || error?.code === "REQUEST_ABORTED") return;
@@ -146,7 +177,7 @@ export function SessionProvider({
           clearAuthentication(null);
           return;
         }
-        setState(
+        commitState(
           Object.freeze({
             ...UNKNOWN_SESSION,
             bootstrapError: error,
@@ -161,12 +192,12 @@ export function SessionProvider({
       active = false;
       controller.abort();
     };
-  }, [adoptSession, bootstrapAttempt, clearAuthentication, httpClient]);
+  }, [adoptSession, bootstrapAttempt, clearAuthentication, commitState, httpClient]);
 
   const signIn = useCallback(
     async (credentials) => {
       const data = await createSession(httpClient, credentials);
-      adoptSession(data);
+      await adoptSession(data);
       return data;
     },
     [adoptSession, httpClient]
@@ -184,9 +215,10 @@ export function SessionProvider({
   }, [clearAuthentication, httpClient]);
 
   const retryBootstrap = useCallback(() => {
-    setState(UNKNOWN_SESSION);
+    transitionRef.current += 1;
+    commitState(UNKNOWN_SESSION);
     setBootstrapAttempt((attempt) => attempt + 1);
-  }, []);
+  }, [commitState]);
 
   const value = useMemo(
     () => ({

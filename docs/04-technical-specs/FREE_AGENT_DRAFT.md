@@ -48,6 +48,47 @@ member after navigation, reconnect, or account change. This supersedes any
 older technical projection that returned every published offer value and term
 to every league member.
 
+The 2026-08-21 implementation audit fixes the exact selected-team wire boundary
+and supersedes older T-131/T-132/T-140 response shapes wherever they expose a
+locked card, slot placement, validation, editor, conflict, intervention,
+ranking, winner-resource, restricted-participant, draw, cap, or other audit
+projection:
+
+* T-131 is a paginated team-selector summary containing exactly league, season,
+  FAD, and team identity, lifecycle status, plus public
+  `{ signed, notWon, tied }` outcome counts; it contains no money, cap, card,
+  slot, editor, conflict, intervention, history descriptor, or resource ID;
+* T-132 is the legacy selected-team compatibility read and contains exactly the
+  same team identity plus `results[]`; it is not a Candidate Card/history DTO;
+* T-140 requires exact `teamId` query context and returns the paginated,
+  searchable selected-team `results[]`; it never returns another team's offer,
+  rank, winner resource, participant, draw, cap, card, or audit evidence;
+* each selected-team result row contains exactly `player`,
+  `status = signed | not_won | tied`, nullable `offer`, and nullable
+  `tieAuctionId`; `offer` is either exactly
+  `{ totalValueCents, aavCents, termYears }` for the selected team's current
+  manager or `null` for every other viewer, while `tieAuctionId` is populated
+  only for that current manager when the tied result has an actionable auction;
+* `pending` and `correction_required` allocations create no selected-team final
+  result row or outcome count until a final Signed/Not won/Tied outcome exists;
+* the selected team is part of every query key and cursor/filter fingerprint;
+  a multi-team manager sees private values only when that exact team is selected;
+* membership or manager-assignment change removes every viewer-sensitive
+  T-131/T-132/T-140 cache entry for the league before any result is rendered;
+  and
+* every T-082 stored FAD-cancellation allocation and every T-144 stored
+  correction response, including a pre-amendment full-money receipt, is passed
+  through the current public all-null projector before fresh return or replay.
+  Immutable internal receipt, preview, and fingerprint evidence is not
+  rewritten. Before staging promotion, the exact physical identity-bound
+  database is checked exhaustively with
+  `npm run db:scan:fad-public-receipts:staging`; the command is query-only,
+  proves unchanged `total_changes()`, and reports only sanitized stable IDs and
+  reason codes.
+
+The complete locked snapshot remains available only to protected internal
+correction/allocation code. It is never recovered from a public result DTO.
+
 On 2026-08-11, Grae clarified that FAD and Entry Draft require only the
 persisted player catalogue, including stable identity, display name, effective
 position, and applicable eligibility/ownership/contract state. Current,
@@ -3525,7 +3566,11 @@ After authentication, league isolation, and current auction-administration
 authority are revalidated, an exact replay is checked before mutable auction
 state, current resource version, clock, or new identifier generation. It
 returns the stored HTTP status and parses the stored `response_json` as the
-response `data`; the transport adds only the new request's `meta.requestId`.
+response `data`, except that a T-082 FAD cancellation's nullable
+`fadAllocation` is always reprojected through the current all-null public
+allocation projector before return. That rule applies to fresh and legacy
+stored responses, including receipts that retain complete internal money. The
+transport adds only the new request's `meta.requestId`.
 The stored expected/resulting version evidence remains the authority for the
 replayed representation; replay does not substitute a later resource version.
 Later bid edits, removals, auction resolution, correction, job completion, or
@@ -4517,7 +4562,11 @@ It returns `200` with exactly `auction`, `removedBidId`, nullable
 ```
 
 It returns `200` with exactly `auction`, nullable `fadAllocation`, and nullable
-`recoveryId`.
+`recoveryId`. When `fadAllocation` is present, every ranked-offer, winner,
+restricted-minimum, and fallback-minimum monetary field is all-null. Fresh and
+replayed responses use the same current projector; an older immutable command
+receipt may retain its original complete evidence but can never replay that
+money publicly.
 
 `T-083` is the commissioner HTTP trigger only; scheduled jobs call the same
 service directly. It requires auction-version `If-Match`, `Idempotency-Key`,
@@ -4539,8 +4588,10 @@ Each successful `T-080` through `T-083` transaction writes the exact immutable
 `auction_administration_command_results` row defined above and completes its
 linked idempotency request last. Exact replay returns that row's original HTTP
 status and response `data`, even when the bid, auction, or durable resolution
-job has since changed. It does not reproject the current auction or resample
-the clock. Any request failure writes neither row.
+job has since changed. The only representation-level compatibility projection
+is the required current all-null redaction of T-082 `fadAllocation`; it does
+not reproject the current auction, recompute state, or resample the clock. Any
+request failure writes neither row.
 
 No written reason is required for these approved auction actions. Malformed
 input is `400`; unauthorized scope is `403` or side-channel-safe `404`; missing
@@ -5167,7 +5218,7 @@ effects.
 | `T-137` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Authorized private editor; move candidate or compatible carryover projection |
 | `T-138` | `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Authorized private editor; remove candidate |
 | `T-139` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Team manager in adaptive help window; grant scoped help |
-| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication; paginated viewer-filtered selected-team results |
+| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results?teamId=:teamId` | League member after publication; paginated viewer-filtered selected-team results |
 | `T-141` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner; safe read-only operational state |
 | `T-142` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner; retry an allowlisted idempotent operation |
 | `T-143` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner; read-only exact repair preview |
@@ -5185,8 +5236,11 @@ current active membership. An active platform administrator uses the guaranteed
 protected active `member` membership; a missing row is invariant corruption and
 grants no league-scoped FAD access until reconciled.
 
-T-130 and T-134 through T-139 accept no query fields. T-133 accepts only
-`slotKey`, `q`, `cursor`, and `limit`. `slotKey` is required. `q` collapses
+T-130, T-132, and T-134 through T-139 accept no query fields. T-131 accepts
+only optional `cursor` and `limit`. T-140 requires `teamId` and accepts only
+optional `q`, `status`, `cursor`, and `limit`; `status` is exactly `signed`,
+`not_won`, or `tied` when present. T-133 accepts only `slotKey`, `q`, `cursor`,
+and `limit`. `slotKey` is required. `q` collapses
 internal whitespace, is trimmed and lowercased for matching, and is bounded at
 200 Unicode code points. Search ordering is normalized player name then stable
 player ID. `cursor`, when present, is an opaque base64url value of at most 1024
@@ -5322,7 +5376,7 @@ status                          valid, warning, or invalid
 codes[]                         stable strings
 ```
 
-Published slot outcome is null or:
+Protected locked-snapshot slot outcome evidence is null or:
 
 ```text
 code                            carryover, automatic_win, automatic_loss,
@@ -5333,6 +5387,9 @@ code                            carryover, automatic_win, automatic_loss,
 allocationId                    nullable
 auctionId                       nullable
 ```
+
+This enum remains internal allocation/correction evidence. T-130 returns null
+slot outcomes, and T-131/T-132/T-140 never return a slot-outcome object.
 
 Result recovery status is null or `pending`, `ready`, `running`, `resolved`,
 or `correction_required`. A restricted-result status is `scheduled`, `open`,
@@ -5689,13 +5746,12 @@ only when one exact actionable recovery exists and otherwise is denied with
 
 ---
 
-## Candidate Card Response
+## Private Candidate Card Response
 
-Private responses and the legacy post-publication detail response share a
-structural DTO but use different paths and cache keys. The post-publication path
-is a compatibility projection: it must never expose another team's bid,
-contract, cap, minimum, revision, editor, conflict, intervention, or complete
-card data merely because the deadline passed.
+T-130 alone returns the complete Candidate Card DTO below. T-132 does not reuse
+this DTO after publication; it returns the exact selected-team result resource
+defined in the next section. No public result endpoint can recover this private
+card shape merely because the deadline passed.
 
 ```text
 leagueId
@@ -5726,7 +5782,6 @@ capabilities
 ```text
 private_editable
 private_read_only
-published_history                 compatibility wire value for a filtered result
 ```
 
 `capStatus` is `compliant` or `over_cap`.
@@ -5745,11 +5800,9 @@ beforehand.
 team_manager
 help_grant_commissioner
 help_grant_platform_administrator
-published_league_history          compatibility wire value for a filtered result
 ```
 
-`authorizationEvidence` is null for `published_league_history`. For a private
-response it is exactly:
+`authorizationEvidence` is always present and is exactly:
 
 ```text
 kind                            manager_assignment or help_request
@@ -5759,15 +5812,6 @@ id                              stable assignment/help-request ID
 Its kind must agree with `accessReason`. It lets authorization-sensitive query
 cache entries prove the exact persisted assignment or grant that allowed the
 response.
-
-For `published_league_history`, the server projects every selected team's
-player identity and outcome status (`Signed`, `Not won`, or `Tied`) to every
-active league member. Monetary and contract-detail fields are populated only
-when the requested team is currently managed by that caller; otherwise they are
-null or omitted, and collection fields that could reconstruct the card are
-empty. Commissioner or platform-administrator authority alone does not widen
-that projection. Complete locked cards and deterministic draw/audit evidence
-remain protected internal evidence and have no ordinary league-member response.
 
 `showMainNavigation` is true from automatic card opening until the earlier of
 FAD completion or the current competition Week 1 start. It becomes false
@@ -5789,9 +5833,8 @@ requestedAtMs
 expiresAtMs
 ```
 
-The message is visible only through this exact-card private projection. It is
-always null in the legacy filtered result and never appears in commissioner
-overview.
+The message is visible only through this exact-card private projection and
+never appears in commissioner overview or a published result.
 
 Each slot includes:
 
@@ -5838,14 +5881,8 @@ Slot discrimination is exact:
 
 Authoritative roster category is null, `Active`, `Bench`, or
 `Injured Reserve`.
-Outcome is null on private responses and uses the viewer-filtered result shape
-on the legacy post-publication projection.
-
-On the legacy filtered result, a candidate slot keeps `outcome = null` while its linked
-allocation remains `pending` or before any durable allocation event exists.
-The API does not infer a provisional win, loss, rank, or tie from mutable job
-progress. Once an immutable allocation event exists, the slot uses the shared
-published-outcome shape derived from that evidence.
+Outcome is always null on this private response. Final selected-team outcomes
+exist only in the exact T-132/T-140 result rows below.
 
 Each `conflicts[]` row contains exactly `entryId`, `entryVersion`, `player`,
 `intendedSlotKey`, `conflictCode`, `validation`, and `lastEditedBy`.
@@ -5858,8 +5895,8 @@ every commissioner or inherited platform-administrator Candidate edit preserved
 by the locked revision history. A later manager edit may change
 `lastEditedBy` on a slot but never erases this attribution.
 `commissionerInterventions[]` is visible only through the same authorized
-private-card response or protected internal audit evidence. It is empty in the
-ordinary legacy post-publication result.
+private-card response or protected internal audit evidence. It is absent from
+every ordinary published result.
 
 The T-130 private path remains available after the deadline while publication
 is pending. In that interval it returns phase `deadline_processing`, visibility
@@ -5867,24 +5904,22 @@ is pending. In that interval it returns phase `deadline_processing`, visibility
 return `409 FAD_DEADLINE_PASSED` in that interval. T-139 returns
 `409 FAD_HELP_WINDOW_CLOSED` whenever its adaptive help window is not open.
 After Candidate publication, every private Candidate path returns
-`409 FAD_PHASE_CONFLICT`. Legacy result list and detail paths return
+`409 FAD_PHASE_CONFLICT`. Published summary, compatibility-detail, and result
+paths return
 `409 FAD_CARDS_NOT_PUBLISHED` before the deadline snapshot commits.
 
 ---
 
 ## Viewer-Filtered Candidate Summary and Result Responses
 
-`T-131`, `T-132`, and `T-140` are authenticated, viewer-sensitive projections.
-Every active league member may see selected-team player identity and outcome
-status after the deadline. Only the current manager of the selected team may
-receive that team's bid, contract, cap, restricted minimum, ranking, draw, or
-other monetary/audit fields. Those fields are null, empty, or omitted for every
-other viewer, including a commissioner or platform administrator who does not
-currently manage that team. Complete Candidate Cards remain protected internal
-audit evidence; these endpoints do not publish them.
+`T-131`, `T-132`, and `T-140` are authenticated, viewer-sensitive projections
+available to every current active league member after publication. Complete
+Candidate Cards and allocation ranking, winner-resource, restricted-
+participant, draw, cap, editor, conflict, intervention, recovery, and other
+audit evidence remain protected internal data and are not fields that these
+endpoints can return.
 
-Each `T-131` compatibility summary may contain the following structural fields,
-subject to the viewer projection above:
+Each T-131 summary row has exactly these seven keys:
 
 ```text
 leagueId
@@ -5892,109 +5927,65 @@ seasonId
 fadId
 teamId
 team
-snapshotId
-lockedCardVersion
 lifecycleStatus
-completeness
-capStatus
-allocationEligibility
-allocationExclusionReason
-maximumPossibleCapCents
-carriedCapUsageCents
-counts
-outcomeCounts
-commissionerInterventionCount
-historyDescriptor
+outcomeCounts                   { signed, notWon, tied }
 ```
 
-`allocationExclusionReason` follows the exact Candidate Card rule above.
-For a caller who does not currently manage the selected team,
-`maximumPossibleCapCents`, `carriedCapUsageCents`, `counts`, `outcomeCounts`,
-and `commissionerInterventionCount` are null or omitted. `counts` otherwise
-contains `carryovers`, `candidates`, `emptyMandatory`, `emptyBench`,
-and `conflicts`. `outcomeCounts` contains `automaticWins`,
-`restrictedPending`, `restrictedWins`, `fallbackPending`, `fallbackWins`,
-`fallbackNoWinner`, `losses`, and `invalidOffers`. `historyDescriptor` contains
-only mode `published_card` plus season/FAD/team/card IDs; the frontend creates
-the URL.
+`lifecycleStatus` is exactly `locked_complete`, `locked_incomplete`, or
+`locked_conflicted`. Every outcome count is a non-negative safe integer derived
+only from durable final selected-team results. `pending` and
+`correction_required` allocations contribute no row and no count.
 
-`T-131` accepts only `cursor` and `limit`; default limit is 50 and maximum is
-100. It returns the shared collection envelope with the rows above under
-`data[]`, plus exactly `page.nextCursor`, `page.hasMore`, and
-`meta.requestId`. Ordering is deterministic team name then team ID.
+T-131 accepts only optional `cursor` and `limit`; default limit is 50 and
+maximum is 100. It returns the shared collection envelope with the summaries
+under `data[]`, plus exactly `page.nextCursor`, `page.hasMore`, and
+`meta.requestId`. Ordering is normalized team name then stable team ID, and the
+cursor fingerprint binds league, FAD, and limit.
 
-Each `T-140` allocation-result structure may contain:
+T-132 accepts no query fields. Its resource has exactly:
 
 ```text
-allocationId
-allocationVersion
-player
-status
-decisionCode
-rankedOffers[]
-winner
-restricted
-fallback
-draws[]
-recoveryStatus
-resolvedAtMs
+leagueId
+seasonId
+fadId
+teamId
+team
+results[]
 ```
 
-For an ordinary member, each row always exposes the player identity and outcome
-status. `rankedOffers[]`, `winner`, `restricted`, `fallback`, `draws[]`, and
-recovery/audit detail are populated only to the extent authorized for the
-caller's currently managed selected team; another team's monetary, minimum, and
-audit values are null, empty, or omitted. Each authorized ranked offer contains
-`snapshotEntryId`, `teamId`, `team`,
-`slotKey`, `totalValueCents`, `termYears`, `aavCents`, `valid`, nullable
-`validationCode`, nullable integer `rank`, and `outcomeCode`.
-`outcomeCode` is exactly `pending`, `winner`, `lost_lower_total`,
-`lost_lower_aav`, `restricted_tied`, or `invalid`. While an allocation remains
-`pending`, every immutable snapshot offer uses `rank = null` and
-`outcomeCode = pending`; `decisionCode`, `winner`, `restricted`, `fallback`,
-`recoveryStatus`, and `resolvedAtMs` are null and `draws[]` is empty. The
-endpoint never predicts the eventual deterministic transaction result.
+The path `teamId`, returned `teamId`, and safe `team.teamId` must agree.
+T-132 is a retained compatibility read for that selected team's final results;
+it is not a Candidate Card, snapshot, slot, or audit-history DTO.
 
-`winner` is null or contains
-`teamId`, nullable `snapshotEntryId`, `contractId`, `ownershipId`, `slotKey`,
-`totalValueCents`, `termYears`, and `aavCents`. `restricted` is null or contains
-nullable `auctionId`, shared restricted-result `status`,
-`participantTeamIds[]`, `minimumTotalValueCents`, `minimumTermYears`, and
-`minimumAavCents`. `fallback` is null or contains `auctionId`, status,
-`minimumTotalValueCents`, nullable winning bid/contract/ownership IDs, and
-nullable terminal `noWinnerReason`.
+Each T-132 result and each row under T-140 `data[]` has exactly:
 
-`winner.snapshotEntryId` is non-null for an automatic or restricted result
-that originates from a Candidate snapshot offer. It is null only for a
-league-wide fallback winner that did not originate from a Candidate snapshot.
+```text
+player
+status                          signed, not_won, or tied
+offer                           nullable
+tieAuctionId                    nullable
+```
 
-Every `draws[]` item belongs to one terminal FAD auction and contains
-`auctionId`, `auctionType`, `drawCommitment`, and nullable `drawReveal`.
-`auctionType` is exactly the shared persisted context value `fad_restricted`
-or `fad_open_rapid`.
-`drawReveal` contains exactly `algorithmVersion`, `nonceHex`,
-`selectionUsed`, `orderedBidIds[]`, `counter`, `digestHex`, `selectedIndex`,
-`selectedBidId`, and `selectedTeamId`.
+`offer` is either null or exactly
+`{ totalValueCents, aavCents, termYears }`. It is complete only when the caller
+is the current manager of the exact selected team; every other active member,
+including a commissioner, inherited platform administrator, or manager of a
+different team, receives null. `tieAuctionId` is non-null only for that exact
+current manager when `status = tied` and the linked auction is currently
+actionable for the team. It is null for every non-tied row and unauthorized or
+non-actionable tie. A multi-team manager receives these private fields only for
+the team selected by the request.
 
-Every FAD auction linked to the allocation appears in `draws[]`, including a
-restricted no-improvement close or fallback no-bid result. `drawReveal` is null
-only while that auction is `correction_required` without a semantic terminal
-outcome. Otherwise it is present and proves the original commitment.
-`selectionUsed = false`, an empty ordered-bid array, and null selection fields
-prove that no random winner was chosen. When `selectionUsed = true`, every
-selection field is non-null and agrees with the persisted draw evidence.
-
-While a restricted auction is active, `rankedOffers[]` shows immutable
-Candidate minimums only; they are not active bids or leaders. `restricted`
-omits every current active-improvement value and term. Revealed draw evidence
-appears only after terminal resolution.
-
-`T-140` accepts only `q`, `status`, `cursor`, and `limit`. `status` is one
-allocation status or omitted; `q` is bounded normalized player text; default
-limit is 50 and maximum is 100. It returns the shared collection envelope with
-the result rows above under `data[]`, plus exactly `page.nextCursor`,
-`page.hasMore`, and `meta.requestId`. Ordering is normalized player name then
-stable player ID.
+T-140 requires `teamId` and accepts only optional `q`, `status`, `cursor`, and
+`limit` in addition to it. `status`, when present, is exactly `signed`,
+`not_won`, or `tied`; `q` is bounded normalized player text; default limit is
+50 and maximum is 100. It returns the shared collection envelope with the exact
+rows above under `data[]`, plus exactly `page.nextCursor`, `page.hasMore`, and
+`meta.requestId`. Ordering is normalized player name then stable player ID.
+The cursor/filter fingerprint binds league, FAD, selected `teamId`, normalized
+`q`, status, and limit, so a cursor cannot cross selected teams or filters.
+Pending and `correction_required` allocations are omitted rather than projected
+as provisional result rows.
 
 ---
 
@@ -6513,10 +6504,32 @@ recoveryStatus                  nullable
 ```
 
 `status` and `decisionCode` use the allocation enums in Part 5.
-`rankedOffers[]`, `winner`, `restricted`, and `recoveryStatus` reuse the exact
-T-140 nested shapes and nullability. A preview therefore cannot silently use a
-different ranking or restricted-auction representation from the published
-result endpoint.
+`rankedOffers[]`, `winner`, `restricted`, and `recoveryStatus` use the protected
+allocation-decision structure required by correction recomputation. They are a
+correction-specific operational projection, not the four-key T-132/T-140
+selected-team result row.
+
+T-143 recomputes the decision and its fingerprint from the complete protected
+locked snapshot and downstream evidence inside the repository boundary. That
+internal money never becomes the HTTP response. Before the application service
+returns the preview, every ranked-offer, winner, restricted-minimum, and delta
+`totalValueCents`/`termYears`/`aavCents` tuple is projected to three nulls.
+Commissioner, inherited platform-administrator, manager, or any combination of
+those roles never widens that projection. Complete-money and partial-null
+public tuples fail closed. The opaque
+`previewFingerprint` remains the hash of the complete internal preview so T-144
+can recompute and compare the exact repair without trusting or recovering
+private values from the client.
+
+T-144 applies the same separation. Its transaction recomputes and validates the
+complete internal preview, but the returned and durably replayed allocation and
+applied-delta projections use all-null monetary and restricted/fallback-minimum
+tuples. Every stored response, including a legacy full-money receipt, is passed
+through this current public projector before fresh return or exact replay; the
+immutable stored receipt and complete internal fingerprint evidence are not
+rewritten. T-143 and T-144 have no selected-team result context, so even a
+caller who also manages a team uses T-140 to view that team's authorized result
+details.
 
 Every `deltas[]` row contains exactly:
 
@@ -6555,8 +6568,9 @@ rosterCategory
 `status` uses the exact public enum for its `resourceType`: allocation status,
 auction public status, contract `Active`/`Expired`/`Bought Out`, ownership
 `rostered`/`released`, roster entry `assigned`/`removed`, activity `appended`,
-or recovery status. Money and term are non-null only for a contract-bearing
-effect. IDs are non-null only when the summarized effect links those resources.
+or recovery status. Money and term are always null in the public T-143/T-144
+`afterSummary`, even for a contract-bearing internal effect. IDs are non-null
+only when the summarized effect links those resources.
 
 Every warning or blocker uses the shared diagnostic shape exactly: `code`,
 `message`, and nullable `resourceId`. No decision, delta, or diagnostic exposes
@@ -6572,7 +6586,9 @@ activityId
 completedAtMs
 ```
 
-`allocation` is the exact new authoritative T-140 allocation result projection.
+`allocation` is the correction-specific authoritative allocation projection,
+not a T-140 selected-team result row. Every ranked-offer, winner, restricted-
+minimum, and fallback-minimum monetary field in it is null.
 Every `appliedDeltas[]` row uses the exact preview-delta shape, but
 `resourceId` is non-null for every committed resource and `beforeVersion` keeps
 the preview value. The response identifies the same bounded effects as the
@@ -7136,7 +7152,7 @@ Required roots include:
 ["league", leagueId, "free-agent-draft", fadId, "history-cards", { limit }]
 ["league", leagueId, "free-agent-draft", fadId, "history-card", teamId]
 ["league", leagueId, "free-agent-draft", fadId, "eligible-players", teamId, slotKey, filters]
-["league", leagueId, "free-agent-draft", fadId, "results", filters]
+["league", leagueId, "free-agent-draft", fadId, "results", teamId, filters]
 ["league", leagueId, "auctions", filters]
 ```
 
@@ -7149,11 +7165,12 @@ unscoped top bar and both are stable IDs for a roster-scoped read. A scoped
 roster descriptor can therefore never overwrite the unscoped navigation
 response.
 
-`history-cards` is a retained compatibility key for an infinite
-viewer-filtered selected-team result query. Its cursor is `pageParam`, not part
-of the base key, and it has no filter beyond validated limit. `results` is also
-an infinite viewer-sensitive query; its base key includes normalized `q`,
-status, and limit while cursor remains `pageParam`.
+`history-cards` is a retained compatibility key for the infinite T-131 summary
+query. Its cursor is `pageParam`, not part of the base key, and it has no filter
+beyond validated limit. `history-card` binds the exact T-132 selected team.
+`results` is also an infinite viewer-sensitive query; its base key binds the
+selected `teamId` separately from normalized `q`, status, and limit while
+cursor remains `pageParam`.
 
 Every authenticated FAD query includes this exact TanStack Query metadata
 base:
@@ -7182,12 +7199,15 @@ meta: {
 `help_grant_platform_administrator`. `authorizationEvidence` is the exact
 `{ kind, id }` object returned by the private-card projection and contains the
 stable team-manager assignment ID or help-request ID. Navigation, overview,
-legacy post-publication results, allocation results, and auction queries retain
-the common `private: true` and `leagueId` metadata. The post-publication result
-queries are still viewer-sensitive: sign-out/session replacement, manager-
-assignment change, membership change, and selected-team change must evict or
-refetch them before rendering so one viewer's monetary projection cannot be
-reused for another viewer. They do not carry a help-grant scope.
+legacy post-publication summaries/results and auction queries retain the common
+`private: true` and `leagueId` metadata. Every T-131/T-132/T-140 query also has
+`viewerSensitiveFadResults: true`; T-132/T-140 metadata binds its exact
+`teamId`, while T-131 uses null team scope. Sign-out or session replacement
+removes all private queries. Membership or manager-assignment change cancels
+and removes every viewer-sensitive T-131/T-132/T-140 query for the league before
+rendering; invalidation alone is insufficient because it could briefly reuse a
+prior manager's monetary projection. Selected-team changes use the distinct
+team-bound key. These result queries do not carry a help-grant scope.
 
 ---
 
@@ -7208,6 +7228,8 @@ eligible-player queries when:
   `409 FAD_PHASE_CONFLICT`/`FAD_DEADLINE_PASSED`.
 
 At publication, private card queries are removed, not merely invalidated.
+Membership or manager-assignment change also removes, rather than merely
+invalidates, every viewer-sensitive T-131/T-132/T-140 query for that league.
 
 Exact realtime cleanup triggers are:
 
@@ -7242,15 +7264,17 @@ live through rapid auctions and corrections. The frontend applies:
 | --- | --- |
 | `candidate_card.changed/card_changed` before publication | Use `related` IDs to invalidate the authorized matching private card, its eligible-player searches, overview, and navigation |
 | `candidate_card_help.changed/help_changed` | Revalidate/remove exact help-scoped private card; invalidate overview and navigation |
-| `free_agent_draft.changed/cards_published` | Remove every private-card and private eligible-player query for the FAD; invalidate legacy viewer-filtered result lists/details, allocation results, overview, and navigation |
-| `free_agent_draft.changed/allocation_changed` | Invalidate legacy viewer-filtered result lists/details, allocation results, and overview |
-| `league.changed/membership_changed`, `team.changed/manager_assignment_changed`, session replacement, or selected-team change | Evict/refetch every affected viewer-filtered result before rendering; never retain a previous viewer's monetary projection |
+| `free_agent_draft.changed/cards_published` | Remove every private-card and private eligible-player query for the FAD; invalidate T-131 summaries, T-132 compatibility results, T-140 selected-team results, overview, and navigation |
+| `free_agent_draft.changed/allocation_changed` | Invalidate T-131 summaries, T-132 compatibility results, T-140 selected-team results, and overview |
+| `league.changed/membership_changed` or `team.changed/manager_assignment_changed` | Cancel and remove every viewer-sensitive T-131/T-132/T-140 query for the league before rendering; invalidation alone is forbidden |
+| Session replacement | Remove every private query before rendering the replacement session |
+| Selected-team change | Use the distinct team-bound T-132/T-140 key; never render the prior team's cached projection as the new selection |
 | `fad_nomination_queue.changed/nomination_queued` | Invalidate only the exact authorized manager's overview/navigation and private queue projection |
 | `fad_nomination_queue.changed/nomination_opened` | Remove the exact private queue projection, then invalidate matching auction lists/detail, overview, and navigation |
-| `free_agent_draft.changed/fallback_opened` | Invalidate allocation results, FAD auction lists, overview, navigation, and the linked viewer-filtered result |
+| `free_agent_draft.changed/fallback_opened` | Invalidate T-131/T-132/T-140 results, FAD auction lists, overview, and navigation |
 | `free_agent_draft.changed/week1_recovered` | Invalidate overview, navigation, recovery, competition schedule, matchup jobs, and standings schedule projections |
-| `auction.changed/auction_changed` with non-null `related.fadId` | Invalidate matching auction list/detail, legacy viewer-filtered result lists/details, allocation results, overview, and navigation |
-| `free_agent_draft.changed/correction_applied` | Invalidate legacy viewer-filtered result lists/details, allocation results, recovery, overview, activity, rosters, and contracts |
+| `auction.changed/auction_changed` with non-null `related.fadId` | Invalidate matching auction list/detail, T-131/T-132/T-140 results, overview, and navigation |
+| `free_agent_draft.changed/correction_applied` | Invalidate T-131/T-132/T-140 results, recovery, overview, activity, rosters, and contracts |
 | `free_agent_draft.changed/completed` | Invalidate every FAD query, FAD auction list/detail, navigation, and relevant roster links |
 | scoped `roster.changed` or `contract.changed` before deadline | Invalidate authorized affected private cards, eligible-player searches, overview, and navigation |
 
@@ -7384,8 +7408,8 @@ Post-deadline projections are:
 | Viewer | Allowed information |
 | --- | --- |
 | Active league member | Selected-team player identity plus Signed/Not won/Tied status |
-| Current manager of selected team | That identity/status projection plus the selected team's authorized monetary/contract result detail |
-| Commissioner/admin who does not manage selected team | Same identity/status-only projection as another active member; no authority-derived money or minimum |
+| Current manager of selected team | That identity/status projection plus nullable exact `{ totalValueCents, aavCents, termYears }` offer and nullable actionable tie-auction ID |
+| Commissioner/admin who does not manage selected team | Same identity/status-only projection as another active member; null offer and tie-auction ID, with no rank, winner, participant, draw, cap, card, or audit detail |
 | Protected internal audit | Complete locked cards and deterministic audit evidence through non-member operational controls only |
 | Public/anonymous | No FAD data |
 
@@ -8024,6 +8048,41 @@ Every `T-126` through `T-144` endpoint proves:
 * no private fields;
 * no read side effects.
 
+The current result/privacy gate additionally proves:
+
+* every T-131 row has exactly the seven summary keys and exact three-key
+  `outcomeCounts`; T-132 has exactly its six team/result keys; and every
+  T-132/T-140 result has exactly `player`, `status`, `offer`, and
+  `tieAuctionId`;
+* T-140 rejects absent, duplicate, malformed, or unknown `teamId`/query input,
+  accepts only the three final statuses, and prevents cursor reuse across team,
+  search, status, or limit;
+* pending and `correction_required` allocations are absent from T-131 counts
+  and T-132/T-140 rows;
+* membership and manager-assignment changes cancel and remove every affected
+  viewer-sensitive result cache before rendering; and
+* fresh and legacy-replay T-082 FAD allocations and T-144 correction results
+  pass through the current all-null public projector while immutable stored
+  receipt/fingerprint evidence remains unchanged.
+
+This canonical stale-contract scan is a required no-match gate:
+
+```powershell
+$files = @('docs/04-technical-specs/FREE_AGENT_DRAFT.md', 'docs/04-technical-specs/API_CONTRACTS.md')
+$patterns = @(
+  ('Private responses and the legacy post-publication detail response ' + 'share'),
+  ('Each `T-131` compatibility summary may ' + 'contain'),
+  ('Each `T-140` allocation-result structure may ' + 'contain'),
+  ('`T-140` accepts only `q`, `status`, `cursor`, and ' + '`limit`'),
+  ('During the allocation window, T-140 returns each persisted `pending` ' + 'allocation'),
+  ('T-132 candidate-slot outcomes remain ' + 'null'),
+  ('`allocation` is the exact new authoritative T-140 allocation result ' + 'projection'),
+  ('T-140 nested shapes and ' + 'nullability')
+)
+$stale = @($patterns | ForEach-Object { $match = rg -n -F -- $_ $files; if ($LASTEXITCODE -gt 1) { exit $LASTEXITCODE }; $match })
+if ($stale.Count -gt 0) { $stale; throw 'Stale public FAD result contract found.' }
+```
+
 Focused T-126 through T-129 contract cases additionally prove:
 
 * T-126's absent-or-complete roster query pair, T-127's exact `seasonId`
@@ -8092,11 +8151,12 @@ one aggregate automatic-result notification per current manager/team pair.
 The exact FAD-10 closure matrix passes `200/200` across `23` suites. Separate
 recorded gates pass `4/4` composed-runtime tests, `18/18` coordinator tests,
 `103/103` shared-auction regression tests, and `7/7` post-amendment reminder
-tests. Pending published results retain the null/pending semantics defined
-above. Exact Candidate ties remain scheduled or quarantined until the future
-restricted-auction privacy and activation gate. This is local evidence only:
-there is no frontend caller, shared staging was not deployed or verified, and
-production remains untouched.
+tests. At that historical checkpoint, pending published results used the then-
+current null/pending structure; the 2026-08-21 contract supersedes that public
+shape and omits pending rows entirely. Exact Candidate ties remained scheduled
+or quarantined until the future restricted-auction privacy and activation gate.
+This is local evidence only: there was no frontend caller, shared staging
+deployment/verification, or production change at that checkpoint.
 
 FAD-11 local closure evidence recorded on `2026-08-10` covers T-141 through
 T-144, the FAD-linked T-080 through T-083 administration paths, atomic FAD

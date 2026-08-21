@@ -6,13 +6,17 @@ import {
   isCandidateAuthorizationError,
   isFreeAgentDraftQuery,
   isPrivateCandidateQuery,
+  isViewerSensitiveFadResultQuery,
   removePrivateCandidateQueries,
+  removeViewerSensitiveFadResultQueries,
   sweepPrivateCandidateQueries,
 } from "./freeAgentDraftCache.js";
 import {
   eligibleCandidatePlayersQuery,
+  freeAgentDraftResultsQuery,
   privateCandidateCardQuery,
   publishedCandidateCardQuery,
+  publishedCandidateCardsQuery,
 } from "./freeAgentDraftQueries.js";
 
 const id = (number) =>
@@ -77,6 +81,23 @@ describe("FAD private cache policy", () => {
         IDS.team
       )
     );
+    const summaries = build(
+      client,
+      publishedCandidateCardsQuery(
+        { request() {} },
+        IDS.league,
+        IDS.fad
+      )
+    );
+    const results = build(
+      client,
+      freeAgentDraftResultsQuery(
+        { request() {} },
+        IDS.league,
+        IDS.fad,
+        { teamId: IDS.team }
+      )
+    );
 
     expect(card.meta).toEqual(expect.objectContaining({
       authorizationEvidence: { kind: "manager_assignment", id: IDS.assignment },
@@ -86,6 +107,10 @@ describe("FAD private cache policy", () => {
     expect(isPrivateCandidateQuery(eligible)).toBe(true);
     expect(isFreeAgentDraftQuery(history)).toBe(true);
     expect(isPrivateCandidateQuery(history)).toBe(false);
+    expect(isViewerSensitiveFadResultQuery(summaries)).toBe(true);
+    expect(isViewerSensitiveFadResultQuery(history)).toBe(true);
+    expect(isViewerSensitiveFadResultQuery(results)).toBe(true);
+    expect(isViewerSensitiveFadResultQuery(card)).toBe(false);
   });
 
   it("cancels and removes only the exact requested private scope", async () => {
@@ -116,6 +141,58 @@ describe("FAD private cache policy", () => {
     expect(client.getQueryCache().find({ queryKey: exact.queryKey })).toBeUndefined();
     expect(client.getQueryCache().find({ queryKey: otherTeam.queryKey })).toBeDefined();
     expect(client.getQueryCache().find({ queryKey: otherLeague.queryKey })).toBeDefined();
+  });
+
+  it("removes every cached T-140 filter for only the selected team", async () => {
+    const client = new QueryClient();
+    const selectedDefault = build(
+      client,
+      freeAgentDraftResultsQuery(
+        { request() {} },
+        IDS.league,
+        IDS.fad,
+        { teamId: IDS.team }
+      )
+    );
+    const selectedSearch = build(
+      client,
+      freeAgentDraftResultsQuery(
+        { request() {} },
+        IDS.league,
+        IDS.fad,
+        { teamId: IDS.team, q: "cached money" }
+      )
+    );
+    const otherTeam = build(
+      client,
+      freeAgentDraftResultsQuery(
+        { request() {} },
+        IDS.league,
+        IDS.fad,
+        { teamId: IDS.otherTeam }
+      )
+    );
+    const selectedHistory = build(
+      client,
+      publishedCandidateCardQuery(
+        { request() {} },
+        IDS.league,
+        IDS.fad,
+        IDS.team
+      )
+    );
+
+    await expect(
+      removeViewerSensitiveFadResultQueries(client, {
+        leagueId: IDS.league,
+        fadId: IDS.fad,
+        teamId: IDS.team,
+      })
+    ).resolves.toBe(2);
+    expect(client.getQueryCache().find({ queryKey: selectedDefault.queryKey })).toBeUndefined();
+    expect(client.getQueryCache().find({ queryKey: selectedSearch.queryKey })).toBeUndefined();
+    expect(client.getQueryCache().find({ queryKey: otherTeam.queryKey })).toBeDefined();
+    expect(client.getQueryCache().find({ queryKey: selectedHistory.queryKey })).toBeDefined();
   });
 
   it.each([

@@ -540,20 +540,25 @@ APPROVED
 
 The core Free Agent Draft is required before every season. Its dedicated
 technical specification is approved at
-`docs/04-technical-specs/FREE_AGENT_DRAFT.md`, and its contained implementation
-sequence is approved at `docs/06-work-plans/ACTIVE_WORK_PLAN.md`.
-Implementation is active. `FAD-01` through `FAD-17` are complete locally and
-`FAD-18` is the sole active isolated-staging slice. Deployment remains blocked
-by its isolated-resource, backup/restore, reset/migration, clean-commit, and
-release-identity prerequisites. A paid SportsDataIO key, provider probe
-manifest, live observation, and signed capability artifact are not FAD
-requirements and do not block FAD-18. The FAD uses the persisted player
+`docs/04-technical-specs/FREE_AGENT_DRAFT.md`. Its completed M7-25
+implementation sequence is preserved at
+`docs/06-work-plans/archive/M7-25_FREE_AGENT_DRAFT_IMPLEMENTATION_SEQUENCE.md`,
+and its exact isolated-staging closure is recorded at
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
+`FAD-01` through `FAD-18` and M7-25 are complete through isolated staging on
+schema `52`; production remained untouched and unauthorized. M7-26 is now the
+sole active work plan at `docs/06-work-plans/ACTIVE_WORK_PLAN.md`. Its current
+local candidate targets schema `54`, registers `123` runtime routes, and has a
+conceptual target catalogue from `T-001` through `T-148`; those local inventory
+facts do not claim M7-26 staging verification. A paid SportsDataIO key,
+provider probe manifest, live observation, and signed capability artifact were
+not FAD-18 requirements. The FAD uses the persisted player
 catalogue for identity, name, position, and eligibility; player statistics do
-not participate in Candidate Card or allocation decisions. For this preseason
-FAD-only staging candidate, the shared automatic matchup-occurrence runner is
+not participate in Candidate Card or allocation decisions. For the historical
+FAD-18 staging release, the shared automatic matchup-occurrence runner was
 disabled in full: statistics refresh, baseline, normal lock, finalization, and
-matchup-week rollover do not run. FAD, Entry Draft, auction, trade, and outbox jobs remain
-available subject to their own gates. Production is unauthorized.
+matchup-week rollover did not run. FAD, Entry Draft, auction, trade, and outbox
+jobs remained available subject to their own gates.
 Its short league-specific AI-generated video is optional for Season 2 and a
 required capability beginning in Season 3.
 
@@ -695,17 +700,18 @@ The file is marked:
 APPROVED
 ```
 
-Its contained implementation sequence is active at
-`docs/06-work-plans/ACTIVE_WORK_PLAN.md`. FAD-11 recovery, correction,
-FAD-linked auction administration, and shared restricted fallback are complete
-locally. FAD-12 restricted/fallback bidding, draw, resolution, recovery, and
-activation are also complete locally through schema `43`. FAD-13 immediate and
-private queued rapid starts, activation, resolution, contiguous rollovers,
-restart-safe recovery, completion, and ordinary handoff remain the historical
-schema-`47` checkpoint. FAD-14 activity, notifications, metadata-only realtime
-privacy, and the exact setup-exemption Activity/notification/publication
-contract are complete locally through schema `49`. FAD-15 through FAD-17 are
-also complete locally; FAD-18 is the sole active isolated-staging slice.
+Its completed M7-25 implementation sequence is archived at
+`docs/06-work-plans/archive/M7-25_FREE_AGENT_DRAFT_IMPLEMENTATION_SEQUENCE.md`.
+The historical local checkpoints remain: FAD-11 recovery, correction,
+FAD-linked auction administration, and shared restricted fallback; FAD-12
+restricted/fallback bidding through schema `43`; FAD-13 rapid-auction and
+handoff work through schema `47`; and FAD-14 activity, notifications, realtime
+privacy, and publication contracts through schema `49`. FAD-15 through FAD-17
+then closed locally, and FAD-18 reached `STAGING VERIFIED` on schema `52` on
+2026-08-18. Its exact hosted evidence remains at
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
+M7-26 is the sole active plan; its schema-`54` local candidate and revised FAD
+privacy projection still require that plan's hosted gates.
 The 2026-08-11 product clarification separates FAD deployment from all live-
 statistics-provider capability work. Provider-neutral post-game matchup-stat
 refresh is a later statistics/matchup follow-up, not a FAD technical gate.
@@ -874,12 +880,14 @@ APPROVED
 ACTIVE
 ```
 
-Its current implementation item is `FAD-18`, the authorized isolated shared-
-staging gate in the approved M7-25 Free Agent Draft work plan. `FAD-01` through
-`FAD-17` are complete locally; the target runtime inventory remains `117`,
-schema `49` is current locally, and migrations `0023` through `0049` remain
-local only. No FAD shared-staging or production environment has yet been
-deployed or changed.
+M7-25 and `FAD-01` through `FAD-18` are complete through isolated staging.
+FAD-18 reached `STAGING VERIFIED` on schema `52` on 2026-08-18; the archived
+plan and exact release record preserve that historical evidence. M7-26 is the
+sole active full-site UI-review plan. Its current shared local candidate targets
+schema `54` with `54` migration files, registers `123` runtime routes, and
+extends the conceptual target catalogue through `T-148`. These are local
+candidate facts, not M7-26 hosted-staging verification. Production remained
+untouched and unauthorized.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -921,18 +929,20 @@ docs/06-work-plans/archive/
 The plan recorded in the active-plan file is:
 
 ```text
-M7-25 - Annual Free Agent Draft implementation sequence
-Status: ACTIVE - FAD-18 AUTHORIZED ISOLATED SHARED-STAGING GATE
+M7-26 - Full-site UI review, plain-language workflow correction,
+permission hardening, and isolated staging release
+Status: ACTIVE - M7-26 FULL-SITE UI REVIEW
 ```
 
-The completed M7-24 plan is preserved at
-`docs/06-work-plans/archive/M7-24_TEAM_IDENTITY_TEMPLATE_CATALOG_AND_MANAGER_SETTINGS.md`.
-M7-25 is active under Grae's continue-through-isolated-staging instruction.
-`FAD-18` is the sole active slice after verified local completion of `FAD-17`;
-deployment remains blocked by the exact external prerequisites recorded in the
-active work plan. Those prerequisites no longer include a SportsDataIO paid
-credential, probe manifest, live observation, or capability artifact.
-Production remains unauthorized.
+The completed M7-24 and M7-25 plans are preserved at
+`docs/06-work-plans/archive/M7-24_TEAM_IDENTITY_TEMPLATE_CATALOG_AND_MANAGER_SETTINGS.md`
+and
+`docs/06-work-plans/archive/M7-25_FREE_AGENT_DRAFT_IMPLEMENTATION_SEQUENCE.md`.
+M7-25's isolated-staging completion evidence remains at
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`. M7-26 is
+active under Grae's continue-through-isolated-staging instruction. Its current
+schema-`54`, 123-runtime-route, `T-001`-through-`T-148` candidate is local only
+until the active plan's hosted gates pass. Production remains unauthorized.
 
 A work plan is used for a contained current task such as:
 
@@ -974,6 +984,7 @@ docs/07-testing/M7_MANUAL_WEBSITE_TEST_GUIDE.md
 docs/07-testing/MATCHUP_FIGMA_HANDOFF.md
 docs/07-testing/SITE_FIGMA_HANDOFF.md
 docs/07-testing/RELEASE_CHECKLIST.md
+docs/07-testing/release-runs/
 ```
 
 Testing documents define how approved behaviour is verified.
@@ -1001,10 +1012,14 @@ APPROVED
 The approved active checklist defines:
 
 * all 34 current compatibility route registrations, including the six conditional debug routes;
-* all 125 pre-FAD `/api/v1` target endpoints approved in the 2026-07-18
-  catalogue;
-* 19 dedicated FAD routes `T-126` through `T-144`, for 144 approved target
-  routes in total;
+* the historical 125 pre-FAD `/api/v1` target endpoints approved in the
+  2026-07-18 catalogue;
+* 19 dedicated FAD routes `T-126` through `T-144`, which established the
+  historical 144-route target catalogue;
+* later amendments `T-145` through `T-148`, for the current conceptual target
+  catalogue `T-001` through `T-148`;
+* the current schema-`54` local runtime inventory of `123` registered routes,
+  which is distinct from the conceptual catalogue count;
 * permanent compatibility and target endpoint IDs;
 * characterization, contract, frontend, staging, production, and retirement statuses;
 * authentication, permission, two-league isolation, validation, concurrency, transaction, read-only, privacy, outbox, and Socket.IO proof;
@@ -1075,6 +1090,11 @@ NOT EVALUATED
 ```
 
 Approval of the template does not mark a release ready.
+
+Completed release and staging-verification records belong under
+`docs/07-testing/release-runs/`. `STAGING VERIFIED` records truthful isolated-
+staging evidence only; they do not grant production authority or imply a
+production release.
 
 Read when:
 
@@ -1413,7 +1433,7 @@ docs/04-technical-specs/FRONTEND_STRUCTURE.md — APPROVED
 docs/04-technical-specs/ENVIRONMENT_SETUP.md — APPROVED
 docs/04-technical-specs/DEPLOYMENT.md — APPROVED
 docs/05-roadmap/ACTIVE_ROADMAP.md — APPROVED / ACTIVE
-docs/06-work-plans/ACTIVE_WORK_PLAN.md — APPROVED / ACTIVE - FAD-18
+docs/06-work-plans/ACTIVE_WORK_PLAN.md — APPROVED / ACTIVE - M7-26
 docs/07-testing/TESTING_STRATEGY.md — APPROVED
 docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md — APPROVED / ACTIVE
 docs/07-testing/MANUAL_QA_CHECKLIST.md — APPROVED / ACTIVE

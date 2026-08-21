@@ -159,8 +159,9 @@ describe("FAD API boundary", () => {
     });
 
     await getFreeAgentDraftResults(httpClient, "league", "fad", {
+      teamId: IDS.entry,
       q: "ada player",
-      status: "pending",
+      status: "tied",
       limit: 25,
       cursor: "page-2",
     });
@@ -197,7 +198,7 @@ describe("FAD API boundary", () => {
     );
 
     expect(httpClient.request.mock.calls.map(([path]) => path)).toEqual([
-      "/api/v1/leagues/league/free-agent-drafts/fad/results?q=ada+player&limit=25&status=pending&cursor=page-2",
+      `/api/v1/leagues/league/free-agent-drafts/fad/results?teamId=${IDS.entry}&q=ada+player&limit=25&status=tied&cursor=page-2`,
       "/api/v1/leagues/league/free-agent-drafts/fad/recovery",
       "/api/v1/leagues/league/free-agent-drafts/fad/recovery/actions",
       `/api/v1/leagues/league/free-agent-drafts/fad/allocations/${IDS.entry}/correction-previews`,
@@ -372,6 +373,13 @@ describe("FAD API boundary", () => {
         { version: 0, idempotencyKey: "candidate:uuid" }
       )
     ).rejects.toThrow("version");
+    await expect(
+      getFreeAgentDraftResults(httpClient, "league", "fad", {
+        q: "player",
+        status: null,
+        limit: 25,
+      })
+    ).rejects.toThrow("result team ID");
     expect(httpClient.request).not.toHaveBeenCalled();
   });
 });

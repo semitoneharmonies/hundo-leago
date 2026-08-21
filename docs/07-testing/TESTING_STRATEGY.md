@@ -46,12 +46,21 @@ replay, league-isolation, frontend, and browser evidence proves:
   caller-owned IDs all-or-none; and the UI acknowledges only the captured
   successfully rendered unread batch, retains it for the mounted visit, and
   visibly reports acknowledgement failure;
-* every active member sees selected-team FAD player identity and Signed/Not
-  won/Tied status, while bid/contract/minimum/ranking/draw detail is returned
-  only for the selected team's current manager; commissioner/admin authority
-  alone remains redacted, internal audit evidence is inaccessible, legacy deep
-  links redirect, and viewer-sensitive caches cannot cross sessions or manager
-  assignments;
+* every active member sees only the exact selected-team FAD result contract:
+  T-131 identity/lifecycle plus `{ signed, notWon, tied }` counts, T-132 the
+  same selected-team identities plus `results[]`, and team-required T-140 rows
+  containing exactly `player`, final Signed/Not won/Tied status, nullable
+  `offer`, and nullable manager-actionable `tieAuctionId`; only the current
+  manager of that exact selected team receives a complete offer or tie action,
+  commissioner/admin authority alone remains redacted, pending and correction-
+  required allocations are omitted, internal card/rank/winner/draw/cap/audit
+  evidence is inaccessible, legacy deep links redirect, server search and
+  cursors bind `teamId`, and viewer-sensitive caches cannot cross sessions,
+  teams, or manager assignments; T-140 tests accept only null or complete
+  offers, while every public T-082 FAD allocation and T-143/T-144 offer,
+  winner, restricted/fallback minimum, and delta money field must be null and
+  both complete-money and partial-null public projections fail frontend and
+  backend gates;
 * proposal creation/cancellation requires the current proposing-team manager,
   acceptance/rejection requires the current receiving-team manager, and
   commissioner authority permits only safe inspection, T-148 approval of an
@@ -79,6 +88,24 @@ same transaction. T-074 remains `PLANNED`, focused M7-26 prospect movement
 remains complete, and no test/status may imply that buyout endpoint is done.
 Full frontend/backend totals and hosted evidence are recorded only after the
 commands actually finish successfully.
+
+M7-26 release evidence must also include two explicit hosted privacy gates:
+
+* scan every persisted legacy T-082 FAD-cancellation allocation and T-144
+  command-response receipt before promotion, prove no replay returns a non-null
+  public offer, winner, restricted/fallback minimum, or delta money field, and
+  exercise at least one pre-amendment full-money receipt from each applicable
+  family through the current all-null replay projector. The exhaustive
+  read-only gate is
+  `npm run db:scan:fad-public-receipts:staging -- --database '<absolute database path>' --environment staging --persistent-root '<absolute persistent root>'`;
+  it must bind exact staging process/database/physical-path identity, report
+  sanitized stable IDs/reason codes only, classify every receipt, fail on any
+  malformed unsafe receipt, and prove zero `total_changes()` delta; and
+* perform an authenticated manager-transfer role smoke in one exact league and
+  two teams: remove the prior manager's T-131/T-132/T-140 caches, prove the
+  prior manager receives null offer/no tie action, prove the replacement sees
+  complete values and an actionable tie only for the newly managed team, and
+  prove a second selected team remains independently redacted or authorized.
 
 ### FAD-06 Auction Read Closure Evidence - 2026-08-02
 
@@ -1016,15 +1043,16 @@ crosses a boundary:
   and independent cap status; a candidate-only unplaced conflict remains an
   individual invalid offer and does not invoke the carried-roster whole-card
   exclusion;
-* immediately after publication, T-132 leaves a pending candidate-slot outcome
-  null and T-140 returns every pending allocation without a provisional
-  decision, rank, winner, restricted/fallback state, recovery, resolution time,
-  or draw; every immutable offer uses exact `outcomeCode = pending`, and replay
-  remains byte-stable as long as no durable allocation event is committed;
-* processed T-140 results derive every rank/outcome from immutable allocation
-  events, allow a null `winner.snapshotEntryId` only for a league-wide fallback
-  winner, and restrict draw `auctionType` to the shared `fad_restricted` and
-  `fad_open_rapid` context values;
+* immediately after publication, T-131 counts only final selected-team
+  outcomes and T-132/T-140 omit pending and `correction_required` allocations;
+  no public slot, provisional decision, rank, winner, restricted/fallback,
+  recovery, resolution, or draw structure is invented, and replay remains
+  byte-stable while no durable final outcome is committed;
+* processed T-132/T-140 rows derive Signed/Not won/Tied from immutable internal
+  allocation evidence but expose exactly `player`, `status`, nullable `offer`,
+  and nullable manager-actionable `tieAuctionId`; rank, winner-resource,
+  participant, draw, cap, slot, and audit evidence remain internal regardless
+  of role;
 * restricted Candidate contracts are equal-status minimums, not bids or
   leaders; every tied team begins with no edit count or cooldown, submits its
   strict improvement as an opening bid, then receives the ordinary

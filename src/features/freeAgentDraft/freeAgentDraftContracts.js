@@ -30,6 +30,12 @@ export const FAD_ALLOCATION_STATUSES = Object.freeze([
   "correction_required",
 ]);
 
+export const FAD_RESULT_STATUSES = Object.freeze([
+  "signed",
+  "not_won",
+  "tied",
+]);
+
 export const FAD_RECOVERY_ACTIONS = Object.freeze([
   "retry_deadline",
   "retry_allocation",
@@ -1005,8 +1011,56 @@ export function validatePrivateCandidateCard(data) {
   return validateCandidateCard(data, { published: false });
 }
 
+function selectedTeamResultOffer(value, location) {
+  if (value === null) return true;
+  exact(
+    value,
+    ["totalValueCents", "aavCents", "termYears"],
+    location
+  );
+  allocationContract(value, location);
+  return true;
+}
+
+function selectedTeamResult(value, location) {
+  exact(value, ["player", "status", "offer", "tieAuctionId"], location);
+  safePlayer(value.player, `${location}.player`);
+  oneOf(value.status, FAD_RESULT_STATUSES, `${location}.status`);
+  selectedTeamResultOffer(value.offer, `${location}.offer`);
+  nullableId(value.tieAuctionId, `${location}.tieAuctionId`);
+  contract(
+    value.tieAuctionId === null ||
+      (value.status === "tied" && value.offer !== null),
+    `${location}.tieAuctionId is invalid.`
+  );
+  return true;
+}
+
 export function validatePublishedCandidateCard(data) {
-  return validateCandidateCard(data, { published: true });
+  exact(
+    data,
+    ["leagueId", "seasonId", "fadId", "teamId", "team", "results"],
+    "Published selected-team result"
+  );
+  for (const field of ["leagueId", "seasonId", "fadId", "teamId"]) {
+    stableId(data[field], `Published selected-team result.${field}`);
+  }
+  safeTeam(data.team, "Published selected-team result.team");
+  contract(
+    data.team.teamId === data.teamId,
+    "Published selected-team result.team is mismatched."
+  );
+  contract(
+    Array.isArray(data.results),
+    "Published selected-team result.results is invalid."
+  );
+  data.results.forEach((result, index) =>
+    selectedTeamResult(
+      result,
+      `Published selected-team result.results[${index}]`
+    )
+  );
+  return true;
 }
 
 function publishedCardSummary(value, location) {
@@ -1018,48 +1072,20 @@ function publishedCardSummary(value, location) {
       "fadId",
       "teamId",
       "team",
-      "snapshotId",
-      "lockedCardVersion",
       "lifecycleStatus",
-      "completeness",
-      "capStatus",
-      "allocationEligibility",
-      "allocationExclusionReason",
-      "maximumPossibleCapCents",
-      "carriedCapUsageCents",
-      "counts",
       "outcomeCounts",
-      "commissionerInterventionCount",
-      "historyDescriptor",
     ],
     location
   );
-  for (const field of ["leagueId", "seasonId", "fadId", "teamId", "snapshotId"]) stableId(value[field], `${location}.${field}`);
+  for (const field of ["leagueId", "seasonId", "fadId", "teamId"]) {
+    stableId(value[field], `${location}.${field}`);
+  }
   safeTeam(value.team, `${location}.team`);
   contract(value.team.teamId === value.teamId, `${location}.team is mismatched.`);
-  safeInteger(value.lockedCardVersion, `${location}.lockedCardVersion`, { positive: true });
   oneOf(value.lifecycleStatus, ["locked_complete", "locked_incomplete", "locked_conflicted"], `${location}.lifecycleStatus`);
-  completeness(value.completeness, `${location}.completeness`);
-  oneOf(value.capStatus, ["compliant", "over_cap"], `${location}.capStatus`);
-  oneOf(value.allocationEligibility, ["eligible", "excluded_structural_conflict", "excluded_over_cap"], `${location}.allocationEligibility`);
-  const expectedExclusion = {
-    eligible: null,
-    excluded_structural_conflict: "candidate_card_structural_conflict",
-    excluded_over_cap: "candidate_card_over_cap",
-  }[value.allocationEligibility];
-  contract(value.allocationExclusionReason === expectedExclusion, `${location}.allocationExclusionReason is invalid.`);
-  safeInteger(value.maximumPossibleCapCents, `${location}.maximumPossibleCapCents`);
-  safeInteger(value.carriedCapUsageCents, `${location}.carriedCapUsageCents`);
-  const countFields = ["carryovers", "candidates", "emptyMandatory", "emptyBench", "conflicts"];
-  exact(value.counts, countFields, `${location}.counts`);
-  countFields.forEach((field) => safeInteger(value.counts[field], `${location}.counts.${field}`));
-  const outcomeFields = ["automaticWins", "restrictedPending", "restrictedWins", "fallbackPending", "fallbackWins", "fallbackNoWinner", "losses", "invalidOffers"];
+  const outcomeFields = ["signed", "notWon", "tied"];
   exact(value.outcomeCounts, outcomeFields, `${location}.outcomeCounts`);
   outcomeFields.forEach((field) => safeInteger(value.outcomeCounts[field], `${location}.outcomeCounts.${field}`));
-  safeInteger(value.commissionerInterventionCount, `${location}.commissionerInterventionCount`);
-  exact(value.historyDescriptor, ["mode", "seasonId", "fadId", "teamId", "cardId"], `${location}.historyDescriptor`);
-  contract(value.historyDescriptor.mode === "published_card", `${location}.historyDescriptor.mode is invalid.`);
-  for (const field of ["seasonId", "fadId", "teamId", "cardId"]) stableId(value.historyDescriptor[field], `${location}.historyDescriptor.${field}`);
   return true;
 }
 
@@ -1118,6 +1144,16 @@ function allocationContract(value, location) {
   return true;
 }
 
+function projectedAllocationContract(value, location) {
+  contract(
+    [value.totalValueCents, value.termYears, value.aavCents].every(
+      (item) => item === null
+    ),
+    `${location} public contract values must be fully redacted.`
+  );
+  return true;
+}
+
 function rankedOffer(value, location) {
   exact(
     value,
@@ -1141,7 +1177,7 @@ function rankedOffer(value, location) {
   safeTeam(value.team, `${location}.team`);
   contract(value.team.teamId === value.teamId, `${location}.team is mismatched.`);
   contract(SLOT_KEYS.includes(value.slotKey), `${location}.slotKey is invalid.`);
-  allocationContract(value, location);
+  projectedAllocationContract(value, location);
   contract(typeof value.valid === "boolean", `${location}.valid is invalid.`);
   nullableText(value.validationCode, `${location}.validationCode`);
   nullableInteger(value.rank, `${location}.rank`, { positive: true });
@@ -1185,7 +1221,7 @@ function allocationWinner(value, status, location) {
   stableId(value.contractId, `${location}.contractId`);
   stableId(value.ownershipId, `${location}.ownershipId`);
   contract(SLOT_KEYS.includes(value.slotKey), `${location}.slotKey is invalid.`);
-  allocationContract(value, location);
+  projectedAllocationContract(value, location);
   return true;
 }
 
@@ -1224,7 +1260,7 @@ function restrictedResult(value, location) {
         : value.participantTeamIds.length >= 2),
     `${location}.participantTeamIds is invalid.`
   );
-  allocationContract(
+  projectedAllocationContract(
     {
       totalValueCents: value.minimumTotalValueCents,
       termYears: value.minimumTermYears,
@@ -1252,7 +1288,10 @@ function fallbackResult(value, location) {
   );
   stableId(value.auctionId, `${location}.auctionId`);
   oneOf(value.status, ["open", "resolving", "resolved", "no_winner", "cancelled", "failed"], `${location}.status`);
-  safeInteger(value.minimumTotalValueCents, `${location}.minimumTotalValueCents`, { positive: true });
+  contract(
+    value.minimumTotalValueCents === null,
+    `${location}.minimumTotalValueCents must be redacted.`
+  );
   for (const field of ["winningBidId", "contractId", "ownershipId"]) {
     nullableId(value[field], `${location}.${field}`);
   }
@@ -1460,8 +1499,10 @@ function allocationResult(value, location) {
 }
 
 export function validateFreeAgentDraftAllocationResults(data) {
-  contract(Array.isArray(data), "Free Agent Draft allocation results must be an array.");
-  data.forEach((result, index) => allocationResult(result, `Free Agent Draft allocation results[${index}]`));
+  contract(Array.isArray(data), "Free Agent Draft results must be an array.");
+  data.forEach((result, index) =>
+    selectedTeamResult(result, `Free Agent Draft results[${index}]`)
+  );
   return true;
 }
 
@@ -2006,9 +2047,7 @@ function correctionAfterSummary(value, resourceType, location) {
   if (value.team !== null) safeTeam(value.team, `${location}.team`);
   if (value.player !== null) safePlayer(value.player, `${location}.player`);
   for (const field of ["contractId", "ownershipId", "auctionId"]) nullableId(value[field], `${location}.${field}`);
-  const monetary = [value.totalValueCents, value.termYears, value.aavCents];
-  contract(monetary.every((item) => item === null) || monetary.every((item) => item !== null), `${location} contract fields are invalid.`);
-  if (monetary.every((item) => item !== null)) allocationContract(value, location);
+  projectedAllocationContract(value, location);
   if (value.rosterCategory !== null) oneOf(value.rosterCategory, ["Active", "Bench", "Injured Reserve"], `${location}.rosterCategory`);
   contract(["allocation", "auction", "contract", "ownership", "roster_entry", "activity", "recovery"].includes(resourceType), `${location} resource type is invalid.`);
   return true;

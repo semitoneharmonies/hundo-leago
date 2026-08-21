@@ -139,7 +139,7 @@ The production approver cannot be inferred from a Git merge.
 Safe release records belong under:
 
 ```text
-docs/08-operations/releases/
+docs/07-testing/release-runs/
 ```
 
 Suggested filename:
@@ -188,6 +188,7 @@ Updated at:
 ```text
 DRAFT
 STAGING CANDIDATE
+STAGING VERIFIED
 NO-GO
 READY FOR AUTHORIZATION
 GO AUTHORIZED
@@ -196,6 +197,12 @@ ROLLED BACK
 COMPLETE
 FAILED
 ```
+
+`STAGING VERIFIED` is valid only when an isolated-staging release record has
+passed every applicable hosted staging gate and explicitly records that
+production remained untouched. It is staging evidence, not a production
+readiness or authorization status, and it does not advance a production
+candidate to `READY FOR AUTHORIZATION` or `GO AUTHORIZED`.
 
 Only Grae's explicit approval changes a production candidate from `READY FOR AUTHORIZATION` to `GO AUTHORIZED`.
 
@@ -638,6 +645,13 @@ For `D3` schema work or `D4`:
   its post-run preview is clean, its exact release replay makes zero writes,
   and its deterministic audit receipt is recorded before migrations `0053`
   and `0054` are applied.
+- [ ] `RC-DB-018C` The exact held staging database passed
+  `npm run db:scan:fad-public-receipts:staging -- --database '<absolute database path>' --environment staging --persistent-root '<absolute persistent root>'`
+  before reconciliation/migration and after migration. The sanitized result
+  accounts for every T-082 auction-cancellation and T-144 allocation-correction
+  receipt as public-redacted, legacy full-money but safely reprojectable,
+  null/no-FAD allocation where applicable, or malformed unsafe; malformed
+  count and `total_changes()` delta are both zero.
 
 ---
 

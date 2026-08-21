@@ -3,6 +3,11 @@ import { ApiError } from "../../shared/api/ApiError.js";
 const UUID_V4 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const PRIVATE_KINDS = new Set(["private-card", "eligible-players"]);
+const VIEWER_SENSITIVE_RESULT_KINDS = new Set([
+  "history-cards",
+  "history-card",
+  "results",
+]);
 const PRIVATE_PHASES = new Set(["cards_open", "help_window", "deadline_processing"]);
 const AUTHORIZATION_SCOPES = new Set([
   "team_manager",
@@ -65,6 +70,23 @@ export function isPrivateCandidateQuery(query) {
     typeof key[3] === "string" &&
     typeof key[5] === "string"
   );
+}
+
+export function isViewerSensitiveFadResultQuery(query) {
+  const key = queryKey(query);
+  if (
+    !isFreeAgentDraftQuery(query) ||
+    !VIEWER_SENSITIVE_RESULT_KINDS.has(key[4]) ||
+    query?.meta?.private !== true ||
+    query.meta.leagueId !== key[1] ||
+    query.meta.viewerSensitiveFadResults !== true
+  ) {
+    return false;
+  }
+  if (key[4] === "history-cards") {
+    return query.meta.teamId === null;
+  }
+  return typeof key[5] === "string" && query.meta.teamId === key[5];
 }
 
 function recordEvidence(value) {
@@ -133,6 +155,25 @@ async function cancelAndRemove(queryClient, predicate) {
 
 export function removePrivateCandidateQueries(queryClient, scope) {
   return cancelAndRemove(queryClient, privateScopePredicate(scope));
+}
+
+export function removeViewerSensitiveFadResultQueries(
+  queryClient,
+  { leagueId, fadId, teamId }
+) {
+  stableId(leagueId, "League ID");
+  stableId(fadId, "FAD ID");
+  stableId(teamId, "Team ID");
+  return cancelAndRemove(queryClient, (query) => {
+    const key = query?.queryKey;
+    return (
+      isViewerSensitiveFadResultQuery(query) &&
+      key[1] === leagueId &&
+      key[3] === fadId &&
+      key[4] === "results" &&
+      key[5] === teamId
+    );
+  });
 }
 
 export function sweepPrivateCandidateQueries(

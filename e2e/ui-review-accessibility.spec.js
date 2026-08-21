@@ -20,6 +20,8 @@ test('reviewed league surfaces remain usable at desktop and mobile widths', asyn
   fadFixture,
   page,
 }) => {
+  test.setTimeout(60_000)
+
   const { manifest } = fadFixture
   const league = manifest.leagues.alpha
   const manager = manifest.accounts.alphaMultiTeamManager

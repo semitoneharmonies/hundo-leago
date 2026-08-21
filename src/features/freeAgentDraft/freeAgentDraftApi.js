@@ -317,9 +317,10 @@ export async function getFreeAgentDraftResults(
   httpClient,
   leagueId,
   fadId,
-  { q, status = null, limit, cursor = null, signal }
+  { teamId, q, status = null, limit, cursor = null, signal }
 ) {
-  const search = new URLSearchParams({ q, limit: String(limit) });
+  stableId(teamId, "FAD result team ID");
+  const search = new URLSearchParams({ teamId, q, limit: String(limit) });
   if (status) search.set("status", status);
   if (cursor) search.set("cursor", cursor);
   const response = await httpClient.request(

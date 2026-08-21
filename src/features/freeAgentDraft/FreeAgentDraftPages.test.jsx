@@ -37,7 +37,6 @@ const replacementHelpId = "99999999-9999-4999-8999-999999999999";
 const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const playerId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const entryId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
-const revisionId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const restrictedAuctionId = "12121212-1212-4212-8212-121212121212";
 const config = Object.freeze({
   appEnv: "local",
@@ -425,41 +424,6 @@ function publishedOverview() {
   };
 }
 
-function publishedCandidateCard() {
-  const card = candidateCard({
-    privatePlayerName: "Published Carryover",
-    candidatePlayerName: "Published Candidate",
-  });
-  return {
-    ...card,
-    phase: "allocating",
-    visibilityMode: "published_history",
-    accessReason: "published_league_history",
-    authorizationEvidence: null,
-    lifecycleStatus: "locked_incomplete",
-    slots: card.slots.map((slot) => ({
-      ...slot,
-      outcome:
-        slot.occupantKind === "carryover"
-          ? { code: "carryover", allocationId: null, auctionId: null }
-          : null,
-      capabilities: {
-        addCandidate: denied("PHASE_CLOSED"),
-        editCandidate: denied("PHASE_CLOSED"),
-        moveCandidate: denied("PHASE_CLOSED"),
-        moveCarryover: denied("PHASE_CLOSED"),
-        removeCandidate: denied("PHASE_CLOSED"),
-      },
-    })),
-    helpContext: null,
-    capabilities: {
-      editCard: denied("PHASE_CLOSED"),
-      requestHelp: denied("PHASE_CLOSED"),
-      viewPublishedHistory: { allowed: true, reasonCode: null },
-    },
-  };
-}
-
 function publishedSummary(summaryTeam = team()) {
   return {
     leagueId,
@@ -467,39 +431,11 @@ function publishedSummary(summaryTeam = team()) {
     fadId,
     teamId: summaryTeam.teamId,
     team: summaryTeam,
-    snapshotId: revisionId,
-    lockedCardVersion: 1,
     lifecycleStatus: "locked_incomplete",
-    completeness: publishedCandidateCard().completeness,
-    capStatus: "compliant",
-    allocationEligibility: "eligible",
-    allocationExclusionReason: null,
-    maximumPossibleCapCents: 1_000,
-    carriedCapUsageCents: 400,
-    counts: {
-      carryovers: 1,
-      candidates: 1,
-      emptyMandatory: 16,
-      emptyBench: 4,
-      conflicts: 0,
-    },
     outcomeCounts: {
-      automaticWins: 0,
-      restrictedPending: 0,
-      restrictedWins: 0,
-      fallbackPending: 0,
-      fallbackWins: 0,
-      fallbackNoWinner: 0,
-      losses: 0,
-      invalidOffers: 0,
-    },
-    commissionerInterventionCount: 0,
-    historyDescriptor: {
-      mode: "published_card",
-      seasonId,
-      fadId,
-      teamId: summaryTeam.teamId,
-      cardId,
+      signed: 1,
+      notWon: 1,
+      tied: 1,
     },
   };
 }
@@ -507,49 +443,35 @@ function publishedSummary(summaryTeam = team()) {
 function publishedResultsCard(
   resultTeam = team(),
   results = [
-    ["F01", "Won Player", "automatic_win", null],
-    ["F02", "Tied Player", "restricted_pending", restrictedAuctionId],
-    ["F03", "Not Won Player", "automatic_loss", null],
+    ["Won Player", "signed", null, true],
+    ["Tied Player", "tied", restrictedAuctionId, true],
+    ["Not Won Player", "not_won", null, true],
   ]
 ) {
-  const card = publishedCandidateCard();
-  const resultSlots = new Map(
-    results.map(([slotKey, fullName, code, auctionId], index) => [
-      slotKey,
-      {
-        ...emptySlot(slotKey),
-        occupantKind: "candidate",
-        entryId: `ccccccc${index}-cccc-4ccc-8ccc-ccccccccccc${index}`,
-        entryVersion: 1,
+  return {
+    leagueId,
+    seasonId,
+    fadId,
+    teamId: resultTeam.teamId,
+    team: resultTeam,
+    results: results.map(
+      ([fullName, status, tieAuctionId, includeOffer], index) => ({
         player: {
           playerId: `bbbbbbb${index}-bbbb-4bbb-8bbb-bbbbbbbbbbb${index}`,
           fullName,
-          positionGroup: slotKey[0],
+          positionGroup: "F",
         },
-        totalValueCents: 300 * (index + 1),
-        termYears: index + 1,
-        aavCents: 300,
-        lastEditedAtMs: 2,
-        lastEditedBy: {
-          userId,
-          displayName: "FAD Manager",
-          authority: "manager",
-        },
-        outcome: { code, allocationId: helpId, auctionId },
-        capabilities: {
-          addCandidate: denied("PHASE_CLOSED"),
-          editCandidate: denied("PHASE_CLOSED"),
-          moveCandidate: denied("PHASE_CLOSED"),
-          moveCarryover: denied("PHASE_CLOSED"),
-          removeCandidate: denied("PHASE_CLOSED"),
-        },
-      },
-    ])
-  );
-  return {
-    ...card,
-    teamId: resultTeam.teamId,
-    slots: slotKeys().map((slotKey) => resultSlots.get(slotKey) || emptySlot(slotKey)),
+        status,
+        offer: includeOffer
+          ? {
+              totalValueCents: 300 * (index + 1),
+              aavCents: 300,
+              termYears: index + 1,
+            }
+          : null,
+        tieAuctionId,
+      })
+    ),
   };
 }
 
@@ -725,8 +647,9 @@ describe("league Drafts area", () => {
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
         return collectionEnvelope([publishedSummary()]);
       }
-      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
-        return envelope(publishedResultsCard());
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        expect(parsed.searchParams.get("teamId")).toBe(teamId);
+        return collectionEnvelope(publishedResultsCard().results);
       }
       if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
         return envelope(teamsFound([leagueTeam(teamId, "Candidate Owls", currentManager())]));
@@ -760,7 +683,7 @@ describe("league Drafts area", () => {
       requests.some((pathname) =>
         pathname.endsWith(`/free-agent-drafts/${fadId}/results`)
       )
-    ).toBe(false);
+    ).toBe(true);
     expect(
       screen.queryByRole("link", { name: "View original Candidate Card" })
     ).toBeNull();
@@ -781,8 +704,9 @@ describe("league Drafts area", () => {
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
         return collectionEnvelope([publishedSummary()]);
       }
-      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
-        return envelope(publishedResultsCard());
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        expect(parsed.searchParams.get("teamId")).toBe(teamId);
+        return collectionEnvelope(publishedResultsCard().results);
       }
       if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
         return envelope(teamsFound());
@@ -810,7 +734,7 @@ describe("league Drafts area", () => {
       requests.some((pathname) =>
         pathname.endsWith(`/free-agent-drafts/${fadId}/results`)
       )
-    ).toBe(false);
+    ).toBe(true);
     expect(
       requests.some((pathname) => pathname.endsWith("/candidate-cards"))
     ).toBe(true);
@@ -1304,9 +1228,11 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     );
   });
 
-  it("maps the selected managed team's Candidate Card to won, not won, and actionable tie results", async () => {
+  it("uses exact selected-team T-140 searches and never renders another team's offer", async () => {
     expect(validatePublishedCandidateCard(publishedResultsCard())).toBe(true);
-    const historyRequests = [];
+    const resultRequests = [];
+    let selectedTeamDefaultRequests = 0;
+    let resolveRefreshedTeamResults;
     const managedOverview = publishedOverview();
     managedOverview.viewer.managedCards = [managedCard()];
     const fetchImpl = baseFetch((parsed) => {
@@ -1325,16 +1251,33 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
           leagueTeam(teamId, "Candidate Owls", currentManager()),
         ]));
       }
-      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
-        historyRequests.push(teamId);
-        return envelope(publishedResultsCard());
-      }
-      if (parsed.pathname.endsWith(`/candidate-cards/${secondTeamId}/history`)) {
-        historyRequests.push(secondTeamId);
-        return envelope(
-          publishedResultsCard(team(secondTeamId, "Second Team"), [
-            ["F01", "Other Team Player", "automatic_loss", null],
-          ])
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        const selectedTeamId = parsed.searchParams.get("teamId");
+        const q = parsed.searchParams.get("q");
+        resultRequests.push({ teamId: selectedTeamId, q });
+        const projection = selectedTeamId === teamId
+          ? publishedResultsCard()
+          : publishedResultsCard(team(secondTeamId, "Second Team"), [
+              ["Other Team Player", "not_won", null, false],
+            ]);
+        if (selectedTeamId === teamId && q === "") {
+          selectedTeamDefaultRequests += 1;
+          if (selectedTeamDefaultRequests === 2) {
+            projection.results[0].offer = {
+              totalValueCents: 1_950,
+              aavCents: 975,
+              termYears: 2,
+            };
+            return new Promise((resolve) => {
+              resolveRefreshedTeamResults = () =>
+                resolve(collectionEnvelope(projection.results));
+            });
+          }
+        }
+        return collectionEnvelope(
+          projection.results.filter((result) =>
+            q === "" || result.player.fullName.toLocaleLowerCase("en-CA").includes(q)
+          )
         );
       }
       throw new Error(`Unexpected request: ${parsed.pathname}`);
@@ -1351,9 +1294,13 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
 
     const teamPicker = await screen.findByLabelText("Team");
     expect(teamPicker).toHaveValue(secondTeamId);
-    expect(await screen.findByText("Other Team Player")).toBeInTheDocument();
+    const redactedName = await screen.findByText("Other Team Player");
+    expect(redactedName.closest("li")).not.toHaveTextContent(/\$|AAV|year/iu);
+    expect(screen.queryByRole("link", { name: "Place bid" })).toBeNull();
     await view.user.selectOptions(teamPicker, teamId);
-    expect(await screen.findByText("Won Player")).toBeInTheDocument();
+    const initialWonPlayer = await screen.findByText("Won Player");
+    expect(initialWonPlayer.closest("li")).toHaveTextContent(/\$3\.00 AAV/iu);
+    expect(screen.getAllByText(/AAV/iu).length).toBeGreaterThan(0);
     const totals = screen.getByLabelText("Candidate Owls result totals");
     expect(within(totals).getByText("Signed").nextSibling).toHaveTextContent("1");
     expect(within(totals).getByText("Not won").nextSibling).toHaveTextContent("1");
@@ -1364,8 +1311,31 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
       routePaths.leagueAuctionFocus(leagueId, restrictedAuctionId)
     );
     expect(screen.queryByText(/Pending|immutable|server/i)).toBeNull();
-
-    expect(historyRequests).toEqual([secondTeamId, teamId]);
+    await view.user.selectOptions(teamPicker, secondTeamId);
+    expect(await screen.findByText("Other Team Player")).toBeInTheDocument();
+    await view.user.selectOptions(teamPicker, teamId);
+    await waitFor(() => expect(selectedTeamDefaultRequests).toBe(2));
+    expect(screen.queryByText("Won Player")).toBeNull();
+    expect(screen.getByText(/Loading Candidate Owls.+results/iu)).toBeInTheDocument();
+    resolveRefreshedTeamResults();
+    const refreshedWonPlayer = await screen.findByText("Won Player");
+    expect(refreshedWonPlayer.closest("li")).toHaveTextContent(/\$9\.75 AAV/iu);
+    await view.user.type(screen.getByLabelText("Search players"), "Not Won");
+    expect(await screen.findByText("Not Won Player")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(resultRequests).toContainEqual({ teamId, q: "not won" })
+    );
+    expect(resultRequests).toContainEqual({ teamId: secondTeamId, q: "" });
+    expect(
+      resultRequests.filter(
+        ({ teamId: requestedTeamId, q }) => requestedTeamId === teamId && q === ""
+      )
+    ).toHaveLength(2);
+    expect(
+      resultRequests.every(({ teamId: requestedTeamId }) =>
+        [teamId, secondTeamId].includes(requestedTeamId)
+      )
+    ).toBe(true);
   });
 
   it("withholds and remounts published result evidence across realtime reauthorization", async () => {
@@ -1376,8 +1346,14 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
         return collectionEnvelope([publishedSummary()]);
       }
-      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
-        return envelope(publishedResultsCard());
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        expect(parsed.searchParams.get("teamId")).toBe(teamId);
+        const q = parsed.searchParams.get("q");
+        return collectionEnvelope(
+          publishedResultsCard().results.filter((result) =>
+            q === "" || result.player.fullName.toLocaleLowerCase("en-CA").includes(q)
+          )
+        );
       }
       if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
         return envelope(teamsFound([leagueTeam(teamId, "Candidate Owls", currentManager())]));

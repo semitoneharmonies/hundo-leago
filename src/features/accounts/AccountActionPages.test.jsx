@@ -2,6 +2,7 @@ import { screen } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
+import { createQueryClient } from "../../shared/query/queryClient.js";
 import { renderWithProviders } from "../../test/render.jsx";
 import { consumeActionTokenFragment } from "./actionToken.js";
 import {
@@ -61,13 +62,14 @@ function sessionData() {
   };
 }
 
-function actionRoute(path, Page, fetchImpl) {
+function actionRoute(path, Page, fetchImpl, { queryClient } = {}) {
   return renderWithProviders(
     <Routes>
       <Route path={path} element={<Page />} />
     </Routes>,
     {
       initialEntries: [path],
+      queryClient,
       enableSession: true,
       initialActionToken: token,
       config,
@@ -113,6 +115,41 @@ describe("account action pages", () => {
     ).toBeInTheDocument();
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({ token });
+  });
+
+  it("purges the authenticated viewer's private cache before email verification replaces them", async () => {
+    const previous = structuredClone(sessionData());
+    previous.csrfToken = "O".repeat(43);
+    previous.session.id = "session-previous";
+    previous.session.userId = "user-previous";
+    previous.user.id = "user-previous";
+    previous.user.displayName = "Previous Manager";
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ data: previous, meta: { requestId: "request-previous" } })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: sessionData(),
+          meta: { requestId: "request-verify-replacement" },
+        })
+      );
+    const queryClient = createQueryClient();
+    const privateKey = ["account", "previous-viewer"];
+    const publicKey = ["public", "league-branding"];
+    queryClient.setQueryDefaults(privateKey, { meta: { private: true } });
+    queryClient.setQueryDefaults(publicKey, { meta: { private: false } });
+    queryClient.setQueryData(privateKey, { email: "previous@example.invalid" });
+    queryClient.setQueryData(publicKey, { name: "Hundo Leago" });
+
+    actionRoute("/verify-email", VerifyEmailPage, fetchImpl, { queryClient });
+
+    expect(
+      await screen.findByText("Your email is verified and you are signed in.")
+    ).toBeInTheDocument();
+    expect(queryClient.getQueryData(privateKey)).toBeUndefined();
+    expect(queryClient.getQueryData(publicKey)).toEqual({ name: "Hundo Leago" });
   });
 
   it("completes administrator credential setup and clears password controls", async () => {

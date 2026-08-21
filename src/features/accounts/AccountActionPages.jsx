@@ -185,8 +185,8 @@ export function VerifyEmailPage() {
     }
     submittedRef.current = true;
     verifyEmail(session.httpClient, actionToken.token)
-      .then((data) => {
-        session.adoptSession(data);
+      .then(async (data) => {
+        await session.adoptSession(data);
         actionToken.clear();
         setOutcome({
           status: "complete",

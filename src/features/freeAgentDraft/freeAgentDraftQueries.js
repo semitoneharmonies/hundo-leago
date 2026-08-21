@@ -2,8 +2,8 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 import {
-  FAD_ALLOCATION_STATUSES,
   FAD_AUTHORIZATION_SCOPES,
+  FAD_RESULT_STATUSES,
 } from "./freeAgentDraftContracts.js";
 import {
   getEligibleCandidatePlayers,
@@ -107,6 +107,15 @@ function commonMeta(leagueId) {
   return Object.freeze({ private: true, leagueId });
 }
 
+function viewerSensitiveResultMeta(leagueId, teamId = null) {
+  return Object.freeze({
+    private: true,
+    leagueId,
+    teamId,
+    viewerSensitiveFadResults: true,
+  });
+}
+
 function protectedMeta(leagueId, teamId, authorization) {
   const canonical = exactAuthorization(authorization);
   return Object.freeze({
@@ -191,12 +200,13 @@ export const freeAgentDraftKeys = Object.freeze({
     slotKey,
     filters,
   ],
-  results: (leagueId, fadId, filters) => [
+  results: (leagueId, fadId, teamId, filters) => [
     "league",
     leagueId,
     "free-agent-draft",
     fadId,
     "results",
+    teamId,
     filters,
   ],
   recovery: (leagueId, fadId) => [
@@ -311,7 +321,7 @@ export function publishedCandidateCardsQuery(
       }),
     getNextPageParam: (lastPage) =>
       lastPage.page.hasMore ? lastPage.page.nextCursor : undefined,
-    meta: commonMeta(leagueId),
+    meta: viewerSensitiveResultMeta(leagueId),
     staleTime: 30_000,
   });
 }
@@ -329,7 +339,7 @@ export function publishedCandidateCardQuery(httpClient, leagueId, fadId, teamId)
       sameIdentity(data.teamId, teamId, "Published Candidate Card team");
       return data;
     },
-    meta: commonMeta(leagueId),
+    meta: viewerSensitiveResultMeta(leagueId, teamId),
     staleTime: 30_000,
   });
 }
@@ -338,12 +348,13 @@ export function freeAgentDraftResultsQuery(
   httpClient,
   leagueId,
   fadId,
-  { q = "", status = null, limit = 50 } = {}
+  { teamId, q = "", status = null, limit = 50 } = {}
 ) {
   identifier(leagueId, "League ID");
   identifier(fadId, "FAD ID");
-  if (status !== null && !FAD_ALLOCATION_STATUSES.includes(status)) {
-    throw new TypeError("The FAD allocation-result status is invalid.");
+  identifier(teamId, "FAD result team ID");
+  if (status !== null && !FAD_RESULT_STATUSES.includes(status)) {
+    throw new TypeError("The FAD result status is invalid.");
   }
   const filters = Object.freeze({
     q: normalizedSearch(q),
@@ -351,17 +362,18 @@ export function freeAgentDraftResultsQuery(
     limit: boundedLimit(limit),
   });
   return infiniteQueryOptions({
-    queryKey: freeAgentDraftKeys.results(leagueId, fadId, filters),
+    queryKey: freeAgentDraftKeys.results(leagueId, fadId, teamId, filters),
     initialPageParam: null,
     queryFn: ({ pageParam, signal }) =>
       getFreeAgentDraftResults(httpClient, leagueId, fadId, {
+        teamId,
         ...filters,
         cursor: pageParam,
         signal,
       }),
     getNextPageParam: (lastPage) =>
       lastPage.page.hasMore ? lastPage.page.nextCursor : undefined,
-    meta: commonMeta(leagueId),
+    meta: viewerSensitiveResultMeta(leagueId, teamId),
     staleTime: 10_000,
   });
 }

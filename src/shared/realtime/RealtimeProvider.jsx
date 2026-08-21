@@ -104,7 +104,7 @@ export function RealtimeProvider({
         await reauthorizePrivateQueriesOnReconnect(queryClient);
         const current = await bootstrapSession(httpClient);
         if (!active) return;
-        adoptSession(current);
+        await adoptSession(current);
         await queryClient.invalidateQueries({ refetchType: "active" });
       } catch {
         postPrivacyStatus = "disconnected";

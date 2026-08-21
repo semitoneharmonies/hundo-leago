@@ -193,7 +193,7 @@ function SignUpForm({ session }) {
       setPasswordConfirmation("");
       intentKeyRef.current = null;
       if (result.automaticVerification === true) {
-        session.adoptSession(result);
+        await session.adoptSession(result);
         navigate(routePaths.leagues, { replace: true });
         return;
       }

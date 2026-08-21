@@ -51,6 +51,22 @@ notification-list grammar where they conflict. Existing endpoints and
 historical data remain backward-readable unless an explicit retirement below
 says otherwise.
 
+The 2026-08-21 FAD privacy audit narrows the public result contract further.
+T-131 is an identity/lifecycle/public-outcome-count selector summary only.
+T-132 returns a selected team's result rows, not a Candidate Card or audit
+history. T-140 requires `teamId` and returns the same result row shape with
+`q`, `status`, `limit`, and cursor pagination. A row is exactly `player`,
+`status`, nullable `offer`, and nullable manager-actionable `tieAuctionId`.
+`offer` is complete only for the current manager of the exact selected team and
+is otherwise `null`; no other card, slot, ranking, winner-resource,
+restricted-participant, draw, cap, editor, conflict, intervention, or audit
+field is returned. Pending and correction-required allocations produce no final
+row or count. Cursors and caches bind the selected team. T-143/T-144 remain
+always-money-redacted operational correction responses. Every T-082 stored FAD
+cancellation allocation and T-144 stored correction response is reprojected
+through the current public redactor before return even when its immutable
+stored receipt predates this amendment.
+
 The Free Agent Draft product specification approved on 2026-07-27 and amended
 on 2026-07-28 for Candidate Card ranking, tie handling, and the explicitly
 selected first-matchup clock is implemented
@@ -1768,6 +1784,11 @@ returns the stored status and parses the stored response `data` even after a
 later bid edit/removal, auction terminal transition or correction, or job-state
 change. Its stored expected/resulting versions remain the immutable version
 evidence for that representation; no current version is substituted.
+For T-082 only, a nullable stored FAD cancellation allocation is always passed
+through the current all-null public allocation projector before fresh return or
+replay. A legacy receipt may retain complete internal money and its original
+hash, but its public ranked-offer, winner, restricted-minimum, and fallback-
+minimum values are null; no other auction state is recomputed.
 Therefore a replayed `T-083` keeps its originally accepted `pending` or
 `already_succeeded` value rather than projecting the job's current status.
 Changed-input key reuse returns `409 IDEMPOTENCY_KEY_REUSED` without altering
@@ -2563,34 +2584,62 @@ defined by `docs/04-technical-specs/FREE_AGENT_DRAFT.md`.
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Authorized private editor | Move one candidate or compatible carryover projection |
 | `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Authorized private editor | Remove one candidate |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Team manager during the adaptive help window | Grant exact-card commissioner help |
-| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication | Read paginated viewer-filtered selected-team results |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results?teamId=:teamId` | League member after publication | Read paginated viewer-filtered selected-team results |
 | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner | Read safe FAD operational state |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner | Retry one allowlisted idempotent operation |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner | Preview deterministic atomic repair without writes |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner | Apply confirmed deterministic repair |
 
-Published FAD reads expose only durable viewer-filtered results. Every active
-member receives requested-player identity and final `Signed`, `Not won`, or
-`Tied` status for the selected team. Amount, AAV, term, calculated total,
-requested position, ranked-offer money, winner money, and restricted
-original-minimum values are populated only for the current manager of that
-selected team; otherwise those fields are `null` or the collection is omitted
-under the exact DTO. Commissioner or platform-administrator authority alone
-does not reveal them.
+Published FAD reads expose only durable viewer-filtered results. Every T-131
+summary row has exactly `leagueId`, `seasonId`, `fadId`, `teamId`, safe `team`,
+`lifecycleStatus`, and `outcomeCounts = { signed, notWon, tied }`. T-132 returns
+exactly `leagueId`, `seasonId`, `fadId`, `teamId`, safe `team`, and `results[]`;
+it is a selected-team compatibility result, not a Candidate Card or audit-
+history DTO.
 
-During the allocation window, T-140 returns each persisted `pending` allocation
-with null decision, winner, restricted, fallback, recovery, and resolution
-fields and an empty draw list. Any retained snapshot-offer structure is still
-viewer-filtered and uses `rank = null` and `outcomeCode = pending`; it never
-reveals unauthorized money. T-132 candidate-slot outcomes remain null until a
-durable allocation event exists. A published winner's `snapshotEntryId` is
-nullable only for a league-wide fallback winner that did not originate from a
-Candidate snapshot. T-140 draw `auctionType` is exactly `fad_restricted` or
-`fad_open_rapid`.
+Every T-132 result and T-140 `data[]` row is exactly `player`, `status`,
+nullable `offer`, and nullable `tieAuctionId`. Status is the wire value
+`signed`, `not_won`, or `tied`. Offer is null or exactly
+`{ totalValueCents, aavCents, termYears }`, and it is complete only for the
+current manager of the exact selected team. `tieAuctionId` is non-null only for
+that manager when a tied row has a currently actionable auction. Every other
+active member, including a commissioner, inherited platform administrator, or
+manager of another team, receives null offer and tie action. No card, slot,
+position, rank, winner resource, participant, draw, cap, editor, conflict,
+intervention, recovery, or other audit field exists in these result rows.
+Pending and `correction_required` allocations produce no T-131 count and no
+T-132/T-140 row.
+
+T-140 requires `teamId`; optional `q`, `status`, `limit`, and `cursor` are the
+only other query fields. `status` accepts only the three wire values above.
+Default limit is 50 and maximum is 100. Ordering is normalized player name then
+stable player ID, and the cursor fingerprint binds league, FAD, selected team,
+normalized search, status, and limit.
+
+T-143 and T-144 keep complete monetary evidence inside the repository/policy
+boundary for correction recomputation, fingerprint, and persistence checks.
+Their public ranked-offer, winner, restricted/fallback-minimum, and delta
+`totalValueCents`/`termYears`/`aavCents` fields are always null. Complete-money
+and partial-null public correction tuples fail closed. Commissioner, inherited
+platform-administrator, manager, or combined authority never widens this
+operational correction projection. Every T-144 stored response, including a
+legacy full-money receipt, passes through the current all-null projector before
+fresh return or replay without rewriting immutable stored or fingerprint
+evidence. T-082 applies the same rule to its nullable stored FAD-cancellation
+allocation.
+
+The M7-26 staging release gate verifies both immutable receipt families with
+the identity- and physical-path-bound read-only command
+`npm run db:scan:fad-public-receipts:staging`; it validates canonical
+response/hash/identity evidence, runs the current all-null projector and strict
+public validator for legacy full-money receipts, and never rewrites them.
 
 Literal `navigation` and `readiness` route families register before `:fadId`.
 Private-card reads and legacy viewer-filtered post-publication result reads are
-separate resources and must never share a frontend cache key.
+separate resources and must never share a frontend cache key. Result keys bind
+the exact selected team, and membership or manager-assignment change cancels
+and removes all viewer-sensitive T-131/T-132/T-140 caches for the league before
+rendering; invalidation alone is not sufficient.
 
 T-126 accepts no query or exactly the complete
 `rosterSeasonId`/`rosterTeamId` pair. T-127 accepts exactly `seasonId`; T-129
@@ -2600,7 +2649,9 @@ membership. An active platform administrator uses the guaranteed protected
 active `member` membership; missing membership is invariant corruption and
 grants no inherited access until reconciled.
 
-T-130, T-134 through T-139, and T-146 accept no query. T-133 accepts only required
+T-130, T-132, T-134 through T-139, and T-146 accept no query. T-131 accepts
+only optional `cursor` and `limit`. T-140 requires `teamId` and accepts only
+optional `q`, `status`, `cursor`, and `limit`. T-133 accepts only required
 `slotKey` plus optional `q`, `cursor`, and `limit`. Search text collapses
 whitespace, trims, lowercases for matching, and is limited to 200 Unicode code
 points; deterministic order is normalized player name then player ID. Its
@@ -3020,12 +3071,14 @@ FAD-10 closure matrix passes `200/200` across `23` suites; separate recorded
 gates pass `4/4` composed-runtime tests, `18/18` coordinator tests, `103/103`
 shared-auction regression tests, and `7/7` post-amendment reminder tests.
 
-The published-read proof includes the pending-result contract above: T-132
-keeps Candidate-slot outcomes null until durable allocation evidence exists,
-and T-140 never invents a decision, winner, rank, restricted/fallback state,
-recovery, resolution time, or draw for a pending allocation. This is local
-contract evidence only. There is no frontend caller, shared staging has not
-been deployed or verified, and production remains untouched.
+The historical published-read proof at that checkpoint covered the then-current
+pending-result shape: T-132 kept Candidate-slot outcomes null until durable
+allocation evidence existed, and T-140 returned pending structures without an
+invented decision, winner, rank, restricted/fallback state, recovery, resolution
+time, or draw. The 2026-08-21 contract supersedes that public shape and now
+omits pending rows entirely. This is historical local evidence only. There was
+no frontend caller, shared staging deployment/verification, or production
+change at that checkpoint.
 
 As of the FAD-11 local closure on `2026-08-10`, T-141 through T-144 and the
 FAD-linked T-080 through T-083 administration paths are composed through their

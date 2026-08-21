@@ -1,6 +1,7 @@
 import {
   isFreeAgentDraftQuery,
   isPrivateCandidateQuery,
+  isViewerSensitiveFadResultQuery,
 } from "./freeAgentDraftCache.js";
 import { freeAgentDraftKeys } from "./freeAgentDraftQueries.js";
 import { auctionKeys } from "../auctions/auctionQueries.js";
@@ -64,7 +65,17 @@ function eligiblePlayersPrefix(leagueId, fadId, teamId) {
 }
 
 function resultsPrefix(leagueId, fadId) {
-  return withoutTail(freeAgentDraftKeys.results(leagueId, fadId, null));
+  return withoutTail(
+    freeAgentDraftKeys.results(leagueId, fadId, null, null),
+    2
+  );
+}
+
+function viewerSensitiveResultQuery(query, leagueId) {
+  return (
+    isViewerSensitiveFadResultQuery(query) &&
+    query.queryKey[1] === leagueId
+  );
 }
 
 function privateCandidateQuery(query, leagueId, fadId = null, teamId = null) {
@@ -195,6 +206,13 @@ function authorityChangeActions(envelope) {
     )
   ) {
     return [
+      ...(reasonCode === "membership_changed"
+        ? [
+            removeWhere((query) =>
+              viewerSensitiveResultQuery(query, leagueId)
+            ),
+          ]
+        : []),
       invalidate(navigationPrefix(leagueId)),
       invalidateWhere((query) => everyFadOverview(query, leagueId)),
     ];
@@ -204,6 +222,7 @@ function authorityChangeActions(envelope) {
     reasonCode === "manager_assignment_changed"
   ) {
     return [
+      removeWhere((query) => viewerSensitiveResultQuery(query, leagueId)),
       removeWhere((query) =>
         authorizedPrivateCandidateQuery(
           query,

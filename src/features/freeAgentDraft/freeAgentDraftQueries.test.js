@@ -23,6 +23,7 @@ const IDS = Object.freeze({
   assignment: id(5),
   help: id(6),
   player: id(7),
+  otherTeam: id(8),
 });
 const managerAuthorization = Object.freeze({
   authorizationScope: "team_manager",
@@ -60,7 +61,7 @@ describe("FAD query keys and options", () => {
     expect(unscoped.meta).toEqual({ private: true, leagueId: IDS.league });
   });
 
-  it("uses exact common metadata for readiness, overview, and history", () => {
+  it("marks T-131/T-132 as viewer-sensitive while keeping ordinary FAD metadata", () => {
     const client = httpClient();
     const options = [
       freeAgentDraftReadinessQuery(client, IDS.league, IDS.season),
@@ -69,9 +70,21 @@ describe("FAD query keys and options", () => {
       publishedCandidateCardQuery(client, IDS.league, IDS.fad, IDS.team),
     ];
 
-    for (const option of options) {
+    for (const option of options.slice(0, 2)) {
       expect(option.meta).toEqual({ private: true, leagueId: IDS.league });
     }
+    expect(options[2].meta).toEqual({
+      private: true,
+      leagueId: IDS.league,
+      teamId: null,
+      viewerSensitiveFadResults: true,
+    });
+    expect(options[3].meta).toEqual({
+      private: true,
+      leagueId: IDS.league,
+      teamId: IDS.team,
+      viewerSensitiveFadResults: true,
+    });
     expect(options[2].queryKey).toEqual([
       "league",
       IDS.league,
@@ -200,7 +213,12 @@ describe("FAD query keys and options", () => {
       client,
       IDS.league,
       IDS.fad,
-      { q: "  ADA   PLAYER ", status: "pending", limit: 25 }
+      {
+        teamId: IDS.team,
+        q: "  ADA   PLAYER ",
+        status: "tied",
+        limit: 25,
+      }
     );
     const recovery = freeAgentDraftRecoveryQuery(
       client,
@@ -214,7 +232,8 @@ describe("FAD query keys and options", () => {
       "free-agent-draft",
       IDS.fad,
       "results",
-      { q: "ada player", status: "pending", limit: 25 },
+      IDS.team,
+      { q: "ada player", status: "tied", limit: 25 },
     ]);
     expect(recovery.queryKey).toEqual([
       "league",
@@ -227,10 +246,42 @@ describe("FAD query keys and options", () => {
       freeAgentDraftKeys.privateCard(IDS.league, IDS.fad, IDS.team)
     );
     expect(recovery.queryKey).not.toEqual(results.queryKey);
+    expect(results.meta).toEqual({
+      private: true,
+      leagueId: IDS.league,
+      teamId: IDS.team,
+      viewerSensitiveFadResults: true,
+    });
     await results.queryFn({ pageParam: "cursor-3", signal: undefined });
     expect(client.request.mock.calls[0][0]).toContain(
-      "/results?q=ada+player&limit=25&status=pending&cursor=cursor-3"
+      `/results?teamId=${IDS.team}&q=ada+player&limit=25&status=tied&cursor=cursor-3`
     );
+  });
+
+  it("uses distinct T-140 keys and transport scopes for a multi-team manager", async () => {
+    const client = httpClient();
+    client.request.mockResolvedValue({
+      data: [],
+      meta: { requestId: "request-team-results" },
+      page: { hasMore: false, nextCursor: null },
+    });
+    const first = freeAgentDraftResultsQuery(client, IDS.league, IDS.fad, {
+      teamId: IDS.team,
+      q: "player",
+    });
+    const second = freeAgentDraftResultsQuery(client, IDS.league, IDS.fad, {
+      teamId: IDS.otherTeam,
+      q: "player",
+    });
+
+    expect(first.queryKey).not.toEqual(second.queryKey);
+    expect(first.queryKey[5]).toBe(IDS.team);
+    expect(second.queryKey[5]).toBe(IDS.otherTeam);
+    await first.queryFn({ pageParam: null, signal: undefined });
+    await second.queryFn({ pageParam: "next", signal: undefined });
+    expect(client.request.mock.calls[0][0]).toContain(`teamId=${IDS.team}`);
+    expect(client.request.mock.calls[1][0]).toContain(`teamId=${IDS.otherTeam}`);
+    expect(client.request.mock.calls[1][0]).toContain("cursor=next");
   });
 
   it("fails closed for partial scope, missing/mismatched evidence, bad slots, and bad limits", () => {
@@ -262,5 +313,10 @@ describe("FAD query keys and options", () => {
     expect(() =>
       publishedCandidateCardsQuery(client, IDS.league, IDS.fad, { limit: 101 })
     ).toThrow("page limit");
+    expect(() =>
+      freeAgentDraftResultsQuery(client, IDS.league, IDS.fad, {
+        q: "player",
+      })
+    ).toThrow("result team ID");
   });
 });

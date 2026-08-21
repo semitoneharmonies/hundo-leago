@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { QueryClient } from "@tanstack/react-query";
 
 import {
   REALTIME_RELATED_ID_KEYS,
+  applyRealtimeInvalidation,
   parseRealtimeEnvelope,
 } from "../../shared/realtime/realtimeInvalidation.js";
 import { freeAgentDraftInvalidationActions } from "./freeAgentDraftInvalidation.js";
@@ -93,6 +95,32 @@ function privateQuery({
   };
 }
 
+function viewerSensitiveResultQuery({
+  league = leagueId,
+  fad = fadId,
+  team = teamId,
+  kind = "results",
+} = {}) {
+  const queryKey = {
+    "history-cards": freeAgentDraftKeys.historyCards(league, fad, { limit: 50 }),
+    "history-card": freeAgentDraftKeys.historyCard(league, fad, team),
+    results: freeAgentDraftKeys.results(league, fad, team, {
+      q: "",
+      status: null,
+      limit: 50,
+    }),
+  }[kind];
+  return {
+    queryKey,
+    meta: {
+      private: true,
+      leagueId: league,
+      teamId: kind === "history-cards" ? null : team,
+      viewerSensitiveFadResults: true,
+    },
+  };
+}
+
 describe("FAD realtime invalidation matrix", () => {
   it("invalidates only the matching private card/search plus overview/navigation", () => {
     const mapped = actions({
@@ -155,23 +183,94 @@ describe("FAD realtime invalidation matrix", () => {
     ]);
   });
 
-  it("removes only the affected manager authorization after reassignment", () => {
+  it("removes manager authorization and every league result projection after reassignment", () => {
     const mapped = actions({
       type: "team.changed",
       reasonCode: "manager_assignment_changed",
       relatedIds: related({ teamId }),
     });
-    const removeManager = actionPredicate(mapped, "remove");
-    expect(removeManager(privateQuery())).toBe(true);
+    const removals = mapped
+      .filter(({ operation, predicate }) => operation === "remove" && predicate)
+      .map(({ predicate }) => predicate);
+    expect(removals.some((predicate) => predicate(privateQuery()))).toBe(true);
     expect(
-      removeManager(
-        privateQuery({
-          authorizationScope: "help_grant_platform_administrator",
-          evidenceKind: "help_request",
-          evidenceId: helpId,
-        })
+      removals.some((predicate) =>
+        predicate(
+          privateQuery({
+            authorizationScope: "help_grant_platform_administrator",
+            evidenceKind: "help_request",
+            evidenceId: helpId,
+          })
+        )
       )
     ).toBe(false);
+    for (const kind of ["history-cards", "history-card", "results"]) {
+      expect(
+        removals.some((predicate) =>
+          predicate(viewerSensitiveResultQuery({ kind }))
+        )
+      ).toBe(true);
+      expect(
+        removals.some((predicate) =>
+          predicate(
+            viewerSensitiveResultQuery({ kind, league: otherLeagueId })
+          )
+        )
+      ).toBe(false);
+    }
+  });
+
+  it("removes all T-131/T-132/T-140 caches on a membership change", () => {
+    const mapped = actions({
+      type: "league.changed",
+      reasonCode: "membership_changed",
+    });
+    const removeResults = actionPredicate(mapped, "remove");
+    for (const kind of ["history-cards", "history-card", "results"]) {
+      expect(removeResults(viewerSensitiveResultQuery({ kind }))).toBe(true);
+      expect(
+        removeResults(viewerSensitiveResultQuery({ kind, league: otherLeagueId }))
+      ).toBe(false);
+    }
+  });
+
+  it("physically evicts every selected-team result cache before a manager-transfer refetch", async () => {
+    const queryClient = new QueryClient();
+    const scopedQueries = [
+      viewerSensitiveResultQuery({ kind: "history-cards" }),
+      viewerSensitiveResultQuery({ kind: "history-card" }),
+      viewerSensitiveResultQuery({ kind: "results" }),
+    ];
+    const otherLeague = viewerSensitiveResultQuery({
+      kind: "results",
+      league: otherLeagueId,
+    });
+    for (const query of [...scopedQueries, otherLeague]) {
+      queryClient.setQueryData(query.queryKey, { privateOffer: 600 });
+      const cached = queryClient.getQueryCache().find({ queryKey: query.queryKey });
+      cached.setOptions({
+        ...cached.options,
+        meta: query.meta,
+      });
+    }
+
+    const envelope = event({
+      type: "team.changed",
+      reasonCode: "manager_assignment_changed",
+      relatedIds: related({ teamId }),
+    });
+    await applyRealtimeInvalidation(queryClient, envelope, [
+      freeAgentDraftInvalidationActions,
+    ]);
+
+    for (const query of scopedQueries) {
+      expect(
+        queryClient.getQueryCache().find({ queryKey: query.queryKey })
+      ).toBeUndefined();
+    }
+    expect(
+      queryClient.getQueryCache().find({ queryKey: otherLeague.queryKey })
+    ).toBeDefined();
   });
 
   it("removes private Candidate queries before published-history refresh", () => {
