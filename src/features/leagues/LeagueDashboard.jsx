@@ -24,6 +24,7 @@ import {
   StatusBadge,
   Surface,
   TableScroll,
+  TeamMark,
   TextLink,
 } from "../../components/HundoUi.jsx";
 import {
@@ -58,7 +59,11 @@ import {
 } from "./leagueQueries.js";
 import { bidderCountLabel } from "./dashboardLabels.js";
 import { createIntentKey } from "../accounts/accountApi.js";
-import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
+import {
+  PLATFORM_ADMINISTRATOR_AUTHORITY,
+  effectiveLeagueAuthority,
+  hasCommissionerAuthority,
+} from "../../shared/leagueAuthority.js";
 
 function scoreFor(matchup, side) {
   const official = matchup?.result?.currentVersion;
@@ -98,6 +103,22 @@ function fantasyPointsPerGame(hundredths, gamesPlayed) {
   }
   if (gamesPlayed === 0) return "0.00";
   return (hundredths / 100 / gamesPlayed).toFixed(2);
+}
+
+function dashboardSeasonLabel(currentSeason) {
+  const label = currentSeason?.label;
+  return typeof label === "string" && label.trim()
+    ? `${label} season`
+    : undefined;
+}
+
+function matchupStatusLabel(status) {
+  return {
+    scheduled: "Scheduled",
+    live: "Live",
+    final: "Final",
+    completed: "Final",
+  }[status] || "Status unavailable";
 }
 
 function MatchupScoreboard({
@@ -259,6 +280,10 @@ function MatchupScoreboard({
     teams.find(({ id }) => id === matchup.homeTeam.id) || matchup.homeTeam;
   const awayTeam =
     teams.find(({ id }) => id === matchup.awayTeam.id) || matchup.awayTeam;
+  const matchupStatus =
+    matchup.scoring?.mode === "live"
+      ? "Live"
+      : matchupStatusLabel(matchup.status);
   return (
     <Surface
       className={`hl-dashboard-matchup${
@@ -273,7 +298,7 @@ function MatchupScoreboard({
         }
         title={`Week ${week.sequence}`}
         description={`${dateRange(week.startsAtMs, week.endsAtMs)} · ${
-          matchup.status
+          matchupStatusLabel(matchup.status)
         }`}
         id="dashboard-matchup-title"
         action={
@@ -298,11 +323,11 @@ function MatchupScoreboard({
           <b>{fantasyPoints(homeScore)} FP</b>
           <small>fantasy points</small>
         </div>
-        <div>
+        <div className="hl-matchup-score__center">
           <StatusBadge
             tone={matchup.scoring?.mode === "live" ? "live" : "neutral"}
           >
-            {matchup.scoring?.mode || matchup.status}
+            {matchupStatus}
           </StatusBadge>
           <span>VS</span>
         </div>
@@ -437,9 +462,16 @@ function TeamStatus({
         </div>
         <div
           className="hl-cap-summary__bar"
+          role="progressbar"
           aria-label={`${money(
             roster.cap.capUsageCents
           )} used of ${money(roster.cap.capLimitCents)}`}
+          aria-valuemin="0"
+          aria-valuemax={roster.cap.capLimitCents}
+          aria-valuenow={Math.min(
+            roster.cap.capUsageCents,
+            roster.cap.capLimitCents
+          )}
         >
           <span
             style={{
@@ -482,10 +514,6 @@ function TeamStatus({
           <dd>{money(roster.cap.buyoutPenaltyTotalCents)}</dd>
         </div>
       </dl>
-      <p className="hl-dashboard-team__note">
-        Cap status uses the authoritative projection. Structural roster
-        legality is not inferred in the browser.
-      </p>
     </Surface>
   );
 }
@@ -713,7 +741,9 @@ export function CommissionerMembersPanel({ league, teams, session }) {
                     : "No manager assigned"}
                 </small>
               </span>
-              {team.currentManager ? (
+              {team.currentManager?.isProtectedPlatformAdministrator === true ? (
+                <StatusBadge tone="neutral">Protected administrator</StatusBadge>
+              ) : team.currentManager ? (
                 <button
                   type="button"
                   className="hl-button hl-button--danger"
@@ -760,7 +790,8 @@ export function CommissionerMembersPanel({ league, teams, session }) {
             .map((membership) => {
             const protectedMember =
               membership.user.id === session.user.id ||
-              membership.permissionCategory === "commissioner";
+              membership.permissionCategory === "commissioner" ||
+              membership.isProtectedPlatformAdministrator === true;
             return (
               <li key={membership.id}>
                 <span>
@@ -769,6 +800,11 @@ export function CommissionerMembersPanel({ league, teams, session }) {
                     {membership.permissionCategory} · {membership.status}
                   </small>
                 </span>
+                {membership.isProtectedPlatformAdministrator === true && (
+                  <StatusBadge tone="neutral">
+                    Protected administrator
+                  </StatusBadge>
+                )}
                 {!protectedMember && (
                   <button
                     type="button"
@@ -1022,9 +1058,7 @@ function AuctionsPanel({ leagueId, auctions, pending, error }) {
             return (
               <li key={auction.auctionId}>
                 <div>
-                  <StatusBadge>
-                    {auction.player.fullName.slice(0, 1)}
-                  </StatusBadge>
+                  <PositionTag position={auction.player.positionGroup} />
                   <span>
                     <strong>{auction.player.fullName}</strong>
                     <small>{relativeTime(closesAt)}</small>
@@ -1111,8 +1145,7 @@ function ActivityPanel({ leagueId, activity, pending, error }) {
       aria-labelledby="dashboard-activity-title"
     >
       <PanelHeading
-        eyebrow="League history"
-        title="Recent activity"
+        title="League history log"
         id="dashboard-activity-title"
         action={
           <TextLink to={routePaths.leagueActivity(leagueId)}>
@@ -1146,14 +1179,13 @@ function ActivityPanel({ leagueId, activity, pending, error }) {
   );
 }
 
-function TeamsPanel({ leagueId, teams, currentUserId }) {
+function TeamsPanel({ leagueId, teams, currentUserId, httpClient }) {
   return (
     <Surface
       className="hl-dashboard-teams"
       aria-labelledby="dashboard-teams-title"
     >
       <PanelHeading
-        eyebrow="League membership"
         title="League teams"
         id="dashboard-teams-title"
         action={
@@ -1176,9 +1208,15 @@ function TeamsPanel({ leagueId, teams, currentUserId }) {
                 className={teamColourClass("hl-team-grid__team", team)}
                 style={teamColourStyle(team)}
               >
-                <span className="hl-team-grid__mark" aria-hidden="true">
-                  {team.name.slice(0, 2).toUpperCase()}
-                </span>
+                <TeamMark
+                  team={team}
+                  logoUrl={
+                    team.logoReference
+                      ? httpClient.resourceUrl(team.logoReference)
+                      : null
+                  }
+                  className="hl-team-grid__mark"
+                />
                 <span>
                   <strong>{team.name}</strong>
                   <small>
@@ -1205,6 +1243,9 @@ export function LeagueDashboard({ league, teams, session }) {
   const leagueId = league.id;
   const seasonId = league.currentSeason?.id || null;
   const commissioner = hasCommissionerAuthority(league.membership);
+  const platformAdministrator =
+    effectiveLeagueAuthority(league.membership) ===
+    PLATFORM_ADMINISTRATOR_AUTHORITY;
   const managedTeam = commissioner
     ? null
     : teams.find(
@@ -1312,15 +1353,15 @@ export function LeagueDashboard({ league, teams, session }) {
     <div className="hl-dashboard">
       <PageHeading
         eyebrow={`${
-          commissioner ? "Commissioner" : league.membership.permissionCategory
+          platformAdministrator
+            ? "Platform administrator"
+            : commissioner
+              ? "Commissioner"
+              : league.membership.permissionCategory
         } workspace`}
         title={league.name}
         description={
-          league.currentSeason
-            ? `${
-                league.currentSeason.label || "Current season"
-              } · Your authoritative league overview`
-            : "Your authoritative league overview"
+          dashboardSeasonLabel(league.currentSeason)
         }
         id="league-title"
         actions={
@@ -1336,7 +1377,9 @@ export function LeagueDashboard({ league, teams, session }) {
                 to={routePaths.leagueCommissioner(leagueId)}
               >
                 <ShieldCheck aria-hidden="true" />
-                Commissioner tools
+                {platformAdministrator
+                  ? "Administrator tools"
+                  : "Commissioner tools"}
               </Link>
             )}
           </>
@@ -1459,6 +1502,7 @@ export function LeagueDashboard({ league, teams, session }) {
         leagueId={leagueId}
         teams={teams}
         currentUserId={commissioner ? null : session.user.id}
+        httpClient={session.httpClient}
       />
     </div>
   );

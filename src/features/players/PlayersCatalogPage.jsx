@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Gavel } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
@@ -6,6 +6,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { routePaths } from "../../app/routePaths.js";
 import {
   EmptyBlock,
+  ErrorBlock,
   LoadingBlock,
   PageHeading,
   PositionTag,
@@ -23,14 +24,46 @@ import {
   leaguePlayerSearchQuery,
 } from "./playerQueries.js";
 
+const PLAYER_AUTOCOMPLETE_LIMIT = 100;
+
+const NHL_TEAM_OPTIONS = Object.freeze([
+  ["ANA", "Anaheim Ducks"],
+  ["BOS", "Boston Bruins"],
+  ["BUF", "Buffalo Sabres"],
+  ["CAR", "Carolina Hurricanes"],
+  ["CBJ", "Columbus Blue Jackets"],
+  ["CGY", "Calgary Flames"],
+  ["CHI", "Chicago Blackhawks"],
+  ["COL", "Colorado Avalanche"],
+  ["DAL", "Dallas Stars"],
+  ["DET", "Detroit Red Wings"],
+  ["EDM", "Edmonton Oilers"],
+  ["FLA", "Florida Panthers"],
+  ["LAK", "Los Angeles Kings"],
+  ["MIN", "Minnesota Wild"],
+  ["MTL", "Montreal Canadiens"],
+  ["NJD", "New Jersey Devils"],
+  ["NSH", "Nashville Predators"],
+  ["NYI", "New York Islanders"],
+  ["NYR", "New York Rangers"],
+  ["OTT", "Ottawa Senators"],
+  ["PHI", "Philadelphia Flyers"],
+  ["PIT", "Pittsburgh Penguins"],
+  ["SEA", "Seattle Kraken"],
+  ["SJS", "San Jose Sharks"],
+  ["STL", "St. Louis Blues"],
+  ["TBL", "Tampa Bay Lightning"],
+  ["TOR", "Toronto Maple Leafs"],
+  ["UTA", "Utah Mammoth"],
+  ["VAN", "Vancouver Canucks"],
+  ["VGK", "Vegas Golden Knights"],
+  ["WPG", "Winnipeg Jets"],
+  ["WSH", "Washington Capitals"],
+]);
+
 function ErrorMessage({ error }) {
   if (!error) return null;
-  return (
-    <div role="alert">
-      <p>{error.message || "The player request could not be completed."}</p>
-      {error.requestId && <p>Request ID: {error.requestId}</p>}
-    </div>
-  );
+  return <ErrorBlock error={error} fallback="The player request could not be completed." />;
 }
 
 function displayPosition(player) {
@@ -159,15 +192,21 @@ export function PlayersCatalogPage() {
   const [nhlTeam, setNhlTeam] = useState("all");
   const [ownership, setOwnership] = useState("all");
   const [minimumGames, setMinimumGames] = useState("0");
+  const [autocompleteDismissed, setAutocompleteDismissed] = useState(false);
   const [sort, setSort] = useState({
     key: "fantasyPoints",
     direction: "desc",
   });
   const [comparedIds, setComparedIds] = useState(() => new Set());
+  const searchInputRef = useRef(null);
+  const suggestionListRef = useRef(null);
   const deferredSearchInput = useDeferredValue(searchInput.trim());
   const selectedTeamId = ownership.startsWith("team:")
     ? ownership.slice(5)
     : null;
+  const serverOwnership = ["free", "prospects"].includes(ownership)
+    ? ownership
+    : "all";
   const players = useInfiniteQuery({
     ...leaguePlayerInfiniteQuery(session.httpClient, leagueId, {
       query,
@@ -175,6 +214,10 @@ export function PlayersCatalogPage() {
       limit: 100,
       sort: "fantasyPoints",
       teamId: selectedTeamId,
+      position: position === "all" ? null : position,
+      nhlTeam: nhlTeam === "all" ? null : nhlTeam,
+      ownership: serverOwnership,
+      minimumGames: Number(minimumGames),
     }),
     enabled: session.status === "authenticated" && Boolean(league),
   });
@@ -182,7 +225,7 @@ export function PlayersCatalogPage() {
     ...leaguePlayerSearchQuery(session.httpClient, leagueId, {
       query: deferredSearchInput,
       status: "active",
-      limit: 8,
+      limit: PLAYER_AUTOCOMPLETE_LIMIT,
       sort: "name",
     }),
     enabled:
@@ -221,17 +264,6 @@ export function PlayersCatalogPage() {
           player.status === "active" && player.provider?.active !== false
       ),
     [loadedPlayers]
-  );
-  const nhlTeams = useMemo(
-    () =>
-      [
-        ...new Set(
-          availablePlayers
-            .map((player) => player.provider?.nhlTeamAbbreviation)
-            .filter(Boolean)
-        ),
-      ].sort(),
-    [availablePlayers]
   );
   const leagueTeams = useMemo(() => {
     if (teams.data) return teams.data;
@@ -326,9 +358,36 @@ export function PlayersCatalogPage() {
           player.status === "active" &&
           player.provider?.active !== false &&
           player.fullName.toLowerCase().includes(needle)
-      )
-      .slice(0, 8);
+      );
   }, [autocomplete.data, query, searchInput]);
+  const showAutocomplete =
+    !autocompleteDismissed && autocompletePlayers.length > 0;
+
+  function chooseAutocompletePlayer(player) {
+    setSearchInput(player.fullName);
+    setQuery(player.fullName);
+    setAutocompleteDismissed(true);
+    searchInputRef.current?.focus();
+  }
+
+  function moveSuggestionFocus(event, index) {
+    if (!["ArrowDown", "ArrowUp", "Escape"].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === "Escape") {
+      setAutocompleteDismissed(true);
+      searchInputRef.current?.focus();
+      return;
+    }
+    const options = [
+      ...(suggestionListRef.current?.querySelectorAll('[role="option"]') || []),
+    ];
+    const nextIndex =
+      event.key === "ArrowDown"
+        ? Math.min(index + 1, options.length - 1)
+        : index - 1;
+    if (nextIndex < 0) searchInputRef.current?.focus();
+    else options[nextIndex]?.focus();
+  }
 
   function changeSort(key) {
     setSort((current) =>
@@ -390,7 +449,6 @@ export function PlayersCatalogPage() {
       <PageHeading
         eyebrow={league.name}
         title="Players"
-        description="Filter and compare the league player catalog, then open an auction for an eligible free agent."
       />
       <Surface
         as="section"
@@ -401,36 +459,57 @@ export function PlayersCatalogPage() {
           onSubmit={(event) => {
             event.preventDefault();
             setQuery(searchInput.trim());
+            setAutocompleteDismissed(true);
           }}
           className="hl-filter-bar hl-player-filters"
         >
           <div className="hl-field hl-player-autocomplete">
             <label htmlFor="player-name-search">Search by player name</label>
             <input
+              ref={searchInputRef}
               id="player-name-search"
               type="search"
+              role="combobox"
               value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
+              onChange={(event) => {
+                setSearchInput(event.target.value);
+                setAutocompleteDismissed(false);
+              }}
+              onFocus={() => setAutocompleteDismissed(false)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape" && showAutocomplete) {
+                  event.preventDefault();
+                  setAutocompleteDismissed(true);
+                } else if (event.key === "ArrowDown" && showAutocomplete) {
+                  event.preventDefault();
+                  suggestionListRef.current
+                    ?.querySelector('[role="option"]')
+                    ?.focus();
+                }
+              }}
               autoComplete="off"
               aria-autocomplete="list"
               aria-controls="player-name-suggestions"
-              aria-expanded={autocompletePlayers.length > 0}
+              aria-expanded={showAutocomplete}
             />
-            {autocompletePlayers.length > 0 && (
+            {showAutocomplete && (
               <ul
+                ref={suggestionListRef}
                 id="player-name-suggestions"
                 className="hl-player-suggestions"
                 role="listbox"
                 aria-label="Matching players"
               >
-                {autocompletePlayers.map((player) => (
-                  <li key={player.id} role="option">
+                {autocompletePlayers.map((player, index) => (
+                  <li key={player.id} role="presentation">
                     <button
                       type="button"
-                      onClick={() => {
-                        setSearchInput(player.fullName);
-                        setQuery(player.fullName);
-                      }}
+                      role="option"
+                      aria-selected="false"
+                      onClick={() => chooseAutocompletePlayer(player)}
+                      onKeyDown={(event) =>
+                        moveSuggestionFocus(event, index)
+                      }
                     >
                       <strong>{player.fullName}</strong>
                       <span>
@@ -462,9 +541,9 @@ export function PlayersCatalogPage() {
               onChange={(event) => setNhlTeam(event.target.value)}
             >
               <option value="all">All NHL teams</option>
-              {nhlTeams.map((team) => (
-                <option value={team} key={team}>
-                  {team}
+              {NHL_TEAM_OPTIONS.map(([abbreviation, name]) => (
+                <option value={abbreviation} key={abbreviation}>
+                  {name} ({abbreviation})
                 </option>
               ))}
             </select>

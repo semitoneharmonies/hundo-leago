@@ -42,33 +42,55 @@ function operationLabel(kind) {
     queued_nomination_activation: "Queued nomination activation",
     fallback_activation: "Fallback activation",
     auction_resolution: "Auction resolution",
-    completion: "FAD completion",
+    completion: "Free Agent Draft completion",
   }[kind] || "Operation";
 }
 
 function correctionDecisionLabel(decision) {
   if (decision.status === "pending") return "Pending — no decision recorded";
-  return `${decision.status.replaceAll("_", " ")} · ${
-    decision.decisionCode?.replaceAll("_", " ") || "decision unavailable"
-  }`;
+  return decision.status.replaceAll("_", " ");
+}
+
+function correctionEffectLabel(delta) {
+  const subject = {
+    allocation: "draft result",
+    auction: "auction",
+    contract: "contract",
+    ownership: "player ownership",
+    roster_entry: "roster spot",
+    activity: "league history entry",
+    recovery: "recovery item",
+  }[delta.resourceType] || "record";
+  const action = {
+    create: "Create",
+    update: "Update",
+    cancel: "Cancel",
+    remove: "Remove",
+    assign: "Assign",
+    release: "Release",
+    append: "Add",
+    resolve: "Resolve",
+  }[delta.action] || "Change";
+  const team = delta.afterSummary.team?.name;
+  const player = delta.afterSummary.player?.fullName;
+  const context = [player, team].filter(Boolean).join(" for ");
+  return `${action} ${subject}${context ? ` for ${context}` : ""}`;
 }
 
 function RecoveryActionForm({ action, busy, error, onCancel, onSubmit }) {
   const [reason, setReason] = useState("");
-  const errorId = error ? "fad-recovery-action-error" : undefined;
   return (
     <form
       className={styles.editor}
       aria-label={`Confirm ${actionLabel(action.action)}`}
-      aria-describedby={errorId}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit(reason);
       }}
     >
       <p>
-        Retry only this server-authorized operation. The accepted receipt does
-        not claim that downstream state changed before the durable worker commits.
+        Retry only this step. Other draft results stay unchanged unless the
+        retry finishes successfully.
       </p>
       <label>
         Recovery reason
@@ -78,18 +100,18 @@ function RecoveryActionForm({ action, busy, error, onCancel, onSubmit }) {
           maxLength={500}
           required
           value={reason}
-          aria-describedby={errorId}
           onChange={(event) => setReason(event.target.value)}
         />
       </label>
       {error && (
-        <p id="fad-recovery-action-error" className={styles.error} role="alert">
-          {error.message || "The recovery action could not be accepted."}
-        </p>
+        <ErrorBlock
+          error={error}
+          fallback="The recovery action could not be accepted."
+        />
       )}
       <div className={styles.editorActions}>
         <button type="submit" className="hl-button hl-button--primary" disabled={busy || !reason.trim()}>
-          {busy ? "Submitting recovery…" : "Submit authorized recovery"}
+          {busy ? "Submitting recovery…" : "Submit recovery"}
         </button>
         <button type="button" className="hl-button hl-button--quiet" disabled={busy} onClick={onCancel}>
           Cancel
@@ -104,7 +126,7 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
   const queryClient = useQueryClient();
   const [preview, setPreview] = useState(null);
   const [reason, setReason] = useState("");
-  const [confirmation, setConfirmation] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const [message, setMessage] = useState("");
   const [focusMessage, setFocusMessage] = useState(false);
   const headingRef = useRef(null);
@@ -128,9 +150,9 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
       ),
     onSuccess(result) {
       setPreview(result);
-      setConfirmation("");
+      setConfirmed(false);
       setFocusMessage(false);
-      setMessage("Read-only deterministic correction preview loaded.");
+      setMessage("Correction preview loaded.");
     },
     onError() {
       setPreview(null);
@@ -159,10 +181,10 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
     onSuccess: async (result) => {
       setPreview(null);
       setReason("");
-      setConfirmation("");
+      setConfirmed(false);
       setFocusMessage(true);
       setMessage(
-        `Correction committed. The authoritative allocation is now ${result.allocation.status.replaceAll("_", " ")}. Original history remains preserved.`
+        `Correction committed. The recorded allocation is now ${result.allocation.status.replaceAll("_", " ")}. Original history remains preserved.`
       );
       await queryClient.invalidateQueries({
         queryKey: freeAgentDraftKeys.root(leagueId),
@@ -175,7 +197,7 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
         error.code === "FAD_CORRECTION_NOT_APPLICABLE"
       ) {
         setPreview(null);
-        setConfirmation("");
+        setConfirmed(false);
         setFocusMessage(true);
         setMessage(
           "The allocation or preview changed. No correction was applied; current recovery and result evidence has been refreshed."
@@ -203,7 +225,7 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
     <Surface className={styles.panel} as="section" aria-labelledby="fad-correction-title">
       <div className={styles.panelHeader}>
         <div>
-          <p className="hl-eyebrow">Explicit atomic repair</p>
+          <p className="hl-eyebrow">Result repair</p>
           <h3 id="fad-correction-title" ref={headingRef} tabIndex={-1}>Allocation correction</h3>
         </div>
         <button type="button" className="hl-button hl-button--quiet" disabled={previewMutation.isPending || applyMutation.isPending} onClick={onClose}>
@@ -211,8 +233,8 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
         </button>
       </div>
       <p>
-        Preview recomputes only from the immutable locked Candidate snapshot.
-        It does not write, select a winner manually, or erase original history.
+        Preview recalculates this result from the saved Candidate Card. It does
+        not change the result, choose a winner manually, or erase history.
       </p>
       {!preview && (
         <button
@@ -221,7 +243,7 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
           disabled={previewMutation.isPending || applyMutation.isPending}
           onClick={() => previewMutation.mutate()}
         >
-          {previewMutation.isPending ? "Preparing read-only preview…" : "Preview deterministic correction"}
+          {previewMutation.isPending ? "Preparing preview…" : "Preview correction"}
         </button>
       )}
       {previewMutation.error && (
@@ -239,7 +261,7 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
               <strong>{correctionDecisionLabel(preview.recomputedDecision)}</strong>
             </div>
             <div className={styles.summaryCard}>
-              <span>Bounded effects</span>
+              <span>Changes if applied</span>
               <strong>{preview.deltas.length}</strong>
             </div>
           </div>
@@ -247,9 +269,7 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
             <ul className={styles.diagnostics} aria-label="Correction preview effects">
               {preview.deltas.map((delta, index) => (
                 <li key={`${delta.resourceType}:${delta.resourceId || index}`}>
-                  {delta.action} {delta.resourceType.replaceAll("_", " ")}
-                  {delta.afterSummary.team ? ` for ${delta.afterSummary.team.name}` : ""}
-                  {delta.afterSummary.player ? ` (${delta.afterSummary.player.fullName})` : ""}
+                  {correctionEffectLabel(delta)}
                 </li>
               ))}
             </ul>
@@ -268,14 +288,19 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
             </div>
           )}
           {preview.reversible && (
-            <form className={styles.editor} aria-label="Apply FAD correction" onSubmit={applyCorrection}>
+            <form className={styles.editor} aria-label="Apply Free Agent Draft correction" onSubmit={applyCorrection}>
               <label>
                 Correction reason
                 <textarea autoFocus rows="3" maxLength={500} required value={reason} onChange={(event) => setReason(event.target.value)} />
               </label>
-              <label>
-                Type the exact confirmation: <strong>{preview.confirmationText}</strong>
-                <input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} />
+              <label className={styles.confirmationCheck}>
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(event) => setConfirmed(event.target.checked)}
+                />
+                I reviewed the correction and understand the recorded draft
+                result may change.
               </label>
               <button
                 type="submit"
@@ -283,7 +308,7 @@ function CorrectionPanel({ allocationId, fadId, leagueId, onClose }) {
                 disabled={
                   applyMutation.isPending ||
                   !reason.trim() ||
-                  confirmation !== preview.confirmationText
+                  !confirmed
                 }
               >
                 {applyMutation.isPending ? "Applying correction…" : "Apply reviewed correction"}
@@ -384,10 +409,10 @@ export function CommissionerFadRecovery({
   }
 
   if (recovery.isPending) {
-    return <Surface><LoadingBlock>Loading FAD recovery evidence…</LoadingBlock></Surface>;
+    return <Surface><LoadingBlock>Loading Free Agent Draft recovery…</LoadingBlock></Surface>;
   }
   if (recovery.isError) {
-    return <Surface><ErrorBlock error={recovery.error} fallback="FAD recovery evidence could not be loaded." /></Surface>;
+    return <Surface><ErrorBlock error={recovery.error} fallback="Free Agent Draft recovery could not be loaded." /></Surface>;
   }
 
   return (
@@ -395,7 +420,7 @@ export function CommissionerFadRecovery({
       <Surface className={styles.panel}>
         <div className={styles.panelHeader}>
           <div>
-            <p className="hl-eyebrow">Commissioner operational history</p>
+            <p className="hl-eyebrow">Commissioner draft tools</p>
             <h2 id="commissioner-fad-recovery-title">Recovery and correction</h2>
           </div>
           <StatusBadge tone={recovery.data.fad.counts.recoveriesOpen > 0 ? "warning" : "success"}>
@@ -403,78 +428,16 @@ export function CommissionerFadRecovery({
           </StatusBadge>
         </div>
         <div className={styles.summaryGrid}>
-          <div className={styles.summaryCard}><span>FAD phase</span><strong>{recovery.data.fad.phase.replaceAll("_", " ")}</strong></div>
+          <div className={styles.summaryCard}><span>Draft phase</span><strong>{recovery.data.fad.phase.replaceAll("_", " ")}</strong></div>
           <div className={styles.summaryCard}><span>Cards locked</span><strong>{recovery.data.fad.counts.cardsLocked}</strong></div>
           <div className={styles.summaryCard}><span>Allocations pending</span><strong>{recovery.data.fad.counts.allocationsPending}</strong></div>
           <div className={styles.summaryCard}><span>Rapid auctions open</span><strong>{recovery.data.fad.counts.rapidAuctionsOpen}</strong></div>
         </div>
       </Surface>
 
-      {recovery.data.scheduleRecoveryEvidence && (
-        <Surface className={styles.panel} as="section" aria-labelledby="fad-week-one-recovery-title">
-          <h3 id="fad-week-one-recovery-title">Committed Week 1 recovery</h3>
-          <p>
-            Competition Week 1 moved from {leagueDateTime(recovery.data.scheduleRecoveryEvidence.oldWeek1StartsAtMs, timeZone)} to {leagueDateTime(recovery.data.scheduleRecoveryEvidence.newWeek1StartsAtMs, timeZone)}.
-          </p>
-          <p>
-            Schedule version {recovery.data.scheduleRecoveryEvidence.oldScheduleVersion} became {recovery.data.scheduleRecoveryEvidence.newScheduleVersion}; {recovery.data.scheduleRecoveryEvidence.removedWeekIds.length} weeks and {recovery.data.scheduleRecoveryEvidence.removedMatchupIds.length} matchups were replaced or removed.
-          </p>
-          <ul className={styles.diagnostics} aria-label="Replaced Week 1 jobs">
-            {recovery.data.scheduleRecoveryEvidence.replacedJobs.map((job) => (
-              <li key={job.oldJobId}>{job.oldOccurrenceKey} → {job.newOccurrenceKey}</li>
-            ))}
-          </ul>
-        </Surface>
-      )}
-
-      <Surface className={styles.panel} as="section" aria-labelledby="fad-operations-title">
-        <h3 id="fad-operations-title">Durable operations</h3>
-        {operations.length === 0 ? <p>No durable operations were returned.</p> : (
-          <div className={styles.resultList}>
-            {operations.map((operation) => (
-              <div className={styles.recoveryItem} key={operation.operationId}>
-                <div className={styles.panelHeader}>
-                  <strong>{operationLabel(operation.operationKind)}</strong>
-                  <StatusBadge tone={operation.status === "succeeded" ? "success" : operation.status === "failed" ? "danger" : "warning"}>{operation.status}</StatusBadge>
-                </div>
-                <span>Attempt {operation.attemptCount}; {operation.blocksCompletion ? "blocks completion" : "does not block completion"}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Surface>
-
-      <Surface className={styles.panel} as="section" aria-labelledby="fad-recoveries-title">
-        <h3 id="fad-recoveries-title">Recovery records</h3>
-        {recovery.data.recoveries.length === 0 ? <p>No recovery record exists.</p> : (
-          <div className={styles.resultList}>
-            {recovery.data.recoveries.map((item) => (
-              <article
-                id={`fad-recovery-${item.recoveryId}`}
-                className={`${styles.recoveryItem} ${item.recoveryId === requestedRecoveryId ? styles.recoveryItemActive : ""}`}
-                tabIndex={-1}
-                key={item.recoveryId}
-              >
-                <div className={styles.panelHeader}>
-                  <strong>{item.kind.replaceAll("_", " ")}</strong>
-                  <StatusBadge tone={item.status === "resolved" ? "success" : item.status === "correction_required" ? "danger" : "warning"}>{item.status.replaceAll("_", " ")}</StatusBadge>
-                </div>
-                <span>Created {leagueDateTime(item.createdAtMs, timeZone)}</span>
-                {item.lastErrorCode && <span>Safe error code: {item.lastErrorCode}</span>}
-                {item.status === "correction_required" && item.allocationId && (
-                  <button type="button" className="hl-button hl-button--secondary" onClick={(event) => { correctionTriggerRef.current = event.currentTarget; setSelectedAllocationId(item.allocationId); }}>
-                    Review deterministic correction
-                  </button>
-                )}
-              </article>
-            ))}
-          </div>
-        )}
-      </Surface>
-
-      <Surface className={styles.panel} as="section" aria-labelledby="fad-available-actions-title">
-        <h3 id="fad-available-actions-title">Server-authorized recovery actions</h3>
-        <p>Only actions returned by the server are shown. Disabled actions cannot be submitted.</p>
+      <Surface className={`${styles.panel} ${styles.needsAction}`} as="section" aria-labelledby="fad-available-actions-title">
+        <h3 id="fad-available-actions-title">Needs your action</h3>
+        <p>Only safe actions currently available for this draft are shown.</p>
         <div className={styles.resultList}>
           {recovery.data.availableActions.map((action) => (
             <div className={styles.recoveryItem} key={`${action.action}:${action.resourceId || "fad"}`}>
@@ -484,7 +447,7 @@ export function CommissionerFadRecovery({
                   Review action
                 </button>
               ) : (
-                <span>Unavailable: {action.reasonCode.replaceAll("_", " ").toLowerCase()}</span>
+                <span>Resolve the earlier blocked draft step, then refresh this page.</span>
               )}
             </div>
           ))}
@@ -507,10 +470,91 @@ export function CommissionerFadRecovery({
         )}
         {receipt && (
           <p className={styles.success} role="status" ref={receiptRef} tabIndex={-1}>
-            Recovery operation {receipt.status === "already_succeeded" ? "was already complete" : "was accepted and is pending"}. The exact FAD recovery resource has been refreshed.
+            Recovery {receipt.status === "already_succeeded" ? "was already complete" : "was accepted and is pending"}. The Free Agent Draft status has been refreshed.
           </p>
         )}
       </Surface>
+
+      {recovery.data.scheduleRecoveryEvidence && (
+        <details className={styles.historyDisclosure}>
+          <summary>
+            <strong>Week 1 recovery history</strong>
+            <small>Completed schedule adjustment</small>
+          </summary>
+        <Surface className={styles.panel} as="section" aria-labelledby="fad-week-one-recovery-title">
+          <h3 id="fad-week-one-recovery-title">Committed Week 1 recovery</h3>
+          <p>
+            Competition Week 1 moved from {leagueDateTime(recovery.data.scheduleRecoveryEvidence.oldWeek1StartsAtMs, timeZone)} to {leagueDateTime(recovery.data.scheduleRecoveryEvidence.newWeek1StartsAtMs, timeZone)}.
+          </p>
+          <p>
+            {recovery.data.scheduleRecoveryEvidence.removedWeekIds.length} weeks
+            and {recovery.data.scheduleRecoveryEvidence.removedMatchupIds.length}
+            matchups were safely replaced or removed.
+          </p>
+        </Surface>
+        </details>
+      )}
+
+      <details className={styles.historyDisclosure}>
+        <summary>
+          <strong>Draft step history</strong>
+          <small>{operations.length} recorded steps</small>
+        </summary>
+      <Surface className={styles.panel} as="section" aria-labelledby="fad-operations-title">
+        <h3 id="fad-operations-title">Draft steps</h3>
+        {operations.length === 0 ? <p>No draft step history is available.</p> : (
+          <div className={styles.resultList}>
+            {operations.map((operation) => (
+              <div className={styles.recoveryItem} key={operation.operationId}>
+                <div className={styles.panelHeader}>
+                  <strong>{operationLabel(operation.operationKind)}</strong>
+                  <StatusBadge tone={operation.status === "succeeded" ? "success" : operation.status === "failed" ? "danger" : "warning"}>{operation.status === "succeeded" ? "Completed" : operation.status === "failed" ? "Needs attention" : "In progress"}</StatusBadge>
+                </div>
+                <span>
+                  Tried {operation.attemptCount} {operation.attemptCount === 1 ? "time" : "times"}. {operation.blocksCompletion ? "This step must finish before the draft can complete." : "The draft can continue without this step."}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Surface>
+      </details>
+
+      <details
+        className={styles.historyDisclosure}
+        open={Boolean(requestedRecoveryId)}
+      >
+        <summary>
+          <strong>Recovery history</strong>
+          <small>{recovery.data.recoveries.length} records</small>
+        </summary>
+      <Surface className={styles.panel} as="section" aria-labelledby="fad-recoveries-title">
+        <h3 id="fad-recoveries-title">Recovery records</h3>
+        {recovery.data.recoveries.length === 0 ? <p>No recovery record exists.</p> : (
+          <div className={styles.resultList}>
+            {recovery.data.recoveries.map((item) => (
+              <article
+                id={`fad-recovery-${item.recoveryId}`}
+                className={`${styles.recoveryItem} ${item.recoveryId === requestedRecoveryId ? styles.recoveryItemActive : ""}`}
+                tabIndex={-1}
+                key={item.recoveryId}
+              >
+                <div className={styles.panelHeader}>
+                  <strong>{item.kind.replaceAll("_", " ").replace(/\b\w/g, (character) => character.toUpperCase())}</strong>
+                  <StatusBadge tone={item.status === "resolved" ? "success" : item.status === "correction_required" ? "danger" : "warning"}>{item.status === "resolved" ? "Resolved" : item.status === "correction_required" ? "Correction needed" : "Ready"}</StatusBadge>
+                </div>
+                <span>Created {leagueDateTime(item.createdAtMs, timeZone)}</span>
+                {item.status === "correction_required" && item.allocationId && (
+                  <button type="button" className="hl-button hl-button--secondary" onClick={(event) => { correctionTriggerRef.current = event.currentTarget; setSelectedAllocationId(item.allocationId); }}>
+                    Review correction
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </Surface>
+      </details>
 
       {selectedAllocationId && (
         <CorrectionPanel

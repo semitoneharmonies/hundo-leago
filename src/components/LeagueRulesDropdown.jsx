@@ -39,11 +39,6 @@ function LeagueRulesDropdown({ onClose }) {
         </button>
       </header>
 
-      <p className="hl-rules-panel__authority">
-        Rules are league-scoped and enforced by the backend. This panel is a
-        quick reference, not an independent rules calculator.
-      </p>
-
       <dl className="hl-rules-quick">
         {QUICK_RULES.map(([label, value]) => (
           <div key={label}>
@@ -79,17 +74,18 @@ function LeagueRulesDropdown({ onClose }) {
               commissioners cannot reveal competitors.
             </li>
             <li>
-              Starting minimums are $1 / $2 / $3 total for 1 / 2 / 3 years;
-              joining minimums are $1.50 / $3 / $5.
+              Starting bids require at least $1 AAV. Joining bids require at
+              least $1.50 AAV for one or two years, or $1.75 AAV for three
+              years. AAV uses $0.25 increments.
             </li>
             <li>
               The starter receives two edits, later bidders one, with a
               75-minute cooldown after each submission or edit.
             </li>
             <li>
-              Bids rank by AAV, then shorter term, original timestamp and
-              stable bid ID. The approved anti-bluff price is calculated at
-              resolution.
+              Bids rank by total contract value, then AAV. Ordinary auction
+              ties use the original timestamp; exact Free Agent Draft ties use
+              an auditable equal-chance draw.
             </li>
           </ul>
         </RuleSection>
@@ -105,8 +101,12 @@ function LeagueRulesDropdown({ onClose }) {
               asset and completes atomically.
             </li>
             <li>
+              A trade containing Future considerations needs commissioner
+              approval after the receiving manager accepts it.
+            </li>
+            <li>
               Retained salary lasts for every remaining contract year and
-              remains an authoritative cap obligation.
+              remains a cap obligation.
             </li>
             <li>
               The standard annual buyout penalty is 25% of AAV for each

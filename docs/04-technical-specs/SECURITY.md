@@ -904,7 +904,13 @@ Protected operations fail unless the backend positively verifies:
 7. allowed league and season state;
 8. resource version or idempotency condition where required.
 
-Platform-administrator status does not grant silent league access. A platform administrator needs an active membership to view or operate inside a league, except for narrowly approved external platform-administration actions.
+Platform-administrator status does not grant membership-free league access.
+Every active platform administrator is provisioned one protected active
+`member` membership in every non-deleted league and operates through that row.
+If it is missing, authorization fails closed as invariant corruption until the
+approved additive reconciliation restores it. Ordinary membership,
+commissioner, and team-manager writers may not end, reclassify, or assign the
+protected row.
 
 ---
 
@@ -1457,7 +1463,10 @@ At minimum, every protected feature tests:
 * inactive-membership denial;
 * manager acting on another team;
 * commissioner acting outside their league;
-* platform administrator without league membership;
+* deliberately corrupted platform-administrator-without-membership state
+  failing closed until reconciliation;
+* attempts to end, reclassify, or team/commissioner-assign a protected
+  administrator membership;
 * valid actor in one league targeting an object in another;
 * object existence not leaked to unauthorized users;
 * client-claimed role ignored;

@@ -20,6 +20,57 @@ technical design adopts them.
 
 ---
 
+# P1 Production-Promotion Follow-up - Signed-Prospect Buyout Trade Cancellation
+
+## Promoted pre-production boundary
+
+The M7-26 staging review identified a known limitation: buying out a player
+whose signed contract remains in the `Prospect` roster category does not yet
+cancel every pending trade whose immutable asset snapshot carries that player
+as `prospect_right`. The current command fails atomically and leaves the buyout
+and proposal unchanged; there is no observed partial-write risk, but the
+manager cannot complete the intended buyout workflow.
+
+This is a `P1` production-promotion blocker/follow-up, not an optional
+post-launch idea and not a blocker for the contained M7-26 isolated-staging UI
+review. Before production promotion, the buyout application transaction must:
+
+* resolve the signed Prospect's stable player, ownership, right, and contract
+  identity before mutation;
+* find and cancel every affected nonterminal pending trade in the same league,
+  including snapshots represented as `prospect_right`;
+* persist the buyout, trade cancellations, explicit cancellation reason,
+  retained history, approved Activity/notification records, and transactional
+  outbox/realtime publications atomically;
+* roll back the buyout and every related side effect if any cancellation or
+  publication persistence fails; and
+* prove idempotent replay, concurrent proposal/buyout behavior, multiple
+  affected proposals, unaffected proposals, and two-league isolation.
+
+`T-074` remains `PLANNED`. This item does not claim that the buyout endpoint,
+service, final automated gate, shared-staging fix, or production behavior is
+complete. Focused M7-26 prospect sign/decline/release movement remains complete;
+this separately scoped follow-up preserves the buyout limitation until its own
+implementation and verification evidence exists.
+
+---
+
+# Collectible Player Cards
+
+## Promoted post-launch direction
+
+Grae identified the collectible-style hockey-card interaction during the
+2026-08-20 full-site review and explicitly deferred it until after launch.
+
+A future contained specification may replace player-name navigation on roster
+and Players catalog pages with an in-place collectible-style card containing
+useful player information, then retire the standalone player-detail page only
+after feature parity, deep-link handling, accessibility, and responsive
+behavior are verified. Until that work is deliberately promoted, the current
+player-detail routes and links remain supported.
+
+---
+
 # Seasonal Event Presentation Videos
 
 ## Idea

@@ -3,6 +3,68 @@
   gap: 1.25rem;
 }
 
+.commissionerDisclosure {
+  border: 1px solid rgb(148 163 184 / 24%);
+  border-radius: 1rem;
+  background: rgb(15 23 42 / 48%);
+}
+
+.commissionerDisclosure > summary {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.15rem;
+  cursor: pointer;
+}
+
+.commissionerDisclosure > summary > span:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.commissionerDisclosure > summary small {
+  color: var(--hl-text-muted, #94a3b8);
+}
+
+.commissionerDisclosure[open] > summary {
+  border-bottom: 1px solid rgb(148 163 184 / 18%);
+}
+
+.commissionerDisclosure > .panel {
+  border: 0;
+  border-radius: 0 0 1rem 1rem;
+}
+
+.needsAction {
+  border-color: color-mix(in srgb, var(--hl-warning, #f59e0b) 48%, transparent);
+}
+
+.historyDisclosure {
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: 0.85rem;
+  background: rgb(2 6 23 / 26%);
+}
+
+.historyDisclosure > summary {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+}
+
+.historyDisclosure > summary small {
+  color: var(--hl-text-muted, #94a3b8);
+}
+
+.historyDisclosure > .panel {
+  border: 0;
+  border-top: 1px solid rgb(148 163 184 / 18%);
+  border-radius: 0 0 0.85rem 0.85rem;
+}
+
 .visuallyHidden {
   position: absolute;
   width: 1px;
@@ -30,6 +92,15 @@
 .hero h2,
 .hero p {
   margin: 0;
+}
+
+.deadlineLine {
+  color: var(--hl-text-muted, #94a3b8);
+  font-size: 0.88rem;
+}
+
+.deadlineLine strong {
+  color: var(--hl-foreground, #f8fafc);
 }
 
 .heroTop,
@@ -881,17 +952,23 @@
 .teamResultTotals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: 0;
   margin: 0;
+  overflow: hidden;
+  border: 1px solid rgb(148 163 184 / 20%);
+  border-radius: 0.7rem;
+  background: rgb(2 6 23 / 32%);
 }
 
 .teamResultTotals div {
   display: grid;
   gap: 0.2rem;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid rgb(148 163 184 / 20%);
-  border-radius: 0.7rem;
-  background: rgb(2 6 23 / 32%);
+  padding: 0.6rem 0.75rem;
+  border-left: 1px solid rgb(148 163 184 / 18%);
+}
+
+.teamResultTotals div:first-child {
+  border-left: 0;
 }
 
 .teamResultTotals dt {
@@ -1274,6 +1351,15 @@
 
   .teamResultTotals {
     grid-template-columns: 1fr;
+  }
+
+  .teamResultTotals div {
+    border-top: 1px solid rgb(148 163 184 / 18%);
+    border-left: 0;
+  }
+
+  .teamResultTotals div:first-child {
+    border-top: 0;
   }
 
   .teamResultList li,

@@ -30,6 +30,56 @@ zero. A separate provider-neutral matchup/statistics slice must test four
 scheduled completed-game cumulative refresh runs each evening; exact times and
 implementation are not yet approved or claimed complete.
 
+### M7-26 Current-Tree Gate Amendment - 2026-08-20
+
+The active shared local tree targets schema `54` with `54` migration files,
+`133` application tables and repository-catalog entries, and `134` physical
+tables including `schema_migrations`. The composed runtime registers `123`
+routes; the conceptual contract catalogue contains `148` entries after T-147
+notification batch acknowledgement and T-148 trade approval. These counts are
+inventory assertions, not final test, deployment, or release evidence.
+
+M7-26 may close only after focused role, privacy, transaction, rollback,
+replay, league-isolation, frontend, and browser evidence proves:
+
+* notification GET filtering is read-only; T-147 accepts exactly 1-100 unique
+  caller-owned IDs all-or-none; and the UI acknowledges only the captured
+  successfully rendered unread batch, retains it for the mounted visit, and
+  visibly reports acknowledgement failure;
+* every active member sees selected-team FAD player identity and Signed/Not
+  won/Tied status, while bid/contract/minimum/ranking/draw detail is returned
+  only for the selected team's current manager; commissioner/admin authority
+  alone remains redacted, internal audit evidence is inaccessible, legacy deep
+  links redirect, and viewer-sensitive caches cannot cross sessions or manager
+  assignments;
+* proposal creation/cancellation requires the current proposing-team manager,
+  acceptance/rejection requires the current receiving-team manager, and
+  commissioner authority permits only safe inspection, T-148 approval of an
+  already accepted Future-Considerations proposal, and separate recovery;
+  standalone retention is rejected, historical retention remains readable,
+  and no counter endpoint/service or UI capability is advertised;
+* normal standings correction presents a recognizable matchup/team/week and
+  projected standings without writes, then confirmed correction and current
+  standings rebuild commit atomically; T-098 remains recovery-only and absent
+  from the normal UI;
+* current-manager-only sign/decline/release decisions use exact versions and
+  destinations, fixed signed-Prospect contract terms, server-derived legality,
+  IR eligibility and no-return rules, affected-trade cancellation, distinct
+  history/activity/realtime evidence, and complete rollback; and
+* active platform administrators have protected active `member` memberships in
+  every non-deleted league, ordinary writers cannot mutate or assign them, and
+  commissioner transfer atomically demotes/promotes roles and changes the one
+  canonical league pointer.
+
+The signed-Prospect buyout limitation recorded in `FUTURE_BACKLOG.md` is a
+separate P1 production-promotion follow-up, not an M7-26 isolated-staging
+closure gate. Its current failure is atomic with no partial write; a future fix
+must make buyout cancel every affected pending `prospect_right` proposal in the
+same transaction. T-074 remains `PLANNED`, focused M7-26 prospect movement
+remains complete, and no test/status may imply that buyout endpoint is done.
+Full frontend/backend totals and hosted evidence are recorded only after the
+commands actually finish successfully.
+
 ### FAD-06 Auction Read Closure Evidence - 2026-08-02
 
 The final local auction-family gate passed `161/161` tests across `22` suites
@@ -123,9 +173,10 @@ Production storage, the production persistent disk, production secrets, and unre
 
 ---
 
-## Reviewed Test State
+## 2026-07-18 Baseline Reviewed Test State
 
-Current reviewed state:
+The following is the preserved baseline reviewed on 2026-07-18, not the current
+M7-26 tree:
 
 * backend work item `BR-00` completed the initial Node built-in test harness locally;
 * the focused characterization suite passes 16 tests;
@@ -506,7 +557,9 @@ They deliberately include:
 * overlapping player pools;
 * a user belonging to only one league;
 * a user belonging to both leagues with different authority;
-* a platform administrator without membership in one league;
+* a platform administrator with protected active memberships in both leagues,
+  plus a deliberately corrupted missing-membership fixture that fails closed
+  until additive reconciliation repairs it;
 * stable IDs that cannot be inferred from names.
 
 Every league-owned endpoint receives a cross-league negative test.
@@ -1195,8 +1248,8 @@ schema `48` is the preserved intermediate realtime checkpoint. Trigger-only
 migration `0049_require_canonical_fad_setup_exemption_publications.sql` is
 pinned at `29,571` bytes, `748` lines, and SHA-256
 `5109baabaeed39e06498c7c26274a41a48edfbbdee958e7dd6b278021a29ebc6`.
-Schema `49` is current with `131` application tables, `132` including the
-migration ledger, and `131` repository-catalog entries.
+Schema `49` was the FAD-14 local target with `131` application tables, `132`
+including the migration ledger, and `131` repository-catalog entries.
 
 Separate pinned Node.js `24.14.1` evidence passes:
 
@@ -1212,8 +1265,9 @@ Separate pinned Node.js `24.14.1` evidence passes:
 The skipped cases are `symlink` (`symlink creation is unavailable`) and
 `target` (`file links are unavailable`) in
 `sportsDataIoLiveCapabilityArtifactFoundation.test.js`. Migrations `0023`
-through `0049` remain local only. No FAD frontend, shared staging, or production
-environment was opened, migrated, deployed, or changed.
+through `0049` remained local only at this historical FAD-14 checkpoint. No FAD
+frontend, shared staging, or production environment was opened, migrated,
+deployed, or changed at that checkpoint.
 
 ### FAD-15 and FAD-16 Frontend Local Closure Evidence - 2026-08-11
 
@@ -1256,8 +1310,9 @@ pass.
 The real disposable two-league Playwright release matrix passes `40/40` with
 zero retries across desktop Chromium, mobile Chromium, desktop Firefox,
 desktop WebKit, and mobile WebKit. T-076 through T-083 and T-126 through T-144
-are therefore `LOCAL VERIFIED`. No shared-staging or production environment was
-opened, migrated, deployed, or changed.
+were therefore `LOCAL VERIFIED` at the FAD-17 checkpoint. No shared-staging or
+production environment had been opened, migrated, deployed, or changed at that
+checkpoint. The FAD-18 closure below records their later staging verification.
 
 ### FAD-18 Local Preflight Evidence - 2026-08-11
 
@@ -1286,15 +1341,42 @@ The hold/discovery/publisher/verifier transition package passes `35/35`, and
 the broader nine-file entrypoint, Render, preflight, target-runtime, hold, and
 provider matrix passes `125/125`, both with zero fail, cancel, skip, or todo.
 
-This is local preflight evidence only. The provider-independent startup and
-preflight amendment, isolated database/disk and operator access, offsite backup
-and clean restore, approved
-fresh-path reset/import and schema-49 migration report, clean release commits,
-auxiliary-bridge and final-held deploys, attached-service shell reachability,
-database-path activation, and deploy/rollback identities remain required before
-the externally mutating staging gate. The tools remove none of those external
-blockers.
-Production remains unauthorized.
+This was local preflight evidence only. At that checkpoint, the provider-
+independent startup and preflight amendment, isolated database/disk and
+operator access, offsite backup and clean restore, approved fresh-path
+reset/import and schema-49 migration report, clean release commits, auxiliary-
+bridge and final-held deploys, attached-service shell reachability, database-
+path activation, and deploy/rollback identities remained required before the
+externally mutating staging gate. The tools removed none of those then-active
+external blockers.
+
+### FAD-18 Shared-Staging Closure Evidence - 2026-08-18
+
+Release `HL-20260818-1` completed the provider-independent FAD-18 isolated
+shared-staging gate and advanced staging to schema `52`. The exact deployed
+backend commit is `9a2f5e8f06b054c84e37d086c1c3a43d0fafbc68`; the exact frontend application
+commit is `50f2414cdda5926942975577f70114b5868917a9`, preserved in frontend source head
+`2ba016c9d5e6b016a150a62da757f28a9c0140c0`.
+
+The focused affected backend matrix passed `152/152`, and the bid-policy and
+persistence rerun passed `29/29`. The local full suite discovered `3,356`
+tests; its sole failure was the workstation Node `24.11.1` version gate, with
+two intentional Windows link-capability skips. Render's exact Node `24.14.1`
+build then passed the authoritative hosted suite at `3,356/3,356`, with zero
+failure or skip.
+
+The held deployment created encrypted backup
+`ccde64d6-bff6-4903-b078-3dd9c1c0b71a`; a restore to a distinct temporary path
+reported SQLite integrity `ok` and zero foreign-key violations. The forward
+migration reported schema `52`, integrity `ok`, and zero foreign-key
+violations. Final Render deploy `dep-da2147e417fc73brkqmg` and final Netlify
+deploy `6a8420054c9c5a624d86b2c3` passed health, build-identity, origin, asset, and
+authenticated non-mutating browser checks. Exact detailed evidence and the
+rollback boundary are recorded in
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
+
+M7-25 and FAD-18 are therefore `STAGING VERIFIED` and complete. M7-26 is the
+sole active plan. Production remained untouched and remains unauthorized.
 
 ---
 
@@ -1644,8 +1726,9 @@ recorded exact required-player and historical-game request. Its intended
 read-only evidence covered exact-set dispositions, explicit-zero pairs,
 source-version binding, targeted historical access, and controlled omissions
 without shared league writes or raw-provider retention. Any provider failure
-stopped only that retired sequence. None of this evidence or provider access is
-part of the active provider-independent FAD-18 acceptance gate.
+stopped only that retired sequence. None of this evidence or provider access
+was part of the provider-independent FAD-18 acceptance gate that later closed
+in isolated staging on `2026-08-18`.
 
 The command and artifact contract are accepted locally only when tests prove:
 

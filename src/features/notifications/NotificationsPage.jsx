@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { routePaths } from "../../app/routePaths.js";
 import {
   EmptyBlock,
+  ErrorBlock,
   LoadingBlock,
   PageHeading,
   StatusBadge,
@@ -26,7 +27,7 @@ import {
   acceptLeagueInvitation,
   declineLeagueInvitation,
   leagueInvitationQuery,
-  markAllNotificationsRead,
+  markNotificationsReadBatch,
   markNotificationRead,
   notificationKeys,
   notificationsQuery,
@@ -42,7 +43,7 @@ function message(notification) {
   return (
     notification.messageData.message ||
     notification.messageData.summary ||
-    notification.type.replaceAll("_", " ")
+    "Other notification"
   );
 }
 
@@ -54,8 +55,25 @@ function notificationDestination(notification) {
   );
 }
 
+function notificationCategory(type) {
+  const value = String(type || "").toLowerCase();
+  if (value.includes("trade")) return { label: "Trade", tone: "trade" };
+  if (value.includes("auction")) return { label: "Auction", tone: "auction" };
+  if (value.startsWith("fad_") || value.includes("draft")) {
+    return { label: "Draft milestone", tone: "draft" };
+  }
+  if (
+    value.includes("league") ||
+    value.includes("team") ||
+    value.includes("assignment")
+  ) {
+    return { label: "League", tone: "league" };
+  }
+  return { label: "Account", tone: "account" };
+}
+
 function FadNotificationDestination({
-  markOne,
+  category,
   notification,
   notificationMessage,
   timestamp,
@@ -64,7 +82,7 @@ function FadNotificationDestination({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [checkingAccess, setCheckingAccess] = useState(false);
-  const [destinationError, setDestinationError] = useState("");
+  const [destinationError, setDestinationError] = useState(null);
   const destination = notification.messageData.destination;
   const path = freeAgentDraftDestinationPath(destination);
   const destinationLabel = freeAgentDraftDestinationLabel(destination);
@@ -77,14 +95,12 @@ function FadNotificationDestination({
       event.shiftKey ||
       event.altKey
     ) {
-      if (notification.readAtMs === null) markOne.mutate(notification.id);
       return;
     }
     event.preventDefault();
     if (checkingAccess) return;
     setCheckingAccess(true);
-    setDestinationError("");
-    if (notification.readAtMs === null) markOne.mutate(notification.id);
+    setDestinationError(null);
     try {
       const authorizedPath = await prepareFreeAgentDraftDestination({
         destination,
@@ -93,7 +109,7 @@ function FadNotificationDestination({
       });
       navigate(authorizedPath);
     } catch (error) {
-      setDestinationError(error.message);
+      setDestinationError(error);
       setCheckingAccess(false);
     }
   };
@@ -108,6 +124,9 @@ function FadNotificationDestination({
       >
         <span>
           <strong>{notificationMessage}</strong>
+          <small className={`hl-notification-category is-${category.tone}`}>
+            {category.label}
+          </small>
           {timestamp}
           <small>
             {checkingAccess ? "Checking current access..." : destinationLabel}
@@ -116,9 +135,21 @@ function FadNotificationDestination({
         <ChevronRight aria-hidden="true" />
       </Link>
       {destinationError && (
-        <p className="hl-form-message is-error" role="alert">
-          {destinationError}
-        </p>
+        <ErrorBlock
+          error={destinationError}
+          fallback="This notification destination could not be opened."
+          impact="Your notification is still available and no league data changed."
+          recovery="Check your current league access, then try the notification again."
+          action={
+            <button
+              className="hl-button hl-button--quiet"
+              type="button"
+              onClick={() => setDestinationError(null)}
+            >
+              Dismiss
+            </button>
+          }
+        />
       )}
     </>
   );
@@ -171,9 +202,12 @@ function LeagueInvitationActions({ notification, session }) {
   }
   if (invitation.isError) {
     return (
-      <p className="hl-form-message is-error" role="alert">
-        {invitation.error.message}
-      </p>
+      <ErrorBlock
+        error={invitation.error}
+        fallback="The invitation details could not be loaded."
+        impact="You cannot accept or decline this invitation yet."
+        recovery="Try again after the invitation details reload."
+      />
     );
   }
   if (invitation.data.invitation.status !== "pending") {
@@ -233,9 +267,12 @@ function LeagueInvitationActions({ notification, session }) {
         </button>
       </div>
       {action.error && (
-        <p className="hl-form-message is-error" role="alert">
-          {action.error.message}
-        </p>
+        <ErrorBlock
+          error={action.error}
+          fallback="The invitation response could not be saved."
+          impact="Your invitation remains unchanged."
+          recovery="Review the invitation and try again."
+        />
       )}
     </div>
   );
@@ -244,27 +281,49 @@ function LeagueInvitationActions({ notification, session }) {
 export function NotificationsPage() {
   const session = useSession();
   const queryClient = useQueryClient();
+  const [view, setView] = useState("unread");
   const [cursor, setCursor] = useState(null);
+  const [unreadSnapshots, setUnreadSnapshots] = useState({});
+  const acknowledgedBatches = useRef(new Set());
+  const pageKey = `${view}:${cursor || "first"}`;
   const notifications = useQuery({
-    ...notificationsQuery(session.httpClient, cursor),
+    ...notificationsQuery(session.httpClient, cursor, view),
     enabled: session.status === "authenticated",
   });
-  const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-  const markOne = useMutation({
-    mutationFn: (id) => markNotificationRead(session.httpClient, id),
-    onSuccess: refresh,
+  const acknowledge = useMutation({
+    mutationFn: (notificationIds) =>
+      markNotificationsReadBatch(session.httpClient, notificationIds),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["notifications", "read"] }),
   });
-  const markAll = useMutation({
-    mutationFn: () => markAllNotificationsRead(session.httpClient),
-    onSuccess: refresh,
-  });
+  const acknowledgeBatch = acknowledge.mutate;
+
+  if (view === "unread" && notifications.data && !unreadSnapshots[pageKey]) {
+    setUnreadSnapshots({
+      ...unreadSnapshots,
+      [pageKey]: notifications.data,
+    });
+  }
+
+  const displayedData =
+    view === "unread"
+      ? unreadSnapshots[pageKey] || notifications.data
+      : notifications.data;
+
+  useEffect(() => {
+    if (view !== "unread" || !displayedData?.notifications?.length) return;
+    const notificationIds = displayedData.notifications.map(({ id }) => id);
+    const signature = notificationIds.join("|");
+    if (acknowledgedBatches.current.has(signature)) return;
+    acknowledgedBatches.current.add(signature);
+    acknowledgeBatch(notificationIds);
+  }, [acknowledgeBatch, displayedData, view]);
 
   if (session.status === "unknown") {
     return (
       <main className="hl-page hl-page--narrow">
         <Surface>
-          <LoadingBlock>Checking secure session…</LoadingBlock>
+          <LoadingBlock>Checking secure session...</LoadingBlock>
         </Surface>
       </main>
     );
@@ -279,39 +338,63 @@ export function NotificationsPage() {
     );
   }
 
-  const mutationError = markOne.error || markAll.error;
-
   return (
     <main className="hl-page" aria-labelledby="notifications-title">
       <PageHeading
         eyebrow="Account inbox"
         title="Notifications"
-        description="Private league and account notices for your signed-in user."
         id="notifications-title"
         actions={
-          <button
-            className="hl-button hl-button--secondary"
-            disabled={markAll.isPending}
-            onClick={() => markAll.mutate()}
-          >
-            Mark all read
-          </button>
+          <div className="hl-segmented-control" aria-label="Notification view">
+            <button
+              className="hl-button hl-button--secondary"
+              type="button"
+              aria-pressed={view === "unread"}
+              onClick={() => {
+                setView("unread");
+                setCursor(null);
+              }}
+            >
+              Unread
+            </button>
+            <button
+              className="hl-button hl-button--secondary"
+              type="button"
+              aria-pressed={view === "read"}
+              onClick={() => {
+                setView("read");
+                setCursor(null);
+              }}
+            >
+              Previous notifications
+            </button>
+          </div>
         }
       />
 
       <Surface className="hl-notifications-panel">
         {notifications.isPending ? (
-          <LoadingBlock>Loading notifications…</LoadingBlock>
+          <LoadingBlock>Loading notifications...</LoadingBlock>
         ) : notifications.isError ? (
-          <p className="hl-form-message is-error" role="alert">
-            {notifications.error.message}
-          </p>
-        ) : notifications.data.notifications.length === 0 ? (
-          <EmptyBlock title="No notifications on this page" />
+          <ErrorBlock
+            error={notifications.error}
+            fallback="Notifications could not be loaded."
+            impact="Your notifications remain saved, but this list is incomplete."
+            recovery="Try this page again in a moment."
+          />
+        ) : !displayedData || displayedData.notifications.length === 0 ? (
+          <EmptyBlock
+            title={
+              view === "unread"
+                ? "You're all caught up"
+                : "No previous notifications"
+            }
+          />
         ) : (
           <ul className="hl-notification-list">
-            {notifications.data.notifications.map((notification) => {
+            {displayedData.notifications.map((notification) => {
               const destination = notificationDestination(notification);
+              const category = notificationCategory(notification.type);
               const fadNotification = isFreeAgentDraftNotificationType(
                 notification.type
               );
@@ -327,9 +410,7 @@ export function NotificationsPage() {
               );
               return (
                 <li
-                  className={
-                    notification.readAtMs === null ? "is-unread" : ""
-                  }
+                  className={`${view === "unread" ? "is-unread " : ""}is-${category.tone}`}
                   key={notification.id}
                 >
                   <span
@@ -338,7 +419,7 @@ export function NotificationsPage() {
                   />
                   {fadNotification ? (
                     <FadNotificationDestination
-                      markOne={markOne}
+                      category={category}
                       notification={notification}
                       notificationMessage={notificationMessage}
                       timestamp={timestamp}
@@ -347,14 +428,12 @@ export function NotificationsPage() {
                     <Link
                       className="hl-notification-list__link"
                       to={destination}
-                      onClick={() => {
-                        if (notification.readAtMs === null) {
-                          markOne.mutate(notification.id);
-                        }
-                      }}
                     >
                       <span>
                         <strong>{notificationMessage}</strong>
+                        <small className={`hl-notification-category is-${category.tone}`}>
+                          {category.label}
+                        </small>
                         {timestamp}
                         <small>Open the trade acceptance preview</small>
                       </span>
@@ -363,6 +442,9 @@ export function NotificationsPage() {
                   ) : (
                     <div>
                       <strong>{notificationMessage}</strong>
+                      <small className={`hl-notification-category is-${category.tone}`}>
+                        {category.label}
+                      </small>
                       {timestamp}
                       {notification.type === "league_invitation_created" && (
                         <LeagueInvitationActions
@@ -372,17 +454,7 @@ export function NotificationsPage() {
                       )}
                     </div>
                   )}
-                  {notification.readAtMs === null ? (
-                    <button
-                      className="hl-button hl-button--quiet"
-                      disabled={markOne.isPending}
-                      onClick={() => markOne.mutate(notification.id)}
-                    >
-                      Mark read
-                    </button>
-                  ) : (
-                    <StatusBadge>Read</StatusBadge>
-                  )}
+                  {view === "read" && <StatusBadge>Read</StatusBadge>}
                 </li>
               );
             })}
@@ -392,10 +464,10 @@ export function NotificationsPage() {
 
       {!notifications.isPending && !notifications.isError && (
         <nav className="hl-pagination" aria-label="Notification pages">
-          {notifications.data.page.nextCursor && (
+          {displayedData?.page.nextCursor && (
             <button
               className="hl-button hl-button--quiet"
-              onClick={() => setCursor(notifications.data.page.nextCursor)}
+              onClick={() => setCursor(displayedData.page.nextCursor)}
             >
               Next page
             </button>
@@ -411,10 +483,23 @@ export function NotificationsPage() {
         </nav>
       )}
 
-      {mutationError && (
-        <p className="hl-form-message is-error" role="alert">
-          {mutationError.message}
-        </p>
+      {acknowledge.isError && view === "unread" && (
+        <div className="hl-form-message is-error" role="alert">
+          <span>
+            These notifications could not be moved to Previous notifications.
+            They are still safe in your unread inbox.
+          </span>
+          <button
+            className="hl-button hl-button--quiet"
+            type="button"
+            disabled={
+              acknowledge.isPending || !acknowledge.variables?.length
+            }
+            onClick={() => acknowledgeBatch(acknowledge.variables)}
+          >
+            Try again
+          </button>
+        </div>
       )}
     </main>
   );

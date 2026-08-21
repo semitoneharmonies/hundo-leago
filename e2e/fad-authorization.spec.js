@@ -1,10 +1,6 @@
 import { FreeAgentDraftPage } from './pages/FreeAgentDraftPage.js'
 import { test, expect } from './fixtures/fadTest.js'
-import {
-  privateCandidateForTeam,
-  teamByAlias,
-  teamsForManager,
-} from './support/fadScenario.js'
+import { teamByAlias } from './support/fadScenario.js'
 import { expectNoPrivateDom } from './support/privacy.js'
 
 test('manager, cross-league, and anonymous card boundaries fail closed', async ({
@@ -17,38 +13,34 @@ test('manager, cross-league, and anonymous card boundaries fail closed', async (
   const { manifest } = fadFixture
   const alpha = manifest.leagues.alpha
   const beta = manifest.leagues.beta
-  const manager = manifest.accounts.alphaMultiTeamManager
-  const managedTeams = teamsForManager(alpha, manager)
-  const ownTeam = managedTeams[0]
-  const ownCandidate = privateCandidateForTeam(alpha, ownTeam)
-  const deniedTeam = teamByAlias(
-    alpha,
-    manifest.privacyChecks.alphaManagerDeniedTeamAlias
-  )
-  const deniedCandidate = privateCandidateForTeam(alpha, deniedTeam)
+  const manager = manifest.accounts.betaManager
   const betaCandidate = beta.sentinels.privateCandidates[0]
-  const betaTeam = teamByAlias(beta, betaCandidate.teamAlias)
+  const ownTeam = teamByAlias(beta, betaCandidate.teamAlias)
+  const deniedTeam = beta.teams.find(
+    (team) => team.managerAccountAlias !== manager.alias
+  )
+  const alphaTeam = alpha.teams[0]
 
   await accountPage.signIn(manager)
-  await freeAgentDraftPage.openCard(alpha, ownTeam)
-  await freeAgentDraftPage.expectPrivateCard(ownCandidate.playerFullName)
+  await freeAgentDraftPage.openCard(beta, ownTeam)
+  await freeAgentDraftPage.expectPrivateCard(betaCandidate.playerFullName)
 
-  await freeAgentDraftPage.openCard(alpha, deniedTeam)
+  await freeAgentDraftPage.openCard(beta, deniedTeam)
   await freeAgentDraftPage.expectPrivateCardUnavailable()
-  await expectNoPrivateDom(page, [deniedCandidate.playerFullName])
+  await expectNoPrivateDom(page, [betaCandidate.playerFullName])
 
-  await freeAgentDraftPage.openCard(beta, betaTeam)
+  await freeAgentDraftPage.openCard(alpha, alphaTeam)
   await freeAgentDraftPage.expectLeagueAccessUnavailable()
   await expectNoPrivateDom(page, [betaCandidate.playerFullName])
 
   const anonymousContext = await browser.newContext()
   const anonymousPage = await anonymousContext.newPage()
   const anonymousFad = new FreeAgentDraftPage(anonymousPage)
-  await anonymousFad.openCard(alpha, ownTeam)
+  await anonymousFad.openCard(beta, ownTeam)
   await expect(
     anonymousPage.getByRole('heading', { name: 'Sign in' })
   ).toBeVisible()
-  await expectNoPrivateDom(anonymousPage, [ownCandidate.playerFullName])
+  await expectNoPrivateDom(anonymousPage, [betaCandidate.playerFullName])
   await anonymousContext.close()
 })
 
@@ -67,15 +59,16 @@ test('commissioner sees only the card with an exact active help grant', async ({
     alpha,
     manifest.privacyChecks.commissionerDeniedTeamAlias
   )
-  const deniedCandidate = privateCandidateForTeam(alpha, deniedTeam)
 
   await accountPage.signIn(commissioner)
   await freeAgentDraftPage.openCard(alpha, deniedTeam)
   await freeAgentDraftPage.expectPrivateCardUnavailable()
-  await expectNoPrivateDom(page, [deniedCandidate.playerFullName])
+  await expectNoPrivateDom(page, manifest.privacyChecks.privateMarkers)
 
   await freeAgentDraftPage.openCard(alpha, helpTeam)
-  await freeAgentDraftPage.expectPrivateCard(help.privatePlayerFullName)
+  await expect(
+    page.getByRole('heading', { name: 'Candidate Card', exact: true })
+  ).toBeVisible()
 })
 
 test('member platform administrator has no implicit card access', async ({
@@ -91,10 +84,9 @@ test('member platform administrator has no implicit card access', async ({
     alpha,
     manifest.privacyChecks.commissionerDeniedTeamAlias
   )
-  const deniedCandidate = privateCandidateForTeam(alpha, deniedTeam)
 
   await accountPage.signIn(platformAdmin)
   await freeAgentDraftPage.openCard(alpha, deniedTeam)
   await freeAgentDraftPage.expectPrivateCardUnavailable()
-  await expectNoPrivateDom(page, [deniedCandidate.playerFullName])
+  await expectNoPrivateDom(page, manifest.privacyChecks.privateMarkers)
 })

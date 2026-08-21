@@ -416,7 +416,7 @@ The approved fantasy ELC is `$3` over three years for `$1 AAV`.
 
 A real-life entry-level-contract signing is the intended trigger for the manager’s fantasy signing option. Automatic detection and enforcement of that trigger are deferred to a future update.
 
-A signed prospect may remain in the Prospect category with the ELC salary excluded from the cap. Once moved to Active or Bench, the player may not return to Prospects.
+A signed prospect may remain in the Prospect category with the ELC salary excluded from the cap. Once moved to Active, Bench, or Injured Reserve, the player may not return to Prospects.
 
 Declining the fantasy ELC or voluntarily releasing unsigned rights makes the rights unowned. The player may re-enter the Entry Draft only when drafted in the immediately preceding year.
 
@@ -692,7 +692,14 @@ Multiple former teams may hold retention after successive trades. Cumulative ret
 
 Existing retained salary is not affected by a later buyout and continues for the original remaining term.
 
-The whole retention obligation may later be traded to another team without changing its amount or remaining schedule.
+The retention obligation remains with its responsible team for its approved
+schedule. A new trade may request retention only as part of an outgoing
+contracted-player asset; an existing standalone retention obligation is not a
+selectable asset in a new proposal. Persisted historical retention records
+and proposals remain readable for accounting/history and executable or
+reversible when their recorded state permits. An exact completed historical
+creation retry replays its original result; only a fresh request uses the new
+asset grammar.
 
 ## Retention Slot
 
@@ -1219,8 +1226,12 @@ One team's private FAD record containing:
 
 Before the Candidate Card deadline, only the assigned manager and a
 help-authorized commissioner may view its competitive contents. After the
-deadline, every active league member may view every league Candidate Card as a
-read-only historical record.
+deadline, the complete card remains internal audit data. Every active league
+member may view each requested player identity and its final `Signed`, `Not
+won`, or `Tied` result. Amount, AAV, term, derived total, and restricted
+original-minimum values are visible only to the current manager of the selected
+team; commissioner or platform-administrator authority alone does not reveal
+them.
 
 A Candidate Card is not the visual player card used in the normal roster
 hockey-lines view.
@@ -1312,8 +1323,9 @@ card opening when less than 48 hours remain, and always ends at the deadline.
 The backend-controlled instant exactly `168 elapsed hours` before the league's
 frozen first-matchup start.
 
-At the deadline every Candidate Card locks, league-wide read-only visibility
-opens, and automatic FAD allocation becomes due.
+At the deadline every Candidate Card locks, viewer-filtered result visibility
+opens, and automatic FAD allocation becomes due. The full card remains internal
+audit data rather than becoming a league-wide record.
 
 ## Restricted Tie Auction
 

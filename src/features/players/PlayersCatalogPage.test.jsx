@@ -298,6 +298,19 @@ describe("league player catalog", () => {
       "FPG",
       "Actions",
     ]);
+    const nhlTeamFilter = screen.getByRole("combobox", { name: "NHL team" });
+    expect(within(nhlTeamFilter).getAllByRole("option")).toHaveLength(33);
+    expect(
+      within(nhlTeamFilter).getByRole("option", {
+        name: "Anaheim Ducks (ANA)",
+      })
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("link", { name: "Free Agent" })
+    ).toHaveAttribute(
+      "href",
+      `/leagues/${leagueId}/players/${freeAgentId}`
+    );
     expect(
       within(
         within(table).getByRole("rowheader", { name: "Owned Player" })
@@ -335,7 +348,7 @@ describe("league player catalog", () => {
       "href",
       `/leagues/${leagueId}/auctions?playerId=${freeAgentId}`
     );
-    const nameSearch = screen.getByRole("searchbox", {
+    const nameSearch = screen.getByRole("combobox", {
       name: "Search by player name",
     });
     await view.user.type(nameSearch, "free");
@@ -343,7 +356,17 @@ describe("league player catalog", () => {
     const suggestion = within(suggestions).getByRole("option", {
       name: /Free Agent/,
     });
-    await view.user.click(within(suggestion).getByRole("button"));
+    const autocompleteRequest = fetchImpl.mock.calls
+      .map(([url]) => new URL(url))
+      .find(
+        ({ pathname, searchParams }) =>
+          pathname === `/api/v1/leagues/${leagueId}/players` &&
+          searchParams.get("sort") === "name"
+      );
+    expect(autocompleteRequest.searchParams.get("limit")).toBe("100");
+    await view.user.keyboard("{ArrowDown}");
+    expect(suggestion).toHaveFocus();
+    await view.user.keyboard("{Enter}");
     expect(nameSearch).toHaveValue("Free Agent");
     const searchedTable = await screen.findByRole("table");
     expect(
@@ -381,7 +404,7 @@ describe("league player catalog", () => {
 
     await view.user.selectOptions(assignmentFilter, "prospects");
     expect(
-      within(table).getByRole("rowheader", { name: "Draft Prospect" })
+      await screen.findByRole("rowheader", { name: "Draft Prospect" })
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: /Compare/ })

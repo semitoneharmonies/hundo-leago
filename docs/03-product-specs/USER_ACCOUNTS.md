@@ -1114,7 +1114,9 @@ Use at least:
 * one user with an account but no membership;
 * one manager with more than one team where permitted;
 * one commissioner who is also a manager;
-* one platform administrator with and without an active league membership.
+* one platform administrator with protected active memberships in both leagues,
+  plus a deliberately corrupted missing-membership fixture that must fail
+  closed until reconciliation.
 
 Verify that authentication establishes one user identity while authorization remains isolated by league, membership, role, and team assignment.
 
@@ -1133,7 +1135,7 @@ Grae approved the following Season 2 User Accounts product decisions on 2026-07-
 - [x] Initial user categories are platform administrator, league commissioner, team manager, and unauthenticated visitor.
 - [x] One user may hold multiple roles in the same league.
 - [x] A commissioner may also manage a team in the same league.
-- [x] A platform administrator requires an active membership to view or operate inside a league.
+- [x] Every active platform administrator is guaranteed one protected active `member` membership in every non-deleted league; missing membership is invariant corruption and fails closed until reconciliation.
 - [x] The frontend never proves identity or authority.
 - [x] The backend verifies credentials, manages sessions, and reloads authorization for each protected action.
 - [x] Read-only endpoints remain read-only.

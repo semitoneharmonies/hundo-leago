@@ -91,14 +91,18 @@ function teamWorkspace(teamId) {
   };
 }
 
-function baseFetch(extra) {
+function baseFetch(
+  extra,
+  permissionCategory = "manager",
+  currentManagerUserId = "user-1"
+) {
   return vi.fn(async (url, options = {}) => {
     const parsedUrl = new URL(url);
     const path = parsedUrl.pathname;
     if (path === "/api/v1/session") return envelope(session());
-    if (path === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [{ id: leagueId, name: "Test League", status: "active", timezone: "America/Vancouver", currentSeason: null, membership: { id: assetId, permissionCategory: "manager", status: "active", version: 1 }, version: 1 }] });
+    if (path === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [{ id: leagueId, name: "Test League", status: "active", timezone: "America/Vancouver", currentSeason: null, membership: { id: assetId, permissionCategory, status: "active", version: 1 }, version: 1 }] });
     if (path === `/api/v1/leagues/${leagueId}/teams`) return envelope({ code: "TEAMS_FOUND", teams: [
-      { id: teamA, leagueId, name: "Managed Team", status: "active", primaryColour: null, secondaryColour: null, logoReference: null, createdAtMs: 1, updatedAtMs: 1, version: 1, currentManager: { assignmentId: assetId, userId: "user-1", displayName: "Manager", acceptedAtMs: 1, version: 1 } },
+      { id: teamA, leagueId, name: "Managed Team", status: "active", primaryColour: null, secondaryColour: null, logoReference: null, createdAtMs: 1, updatedAtMs: 1, version: 1, currentManager: currentManagerUserId ? { assignmentId: assetId, userId: currentManagerUserId, displayName: "Manager", acceptedAtMs: 1, version: 1 } : null },
       { id: teamB, leagueId, name: "Other Team", status: "active", primaryColour: null, secondaryColour: null, logoReference: null, createdAtMs: 1, updatedAtMs: 1, version: 1, currentManager: null },
     ] });
     const workspaceMatch = path.match(
@@ -232,9 +236,35 @@ describe("M5-11 authenticated transaction pages", () => {
     });
     renderPage(`/leagues/${leagueId}/trades`, "/leagues/:leagueId/trades", <TradesPage />, fetchImpl);
     expect(await screen.findByRole("heading", { name: "New trade proposal" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "League trade block" })).toBeInTheDocument();
-    expect(screen.getAllByRole("option", { name: "Retention" })).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "Trade block" })).toBeInTheDocument();
+    expect(screen.getAllByRole("option", { name: "Player" })).toHaveLength(2);
+    expect(screen.queryByRole("option", { name: "Retention" })).not.toBeInTheDocument();
     expect(screen.getByText("No proposals in this view.")).toBeInTheDocument();
+  });
+
+  it("does not offer proposal composition to a commissioner without a team assignment", async () => {
+    const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades`) {
+        return envelope({ code: "TRADE_PROPOSALS_FOUND", proposals: [] });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    }, "commissioner", null);
+
+    renderPage(
+      `/leagues/${leagueId}/trades`,
+      "/leagues/:leagueId/trades",
+      <TradesPage />,
+      fetchImpl
+    );
+
+    expect(
+      await screen.findByText(
+        "You do not currently control a team that can propose a trade."
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "New trade proposal" })
+    ).not.toBeInTheDocument();
   });
 
   it("highlights a pending proposal awaiting the receiving manager", async () => {
@@ -305,7 +335,7 @@ describe("M5-11 authenticated transaction pages", () => {
       screen.getByRole("combobox", {
         name: "Receiving team sends asset 1",
       })
-    ).toHaveValue(assetId);
+    ).toHaveValue(`contract:${assetId}`);
   });
 
   it("adds optional retention to a contract and uses notes for Future Considerations", async () => {
@@ -333,7 +363,7 @@ describe("M5-11 authenticated transaction pages", () => {
       screen.getByRole("combobox", {
         name: "Proposing team sends asset 1",
       }),
-      assetId
+      `contract:${assetId}`
     );
     await view.user.type(
       screen.getByRole("spinbutton", {
@@ -486,6 +516,201 @@ describe("M5-11 authenticated transaction pages", () => {
     expect(await screen.findByRole("button", { name: "Confirm and accept trade" })).toBeInTheDocument();
   });
 
+  it("keeps a commissioner without a team assignment in read-only inspection of Pending proposals", async () => {
+    const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades/${tradeId}`) {
+        return envelope({
+          code: "TRADE_PROPOSAL_FOUND",
+          proposal: {
+            id: tradeId,
+            leagueId,
+            seasonId,
+            proposingTeam: { id: teamB, name: "Other Team" },
+            receivingTeam: { id: teamA, name: "Managed Team" },
+            proposingUserId: "user-2",
+            status: "Pending",
+            storageStatus: "proposed",
+            createdAtMs: 1,
+            expiresAtMs: 99,
+            tradeDeadlineAtMs: null,
+            effectiveDeadlineAtMs: 99,
+            respondedAtMs: null,
+            completedAtMs: null,
+            commissionerCompletionReference: null,
+            version: 1,
+            assets: [],
+            history: [],
+          },
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    }, "commissioner", null);
+
+    renderPage(
+      `/leagues/${leagueId}/trades/${tradeId}`,
+      "/leagues/:leagueId/trades/:tradeId",
+      <TradeDetailPage />,
+      fetchImpl
+    );
+
+    expect(await screen.findByText("Pending")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Preview acceptance" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Decline" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Cancel proposal" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows Pending cancellation only to the proposing team's current manager", async () => {
+    const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades/${tradeId}`) {
+        return envelope({
+          code: "TRADE_PROPOSAL_FOUND",
+          proposal: {
+            id: tradeId,
+            leagueId,
+            seasonId,
+            proposingTeam: { id: teamA, name: "Managed Team" },
+            receivingTeam: { id: teamB, name: "Other Team" },
+            proposingUserId: "user-1",
+            status: "Pending",
+            storageStatus: "proposed",
+            createdAtMs: 1,
+            expiresAtMs: 99,
+            tradeDeadlineAtMs: null,
+            effectiveDeadlineAtMs: 99,
+            respondedAtMs: null,
+            completedAtMs: null,
+            commissionerCompletionReference: null,
+            version: 1,
+            assets: [],
+            history: [],
+          },
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    renderPage(
+      `/leagues/${leagueId}/trades/${tradeId}`,
+      "/leagues/:leagueId/trades/:tradeId",
+      <TradeDetailPage />,
+      fetchImpl
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Cancel proposal" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Preview acceptance" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Decline" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("requires a commissioner preview before approving Future considerations", async () => {
+    let approvalRequests = 0;
+    let approved = false;
+    const proposal = () => ({
+      id: tradeId,
+      leagueId,
+      seasonId,
+      proposingTeam: { id: teamB, name: "Other Team" },
+      receivingTeam: { id: teamA, name: "Managed Team" },
+      proposingUserId: "user-2",
+      status: approved ? "Accepted" : "Awaiting Commissioner Approval",
+      storageStatus: approved ? "completed" : "awaiting_commissioner_approval",
+      createdAtMs: 1,
+      expiresAtMs: 99,
+      tradeDeadlineAtMs: null,
+      effectiveDeadlineAtMs: 99,
+      respondedAtMs: 2,
+      completedAtMs: approved ? 3 : null,
+      commissionerCompletionReference: approved ? correctionId : null,
+      version: approved ? 3 : 2,
+      assets: [{
+        id: assetId,
+        type: "future_consideration_instruction",
+        sourceTeamId: teamB,
+        snapshot: {
+          type: "future_consideration_instruction",
+          description: "Conditional 2027 consideration",
+        },
+      }],
+      history: [{
+        id: correctionId,
+        actorUserId: "user-1",
+        type: "proposal_accepted_awaiting_commissioner_approval",
+        reason: null,
+        metadata: {},
+        occurredAtMs: 2,
+      }],
+    });
+    const fetchImpl = baseFetch(async (path, options) => {
+      if (path === `/api/v1/leagues/${leagueId}/trades/${tradeId}`) {
+        return envelope({ code: "TRADE_PROPOSAL_FOUND", proposal: proposal() });
+      }
+      if (path.endsWith("/acceptance-preview")) {
+        return envelope({
+          code: "TRADE_ACCEPTANCE_PREVIEWED",
+          proposal: { id: tradeId },
+          assets: [],
+          teams: [{
+            teamId: teamA,
+            rosterCounts: {},
+            cap: {
+              salaryCapCents: 10_000,
+              usageCents: 5_000,
+              spaceCents: 5_000,
+            },
+            retentionSlots: 0,
+            issues: [],
+            generallyIllegal: false,
+          }],
+          generallyIllegal: false,
+        });
+      }
+      if (path.endsWith("/approve") && options.method === "POST") {
+        approvalRequests += 1;
+        approved = true;
+        return envelope({
+          code: "TRADE_APPROVED",
+          replayed: false,
+          proposal: { id: tradeId },
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    }, "commissioner", null);
+    const view = renderPage(
+      `/leagues/${leagueId}/trades/${tradeId}`,
+      "/leagues/:leagueId/trades/:tradeId",
+      <TradeDetailPage />,
+      fetchImpl
+    );
+
+    expect(
+      await screen.findByText(/No assets move until a commissioner/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Approve and complete trade" })
+    ).not.toBeInTheDocument();
+    await view.user.click(
+      screen.getByRole("button", { name: "Preview commissioner approval" })
+    );
+    expect(
+      await screen.findByText(/no roster warning was found/i)
+    ).toBeInTheDocument();
+    await view.user.click(
+      screen.getByRole("button", { name: "Approve and complete trade" })
+    );
+    await waitFor(() => expect(approvalRequests).toBe(1));
+  });
+
   it("groups requested retention with its player contract while keeping draft picks separate", async () => {
     const retentionAssetId = correctionId;
     const draftPickId = ownershipId;
@@ -601,9 +826,12 @@ describe("M5-11 authenticated transaction pages", () => {
           actor: {
             userId: actorUserId,
             authority: "commissioner",
+            displayName: "Commissioner Casey",
           },
           teamId: teamA,
           playerId: playerSearchId,
+          team: { id: teamA, name: "Managed Team" },
+          player: { id: playerSearchId, name: "Current Player Name" },
           related: {
             type: "player_ownership",
             id: ownershipId,
@@ -639,18 +867,22 @@ describe("M5-11 authenticated transaction pages", () => {
     });
     renderPage(`/leagues/${leagueId}/activity`, "/leagues/:leagueId/activity", <ActivityPage />, fetchImpl);
     const entry = (
-      await screen.findByText("Commissioner corrected a roster assignment.")
+      await screen.findByText(
+        "Commissioner corrected Current Player Name’s roster assignment."
+      )
     ).closest("li");
     const audit = within(entry);
 
-    expect(audit.getByText("Managed Team")).toBeInTheDocument();
+    expect(audit.getByText(/Current Player Name · Managed Team/)).toBeInTheDocument();
+    expect(audit.getByText(/By Commissioner Casey/)).toBeInTheDocument();
     expect(audit.queryByText("Technical record")).not.toBeInTheDocument();
     expect(audit.queryByText("Authority")).not.toBeInTheDocument();
     expect(audit.queryByText("Activity ID")).not.toBeInTheDocument();
     expect(entry).toHaveClass("hl-activity-entry--commissioner");
-    expect(audit.getByText(/Roster category: Active/)).toBeInTheDocument();
-    expect(audit.getByText(/Roster category: Bench/)).toBeInTheDocument();
-    expect(audit.getByText("TEAM ROSTER ILLEGAL")).toBeInTheDocument();
+    expect(audit.getByText(/Active · F · Slot 1 → Bench · F · Slot None/)).toBeInTheDocument();
+    expect(audit.queryByText("TEAM ROSTER ILLEGAL")).not.toBeInTheDocument();
+    expect(audit.queryByText("Before")).not.toBeInTheDocument();
+    expect(audit.queryByText("Result")).not.toBeInTheDocument();
     expect(
       audit.getByText("Manual release acceptance correction")
     ).toBeInTheDocument();
@@ -678,7 +910,7 @@ describe("M5-11 authenticated transaction pages", () => {
   });
 
   it("summarizes trade participants and moved assets, then filters by event type", async () => {
-    const fetchImpl = baseFetch((path) => {
+    const fetchImpl = baseFetch((path, _options, parsedUrl) => {
       if (path === `/api/v1/leagues/${leagueId}/activity`) return envelope({
         code: "LEAGUE_ACTIVITY_FOUND",
         activity: [
@@ -707,6 +939,42 @@ describe("M5-11 authenticated transaction pages", () => {
             occurredAtMs: 1,
           },
           {
+            id: correctionId,
+            leagueId,
+            seasonId,
+            type: "trade_awaiting_commissioner_approval",
+            actor: { userId: actorUserId, authority: "manager" },
+            teamId: teamA,
+            playerId: null,
+            related: { type: "trade", id: tradeId },
+            summary: "Trade awaiting commissioner approval.",
+            reason: null,
+            metadata: {
+              proposingTeamId: teamB,
+              receivingTeamId: teamA,
+              assets: [],
+            },
+            occurredAtMs: 2,
+          },
+          {
+            id: actorMembershipId,
+            leagueId,
+            seasonId,
+            type: "trade_proposal_automatically_cancelled",
+            actor: { userId: null, authority: "system" },
+            teamId: teamB,
+            playerId: null,
+            related: { type: "trade", id: tradeId },
+            summary: "Conflicting proposal cancelled.",
+            reason: null,
+            metadata: {
+              proposingTeamId: teamB,
+              receivingTeamId: teamA,
+              assets: [],
+            },
+            occurredAtMs: 3,
+          },
+          {
             id: auctionId,
             leagueId,
             seasonId,
@@ -718,9 +986,12 @@ describe("M5-11 authenticated transaction pages", () => {
             summary: "Auction won and contract assigned.",
             reason: null,
             metadata: null,
-            occurredAtMs: 2,
+            occurredAtMs: 4,
           },
-        ],
+        ].filter((item) => {
+          const category = parsedUrl.searchParams.get("category") || "all";
+          return category === "all" || item.type.includes(category);
+        }),
         page: { limit: 25, nextCursor: null },
       });
       throw new Error(`Unexpected request: ${path}`);
@@ -733,12 +1004,21 @@ describe("M5-11 authenticated transaction pages", () => {
     );
 
     const trade = await screen.findByText(
-      "Managed Team accepted a trade from Other Team."
+      "Other Team and Managed Team made a trade."
     );
     expect(trade.closest("li")).toHaveClass("hl-activity-entry--trade");
     expect(
+      screen.getByText("Managed Team receives:")
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Current Player Name/)).toBeInTheDocument();
+    expect(
       screen.getByText(
-        "Current Player Name moved from Other Team to Managed Team."
+        "Other Team and Managed Team agreed to a trade. Commissioner approval is required."
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A conflicting trade proposal between Other Team and Managed Team was cancelled."
       )
     ).toBeInTheDocument();
 
@@ -746,7 +1026,7 @@ describe("M5-11 authenticated transaction pages", () => {
       screen.getByRole("combobox", { name: "Event type" }),
       "auction"
     );
-    expect(screen.queryByText(/accepted a trade/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/made a trade/i)).not.toBeInTheDocument();
     expect(screen.getByText("Auction won and contract assigned.")).toBeInTheDocument();
     expect(
       screen.getByText("Auction won and contract assigned.").closest("li")

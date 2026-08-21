@@ -615,7 +615,11 @@ describe("FAD-16 auction pages", () => {
     const aav = within(startPanel).getByLabelText("AAV (dollars per year)");
     await view.user.clear(aav);
     await view.user.type(aav, "4.00");
-    expect(within(startPanel).getByLabelText("Total contract value")).toHaveValue("4.00");
+    const totalValue = within(startPanel).getByLabelText(
+      "Total contract value"
+    );
+    expect(totalValue.tagName).toBe("OUTPUT");
+    expect(totalValue).toHaveTextContent("$4.00");
     expect(screen.queryByRole("checkbox", { name: /binding/i })).not.toBeInTheDocument();
     await view.user.click(within(startPanel).getByRole("button", { name: "Nominate player" }));
 
@@ -691,7 +695,7 @@ describe("FAD-16 auction pages", () => {
       "/leagues/:leagueId/auctions",
       <AuctionsPage />
     );
-    expect(await screen.findByText("Weekly auction")).toBeInTheDocument();
+    expect(await screen.findByText("Auction")).toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     await view.user.type(screen.getByRole("combobox", { name: "Player" }), "ada");
     await view.user.click(await screen.findByRole("option", { name: /Ada Player/ }));
@@ -1322,6 +1326,9 @@ describe("FAD-16 auction pages", () => {
       <AuctionDetailPage />
     );
     expect(await screen.findByText("Minimum offer")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Free Agent Draft Rapid Auction/)
+    ).toBeInTheDocument();
     expect(screen.queryByText(/league-wide fresh auction|first bid may equal/i)).not.toBeInTheDocument();
   });
 
@@ -1444,8 +1451,8 @@ describe("FAD-16 auction pages", () => {
     );
     expect(await screen.findByText(/2 bids remained exactly tied/i)).toBeInTheDocument();
     expect(screen.getByText("Draw used")).toBeInTheDocument();
-    expect(screen.getByText(IDS.bid)).toBeInTheDocument();
-    expect(screen.getByText(IDS.bidTwo)).toBeInTheDocument();
+    expect(screen.queryByText(IDS.bid)).not.toBeInTheDocument();
+    expect(screen.queryByText(IDS.bidTwo)).not.toBeInTheDocument();
     expect(screen.getByText(/final contract value/i)).toBeInTheDocument();
   });
 

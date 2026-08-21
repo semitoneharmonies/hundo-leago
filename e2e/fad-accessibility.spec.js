@@ -1,9 +1,5 @@
 import { test, expect } from './fixtures/fadTest.js'
 import { expectNoAxeViolations } from './support/accessibility.js'
-import {
-  privateCandidateForTeam,
-  teamsForManager,
-} from './support/fadScenario.js'
 
 test('Candidate Card overview and editor pass automated and keyboard checks', async ({
   accountPage,
@@ -13,23 +9,14 @@ test('Candidate Card overview and editor pass automated and keyboard checks', as
   page,
 }) => {
   const { manifest } = fadFixture
-  const alpha = manifest.leagues.alpha
-  const manager = manifest.accounts.alphaMultiTeamManager
-  const team = teamsForManager(alpha, manager)[0]
-  const candidate = privateCandidateForTeam(alpha, team)
+  const beta = manifest.leagues.beta
+  const manager = manifest.accounts.betaManager
+  const candidate = beta.sentinels.privateCandidates[0]
+  const team = beta.teams.find(({ alias }) => alias === candidate.teamAlias)
 
   await accountPage.signIn(manager)
-  await leagueChooserPage.openLeague(alpha)
-  const menu = page.getByRole('button', { name: 'Menu', exact: true })
-  await menu.focus()
-  await menu.press('Enter')
-  const fadLink = page.getByRole('link', {
-    name: 'Free Agent Draft',
-    exact: true,
-  })
-  await expect(fadLink).toBeVisible()
-  await fadLink.focus()
-  await fadLink.press('Enter')
+  await leagueChooserPage.openLeague(beta)
+  await freeAgentDraftPage.openFromMainMenu()
   await expect(
     page.getByRole('heading', { name: 'Free Agent Draft', exact: true })
   ).toBeVisible()

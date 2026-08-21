@@ -553,7 +553,7 @@ Evidence:
 - [ ] `RC-SEC-011` Output encoding prevents stored/reflected script execution.
 - [ ] `RC-SEC-012` Logs and audits redact credentials, tokens, bids, and secrets.
 - [ ] `RC-SEC-013` First-platform-administrator bootstrap is disabled after use.
-- [ ] `RC-SEC-014` Platform administrator still requires league membership for internal league operation.
+- [ ] `RC-SEC-014` Every active platform administrator has a protected active `member` membership in every non-deleted league, and membership/commissioner/team-manager mutation attempts against it fail closed.
 - [ ] `RC-SEC-015` Socket.IO uses session authentication and authorized league rooms.
 - [ ] `RC-SEC-016` No active sealed bid value is visible to a commissioner.
 - [ ] `RC-SEC-017` Public health and frontend assets contain no internal path or secret.
@@ -628,6 +628,16 @@ For `D3` schema work or `D4`:
 - [ ] `RC-DB-016` Reconciliation queries and expected totals are prepared.
 - [ ] `RC-DB-017` First-write boundary and rollback path are explicit.
 - [ ] `RC-DB-018` Post-migration backup command and verification are prepared.
+- [ ] `RC-DB-018A` M7-26 authority reconciliation, when required, uses only
+  `npm run db:reconcile:m7-26:staging` with all five explicit arguments:
+  absolute database path, `--environment staging`, absolute persistent root,
+  release ID, and identity-bound confirmation
+  `M7-26:<release ID>:staging:<environment ID>:<database ID>`.
+- [ ] `RC-DB-018B` The M7-26 command ran only under the full staging
+  maintenance hold after read-only preview plus verified backup/clean restore;
+  its post-run preview is clean, its exact release replay makes zero writes,
+  and its deterministic audit receipt is recorded before migrations `0053`
+  and `0054` are applied.
 
 ---
 

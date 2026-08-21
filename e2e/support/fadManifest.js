@@ -96,78 +96,109 @@ function validateCardReadyNotification(notification, location) {
   text(notification.copy, `${location}.copy`)
 }
 
-function validateSentinels(sentinels, location, { alpha }) {
+function validateSentinels(sentinels, location, leagueAlias) {
+  if (leagueAlias === 'gamma') {
+    exactKeys(
+      sentinels,
+      [
+        'publishedHistoryReadOnly',
+        'rosterPlayersPerTeam',
+        'capRangeCents',
+        'offerOutcomes',
+        'thirtyDollarThreeYearWinner',
+        'weekOneMatchups',
+      ],
+      location
+    )
+    if (
+      sentinels.publishedHistoryReadOnly !== true ||
+      sentinels.rosterPlayersPerTeam !== 22
+    ) {
+      fail(`${location} completed-draft evidence is invalid.`)
+    }
+    record(sentinels.capRangeCents, `${location}.capRangeCents`)
+    record(sentinels.offerOutcomes, `${location}.offerOutcomes`)
+    record(
+      sentinels.thirtyDollarThreeYearWinner,
+      `${location}.thirtyDollarThreeYearWinner`
+    )
+    record(sentinels.weekOneMatchups, `${location}.weekOneMatchups`)
+    return
+  }
   exactKeys(
     sentinels,
-    alpha
+    leagueAlias === 'alpha'
       ? [
-          'lockedCarryover',
-          'privateCandidates',
+          'emptyInauguralCards',
+          'carryoverCount',
           'exactCommissionerHelp',
           'cardReadyNotification',
         ]
       : ['privateCandidates', 'cardReadyNotification'],
     location
   )
-  if (!Array.isArray(sentinels.privateCandidates)) {
+  if (leagueAlias === 'alpha') {
+    if (
+      sentinels.emptyInauguralCards !== true ||
+      sentinels.carryoverCount !== 0
+    ) {
+      fail(`${location} inaugural-card evidence is invalid.`)
+    }
+  }
+  const privateCandidates = sentinels.privateCandidates || []
+  if (!Array.isArray(privateCandidates)) {
     fail(`${location}.privateCandidates must be an array.`)
   }
-  sentinels.privateCandidates.forEach((candidate, index) =>
+  privateCandidates.forEach((candidate, index) =>
     validatePrivateCandidate(candidate, `${location}.privateCandidates[${index}]`)
   )
   validateCardReadyNotification(
     sentinels.cardReadyNotification,
     `${location}.cardReadyNotification`
   )
-  if (!alpha) return
-  exactKeys(
-    sentinels.lockedCarryover,
-    ['playerFullName', 'playerId', 'teamAlias', 'slotKey', 'entryId'],
-    `${location}.lockedCarryover`
-  )
-  text(
-    sentinels.lockedCarryover.playerFullName,
-    `${location}.lockedCarryover.playerFullName`
-  )
-  stableId(
-    sentinels.lockedCarryover.playerId,
-    `${location}.lockedCarryover.playerId`
-  )
-  text(
-    sentinels.lockedCarryover.teamAlias,
-    `${location}.lockedCarryover.teamAlias`
-  )
-  text(
-    sentinels.lockedCarryover.slotKey,
-    `${location}.lockedCarryover.slotKey`
-  )
-  canonicalId(
-    sentinels.lockedCarryover.entryId,
-    `${location}.lockedCarryover.entryId`
-  )
-  exactKeys(
-    sentinels.exactCommissionerHelp,
-    [
-      'teamAlias',
-      'cardId',
-      'helpRequestId',
-      'message',
-      'privatePlayerFullName',
-      'requestingAccountAlias',
-      'commissionerAccountAlias',
-    ],
-    `${location}.exactCommissionerHelp`
-  )
+  if (leagueAlias !== 'alpha') return
   const help = sentinels.exactCommissionerHelp
+  record(help, `${location}.exactCommissionerHelp`)
+  if (help.status === 'active') {
+    exactKeys(
+      help,
+      [
+        'status',
+        'teamAlias',
+        'cardId',
+        'helpRequestId',
+        'message',
+        'requestingAccountAlias',
+        'commissionerAccountAlias',
+      ],
+      `${location}.exactCommissionerHelp`
+    )
+    stableId(help.cardId, `${location}.exactCommissionerHelp.cardId`)
+    stableId(
+      help.helpRequestId,
+      `${location}.exactCommissionerHelp.helpRequestId`
+    )
+    text(help.message, `${location}.exactCommissionerHelp.message`)
+  } else if (help.status === 'not_open') {
+    exactKeys(
+      help,
+      [
+        'status',
+        'teamAlias',
+        'helpOpensAtMs',
+        'requestingAccountAlias',
+        'commissionerAccountAlias',
+      ],
+      `${location}.exactCommissionerHelp`
+    )
+    if (!Number.isSafeInteger(help.helpOpensAtMs)) {
+      fail(`${location}.exactCommissionerHelp.helpOpensAtMs is invalid.`)
+    }
+  } else {
+    fail(`${location}.exactCommissionerHelp.status is invalid.`)
+  }
   text(help.teamAlias, `${location}.exactCommissionerHelp.teamAlias`)
-  stableId(help.cardId, `${location}.exactCommissionerHelp.cardId`)
-  stableId(
-    help.helpRequestId,
-    `${location}.exactCommissionerHelp.helpRequestId`
-  )
   for (const key of [
-    'message',
-    'privatePlayerFullName',
     'requestingAccountAlias',
     'commissionerAccountAlias',
   ]) {
@@ -181,8 +212,10 @@ function validateLeague(league, location) {
     [
       'alias',
       'name',
+      'scenario',
       'leagueId',
       'seasonId',
+      'priorSeasonId',
       'fadId',
       'phase',
       'openedAtMs',
@@ -190,6 +223,9 @@ function validateLeague(league, location) {
       'firstWeekStartsAtMs',
       'candidateDeadlineAtMs',
       'commissionerAccountAlias',
+      'memberAccountAliases',
+      'candidateCardsEditable',
+      'competitionPhase',
       'teams',
       'sentinels',
     ],
@@ -199,9 +235,20 @@ function validateLeague(league, location) {
   text(league.name, `${location}.name`)
   stableId(league.leagueId, `${location}.leagueId`)
   stableId(league.seasonId, `${location}.seasonId`)
+  if (league.priorSeasonId !== null) {
+    stableId(league.priorSeasonId, `${location}.priorSeasonId`)
+  }
   stableId(league.fadId, `${location}.fadId`)
-  if (league.phase !== 'cards_open') {
-    fail(`${location}.phase must be cards_open.`)
+  const completed = league.scenario === 'week_1_completed_fad'
+  if (
+    !['inaugural_fad', 'second_season_fad', 'week_1_completed_fad'].includes(
+      league.scenario
+    ) ||
+    league.phase !== (completed ? 'completed' : 'cards_open') ||
+    league.candidateCardsEditable !== !completed ||
+    league.competitionPhase !== (completed ? 'week_1' : 'preseason_fad')
+  ) {
+    fail(`${location} scenario state is invalid.`)
   }
   if (
     !Number.isSafeInteger(league.openedAtMs) ||
@@ -222,15 +269,21 @@ function validateLeague(league, location) {
     league.commissionerAccountAlias,
     `${location}.commissionerAccountAlias`
   )
-  if (!Array.isArray(league.teams) || league.teams.length !== 6) {
-    fail(`${location}.teams must contain exactly six teams.`)
+  if (
+    !Array.isArray(league.memberAccountAliases) ||
+    league.memberAccountAliases.length === 0 ||
+    league.memberAccountAliases.some((alias) => typeof alias !== 'string')
+  ) {
+    fail(`${location}.memberAccountAliases is invalid.`)
+  }
+  const expectedTeamCount = { alpha: 8, beta: 6, gamma: 14 }[league.alias]
+  if (!Array.isArray(league.teams) || league.teams.length !== expectedTeamCount) {
+    fail(`${location}.teams has an invalid participant count.`)
   }
   league.teams.forEach((team, index) =>
     validateTeam(team, `${location}.teams[${index}]`)
   )
-  validateSentinels(league.sentinels, `${location}.sentinels`, {
-    alpha: location.endsWith('.alpha'),
-  })
+  validateSentinels(league.sentinels, `${location}.sentinels`, league.alias)
 }
 
 function deepFreeze(value) {
@@ -272,7 +325,7 @@ export function readConnectedFadFixture(environment = process.env) {
     'manifest'
   )
   if (
-    manifest.schemaVersion !== 1 ||
+    manifest.schemaVersion !== 4 ||
     manifest.fixtureKind !== 'free_agent_draft_browser' ||
     !Number.isSafeInteger(manifest.fixedNowMs)
   ) {
@@ -285,14 +338,20 @@ export function readConnectedFadFixture(environment = process.env) {
     'alphaOtherManager',
     'betaCommissioner',
     'betaManager',
+    'betaOtherManager',
+    'gammaCommissioner',
+    'gammaManagerOne',
+    'gammaManagerTwo',
+    'gammaManagerThree',
   ]
   exactKeys(manifest.accounts, accountKeys, 'manifest.accounts')
   accountKeys.forEach((key) =>
     validateAccount(manifest.accounts[key], `manifest.accounts.${key}`)
   )
-  exactKeys(manifest.leagues, ['alpha', 'beta'], 'manifest.leagues')
+  exactKeys(manifest.leagues, ['alpha', 'beta', 'gamma'], 'manifest.leagues')
   validateLeague(manifest.leagues.alpha, 'manifest.leagues.alpha')
   validateLeague(manifest.leagues.beta, 'manifest.leagues.beta')
+  validateLeague(manifest.leagues.gamma, 'manifest.leagues.gamma')
   if (
     manifest.leagues.alpha.openedAtMs !==
     manifest.leagues.alpha.helpOpensAtMs
@@ -305,10 +364,12 @@ export function readConnectedFadFixture(environment = process.env) {
     fail('manifest.leagues.beta must use a later normal help opening.')
   }
   if (
-    manifest.leagues.alpha.firstWeekStartsAtMs ===
-    manifest.leagues.beta.firstWeekStartsAtMs
+    manifest.leagues.alpha.firstWeekStartsAtMs !==
+      manifest.leagues.beta.firstWeekStartsAtMs ||
+    manifest.leagues.gamma.firstWeekStartsAtMs ===
+      manifest.leagues.alpha.firstWeekStartsAtMs
   ) {
-    fail('the two fixture leagues must use distinct Week 1 starts.')
+    fail('the fixture Week 1 clocks are invalid.')
   }
   exactKeys(
     manifest.privacyChecks,

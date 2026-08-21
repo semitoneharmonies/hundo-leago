@@ -169,8 +169,12 @@ A commissioner may:
 
 * perform ordinary roster moves for any team in the assigned league;
 * make explicit roster corrections;
-* make the approved manual prospect-signing decisions for a team;
 * correct roster-category and related contract records where authorized.
+
+Prospect sign, decline, and unsigned-rights release decisions belong to the
+current team manager. Commissioner or platform-administrator authority alone
+does not grant those decisions; any commissioner correction must use a
+separately authorized correction workflow.
 
 Commissioner actions must be clearly identified as commissioner actions.
 
@@ -474,11 +478,17 @@ The manager has complete manual authority over the prospect-signing decision dur
 Signing a prospect must be an explicit action that:
 
 * verifies ownership of the prospect rights;
-* creates exactly one fantasy ELC;
-* permits the signed player to remain in Prospects or move to an approved normal roster category;
+* accepts exactly `destinationCategory` and `expectedVersion`;
+* creates exactly one fixed `$3` three-year fantasy ELC (`$1 AAV`);
+* permits `Prospect`, `Active`, `Bench`, or eligible `Injured Reserve` while the
+  backend derives the effective position, destination slot, season IDs, and IR
+  eligibility;
 * calculates resulting roster and cap legality;
-* saves every effect atomically;
-* creates one activity record.
+* cancels every pending trade containing the previously unsigned
+  `prospect_right`, including when the signed player remains in `Prospect`;
+* saves the ownership conversion, contract, cancellations, activity, and
+  publication outbox effects atomically;
+* returns the affected proposal IDs in `automaticallyCancelledTradeIds`.
 
 The manager may initiate this action manually at any time while automatic real-life ELC enforcement remains deferred.
 
@@ -493,17 +503,22 @@ The manager may:
 
 A signing destination that would make the roster illegal is rejected. The player may remain in Prospects instead.
 
-Once a signed player moves to Active or Bench, that player may not return to Prospects.
+Once a signed player moves to Active, Bench, or Injured Reserve, that player may not return to Prospects.
 
-A separate `Decline ELC` action releases the prospect rights rather than creating the fantasy ELC.
+A separate `Decline ELC` action accepts exactly `confirmed: true` and
+`expectedVersion`, releases the unsigned prospect rights rather than creating
+the fantasy ELC, and records a distinct decline event.
 
-The manager may also voluntarily release unsigned prospect rights.
+The manager may also voluntarily release unsigned prospect rights with exactly
+`confirmed: true` and `expectedVersion`; this records a distinct release event.
 
 Release:
 
 * requires an `Are you sure?` confirmation;
 * makes the rights unowned;
 * creates league activity history;
+* atomically cancels and publishes every pending proposal containing those
+  rights and returns the proposal IDs in `automaticallyCancelledTradeIds`;
 * does not make the player eligible for a normal free-agent auction unless a later approved specification permits it;
 * permits the player to re-enter the Entry Draft only when the player was drafted in the immediately preceding year.
 
@@ -952,7 +967,14 @@ Tests must cover:
 * stable player IDs;
 * active, bench, and injured-reserve moves;
 * prospect-right trade preservation;
-* prospect-signing atomicity;
+* manager-only sign, decline, and unsigned-rights-release authorization;
+* fixed ELC terms, backend-derived slot/position/IR eligibility, and optimistic
+  version conflicts;
+* prospect-decision atomicity, rollback, distinct event types, and affected
+  pending-trade cancellation IDs;
+* signed-Prospect activation to Active, Bench, or Injured Reserve, ownership
+  conversion, pending prospect-right trade cancellation, and no return to
+  Prospect;
 * unauthorized team access;
 * cross-league identifiers;
 * duplicate submission;
@@ -1110,13 +1132,16 @@ the FAD-related amendments on 2026-07-27.
 
 - [x] During deferred automatic ELC enforcement, the manager may initiate the fantasy ELC signing action manually at any time.
 - [x] The manual prospect-signing screen reminds the manager that the intended trigger is the player’s real-life ELC signing.
+- [x] Signing accepts exactly `destinationCategory` and `expectedVersion`, creates the fixed `$3` three-year (`$1 AAV`) ELC, and lets the backend derive position, slot, season IDs, and IR eligibility.
 - [x] A signed prospect may remain in Prospects without the ELC salary affecting the cap, or move to Active, Bench, or eligible Injured Reserve.
 - [x] Prospect signing may not complete with an illegal resulting roster.
-- [x] Once a signed prospect moves to Active or Bench, the player may not return to Prospects.
-- [x] The initial release includes a separate `Decline ELC` action.
-- [x] A manager may voluntarily release unsigned prospect rights.
+- [x] Signing atomically cancels pending proposals containing the previously unsigned prospect right and returns `automaticallyCancelledTradeIds`, including when the signed player remains in Prospects.
+- [x] Activating a signed Prospect to Active, Bench, or Injured Reserve converts ownership and atomically cancels pending prospect-right proposals; ordinary moves among normal categories do not cancel them.
+- [x] Once a signed prospect moves to Active, Bench, or Injured Reserve, the player may not return to Prospects.
+- [x] The manager-only `Decline ELC` action accepts exactly `confirmed: true` and `expectedVersion` and records a distinct decline event.
+- [x] A manager may voluntarily release unsigned prospect rights with exactly `confirmed: true` and `expectedVersion`, producing a distinct release event.
 - [x] Released rights become unowned; the player cannot enter a normal free-agent auction unless later approved and may re-enter the Entry Draft only when drafted in the immediately preceding year.
-- [x] Prospect-right release requires an `Are you sure?` confirmation and creates league activity history.
+- [x] Decline and unsigned-right release require confirmation, create their distinct League Activity records, atomically cancel affected pending prospect-right proposals, and return `automaticallyCancelledTradeIds`.
 
 ## Move, Warning, and Correction Decisions
 

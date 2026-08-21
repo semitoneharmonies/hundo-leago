@@ -354,7 +354,24 @@ function correctionPreview() {
     reversible: true,
     currentDecision: currentDecision(),
     recomputedDecision: recomputedDecision(),
-    deltas: [],
+    deltas: [
+      {
+        resourceType: "roster_entry",
+        resourceId: null,
+        action: "create",
+        beforeVersion: null,
+        afterSummary: {
+          ...emptyAfterSummary(),
+          team: team(),
+          player: {
+            playerId,
+            fullName: "Corrected Player",
+            positionGroup: "F",
+          },
+          rosterCategory: "Active",
+        },
+      },
+    ],
     warnings: [],
     blockers: [],
     confirmationText: "APPLY FAD CORRECTION",
@@ -446,7 +463,7 @@ describe("FAD-16 commissioner recovery and correction", () => {
     expect(
       await screen.findByRole("heading", { name: "Recovery and correction" })
     ).toBeInTheDocument();
-    expect(screen.getByText(/readiness is unavailable/i)).toBeInTheDocument();
+    expect(screen.getByText(/Set a current season before running/i)).toBeInTheDocument();
     expect(
       fetchImpl.mock.calls.some(([url]) =>
         new URL(url).pathname.endsWith("/free-agent-drafts/readiness")
@@ -454,6 +471,17 @@ describe("FAD-16 commissioner recovery and correction", () => {
     ).toBe(false);
     const reviewAction = screen.getByRole("button", { name: "Review action" });
     expect(reviewAction).toBeInTheDocument();
+    const page = document.querySelector(
+      'section[aria-labelledby="commissioner-fad-recovery-title"]'
+    );
+    const actionPanel = screen.getByRole("heading", { name: "Needs your action" }).closest("section");
+    const recoveryHistory = screen.getByText("Recovery history").closest("details");
+    expect(actionPanel.compareDocumentPosition(recoveryHistory)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(recoveryHistory).toHaveAttribute("open");
+    expect(screen.getAllByText(/Resolve the earlier blocked draft step/).length).toBeGreaterThan(0);
+    expect(page).toContainElement(actionPanel);
     expect(screen.queryByText("Complete Free Agent Draft")).toBeNull();
     await waitFor(() =>
       expect(document.activeElement).toHaveAttribute(
@@ -485,17 +513,13 @@ describe("FAD-16 commissioner recovery and correction", () => {
         throw new Error("secure randomness unavailable");
       });
     const submit = within(form).getByRole("button", {
-      name: "Submit authorized recovery",
+      name: "Submit recovery",
     });
     submit.focus();
     await view.user.keyboard("{Enter}");
     const alert = await within(form).findByRole("alert");
-    expect(alert).toHaveAttribute("id", "fad-recovery-action-error");
-    expect(alert).toHaveTextContent(/cannot be submitted securely/i);
-    expect(form).toHaveAttribute(
-      "aria-describedby",
-      "fad-recovery-action-error"
-    );
+    expect(alert).toHaveTextContent(/recovery action could not be accepted/i);
+    expect(form).not.toHaveAttribute("aria-describedby");
     expect(requests.filter((request) => request.kind === "action")).toHaveLength(0);
 
     randomUuid.mockRestore();
@@ -513,7 +537,7 @@ describe("FAD-16 commissioner recovery and correction", () => {
     expect(action.headers.get("Idempotency-Key")).toMatch(/^fad-recovery:/);
     expect(action.headers.get("If-Match")).toBeNull();
     const receipt = await screen.findByText(
-      /exact FAD recovery resource has been refreshed/i
+      /Free Agent Draft status has been refreshed/i
     );
     expect(receipt).toHaveFocus();
   });
@@ -532,7 +556,7 @@ describe("FAD-16 commissioner recovery and correction", () => {
     expect(
       await screen.findByText(/Competition Week 1 moved from/)
     ).toHaveTextContent(/America\/Vancouver/);
-    expect(screen.getByText(/matchup:.*:old/)).toHaveTextContent(/→/);
+    expect(screen.queryByText(/matchup:.*:old/)).not.toBeInTheDocument();
   });
 
   it("withholds and remounts commissioner recovery evidence during realtime reauthorization", async () => {
@@ -586,7 +610,7 @@ describe("FAD-16 commissioner recovery and correction", () => {
     await view.user.click(screen.getByRole("button", { name: "Reauthorize recovery" }));
     expect(screen.queryByRole("heading", { name: "Recovery and correction" })).toBeNull();
     expect(
-      screen.getByText(/Reauthorizing commissioner Free Agent Draft evidence/i)
+      screen.getByText(/Refreshing secure Free Agent Draft access/i)
     ).toBeInTheDocument();
     await view.user.click(
       screen.getByRole("button", { name: "Finish recovery reauthorization" })
@@ -617,20 +641,25 @@ describe("FAD-16 commissioner recovery and correction", () => {
     const view = renderRecovery(fetchImpl);
 
     const correctionTrigger = await screen.findByRole("button", {
-      name: "Review deterministic correction",
+      name: "Review correction",
     });
     await view.user.click(correctionTrigger);
     expect(
       screen.getByRole("heading", { name: "Allocation correction" })
     ).toHaveFocus();
     const previewButton = screen.getByRole("button", {
-      name: "Preview deterministic correction",
+      name: "Preview correction",
     });
     previewButton.focus();
     await view.user.keyboard("{Enter}");
     const correctionForm = await screen.findByRole("form", {
-      name: "Apply FAD correction",
+      name: "Apply Free Agent Draft correction",
     });
+    expect(screen.getByText("Changes if applied")).toBeInTheDocument();
+    expect(
+      screen.getByText("Create roster spot for Corrected Player for Recovery Owls")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/roster_entry/)).not.toBeInTheDocument();
     expect(
       within(correctionForm).getByLabelText("Correction reason")
     ).toHaveFocus();
@@ -646,10 +675,10 @@ describe("FAD-16 commissioner recovery and correction", () => {
       within(correctionForm).getByLabelText("Correction reason"),
       "Apply the deterministic locked-snapshot repair."
     );
-    const exactConfirmation = within(correctionForm).getByLabelText(
-      /Type the exact confirmation/
+    const confirmation = within(correctionForm).getByLabelText(
+      /I reviewed the correction/
     );
-    await view.user.type(exactConfirmation, "APPLY FAD CORRECTION");
+    await view.user.click(confirmation);
     const apply = within(correctionForm).getByRole("button", {
       name: "Apply reviewed correction",
     });

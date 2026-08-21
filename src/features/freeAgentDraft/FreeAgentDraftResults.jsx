@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
@@ -100,12 +100,6 @@ function SelectedTeamResults({
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
-        <Link
-          className="hl-button hl-button--quiet"
-          to={routePaths.draftFreeAgentCard(leagueId, fadId, summary.teamId)}
-        >
-          View original Candidate Card
-        </Link>
       </div>
       {visible.length === 0 ? (
         <p>No players match this search.</p>
@@ -152,6 +146,7 @@ export function PublishedCandidateCards({
   fadId,
   currentUserId,
 }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const cards = useInfiniteQuery(
     publishedCandidateCardsQuery(httpClient, leagueId, fadId)
   );
@@ -173,7 +168,9 @@ export function PublishedCandidateCards({
   const defaultTeamId = managedTeamIds.find((teamId) =>
     summaries.some((summary) => summary.teamId === teamId)
   ) || null;
-  const [chosenTeamId, setChosenTeamId] = useState("");
+  const [chosenTeamId, setChosenTeamId] = useState(
+    () => searchParams.get("teamId") || ""
+  );
   const selectedTeamId = summaries.some(({ teamId }) => teamId === chosenTeamId)
     ? chosenTeamId
     : summaries.some(({ teamId }) => teamId === defaultTeamId)
@@ -188,22 +185,28 @@ export function PublishedCandidateCards({
         <div>
           <h2 id="published-candidate-cards-title">Team results</h2>
         </div>
-        {summaries.length > 0 && (
-          <label className={styles.teamResultPicker}>
-            Team
-            <select
-              value={selectedTeamId}
-              onChange={(event) => setChosenTeamId(event.target.value)}
-            >
-              {summaries.map((summary) => (
-                <option key={summary.teamId} value={summary.teamId}>
-                  {summary.team.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
       </div>
+      {summaries.length > 0 && (
+        <label className={styles.teamResultPicker}>
+          Team
+          <select
+            value={selectedTeamId}
+            onChange={(event) => {
+              const nextTeamId = event.target.value;
+              setChosenTeamId(nextTeamId);
+              const nextParams = new URLSearchParams(searchParams);
+              nextParams.set("teamId", nextTeamId);
+              setSearchParams(nextParams, { replace: true });
+            }}
+          >
+            {summaries.map((summary) => (
+              <option key={summary.teamId} value={summary.teamId}>
+                {summary.team.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {cards.isPending || teams.isPending ? (
         <LoadingBlock>Loading published Candidate Cards…</LoadingBlock>
       ) : cards.isError ? (

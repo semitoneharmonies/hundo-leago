@@ -473,9 +473,6 @@ function TopBar({ freezeBanner }) {
                     <Link to={routePaths.leagues} onClick={closeMenus}>
                       {leagues.length > 1 ? "Switch league" : "Your league"}
                     </Link>
-                    <Link to={routePaths.notifications} onClick={closeMenus}>
-                      Notifications
-                    </Link>
                     <Link to={routePaths.account} onClick={closeMenus}>
                       Account and team settings
                     </Link>

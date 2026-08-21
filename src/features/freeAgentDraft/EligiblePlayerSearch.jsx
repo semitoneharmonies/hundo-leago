@@ -1,6 +1,7 @@
 import { useDeferredValue, useId, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
+import { ErrorBlock } from "../../components/HundoUi.jsx";
 import styles from "./FreeAgentDraftPage.module.css";
 
 export function EligiblePlayerSearch({
@@ -114,9 +115,12 @@ export function EligiblePlayerSearch({
             {players.isPending ? (
               <span role="status">Searching eligible players…</span>
             ) : players.isError ? (
-              <span className={styles.error} role="alert">
-                {players.error.message || "Eligible players could not be loaded."}
-              </span>
+              <ErrorBlock
+                error={players.error}
+                fallback="Eligible players could not be loaded."
+                impact="You cannot select a player for this Candidate Card slot yet."
+                recovery="Check the player name and try again."
+              />
             ) : items.length === 0 ? (
               <span>No eligible players match that name.</span>
             ) : (

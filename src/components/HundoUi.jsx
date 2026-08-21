@@ -2,6 +2,11 @@ import React from "react";
 import { AlertTriangle, ArrowRight, LoaderCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import {
+  teamColourClass,
+  teamColourStyle,
+} from "../shared/teamIdentity.js";
+
 function classes(...values) {
   return values.filter(Boolean).join(" ");
 }
@@ -85,6 +90,28 @@ export function PositionTag({ position, category = "Free Agent" }) {
   );
 }
 
+export function TeamMark({ team, logoUrl = null, className }) {
+  return (
+    <span
+      className={classes("hl-team-mark", teamColourClass(className))}
+      style={teamColourStyle(team)}
+      aria-hidden="true"
+    >
+      {logoUrl ? (
+        <img
+          key={logoUrl}
+          src={logoUrl}
+          crossOrigin="use-credentials"
+          alt=""
+          onError={(event) => {
+            event.currentTarget.hidden = true;
+          }}
+        />
+      ) : null}
+    </span>
+  );
+}
+
 export function TableScroll({ label, className, children }) {
   return (
     <div
@@ -116,15 +143,33 @@ export function EmptyBlock({ title, children }) {
   );
 }
 
-export function ErrorBlock({ error, fallback }) {
+export function ErrorBlock({
+  error,
+  fallback,
+  impact = "This section may be incomplete until it loads successfully.",
+  recovery = "Try again. If the problem continues, come back in a moment.",
+  action,
+  elementRef,
+  id,
+  tabIndex,
+}) {
+  const message =
+    fallback || error?.message || "The request could not be completed.";
+
   return (
-    <div className="hl-state-block hl-state-block--error" role="alert">
+    <div
+      className="hl-state-block hl-state-block--error"
+      id={id}
+      ref={elementRef}
+      role="alert"
+      tabIndex={tabIndex}
+    >
       <AlertTriangle aria-hidden="true" />
       <div>
-        <strong>
-          {error?.message || fallback || "The request could not be completed."}
-        </strong>
-        {error?.requestId && <span>Request ID: {error.requestId}</span>}
+        <strong>{message}</strong>
+        <span>{impact}</span>
+        <span>{recovery}</span>
+        {action && <div className="hl-state-block__action">{action}</div>}
       </div>
     </div>
   );

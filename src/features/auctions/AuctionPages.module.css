@@ -150,6 +150,19 @@
   min-width: 0;
 }
 
+.calculatedField output {
+  display: flex;
+  min-height: 2.45rem;
+  align-items: center;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgb(148 163 184 / 26%);
+  border-radius: 0.55rem;
+  background: rgb(2 6 23 / 38%);
+  color: var(--hl-foreground, #f8fafc);
+  font-family: var(--hl-font-mono, monospace);
+  font-weight: 750;
+}
+
 .playerPicker {
   position: relative;
 }

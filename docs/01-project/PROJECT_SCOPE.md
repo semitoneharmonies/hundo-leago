@@ -255,6 +255,9 @@ At minimum:
 * managers can act only for their authorized teams;
 * commissioners can use approved league-administration tools;
 * platform administrators can create and manage leagues;
+* every active platform administrator has one protected active `member`
+  membership in every non-deleted league, and ordinary membership,
+  commissioner, and team-manager writers cannot mutate or assign it;
 * unauthorized users cannot perform write operations;
 * commissioner and administrator actions are logged.
 
@@ -268,6 +271,8 @@ Season 2 must support:
 * users being assigned to teams;
 * teams belonging to one league;
 * commissioners belonging to the leagues they manage;
+* exactly one current commissioner per operational league and explicit atomic
+  transfer to an eligible non-administrator replacement;
 * users participating in more than one league when approved.
 
 The meaning of “membership” must be formally documented in the data model and glossary.
@@ -413,7 +418,10 @@ The core Season 2 workflow includes:
   remaining preparation period when cards open later;
 * an automatic deadline exactly 168 elapsed hours before the frozen
   first-matchup start;
-* league-wide read-only Candidate Card visibility after the deadline;
+* post-deadline viewer-filtered results: every active member sees selected-team
+  player identity and Signed/Not won/Tied status, while money, restricted
+  minimums, and complete-card/audit detail remain limited to the selected
+  team's current manager or protected internal evidence;
 * automatic allocation by highest total contract value and then highest AAV;
 * restricted auctions only for equal highest totals with equal terms, using
   Candidate minimums that require an active improvement and a league-wide
@@ -450,7 +458,16 @@ Launch-critical functionality includes:
 * contract transfer with unchanged average annual value and remaining years;
 * average-annual-value salary retention for every remaining contract year;
 * multiple retention records up to a cumulative 50% of original AAV and three retention slots per team;
-* roster players, prospects or player rights, and draft picks as tradeable assets;
+* the normal new-proposal presentation of Player, Draft pick, Buyout obligation,
+  and Future Considerations, with requested retention nested on an outgoing
+  contracted Player and no fresh standalone existing-retention asset;
+* persisted historical retention proposals/assets remaining readable and
+  executable/reversible when their recorded state permits, including exact
+  idempotent creation-result replay;
+* proposer-manager-only create/cancel and receiver-manager-only accept/reject;
+* receiver acceptance of Future Considerations persisting an awaiting-approval
+  projection without transfers, followed by commissioner/inherited-admin
+  revalidation and atomic approval completion;
 * a commissioner-configured trade deadline set during league creation;
 * reopening of trading only after the scheduled Entry Draft-start rollover
   succeeds atomically with draft start;
@@ -458,6 +475,10 @@ Launch-critical functionality includes:
 * automatic cancellation when required;
 * activity logging;
 * duplicate-processing protection.
+
+No counter endpoint or service is implemented for M7-26. Countering remains
+planned; reject plus a separately manager-authorized reversed proposal are
+independent actions.
 
 Draft picks and player rights require stable identifiers and an approved data model before implementation.
 
@@ -580,7 +601,10 @@ Standings must be:
 * league-specific;
 * season-specific;
 * derived from authoritative results;
-* rebuildable;
+* contextually correctable beside a recognizable finalized matchup, with a
+  read-only projected standings preview and atomic confirmed recalculation;
+* rebuildable only through an explicit recovery capability absent from the
+  normal standings interface;
 * understandable;
 * protected from normal manager writes.
 
@@ -631,6 +655,13 @@ The activity system should include:
 * commissioner override identification.
 
 The audit trail must survive the SQLite migration.
+
+The launch-critical notification inbox uses read-only listing with explicit
+unread/read filters. After one captured unread batch renders, the normal UI may
+send exactly one authenticated idempotent acknowledgement for those displayed
+IDs, retain that batch for the mounted visit, and surface failure. This is the
+sole normal automatic-on-view write; legacy single/read-all commands remain
+compatibility APIs rather than the ordinary workflow.
 
 ---
 
@@ -815,7 +846,8 @@ The following may be added only after launch-critical work is safe.
 * performance improvements;
 * improved mobile layouts;
 * additional automated tests;
-* better notifications;
+* notification channels or enhancements beyond the approved in-app unread,
+  previous, and displayed-batch acknowledgement workflow;
 * clearer league activity presentation.
 
 Optional work must not delay launch-critical work.

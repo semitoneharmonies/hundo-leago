@@ -3,6 +3,7 @@ import { ResponseContractError } from "../../shared/api/responseContracts.js";
 const ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const TRADE_STATUSES = new Set([
   "proposed",
+  "awaiting_commissioner_approval",
   "accepted",
   "declined",
   "cancelled",
@@ -280,12 +281,41 @@ export function validateActivityPage(data) {
       "An activity actor authority is invalid.",
       { maximum: 100 }
     );
+    if (Object.hasOwn(item.actor, "displayName")) {
+      activityText(
+        item.actor.displayName,
+        "An activity actor name is invalid.",
+        { nullable: true, maximum: 100 }
+      );
+    }
     activityId(item.teamId, "An activity team ID is invalid.", {
       nullable: true,
     });
     activityId(item.playerId, "An activity player ID is invalid.", {
       nullable: true,
     });
+    if (Object.hasOwn(item, "team")) {
+      contract(item.team === null || typeof item.team === "object", "The activity team is invalid.");
+      if (item.team) {
+        activityId(item.team.id, "The activity team ID is invalid.");
+        activityText(item.team.name, "The activity team name is invalid.", {
+          nullable: true,
+          maximum: 100,
+        });
+        contract(item.team.id === item.teamId, "The activity team scope is invalid.");
+      }
+    }
+    if (Object.hasOwn(item, "player")) {
+      contract(item.player === null || typeof item.player === "object", "The activity player is invalid.");
+      if (item.player) {
+        activityId(item.player.id, "The activity player ID is invalid.");
+        activityText(item.player.name, "The activity player name is invalid.", {
+          nullable: true,
+          maximum: 100,
+        });
+        contract(item.player.id === item.playerId, "The activity player scope is invalid.");
+      }
+    }
     if (item.related !== null) {
       object(item.related, "An activity related record is invalid.");
       activityText(
@@ -314,15 +344,30 @@ export function buildTradeAsset({
   type,
   reference,
   retainedAavCents,
-  retainedAavDollars,
   mode,
 }) {
   const value = String(reference || "").trim();
   switch (type) {
+    case "player": {
+      const separator = value.indexOf(":");
+      const playerAssetType = value.slice(0, separator);
+      const playerAssetId = value.slice(separator + 1);
+      if (separator < 1 || !["contract", "prospect_right"].includes(playerAssetType)) {
+        throw new ResponseContractError("Choose a player to trade.");
+      }
+      return playerAssetType === "contract"
+        ? {
+            type: "contract",
+            contractId: id(playerAssetId, "The contract ID is invalid."),
+          }
+        : {
+            type: "prospect_right",
+            playerId: id(playerAssetId, "The player ID is invalid."),
+          };
+    }
     case "contract": return { type, contractId: id(value, "The contract ID is invalid.") };
     case "prospect_right": return { type, playerId: id(value, "The player ID is invalid.") };
     case "draft_pick": return { type, draftPickId: id(value, "The draft-pick ID is invalid.") };
-    case "retention_obligation": return { type, retentionObligationId: id(value, "The retention ID is invalid.") };
     case "buyout_obligation": return { type, buyoutObligationId: id(value, "The buyout ID is invalid.") };
     case "future_consideration": return { type, futureConsiderationId: id(value, "The Future Considerations ID is invalid.") };
     case "future_consideration_instruction":
@@ -332,24 +377,6 @@ export function buildTradeAsset({
       const cents = Number(retainedAavCents);
       contract(Number.isSafeInteger(cents) && cents > 0, "The retained AAV is invalid.");
       return { type, contractId: id(value, "The retained contract ID is invalid."), retainedAavCents: cents };
-    }
-    case "retention": {
-      if (mode !== "requested") {
-        return {
-          type: "retention_obligation",
-          retentionObligationId: id(
-            value,
-            "The retention selection is invalid."
-          ),
-        };
-      }
-      const cents = dollarsToCents(retainedAavDollars);
-      contract(cents > 0, "The retained AAV is invalid.");
-      return {
-        type: "requested_retention",
-        contractId: id(value, "The retained contract is invalid."),
-        retainedAavCents: cents,
-      };
     }
     case "future_considerations":
       if (mode === "new") {

@@ -2,7 +2,6 @@ import { AccountPage } from './pages/AccountPage.js'
 import { test, expect } from './fixtures/fadTest.js'
 import {
   privacyMarkers,
-  privateCandidateForTeam,
   teamsForManager,
 } from './support/fadScenario.js'
 import {
@@ -17,10 +16,10 @@ test('sign-out removes private Candidate Card DOM and leaves no persistent copy'
   page,
 }) => {
   const { manifest } = fadFixture
-  const alpha = manifest.leagues.alpha
-  const manager = manifest.accounts.alphaMultiTeamManager
-  const team = teamsForManager(alpha, manager)[0]
-  const candidate = privateCandidateForTeam(alpha, team)
+  const beta = manifest.leagues.beta
+  const manager = manifest.accounts.betaManager
+  const candidate = beta.sentinels.privateCandidates[0]
+  const team = beta.teams.find(({ alias }) => alias === candidate.teamAlias)
   const markers = privacyMarkers(manifest)
 
   await accountPage.signIn(manager)
@@ -30,7 +29,7 @@ test('sign-out removes private Candidate Card DOM and leaves no persistent copy'
       response.url().includes('/candidate-cards/') &&
       response.url().endsWith('/private')
   )
-  await freeAgentDraftPage.openCard(alpha, team)
+  await freeAgentDraftPage.openCard(beta, team)
   await freeAgentDraftPage.expectPrivateCard(candidate.playerFullName)
   const response = await privateResponse
   expect(response.headers()['cache-control'] || '').toMatch(/no-store/i)
@@ -49,15 +48,16 @@ test('session replacement purges the first context before another private card l
   page,
 }) => {
   const { manifest } = fadFixture
-  const alpha = manifest.leagues.alpha
-  const manager = manifest.accounts.alphaMultiTeamManager
-  const managedTeams = teamsForManager(alpha, manager)
-  expect(managedTeams).toHaveLength(2)
-  const firstCandidate = privateCandidateForTeam(alpha, managedTeams[0])
+  const beta = manifest.leagues.beta
+  const manager = manifest.accounts.betaManager
+  const managedTeams = teamsForManager(beta, manager)
+  expect(managedTeams.length).toBeGreaterThanOrEqual(2)
+  const firstCandidate = beta.sentinels.privateCandidates[0]
+  const firstTeam = beta.teams.find(({ alias }) => alias === firstCandidate.teamAlias)
   const markers = privacyMarkers(manifest)
 
   await accountPage.signIn(manager)
-  await freeAgentDraftPage.openCard(alpha, managedTeams[0])
+  await freeAgentDraftPage.openCard(beta, firstTeam)
   await freeAgentDraftPage.expectPrivateCard(firstCandidate.playerFullName)
 
   const replacementContext = await browser.newContext()
@@ -65,7 +65,9 @@ test('session replacement purges the first context before another private card l
   const replacementAccount = new AccountPage(replacementPage, fadFixture)
   await replacementAccount.signIn(manager)
 
-  const secondTeamLink = freeAgentDraftPage.teamLink(managedTeams[1])
+  const secondTeamLink = freeAgentDraftPage.teamLink(
+    managedTeams.find(({ teamId }) => teamId !== firstTeam.teamId)
+  )
   await expect(secondTeamLink).toBeVisible()
   await secondTeamLink.click()
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()

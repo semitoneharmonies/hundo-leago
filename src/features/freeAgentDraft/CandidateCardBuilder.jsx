@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
-import { StatusBadge, Surface } from "../../components/HundoUi.jsx";
+import { ErrorBlock, StatusBadge, Surface } from "../../components/HundoUi.jsx";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { leagueDateTime } from "../../shared/hundoFormat.js";
 import {
@@ -196,7 +196,7 @@ export function CandidateCardBuilder({
   const [rowErrors, setRowErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [helpError, setHelpError] = useState("");
+  const [helpError, setHelpError] = useState(null);
   const [helpMessage, setHelpMessage] = useState("");
   const editable =
     card.visibilityMode === "private_editable" &&
@@ -243,7 +243,7 @@ export function CandidateCardBuilder({
       setRowErrors({});
       setFormError("");
       setStatusMessage("");
-      setHelpError("");
+      setHelpError(null);
       setHelpMessage("");
     }
   }
@@ -283,7 +283,7 @@ export function CandidateCardBuilder({
           "This card changed before your save was applied. Your entries are still here. Review the refreshed card and save again."
         );
       } else {
-        setFormError(error.message || "The Candidate Card could not be saved.");
+        setFormError("The Candidate Card could not be saved.");
       }
       onProtectedFailure?.(error);
     },
@@ -311,7 +311,7 @@ export function CandidateCardBuilder({
       onAuthoritativeCard(null);
     },
     onError: (error) => {
-      setHelpError(error.message || "The help request could not be sent.");
+      setHelpError(error);
       onProtectedFailure?.(error);
     },
   });
@@ -378,8 +378,8 @@ export function CandidateCardBuilder({
     let idempotencyKey;
     try {
       idempotencyKey = createIdempotencyKey("candidate-card-save");
-    } catch (error) {
-      setFormError(error.message);
+    } catch {
+      setFormError("This browser could not prepare the secure save. Reload and try again.");
       return;
     }
     setRowErrors({});
@@ -389,12 +389,12 @@ export function CandidateCardBuilder({
 
   function requestHelp(event) {
     event.preventDefault();
-    setHelpError("");
+    setHelpError(null);
     let idempotencyKey;
     try {
       idempotencyKey = createIdempotencyKey("candidate-help");
-    } catch (error) {
-      setHelpError(error.message);
+    } catch {
+      setHelpError("This browser could not prepare the secure help request. Reload and try again.");
       return;
     }
     helpMutation.mutate({
@@ -478,9 +478,11 @@ export function CandidateCardBuilder({
           </p>
         )}
         {formError && (
-          <p className={styles.error} role="alert">
-            {formError}
-          </p>
+          <ErrorBlock
+            fallback={formError}
+            impact="Your Candidate Card has not been changed."
+            recovery="Review any highlighted rows, then try the save again."
+          />
         )}
 
         <div className={styles.compactCard} aria-label="Candidate Card rows">
@@ -559,13 +561,13 @@ export function CandidateCardBuilder({
               />
             </label>
             {helpError && (
-              <p
+              <ErrorBlock
                 id="candidate-help-error"
-                className={styles.error}
-                role="alert"
-              >
-                {helpError}
-              </p>
+                error={typeof helpError === "object" ? helpError : undefined}
+                fallback={typeof helpError === "string" ? helpError : undefined}
+                impact="No help request was sent."
+                recovery="Keep your message, then try again."
+              />
             )}
             <button
               type="submit"

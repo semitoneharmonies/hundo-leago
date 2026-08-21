@@ -14,6 +14,43 @@ This technical specification defines:
 
 Grae delegated the API-contract decisions and approved adoption of the resulting design on 2026-07-18.
 
+On 2026-08-20, Grae approved the M7-26 full-site UI contract amendment:
+
+* league-player catalog reads accept optional `position=F|D`, canonical NHL
+  abbreviation `nhlTeam`, `ownership=all|free|prospects`, and integer
+  `minimumGames`; every filter is applied by the repository before cursor
+  pagination and the unfiltered page limit remains `100`;
+* FAD result and historical-card reads return offer amount/AAV/term only to a
+  current manager of the selected team, while other active members receive
+  player identity and Signed/Not won/Tied outcome only;
+* manager acceptance of a trade containing Future Considerations persists a
+  durable acceptance snapshot and returns the projected `Awaiting Commissioner
+  Approval` state without transferring assets; storage status remains
+  `proposed`;
+  commissioner approval revalidates and applies the trade atomically, while
+  commissioner authority alone grants no proposal, receiver-response, or
+  cancellation write;
+* a result-correction preview returns recognizable week/team/matchup context
+  and projected standings, and correction confirmation atomically persists the
+  result version and rebuilt current standings;
+* notification listing accepts `readStatus=all|unread|read`, defaults compatibly
+  to `all`, and remains read-only; normal UI uses unread/read views;
+  `POST /api/v1/notifications/read-batch` accepts the exact displayed
+  notification-ID set and idempotently marks only the caller-owned rows read;
+* every active platform administrator is automatically represented by a
+  protected active `member` membership in every non-deleted league and may not
+  be ended, reclassified, or manager/commissioner-assigned by ordinary writers;
+  and
+* response `requestId`, stable IDs, versions, and internal error evidence remain
+  available to clients/services that need them, but normal UI projections do
+  not render those implementation details.
+
+These contracts supersede older visibility, immediate Future Considerations
+completion, manual administrator-membership, separate correction/rebuild, and
+notification-list grammar where they conflict. Existing endpoints and
+historical data remain backward-readable unless an explicit retirement below
+says otherwise.
+
 The Free Agent Draft product specification approved on 2026-07-27 and amended
 on 2026-07-28 for Candidate Card ranking, tie handling, and the explicitly
 selected first-matchup clock is implemented
@@ -847,8 +884,8 @@ Successful password change revokes all sessions and returns a signed-out respons
 | `PATCH /api/v1/admin/users/:userId` | Platform administrator | Update approved profile or status fields |
 | `POST /api/v1/admin/users/:userId/credential-setup-requests` | Platform administrator | Send or resend the 72-hour single-use credential-setup link |
 | `POST /api/v1/admin/users/:userId/password-reset-requests` | Platform administrator | Send a password-reset link without setting or viewing the password |
-| `POST /api/v1/admin/leagues` | Platform administrator | Create a league and initial season atomically |
-| `POST /api/v1/admin/leagues/:leagueId/commissioner-assignments` | Platform administrator | Propose an existing user as commissioner |
+| `POST /api/v1/admin/leagues` | Platform administrator | Create a league and initial season atomically and provision protected active `member` memberships for every active platform administrator |
+| `POST /api/v1/admin/leagues/:leagueId/commissioner-assignments` | Platform administrator | Propose one eligible non-administrator user as the replacement commissioner; never add a second current commissioner |
 | `DELETE /api/v1/admin/leagues/:leagueId` | Platform administrator with protected confirmation | Execute the approved permanent league-deletion workflow |
 | `GET /api/v1/admin/requests` | Platform administrator | List protected operations awaiting an administrator decision |
 | `GET /api/v1/admin/requests/:requestId` | Platform administrator | Read one request and its safe review context |
@@ -1055,10 +1092,10 @@ Only Active leagues are publicly discoverable. Public league resources return `X
 Authenticated league-list and league-detail responses expose both the stored
 membership `permissionCategory` and its backend-derived
 `effectiveAuthority`. They are normally equal. A platform administrator with
-an explicit active `member` membership retains `permissionCategory: "member"`
+the guaranteed protected active `member` membership retains `permissionCategory: "member"`
 and receives `effectiveAuthority: "platform_administrator"`. Platform role
-without active league membership returns no private league and grants no
-commissioner operation.
+without the required membership is invariant corruption: private access fails
+closed until the approved additive reconciliation restores the row.
 
 ---
 
@@ -1072,18 +1109,18 @@ commissioner operation.
 | `GET /api/v1/league-invitations/:invitationId` | Authenticated invited user | Read safe invitation details |
 | `POST /api/v1/league-invitations/:invitationId/accept` | Authenticated invited user | Accept and atomically create or activate membership and the associated team workflow |
 | `POST /api/v1/league-invitations/:invitationId/decline` | Authenticated invited user | Decline the invitation |
-| `PATCH /api/v1/leagues/:leagueId/memberships/:membershipId` | Commissioner | Change approved status or league role |
-| `DELETE /api/v1/leagues/:leagueId/memberships/:membershipId` | Commissioner | Deactivate membership under product constraints |
+| `PATCH /api/v1/leagues/:leagueId/memberships/:membershipId` | Commissioner | Change approved ordinary status or league role; reject protected administrator or current-commissioner mutation |
+| `DELETE /api/v1/leagues/:leagueId/memberships/:membershipId` | Commissioner | Deactivate an ordinary membership; reject protected administrator or current-commissioner removal |
 | `GET /api/v1/leagues/:leagueId/teams` | League member | List teams in the league |
 | `POST /api/v1/leagues/:leagueId/teams` | Commissioner | Create a team before the live season |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId` | League member | Return safe team summary |
 | `GET /api/v1/leagues/:leagueId/teams/:teamId/logo` | League member | Return the current inspected raster logo bytes without mutation |
 | `PATCH /api/v1/leagues/:leagueId/teams/:teamId` | Commissioner or authorized manager for permitted profile fields | Update explicitly editable fields |
-| `POST /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner | Assign a manager |
-| `DELETE /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner | End the active assignment |
+| `POST /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner | Assign an eligible non-administrator manager |
+| `DELETE /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner | End the active assignment without ending a protected administrator membership |
 | `DELETE /api/v1/leagues/:leagueId/teams/:teamId` | Commissioner plus administrator approval | Execute the protected team-erase workflow |
 | `GET /api/v1/commissioner-assignments/:assignmentId` | Authenticated proposed commissioner | Read safe assignment details |
-| `POST /api/v1/commissioner-assignments/:assignmentId/accept` | Authenticated proposed commissioner | Accept and atomically activate commissioner membership and role |
+| `POST /api/v1/commissioner-assignments/:assignmentId/accept` | Authenticated eligible proposed commissioner | Accept the explicit transfer and atomically demote the old commissioner, promote the replacement, and update the league pointer |
 
 Membership removal uses an exact body:
 
@@ -1094,11 +1131,19 @@ Membership removal uses an exact body:
 }
 ```
 
-The current commissioner membership cannot be removed through this endpoint.
+The current commissioner and a protected administrator membership cannot be
+removed through this endpoint.
 Removing an active manager membership ends its current team assignment in the
 same transaction. The response never exposes the removed user's email or
 credential data.
 | `POST /api/v1/commissioner-assignments/:assignmentId/decline` | Authenticated proposed commissioner | Decline the assignment |
+
+Commissioner-transfer acceptance rejects an active platform administrator as
+the replacement. In one transaction it demotes the old commissioner to
+`manager` when an active team assignment remains, otherwise `member`; promotes
+the replacement membership; and updates the league pointer. Protected
+administrator mutations fail with the stable authorization/state error mapped
+by the endpoint, and no related membership or assignment changes partially.
 
 Teams are not added or removed during a live season.
 
@@ -1342,6 +1387,39 @@ occurrence runner is absent.
 | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/decline` | Authorized team manager | Decline the ELC under approved rules |
 | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/prospect-rights/:playerId` | Authorized team manager | Release prospect rights |
 
+Prospect signing accepts exactly `destinationCategory` and `expectedVersion`.
+The destination is `Prospect`, `Active`, `Bench`, or `Injured Reserve`; the
+backend re-derives the current owned right, effective position, first open
+slot, fixed `$3` three-season fantasy ELC, current plus next two season IDs,
+cap/roster legality, and provider IR eligibility. Signing and the selected
+destination commit as one contract/ownership/activity transaction. A signed
+player may remain a cap-exempt Prospect, but any normal-roster destination
+that is illegal is rejected and cannot be overridden by an illegal-roster
+confirmation.
+
+Any signing converts the selected unsigned prospect-right asset by attaching a
+fantasy ELC and advancing its ownership version, including when the signed
+player remains in `Prospect`. In the same database transaction, every pending
+trade containing that previously unsigned player as a `prospect_right` is
+changed to cancelled, gets a `proposal_auto_cancelled` trade event and League
+Activity entry, and queues the canonical `trade.changed` publication. This
+does not prevent a new proposal from trading an already-signed fantasy-ELC
+Prospect. The successful signing response returns the affected proposal IDs in
+`automaticallyCancelledTradeIds`.
+
+Decline and unsigned-right release each accept exactly `confirmed: true` and
+`expectedVersion`, require the current manager of the route team, delete only
+that team's current unsigned right, and retain one distinct ownership event
+and one League Activity entry atomically. The same transaction cancels and
+publishes every pending trade containing the released right; the response
+returns those proposal IDs in `automaticallyCancelledTradeIds`. A signed
+`fantasy_elc` Prospect is activated through the existing versioned roster-move
+route. That activation converts the signed `prospect_right` ownership to
+`Rostered` and atomically cancels/publishes pending proposals that still carry
+it as a prospect-right asset. Ordinary moves among `Active`, `Bench`, and
+`Injured Reserve` do not cancel a proposal. `Prospect` is not an accepted
+destination, so activation cannot be reversed back to Prospects.
+
 Transaction-created roster illegality returns a warning in the successful command response. It is not represented as a false failed transaction when the approved feature permits completion.
 
 For a late-legality transition, the roster move may commit while scoring state
@@ -1536,6 +1614,13 @@ Buyout requests require `confirmed: true`, `expectedContractVersion`, and
 ownership, provider injury status, available IR capacity, contract state,
 buyout lock, and pending-trade conflicts before writing.
 
+The target buyout transaction cancels every pending proposal involving the
+player, including a signed player still rostered as `Prospect` whose immutable
+trade snapshot uses `prospect_right`. The current staging command misses that
+compatibility representation and fails atomically with no partial write. This
+is a separate P1 production-promotion follow-up outside the M7-26 isolated-
+staging gate; T-074 remains `PLANNED`.
+
 Normal contract creation occurs only through approved feature commands such as
 automatic FAD allocation, an auction win, prospect signing, or commissioner
 correction. The exact automatic-FAD command and persistence boundary is defined
@@ -1717,14 +1802,46 @@ auction handoff behind the same contract boundary.
 | `POST /api/v1/leagues/:leagueId/trades` | Authorized proposing team manager | Create a proposal with typed assets |
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId` | Authorized participant or commissioner safe view | Read a proposal |
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId/acceptance-preview` | Authorized receiving team manager | Revalidate the current proposal and project acceptance effects without writes |
-| `POST /api/v1/leagues/:leagueId/trades/:tradeId/accept` | Authorized receiving team manager | Revalidate and complete atomically |
+| `POST /api/v1/leagues/:leagueId/trades/:tradeId/accept` | Authorized receiving team manager | Revalidate and either complete atomically or persist the acceptance snapshot that projects Awaiting Commissioner Approval when Future Considerations are present |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/decline` | Authorized receiving team manager | Decline |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/cancel` | Authorized proposing team manager | Cancel |
+| `POST /api/v1/leagues/:leagueId/trades/:tradeId/approve` | Current commissioner or inherited platform administrator | T-148: revalidate and atomically complete only a receiver-accepted Future-Considerations proposal awaiting approval |
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId/reversal-preview` | Current commissioner | Preview exact direct-reversal recoverability without writes |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/reverse` | Current commissioner | Reverse atomically only when every asset remains exactly recoverable |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/correction-required` | Current commissioner | Route an unsafe completed trade to explicit correction recovery without moving assets |
 
-Acceptance revalidates ownership, contracts, retention, obligations, picks, rights, deadline, and proposal status inside one transaction.
+Proposal creation accepts standalone Player (contracted Active/Bench/IR or
+prospect right), Draft pick, Buyout obligation, and Future Considerations asset
+types. Requested retention is accepted only within an outgoing contracted
+Player asset. A standalone retention asset is rejected with
+`TRADE_ASSET_TYPE_UNSUPPORTED` on a fresh request. Persisted legacy retention
+rows and proposals remain readable and remain executable or reversible when
+their recorded model/state permits. An exact retry of an already-completed
+proposal-creation idempotency key returns the stored original result before
+fresh-request grammar validation; it performs no new write or revalidation.
+
+`accept` and `approve` require `Idempotency-Key` and an empty request body.
+Acceptance revalidates ownership, contracts, requested retention, obligations,
+picks, rights, deadline, and proposal status inside one transaction. Without
+Future Considerations it returns `TRADE_ACCEPTED` and completes. With Future
+Considerations it writes the durable acceptance snapshot, moves nothing, and
+returns `TRADE_AWAITING_COMMISSIONER_APPROVAL` with presentation status
+`Awaiting Commissioner Approval` while storage status remains `proposed`.
+Exact acceptance replay returns `TRADE_ACCEPTANCE_REPLAYED` without another
+effect.
+
+Approval requires the current commissioner or inherited platform administrator
+and the awaiting-approval projection. It revalidates the current proposal and
+returns `TRADE_APPROVED` after atomic completion;
+`TRADE_APPROVAL_REPLAYED` is the exact idempotent replay. A plain `Pending`
+proposal, missing receiver acceptance, terminal state, stale asset, or expired
+deadline fails without moving any asset. Commissioner authority alone grants no
+proposal, receiver-response, or cancellation write.
+
+No counter endpoint or atomic counter service exists in M7-26. A receiver may
+reject and later create an independent reversed-role proposal only when they
+hold proposing-team manager authority; documentation and clients must not
+present that sequence as atomic countering.
 
 For every transferred player or prospect right, that transaction closes the
 source ownership tenure, creates a distinct destination ownership at version
@@ -2088,13 +2205,28 @@ POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corre
 Content-Type: application/json
 ```
 
-A read-only preview accepts exactly:
+A read-only preview accepts either the legacy compatibility body:
 
 ```json
 {
   "confirmed": false
 }
 ```
+
+or the normal contextual body:
+
+```json
+{
+  "confirmed": false,
+  "homeScoreHundredths": 450,
+  "awayScoreHundredths": 375,
+  "reason": "Approved official scoring correction"
+}
+```
+
+The two score fields are required together in the contextual form and `reason`
+is optional under the same validation as apply. The legacy body remains
+supported for compatibility; the contextual body is the normal UI contract.
 
 It requires neither `If-Match` nor `Idempotency-Key`, performs no write, and
 returns `200` with exactly:
@@ -2110,7 +2242,25 @@ preview.currentVersion.versionNumber
 preview.currentVersion.homeScoreHundredths
 preview.currentVersion.awayScoreHundredths
 preview.currentVersion.outcome
+preview.week.id
+preview.week.sequence
+preview.week.startsAtMs
+preview.week.endsAtMs
+preview.matchup.id
+preview.matchup.homeTeam.id
+preview.matchup.homeTeam.name
+preview.matchup.awayTeam.id
+preview.matchup.awayTeam.name
+preview.proposedVersion.homeScoreHundredths
+preview.proposedVersion.awayScoreHundredths
+preview.proposedVersion.outcome
+preview.standingsImpact.currentRows
+preview.standingsImpact.projectedRows
+preview.standingsImpact.changedTeamIds
 ```
+
+The contextual fields are returned for the contextual form; legacy callers keep
+their compatible base preview. Preview performs no rebuild and no write.
 
 An apply command requires:
 
@@ -2177,7 +2327,8 @@ League Activity state unchanged.
 `T-098` remains an explicit commissioner recovery command for non-final
 derived standings. It may preserve and replace derived snapshot versions, but
 it never creates, promotes, supersedes, or replaces the canonical final
-snapshot and never makes a season rollover-ready.
+snapshot and never makes a season rollover-ready. T-098 is absent from the
+normal commissioner UI; contextual T-097 correction is the normal workflow.
 
 Before T-145 succeeds, `T-097` appends an approved result version and current
 read-derived standings use it normally. After a canonical final snapshot
@@ -2402,8 +2553,8 @@ defined by `docs/04-technical-specs/FREE_AGENT_DRAFT.md`.
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/readiness/retries` | Current commissioner or inherited platform administrator with active league membership | Idempotently retry the same blocked automatic-readiness occurrence without opening parameters |
 | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId` | League member | Read viewer-filtered overview |
 | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/private` | Team manager or exact active help authority | Read one authorized private card |
-| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | League member after publication | List published card summaries |
-| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | League member after publication | Read one immutable published card |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | League member after publication | Legacy compatibility read returning viewer-filtered selected-team result summaries; never expose the complete audit cards |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | League member after publication | Legacy compatibility read of one viewer-filtered selected-team result; normal UI redirects this deep link to results |
 | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/eligible-players` | Authorized private editor | Search server-confirmed candidates for one slot |
 | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId` | Authorized private editor | Atomically save the complete 22-slot Candidate Card draft |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/revision-previews` | Authorized private editor | Preview one revision without writes |
@@ -2412,32 +2563,42 @@ defined by `docs/04-technical-specs/FREE_AGENT_DRAFT.md`.
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Authorized private editor | Move one candidate or compatible carryover projection |
 | `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Authorized private editor | Remove one candidate |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Team manager during the adaptive help window | Grant exact-card commissioner help |
-| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication | Read paginated allocation results |
+| `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication | Read paginated viewer-filtered selected-team results |
 | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner | Read safe FAD operational state |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner | Retry one allowlisted idempotent operation |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner | Preview deterministic atomic repair without writes |
 | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner | Apply confirmed deterministic repair |
 
-Published FAD reads expose only durable results. During the allocation window,
-T-140 returns each persisted `pending` allocation with null decision, winner,
-restricted, fallback, recovery, and resolution fields, an empty draw list, and
-its immutable snapshot offers using `rank = null` and
-`outcomeCode = pending`. T-132 candidate-slot outcomes remain null until a
+Published FAD reads expose only durable viewer-filtered results. Every active
+member receives requested-player identity and final `Signed`, `Not won`, or
+`Tied` status for the selected team. Amount, AAV, term, calculated total,
+requested position, ranked-offer money, winner money, and restricted
+original-minimum values are populated only for the current manager of that
+selected team; otherwise those fields are `null` or the collection is omitted
+under the exact DTO. Commissioner or platform-administrator authority alone
+does not reveal them.
+
+During the allocation window, T-140 returns each persisted `pending` allocation
+with null decision, winner, restricted, fallback, recovery, and resolution
+fields and an empty draw list. Any retained snapshot-offer structure is still
+viewer-filtered and uses `rank = null` and `outcomeCode = pending`; it never
+reveals unauthorized money. T-132 candidate-slot outcomes remain null until a
 durable allocation event exists. A published winner's `snapshotEntryId` is
 nullable only for a league-wide fallback winner that did not originate from a
 Candidate snapshot. T-140 draw `auctionType` is exactly `fad_restricted` or
 `fad_open_rapid`.
 
 Literal `navigation` and `readiness` route families register before `:fadId`.
-Private and published card reads are separate resources and must never share a
-frontend cache key.
+Private-card reads and legacy viewer-filtered post-publication result reads are
+separate resources and must never share a frontend cache key.
 
 T-126 accepts no query or exactly the complete
 `rosterSeasonId`/`rosterTeamId` pair. T-127 accepts exactly `seasonId`; T-129
 accepts no query. Unknown, partial, duplicate, or malformed query shapes are
 `400` before repository access. Every league-scoped FAD route requires active
-membership; platform role without active membership grants no inherited
-commissioner access.
+membership. An active platform administrator uses the guaranteed protected
+active `member` membership; missing membership is invariant corruption and
+grants no inherited access until reconciled.
 
 T-130, T-134 through T-139, and T-146 accept no query. T-133 accepts only required
 `slotKey` plus optional `q`, `cursor`, and `limit`. Search text collapses
@@ -2814,16 +2975,19 @@ checkpoint. Trigger-only migration
 `29,571` bytes, `748` lines, and lowercase SHA-256
 `5109baabaeed39e06498c7c26274a41a48edfbbdee958e7dd6b278021a29ebc6`,
 reconciles the setup-exemption Activity, exact commissioner notification, and
-three required publications. Schema `49` is current locally with the same
+three required publications. At that FAD-14 local checkpoint, schema `49` had
 `131` application tables, `132` including `schema_migrations`, and `131`
-repository-catalog entries. None of migrations `0023` through `0049` has
-reached shared staging or production.
+repository-catalog entries. At that checkpoint none of migrations `0023`
+through `0049` had reached shared staging or production; these values are
+historical evidence rather than the current shared-tree inventory.
 
 T-129 always returns `managedCards`, `commissionerCards`, and
 `queuedNominations`; an unauthorized array is empty. Before publication a
 caller without commissioner authority receives numeric `participatingTeams`
-and null for every other league-wide count. `viewPublishedCards` is allowed
-only after publication and otherwise uses `PHASE_CLOSED`. `viewRecovery`
+and null for every other league-wide count. `viewPublishedCards` is a retained
+compatibility capability name for the viewer-filtered selected-team result; it
+is allowed only after publication and otherwise uses `PHASE_CLOSED`.
+`viewRecovery`
 requires current commissioner authority and otherwise uses `NOT_AUTHORIZED`.
 `completeRecoveryAction` checks authority first, then requires one exact
 actionable recovery, using `NOT_AUTHORIZED` or `RECOVERY_NOT_AVAILABLE`
@@ -2946,6 +3110,16 @@ failed, cancelled, or todo, and two intentional Windows link-capability skips
 `30m03.603s`. No FAD frontend or shared environment changed; migrations `0023`
 through `0049` remain local only.
 
+As of the active M7-26 shared tree on `2026-08-20`, the local target is schema
+`54` with `54` migration files, `133` application tables and repository-catalog
+entries, and `134` physical tables including `schema_migrations`. The composed
+runtime inventory is `123` routes. The conceptual endpoint catalogue becomes
+`148` entries after T-147 notification batch acknowledgement and T-148 trade
+approval; conceptual catalogue count and composed runtime-route count are
+different measures. This records current local inventory only. It does not
+claim a final full-suite pass, shared-staging migration/deployment, or production
+change.
+
 T-130 remains privately readable after the deadline while publication is
 pending, but returns phase `deadline_processing`, visibility
 `private_read_only`, and denied mutation capabilities. During that interval,
@@ -2982,11 +3156,29 @@ server-owned schedule recovery and the completion marker commit together.
 |---|---|---|
 | `GET /api/v1/leagues/:leagueId/activity` | League member | Cursor-paginated approved League Activity |
 | `GET /api/v1/leagues/:leagueId/security-audit` | League member | Cursor-paginated approved league-scoped login and security events |
-| `GET /api/v1/notifications` | Authenticated | List the caller's in-app notifications |
-| `POST /api/v1/notifications/:notificationId/read` | Notification owner | Mark one notification read |
-| `POST /api/v1/notifications/read-all` | Authenticated | Mark the caller's current notifications read |
+| `GET /api/v1/notifications` | Authenticated | Read-only cursor page for the caller using `cursor`, `limit`, and `readStatus=all|read|unread` |
+| `POST /api/v1/notifications/read-batch` | Authenticated notification owner | T-147: transactionally and idempotently mark exactly 1–100 unique caller-owned notification IDs read |
+| `POST /api/v1/notifications/:notificationId/read` | Notification owner | Legacy compatibility command to mark one notification read |
+| `POST /api/v1/notifications/read-all` | Authenticated | Legacy compatibility command to mark the caller's current notifications read |
 
-Listing notifications is read-only.
+Listing notifications is read-only. `readStatus` defaults to compatibility
+value `all`; normal UI requests `unread` or `read` explicitly.
+
+T-147 accepts exactly:
+
+```json
+{
+  "notificationIds": ["notification-id-1", "notification-id-2"]
+}
+```
+
+The array contains 1–100 unique stable IDs. The repository validates ownership
+of the complete set before updating any row; a missing or foreign ID rejects and
+rolls back the whole batch. Success returns `NOTIFICATIONS_READ`,
+`changedCount`, `readAtMs`, and the exact `notificationIds`. Exact replay is
+idempotent and may return `changedCount: 0`. The frontend sends one batch only
+after successfully rendering its captured unread page and keeps that rendered
+batch visible for the mounted visit even if acknowledgement fails.
 
 Creating a pending trade proposal writes the proposal, proposal history,
 outbox evidence, and one `trade_proposal_received` in-app notification for

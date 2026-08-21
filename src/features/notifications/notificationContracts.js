@@ -65,7 +65,7 @@ export const FREE_AGENT_DRAFT_NOTIFICATION_LIST_COPY = Object.freeze({
     "Candidate Cards are locked and results are available.",
   fad_automatic_result: "Your Candidate Card results are available.",
   fad_restricted_eligible:
-    "You are eligible to bid in a restricted FAD auction.",
+    "You are eligible to bid in a restricted Free Agent Draft auction.",
   fad_restricted_fallback_opened:
     "A league-wide Free Agent Draft fallback auction is open.",
   fad_rapid_auction_result: "A Free Agent Draft auction has finished.",

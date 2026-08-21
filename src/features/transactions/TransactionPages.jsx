@@ -8,8 +8,10 @@ import {
 } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 import {
   EmptyBlock,
+  ErrorBlock,
   LoadingBlock,
   PageHeading,
   StatusBadge,
@@ -27,10 +29,12 @@ import {
   auctionDollarsToCents,
   buildTradeAsset,
   centsToDollarInput,
+  dollarsToCents,
 } from "./transactionContracts.js";
 import {
   acceptTrade,
   activityQuery,
+  approveTrade,
   auctionsQuery,
   cancelTrade,
   createTrade,
@@ -49,24 +53,16 @@ import { TradeBlockPanel } from "./TradeBlockPanel.jsx";
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
 const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" };
 const input = { padding: 8, borderRadius: 6, border: "1px solid #475569", minWidth: 170 };
-const activityDetails = { display: "grid", gap: 5, margin: 0 };
-const activityDetailRow = {
-  display: "grid",
-  gridTemplateColumns: "minmax(7rem, auto) minmax(0, 1fr)",
-  gap: 8,
-};
-const activityDetailTerm = { fontWeight: 700 };
-const activityDetailValue = { margin: 0, overflowWrap: "anywhere" };
 const ACTIVITY_STATE_FIELDS = Object.freeze([
-  ["ownershipKind", "Ownership"],
-  ["rosterCategory", "Roster category"],
-  ["positionGroup", "Position"],
-  ["slotNumber", "Slot"],
-  ["contractType", "Contract type"],
-  ["originalTotalValueCents", "Total value"],
-  ["originalTermYears", "Term"],
-  ["aavCents", "AAV"],
-  ["status", "Status"],
+  "ownershipKind",
+  "rosterCategory",
+  "positionGroup",
+  "slotNumber",
+  "contractType",
+  "originalTotalValueCents",
+  "originalTermYears",
+  "aavCents",
+  "status",
 ]);
 
 function key(prefix) {
@@ -116,34 +112,29 @@ function activityStateSummary(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
-  const details = ACTIVITY_STATE_FIELDS.flatMap(([field, label]) => {
+  const details = ACTIVITY_STATE_FIELDS.flatMap((field) => {
     if (!Object.hasOwn(value, field)) return [];
     const display = activityStateValue(field, value[field]);
-    return display === null ? [] : [`${label}: ${display}`];
+    if (display === null) return [];
+    if (field === "slotNumber") return [`Slot ${display}`];
+    if (field === "originalTermYears") {
+      return [`${display} ${display === "1" ? "year" : "years"}`];
+    }
+    if (field === "originalTotalValueCents") return [`${display} total`];
+    if (field === "aavCents") return [`${display} AAV`];
+    return [activityWords(display)];
   });
   return details.length > 0 ? details.join(" · ") : null;
 }
 
-function activityMetadataRows(metadata) {
+function activityChangeSummary(metadata) {
   if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return [];
-  }
-  const rows = [];
-  if (typeof metadata.correctionId === "string") {
-    rows.push(["Correction ID", metadata.correctionId]);
+    return null;
   }
   const before = activityStateSummary(metadata.before);
-  if (before) rows.push(["Before", before]);
-  const result = activityStateSummary(metadata.after || metadata.authoritative);
-  if (result) rows.push(["Result", result]);
-  if (Array.isArray(metadata.warnings) && metadata.warnings.length > 0) {
-    const warnings = metadata.warnings
-      .map((warning) => warning?.code)
-      .filter((code) => typeof code === "string")
-      .map(activityWords);
-    if (warnings.length > 0) rows.push(["Warnings", warnings.join(", ")]);
-  }
-  return rows;
+  const after = activityStateSummary(metadata.after || metadata.authoritative);
+  if (before && after) return `${before} → ${after}`;
+  return after || before;
 }
 
 const ACTIVITY_FILTERS = Object.freeze([
@@ -168,7 +159,13 @@ function activityCategory(type) {
   if (value.includes("team") || value.includes("roster") || value.includes("ownership")) {
     return "team";
   }
-  if (value.includes("matchup") || value.includes("standings") || value.includes("draft")) {
+  if (
+    value.includes("matchup") ||
+    value.includes("standings") ||
+    value.includes("draft") ||
+    value.startsWith("fad_") ||
+    value.startsWith("fad.")
+  ) {
     return "competition";
   }
   return "other";
@@ -180,7 +177,47 @@ function namedTeam(teamNames, teamId, fallback = "A team") {
 
 function activityTitle(item, teamNames) {
   const metadata = item.metadata || {};
-  if (activityCategory(item.type) !== "trade") return item.summary;
+  const category = activityCategory(item.type);
+  const playerName =
+    item.player?.name ||
+    metadata.player?.name ||
+    metadata.player?.fullName ||
+    metadata.playerName ||
+    null;
+  const itemTeamName =
+    item.team?.name || namedTeam(teamNames, item.teamId, null);
+  if (
+    category !== "commissioner" &&
+    [
+      "auction_player_acquired",
+      "contract_created",
+      "fad_allocation_player_acquired",
+      "fantasy_elc_created",
+      "fantasy_elc_signed",
+    ].includes(item.type) &&
+    playerName &&
+    itemTeamName
+  ) {
+    return `${playerName} signed with ${itemTeamName}.`;
+  }
+  if (category === "buyout" && playerName && itemTeamName) {
+    return `${itemTeamName} bought out ${playerName}.`;
+  }
+  if (category === "commissioner" && playerName) {
+    if (item.type === "commissioner_player_added") {
+      return `Commissioner added ${playerName} to ${itemTeamName || "a team"}.`;
+    }
+    if (item.type === "commissioner_player_removed") {
+      return `Commissioner removed ${playerName} from ${itemTeamName || "a team"}.`;
+    }
+    if (item.type === "commissioner_roster_corrected") {
+      return `Commissioner corrected ${playerName}’s roster assignment.`;
+    }
+    if (item.type === "commissioner_contract_corrected") {
+      return `Commissioner corrected ${playerName}’s contract.`;
+    }
+  }
+  if (category !== "trade") return item.summary;
   const proposing = namedTeam(teamNames, metadata.proposingTeamId, "The proposing team");
   const receiving = namedTeam(teamNames, metadata.receivingTeamId, "the receiving team");
   switch (item.type) {
@@ -191,7 +228,11 @@ function activityTitle(item, teamNames) {
     case "trade_proposal_cancelled":
       return `${proposing} cancelled its trade proposal to ${receiving}.`;
     case "trade_completed":
-      return `${receiving} accepted a trade from ${proposing}.`;
+      return `${proposing} and ${receiving} made a trade.`;
+    case "trade_awaiting_commissioner_approval":
+      return `${proposing} and ${receiving} agreed to a trade. Commissioner approval is required.`;
+    case "trade_proposal_automatically_cancelled":
+      return `A conflicting trade proposal between ${proposing} and ${receiving} was cancelled.`;
     case "trade_proposal_expired":
       return `The trade proposal from ${proposing} to ${receiving} expired.`;
     default:
@@ -199,12 +240,23 @@ function activityTitle(item, teamNames) {
   }
 }
 
-function activityAssetMovements(item, teamNames) {
+function activitySource(item) {
+  const type = String(item.type || "").toLowerCase();
+  if (type.includes("free_agent_draft") || type.startsWith("fad_")) {
+    return "Via Free Agent Draft";
+  }
+  if (item.actor?.displayName) return `By ${item.actor.displayName}`;
+  if (item.actor?.authority === "system") return "League automation";
+  return "League update";
+}
+
+function activityTradeReceipts(item, teamNames) {
   if (activityCategory(item.type) !== "trade" || !Array.isArray(item.metadata?.assets)) {
     return [];
   }
-  return item.metadata.assets.flatMap((asset) => {
-    if (!asset || typeof asset !== "object") return [];
+  const receipts = new Map();
+  for (const asset of item.metadata.assets) {
+    if (!asset || typeof asset !== "object") continue;
     const snapshot = asset.executionSnapshot || asset.snapshot || asset.proposalSnapshot || {};
     const type = asset.assetType || asset.type || "asset";
     const playerName = snapshot.player?.name || snapshot.player?.fullName || null;
@@ -214,46 +266,53 @@ function activityAssetMovements(item, teamNames) {
         : type.includes("future_consideration")
           ? "Future Considerations"
           : activityWords(type));
-    const source = namedTeam(teamNames, asset.sourceTeamId, "one team");
-    const destination = namedTeam(teamNames, asset.destinationTeamId, "another team");
-    return [`${title} moved from ${source} to ${destination}.`];
-  });
+    const destination = namedTeam(
+      teamNames,
+      asset.destinationTeamId,
+      "Receiving team"
+    );
+    if (!receipts.has(destination)) receipts.set(destination, []);
+    receipts.get(destination).push(title);
+  }
+  return [...receipts.entries()].map(([teamName, assets]) => ({
+    teamName,
+    assets,
+  }));
 }
 
 function ActivityEntry({ item, teamNames }) {
-  const teamName = namedTeam(teamNames, item.teamId, null);
   const category = activityCategory(item.type);
-  const assets = activityAssetMovements(item, teamNames);
-  const rows = [
-    ...(teamName ? [["Team", teamName]] : []),
-    ...activityMetadataRows(item.metadata).filter(
-      ([label]) => label !== "Correction ID"
-    ),
-    ...(item.reason ? [["Reason", item.reason]] : []),
-  ];
+  const receipts = activityTradeReceipts(item, teamNames);
+  const teamName = item.team?.name || namedTeam(teamNames, item.teamId, null);
+  const playerName = item.player?.name || null;
+  const change = activityChangeSummary(item.metadata);
+  const subject = [playerName, teamName].filter(Boolean).join(" · ");
   return (
     <li className={`hl-activity-entry hl-activity-entry--${category}`}>
       <span aria-hidden="true" />
       <div>
         <strong>{activityTitle(item, teamNames)}</strong>
-        <time
-          className="hl-activity-time"
-          dateTime={new Date(item.occurredAtMs).toISOString()}
-        >
-          {time(item.occurredAtMs)}
-        </time>
-        {rows.length > 0 && <dl style={activityDetails}>
-          {rows.map(([label, value]) => (
-            <div key={label} style={activityDetailRow}>
-              <dt style={activityDetailTerm}>{label}</dt>
-              <dd style={activityDetailValue}>{value}</dd>
-            </div>
-          ))}
-        </dl>}
-        {assets.length > 0 && (
+        <span className="hl-activity-context">
+          {activitySource(item)} <span aria-hidden="true">·</span>{" "}
+          <time
+            className="hl-activity-time"
+            dateTime={new Date(item.occurredAtMs).toISOString()}
+          >
+            {time(item.occurredAtMs)}
+          </time>
+        </span>
+        {subject && category !== "trade" && (
+          <span className="hl-activity-subject">{subject}</span>
+        )}
+        {change && <p className="hl-activity-change">{change}</p>}
+        {item.reason && <p className="hl-activity-reason">{item.reason}</p>}
+        {receipts.length > 0 && (
           <div className="hl-activity-assets">
-            <span>Assets moved</span>
-            <ul>{assets.map((asset) => <li key={asset}>{asset}</li>)}</ul>
+            {receipts.map(({ teamName: recipient, assets }) => (
+              <p key={recipient}>
+                <strong>{recipient} receives:</strong> {assets.join(", ")}
+              </p>
+            ))}
           </div>
         )}
       </div>
@@ -263,12 +322,7 @@ function ActivityEntry({ item, teamNames }) {
 
 function ErrorMessage({ error }) {
   if (!error) return null;
-  return (
-    <div role="alert">
-      <p>{error.message || "The request could not be completed."}</p>
-      {error.requestId && <p>Request ID: {error.requestId}</p>}
-    </div>
-  );
+  return <ErrorBlock error={error} />;
 }
 
 function useLeagueContext(leagueId) {
@@ -287,7 +341,20 @@ function useLeagueContext(leagueId) {
     if (league?.membership.permissionCategory === "commissioner") return teams.data;
     return teams.data.filter((team) => team.currentManager?.userId === session.user.id);
   }, [league, session.user, teams.data]);
-  return { session, leagues, league, teams, managedTeams };
+  const managerControlledTeams = useMemo(() => {
+    if (!teams.data || !session.user) return [];
+    return teams.data.filter(
+      (team) => team.currentManager?.userId === session.user.id
+    );
+  }, [session.user, teams.data]);
+  return {
+    session,
+    leagues,
+    league,
+    teams,
+    managedTeams,
+    managerControlledTeams,
+  };
 }
 
 function LeaguePageState({ context, title, children }) {
@@ -306,15 +373,6 @@ function LeaguePageState({ context, title, children }) {
       <PageHeading
         eyebrow={context.league.name}
         title={title}
-        description={
-          title === "Auctions"
-            ? "Sealed free-agent bidding with server-enforced eligibility and timing."
-            : title === "Trades"
-              ? "Propose and review typed-asset trades."
-              : title === "League Activity"
-                ? "Authoritative transaction and roster history."
-                : "Review the proposal, its assets, and authoritative status history."
-        }
       />
       {children}
     </main>
@@ -481,7 +539,12 @@ function StartAuctionForm({ context, leagueId }) {
               {players.isPending ? (
                 <span role="status">Searching available players…</span>
               ) : players.isError ? (
-                <span role="alert">{players.error.message}</span>
+                <ErrorBlock
+                  error={players.error}
+                  fallback="Available players could not be searched."
+                  impact="You cannot select a player for this auction yet."
+                  recovery="Check the player name and try again."
+                />
               ) : suggestions.length === 0 ? (
                 <span>No available players match that name.</span>
               ) : suggestions.map((player) => (
@@ -663,7 +726,7 @@ export function AuctionsPage() {
             <p>Closes {time(auction.bidClosesAtMs)} · {auction.participantCount} participating team(s)</p>
             <p>Participants: {auction.participants.map(({ teamName }) => teamName).join(", ")}</p>
             {auction.ownBid ? (
-              <p>Your sealed bid: {money(auction.ownBid.totalValueCents)} over {auction.ownBid.termYears} year(s), AAV {money(auction.ownBid.aavCents)}. Manager edits remaining: {auction.ownBid.remainingManagerEdits ?? "refetch required"}. Cooldown ends {auction.ownBid.cooldownEndsAtMs === undefined ? "after the server-enforced interval" : time(auction.ownBid.cooldownEndsAtMs)}.</p>
+              <p>Your sealed bid: {money(auction.ownBid.totalValueCents)} over {auction.ownBid.termYears} year(s), AAV {money(auction.ownBid.aavCents)}. Manager edits remaining: {auction.ownBid.remainingManagerEdits ?? "refresh to update"}. Cooldown ends {auction.ownBid.cooldownEndsAtMs === undefined ? "after the required waiting period" : time(auction.ownBid.cooldownEndsAtMs)}.</p>
             ) : <p>You have no bid in this auction.</p>}
             <OwnBidForm auction={auction} managedTeams={context.managedTeams} client={context.session.httpClient} leagueId={leagueId} />
           </article>
@@ -674,29 +737,44 @@ export function AuctionsPage() {
 }
 
 const ASSET_TYPES = [
-  ["contract", "Contract"],
-  ["prospect_right", "Prospect"],
+  ["player", "Player"],
   ["draft_pick", "Draft pick"],
   ["buyout_obligation", "Buyout obligation"],
-  ["retention", "Retention"],
-  ["future_considerations", "Future Considerations"],
+  ["future_considerations", "Future considerations"],
 ];
+
+function playerAssetReference(type, reference) {
+  return `${type}:${reference}`;
+}
+
+function selectedPlayerAsset(reference) {
+  const separator = String(reference || "").indexOf(":");
+  if (separator < 1) return null;
+  const type = reference.slice(0, separator);
+  const id = reference.slice(separator + 1);
+  return ["contract", "prospect_right"].includes(type) && id
+    ? { type, id }
+    : null;
+}
 
 function assetChoices(asset, workspace) {
   if (!workspace) return [];
   switch (asset.type) {
-    case "contract":
-      return workspace.tradeAssets.contracts;
-    case "prospect_right":
-      return workspace.tradeAssets.prospects;
+    case "player":
+      return [
+        ...workspace.tradeAssets.contracts.map((choice) => ({
+          ...choice,
+          id: playerAssetReference("contract", choice.id),
+        })),
+        ...workspace.tradeAssets.prospects.map((choice) => ({
+          ...choice,
+          id: playerAssetReference("prospect_right", choice.id),
+        })),
+      ];
     case "draft_pick":
       return workspace.tradeAssets.draftPicks;
     case "buyout_obligation":
       return workspace.tradeAssets.buyouts;
-    case "retention":
-      return asset.mode === "requested"
-        ? workspace.tradeAssets.contracts
-        : workspace.tradeAssets.retentions;
     case "future_considerations":
       return [];
     default:
@@ -728,10 +806,7 @@ function AssetEditor({
               update(index, {
                 type: event.target.value,
                 reference: "",
-                mode:
-                  event.target.value === "retention"
-                    ? "existing"
-                    : event.target.value === "future_considerations"
+                mode: event.target.value === "future_considerations"
                       ? "new"
                       : null,
                 retainedAavDollars: "",
@@ -740,23 +815,6 @@ function AssetEditor({
           >
             {ASSET_TYPES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
           </select>
-          {asset.type === "retention" && (
-            <select
-              aria-label={`${label} asset ${index + 1} retention kind`}
-              style={input}
-              value={asset.mode || "existing"}
-              onChange={(event) =>
-                update(index, {
-                  mode: event.target.value,
-                  reference: "",
-                  retainedAavDollars: "",
-                })
-              }
-            >
-              <option value="existing">Existing retention obligation</option>
-              <option value="requested">Retain salary on a contract</option>
-            </select>
-          )}
           {asset.type === "future_considerations" ? (
             <input
               aria-label={`${label} asset ${index + 1} notes`}
@@ -801,7 +859,8 @@ function AssetEditor({
               </p>
             ) : null;
           })()}
-          {asset.type === "contract" && asset.reference && (
+          {asset.type === "player" &&
+            selectedPlayerAsset(asset.reference)?.type === "contract" && (
             <>
               <input
                 aria-label={`${label} asset ${index + 1} retained AAV dollars`}
@@ -820,30 +879,10 @@ function AssetEditor({
               <small>Leave blank to trade the contract without retention.</small>
             </>
           )}
-          {asset.type === "retention" && asset.mode === "requested" && (
-            <>
-              <input
-                aria-label={`${label} asset ${index + 1} retained AAV dollars`}
-                style={input}
-                type="number"
-                min="0.01"
-                step="0.01"
-                required
-                placeholder="Retained AAV ($)"
-                value={asset.retainedAavDollars || ""}
-                onChange={(event) =>
-                  update(index, {
-                    retainedAavDollars: event.target.value,
-                  })
-                }
-              />
-              <small>The matching contract is included automatically.</small>
-            </>
-          )}
           {assets.length > 1 && <button className="hl-button hl-button--quiet" type="button" onClick={() => setAssets(assets.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>}
         </div>
       ))}
-      <button className="hl-button hl-button--quiet" type="button" onClick={() => setAssets([...assets, { type: "contract", reference: "" }])}>Add asset</button>
+      <button className="hl-button hl-button--quiet" type="button" onClick={() => setAssets([...assets, { type: "player", reference: "" }])}>Add asset</button>
     </fieldset>
   );
 }
@@ -857,11 +896,19 @@ function NewTradeForm({ context, leagueId }) {
   const requestedSourceTeamId = searchParams.get("sourceTeamId") || "";
   const requestedProposingTeamId =
     searchParams.get("proposingTeamId") || "";
-  const initialAssetType = ASSET_TYPES.some(
-    ([value]) => value === requestedAssetType
+  const requestedPlayerType = ["contract", "prospect_right"].includes(
+    requestedAssetType
   )
     ? requestedAssetType
-    : "contract";
+    : null;
+  const initialAssetType = requestedPlayerType
+    ? "player"
+    : ASSET_TYPES.some(([value]) => value === requestedAssetType)
+      ? requestedAssetType
+      : "player";
+  const initialAssetReference = requestedPlayerType
+    ? playerAssetReference(requestedPlayerType, requestedAssetId)
+    : requestedAssetId;
   const prefillRequestedAsset =
     requestedAssetDirection === "requested" && Boolean(requestedAssetId);
   const [proposingTeamId, setProposingTeamId] = useState(
@@ -872,25 +919,25 @@ function NewTradeForm({ context, leagueId }) {
   );
   const [proposingAssets, setProposingAssets] = useState([
     prefillRequestedAsset
-      ? { type: "contract", reference: "" }
+      ? { type: "player", reference: "" }
       : {
           type: initialAssetType,
-          reference: requestedAssetId,
+          reference: initialAssetReference,
         },
   ]);
   const [receivingAssets, setReceivingAssets] = useState([
     prefillRequestedAsset
       ? {
           type: initialAssetType,
-          reference: requestedAssetId,
+          reference: initialAssetReference,
         }
-      : { type: "contract", reference: "" },
+      : { type: "player", reference: "" },
   ]);
   const [clientError, setClientError] = useState(null);
   const proposer =
-    context.managedTeams.some(({ id }) => id === proposingTeamId)
+    context.managerControlledTeams.some(({ id }) => id === proposingTeamId)
       ? proposingTeamId
-      : context.managedTeams[0]?.id || "";
+      : context.managerControlledTeams[0]?.id || "";
   const receiving =
     context.teams.data?.some(
       ({ id }) => id === receivingTeamId && id !== proposer
@@ -924,12 +971,12 @@ function NewTradeForm({ context, leagueId }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) }),
   });
   if (context.teams.isPending) return <p>Loading trade teams…</p>;
-  if (context.managedTeams.length === 0) return <p>You do not currently control a team that can propose a trade.</p>;
+  if (context.managerControlledTeams.length === 0) return <p>You do not currently control a team that can propose a trade.</p>;
   function buildSide(items) {
     const built = items.flatMap((item) => {
       const asset = buildTradeAsset(item);
       if (
-        item.type !== "contract" ||
+        asset.type !== "contract" ||
         !String(item.retainedAavDollars || "").trim()
       ) {
         return [asset];
@@ -937,9 +984,9 @@ function NewTradeForm({ context, leagueId }) {
       return [
         asset,
         buildTradeAsset({
-          type: "retention",
-          mode: "requested",
-          reference: item.reference,
+          type: "requested_retention",
+          reference: asset.contractId,
+          retainedAavCents: dollarsToCents(item.retainedAavDollars),
           retainedAavDollars: item.retainedAavDollars,
         }),
       ];
@@ -985,14 +1032,14 @@ function NewTradeForm({ context, leagueId }) {
         <label>Proposing team<br /><select style={input} value={proposer} onChange={(e) => {
           setProposingTeamId(e.target.value);
           setReceivingTeamId("");
-          setProposingAssets([{ type: "contract", reference: "" }]);
-          setReceivingAssets([{ type: "contract", reference: "" }]);
+          setProposingAssets([{ type: "player", reference: "" }]);
+          setReceivingAssets([{ type: "player", reference: "" }]);
         }}>
-          {context.managedTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+          {context.managerControlledTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
         </select></label>
         <label>Receiving team<br /><select style={input} value={receiving} onChange={(e) => {
           setReceivingTeamId(e.target.value);
-          setReceivingAssets([{ type: "contract", reference: "" }]);
+          setReceivingAssets([{ type: "player", reference: "" }]);
         }}>
           {context.teams.data.filter(({ id }) => id !== proposer).map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
         </select></label>
@@ -1028,7 +1075,11 @@ export function TradesPage() {
     enabled: context.session.status === "authenticated" && Boolean(context.league),
   });
   const visible = (trades.data || []).filter((trade) =>
-    trade.storageStatus !== "expired" && (status === "all" || trade.storageStatus === "proposed")
+    trade.storageStatus !== "expired" &&
+    (status === "all" ||
+      ["proposed", "awaiting_commissioner_approval"].includes(
+        trade.storageStatus
+      ))
   );
   const managedTeamIds = new Set(
     (context.teams.data || [])
@@ -1053,10 +1104,12 @@ export function TradesPage() {
           const awaitingManagedTeam =
             trade.storageStatus === "proposed" &&
             managedTeamIds.has(trade.receivingTeam.id);
+          const awaitingCommissioner =
+            trade.storageStatus === "awaiting_commissioner_approval";
           return (
             <li
               key={trade.id}
-              className={awaitingManagedTeam ? "is-awaiting-you" : undefined}
+              className={awaitingManagedTeam || awaitingCommissioner ? "is-awaiting-you" : undefined}
             >
               <Link to={routePaths.trade(leagueId, trade.id)}>
                 <span>
@@ -1064,10 +1117,12 @@ export function TradesPage() {
                   <small>
                     {awaitingManagedTeam
                       ? "Awaiting your response"
+                      : awaitingCommissioner
+                        ? "Awaiting commissioner approval"
                       : "Open proposal details"}
                   </small>
                 </span>
-                <StatusBadge tone={awaitingManagedTeam ? "live" : "neutral"}>
+                <StatusBadge tone={awaitingManagedTeam || awaitingCommissioner ? "live" : "neutral"}>
                   {trade.status}
                 </StatusBadge>
               </Link>
@@ -1078,15 +1133,6 @@ export function TradesPage() {
       <p>Expired proposals are preserved in <Link to={routePaths.leagueActivity(leagueId)}>League Activity</Link>.</p>
       <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>
     </LeaguePageState>
-  );
-}
-
-function Snapshot({ value }) {
-  return (
-    <details className="hl-technical-details">
-      <summary>Technical details</summary>
-      <pre className="hl-snapshot">{JSON.stringify(value, null, 2)}</pre>
-    </details>
   );
 }
 
@@ -1214,7 +1260,7 @@ function AcceptancePreview({ preview }) {
       <p>
         {preview.generallyIllegal
           ? "This trade would leave at least one roster generally illegal."
-          : "The authoritative preflight found no general-illegality warning."}
+          : "No roster warning was found during the preview."}
       </p>
       <div className="hl-trade-team-preview">
         {preview.teams.map((team) => (
@@ -1243,7 +1289,11 @@ function tradeHistorySummary(event, proposal) {
     case "proposal_created":
       return `${proposal.proposingTeam.name} sent the proposal to ${proposal.receivingTeam.name}.`;
     case "proposal_accepted":
-      return `${proposal.receivingTeam.name} accepted the proposal.`;
+      return event.metadata?.action === "approve"
+        ? "The commissioner approved and completed the trade."
+        : `${proposal.receivingTeam.name} accepted the proposal.`;
+    case "proposal_accepted_awaiting_commissioner_approval":
+      return `${proposal.receivingTeam.name} accepted the proposal. Commissioner approval is still required.`;
     case "proposal_rejected":
       return `${proposal.receivingTeam.name} declined the proposal.`;
     case "proposal_cancelled":
@@ -1279,15 +1329,22 @@ export function TradeDetailPage() {
     ]);
   };
   const previewAcceptance = useMutation({ mutationFn: () => previewTradeAcceptance(context.session.httpClient, leagueId, tradeId), onSuccess: setAcceptancePreview });
-  const command = useMutation({ mutationFn: ({ action }) => ({ accept: acceptTrade, decline: declineTrade, cancel: cancelTrade }[action])(context.session.httpClient, leagueId, tradeId, key(`trade-${action}`)), onSuccess: refresh });
+  const command = useMutation({ mutationFn: ({ action }) => ({ accept: acceptTrade, approve: approveTrade, decline: declineTrade, cancel: cancelTrade }[action])(context.session.httpClient, leagueId, tradeId, key(`trade-${action}`)), onSuccess: refresh });
   const previewReversal = useMutation({ mutationFn: () => previewTradeReversal(context.session.httpClient, leagueId, tradeId), onSuccess: (data) => setReversalPreview(data.preview) });
   const recovery = useMutation({ mutationFn: (action) => recoverTrade(context.session.httpClient, leagueId, tradeId, action, key(`trade-${action}`)), onSuccess: refresh });
   const proposal = trade.data;
-  const commissioner = context.league?.membership.permissionCategory === "commissioner";
-  const managedIds = new Set(context.managedTeams.map(({ id }) => id));
+  const commissioner = hasCommissionerAuthority(context.league?.membership);
+  const managedIds = new Set(
+    context.managerControlledTeams.map(({ id }) => id)
+  );
   const pending = proposal?.storageStatus === "proposed";
-  const canRespond = pending && (commissioner || managedIds.has(proposal.receivingTeam.id));
-  const canCancel = pending && (commissioner || managedIds.has(proposal.proposingTeam.id));
+  const awaitingCommissionerApproval =
+    proposal?.storageStatus === "awaiting_commissioner_approval";
+  const canRespond = pending && managedIds.has(proposal.receivingTeam.id);
+  const canApprove = awaitingCommissionerApproval && commissioner;
+  const canCancel =
+    (pending || awaitingCommissionerApproval) &&
+    managedIds.has(proposal.proposingTeam.id);
   const openAcceptancePreview = searchParams.get("preview") === "acceptance";
   const requestAcceptancePreview = previewAcceptance.mutate;
   useEffect(() => {
@@ -1316,6 +1373,12 @@ export function TradeDetailPage() {
       {trade.isPending ? <Surface><LoadingBlock>Loading trade…</LoadingBlock></Surface> : trade.isError ? <ErrorMessage error={trade.error} /> : <Surface className="hl-trade-detail">
         <h2>{proposal.proposingTeam.name} ↔ {proposal.receivingTeam.name}</h2>
         <p><StatusBadge>{proposal.status}</StatusBadge> Created {time(proposal.createdAtMs)}.</p>
+        {awaitingCommissionerApproval && (
+          <p className="hl-form-message is-warning" role="status">
+            The receiving team accepted this proposal. No assets move until a
+            commissioner reviews and approves it.
+          </p>
+        )}
         <div className="hl-trade-team-grid">
           <TradeTeamPanel
             team={proposal.proposingTeam}
@@ -1340,11 +1403,18 @@ export function TradeDetailPage() {
           {acceptancePreview && <div><AcceptancePreview preview={acceptancePreview} /><button className="hl-button hl-button--primary" disabled={command.isPending} onClick={() => command.mutate({ action: "accept" })}>Confirm and accept trade</button></div>}
           <ErrorMessage error={previewAcceptance.error || command.error} />
         </div>}
+        {canApprove && <div className="hl-trade-action">
+          <h3>Commissioner approval</h3>
+          <p>Review the current roster and cap impact before completing this trade.</p>
+          <button className="hl-button hl-button--primary" disabled={previewAcceptance.isPending} onClick={() => previewAcceptance.mutate()}>Preview commissioner approval</button>
+          {acceptancePreview && <div><AcceptancePreview preview={acceptancePreview} /><button className="hl-button hl-button--primary" disabled={command.isPending} onClick={() => command.mutate({ action: "approve" })}>Approve and complete trade</button></div>}
+          <ErrorMessage error={previewAcceptance.error || command.error} />
+        </div>}
         {canCancel && <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "cancel" })}>Cancel proposal</button>}
         {commissioner && proposal.storageStatus === "completed" && <div className="hl-trade-action">
           <h3>Commissioner recovery</h3>
           <button className="hl-button hl-button--quiet" disabled={previewReversal.isPending} onClick={() => previewReversal.mutate()}>Preview exact reversal</button>
-          {reversalPreview && <div><p>{reversalPreview.recoverable ? "Every affected asset remains exactly recoverable." : "Direct reversal is unsafe; no asset has moved."}</p><Snapshot value={reversalPreview.mismatches} />{reversalPreview.recoverable ? <button className="hl-button hl-button--primary" disabled={recovery.isPending} onClick={() => recovery.mutate("reverse")}>Confirm exact reversal</button> : <button className="hl-button hl-button--primary" disabled={recovery.isPending} onClick={() => recovery.mutate("correction-required")}>Confirm correction required</button>}</div>}
+          {reversalPreview && <div><p>{reversalPreview.recoverable ? "Every affected asset can be safely restored." : `${reversalPreview.mismatches.length} asset change${reversalPreview.mismatches.length === 1 ? "" : "s"} prevent an automatic reversal. Mark this trade for commissioner correction instead.`}</p>{reversalPreview.recoverable ? <button className="hl-button hl-button--primary" disabled={recovery.isPending} onClick={() => recovery.mutate("reverse")}>Confirm exact reversal</button> : <button className="hl-button hl-button--primary" disabled={recovery.isPending} onClick={() => recovery.mutate("correction-required")}>Confirm correction required</button>}</div>}
           <ErrorMessage error={previewReversal.error || recovery.error} />
         </div>}
         <h3>Status history</h3>
@@ -1366,14 +1436,16 @@ export function ActivityPage() {
   const [cursor, setCursor] = useState(null);
   const [eventFilter, setEventFilter] = useState("all");
   const activity = useQuery({
-    ...activityQuery(context.session.httpClient, leagueId, cursor),
+    ...activityQuery(
+      context.session.httpClient,
+      leagueId,
+      cursor,
+      eventFilter
+    ),
     enabled: context.session.status === "authenticated" && Boolean(context.league),
   });
   const teamNames = new Map(
     (context.teams.data || []).map((team) => [team.id, team.name])
-  );
-  const visibleActivity = (activity.data?.activity || []).filter(
-    (item) => eventFilter === "all" || activityCategory(item.type) === eventFilter
   );
   return (
     <LeaguePageState context={context} title="League Activity">
@@ -1381,15 +1453,21 @@ export function ActivityPage() {
         <h2 id="activity-filter-title">Filter league events</h2>
         <label className="hl-field">
           Event type
-          <select value={eventFilter} onChange={(event) => setEventFilter(event.target.value)}>
+          <select
+            value={eventFilter}
+            onChange={(event) => {
+              setEventFilter(event.target.value);
+              setCursor(null);
+            }}
+          >
             {ACTIVITY_FILTERS.map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
         </label>
       </Surface>
-      {activity.isPending ? <Surface><LoadingBlock>Loading activity…</LoadingBlock></Surface> : activity.isError ? <ErrorMessage error={activity.error} /> : <>
-        {visibleActivity.length === 0 ? <Surface><EmptyBlock title={activity.data.activity.length === 0 ? "No activity on this page" : "No events match this filter"} /></Surface> : <Surface><ol className="hl-activity-timeline">{visibleActivity.map((item) => <ActivityEntry key={item.id} item={item} teamNames={teamNames} />)}</ol></Surface>}
+      {activity.isPending ? <Surface><LoadingBlock>Loading activity...</LoadingBlock></Surface> : activity.isError ? <ErrorMessage error={activity.error} /> : <>
+        {activity.data.activity.length === 0 ? <Surface><EmptyBlock title={eventFilter === "all" ? "No activity on this page" : "No events match this filter"} /></Surface> : <Surface><ol className="hl-activity-timeline">{activity.data.activity.map((item) => <ActivityEntry key={item.id} item={item} teamNames={teamNames} />)}</ol></Surface>}
         <div className="hl-pagination">
         {activity.data.page.nextCursor && <button className="hl-button hl-button--quiet" onClick={() => setCursor(activity.data.page.nextCursor)}>Next page</button>}
         {cursor && <button className="hl-button hl-button--quiet" onClick={() => setCursor(null)}>First page</button>}

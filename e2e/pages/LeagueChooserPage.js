@@ -11,13 +11,17 @@ export class LeagueChooserPage {
     const destination = `${FRONTEND_ORIGIN}/leagues/${encodeURIComponent(
       league.leagueId
     )}`
-    await this.page.goto('/leagues')
     if (this.page.url() === destination) return
     const link = this.page.getByRole('link', {
       name: league.name,
       exact: true,
     })
-    await expect(link).toBeVisible()
+    await expect
+      .poll(async () =>
+        this.page.url() === destination || (await link.isVisible())
+      )
+      .toBe(true)
+    if (this.page.url() === destination) return
     await link.click()
     await expect(this.page).toHaveURL(destination)
   }

@@ -49,7 +49,7 @@ prints the password.
 
 | Name | Email | State or role | Expected access |
 | --- | --- | --- | --- |
-| Admin | `admin@release-qa.example.test` | Platform administrator | Explicit membership in both Alpha and Beta plus inherited commissioner authority |
+| Admin | `admin@release-qa.example.test` | Platform administrator | Protected active `member` membership in both Alpha and Beta plus inherited commissioner authority |
 | Comm A | `comm.a@release-qa.example.test` | Commissioner | Release QA Alpha League and commissioner tools |
 | Comm B | `comm.b@release-qa.example.test` | Commissioner | Release QA Beta League and commissioner tools |
 | Man A Leag A | `man.a.leag.a@release-qa.example.test` | Manager | Alpha only; manages Alpha Ravens |

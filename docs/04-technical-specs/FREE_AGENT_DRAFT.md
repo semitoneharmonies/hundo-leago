@@ -37,6 +37,17 @@ notification and retain only normal League Activity visibility. The approved
 opening publications and queued-nomination audiences below carry invalidation
 metadata only and never disclose private card or auction content.
 
+On 2026-08-20, Grae approved a result-projection amendment. T-131/T-132/T-140
+retain immutable internal Candidate evidence but must project offer amount and
+term only to a current manager of the selected team. All other active league
+members receive player identity and final Signed/Not won/Tied status only.
+Frontend history routes redirect to the selected-team results route and never
+bypass the service projection. Cache keys must include viewer authority or use
+viewer-private responses so one manager's offer details cannot leak to another
+member after navigation, reconnect, or account change. This supersedes any
+older technical projection that returned every published offer value and term
+to every league member.
+
 On 2026-08-11, Grae clarified that FAD and Entry Draft require only the
 persisted player catalogue, including stable identity, display name, effective
 position, and applicable eligibility/ownership/contract state. Current,
@@ -5147,8 +5158,8 @@ effects.
 | `T-128` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/readiness/retries` | Current commissioner or inherited platform administrator with active league membership; enqueue an idempotent blocked-readiness retry without opening parameters |
 | `T-129` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId` | League member; viewer-filtered overview |
 | `T-130` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/private` | Team manager or active help authority; private current card |
-| `T-131` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | League member after publication; card summaries |
-| `T-132` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | League member after publication; immutable locked card plus current outcomes |
+| `T-131` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | League member after publication; legacy compatibility list of viewer-filtered selected-team result summaries, never complete audit cards |
+| `T-132` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | League member after publication; legacy compatibility selected-team result using the same viewer projection; normal UI redirects to results |
 | `T-133` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/eligible-players` | Authorized private editor; slot-scoped eligible-player search |
 | `T-134` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/revision-previews` | Authorized private editor; read-only proposed revision |
 | `T-135` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/slots/:slotKey/candidate` | Authorized private editor; add candidate |
@@ -5156,7 +5167,7 @@ effects.
 | `T-137` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Authorized private editor; move candidate or compatible carryover projection |
 | `T-138` | `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Authorized private editor; remove candidate |
 | `T-139` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Team manager in adaptive help window; grant scoped help |
-| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication; paginated allocation results |
+| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication; paginated viewer-filtered selected-team results |
 | `T-141` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner; safe read-only operational state |
 | `T-142` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner; retry an allowlisted idempotent operation |
 | `T-143` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner; read-only exact repair preview |
@@ -5170,8 +5181,9 @@ T-126 accepts either no query fields or exactly the complete
 query field. T-129 accepts no query fields. Missing required fields, a partial
 pair, malformed IDs, duplicates, or any unknown query field are `400` before
 repository access. Every league-member authorization in this catalogue means
-current active membership; platform role without active membership grants no
-league-scoped FAD access.
+current active membership. An active platform administrator uses the guaranteed
+protected active `member` membership; a missing row is invariant corruption and
+grants no league-scoped FAD access until reconciled.
 
 T-130 and T-134 through T-139 accept no query fields. T-133 accepts only
 `slotKey`, `q`, `cursor`, and `limit`. `slotKey` is required. `q` collapses
@@ -5404,9 +5416,11 @@ descriptor, or is empty when no link is authorized.
 
 `rosterLinks[]` is therefore keyed by season and team: before publication it
 contains only a manager- or help-authorized `private_card`; after publication
-it may contain the requested `published_card`. Its `mode` is exactly
-`private_card` or `published_card`. The backend returns IDs and mode, never
-frontend URL strings; `routePaths.js` constructs the route.
+it may contain the requested viewer-filtered selected-team result. The legacy
+wire token for that result descriptor remains `published_card` for
+compatibility; it never means the complete card became league-visible. The
+backend returns IDs and mode, never frontend URL strings; `routePaths.js`
+constructs the result route or redirects a legacy deep link.
 
 Every private descriptor includes `authorizationEvidence` with the exact
 manager-assignment or help-request shape defined for the private Candidate Card
@@ -5627,8 +5641,10 @@ persisted incomplete initial or extension rollover remains.
 `cardDescriptor` containing exactly `mode`, season/FAD/team/card IDs, and
 `authorizationEvidence`. Before publication its mode is `private_card` and its
 evidence is exactly `{ kind: "manager_assignment", id:
-managerAssignmentId }`. After publication its mode is `published_card` and its
-evidence is null. A descriptor exists for every currently managed team.
+managerAssignmentId }`. After publication its mode uses the compatibility wire
+token `published_card` and its evidence is null, but the linked resource is a
+viewer-filtered selected-team result rather than the complete Candidate Card. A
+descriptor exists for every currently managed team.
 `viewer` always contains exactly `managedCards`, `commissionerCards`, and
 `queuedNominations` arrays. An array remains present and empty when the caller
 lacks its authority. `viewer.commissionerCards[]` is populated only for the
@@ -5660,8 +5676,10 @@ objects named `viewPublishedCards`, `viewRecovery`, and
 `completeRecoveryAction`. Team-specific rapid-auction capability belongs to the
 auction collection contract, not this global overview.
 
-`viewPublishedCards` is allowed exactly after the immutable deadline
-publication commits and is otherwise denied with `PHASE_CLOSED`.
+`viewPublishedCards` is a retained compatibility capability name for opening
+viewer-filtered selected-team results, not complete cards. It is allowed exactly
+after immutable deadline publication commits and is otherwise denied with
+`PHASE_CLOSED`.
 `viewRecovery` is allowed for the current commissioner or inherited platform
 administrator with active membership and is otherwise denied with
 `NOT_AUTHORIZED`. `completeRecoveryAction` is denied with `NOT_AUTHORIZED`
@@ -5673,8 +5691,11 @@ only when one exact actionable recovery exists and otherwise is denied with
 
 ## Candidate Card Response
 
-Private and historical responses share a safe structural DTO but use different
-paths and cache keys:
+Private responses and the legacy post-publication detail response share a
+structural DTO but use different paths and cache keys. The post-publication path
+is a compatibility projection: it must never expose another team's bid,
+contract, cap, minimum, revision, editor, conflict, intervention, or complete
+card data merely because the deadline passed.
 
 ```text
 leagueId
@@ -5705,7 +5726,7 @@ capabilities
 ```text
 private_editable
 private_read_only
-published_history
+published_history                 compatibility wire value for a filtered result
 ```
 
 `capStatus` is `compliant` or `over_cap`.
@@ -5724,7 +5745,7 @@ beforehand.
 team_manager
 help_grant_commissioner
 help_grant_platform_administrator
-published_league_history
+published_league_history          compatibility wire value for a filtered result
 ```
 
 `authorizationEvidence` is null for `published_league_history`. For a private
@@ -5738,6 +5759,15 @@ id                              stable assignment/help-request ID
 Its kind must agree with `accessReason`. It lets authorization-sensitive query
 cache entries prove the exact persisted assignment or grant that allowed the
 response.
+
+For `published_league_history`, the server projects every selected team's
+player identity and outcome status (`Signed`, `Not won`, or `Tied`) to every
+active league member. Monetary and contract-detail fields are populated only
+when the requested team is currently managed by that caller; otherwise they are
+null or omitted, and collection fields that could reconstruct the card are
+empty. Commissioner or platform-administrator authority alone does not widen
+that projection. Complete locked cards and deterministic draw/audit evidence
+remain protected internal evidence and have no ordinary league-member response.
 
 `showMainNavigation` is true from automatic card opening until the earlier of
 FAD completion or the current competition Week 1 start. It becomes false
@@ -5760,7 +5790,8 @@ expiresAtMs
 ```
 
 The message is visible only through this exact-card private projection. It is
-always null in published history and never appears in commissioner overview.
+always null in the legacy filtered result and never appears in commissioner
+overview.
 
 Each slot includes:
 
@@ -5807,10 +5838,10 @@ Slot discrimination is exact:
 
 Authoritative roster category is null, `Active`, `Bench`, or
 `Injured Reserve`.
-Outcome is null on private responses and uses the shared published-outcome
-shape on history.
+Outcome is null on private responses and uses the viewer-filtered result shape
+on the legacy post-publication projection.
 
-On published history, a candidate slot keeps `outcome = null` while its linked
+On the legacy filtered result, a candidate slot keeps `outcome = null` while its linked
 allocation remains `pending` or before any durable allocation event exists.
 The API does not infer a provisional win, loss, rank, or tie from mutable job
 progress. Once an immutable allocation event exists, the slot uses the shared
@@ -5826,9 +5857,9 @@ Each intervention has exactly `revisionId`, nullable `entryId`, `action`,
 every commissioner or inherited platform-administrator Candidate edit preserved
 by the locked revision history. A later manager edit may change
 `lastEditedBy` on a slot but never erases this attribution.
-`commissionerInterventions[]` is visible before the deadline only through the
-same authorized private-card response and after publication through league
-history. It is otherwise never returned.
+`commissionerInterventions[]` is visible only through the same authorized
+private-card response or protected internal audit evidence. It is empty in the
+ordinary legacy post-publication result.
 
 The T-130 private path remains available after the deadline while publication
 is pending. In that interval it returns phase `deadline_processing`, visibility
@@ -5836,14 +5867,24 @@ is pending. In that interval it returns phase `deadline_processing`, visibility
 return `409 FAD_DEADLINE_PASSED` in that interval. T-139 returns
 `409 FAD_HELP_WINDOW_CLOSED` whenever its adaptive help window is not open.
 After Candidate publication, every private Candidate path returns
-`409 FAD_PHASE_CONFLICT`. History list and detail paths return
+`409 FAD_PHASE_CONFLICT`. Legacy result list and detail paths return
 `409 FAD_CARDS_NOT_PUBLISHED` before the deadline snapshot commits.
 
 ---
 
-## Published Card Summary and Result Responses
+## Viewer-Filtered Candidate Summary and Result Responses
 
-Each `T-131` published card summary contains:
+`T-131`, `T-132`, and `T-140` are authenticated, viewer-sensitive projections.
+Every active league member may see selected-team player identity and outcome
+status after the deadline. Only the current manager of the selected team may
+receive that team's bid, contract, cap, restricted minimum, ranking, draw, or
+other monetary/audit fields. Those fields are null, empty, or omitted for every
+other viewer, including a commissioner or platform administrator who does not
+currently manage that team. Complete Candidate Cards remain protected internal
+audit evidence; these endpoints do not publish them.
+
+Each `T-131` compatibility summary may contain the following structural fields,
+subject to the viewer projection above:
 
 ```text
 leagueId
@@ -5867,7 +5908,10 @@ historyDescriptor
 ```
 
 `allocationExclusionReason` follows the exact Candidate Card rule above.
-`counts` contains `carryovers`, `candidates`, `emptyMandatory`, `emptyBench`,
+For a caller who does not currently manage the selected team,
+`maximumPossibleCapCents`, `carriedCapUsageCents`, `counts`, `outcomeCounts`,
+and `commissionerInterventionCount` are null or omitted. `counts` otherwise
+contains `carryovers`, `candidates`, `emptyMandatory`, `emptyBench`,
 and `conflicts`. `outcomeCounts` contains `automaticWins`,
 `restrictedPending`, `restrictedWins`, `fallbackPending`, `fallbackWins`,
 `fallbackNoWinner`, `losses`, and `invalidOffers`. `historyDescriptor` contains
@@ -5879,7 +5923,7 @@ the URL.
 `data[]`, plus exactly `page.nextCursor`, `page.hasMore`, and
 `meta.requestId`. Ordering is deterministic team name then team ID.
 
-Each `T-140` allocation result contains:
+Each `T-140` allocation-result structure may contain:
 
 ```text
 allocationId
@@ -5896,7 +5940,12 @@ recoveryStatus
 resolvedAtMs
 ```
 
-Each ranked offer contains `snapshotEntryId`, `teamId`, `team`,
+For an ordinary member, each row always exposes the player identity and outcome
+status. `rankedOffers[]`, `winner`, `restricted`, `fallback`, `draws[]`, and
+recovery/audit detail are populated only to the extent authorized for the
+caller's currently managed selected team; another team's monetary, minimum, and
+audit values are null, empty, or omitted. Each authorized ranked offer contains
+`snapshotEntryId`, `teamId`, `team`,
 `slotKey`, `totalValueCents`, `termYears`, `aavCents`, `valid`, nullable
 `validationCode`, nullable integer `rank`, and `outcomeCode`.
 `outcomeCode` is exactly `pending`, `winner`, `lost_lower_total`,
@@ -7091,7 +7140,7 @@ Required roots include:
 ["league", leagueId, "auctions", filters]
 ```
 
-Private and historical cards never share a cache key.
+Private cards and legacy viewer-filtered result routes never share a cache key.
 Auction filters include FAD and source context so ordinary and rapid result
 sets cannot collide in one cache entry.
 
@@ -7100,10 +7149,11 @@ unscoped top bar and both are stable IDs for a roster-scoped read. A scoped
 roster descriptor can therefore never overwrite the unscoped navigation
 response.
 
-`history-cards` is an infinite query. Its cursor is `pageParam`, not part of
-the base key, and it has no filter beyond validated limit. `results` is also an
-infinite query; its base key includes normalized `q`, status, and limit while
-cursor remains `pageParam`.
+`history-cards` is a retained compatibility key for an infinite
+viewer-filtered selected-team result query. Its cursor is `pageParam`, not part
+of the base key, and it has no filter beyond validated limit. `results` is also
+an infinite viewer-sensitive query; its base key includes normalized `q`,
+status, and limit while cursor remains `pageParam`.
 
 Every authenticated FAD query includes this exact TanStack Query metadata
 base:
@@ -7131,10 +7181,13 @@ meta: {
 `help_grant_commissioner`, or
 `help_grant_platform_administrator`. `authorizationEvidence` is the exact
 `{ kind, id }` object returned by the private-card projection and contains the
-stable team-manager assignment ID or help-request ID. Safe league-member
-navigation, overview, published history, results, and auction queries retain
-only the common `private: true` and `leagueId` metadata; they never carry a
-help- or assignment-authorization scope.
+stable team-manager assignment ID or help-request ID. Navigation, overview,
+legacy post-publication results, allocation results, and auction queries retain
+the common `private: true` and `leagueId` metadata. The post-publication result
+queries are still viewer-sensitive: sign-out/session replacement, manager-
+assignment change, membership change, and selected-team change must evict or
+refetch them before rendering so one viewer's monetary projection cannot be
+reused for another viewer. They do not carry a help-grant scope.
 
 ---
 
@@ -7189,14 +7242,15 @@ live through rapid auctions and corrections. The frontend applies:
 | --- | --- |
 | `candidate_card.changed/card_changed` before publication | Use `related` IDs to invalidate the authorized matching private card, its eligible-player searches, overview, and navigation |
 | `candidate_card_help.changed/help_changed` | Revalidate/remove exact help-scoped private card; invalidate overview and navigation |
-| `free_agent_draft.changed/cards_published` | Remove every private-card and private eligible-player query for the FAD; invalidate history-card lists/details, results, overview, and navigation |
-| `free_agent_draft.changed/allocation_changed` | Invalidate history-card lists/details, results, and overview |
+| `free_agent_draft.changed/cards_published` | Remove every private-card and private eligible-player query for the FAD; invalidate legacy viewer-filtered result lists/details, allocation results, overview, and navigation |
+| `free_agent_draft.changed/allocation_changed` | Invalidate legacy viewer-filtered result lists/details, allocation results, and overview |
+| `league.changed/membership_changed`, `team.changed/manager_assignment_changed`, session replacement, or selected-team change | Evict/refetch every affected viewer-filtered result before rendering; never retain a previous viewer's monetary projection |
 | `fad_nomination_queue.changed/nomination_queued` | Invalidate only the exact authorized manager's overview/navigation and private queue projection |
 | `fad_nomination_queue.changed/nomination_opened` | Remove the exact private queue projection, then invalidate matching auction lists/detail, overview, and navigation |
-| `free_agent_draft.changed/fallback_opened` | Invalidate results, FAD auction lists, overview, navigation, and the linked allocation history |
+| `free_agent_draft.changed/fallback_opened` | Invalidate allocation results, FAD auction lists, overview, navigation, and the linked viewer-filtered result |
 | `free_agent_draft.changed/week1_recovered` | Invalidate overview, navigation, recovery, competition schedule, matchup jobs, and standings schedule projections |
-| `auction.changed/auction_changed` with non-null `related.fadId` | Invalidate matching auction list/detail, history-card lists/details, results, overview, and navigation |
-| `free_agent_draft.changed/correction_applied` | Invalidate history-card lists/details, results, recovery, overview, activity, rosters, and contracts |
+| `auction.changed/auction_changed` with non-null `related.fadId` | Invalidate matching auction list/detail, legacy viewer-filtered result lists/details, allocation results, overview, and navigation |
+| `free_agent_draft.changed/correction_applied` | Invalidate legacy viewer-filtered result lists/details, allocation results, recovery, overview, activity, rosters, and contracts |
 | `free_agent_draft.changed/completed` | Invalidate every FAD query, FAD auction list/detail, navigation, and relevant roster links |
 | scoped `roster.changed` or `contract.changed` before deadline | Invalidate authorized affected private cards, eligible-player searches, overview, and navigation |
 
@@ -7325,7 +7379,18 @@ Pre-deadline projections are:
 | Other league member | FAD timing and own authorized summaries only |
 | Public/anonymous | No FAD data |
 
-Post-deadline active league members receive published history.
+Post-deadline projections are:
+
+| Viewer | Allowed information |
+| --- | --- |
+| Active league member | Selected-team player identity plus Signed/Not won/Tied status |
+| Current manager of selected team | That identity/status projection plus the selected team's authorized monetary/contract result detail |
+| Commissioner/admin who does not manage selected team | Same identity/status-only projection as another active member; no authority-derived money or minimum |
+| Protected internal audit | Complete locked cards and deterministic audit evidence through non-member operational controls only |
+| Public/anonymous | No FAD data |
+
+Legacy wire/path names containing `published`, `history`, or `card` do not widen
+this projection.
 
 ---
 
@@ -8120,7 +8185,8 @@ Cover:
 * stale card behavior;
 * deadline crossing with authoritative refetch;
 * private-cache removal at assignment, help expiry, and publication;
-* published league cards and outcomes;
+* viewer-filtered selected-team identities/outcomes, own-team monetary detail,
+  and redaction for every other viewer (including commissioner/admin roles);
 * open, restricted-minimum, and fallback auction capabilities;
 * binding warning, ordinary edit/cooldown limit, and absent manager withdrawal;
 * 60-minute cutoff returning a private queued receipt rather than an error;
@@ -8188,8 +8254,9 @@ run.
   free incomplete, cap-compliant card contributes each individually valid
   filled offer.
 - [x] The card version is the stale-write boundary.
-- [x] Private and published card reads use separate paths and frontend cache
-  keys.
+- [x] Private-card reads and legacy viewer-filtered post-publication result
+  reads use separate paths and frontend cache keys; complete cards are not
+  published to league members.
 - [x] Help is available for the last 48 hours or all remaining time when cards
   open later; asking grants the current commissioner exact-card view/edit
   authority until the deadline.

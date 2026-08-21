@@ -1,12 +1,14 @@
 import { expect } from '@playwright/test'
 
+import { navigateToAppPath } from '../support/navigation.js'
+
 export class NotificationsPage {
   constructor(page) {
     this.page = page
   }
 
   async open() {
-    await this.page.goto('/notifications')
+    await navigateToAppPath(this.page, '/notifications')
     await expect(
       this.page.getByRole('heading', { name: 'Notifications', exact: true })
     ).toBeVisible()

@@ -5,9 +5,11 @@ import { Navigate } from "react-router-dom";
 import { routePaths } from "../../app/routePaths.js";
 import {
   EmptyBlock,
+  ErrorBlock,
   LoadingBlock,
   PageHeading,
   Surface,
+  TeamMark,
 } from "../../components/HundoUi.jsx";
 import { teamColourStyle } from "../../shared/teamIdentity.js";
 import {
@@ -31,11 +33,7 @@ import {
 
 function ErrorMessage({ error }) {
   if (!error) return null;
-  return (
-    <p className="hl-form-message is-error" role="alert">
-      {error.message || "The account request could not be completed."}
-    </p>
-  );
+  return <ErrorBlock error={error} fallback="The account request could not be completed." />;
 }
 
 function fileBase64(file) {
@@ -166,21 +164,15 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
       }}
     >
       <div className="hl-account-team-form__heading">
-        <div
-          style={teamColourStyle(previewTeam)}
-          className="hl-account-team-mark has-team-pattern"
-          aria-hidden="true"
-        >
-          {team.logoReference ? (
-            <img
-              src={httpClient.resourceUrl(team.logoReference)}
-              crossOrigin="use-credentials"
-              alt=""
-            />
-          ) : (
-            name.slice(0, 2).toUpperCase()
-          )}
-        </div>
+        <TeamMark
+          team={previewTeam}
+          logoUrl={
+            !removeLogo && team.logoReference
+              ? httpClient.resourceUrl(team.logoReference)
+              : null
+          }
+          className="hl-account-team-mark"
+        />
         <div>
           <h3>{team.name}</h3>
           <p>Team identity and colours</p>

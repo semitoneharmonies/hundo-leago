@@ -82,7 +82,7 @@ function newOperationId() {
   const id = globalThis.crypto?.randomUUID?.();
   if (!id) {
     throw new Error(
-      "Secure operation IDs are unavailable in this browser. Reload in a supported browser."
+      "This browser cannot create a secure confirmation. Reload in a supported browser."
     );
   }
   return id;
@@ -246,7 +246,7 @@ function CapImpact({ impacts, teamsById }) {
         <tbody>
           {impacts.map((impact) => (
             <tr key={impact.teamId}>
-              <td>{teamsById.get(impact.teamId)?.name || impact.teamId}</td>
+              <td>{teamsById.get(impact.teamId)?.name || "Affected team"}</td>
               <td>{money(impact.cap.capUsageCents)}</td>
               <td>{money(impact.cap.capSpaceCents)}</td>
               <td>
@@ -270,26 +270,27 @@ function PreviewResult({ label, workflow, teamsById }) {
       {workflow.applied && (
         <div className={styles.success} role="status">
           <strong>{label} applied.</strong>
-          <span>
-            Audit activity: {workflow.applied.evidence.activityId}
-          </span>
         </div>
       )}
       {workflow.preview && (
         <>
-          <h3>Authoritative preview</h3>
+          <h3>Preview</h3>
           {hasPreviewWarnings(workflow.preview) ? (
             <div className={styles.warning} role="alert">
               <strong>Review warnings before applying</strong>
               <ul>
                 {workflow.preview.warnings.map((warning, index) => (
-                  <li key={`${warning.code}-${index}`}>{warning.code}</li>
+                  <li key={`${warning.code}-${index}`}>
+                    {warning.message ||
+                      "The roster may need another correction after this change."}
+                  </li>
                 ))}
                 {workflow.preview.capImpact.flatMap((impact) =>
                   impact.warnings.map((warning, index) => (
                     <li key={`${impact.teamId}-${warning.code}-${index}`}>
-                      {teamsById.get(impact.teamId)?.name || impact.teamId}:{" "}
-                      {warning.code}
+                      {teamsById.get(impact.teamId)?.name || "Affected team"}:{" "}
+                      {warning.message ||
+                        "review the roster and cap impact before applying."}
                     </li>
                   ))
                 )}
@@ -303,8 +304,7 @@ function PreviewResult({ label, workflow, teamsById }) {
             teamsById={teamsById}
           />
           <p className={styles.previewSummary}>
-            The server compared the current records with this correction and
-            calculated the authoritative roster and cap result shown above.
+            Review the roster and cap result above before applying this change.
           </p>
           <label className={styles.confirmation}>
             <input
@@ -567,7 +567,7 @@ function RemovePlayerPanel({
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Remove a player"
-        description="Release a rostered player and their active contract after reviewing the authoritative preview."
+        description="Release a rostered player and their active contract after reviewing the preview."
       />
       <div className={styles.formGrid}>
         <Field label="Team">
@@ -641,7 +641,9 @@ function RosterCorrectionPanel({
 }) {
   const [teamId, setTeamId] = useState("");
   const [ownershipId, setOwnershipId] = useState("");
+  const [destinationTeamId, setDestinationTeamId] = useState("");
   const [category, setCategory] = useState("Bench");
+  const [positionGroup, setPositionGroup] = useState("F");
   const [correctionReason, setCorrectionReason] = useState("");
   const entry = workspace.roster.find(
     (candidate) => candidate.ownershipId === ownershipId
@@ -664,7 +666,9 @@ function RosterCorrectionPanel({
     changed(() => {
       setOwnershipId(nextOwnershipId);
       if (!selected) return;
+      setDestinationTeamId(selected.teamId);
       setCategory(selected.rosterCategory);
+      setPositionGroup(selected.positionGroup);
     });
   }
 
@@ -682,15 +686,15 @@ function RosterCorrectionPanel({
       ownershipId: entry.ownershipId,
       playerId: entry.playerId,
       expectedVersion: entry.ownershipVersion,
-      correctedTeamId: entry.teamId,
+      correctedTeamId: destinationTeamId,
       correctedOwnershipKind:
         entry.contract === null ? "Prospect Right" : "Rostered",
       correctedRosterCategory: category,
-      correctedPositionGroup: entry.positionGroup,
+      correctedPositionGroup: positionGroup,
       correctedSlotNumber: automaticRosterSlot(workspace.roster, {
-        teamId: entry.teamId,
+        teamId: destinationTeamId,
         category,
-        positionGroup: entry.positionGroup,
+        positionGroup,
         excludeOwnershipId: entry.ownershipId,
       }),
       reason: reason(correctionReason),
@@ -702,16 +706,17 @@ function RosterCorrectionPanel({
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Move or re-slot a player"
-        description="Move a signed player among Active, Bench, Injured Reserve, and Prospect categories, or re-slot an unsigned prospect right."
+        description="Correct a player’s team, roster category, position, or slot without rebuilding their ownership history."
       />
       <div className={styles.formGrid}>
-        <Field label="Team">
+        <Field label="Current team">
           <select
             value={teamId}
             onChange={(event) =>
               changed(() => {
                 setTeamId(event.target.value);
                 setOwnershipId("");
+                setDestinationTeamId("");
               })
             }
           >
@@ -739,6 +744,22 @@ function RosterCorrectionPanel({
             ))}
           </select>
         </Field>
+        <Field label="Destination team">
+          <select
+            value={destinationTeamId}
+            disabled={!entry}
+            onChange={(event) =>
+              changed(() => setDestinationTeamId(event.target.value))
+            }
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Roster category">
           <select
             value={category}
@@ -750,6 +771,18 @@ function RosterCorrectionPanel({
             {availableCategories.map((value) => (
               <option key={value}>{value}</option>
             ))}
+          </select>
+        </Field>
+        <Field label="Position">
+          <select
+            value={positionGroup}
+            disabled={!entry}
+            onChange={(event) =>
+              changed(() => setPositionGroup(event.target.value))
+            }
+          >
+            <option value="F">Forward</option>
+            <option value="D">Defence</option>
           </select>
         </Field>
         <Field label="Reason" hint="Optional; recorded in league activity.">
@@ -977,7 +1010,7 @@ function TeamCapSummary({ teams }) {
       </summary>
       <Surface className={styles.disclosurePanel}>
         <PanelHeading
-          eyebrow="Authoritative cap"
+          eyebrow="Cap impact"
           title="Team cap position"
           description="Current active-roster cap totals before a correction."
         />
@@ -1019,7 +1052,11 @@ function TeamCapSummary({ teams }) {
 const OPERATIONS = Object.freeze([
   { key: "add", panelId: "add-player", label: "Add player" },
   { key: "remove", panelId: "remove-player", label: "Remove player" },
-  { key: "roster", panelId: "correct-roster", label: "Correct roster" },
+  {
+    key: "roster",
+    panelId: "correct-roster",
+    label: "Move or re-slot player",
+  },
   {
     key: "contract",
     panelId: "correct-contract",
@@ -1032,13 +1069,13 @@ function OperationsGuide({ selectedOperation, onSelect }) {
     <Surface className={styles.guide}>
       <div>
         <p className="hl-eyebrow">Correction workflow</p>
-        <h2>Choose the operation you need</h2>
+        <h2>Choose a task</h2>
         <p>
           Work with one correction at a time. Every change is previewed first,
           then explicitly confirmed and recorded in League Activity.
         </p>
       </div>
-      <nav aria-label="Roster correction operations" role="tablist">
+      <nav aria-label="Roster correction tasks" role="tablist">
         {OPERATIONS.map((operation) => (
           <button
             key={operation.key}
@@ -1175,7 +1212,6 @@ function CommissionerWorkspace({
       <PageHeading
         eyebrow={`${workspace.league.name} · ${workspace.league.currentSeasonLabel}`}
         title="Commissioner roster operations"
-        description="Every correction is league-scoped, previewed against authoritative roster and cap rules, explicitly confirmed, and written to league activity."
         actions={
           <Link
             className="hl-button hl-button--quiet"
@@ -1299,7 +1335,7 @@ export function CommissionerRosterPage() {
     return (
       <main className="hl-page">
         <Surface>
-          <LoadingBlock>Loading the authoritative roster workspace…</LoadingBlock>
+          <LoadingBlock>Loading roster tools…</LoadingBlock>
         </Surface>
       </main>
     );

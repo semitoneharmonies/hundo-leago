@@ -7,15 +7,23 @@ import {
 
 export const notificationKeys = Object.freeze({
   all: ["notifications"],
-  page: (cursor = null) => ["notifications", cursor],
+  page: (readStatus = "all", cursor = null) => [
+    "notifications",
+    readStatus,
+    cursor,
+  ],
   invitation: (invitationId) => ["notifications", "league-invitation", invitationId],
 });
 
-export function notificationsQuery(httpClient, cursor = null) {
-  const query = new URLSearchParams({ limit: "25" });
+export function notificationsQuery(
+  httpClient,
+  cursor = null,
+  readStatus = "all"
+) {
+  const query = new URLSearchParams({ limit: "25", readStatus });
   if (cursor) query.set("cursor", cursor);
   return queryOptions({
-    queryKey: notificationKeys.page(cursor),
+    queryKey: notificationKeys.page(readStatus, cursor),
     queryFn: async ({ signal }) => {
       const response = await httpClient.request(`/api/v1/notifications?${query}`, {
         authenticated: true,
@@ -28,6 +36,15 @@ export function notificationsQuery(httpClient, cursor = null) {
     meta: { private: true },
     staleTime: 10_000,
   });
+}
+
+export async function markNotificationsReadBatch(httpClient, notificationIds) {
+  return (await httpClient.request("/api/v1/notifications/read-batch", {
+    method: "POST",
+    body: { notificationIds },
+    authenticated: true,
+    dataKind: "object",
+  })).data;
 }
 
 export async function markNotificationRead(httpClient, notificationId) {

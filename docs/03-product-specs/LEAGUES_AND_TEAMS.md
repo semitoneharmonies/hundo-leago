@@ -18,6 +18,19 @@ Grae approved the FAD readiness and participating-team amendments on 2026-07-27.
 
 Grae approved the automatic Candidate Card opening amendment on 2026-07-29.
 
+On 2026-08-20, Grae approved the full-site UI and administrator-authority
+amendment. Uploaded team logos are the preferred identity treatment and a
+shared accessible team-colour/pattern mark, never initials, is the no-logo
+fallback. Every active platform administrator must have protected persisted
+access to every league: league creation provisions that active membership,
+existing leagues are reconciled additively, and a commissioner cannot edit,
+deactivate, remove, or indirectly end it through a team assignment. Each
+league continues to have exactly one current commissioner, and changing that
+person uses one explicit atomic commissioner-transfer workflow rather than an
+addition that can create a second current commissioner. These decisions
+supersede older text only where it assumes administrator league membership is
+manually granted or permits a normal commissioner-addition presentation.
+
 ---
 
 ## Product Purpose
@@ -161,11 +174,15 @@ The platform administrator may:
 
 * create and manage leagues;
 * assign or replace the league commissioner;
-* create an active membership permitting the administrator to operate inside a league;
+* rely on the guaranteed protected active `member` membership provisioned for
+  every active administrator in every non-deleted league;
 * configure approved initial league information;
 * deactivate or delete a league after the approved confirmation and safety checks.
 
-A platform administrator requires an explicit active membership to view or operate inside a league.
+A platform administrator operates through that protected membership without
+becoming commissioner or team manager. Missing membership is invariant
+corruption and must fail closed until the approved additive reconciliation
+restores it.
 
 ---
 
@@ -371,16 +388,18 @@ The approved workflow is:
 2. The administrator enters the unique league name.
 3. The backend creates the league in `Setup` using the current approved fixed settings and `America/Vancouver`.
 4. The administrator selects one existing user as the proposed commissioner.
-5. The proposed commissioner receives a basic notification and accepts the assignment.
-6. The system creates the commissioner’s active league membership.
-7. The commissioner invites users to create the initial teams.
-8. Each invited user accepts the invitation and creates a team.
-9. The commissioner records the trade-deadline date and time.
-10. When at least four teams exist and every launch invitation has been accepted, the commissioner presses `Start League`.
-11. The backend validates the complete proposed league.
-12. The league becomes `Active`.
-13. Administrative and league activity records are created where required.
-14. The backend returns the authoritative league.
+5. The same creation transaction provisions or preserves a protected active
+   `member` membership for every active platform administrator.
+6. The proposed commissioner receives a basic notification and accepts the assignment.
+7. The system creates or promotes the commissioner’s active league membership.
+8. The commissioner invites users to create the initial teams.
+9. Each invited user accepts the invitation and creates a team.
+10. The commissioner records the trade-deadline date and time.
+11. When at least four teams exist and every launch invitation has been accepted, the commissioner presses `Start League`.
+12. The backend validates the complete proposed league.
+13. The league becomes `Active`.
+14. Administrative and league activity records are created where required.
+15. The backend returns the authoritative league.
 
 No partial league should appear active when creation fails.
 
@@ -548,17 +567,19 @@ The replacement workflow is:
 4. The administrator confirms the replacement.
 5. The proposed replacement receives a basic notification.
 6. The proposed replacement accepts.
-7. The backend validates both memberships and the target league.
-8. The old commissioner role is removed.
-9. The replacement commissioner role is created.
-10. Both changes save atomically.
+7. The backend validates both memberships, the target league, and that the
+   replacement is not an active platform administrator.
+8. The old commissioner is demoted to `manager` when they retain an active team
+   assignment, otherwise to `member`.
+9. The replacement membership is promoted to commissioner.
+10. Both membership changes and the league commissioner pointer save atomically.
 11. The action is recorded.
 
-If a commissioner account or membership becomes inactive, the system automatically reassigns the commissioner role to another active manager in the same league.
-
-The selection must use one deterministic rule defined in the User Accounts and technical specifications.
-
-The automatically selected replacement receives a basic notification.
+The system never silently chooses a replacement. An attempt to deactivate the
+current commissioner account or membership must fail until an administrator
+completes the explicit transfer. The schema enforces at most one active
+commissioner membership; application validation and the league pointer enforce
+exactly one commissioner for an operational league.
 
 ---
 
@@ -831,7 +852,10 @@ Existing pending bids, trades, and other team records remain with the team rathe
 
 Users may create accounts through the home-page sign-up form.
 
-Account creation does not automatically create a league membership.
+Ordinary account creation does not automatically create a league membership.
+Creating or granting an active platform-administrator role provisions the
+protected active `member` membership in every non-deleted league; reconciliation
+repairs any missing legacy rows additively.
 
 A commissioner invites a user to join the league and create or manage a team.
 
@@ -855,7 +879,10 @@ Removal:
 * does not delete the team, transactions, activity history, or other
   authoritative league records; and
 * cannot remove the league's current commissioner membership or be used as a
-  substitute for the separately protected commissioner-replacement workflow.
+  substitute for the separately protected commissioner-replacement workflow;
+* cannot end, reclassify, or otherwise mutate a protected active
+  platform-administrator membership, including indirectly through manager
+  assignment or removal.
 
 ---
 
@@ -867,7 +894,9 @@ Private league information requires:
 * an active membership in the requested league;
 * any additional feature-specific permission.
 
-A platform administrator also requires an active membership to view private league information.
+A platform administrator uses the guaranteed protected active membership to
+view private league information. A missing row is invariant corruption and
+fails closed rather than becoming a supported no-membership administrator state.
 
 ---
 
@@ -893,7 +922,9 @@ An inactive membership does not authorize private league access or league writes
 
 Changing a membership or role does not revoke the authenticated session, but the backend must reload current permission state for every protected action.
 
-Only the league commissioner may reactivate an inactive league membership.
+Only the league commissioner may reactivate an ordinary inactive league
+membership. Platform-administrator membership is protected and cannot normally
+be made inactive.
 
 ---
 
@@ -1269,7 +1300,11 @@ At minimum, test:
 * manager edits only assigned teams;
 * team rename preserves stable identity and related records;
 * inactive membership loses private access;
-* platform administrator without membership cannot view private league data;
+* every active platform administrator is provisioned into every non-deleted
+  league as a protected active `member` and cannot be assigned as commissioner
+  or team manager through ordinary flows;
+* deliberately corrupted administrator-without-membership state fails closed
+  until additive reconciliation repairs it;
 * unauthenticated visitor can read approved roster fields;
 * unauthenticated visitor cannot write or view private league information;
 * league deletion requires the approved confirmation and authorization;
@@ -1327,7 +1362,8 @@ Grae approved the original Season 2 Leagues and Teams product decisions on
 - [x] Public self-service league creation is not available in the initial release.
 - [x] Each league has exactly one commissioner.
 - [x] Only a platform administrator may assign or remove a commissioner.
-- [x] A platform administrator needs an active membership to view or operate inside a league.
+- [x] Every active platform administrator has one guaranteed protected active `member` membership in every non-deleted league; missing membership is invariant corruption and fails closed.
+- [x] Membership, commissioner, and team-manager writers reject attempts to end, reclassify, or assign a protected administrator membership.
 - [x] A commissioner may simultaneously manage a team.
 - [x] Commissioners may add, rename, deactivate, and remove teams in their league.
 - [x] Commissioners may assign and remove team managers.
@@ -1370,7 +1406,8 @@ Grae approved the original Season 2 Leagues and Teams product decisions on
 
 - [x] A replacement commissioner must accept the assignment.
 - [x] Commissioner replacement atomically removes the former commissioner and assigns the replacement after acceptance.
-- [x] If the commissioner account or membership becomes inactive, the system automatically reassigns the role to another active manager in the league.
+- [x] Commissioner transfer is explicit and atomic: the old commissioner becomes `manager` when retaining an active team assignment, otherwise `member`, and the eligible non-administrator replacement becomes commissioner.
+- [x] The system never silently selects a replacement; attempts to deactivate a current commissioner fail until explicit transfer completes.
 - [x] Commissioner assignment and replacement use a basic notification.
 
 ## Teams

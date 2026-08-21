@@ -207,7 +207,7 @@ function LocationProbe() {
 }
 
 describe("M5-11 owner notifications", () => {
-  it("lists without a write and explicitly marks only the selected row read", async () => {
+  it("renders the unread batch, acknowledges exactly those rows, and keeps them visible", async () => {
     let read = false;
     const fetchImpl = vi.fn(async (url, options = {}) => {
       const path = new URL(url).pathname;
@@ -219,13 +219,24 @@ describe("M5-11 owner notifications", () => {
       if (path === "/api/v1/notifications" && (!options.method || options.method === "GET")) {
         return envelope({
           code: "NOTIFICATIONS_FOUND",
-          notifications: [{ id: notificationId, leagueId: null, type: "account_notice", messageData: { message: "A private account notice." }, related: null, deliveryStatus: "delivered", createdAtMs: 1, readAtMs: read ? 2 : null, deliveredAtMs: 1, version: read ? 2 : 1 }],
+          notifications: [
+            { id: notificationId, leagueId: null, type: "account_notice", messageData: { message: "A private account notice." }, related: null, deliveryStatus: "delivered", createdAtMs: 1, readAtMs: read ? 2 : null, deliveredAtMs: 1, version: read ? 2 : 1 },
+            { id: invitationId, leagueId: null, type: "internal_unknown_event", messageData: {}, related: null, deliveryStatus: "delivered", createdAtMs: 2, readAtMs: read ? 2 : null, deliveredAtMs: 2, version: read ? 2 : 1 },
+          ],
           page: { limit: 25, nextCursor: null },
         });
       }
-      if (path === `/api/v1/notifications/${notificationId}/read`) {
+      if (path === "/api/v1/notifications/read-batch") {
+        expect(JSON.parse(options.body)).toEqual({
+          notificationIds: [notificationId, invitationId],
+        });
         read = true;
-        return envelope({ code: "NOTIFICATION_READ", notification: {} });
+        return envelope({
+          code: "NOTIFICATIONS_READ",
+          changedCount: 2,
+          notificationIds: [notificationId, invitationId],
+          readAtMs: 2,
+        });
       }
       throw new Error(`Unexpected request: ${path}`);
     });
@@ -235,19 +246,35 @@ describe("M5-11 owner notifications", () => {
       sessionOptions: { fetchImpl },
     });
     expect(await screen.findByText("A private account notice.")).toBeInTheDocument();
+    expect(screen.getByText("Other notification")).toBeInTheDocument();
+    expect(screen.queryByText("internal unknown event")).not.toBeInTheDocument();
     const initialNotificationCalls = fetchImpl.mock.calls.filter(([url]) => new URL(url).pathname === "/api/v1/notifications");
     expect(initialNotificationCalls).toHaveLength(1);
     expect(initialNotificationCalls[0][1]?.method).toBe("GET");
-    await view.user.click(screen.getByRole("button", { name: "Mark read" }));
-    expect(fetchImpl.mock.calls.some(([url, options]) =>
-      new URL(url).pathname.endsWith(`/${notificationId}/read`) &&
+    expect(new URL(initialNotificationCalls[0][0]).searchParams.get("readStatus"))
+      .toBe("unread");
+    await waitFor(() => expect(fetchImpl.mock.calls.some(([url, options]) =>
+      new URL(url).pathname === "/api/v1/notifications/read-batch" &&
       options.method === "POST" &&
       options.headers.get("X-CSRF-Token") === "D".repeat(43)
-    )).toBe(true);
+    )).toBe(true));
+    expect(screen.getByText("A private account notice.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /mark read/i })).not.toBeInTheDocument();
+    await view.user.click(
+      screen.getByRole("button", { name: "Previous notifications" })
+    );
+    await waitFor(() =>
+      expect(
+        fetchImpl.mock.calls.some(
+          ([url]) => new URL(url).searchParams.get("readStatus") === "read"
+        )
+      ).toBe(true)
+    );
+    expect(await screen.findAllByText("Read")).toHaveLength(2);
   });
 
   it("links a received-trade notification to its acceptance preview", async () => {
-    const fetchImpl = vi.fn(async (url) => {
+    const fetchImpl = vi.fn(async (url, options = {}) => {
       const path = new URL(url).pathname;
       if (path === "/api/v1/session") return envelope({
         csrfToken: "D".repeat(43),
@@ -280,6 +307,9 @@ describe("M5-11 owner notifications", () => {
           page: { limit: 25, nextCursor: null },
         });
       }
+      if (path === "/api/v1/notifications/read-batch" && options.method === "POST") {
+        return envelope({ code: "NOTIFICATIONS_READ", changedCount: 1 });
+      }
       throw new Error(`Unexpected request: ${path}`);
     });
     renderWithProviders(<NotificationsPage />, {
@@ -298,7 +328,7 @@ describe("M5-11 owner notifications", () => {
   });
 
   it("renders every approved FAD copy and exact destination route", async () => {
-    const fetchImpl = vi.fn(async (url) => {
+    const fetchImpl = vi.fn(async (url, options = {}) => {
       const path = new URL(url).pathname;
       if (path === "/api/v1/session") return envelope(sessionData());
       if (path === "/api/v1/notifications") {
@@ -306,6 +336,12 @@ describe("M5-11 owner notifications", () => {
           code: "NOTIFICATIONS_FOUND",
           notifications: fadNotifications(),
           page: { limit: 25, nextCursor: null },
+        });
+      }
+      if (path === "/api/v1/notifications/read-batch" && options.method === "POST") {
+        return envelope({
+          code: "NOTIFICATIONS_READ",
+          changedCount: fadNotifications().length,
         });
       }
       throw new Error(`Unexpected request: ${path}`);
@@ -323,7 +359,7 @@ describe("M5-11 owner notifications", () => {
       "A manager has requested Candidate Card help.",
       "Candidate Cards are locked and results are available.",
       "Your Candidate Card results are available.",
-      "You are eligible to bid in a restricted FAD auction.",
+      "You are eligible to bid in a restricted Free Agent Draft auction.",
       "A league-wide Free Agent Draft fallback auction is open.",
       "A Free Agent Draft auction has finished.",
       "Free Agent Draft recovery requires commissioner attention.",
@@ -386,12 +422,9 @@ describe("M5-11 owner notifications", () => {
           resolveLeagues = () => resolve(envelope(visibleLeagueData()));
         });
       }
-      if (
-        path === `/api/v1/notifications/${fadNotifications()[0].id}/read` &&
-        options.method === "POST"
-      ) {
+      if (path === "/api/v1/notifications/read-batch" && options.method === "POST") {
         notificationRead = true;
-        return envelope({ code: "NOTIFICATION_READ", notification: {} });
+        return envelope({ code: "NOTIFICATIONS_READ", changedCount: 1 });
       }
       throw new Error(`Unexpected request: ${path}`);
     });
@@ -551,6 +584,10 @@ describe("M5-11 owner notifications", () => {
       if (path === `/api/v1/notifications/${notificationId}/read`) {
         notificationRead = true;
         return envelope({ code: "NOTIFICATION_READ", notification: {} });
+      }
+      if (path === "/api/v1/notifications/read-batch" && options.method === "POST") {
+        notificationRead = true;
+        return envelope({ code: "NOTIFICATIONS_READ", changedCount: 1 });
       }
       throw new Error(`Unexpected request: ${path}`);
     });

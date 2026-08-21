@@ -90,7 +90,12 @@ function league(id, name) {
 
 function fetchScenario(
   leagues,
-  { managerAssigned = true, platformAdmin = false } = {}
+  {
+    managerAssigned = true,
+    platformAdmin = false,
+    currentCommissioner = false,
+    teamLogoReference = `/api/v1/leagues/${leagueOneId}/teams/${teamId}/logo`,
+  } = {}
 ) {
   return vi.fn(async (url, options = {}) => {
     const path = new URL(url).pathname;
@@ -110,6 +115,7 @@ function fetchScenario(
                 displayName: "Commissioner Candidate",
                 email: "candidate@example.test",
                 status: "active",
+                isPlatformAdministrator: false,
               },
             ],
           })
@@ -140,6 +146,29 @@ function fetchScenario(
     ) {
       return response({ code: "COMMISSIONER_ASSIGNMENT_PROPOSED" });
     }
+    if (
+      platformAdmin &&
+      path === `/api/v1/leagues/${leagueOneId}/memberships`
+    ) {
+      return response({
+        code: "LEAGUE_MEMBERSHIPS_FOUND",
+        memberships: currentCommissioner
+          ? [
+              {
+                id: "commissioner-membership",
+                status: "active",
+                permissionCategory: "commissioner",
+                isProtectedPlatformAdministrator: false,
+                version: 1,
+                user: {
+                  id: "current-commissioner",
+                  displayName: "Current Commissioner",
+                },
+              },
+            ]
+          : [],
+      });
+    }
     if (path === `/api/v1/leagues/${leagueOneId}`) {
       return response(
         { code: "LEAGUE_FOUND", league: leagues[0] },
@@ -158,7 +187,7 @@ function fetchScenario(
               status: "active",
               primaryColour: null,
               secondaryColour: null,
-              logoReference: `/api/v1/leagues/${leagueOneId}/teams/${teamId}/logo`,
+              logoReference: teamLogoReference,
               createdAtMs: 1,
               updatedAtMs: 1,
               version: 1,
@@ -167,6 +196,7 @@ function fetchScenario(
                     assignmentId: "assignment-1",
                     userId: "user-league",
                     displayName: "League Manager",
+                    isProtectedPlatformAdministrator: false,
                     acceptedAtMs: 1,
                     version: 1,
                   }
@@ -351,7 +381,7 @@ describe("league selection", () => {
     );
     expect(
       await screen.findByRole("heading", {
-        name: "Assign commissioner for New Review League",
+        name: "Set initial commissioner for New Review League",
       })
     ).toBeInTheDocument();
     await view.user.selectOptions(
@@ -368,6 +398,44 @@ describe("league selection", () => {
         "Commissioner assignment sent to Commissioner Candidate. It becomes active after acceptance."
       )
     ).toBeInTheDocument();
+  });
+
+  it("lets a platform administrator transfer an existing league commissioner", async () => {
+    const fetchImpl = fetchScenario(
+      [league(leagueOneId, "Existing League")],
+      { platformAdmin: true, currentCommissioner: true }
+    );
+    const view = renderLeagueRoutes("/leagues", fetchImpl);
+
+    await view.user.selectOptions(
+      await screen.findByRole("combobox", { name: "League to manage" }),
+      leagueOneId
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "Transfer commissioner for Existing League",
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Current commissioner: Current Commissioner/u)
+    ).toBeInTheDocument();
+    await view.user.selectOptions(
+      screen.getByRole("combobox", { name: "Commissioner" }),
+      playerId
+    );
+    await view.user.click(
+      screen.getByRole("button", { name: "Send commissioner transfer" })
+    );
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `/api/v1/admin/leagues/${leagueOneId}/commissioner-assignments`
+      ),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ userId: playerId }),
+      })
+    );
   });
 
   it("automatically enters exactly one visible league and offers its team", async () => {
@@ -393,7 +461,7 @@ describe("league selection", () => {
     });
     expect(screen.getByText(/managed by you/i)).toBeInTheDocument();
     const tradeBlock = screen
-      .getByRole("heading", { name: "League trade block" })
+      .getByRole("heading", { name: "Trade block" })
       .closest("section");
     expect(
       within(tradeBlock).getByText("No players are on the trade block right now.")
@@ -408,6 +476,9 @@ describe("league selection", () => {
     expect(
       await screen.findByRole("heading", { name: "Teams" })
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Open any team’s authoritative roster/i)
+    ).toBeNull();
     expect(screen.getByRole("link", { name: "Target Owls" })).toHaveAttribute(
       "href",
       `/leagues/${leagueOneId}/teams/${teamId}/roster`
@@ -429,6 +500,22 @@ describe("league selection", () => {
       `http://localhost:4000/api/v1/leagues/${leagueOneId}/teams/${teamId}/logo`
     );
     expect(logo).toHaveAttribute("crossorigin", "use-credentials");
+  });
+
+  it("uses a team-colour mark without initials when a team has no logo", async () => {
+    renderLeagueRoutes(
+      `/leagues/${leagueOneId}/teams`,
+      fetchScenario([league(leagueOneId, "Only League")], {
+        teamLogoReference: null,
+      })
+    );
+
+    const teamLink = await screen.findByRole("link", { name: "Target Owls" });
+    const mark = teamLink.querySelector(".hl-team-mark");
+    expect(mark).toHaveClass("hl-teams-index__mark", "has-team-pattern");
+    expect(mark).toHaveTextContent("");
+    expect(mark.querySelector("img")).toBeNull();
+    expect(screen.queryByText("TA")).toBeNull();
   });
 
   it("does not give a commissioner an implicit dashboard team", async () => {

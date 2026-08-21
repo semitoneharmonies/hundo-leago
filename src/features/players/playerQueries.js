@@ -41,7 +41,18 @@ export const playerKeys = Object.freeze({
     cursor,
     sort,
   ],
-  leagueInfinite: ({ leagueId, query, status, limit, sort, teamId }) => [
+  leagueInfinite: ({
+    leagueId,
+    query,
+    status,
+    limit,
+    sort,
+    teamId,
+    position,
+    nhlTeam,
+    ownership,
+    minimumGames,
+  }) => [
     "league",
     leagueId,
     "players",
@@ -51,6 +62,10 @@ export const playerKeys = Object.freeze({
     limit,
     sort,
     teamId,
+    position,
+    nhlTeam,
+    ownership,
+    minimumGames,
   ],
   leagueDetail: (leagueId, playerId) => [
     "league",
@@ -193,6 +208,10 @@ export function leaguePlayerInfiniteQuery(
     limit = 100,
     sort = "fantasyPoints",
     teamId = null,
+    position = null,
+    nhlTeam = null,
+    ownership = "all",
+    minimumGames = 0,
   } = {}
 ) {
   return infiniteQueryOptions({
@@ -203,6 +222,10 @@ export function leaguePlayerInfiniteQuery(
       limit,
       sort,
       teamId,
+      position,
+      nhlTeam,
+      ownership,
+      minimumGames,
     }),
     initialPageParam: null,
     queryFn: async ({ pageParam, signal }) => {
@@ -212,6 +235,12 @@ export function leaguePlayerInfiniteQuery(
         limit: String(limit),
         sort,
         ...(teamId ? { teamId } : {}),
+        ...(position ? { position } : {}),
+        ...(nhlTeam ? { nhlTeam } : {}),
+        ...(ownership !== "all" ? { ownership } : {}),
+        ...(minimumGames > 0
+          ? { minimumGames: String(minimumGames) }
+          : {}),
         ...(pageParam ? { cursor: pageParam } : {}),
       });
       const response = await httpClient.request(

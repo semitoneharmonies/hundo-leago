@@ -694,6 +694,13 @@ The league and season remain visibly incomplete while an expected result lacks a
 
 Before finalization, a valid source refresh may update provisional totals.
 
+The normal manual correction is presented beside the affected result context on
+Standings. Its read-only preview accepts proposed home and away scores plus an
+optional reason and returns week, matchup/team identity, the proposed version
+and outcome, current and projected standings rows, and changed team IDs. The
+confirmed apply action is separate and atomic. Full standings rebuild remains a
+recovery-only operation outside the normal UI.
+
 After finalization:
 
 1. a detected source change creates a review item;

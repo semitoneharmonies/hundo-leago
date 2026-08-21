@@ -18,6 +18,25 @@ Grae approved the FAD readiness and assistance amendments on 2026-07-27.
 
 Grae approved the automatic FAD opening and adaptive-assistance amendments on 2026-07-29.
 
+Grae approved the full-site commissioner-interface amendment on 2026-08-20.
+Normal commissioner pages use task language and do not show raw request IDs,
+JSON, internal error/code names, operation versions, or database identifiers.
+Urgent recoverable issues appear under `Needs your action` with the problem,
+impact, remedy, and safe action; long technical history is collapsed and kept
+separate. The Free Agent Draft area is collapsible and becomes secondary after
+the authoritative season begins while preserving team count, deadline,
+projected Week 1, real team names, and backend-authoritative open Forward,
+Defence, and Bench slots. Schedule preview remains read-only and explains
+failed prerequisites. Week transition uses human labels backed by stable week
+IDs. Result correction moves to Standings and automatically rebuilds current
+standings; the standalone rebuild endpoint remains recovery-only.
+
+Implementation review confirmed that `Correct roster` is not redundant: it
+can correct ownership team, ownership kind, source position, injured-reserve
+override, or prospect-right state that Add player, Remove player, and Correct
+contract do not cover. It remains available with plain-language scope and
+consequences.
+
 ---
 
 ## Product Purpose
@@ -133,7 +152,11 @@ Only a platform administrator may assign or remove a commissioner.
 
 ## Platform Administrator
 
-A platform administrator may perform commissioner actions without taking the commissioner role only when the administrator has an explicit active membership in the affected league.
+A platform administrator may perform commissioner actions without taking the
+commissioner role through the guaranteed protected active `member` membership
+in the affected league. Missing membership is invariant corruption and must
+fail closed until reconciled; ordinary membership, commissioner, and
+team-manager writers may not end, reclassify, or assign that protected row.
 
 Platform-administrator-only actions include:
 
@@ -300,10 +323,18 @@ Commissioner authority does not reveal competing active bid values or terms.
 
 A commissioner may:
 
-* propose, accept, reject, and cancel a trade for any team;
-* complete an explicit commissioner trade action for both sides;
+* inspect league trade proposals without gaining manager execution authority;
+* approve a Future-Considerations proposal only after the receiving manager has
+  created the durable acceptance snapshot that projects `Awaiting Commissioner
+  Approval`;
 * reverse a completed trade when every affected asset remains in the exact recoverable state;
 * route an unsafe reversal to an explicit correction workflow.
+
+Commissioner authority alone does not permit proposing, accepting, rejecting,
+or cancelling an ordinary `Pending` proposal for either team. Receiver
+acceptance without Future Considerations completes atomically; receiver
+acceptance with Future Considerations moves no assets until the separate
+commissioner approval.
 
 The commissioner actor and authority must remain visible. The action must not appear to have been performed by the affected team's manager.
 
@@ -344,12 +375,17 @@ Matchup actions never create League Activity entries. They remain attributable t
 A commissioner may:
 
 * inspect source-result and completeness health;
-* preview and run an explicit standings rebuild;
+* preview a contextual matchup-result correction with current and projected
+  standings impact, then apply the confirmed correction atomically;
+* preview and run an explicit standings rebuild only as an exceptional recovery
+  action outside the normal standings UI;
 * recover a failed derived-standings update.
 
 A commissioner may not directly type replacement GP, W, L, T, PTS, PCT, PF, PA, DIFF, or rank.
 
-Standings actions never create League Activity entries. They remain attributable through standings rebuild or correction records.
+Standings actions never create League Activity entries. Normal result
+corrections remain attributable through correction records; recovery-only
+rebuilds remain attributable through rebuild records.
 
 ---
 
@@ -692,7 +728,7 @@ The restoration workflow is:
 3. the commissioner previews records that would change;
 4. the commissioner enters the typed confirmation;
 5. the request becomes `Awaiting Administrator Approval`;
-6. a platform administrator with active league membership reviews the same preview;
+6. a platform administrator using the guaranteed protected active league membership reviews the same preview;
 7. the administrator approves or rejects;
 8. approval activates a league freeze and creates a fresh pre-restore backup;
 9. restoration runs atomically;
@@ -834,7 +870,7 @@ Tests must cover:
 - [x] A commissioner may also manage a team.
 - [x] Commissioner and manager authority remain distinguishable.
 - [x] Only a platform administrator may assign or remove a commissioner.
-- [x] A platform administrator needs an active league membership to operate inside a league.
+- [x] Every active platform administrator uses one guaranteed protected active `member` membership in every non-deleted league; missing membership is invariant corruption and fails closed.
 - [x] Commissioners may not change league settings in the initial release.
 - [x] Commissioners may administer teams and manager assignments within approved boundaries.
 - [x] In a draft season, normal team creation closes at Entry Draft setup confirmation; on a no-draft path it closes when the automatic all-or-none readiness transition opens Candidate Cards.
@@ -850,10 +886,10 @@ Tests must cover:
 - [x] Commissioners may execute buyouts and correct contracts, retentions, and buyout penalties.
 - [x] Commissioners may submit, edit, remove, and manually resolve auction bids.
 - [x] Commissioners cannot view competing active bid values or terms.
-- [x] Commissioners may propose, accept, reject, cancel, complete, safely reverse, and correct trades.
+- [x] Commissioners may safely inspect proposals, approve only accepted Future-Considerations trades awaiting approval, and use separate safe-reversal or correction workflows; commissioner authority alone cannot propose, accept, reject, or cancel for either team.
 - [x] Commissioners may make Entry Draft selections for any team.
 - [x] Commissioners may manage matchup schedules, locks, baselines, results, finalization, and rollover recovery.
-- [x] Commissioners may inspect and rebuild standings but cannot directly edit standings-row values.
+- [x] Commissioners use contextual matchup-result correction with projected standings impact; full standings rebuild is recovery-only and absent from the normal UI, and no actor may directly edit standings-row values.
 - [x] Matchup-only and standings-only operations never enter League Activity.
 - [x] Commissioners may freeze or reopen manager actions.
 - [x] Authorized commissioner and administrator actions remain available during a freeze.
@@ -901,7 +937,7 @@ Tests must cover:
 - [x] Backup creation is league-scoped, attributable, and hides raw storage paths.
 - [x] Restoration selection shows snapshot identity, scope, contents, validation, and affected-record preview.
 - [x] Restoration becomes `Awaiting Administrator Approval` after commissioner confirmation.
-- [x] The approving administrator must have active membership in the league.
+- [x] The approving administrator acts through the guaranteed protected active membership in the league.
 - [x] Approved restoration automatically freezes the league and creates a fresh pre-restore backup.
 - [x] Restoration is atomic and the league reopens only after validation.
 - [x] Failed restoration keeps the league frozen and cannot leave mixed state.

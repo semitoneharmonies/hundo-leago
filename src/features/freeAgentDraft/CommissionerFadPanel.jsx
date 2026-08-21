@@ -29,7 +29,7 @@ function readableStatus(status) {
   return {
     not_triggered: "Not triggered",
     pending: "Pending automatic worker",
-    running: "Automatic readiness running",
+    running: "Opening check in progress",
     blocked: "Blocked",
     succeeded: "Succeeded",
   }[status] || "Unavailable";
@@ -54,12 +54,17 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
   });
   const requestedFadId = searchParams.get("fadId");
   const requestedRecoveryId = searchParams.get("recoveryId");
+  const [panelRequestedOpen, setPanelRequestedOpen] = useState(
+    Boolean(requestedFadId || requestedRecoveryId)
+  );
   const requestedFadValid = requestedFadId === null || UUID_V4.test(requestedFadId);
   const requestedRecoveryValid =
     requestedRecoveryId === null || UUID_V4.test(requestedRecoveryId);
   const recoveryFadId = requestedFadValid
     ? requestedFadId || readiness.data?.resultFadId || null
     : null;
+  const panelOpen =
+    panelRequestedOpen || readiness.data?.status === "blocked";
   const retry = useMutation({
     mutationFn: ({ data, version, idempotencyKey }) =>
       retryFreeAgentDraftReadiness(session.httpClient, leagueId, data, {
@@ -70,7 +75,7 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
       setReceipt(result);
       setConfirming(false);
       setMessage(
-        "The exact blocked readiness operation was accepted for retry. The automatic worker will re-evaluate every prerequisite."
+        "The opening check was queued. Every requirement will be checked again."
       );
       await queryClient.invalidateQueries({
         queryKey: freeAgentDraftKeys.readiness(leagueId, seasonId),
@@ -118,6 +123,30 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
 
   return (
     <>
+      <details
+        className={styles.commissionerDisclosure}
+        open={panelOpen}
+        onToggle={(event) => setPanelRequestedOpen(event.currentTarget.open)}
+      >
+        <summary>
+          <span>
+            <strong>Free Agent Draft opening</strong>
+            <small>Seasonal opening, team capacity, and recovery</small>
+          </span>
+          {readiness.data && (
+            <StatusBadge
+              tone={
+                readiness.data.status === "succeeded"
+                  ? "success"
+                  : readiness.data.status === "blocked"
+                    ? "warning"
+                    : "neutral"
+              }
+            >
+              {readableStatus(readiness.data.status)}
+            </StatusBadge>
+          )}
+        </summary>
       <Surface
         className={styles.panel}
         as="section"
@@ -127,42 +156,22 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
         <div>
           <p className="hl-eyebrow">Free Agent Draft</p>
           <h2 id="commissioner-fad-readiness-title">
-            Automatic opening readiness
+            Opening check
           </h2>
         </div>
-        {readiness.data && (
-          <StatusBadge
-            tone={
-              readiness.data.status === "succeeded"
-                ? "success"
-                : readiness.data.status === "blocked"
-                  ? "warning"
-                  : "neutral"
-            }
-          >
-            {readableStatus(readiness.data.status)}
-          </StatusBadge>
-        )}
       </div>
-
-      <p>
-        Candidate Cards open automatically after the Entry Draft or approved
-        no-draft transition. This panel cannot choose an opening time, setup
-        path, team list, draft override, or no-draft reason.
-      </p>
 
       {!seasonId ? (
         <p role="status">
-          Automatic opening readiness is unavailable because the league has no
-          authoritative current season. A valid recovery deep link remains
-          available below.
+          Set a current season before running the Free Agent Draft opening
+          check.
         </p>
       ) : readiness.isPending ? (
-        <LoadingBlock>Loading readiness evidence…</LoadingBlock>
+        <LoadingBlock>Loading opening checks…</LoadingBlock>
       ) : readiness.isError ? (
         <ErrorBlock
           error={readiness.error}
-          fallback="Automatic readiness could not be loaded."
+          fallback="The Free Agent Draft opening check could not be loaded."
         />
       ) : (
         <>
@@ -170,10 +179,6 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
             <div className={styles.summaryCard}>
               <span>Participating teams</span>
               <strong>{readiness.data.participatingTeamCount}</strong>
-            </div>
-            <div className={styles.summaryCard}>
-              <span>Operation version</span>
-              <strong>{readiness.data.operationVersion ?? "Not triggered"}</strong>
             </div>
             <div className={styles.summaryCard}>
               <span>Candidate deadline</span>
@@ -200,19 +205,19 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
             readiness.data.firstMatchupWeekBefore.startsAtMs !==
               readiness.data.firstMatchupWeekAfter.startsAtMs && (
               <p className={styles.notice}>
-                The server projected a whole-Monday Week 1 adjustment from {leagueDateTime(
+                Week 1 will move from {leagueDateTime(
                   readiness.data.firstMatchupWeekBefore.startsAtMs,
                   readiness.data.timeZone
                 )} to {leagueDateTime(
                   readiness.data.firstMatchupWeekAfter.startsAtMs,
                   readiness.data.timeZone
-                )}.
+                )} so it starts on Monday.
               </p>
             )}
 
           {readiness.data.blockers.length > 0 && (
             <section aria-labelledby="fad-readiness-blockers-title">
-              <h3 id="fad-readiness-blockers-title">Current blockers</h3>
+              <h3 id="fad-readiness-blockers-title">Needs attention</h3>
               <ul className={styles.diagnostics}>
                 {readiness.data.blockers.map((blocker) => (
                   <li key={`${blocker.code}:${blocker.resourceId || "league"}`}>
@@ -225,7 +230,7 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
 
           {readiness.data.warnings.length > 0 && (
             <section aria-labelledby="fad-readiness-warnings-title">
-              <h3 id="fad-readiness-warnings-title">Readiness warnings</h3>
+              <h3 id="fad-readiness-warnings-title">Things to review</h3>
               <ul className={styles.diagnostics}>
                 {readiness.data.warnings.map((warning) => (
                   <li key={`${warning.code}:${warning.resourceId || "league"}`}>
@@ -277,18 +282,15 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
                 setConfirming(true);
               }}
             >
-              Retry automatic readiness
+              Run opening check again
             </button>
           )}
 
           {confirming && (
             <div className={styles.pendingConfirmation} role="group" aria-label="Confirm readiness retry">
               <p>
-                Confirm the retry of this exact blocked operation at version {readiness.data.operationVersion}.
-                It will not bypass any blocker or open a subset of cards.
-              </p>
-              <p className={styles.confirmationPhrase}>
-                {RETRY_CONFIRMATION}
+                Run the opening check again using the league’s current teams,
+                rosters, and schedule.
               </p>
               <div className={styles.readinessActions}>
                 <button
@@ -297,7 +299,7 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
                   disabled={retry.isPending}
                   onClick={submitRetry}
                 >
-                  {retry.isPending ? "Submitting retry…" : "Confirm readiness retry"}
+                  {retry.isPending ? "Starting check…" : "Run opening check"}
                 </button>
                 <button
                   type="button"
@@ -318,8 +320,7 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
           )}
           {receipt && (
             <p className={styles.success}>
-              Retry {receipt.retryAttemptNumber} accepted for the same canonical
-              job. Receipt: {receipt.retryReceiptId}
+              The opening check was queued.
             </p>
           )}
           {retry.error &&
@@ -327,15 +328,16 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
             retry.error.code !== "FAD_READINESS_PRECONDITION_FAILED" && (
               <ErrorBlock
                 error={retry.error}
-                fallback="The readiness retry could not be accepted."
+                fallback="The opening check could not be started again."
               />
             )}
         </>
       )}
       </Surface>
+      </details>
       {(!requestedFadValid || !requestedRecoveryValid) && (
         <p className={styles.error} role="alert">
-          The requested FAD recovery deep link is invalid.
+          This Free Agent Draft recovery link is invalid.
         </p>
       )}
       {recoveryFadId && requestedRecoveryValid && (
@@ -355,7 +357,7 @@ export function CommissionerFadPanel(props) {
   if (realtime.status === "reauthorizing") {
     return (
       <Surface>
-        <LoadingBlock>Reauthorizing commissioner Free Agent Draft evidence…</LoadingBlock>
+        <LoadingBlock>Refreshing secure Free Agent Draft access…</LoadingBlock>
       </Surface>
     );
   }

@@ -837,16 +837,33 @@ The project has now approved:
 
 * the related technical specification, now approved at
   `docs/04-technical-specs/FREE_AGENT_DRAFT.md`;
-* the contained M7-25 implementation sequence at
-  `docs/06-work-plans/ACTIVE_WORK_PLAN.md`;
+* the completed M7-25 implementation sequence archived at
+  `docs/06-work-plans/archive/M7-25_FREE_AGENT_DRAFT_IMPLEMENTATION_SEQUENCE.md`;
 * the Candidate Card, allocation, restricted-auction, rapid-scheduler, privacy,
   recovery, and migration test strategy embodied by those documents.
 
-`FAD-01` through `FAD-17` are complete locally. `FAD-18` is the sole active
-isolated-staging slice. The
-migration-impact audit, corrective schema-30 boundary, scheduled `T-037`
-rollover, reset/backup rehearsal, and integrated `FAD-01` through `FAD-04` gate
-have passed. `FAD-07` closed after its final `276/276`
+`FAD-01` through `FAD-18` and M7-25 are complete through isolated staging.
+FAD-18 reached `STAGING VERIFIED` on schema `52` on `2026-08-18`; the exact
+release is recorded at
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
+Production remained untouched and unauthorized. M7-26 is the sole active
+full-site UI-review plan.
+
+The active shared local M7-26 tree now targets schema `54` with `54` migration
+files, `133` application tables/repository-catalog entries, and `134` physical
+tables including `schema_migrations`. Its composed runtime registers `123`
+routes and its conceptual contract catalogue contains `148` entries after
+T-147 notification batch acknowledgement and T-148 trade approval. These are
+current local inventory facts, not a completed gate, shared-staging release, or
+production claim. M7-26 remains `ACTIVE` until the exact completion conditions
+in `ACTIVE_WORK_PLAN.md` pass. The known signed-Prospect buyout/pending-trade
+limitation is a separate P1 production-promotion follow-up outside this
+isolated-staging UI-review gate; it fails atomically without partial writes, and
+T-074 remains `PLANNED`.
+
+The historical migration-impact audit, corrective schema-30 boundary,
+scheduled `T-037` rollover, reset/backup rehearsal, and integrated `FAD-01`
+through `FAD-04` gate passed. `FAD-07` closed after its final `276/276`
 migration/policy/repository/schema/reset gate and independent closure audit.
 `FAD-05` closed after its complete recovery/job/late-lock and migration-freeze
 gates. `FAD-06` closed locally after its final `161/161` auction-family gate
@@ -854,8 +871,7 @@ across `22` suites in `17` files, post-gate `10/10` administration check, and
 fresh full-migration composed GET proof. Independent review's terminal
 player-source P2 was corrected, leaving no remaining P1/P2 issue. FAD-linked
 `T-080` through `T-083` remained fail-closed until their FAD-11 gate. FAD-11
-through FAD-17 have now closed locally; FAD-18 is the sole active isolated-
-staging slice.
+through FAD-17 later closed locally before the completed FAD-18 staging gate.
 
 FAD-08 closed with the shared internal, transaction-bound readiness-handoff
 primitive, but it did not pull the Entry Draft into M7. The future final
@@ -945,9 +961,10 @@ reconciliation migration
 `0049_require_canonical_fad_setup_exemption_publications.sql` is pinned at
 `29,571` bytes, `748` lines, and SHA-256
 `5109baabaeed39e06498c7c26274a41a48edfbbdee958e7dd6b278021a29ebc6`.
-Schema `49` is current locally with the same `131` application tables, `132`
-including the ledger, and `131` repository-catalog entries. Migrations `0023`
-through `0049` have not been applied to shared staging or production.
+Schema `49` was the FAD-14 local target with the same `131` application tables,
+`132` including the ledger, and `131` repository-catalog entries. At that
+checkpoint, migrations `0023` through `0049` had not been applied to shared
+staging or production.
 
 The composed readiness worker/runtime, carryover opening, T-126 through T-129
 privacy and no-write contracts, and original-receipt T-128 replay after later
@@ -1073,7 +1090,8 @@ cancellation, or skip. This includes exact schema `22 -> 49` plus fresh schema-
 aggregate wins, absent/disabled nonblocking video, distinct Alpha/Beta Week 1
 and help chronology, GET/preview no-write proof, restart/recovery, privacy, and
 ordinary-auction compatibility. T-076 through T-083 and T-126 through T-144 are
-`LOCAL VERIFIED` from that recorded evidence.
+`LOCAL VERIFIED` at that FAD-17 checkpoint; FAD-18 later raised them to
+`STAGING VERIFIED` under release `HL-20260818-1`.
 
 The amendment requires automatic all-or-none Candidate Card readiness,
 server-owned whole-Monday Week 1 recovery, strict whole-card cap exclusion,
@@ -1083,41 +1101,33 @@ auctions, private final-hour nomination queueing, no-bid unclaimed outcomes,
 no cap/slot reservation, binding aggregate wins, and contiguous rollover
 extensions beyond the initial seven when required.
 
-Grae's continuation instruction authorizes the isolated staging gate. `FAD-18`
-is now the sole active slice. Exact published source heads now exist, but
-deployment remains blocked until the provider-independent startup/preflight
-amendment is implemented and tested, attached-service operator access exists,
-offsite object storage/encryption plus current backup and clean restore pass,
-the approved reset/import and one schema-49 migration report pass, and final
-release/deploy/rollback identities are available. A SportsDataIO manifest,
-paid credential, live observation, signing secret, and capability artifact are
-not blockers. Production remains blocked and unauthorized.
+Grae's continuation instruction carried the isolated staging gate through
+completion on `2026-08-18`. FAD-18 and M7-25 are complete. The exact backend
+commit `9a2f5e8f06b054c84e37d086c1c3a43d0fafbc68` passed the final Render-hosted
+Node `24.14.1` suite at `3,356/3,356`, migrated isolated staging to schema `52`,
+and is live as Render deploy `dep-da2147e417fc73brkqmg`. Netlify deploy
+`6a8420054c9c5a624d86b2c3` serves exact frontend application commit
+`50f2414cdda5926942975577f70114b5868917a9` from preserved source head
+`2ba016c9d5e6b016a150a62da757f28a9c0140c0`. The encrypted pre-migration backup,
+distinct clean restore, release preflight, health checks, and authenticated
+non-mutating browser acceptance passed. Production remained untouched and
+unauthorized.
 
-The `2026-08-11` pre-mutation read-only inspection records the existing Render
-staging rollback identity as deploy `dep-d9kmv0ijobas73fsp8kg` at commit
-`fa85e75c904389284a030459cd8a68f452cdac02`. Published source heads are frontend
-`29d4d89ea6def41464fc48b6390e7f567c480039` and backend
-`26cf9606b8ee1f33efeb9e667cd265f947bc5387`; backend bridge implementation
-began at `1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd`. None of those FAD source
-commits has been deployed. The final backend candidate formerly depended on an
-operator-reviewed provider-manifest commit. That dependency is superseded; a
-new final identity remains pending the provider-independent preflight
-amendment. This checkpoint changed no Render, Netlify, disk, database, or
-production state.
+For historical rollback provenance, the `2026-08-11` pre-mutation inspection
+recorded Render deploy `dep-d9kmv0ijobas73fsp8kg` at commit
+`fa85e75c904389284a030459cd8a68f452cdac02`, Netlify deploy
+`6a6bede0e1742b6b750017cb`, published frontend source head
+`29d4d89ea6def41464fc48b6390e7f567c480039`, and backend bridge head
+`26cf9606b8ee1f33efeb9e667cd265f947bc5387`. The bridge implementation began at
+`1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd`. Those were pre-release identities;
+the inspection itself changed no hosted resource.
 
-The schema-agnostic maintenance-hold bridge is implemented and published to the
-backend `staging` branch but is not deployed. FAD-18 now routes through an
-auxiliary hold-true deploy on the old schema-22 path, then an exact-final-build
-hold-true deploy for verified backup, clean-
-restore proof at a distinct inactive path, and the complete reset/import at a
-different fresh schema-49 path, including the ordered artifact/bootstrap/
-report/database-identity handoff. Only that same final build may transition
-explicitly to hold `false` on the new path with provider composition and the
-complete automatic matchup-occurrence runner disabled. FAD, Entry Draft,
-auction, trade, and outbox workers remain available subject to their own gates.
-The old file
-remains untouched; in-place migration is excluded pending persistent-root
-hardening.
+The executed maintenance sequence used the schema-agnostic hold, verified
+encrypted backup and distinct clean restore, forward migration, and final
+hold-false activation with the complete automatic matchup-occurrence runner
+disabled. FAD, Entry Draft, auction, trade, and outbox workers remain available
+subject to their own gates. Exact operational and rollback evidence is in the
+2026-08-18 release record.
 
 The core gate includes:
 
@@ -1276,10 +1286,11 @@ Every milestone adds tests at the lowest useful level:
 * written manual QA;
 * staging and release smoke tests.
 
-For M7-25, this also requires the recorded historical `0023` through `0029`
+For M7-25, this also required the recorded historical `0023` through `0029`
 amendment impact dispositions, the resulting verified `0023` through `0049`
 migration set, and the complete 2026-07-29 FAD acceptance package to pass
-locally and in isolated staging before the FAD launch gate can close.
+locally and in isolated staging before the FAD launch gate could close. Those
+requirements passed under release `HL-20260818-1`.
 
 Passing `npm run build` alone is not feature verification.
 
@@ -1340,8 +1351,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Continue FAD-18 through its authorized isolated shared-staging gate
-Implementation status: M7-25 ACTIVE / FAD-01 THROUGH FAD-17 COMPLETE LOCALLY / FAD-18 SOLE ACTIVE ISOLATED-STAGING SLICE / SCHEMA 49 LOCAL ONLY / MIGRATIONS 0023-0049 LOCAL ONLY / TARGET ENDPOINT INVENTORY 117 / T-076 THROUGH T-083 AND T-126 THROUGH T-144 LOCAL VERIFIED / FRONTEND 316/316 / PLAYWRIGHT 40/40 ACROSS FIVE PROJECTS WITH ZERO RETRIES / SOURCE HEADS PUBLISHED; NO FAD DEPLOY / SPORTSDATAIO PAID KEY, MANIFEST, LIVE OBSERVATION, AND ARTIFACT REMOVED FROM FAD GATE / FULL AUTOMATIC MATCHUP-OCCURRENCE RUNNER DISABLED FOR THE FAD-ONLY CANDIDATE; FAD, ENTRY DRAFT, AUCTION, TRADE, AND OUTBOX WORKERS RETAINED / STAGING DEPLOYMENT BLOCKED BY PROVIDER-INDEPENDENT PREFLIGHT AMENDMENT, OPERATOR/SHELL ACCESS, BACKUP-RESTORE, RESET-MIGRATION, AND FINAL RELEASE/DEPLOY IDENTITIES / PRODUCTION UNAUTHORIZED AND BLOCKED
+Action: Execute M7-26 full-site UI review through its approved isolated-staging gate
+Implementation status: M7-25 AND FAD-18 COMPLETE - STAGING VERIFIED 2026-08-18 / STAGING SCHEMA 52 / BACKEND 9A2F5E8 / RENDER DEP-DA2147E417FC73BRKQMG / FRONTEND APP 50F2414 / SOURCE HEAD 2BA016C / NETLIFY 6A8420054C9C5A624D86B2C3 / HOSTED BACKEND 3,356 OF 3,356 / M7-26 SOLE ACTIVE PLAN / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Branches: staging and staging
 ```

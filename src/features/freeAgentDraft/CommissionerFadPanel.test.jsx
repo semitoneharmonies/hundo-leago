@@ -157,12 +157,13 @@ describe("CommissionerFadPanel", () => {
     ).toBeInTheDocument();
     expect(screen.queryByLabelText(/opening time/i)).toBeNull();
     expect(screen.queryByLabelText(/team list/i)).toBeNull();
+    expect(screen.queryByText("Operation version")).not.toBeInTheDocument();
     await view.user.click(
-      screen.getByRole("button", { name: "Retry automatic readiness" })
+      screen.getByRole("button", { name: "Run opening check again" })
     );
-    expect(screen.getByText("RETRY FREE AGENT DRAFT READINESS")).toBeInTheDocument();
+    expect(screen.queryByText("RETRY FREE AGENT DRAFT READINESS")).not.toBeInTheDocument();
     await view.user.click(
-      screen.getByRole("button", { name: "Confirm readiness retry" })
+      screen.getByRole("button", { name: "Run opening check" })
     );
 
     await waitFor(() => expect(retryRequests).toHaveLength(1));
@@ -176,6 +177,7 @@ describe("CommissionerFadPanel", () => {
       /^fad-readiness-retry:/
     );
     expect(retryRequests[0].headers.get("X-CSRF-Token")).toBe("D".repeat(43));
-    expect(await screen.findByText(/Retry 2 accepted/)).toBeInTheDocument();
+    expect(await screen.findByText("The opening check was queued.")).toBeInTheDocument();
+    expect(screen.queryByText(receiptId)).not.toBeInTheDocument();
   });
 });

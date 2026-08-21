@@ -27,5 +27,5 @@ export function teamColourStyle(team) {
 }
 
 export function teamColourClass(baseClassName) {
-  return `${baseClassName} has-team-pattern`;
+  return [baseClassName, "has-team-pattern"].filter(Boolean).join(" ");
 }

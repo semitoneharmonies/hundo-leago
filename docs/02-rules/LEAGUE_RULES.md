@@ -364,7 +364,7 @@ A prospect:
 
 A prospect who signs the fantasy ELC may remain in the Prospect category. The contract exists, but its salary remains cap-exempt and the player remains ineligible for matchup points while assigned to Prospects.
 
-Once a signed prospect moves to Active or Bench, the player may not return to Prospects.
+Once a signed prospect moves to Active, Bench, or Injured Reserve, the player may not return to Prospects.
 
 The approved Hundo Leago fantasy entry-level contract is:
 
@@ -769,7 +769,12 @@ A team re-trading the player may retain an additional portion when:
 
 If the player is bought out, every existing retained-salary obligation remains unchanged for the original remaining contract term.
 
-An existing retained-salary obligation may be traded as a whole. Its amount, remaining schedule, underlying-contract reference, and history do not change. The receiving team becomes responsible for the cap charge and retention slot.
+An existing retained-salary obligation remains with its responsible team and is
+not a selectable standalone asset in a new proposal. New retained salary may be
+requested only within an outgoing contracted-player asset. Persisted historical
+retention records remain readable for accounting, correction, and safe
+reversal; their amount, schedule, underlying-contract reference, and history do
+not change.
 
 The buying-out team’s annual buyout penalty is calculated from the player’s full underlying AAV. Existing retention does not reduce that penalty.
 
@@ -913,12 +918,14 @@ conflict-free incomplete card may still lock and each individually valid new
 offer may participate. A card with an unresolved carried-roster structural
 conflict or an over-cap projection locks as illegal and none of its new
 Candidate offers participate; carryover ownerships remain owned and the
-published card explains the exclusion. The backend never chooses a subset of
+viewer-filtered result explains the exclusion without publishing the complete
+card or its private money. The backend never chooses a subset of
 offers to remove. A manager or help-authorized commissioner may correct the
 card before the deadline, but there is no post-deadline repair.
 
 At the deadline, exactly 168 elapsed hours before the frozen first-matchup
-start, every card locks and becomes read-only to active league members.
+start, every card locks as immutable internal evidence. Active league members
+receive the approved viewer-filtered result projection, not the card itself.
 
 Player allocation ranks highest total contract value first. When highest totals
 tie, the highest AAV wins, so the shorter term wins at an equal total. Only
@@ -1065,7 +1072,8 @@ A proposal’s effective deadline is the earlier of exactly `168 hours` after cr
 Cross-feature trade rules include:
 
 * both teams belong to the same league;
-* roster players, prospects or player rights, draft picks, existing retained-salary obligations, existing buyout-penalty obligations, and Future Considerations are approved tradeable asset types;
+* roster players, prospects or player rights, draft picks, existing buyout-penalty obligations, and Future Considerations are approved standalone tradeable asset types;
+* new retained salary may be requested only within an outgoing contracted-player asset; existing retained-salary obligations are historical/accounting records and may not be selected in a new proposal;
 * the proposing user may act for the proposing team;
 * the accepting user may act for the receiving team;
 * all assets must still be owned by the expected team at acceptance;
@@ -1550,8 +1558,8 @@ FAD-related amendments on 2026-07-27, 2026-07-28, 2026-07-29, and
 - [x] A re-trading team may retain additional salary within the cumulative 50% limit and its slot limit.
 - [x] Retention ends when the underlying contract’s remaining term ends.
 - [x] Existing retained-salary obligations are not affected by a later buyout.
-- [x] An existing retained-salary obligation may be traded as a whole without changing its amount or remaining schedule.
-- [x] The receiving team assumes the traded retention cap charge and retention slot.
+- [x] An existing retained-salary obligation remains with its responsible team and may not be selected as a standalone asset in a new proposal.
+- [x] Persisted historical retention proposals/assets remain readable and executable or reversible when their recorded state permits; an exact completed creation retry replays its original result, while only a fresh proposal uses the new unsupported-asset rule.
 - [x] The buying-out team’s penalty uses the player’s full underlying AAV.
 
 ## Buyouts
@@ -1571,7 +1579,7 @@ FAD-related amendments on 2026-07-27, 2026-07-28, 2026-07-29, and
 - [x] Trade proposals expire after `7 days`.
 - [x] Proposals may not be accepted after the league trade deadline.
 - [x] Buying out a player automatically cancels pending trades involving that player.
-- [x] Active, Bench, and Injured Reserve players, prospects or player rights, draft picks, retention obligations, buyout-penalty obligations, and Future Considerations are tradeable assets.
+- [x] Active, Bench, and Injured Reserve players, prospects or player rights, draft picks, buyout-penalty obligations, and Future Considerations are standalone tradeable assets; requested retention is nested under an outgoing contracted player, and existing retention is not newly selectable.
 - [x] The same asset may appear in multiple pending proposals because proposals do not reserve assets.
 - [x] Unspent draft picks may be traded repeatedly, including during the Entry Draft.
 - [x] A pick permanently preserves draft year, round, and original team; its current owner selects at the original team's position.
@@ -1585,7 +1593,7 @@ FAD-related amendments on 2026-07-27, 2026-07-28, 2026-07-29, and
 - [x] Auction rollover is Sunday at `4:00 PM Pacific`.
 - [x] Ordinary weekly auctions close at playoff start and reopen only after the next season starts and its Free Agent Draft completes.
 - [x] Every season uses private Candidate Cards with 12 F, 6 D, and 4 optional Bench positions.
-- [x] Candidate Cards lock exactly 168 elapsed hours before the frozen first-matchup start and become league-wide read-only.
+- [x] Candidate Cards lock exactly 168 elapsed hours before the frozen first-matchup start; the full cards remain internal audit data while viewer-filtered player identity, final status, and authorized selected-team monetary results become available.
 - [x] The atomic Entry Draft completion transaction records one durable readiness handoff; its later server-owned worker opens all Candidate Cards automatically and simultaneously only when every prerequisite passes, while validation failure opens none.
 - [x] There is no standalone or manual Entry Draft completion endpoint and no commissioner command that opens Candidate Cards directly.
 - [x] Managers may request commissioner card assistance during the final 48 hours, or throughout the entire remaining preparation period when cards open later.

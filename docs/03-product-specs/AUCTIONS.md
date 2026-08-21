@@ -381,7 +381,8 @@ During the approved FAD rapid-auction period:
 * a Candidate minimum creates no cooldown; the ordinary 75-minute cooldown is
   anchored to the participant's opening improvement and each later permitted
   edit;
-* original Candidate minimum values remain visible through the locked Candidate Cards,
+* original Candidate minimum values follow the post-deadline FAD viewer
+  projection and are visible only to the current manager of the selected team,
   while later edited values remain blind until resolution;
 * every open or restricted FAD auction ranks by current AAV and then shorter
   term, using an auditable equal-chance draw among the exact remaining
@@ -1020,7 +1021,7 @@ Tests must cover:
 - [x] A delayed restricted tie auction never bypasses the 60-minute creation cutoff and follows the FAD recovery rule when no fair rapid rollover remains.
 - [x] Restricted FAD auctions accept bids only from Candidate Card teams tied on both the highest total and term.
 - [x] A restricted Candidate minimum creates no edit cooldown; the ordinary cooldown anchors to opening improvement and later bid activity.
-- [x] Locked Candidate Cards preserve public minimum values while later restricted-auction bids and edits remain blind.
+- [x] Locked Candidate Cards remain internal audit data; original minimum values are visible only to the current manager of the selected team, while later restricted-auction bids and edits remain blind.
 - [x] An exact top tie in any open or restricted FAD blind auction uses one auditable equal-chance draw rather than ordinary timestamp or bid ID.
 - [x] If no restricted participant has an eligible current active improvement at resolution, including after invalidation or commissioner removal, the player enters a fresh league-wide 24-hour blind auction with no initial leader.
 - [x] The tied contract floor applies across terms by total first and AAV second; a restricted contender must rank strictly above it, while a fallback bid may equal it.

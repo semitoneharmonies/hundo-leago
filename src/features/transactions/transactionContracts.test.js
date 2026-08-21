@@ -49,12 +49,13 @@ describe("M5-11 transaction response contracts", () => {
     })).toThrow(/sealed bid data/);
   });
 
-  it("builds every approved typed trade asset with exact transport keys", () => {
+  it("builds every new-proposal trade asset with exact transport keys", () => {
     expect([
+      buildTradeAsset({ type: "player", reference: `contract:${assetId}` }),
+      buildTradeAsset({ type: "player", reference: `prospect_right:${playerId}` }),
       buildTradeAsset({ type: "contract", reference: assetId }),
       buildTradeAsset({ type: "prospect_right", reference: playerId }),
       buildTradeAsset({ type: "draft_pick", reference: assetId }),
-      buildTradeAsset({ type: "retention_obligation", reference: assetId }),
       buildTradeAsset({ type: "buyout_obligation", reference: assetId }),
       buildTradeAsset({ type: "future_consideration", reference: assetId }),
       buildTradeAsset({ type: "future_consideration_instruction", reference: "Conditional selection" }),
@@ -62,17 +63,29 @@ describe("M5-11 transaction response contracts", () => {
     ]).toEqual([
       { type: "contract", contractId: assetId },
       { type: "prospect_right", playerId },
+      { type: "contract", contractId: assetId },
+      { type: "prospect_right", playerId },
       { type: "draft_pick", draftPickId: assetId },
-      { type: "retention_obligation", retentionObligationId: assetId },
       { type: "buyout_obligation", buyoutObligationId: assetId },
       { type: "future_consideration", futureConsiderationId: assetId },
       { type: "future_consideration_instruction", description: "Conditional selection" },
       { type: "requested_retention", contractId: assetId, retainedAavCents: 250 },
     ]);
+    expect(() =>
+      buildTradeAsset({ type: "retention_obligation", reference: assetId })
+    ).toThrow(/unsupported/);
+    expect(() =>
+      buildTradeAsset({
+        type: "retention",
+        mode: "requested",
+        reference: assetId,
+        retainedAavDollars: "2.50",
+      })
+    ).toThrow(/unsupported/);
   });
 
   it("accepts correction-required trade details and typed history", () => {
-    expect(validateTradeDetail({
+    const detail = {
       code: "TRADE_PROPOSAL_FOUND",
       proposal: {
         id: tradeId,
@@ -87,6 +100,14 @@ describe("M5-11 transaction response contracts", () => {
         version: 3,
         assets: [{ id: assetId, type: "contract", snapshot: { type: "contract" } }],
         history: [{ id: assetId, type: "correction_required", occurredAtMs: 2 }],
+      },
+    };
+    expect(validateTradeDetail(detail)).toBe(true);
+    expect(validateTradeDetail({
+      ...detail,
+      proposal: {
+        ...detail.proposal,
+        storageStatus: "awaiting_commissioner_approval",
       },
     })).toBe(true);
   });

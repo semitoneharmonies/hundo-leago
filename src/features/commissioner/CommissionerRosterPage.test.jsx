@@ -420,7 +420,7 @@ describe("M7-10 commissioner roster operations", () => {
       })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Choose the operation you need" })
+      screen.getByRole("heading", { name: "Choose a task" })
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Import health" })
@@ -438,22 +438,22 @@ describe("M7-10 commissioner roster operations", () => {
       })
     ).not.toBeInTheDocument();
     await view.user.click(
-      screen.getByRole("tab", { name: "Correct roster" })
+      screen.getByRole("tab", { name: "Move or re-slot player" })
     );
     const movePanel = screen
       .getByRole("heading", { name: "Move or re-slot a player" })
       .closest("section");
+    expect(
+      within(movePanel).getByRole("combobox", {
+        name: "Destination team",
+      })
+    ).toBeDisabled();
     await view.user.click(
       screen.getByRole("tab", { name: "Correct contract" })
     );
     const contractPanel = screen
       .getByRole("heading", { name: "Correct a contract" })
       .closest("section");
-    expect(
-      within(movePanel).queryByRole("combobox", {
-        name: "Destination team",
-      })
-    ).not.toBeInTheDocument();
     expect(
       within(contractPanel).queryByRole("combobox", {
         name: "Contract team",
@@ -475,10 +475,10 @@ describe("M7-10 commissioner roster operations", () => {
       })
     ).not.toBeInTheDocument();
     await view.user.click(
-      screen.getByRole("tab", { name: "Correct roster" })
+      screen.getByRole("tab", { name: "Move or re-slot player" })
     );
     await view.user.selectOptions(
-      within(movePanel).getByLabelText("Team"),
+      within(movePanel).getByLabelText("Current team"),
       IDS.secondTeam
     );
     await view.user.selectOptions(
@@ -493,6 +493,10 @@ describe("M7-10 commissioner roster operations", () => {
     expect(
       within(movePanel).getByRole("option", { name: "Prospect" })
     ).toBeInTheDocument();
+    expect(
+      within(movePanel).getByLabelText("Destination team")
+    ).toHaveValue(IDS.secondTeam);
+    expect(within(movePanel).getByLabelText("Position")).toHaveValue("F");
 
     await view.user.click(
       screen.getByRole("tab", { name: "Add player" })
@@ -528,9 +532,18 @@ describe("M7-10 commissioner roster operations", () => {
     );
 
     expect(
-      await form.findByRole("heading", { name: "Authoritative preview" })
+      await form.findByRole("heading", { name: "Preview" })
     ).toBeInTheDocument();
-    expect(form.getAllByText(/TEAM_ROSTER_ILLEGAL/)).toHaveLength(2);
+    expect(
+      form.getByText(
+        "The roster may need another correction after this change."
+      )
+    ).toBeInTheDocument();
+    expect(
+      form.getByText(
+        "Alpha Aurora: review the roster and cap impact before applying."
+      )
+    ).toBeInTheDocument();
     expect(form.getByText("$43.00")).toBeInTheDocument();
     expect(requests).toHaveLength(1);
     expect(JSON.parse(requests[0].options.body)).toEqual({
@@ -577,7 +590,7 @@ describe("M7-10 commissioner roster operations", () => {
     );
   });
 
-  it("builds exact remove, same-team roster, and value-term contract previews", async () => {
+  it("builds exact remove, cross-team roster, and value-term contract previews", async () => {
     vi.stubGlobal("crypto", {
       randomUUID: vi.fn(() => IDS.operation),
     });
@@ -636,13 +649,13 @@ describe("M7-10 commissioner roster operations", () => {
     });
 
     await view.user.click(
-      screen.getByRole("tab", { name: "Correct roster" })
+      screen.getByRole("tab", { name: "Move or re-slot player" })
     );
     const movePanel = screen
       .getByRole("heading", { name: "Move or re-slot a player" })
       .closest("section");
     await view.user.selectOptions(
-      within(movePanel).getByLabelText("Team"),
+      within(movePanel).getByLabelText("Current team"),
       IDS.team
     );
     await view.user.selectOptions(
@@ -652,6 +665,14 @@ describe("M7-10 commissioner roster operations", () => {
     await view.user.selectOptions(
       within(movePanel).getByLabelText("Roster category"),
       "Bench"
+    );
+    await view.user.selectOptions(
+      within(movePanel).getByLabelText("Destination team"),
+      IDS.secondTeam
+    );
+    await view.user.selectOptions(
+      within(movePanel).getByLabelText("Position"),
+      "D"
     );
     await view.user.click(
       within(movePanel).getByRole("button", {
@@ -667,10 +688,10 @@ describe("M7-10 commissioner roster operations", () => {
       ownershipId: IDS.ownership,
       playerId: IDS.player,
       expectedVersion: 2,
-      correctedTeamId: IDS.team,
+      correctedTeamId: IDS.secondTeam,
       correctedOwnershipKind: "Rostered",
       correctedRosterCategory: "Bench",
-      correctedPositionGroup: "F",
+      correctedPositionGroup: "D",
       correctedSlotNumber: 1,
       reason: null,
     });

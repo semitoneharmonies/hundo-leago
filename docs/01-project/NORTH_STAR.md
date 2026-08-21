@@ -216,7 +216,7 @@ The original league’s salary cap is $100.
 
 Only active-player average annual value, retained salary, and buyout penalties affect the salary cap.
 
-Prospects use an approved $3, three-year fantasy entry-level contract when signed. A signed player may remain in Prospects with the ELC salary excluded from the cap; once moved to Active or Bench, the player may not return to Prospects. Automatic enforcement of real-life ELC signing is deferred to a future update.
+Prospects use an approved $3, three-year fantasy entry-level contract when signed. A signed player may remain in Prospects with the ELC salary excluded from the cap; once moved to Active, Bench, or Injured Reserve, the player may not return to Prospects. Automatic enforcement of real-life ELC signing is deferred to a future update.
 
 Normal non-ELC contracts require at least $1 AAV per contract year. There is no separate monetary maximum, and three years is the maximum term.
 

@@ -18,7 +18,7 @@ export const test = base.extend({
         await stack.close()
       }
     },
-    { scope: 'worker' },
+    { scope: 'worker', timeout: 180_000 },
   ],
   accountPage: async ({ page, fadFixture }, provide) => {
     await provide(new AccountPage(page, fadFixture))

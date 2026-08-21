@@ -366,7 +366,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-SHL-011` Initial loading state is visible and does not flash unauthorized data.
 - [ ] `MQ-SHL-012` Empty state explains what is empty and what authorized action is available.
 - [ ] `MQ-SHL-013` Backend validation appears near the relevant input.
-- [ ] `MQ-SHL-014` Safe unexpected error includes a request ID without stack trace.
+- [ ] `MQ-SHL-014` Safe unexpected error explains what failed and the available recovery without exposing a request ID, raw error code, or stack trace in the normal interface; the request ID remains available in protected technical evidence.
 - [ ] `MQ-SHL-015` Double-clicking a material action does not submit twice.
 - [ ] `MQ-SHL-016` Disabled controls explain timing or permission when explanation is useful.
 - [ ] `MQ-SHL-017` A stale `If-Match` conflict preserves user context and offers/refetches current data safely.
@@ -455,9 +455,9 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-LGT-003` Administrator-created user receives credential-setup email; administrator never sets or sees password.
 - [ ] `MQ-LGT-004` Administrator creates league and initial season atomically.
 - [ ] `MQ-LGT-005` Newly created league is not publicly discoverable before activation.
-- [ ] `MQ-LGT-006` Commissioner assignment is a proposal, not immediate authority.
-- [ ] `MQ-LGT-007` Proposed commissioner can accept or decline.
-- [ ] `MQ-LGT-008` Platform administrator without active league membership cannot perform ordinary internal league operations merely because they are administrator.
+- [ ] `MQ-LGT-006` A league always has exactly one active commissioner; a commissioner change uses the explicit transfer workflow rather than creating a second assignment.
+- [ ] `MQ-LGT-007` Commissioner transfer is atomic and auditable: it cannot leave zero or two active commissioners under retries or concurrent attempts.
+- [ ] `MQ-LGT-008` Every platform administrator receives a protected active membership in every league, can enter every league from the switcher, and can use the approved internal league tools without a commissioner being able to remove or alter that membership.
 
 ---
 
@@ -472,6 +472,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-LGT-015` Manager assignment grants control of the intended team only.
 - [ ] `MQ-LGT-016` Ended assignment removes control after authorization refresh.
 - [ ] `MQ-LGT-017` Team and membership changes cannot target League B from League A.
+- [ ] `MQ-LGT-030` Commissioner membership and team-access controls reject every attempt to remove, unassign, or alter a protected platform-administrator membership.
 - [ ] `MQ-LGT-018` League start is blocked below four teams.
 - [ ] `MQ-LGT-019` League start is blocked by incomplete launch invitation requirements.
 - [ ] `MQ-LGT-020` Successful start performs one visible lifecycle transition.
@@ -482,7 +483,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 
 ## League Use
 
-- [ ] `MQ-LGT-023` Authenticated user sees only their available leagues.
+- [ ] `MQ-LGT-023` Ordinary authenticated users see only their active memberships; platform administrators see every league through their protected memberships.
 - [ ] `MQ-LGT-024` League chooser handles one, multiple, and zero memberships.
 - [ ] `MQ-LGT-025` Manager cannot select or impersonate another team by editing URL, storage, or request data.
 - [ ] `MQ-LGT-026` Commissioner can freeze and unfreeze only the approved manager writes.
@@ -537,6 +538,12 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-ROS-029` Table and lines views both support within-position drag ordering and keyboard ordering without changing authoritative slots.
 - [ ] `MQ-ROS-030` Roster GP, G, A, P, FP, and FPG columns sort clearly without inline stat labels.
 - [ ] `MQ-ROS-031` Player catalog supports All Players, Free Agents, Favourites, every league team, and Prospects filters and displays FPG.
+- [ ] `MQ-ROS-032` An unsigned owned prospect shows manager-only keyboard-operable choices to sign and remain in Prospects, sign to Active, sign to Bench, sign to eligible Injured Reserve, decline the ELC, or voluntarily release the rights.
+- [ ] `MQ-ROS-033` Signing creates exactly one `$3` three-season fantasy ELC and one activity entry; remain-in-Prospects stays off cap, while an illegal Active/Bench/IR destination fails without any contract, ownership, or activity change.
+- [ ] `MQ-ROS-034` Decline ELC and voluntary unsigned-right release each require confirmation, make the player unowned, appear distinctly in League Activity, and cannot target another team or league.
+- [ ] `MQ-ROS-035` A signed fantasy-ELC Prospect remains in Prospects until the manager explicitly activates them to Active, Bench, or eligible Injured Reserve; every promotion control works by keyboard and no path returns the player to Prospects.
+- [ ] `MQ-ROS-036` Prospect decisions and promotion controls remain understandable and operable on a narrow mobile viewport, including disabled IR eligibility and visible backend rejection feedback.
+- [ ] `MQ-ROS-037` Any unsigned-prospect signing, including signing and remaining in Prospects, declining the ELC, releasing the unsigned right, or activating an already-signed Prospect to a normal roster category atomically cancels every affected prospect-right proposal with recorded League Activity and a live trade update; an injected publication failure leaves both the prospect and proposals unchanged, while a new proposal can still trade an already-signed fantasy-ELC Prospect and ordinary Active/Bench/IR moves do not cancel proposals.
 
 ---
 
@@ -582,7 +589,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 
 - [ ] `MQ-FAD-009` The deadline occurs exactly `168 elapsed hours` before the frozen persisted first-matchup start.
 - [ ] `MQ-FAD-010` At the deadline, every Candidate Card locks automatically, including an incomplete card, and no manager or commissioner can extend or edit it.
-- [ ] `MQ-FAD-011` After the deadline, all league Candidate Cards become read-only and visible to league members.
+- [ ] `MQ-FAD-011` After the deadline, every league member can see each requested player and the public `Signed`, `Not won`, or `Tied` result, but only a current manager of the selected team can retrieve that team's offer and term through either the page or API; commissioner or administrator status alone does not reveal them.
 - [ ] `MQ-FAD-012` A player requested by one team is assigned to that team on the exact offered contract with the 14-day free-agent acquisition buyout lock.
 - [ ] `MQ-FAD-013` Candidate offers rank first by highest total contract value and then, among equal highest totals, by highest AAV; `$6/2y` defeats `$6/3y`.
 - [ ] `MQ-FAD-014` Only offers tied on both highest total and term create one restricted tie auction for the exact top-tied teams; lower-ranked offers and other teams are excluded.
@@ -602,12 +609,12 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-FAD-023` Before the final `60 minutes`, a valid rapid nomination opens normally; exactly at and after the cutoff it is accepted privately into a queue, then opens at rollover with the nominator's binding starter bid for resolution at the following rollover, while existing bids and permitted edits remain available until rollover.
 - [ ] `MQ-FAD-024` Rapid resolution is idempotent and creates ownership, contract, normal Active assignment, activity, and notifications together without a second illegality confirmation.
 - [ ] `MQ-FAD-025` FAD completion waits until every active, pending, queued, fallback, delayed, and recovery path is terminal; if completion would be at or after Week 1, the same transaction moves Week 1 and regenerates remaining schedule/jobs before publishing completion.
-- [ ] `MQ-FAD-026` The main navigation shows the FAD workspace while it is active, the roster provides the approved contextual link, and completed cards/results remain available read-only.
+- [ ] `MQ-FAD-026` The main navigation shows the Free Agent Draft workspace while it is active, the roster provides the approved contextual link, completed viewer-filtered results remain available read-only, and a legacy published-card deep link redirects without disclosing private offer data.
 - [ ] `MQ-FAD-027` If the optional league recap video is enabled, it is generated from recorded results, cannot change or delay them, and failure does not block FAD completion or season start.
 - [ ] `MQ-FAD-028` An authorized commissioner or administrator explicitly chooses and persists the first-matchup start; the system does not substitute a fixed annual or NHL-opening-derived date, automatic readiness derives its clock from that choice, advances Week 1 by whole Mondays when Entry Draft completion is late, and freezes the historical FAD clock and participating-team set while still permitting approved atomic server-owned completion recovery to move competition Week 1.
 - [ ] `MQ-FAD-029` A contracted IR player reserves a locked Candidate position without moving off IR or creating an extra opening.
 - [ ] `MQ-FAD-030` A Prospect moved to Active, Bench, or eligible Injured Reserve before the deadline synchronizes as a carryover, while released prospect rights remain excluded without a later eligibility event.
-- [ ] `MQ-FAD-031` Original Candidate minimum values remain visible on locked cards, later bids/edits remain blind, and the final restricted-auction price cannot fall below the original tied total.
+- [ ] `MQ-FAD-031` Every active member sees requested-player identity and final `Signed`, `Not won`, or `Tied` status, but original Candidate minimum amount/term and every other monetary result field are visible only to the current manager of the selected team; later bids/edits remain blind and the final restricted-auction price cannot fall below the original tied total.
 - [ ] `MQ-FAD-032` Correction-required allocation players and players linked to failed or unresolved FAD-auction recovery remain quarantined from rapid and ordinary auctions until explicit terminal recovery, and every rapid-auction contract belongs to the FAD target season.
 - [ ] `MQ-FAD-033` Candidate revision preview and save show the authoritative whole-card maximum-cap projection; the warning remains advisory while editing, and only the deadline transaction decides allocation eligibility from the complete locked card.
 - [ ] `MQ-FAD-034` In a draft season, normal team addition is rejected after Entry Draft setup confirmation; on an approved no-draft path it remains available only until automatic readiness commits, while team erasure uses the separate post-draft/no-draft pre-FAD window.
@@ -667,18 +674,18 @@ This is critical usability verification, not a claim of a formal accessibility c
 
 # Part 12 - Trades
 
-- [ ] `MQ-TRD-001` Manager can propose approved typed assets.
-- [ ] `MQ-TRD-002` Player, prospect rights, draft picks, retention, buyout penalties, and Future Considerations render clearly.
+- [ ] `MQ-TRD-001` Manager can propose the approved friendly asset choices: Player, Draft pick, Buyout obligation, and Future Considerations.
+- [ ] `MQ-TRD-002` Contracted players and prospect rights render under Player; newly requested retained salary is attached to its outgoing player; a fresh standalone retention asset is rejected, while historical proposals/obligations remain readable and executable/reversible when their state permits and an exact completed creation retry replays the original result.
 - [ ] `MQ-TRD-003` Existing contract AAV and remaining years transfer unchanged.
 - [ ] `MQ-TRD-004` Draft pick identifies draft year, round, original team, and current owner.
 - [ ] `MQ-TRD-005` Current, future, and on-clock draft picks can be represented as approved.
 - [ ] `MQ-TRD-006` Multiple simultaneous proposals may reference one asset.
 - [ ] `MQ-TRD-007` Proposal does not reserve the asset prematurely.
-- [ ] `MQ-TRD-008` Only receiving manager can accept or decline.
+- [ ] `MQ-TRD-008` Only the receiving manager can accept or decline; accepting a proposal containing Future Considerations moves it to awaiting commissioner approval without transferring any asset.
 - [ ] `MQ-TRD-009` Only proposing manager can cancel.
-- [ ] `MQ-TRD-010` Commissioner safe view does not grant execution authority.
+- [ ] `MQ-TRD-010` Commissioner safe inspection grants no proposal, receiver-response, or cancellation authority; the only normal execution action is approval of a Future-Considerations proposal already awaiting approval, with reversal/correction kept as separate recovery paths.
 - [ ] `MQ-TRD-011` Acceptance revalidates ownership, obligations, deadline, and proposal status.
-- [ ] `MQ-TRD-012` Successful acceptance applies every transfer atomically.
+- [ ] `MQ-TRD-012` A proposal without Future Considerations completes atomically on valid acceptance; one containing Future Considerations completes atomically only after an authorized commissioner or administrator revalidates and approves it.
 - [ ] `MQ-TRD-013` Failed acceptance changes nothing.
 - [ ] `MQ-TRD-014` Completing one overlapping proposal cancels or invalidates affected proposals.
 - [ ] `MQ-TRD-015` Trade deadline closes trading; the persisted Entry Draft-start occurrence keeps it locked until automatic rollover succeeds, then opens trading and the draft atomically.
@@ -686,8 +693,9 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-TRD-017` Completed trade appears once in League Activity and sends expected notifications.
 - [ ] `MQ-TRD-018` Cross-league team, player ownership, proposal, and pick IDs fail safely.
 - [ ] `MQ-TRD-019` Trade builder and proposal detail remain usable on mobile.
-- [ ] `MQ-TRD-020` Selected contract retention is optional and Future Considerations uses one plain-language notes field.
+- [ ] `MQ-TRD-020` Selected player retention is optional and nested on that player, while Future Considerations uses one plain-language notes field and shows its awaiting-approval state clearly.
 - [ ] `MQ-TRD-021` Buyout choices identify the bought-out player, annual penalty, and remaining term, and acceptance transfers the selected obligation in full.
+- [ ] `MQ-TRD-022` No counter action or endpoint is advertised; rejecting and independently creating a reversed-role proposal are visibly separate manager-authorized actions.
 
 ---
 
@@ -716,7 +724,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-MAT-012` Approved scoring is goals × `1.25` plus assists.
 - [ ] `MQ-MAT-013` Live updates refetch correct matchup without moving locked players.
 - [ ] `MQ-MAT-014` Finalization occurs once.
-- [ ] `MQ-MAT-015` Commissioner correction creates a visible versioned result without League Activity entry.
+- [ ] `MQ-MAT-015` Beside a finalized result, an authorized commissioner can identify the matchup by teams and week, preview the corrected result and projected standings impact, then confirm one atomic result-version and standings recalculation without a League Activity entry.
 - [ ] `MQ-MAT-016` Reconnect or refresh does not double-count fantasy points.
 - [ ] `MQ-MAT-017` Matchup tables/cards remain understandable on mobile.
 - [ ] `MQ-MAT-024` One week selector exposes every completed, current, and future regular-season week.
@@ -729,8 +737,8 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-MAT-018` Standings use finalized authoritative results only.
 - [ ] `MQ-MAT-019` Wins, losses, ties, standings points, FP for/against, and differential reconcile.
 - [ ] `MQ-MAT-020` Sorting follows standings points, FP differential, FP for, then team name.
-- [ ] `MQ-MAT-021` Standings page view does not trigger rebuild or write.
-- [ ] `MQ-MAT-022` Commissioner rebuild uses official result versions and creates no League Activity entry.
+- [ ] `MQ-MAT-021` Ordinary standings and correction-preview views are read-only and never trigger a rebuild or write.
+- [ ] `MQ-MAT-022` A confirmed commissioner correction recalculates standings in the same authoritative operation; explicit rebuild remains a recovery-only backend capability and is absent from the normal commissioner flow.
 - [ ] `MQ-MAT-023` League A standings never show League B teams/results.
 
 ---
@@ -747,7 +755,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-COM-006` Platform administrator can approve/decline protected request with recorded outcome.
 - [ ] `MQ-COM-007` League-specific correction is preferred over whole-database restore.
 - [ ] `MQ-COM-008` Debug controls are absent from production-target presentation.
-- [ ] `MQ-COM-009` Commissioner operation failure leaves prior data intact and shows request ID.
+- [ ] `MQ-COM-009` Commissioner operation failure leaves prior data intact and presents a plain-language problem, impact, and safe next action without exposing a request ID, operation version, raw code, or JSON in the normal interface.
 - [ ] `MQ-COM-023` Commissioner dashboard shows personal-team context only when the user also has an explicit current manager assignment.
 - [ ] `MQ-COM-024` Commissioner Roster Operations presents the four correction workflows without provider import-health or raw-JSON panes.
 
@@ -768,9 +776,9 @@ This is critical usability verification, not a claim of a formal accessibility c
 ## Notifications
 
 - [ ] `MQ-COM-017` User sees only own notifications.
-- [ ] `MQ-COM-018` Listing notifications does not mark them read.
-- [ ] `MQ-COM-019` Mark-one-read updates only the selected owned notification.
-- [ ] `MQ-COM-020` Mark-all-read affects only the caller.
+- [ ] `MQ-COM-018` The default notification inbox fetches unread records with a bounded batch; after that batch renders, one explicit authenticated batch request marks exactly those IDs read while keeping the mounted batch visible for the current visit.
+- [ ] `MQ-COM-019` Reload or a later visit moves the acknowledged batch to `Previous notifications`; unread records not included in that rendered batch remain unread, and no individual or mark-all control is required.
+- [ ] `MQ-COM-020` Batch acknowledgement affects only notifications owned by the caller; a partial or failed acknowledgement remains visible with a safe retry and never pretends success.
 - [ ] `MQ-COM-021` Socket invalidation/refetch does not create duplicate notification rows.
 - [ ] `MQ-COM-022` Notification links open an authorized stable-ID route and fail safely after access changes.
 
@@ -783,7 +791,7 @@ This is critical usability verification, not a claim of a formal accessibility c
 - [ ] `MQ-ERR-001` Slow request shows loading state without duplicate action.
 - [ ] `MQ-ERR-002` Timeout permits safe retry with the same user intent/idempotency key.
 - [ ] `MQ-ERR-003` New user intent uses a new idempotency key.
-- [ ] `MQ-ERR-004` `500` response shows safe message and request ID.
+- [ ] `MQ-ERR-004` A `500` response shows a safe actionable message without a request ID, raw code, JSON, or stack in the normal interface; protected network or server evidence still retains the request ID for support.
 - [ ] `MQ-ERR-005` Malformed server response does not render stale success.
 - [ ] `MQ-ERR-006` Frontend does not silently fall back to another environment origin.
 - [ ] `MQ-ERR-007` Browser console/log display contains no secret or raw stack.

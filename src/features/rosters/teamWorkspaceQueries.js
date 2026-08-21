@@ -118,6 +118,72 @@ export async function moveRosterPlayer(
   ).data;
 }
 
+export async function signProspectFantasyElc(
+  httpClient,
+  leagueId,
+  teamId,
+  playerId,
+  input
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${part(leagueId)}/teams/${part(teamId)}/prospects/${part(
+        playerId
+      )}/sign`,
+      {
+        method: "POST",
+        authenticated: true,
+        body: input,
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
+export async function declineProspectFantasyElc(
+  httpClient,
+  leagueId,
+  teamId,
+  playerId,
+  expectedVersion
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${part(leagueId)}/teams/${part(teamId)}/prospects/${part(
+        playerId
+      )}/decline`,
+      {
+        method: "POST",
+        authenticated: true,
+        body: { confirmed: true, expectedVersion },
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
+export async function releaseUnsignedProspectRights(
+  httpClient,
+  leagueId,
+  teamId,
+  playerId,
+  expectedVersion
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${part(leagueId)}/teams/${part(teamId)}/prospect-rights/${part(
+        playerId
+      )}`,
+      {
+        method: "DELETE",
+        authenticated: true,
+        body: { confirmed: true, expectedVersion },
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
 export async function buyOutRosterContract(
   httpClient,
   leagueId,

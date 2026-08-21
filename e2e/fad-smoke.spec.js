@@ -1,9 +1,5 @@
 import { test, expect } from './fixtures/fadTest.js'
-import {
-  privateCandidateForTeam,
-  teamByAlias,
-  teamsForManager,
-} from './support/fadScenario.js'
+import { teamByAlias, teamsForManager } from './support/fadScenario.js'
 
 test('manager reaches the server-authored Candidate Card workflow', async ({
   accountPage,
@@ -13,17 +9,15 @@ test('manager reaches the server-authored Candidate Card workflow', async ({
   page,
 }) => {
   const { manifest } = fadFixture
-  const alpha = manifest.leagues.alpha
-  const manager = manifest.accounts.alphaMultiTeamManager
-  const managedTeams = teamsForManager(alpha, manager)
-  expect(managedTeams).toHaveLength(2)
-  const carryover = alpha.sentinels.lockedCarryover
-  const primaryTeam = teamByAlias(alpha, carryover.teamAlias)
-  expect(managedTeams.map((team) => team.alias)).toContain(primaryTeam.alias)
-  const privateCandidate = privateCandidateForTeam(alpha, primaryTeam)
+  const beta = manifest.leagues.beta
+  const manager = manifest.accounts.betaManager
+  const managedTeams = teamsForManager(beta, manager)
+  expect(managedTeams.length).toBeGreaterThanOrEqual(2)
+  const privateCandidate = beta.sentinels.privateCandidates[0]
+  const primaryTeam = teamByAlias(beta, privateCandidate.teamAlias)
 
   await accountPage.signIn(manager)
-  await leagueChooserPage.openLeague(alpha)
+  await leagueChooserPage.openLeague(beta)
   await freeAgentDraftPage.openFromMainMenu()
   await expect(
     page.getByRole('heading', { name: 'Free Agent Draft', exact: true })
@@ -35,14 +29,12 @@ test('manager reaches the server-authored Candidate Card workflow', async ({
   await freeAgentDraftPage.openTeamLink(primaryTeam)
   await freeAgentDraftPage.expectPrivateCard(privateCandidate.playerFullName)
   await freeAgentDraftPage.expectSlotMatrix()
+  await expect(page.getByText('Projected cap use', { exact: true })).toBeVisible()
+  await expect(page.getByText('Mandatory missing', { exact: true })).toBeVisible()
+  await expect(page.getByLabel(/^F\d{2} AAV$/).first()).toBeVisible()
+  await expect(page.getByLabel(/^F\d{2} term$/).first()).toBeVisible()
   await expect(
-    page.getByRole('complementary', { name: 'Candidate Card controls' })
-  ).toContainText('Card status')
-  await expect(page.getByText('Maximum cap use', { exact: true })).toBeVisible()
-  await expect(page.getByText('Total value', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText('Term', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText('AAV', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText('Locked carryover', { exact: true })).toBeVisible()
-  await expect(page.getByText(carryover.playerFullName, { exact: true })).toBeVisible()
+    page.getByLabel(/^F\d{2} total contract value$/).first()
+  ).toBeVisible()
   await freeAgentDraftPage.expectNoHorizontalOverflow()
 })

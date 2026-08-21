@@ -18,6 +18,28 @@ The approved feature-specific frontend, route, query, privacy, realtime, and
 cache-eviction amendment for the Free Agent Draft is defined at
 `docs/04-technical-specs/FREE_AGENT_DRAFT.md`.
 
+The M7-26 full-site UI amendment approved on 2026-08-20 requires shared
+matchup, trade-block, team-mark, position-pill, and actionable-error
+presentation wherever the same concept repeats. Normal user and commissioner
+views use plain language and do not render request IDs, raw JSON, internal
+codes/error names, operation versions, or database identifiers. Those values
+remain in typed client errors, logs, protected technical evidence, and request
+preconditions where required; hiding them is presentation, not removal of
+concurrency or support data.
+
+Uploaded team logos are preferred and the shared team-colour/pattern mark is
+the no-logo fallback without initials. Season labels use selected-league
+authoritative current-season data, never the browser clock. Error surfaces
+state what failed, why it matters, how the user can recover, and expose a safe
+action when one exists. Muted Bench styling and semantic event colours retain
+text labels and accessible contrast rather than relying on colour alone.
+
+Notification listing remains a read-only query. The Notifications page is the
+one approved automatic-on-view write surface: after successfully rendering a
+captured unread batch it sends one explicit authenticated batch POST for those
+exact IDs, retains the captured rows for that mounted visit, and surfaces a
+failure. No other page view gains mutation authority from this exception.
+
 ---
 
 ## Technical Purpose
@@ -84,9 +106,9 @@ Product specifications own visible workflow. API Contracts own transport. Securi
 
 ---
 
-## Reviewed Frontend
+## 2026-07-18 Reviewed Frontend Baseline
 
-Current foundation:
+Foundation reviewed at that historical baseline:
 
 ```text
 React 19
@@ -112,7 +134,9 @@ Reviewed facts:
 * no automated frontend test runner exists;
 * `src/components/TeamToolsPanel.jsx` contains unrelated local work that must be preserved.
 
-These facts describe current implementation. They are not approved target authority or permission behavior.
+These facts describe the 2026-07-18 pre-refactor baseline, not the current
+M7-26 implementation. They remain historical context and are not approved
+target authority or permission behavior.
 
 ---
 

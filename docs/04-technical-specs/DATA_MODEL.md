@@ -7,12 +7,45 @@
 This technical specification consolidates:
 
 * approved stable-identifier, league-isolation, season, permission, roster, contract, transaction, matchup, standings, history, and recovery requirements;
-* the current file-backed JSON shapes that must be migrated safely;
+* the preserved pre-SQLite file-backed JSON shapes used as migration and
+  compatibility evidence;
 * the approved normalized SQLite target model;
 * approved identity, time, money, versioning, constraint, history, and deletion conventions;
 * technical decisions delegated to and resolved by Codex from the approved project requirements.
 
 Grae delegated the technical data-model decisions and approved adoption of the resulting design on 2026-07-18.
+
+On 2026-08-20, Grae approved the M7-26 data amendment. Platform-administrator
+authority remains global, but each active administrator also has one protected
+active membership in every league for stable actor, audit, and league-context
+relationships. League creation provisions those memberships and an additive
+reconciliation covers existing leagues; commissioner membership and manager-
+assignment writers must reject any operation that would edit or end protected
+administrator access.
+
+Trade proposals add a durable one-to-one receiver-acceptance record for a
+manager-accepted Future Considerations proposal. The stored trade status stays
+`proposed`; the acceptance record projects `Awaiting Commissioner Approval`.
+Entering that projection moves no asset and creates no contract, ownership,
+retention, buyout, roster, cap, or Future Considerations obligation. The
+authorized completion transaction creates the normal effects only after
+revalidation. New proposals do not create standalone retention-obligation
+asset rows; requested retention remains linked to its outgoing contracted-
+player asset. Persisted history remains readable and executable/reversible as
+its state permits, and an exact completed creation retry returns its stored
+original result before fresh-request grammar validation.
+
+Notification batch acknowledgement updates only the exact caller-owned IDs in
+one transaction and is idempotent. Result correction and replacement of any
+current derived standings snapshot share one atomic transaction. M7-26 uses
+schema version `54`: migration `0053` adds the durable Future-Considerations
+acceptance record, and migration `0054` fails closed on dirty authority data
+before adding the one-active-commissioner partial unique index. Migration
+`0054` adds no permanent table.
+
+The verified isolated staging target reached schema `52` on 2026-08-18. Older
+schema-49 status language below is retained only as historical FAD build
+evidence and is not the current shared-staging state.
 
 The FAD product approval on 2026-07-27, including the Candidate Card ranking and
 tie amendment on 2026-07-28, supersedes conflicting lifecycle language, but the
@@ -28,7 +61,7 @@ The shared relationships and lifecycle gates below adopt those decisions;
 the dedicated FAD specification remains authoritative for its exact tables,
 columns, constraints, canonical hashes, and migration order.
 
-The current additive SQLite target is schema version `49`. Schema 39 adds the
+The current additive SQLite target is schema version `54`. Schema 39 adds the
 immutable FAD recovery-action and allocation-correction command-result evidence
 plus its recovery, queue-acceptance, and guard support. Schema 40 adds no table
 or repository-catalog entry; it narrows the exact transaction-bound overlap
@@ -46,6 +79,16 @@ preserved intermediate FAD-14 checkpoint that requires canonical automatic-
 award and Candidate Card opening realtime evidence. Schema 49 requires the
 exact setup-exemption Activity, current-commissioner notification, destination,
 and three metadata-only publications without changing structural inventory.
+Schema 50 adds `candidate_card_revision_entry_changes`. Schema 51 changes FAD
+ranking to AAV-first without a new table, and schema 52 adds post-deadline FAD
+nominations without a new table. Schema 53 adds
+`trade_future_consideration_acceptances`. Schema 54 creates and drops a
+preflight guard, rejects duplicate commissioners plus missing or noncanonical
+administrator memberships, adds the partial unique index
+`league_memberships_one_active_commissioner`, and advances the data-model
+version without adding a permanent table. The current local inventory is `133`
+application tables and repository-catalog entries, or `134` physical tables
+including `schema_migrations`.
 
 The explicit final-standings amendment approved on 2026-07-29 requires one
 canonical, provenance-complete regular-season final snapshot before later
@@ -439,7 +482,10 @@ Fields include:
 
 League name is unique platform-wide under the approved initial product rule.
 
-Exactly one active league membership is referenced as commissioner for an operational league.
+Exactly one active league membership is referenced as commissioner for an
+operational league. Schema 54 enforces at most one active commissioner
+membership per league; application invariants and `commissioner_membership_id`
+enforce that an operational league has exactly one.
 
 ---
 
@@ -520,7 +566,14 @@ Fields include:
 
 A user has at most one current membership row per league.
 
-Platform-administrator authority remains separate from league membership.
+Platform-administrator authority remains separate from league membership, but
+every active administrator must have an active `member` membership with
+`ended_at` unset in every non-deleted league. Protection is derived from the
+active platform role and enforced by the application writers: league creation
+and role grant/bootstrap provision or reconcile the row, while membership,
+commissioner, and manager-assignment writes reject ending, reclassifying, or
+assigning it. An administrator is ineligible to become commissioner or team
+manager through those flows.
 
 ---
 
@@ -864,7 +917,15 @@ field and constraint contract is defined in the dedicated FAD specification.
 
 `retention_years` stores the obligation amount for each affected season.
 
-Trading a whole retention obligation changes the responsible team without changing its amount or schedule.
+New proposal creation cannot select a whole retention obligation. Requested
+retention is stored only with the matching outgoing contracted-player asset and
+creates a retention obligation at successful completion. Persisted standalone
+retention references remain readable for historical accounting, explicit
+correction, and safe reversal without changing their amount or schedule.
+Persisted historical proposals remain executable or reversible when their
+recorded model/state permits. Exact replay of a completed historical creation
+request returns its immutable stored result before fresh-request asset-grammar
+validation and performs no new write.
 
 Retention continues when the underlying player is bought out.
 
@@ -971,10 +1032,18 @@ intermediate realtime-evidence checkpoint. Migration
 `0049_require_canonical_fad_setup_exemption_publications.sql` is pinned at
 `29,571` bytes, `748` lines, and lowercase SHA-256
 `5109baabaeed39e06498c7c26274a41a48edfbbdee958e7dd6b278021a29ebc6`.
-It replaces only the live head-48 setup-exemption insert trigger. Schema `49`
-is current locally with the same `131` application tables, `132` including
-`schema_migrations`, and `131` repository-catalog entries. None of migrations
-`0023` through `0049` has reached shared staging or production.
+It replaces only the live head-48 setup-exemption insert trigger. At that dated
+FAD-14 local checkpoint, schema `49` had `131` application tables, `132`
+including `schema_migrations`, and `131` repository-catalog entries. At that
+checkpoint none of migrations `0023` through `0049` had reached shared staging
+or production; this sentence is historical release evidence, not current-state
+guidance.
+
+The current shared-tree target is schema `54` with `54` migration files, `133`
+application tables and repository-catalog entries, and `134` physical tables
+including `schema_migrations`. The reset bootstrap retains `51` post-reset
+tables and classifies all `133` application tables. This current local inventory
+does not claim that schemas 53 or 54 have reached shared staging or production.
 
 The scheduled FAD resolver now composes exact Candidate-tie restricted,
 allocation-linked restricted-no-improvement fallback, direct open-rapid, and
@@ -1209,6 +1278,7 @@ commits with all of its linked FAD state or leaves every related row unchanged.
 | `trades` | Two-team proposal lifecycle |
 | `trade_assets` | Typed proposed transfer in one direction |
 | `trade_events` | Proposal, response, cancellation, completion, reversal, and correction |
+| `trade_future_consideration_acceptances` | One durable receiver-acceptance snapshot per open Future-Considerations proposal, used to project awaiting commissioner approval |
 | `future_considerations` | Stable outstanding future obligation |
 
 ---
@@ -1221,20 +1291,21 @@ Fields include:
 * league and season;
 * proposing and receiving teams;
 * proposing user;
-* creating membership and manager-or-commissioner authority;
+* creating membership and proposing-manager authority;
 * status;
 * created and expires timestamps;
 * persisted effective acceptance deadline;
 * responded and completed timestamps;
-* commissioner-completion reference;
+* commissioner-approval or recovery reference when applicable;
 * proposal model version;
 * version.
 
 Proposals do not reserve assets.
 
 The completed `M5-05` foundation keeps proposal evaluation and authenticated
-league-member history reads SELECT-only. It derives current proposing-manager
-or league-commissioner authority from active membership and assignment records,
+league-member history reads SELECT-only. Proposal creation derives current
+proposing-manager authority from active membership and assignment records;
+commissioner authority grants safe inspection but no create/cancel bypass,
 opens trading only from the persisted successful scheduled Entry Draft-start
 rollover and trading-window state, and treats the configured league trade
 deadline as closed at the exact stored instant. Draft setup or a merely
@@ -1250,11 +1321,12 @@ unknown creating membership, authority, and effective-deadline evidence; every
 new target proposal is complete model version 2. Proposal creation still
 reserves or transfers nothing.
 
-The completed `M5-07` lifecycle step uses the existing `trades`,
+The lifecycle uses `trades`,
 `trade_events`, `idempotency_requests`, and durable `job_runs` records without
-a schema migration. Receiver rejection, proposer cancellation, explicit
-commissioner action, and exact-deadline expiry are pending-only terminal
-transitions with append-only evidence. The expiry job uses one stable occurrence
+a schema migration. Receiver rejection, proposer cancellation, and
+exact-deadline expiry are open-proposal transitions with append-only evidence.
+Commissioner authority does not provide proposal, response, or cancellation
+writes. The expiry job uses one stable occurrence
 per proposal and effective deadline; authenticated reads never expire or repair
 a proposal.
 
@@ -1265,17 +1337,26 @@ slots, and retention limits. It returns both proposal-time and current snapshots
 resulting team previews, and one approved general-illegality flag without
 changing any row.
 
-The completed `M5-08` execution step repeats those checks inside one immediate
-transaction. It moves the proposal directly from storage `proposed` to
-`completed`; transfers rostered ownership and its active contract, prospect
-rights and any fantasy ELC, unused draft-pick ownership, whole retention and
-buyout obligations, and existing Future Considerations without changing their
-underlying terms; creates approved requested-retention schedules and new Future
-Considerations; appends typed history; and automatically cancels other pending
-proposals made stale by the transferred asset identities. A generally illegal
-normal roster may persist a null finite slot; the ownership remains explicit
-and requires a later normal roster move. Exact idempotent replay changes no
-row.
+For a proposal without Future Considerations, receiver acceptance repeats those
+checks inside one immediate transaction. It moves the proposal directly from
+storage `proposed` to `completed`; transfers rostered ownership and its active
+contract, prospect rights and any fantasy ELC, unused draft-pick ownership, and
+buyout obligations without changing their underlying terms; creates approved
+requested-retention schedules; appends typed history; and automatically cancels
+other pending proposals made stale by the transferred asset identities. A
+generally illegal normal roster may persist a null finite slot; the ownership
+remains explicit and requires a later normal roster move. Exact idempotent replay
+changes no row.
+
+For a proposal containing Future Considerations, receiver acceptance leaves the
+`trades.status` storage value `proposed`, moves no asset, and inserts exactly one
+`trade_future_consideration_acceptances` row containing the accepted proposal
+version and immutable acceptance evidence. That one-to-one row projects
+`awaiting_commissioner_approval`. Proposer cancellation, receiver rejection,
+expiry, and automatic stale cancellation remain valid while it exists.
+Commissioner or inherited-administrator approval revalidates current state and
+then performs the same completion transaction, including creation of the Future
+Considerations obligation. Approval replay is idempotent.
 
 ---
 
@@ -1297,34 +1378,43 @@ Approved asset types include:
 * player and contract;
 * prospect right;
 * draft pick;
-* retention obligation;
 * buyout obligation;
 * Future Considerations.
+
+The persisted schema continues to recognize a retention-obligation reference
+for legacy history and recovery, but it is excluded from the new-proposal
+creation whitelist.
 
 Database checks and service validation ensure exactly one valid asset reference
 or explicit Future Considerations instruction and same-league ownership. New
 model-version-2 assets require a non-empty valid JSON snapshot. A requested-
 retention row links the exact included outgoing contract and amount; the amount
-does not consume a retention slot until acceptance. Existing whole obligations
-and new requested instructions remain distinct asset identities.
+does not consume a retention slot until completion. Existing standalone
+retention rows remain compatibility-only persisted identities and are not
+accepted by new proposal creation.
 
 ---
 
-## Trade Completion
+## Trade Acceptance And Completion
 
-The completed `M5-08` work revalidates every asset inside one immediate
-transaction and saves:
+Receiver acceptance without Future Considerations, or commissioner approval of
+a receiver-accepted Future-Considerations proposal, revalidates every asset
+inside one immediate transaction and saves:
 
 * transfers;
 * contract ownership;
 * new retention obligations;
-* obligation transfers;
+* buyout-obligation transfers;
 * Future Considerations;
 * proposal status;
 * automatic cancellation of conflicting proposals;
 * typed completion and automatic-cancellation history.
 
 All changes occur in one transaction.
+
+Receiver acceptance with Future Considerations saves only the durable
+acceptance snapshot and its event/outbox evidence. It does not perform any item
+in the completion list until authorized commissioner approval.
 
 The completed `M5-09` work adds approved League Activity and transactional
 outbox records to successful auction and trade transaction boundaries,
@@ -2190,7 +2280,13 @@ Entry Draft activity contains only draft start, lottery results, and draft compl
 * related feature and record;
 * delivery state.
 
-In-app notification reads use an explicit write to mark a notification read; merely listing notifications does not mutate them.
+Listing notifications is read-only. After the frontend successfully renders its
+captured unread batch, one explicit authenticated batch command may mark exactly
+1–100 unique stable notification IDs read. The repository first validates that
+every ID belongs to the caller, then updates all IDs in one transaction; any
+foreign or missing ID rolls back the complete batch. Exact replay is idempotent
+and may report `changedCount: 0`. Legacy one-notification and read-all commands
+remain compatibility writes rather than the normal UI workflow.
 
 ---
 
@@ -2311,7 +2407,9 @@ The schema must enforce, where applicable:
 * same-league composite relationships;
 * unique normalized emails;
 * unique league and team names under approved scope;
-* one active commissioner per league;
+* at most one active commissioner membership per league through the schema-54
+  partial unique index, with exactly one operational commissioner additionally
+  enforced by application validation and the league pointer;
 * one active membership per user and league;
 * one active manager per team;
 * one current owner per league and player;
@@ -2546,6 +2644,8 @@ Data-model tests must cover:
 - [x] Normalized email is platform-wide unique.
 - [x] The initial session model permits only one active session per user.
 - [x] Platform roles are stored separately from league memberships.
+- [x] Every active platform administrator has one protected active `member` membership with no end timestamp in every non-deleted league; provisioning and additive reconciliation maintain it.
+- [x] Membership, commissioner, and team-manager writers reject ending, reclassifying, or assigning a protected administrator membership, and administrators are ineligible for commissioner or manager assignment through those flows.
 - [x] Each operational league references exactly one active commissioner membership.
 - [x] One user has at most one current membership row per league.
 - [x] Team names are case-insensitively unique inside a league.
@@ -2570,11 +2670,13 @@ Data-model tests must cover:
   season, contract, ownership, obligation, trade, draft, or trading effect.
 - [x] Retention obligations and their yearly schedules are separate records from contracts.
 - [x] Buyout obligations and their yearly schedules are separate records from eliminated contracts.
-- [x] Trading a retention or buyout obligation changes its responsible team without changing its schedule.
+- [x] New proposals cannot select a standalone retention obligation; requested retention is nested under an outgoing contracted player, while persisted legacy retention remains readable for accounting, correction, and safe reversal.
+- [x] Trading a buyout obligation changes its responsible team without changing its schedule.
 - [x] Auctions, bids, events, and resolutions use separate tables.
 - [x] Active bid secrecy is enforced through authorized queries rather than omitting bid values from storage.
 - [x] Trades use a stable proposal row plus typed asset rows and append-only trade events.
 - [x] Trade asset rows permit exactly one valid same-league asset reference.
+- [x] `trade_future_consideration_acceptances` stores one durable receiver-acceptance snapshot and projects awaiting commissioner approval without moving assets; completion waits for authorized revalidation and approval.
 - [x] Future Considerations use stable outstanding-obligation records.
 - [x] Entry Draft tables may be implemented during the season using the approved lottery and real-world eligibility rules.
 - [x] Lottery runs preserve standings source, algorithm version, integer weights, secure-random audit inputs, draw order, final positions, and current pick owners.
@@ -2621,7 +2723,7 @@ Data-model tests must cover:
   canonical standings snapshot commit atomically or not at all.
 - [x] Standings rows cannot be directly edited as independent league truth.
 - [x] League Activity, notifications, commissioner corrections, administrator requests, freezes, and operational events use separate tables.
-- [x] Listing notifications is read-only; marking one read is an explicit write.
+- [x] Listing notifications is read-only; normal UI acknowledgement explicitly marks exactly the rendered caller-owned batch transactionally and idempotently, while legacy one/read-all commands remain compatibility writes.
 - [x] Entry Draft League Activity contains only draft start, lottery results, and draft completion.
 - [x] Idempotency requests are scoped by actor, league, operation, and client key.
 - [x] Every successful T-080 through T-083 request has one immutable

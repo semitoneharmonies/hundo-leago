@@ -18,6 +18,16 @@ canonical final standings snapshot with exact source-result provenance before
 the scheduled Entry Draft-start rollover can run. Competition-season end does
 not itself run that rollover.
 
+On 2026-08-20, Grae approved contextual result correction on the Standings
+page. A commissioner selects a recognizable week/matchup identified by team
+names, previews the corrected result and projected standings impact, and then
+confirms once. Confirmation stores the corrected official result and its
+recalculated current standings atomically; partial correction without the
+corresponding standings state is forbidden. The normal interface has no
+separate standings-rebuild step after a result correction. The explicit
+backend rebuild remains an exceptional recovery capability for independently
+detected derived-state failure and is not removed by this presentation change.
+
 ---
 
 ## Product Purpose
@@ -127,8 +137,10 @@ A commissioner may:
 
 * view standings health and source-result information;
 * explicitly finalize complete regular-season standings;
-* preview and run an explicit rebuild;
-* correct source matchup results through the Matchups workflow;
+* preview a contextual matchup-result correction beside the affected standings,
+  including current and projected rows, then apply the confirmed correction;
+* preview and run an explicit rebuild only as an exceptional recovery action
+  outside the normal standings UI;
 * recover a failed derived-standings update.
 
 A commissioner may not directly type replacement standings values into a row.
@@ -401,9 +413,10 @@ finalization exists and still matches every current official result version.
 
 ---
 
-## Explicit Rebuild
+## Recovery-Only Explicit Rebuild
 
-A commissioner rebuild:
+A full commissioner rebuild is an exceptional recovery operation and is absent
+from the normal Standings UI. When recovery is required, it:
 
 1. selects one league and season;
 2. previews expected and included results;
@@ -427,7 +440,9 @@ correction workflow.
 
 ## Latest Approved Version
 
-When a matchup result is corrected, standings use the latest approved result version.
+When a matchup result is corrected, standings use the latest approved result
+version. The normal correction surface is presented beside the affected
+Standings result context rather than as a generic rebuild panel.
 
 Earlier result versions remain in matchup correction history.
 
@@ -435,7 +450,17 @@ Earlier result versions remain in matchup correction history.
 
 ## Correction Propagation
 
-For live/current standings calculated on read, the corrected result appears on the next successful read.
+The read-only correction preview accepts proposed home and away scores plus an
+optional reason and returns the week and matchup/team identities, proposed
+result version and outcome, current rows, projected rows, and changed team IDs.
+It changes no state.
+
+Before official finalization, applying the confirmed correction atomically
+commits the new authoritative result version, any required current derived-state
+update or invalidation, correction evidence, and post-commit publication work.
+For standings calculated on read, the corrected result appears on the next
+successful read; there is no interval in which a committed result is paired
+with a knowingly authoritative stale current table.
 
 After official finalization, result correction and a replacement canonical
 final standings snapshot complete through one explicit atomic correction
@@ -699,11 +724,12 @@ Tests must cover:
   expected and included counts, participant count, and finalization evidence.
 - [x] A legacy snapshot without complete provenance and explicit finalization
   evidence does not satisfy the finalization or rollover prerequisite.
-- [x] A commissioner rebuild previews inputs and problems, requires confirmation, and changes no matchup result.
-- [x] A rebuild creates a new snapshot version when persistence is required and preserves prior versions.
-- [x] A standings rebuild never creates or replaces the canonical final
+- [x] The normal commissioner surface previews contextual matchup-result correction with current/projected rows and applies the confirmed result correction atomically.
+- [x] Full standings rebuild is an exceptional recovery action absent from the normal UI; it previews inputs and problems, requires confirmation, and changes no matchup result.
+- [x] A recovery rebuild creates a new snapshot version when persistence is required and preserves prior versions.
+- [x] A recovery standings rebuild never creates or replaces the canonical final
   snapshot.
-- [x] No written reason is required for a standings rebuild.
+- [x] No written reason is required for a recovery standings rebuild; contextual result correction may include an optional reason.
 - [x] Current derived standings reflect an approved result correction on the next successful read.
 - [x] Completed-season result correction and snapshot rebuilding use one explicit atomic workflow.
 - [x] After finalization, a corrected result cannot commit without the complete

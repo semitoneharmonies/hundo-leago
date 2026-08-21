@@ -10,7 +10,7 @@
 
 This testing document defines:
 
-* the exact current 34-route compatibility inventory;
+* the reviewed 2026-07-18 34-route compatibility baseline;
 * the approved Season 2 target endpoint catalogue as of its 2026-07-18 design;
 * the evidence required before an endpoint is connected to the frontend, staged, or used in production;
 * authentication, permission, league-isolation, validation, read-only, transaction, idempotency, concurrency, privacy, Socket.IO, and activity checks;
@@ -36,6 +36,41 @@ Its finalization evidence is a required prerequisite for a later-season
 The atomic whole-card Candidate Card amendment approved on 2026-08-13 adds
 `T-146` and raises the approved target catalogue to 146 routes. `T-145`
 remains the distinct standings-finalization route.
+
+## 2026-08-18 FAD Shared-Staging Closure
+
+Release `HL-20260818-1` completed FAD-18 and M7-25 on isolated staging schema
+`52`. Backend commit `9a2f5e8f06b054c84e37d086c1c3a43d0fafbc68` is live as Render deploy
+`dep-da2147e417fc73brkqmg`; frontend application commit
+`50f2414cdda5926942975577f70114b5868917a9` from preserved source head
+`2ba016c9d5e6b016a150a62da757f28a9c0140c0` is live as Netlify deploy
+`6a8420054c9c5a624d86b2c3`. The exact hosted Node `24.14.1` backend suite passed
+`3,356/3,356`; the encrypted backup, distinct clean restore, migration,
+identity, health, privacy, and authenticated non-mutating browser gates passed.
+Exact evidence is recorded in
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
+
+The FAD-context auction rows `T-076` through `T-083`, FAD rows `T-126` through
+`T-144`, and atomic whole-card row `T-146` are therefore `STAGING VERIFIED`.
+Production was untouched and remains unauthorized. M7-26 is the sole active
+full-site UI-review plan.
+
+## 2026-08-20 M7-26 Active-Tree Inventory Amendment
+
+The current shared local tree targets schema `54` with `54` migration files,
+`133` application tables and repository-catalog entries, and `134` physical
+tables including `schema_migrations`. The composed runtime registers `123`
+routes. The conceptual endpoint catalogue is `148`: T-147 is exact displayed-
+batch notification acknowledgement and T-148 is commissioner approval of a
+receiver-accepted Future-Considerations trade. Runtime-route count and
+conceptual catalogue count are different measures.
+
+This amendment records inventory and current normative boundaries only. It does
+not claim a final M7-26 full-suite pass, shared-staging migration/deployment, or
+production change. The dated FAD-18 evidence above remains exact historical
+evidence; in particular, it does not verify the new M7-26 viewer-filtered FAD
+privacy projection, which still requires the active plan's final gates and
+hosted evidence.
 
 ---
 
@@ -357,8 +392,8 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-017` | `PATCH /api/v1/admin/users/:userId` | Approved fields, version conflict, status invariants | `PLANNED` |
 | `T-018` | `POST /api/v1/admin/users/:userId/credential-setup-requests` | 72-hour single-use link, replacement, no password disclosure | `PLANNED` |
 | `T-019` | `POST /api/v1/admin/users/:userId/password-reset-requests` | Admin initiates email only, cannot set/view password | `PLANNED` |
-| `T-020` | `POST /api/v1/admin/leagues` | League and initial season atomic, unique stable IDs, creator receives no hidden membership | `PLANNED` |
-| `T-021` | `POST /api/v1/admin/leagues/:leagueId/commissioner-assignments` | Existing user, proposal not active authority, notification/outbox | `PLANNED` |
+| `T-020` | `POST /api/v1/admin/leagues` | League and initial season atomic, unique stable IDs, protected active `member` membership provisioned for every active platform administrator | `PLANNED` |
+| `T-021` | `POST /api/v1/admin/leagues/:leagueId/commissioner-assignments` | Eligible non-administrator existing member, proposal grants no active authority, notification/outbox | `PLANNED` |
 | `T-022` | `DELETE /api/v1/admin/leagues/:leagueId` | Protected request, typed confirmation, backup, idempotent approved workflow | `PLANNED` |
 | `T-023` | `GET /api/v1/admin/requests` | Safe pagination and status filter, no protected payload leakage | `PLANNED` |
 | `T-024` | `GET /api/v1/admin/requests/:requestId` | Safe review context and inaccessible-resource behavior | `PLANNED` |
@@ -396,18 +431,18 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-042` | `GET /api/v1/league-invitations/:invitationId` | Invited user only, safe league/team context | `PLANNED` |
 | `T-043` | `POST /api/v1/league-invitations/:invitationId/accept` | One use, membership/team workflow atomic, conflict behavior | `PLANNED` |
 | `T-044` | `POST /api/v1/league-invitations/:invitationId/decline` | Invited user only, final status, no membership | `PLANNED` |
-| `T-045` | `PATCH /api/v1/leagues/:leagueId/memberships/:membershipId` | Commissioner, approved status/role fields, last-commissioner protection | `PLANNED` |
-| `T-046` | `DELETE /api/v1/leagues/:leagueId/memberships/:membershipId` | Product constraints, assignment effects, session authorization refresh | `PLANNED` |
+| `T-045` | `PATCH /api/v1/leagues/:leagueId/memberships/:membershipId` | Commissioner, approved ordinary status/role fields; current-commissioner and protected-administrator mutation rejected | `PLANNED` |
+| `T-046` | `DELETE /api/v1/leagues/:leagueId/memberships/:membershipId` | Ordinary membership only; protected administrator/current commissioner rejected; manager assignment effects and session authorization refresh atomic | `PLANNED` |
 | `T-047` | `GET /api/v1/leagues/:leagueId/teams` | Member-only list, stable IDs, league isolation | `PLANNED` |
 | `T-048` | `POST /api/v1/leagues/:leagueId/teams` | Commissioner, non-live-season restriction, stable identity | `PLANNED` |
 | `T-049` | `GET /api/v1/leagues/:leagueId/teams/:teamId` | Safe member projection, team belongs to league | `PLANNED` |
 | `T-050` | `PATCH /api/v1/leagues/:leagueId/teams/:teamId` | Manager field allowlist versus commissioner fields, `If-Match` | `PLANNED` |
 | `T-125` | `GET /api/v1/leagues/:leagueId/teams/:teamId/logo` | Member-only exact-team BLOB read, inspected media, no-store, strictly read-only | `PLANNED` |
-| `T-051` | `POST /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner, one active assignment, user membership constraints | `PLANNED` |
-| `T-052` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner, no unauthorized team control remains | `PLANNED` |
+| `T-051` | `POST /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner, one active assignment, eligible ordinary active member only; protected administrators rejected | `PLANNED` |
+| `T-052` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/manager-assignment` | Commissioner, no unauthorized team control remains and no protected membership changes | `PLANNED` |
 | `T-053` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId` | Commissioner request plus admin approval, no live-season deletion, backup | `PLANNED` |
 | `T-054` | `GET /api/v1/commissioner-assignments/:assignmentId` | Proposed user only, safe details | `PLANNED` |
-| `T-055` | `POST /api/v1/commissioner-assignments/:assignmentId/accept` | One use, commissioner membership/role atomic | `PLANNED` |
+| `T-055` | `POST /api/v1/commissioner-assignments/:assignmentId/accept` | One use; replacement is an eligible non-administrator; old commissioner demotes to manager/member, replacement promotes, and league pointer changes atomically | `PLANNED` |
 | `T-056` | `POST /api/v1/commissioner-assignments/:assignmentId/decline` | Proposed user only, no authority granted | `PLANNED` |
 
 ---
@@ -434,9 +469,9 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-065` | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | Groups, slots, ownership, contracts, cap and legality reconcile | `PLANNED` |
 | `T-066` | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | Complete authoritative reasons, strictly read-only | `PLANNED` |
 | `T-067` | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Team control, group/slot rules, prospect no-return rule, warning behavior; when the move first restores late legality, fresh authoritative NHL game state drives one atomic roster snapshot/baseline/immutable player-game exclusion set, already-underway games are excluded in full, and replay/racing moves converge | `PLANNED` |
-| `T-068` | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/sign` | Drafted/right eligibility, `$3/3y` ELC, off-cap prospect retention | `PLANNED` |
-| `T-069` | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/decline` | Eligible signed prospect and irreversible approved result | `PLANNED` |
-| `T-070` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/prospect-rights/:playerId` | Rights ownership, player release, pending-asset effects | `PLANNED` |
+| `T-068` | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/sign` | Exact manager/team/right/version authority; server-derived `$3/3y` ELC and season plan; atomic remain-in-Prospects or legal Active/Bench/eligible-IR destination; strict illegality rejection, activity, rollback, late-lock coordination, and cancellation/history/socket publication for every pending proposal whose unsigned prospect-right snapshot is converted by signing | `LOCAL VERIFIED - M7-26 (2026-08-20)` |
+| `T-069` | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/decline` | Exact confirmation/version; current unsigned right only; distinct atomic decline, rights deletion, retained history/activity, affected pending-trade cancellation/publication, rollback, isolation, and late-lock coordination | `LOCAL VERIFIED - M7-26 (2026-08-20)` |
+| `T-070` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/prospect-rights/:playerId` | Exact confirmation/version; current manager and unsigned-right ownership; distinct atomic voluntary release, retained history/activity, affected pending-trade cancellation/publication, rollback, isolation, and late-lock coordination | `LOCAL VERIFIED - M7-26 (2026-08-20)` |
 
 ---
 
@@ -447,7 +482,7 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-071` | `GET /api/v1/leagues/:leagueId/teams/:teamId/contracts` | Current contracts only, integer money, remaining years | `PLANNED` |
 | `T-072` | `GET /api/v1/leagues/:leagueId/contracts/:contractId` | League ownership and remaining schedule, no expired/bought-out display | `PLANNED` |
 | `T-073` | `GET /api/v1/leagues/:leagueId/teams/:teamId/cap-obligations` | Retention and buyout schedules reconcile by season | `PLANNED` |
-| `T-074` | `POST /api/v1/leagues/:leagueId/contracts/:contractId/buyout` | Owner, 14-day lock, 25% full AAV schedule, release and trade cancellation atomic | `PLANNED` |
+| `T-074` | `POST /api/v1/leagues/:leagueId/teams/:teamId/contracts/:contractId/buyout` | Authorized owning-team manager or approved commissioner/inherited-admin actor, 14-day lock, 25% full-AAV schedule, release and every affected pending-trade cancellation atomic, including signed `Prospect` snapshots represented as `prospect_right`; current known staging failure leaves all state unchanged and requires a separate P1 production-promotion follow-up | `PLANNED` |
 | `T-075` | `POST /api/v1/leagues/:leagueId/contracts/:contractId/corrections` | Commissioner, explicit before/after version, no hidden extension | `PLANNED` |
 
 ---
@@ -456,14 +491,14 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 
 | ID | Method and path | Key proof beyond global matrix | Status |
 | --- | --- | --- | --- |
-| `T-076` | `GET /api/v1/leagues/:leagueId/auctions` | Ordinary/FAD context/filters, bounded opaque-cursor search, per-managed-team `viewerTeams[]`/`startTeams[]`, identity-only commissioner administration, draw commitment and terminal safe result, no competing or queued-nomination values; fresh full-migration authenticated runtime proves exact envelopes, privacy, and no writes | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-077` | `POST /api/v1/leagues/:leagueId/auctions` | Server-derived weekly/open-rapid context and target season; AAV-first quarter-increment input and derived total; before cutoff opens an auction, at/after cutoff returns the private queued-nomination discriminator with binding starter bid and next-rollover identity; quarantine and no-reservation confirmation | `AMENDMENT PENDING VERIFICATION (2026-08-14)` |
-| `T-078` | `GET /api/v1/leagues/:leagueId/auctions/:auctionId` | Context/timing, immutable restricted public Candidate allowlist plus current removal state, per-managed-team bid/capability rows, identity-only commissioner bid projection, every terminal FAD commitment/reveal with optional exact-tie selection, terminal no-winner/fallback-safe detail, and stable player position after provider conflict/source replacement | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-079` | `PUT /api/v1/leagues/:leagueId/auctions/:auctionId/bids/mine` | Exact team row control; AAV-first quarter-increment input and derived total; total-first/AAV-second ranking; server-derived restricted, allocation-linked fallback, direct, or queued open-rapid context; restricted allowlist and active-participant improvement; ordinary starter/nonstarter edit allowance; current edit limit; 75-minute bid-activity cooldown; total/AAV floor; binding confirmation; no manager withdrawal; and immutable idempotent replay | `AMENDMENT PENDING VERIFICATION (2026-08-14)` |
-| `T-080` | `PATCH /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner/member-admin stable bid administration, AAV-first quarter-increment input and derived total, actual authority attribution, required bid version/idempotency, no value reveal | `AMENDMENT PENDING VERIFICATION (2026-08-14)` |
-| `T-081` | `DELETE /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Exact confirmation, bid `If-Match`/idempotency, no reveal; restricted bid plus participant removal permanent and allocation linked | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-082` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/cancel` | Exact confirmation, auction `If-Match`/idempotency; restricted cancellation atomically creates FAD correction/recovery and quarantine | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-083` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/resolve` | Due-only `202` trigger with version/idempotency; same scheduler/retry service; atomic FAD draw or no-bid result; restricted strict-improvement winner or no-draw league-wide fallback; direct/queued rapid allocation/event/update and recovery remain atomic | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
+| `T-076` | `GET /api/v1/leagues/:leagueId/auctions` | Ordinary/FAD context/filters, bounded opaque-cursor search, per-managed-team `viewerTeams[]`/`startTeams[]`, identity-only commissioner administration, draw commitment and terminal safe result, no competing or queued-nomination values; fresh full-migration authenticated runtime proves exact envelopes, privacy, and no writes | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-077` | `POST /api/v1/leagues/:leagueId/auctions` | Server-derived weekly/open-rapid context and target season; AAV-first quarter-increment input and derived total; before cutoff opens an auction, at/after cutoff returns the private queued-nomination discriminator with binding starter bid and next-rollover identity; quarantine and no-reservation confirmation | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-078` | `GET /api/v1/leagues/:leagueId/auctions/:auctionId` | Context/timing, immutable restricted public Candidate allowlist plus current removal state, per-managed-team bid/capability rows, identity-only commissioner bid projection, every terminal FAD commitment/reveal with optional exact-tie selection, terminal no-winner/fallback-safe detail, and stable player position after provider conflict/source replacement | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-079` | `PUT /api/v1/leagues/:leagueId/auctions/:auctionId/bids/mine` | Exact team row control; AAV-first quarter-increment input and derived total; total-first/AAV-second ranking; server-derived restricted, allocation-linked fallback, direct, or queued open-rapid context; restricted allowlist and active-participant improvement; ordinary starter/nonstarter edit allowance; current edit limit; 75-minute bid-activity cooldown; total/AAV floor; binding confirmation; no manager withdrawal; and immutable idempotent replay | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-080` | `PATCH /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner/member-admin stable bid administration, AAV-first quarter-increment input and derived total, actual authority attribution, required bid version/idempotency, no value reveal | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-081` | `DELETE /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Exact confirmation, bid `If-Match`/idempotency, no reveal; restricted bid plus participant removal permanent and allocation linked | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-082` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/cancel` | Exact confirmation, auction `If-Match`/idempotency; restricted cancellation atomically creates FAD correction/recovery and quarantine | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-083` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/resolve` | Due-only `202` trigger with version/idempotency; same scheduler/retry service; atomic FAD draw or no-bid result; restricted strict-improvement winner or no-draw league-wide fallback; direct/queued rapid allocation/event/update and recovery remain atomic | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 
 ---
 
@@ -490,12 +525,18 @@ perform no writes.
 
 | ID | Method and path | Key proof beyond global matrix | Status |
 | --- | --- | --- | --- |
-| `T-084` | `GET /api/v1/leagues/:leagueId/trades` | Authorized team views, allowed league views, private proposal isolation | `PLANNED` |
-| `T-085` | `POST /api/v1/leagues/:leagueId/trades` | Typed assets, no premature reservation, deadline and ownership validation | `PLANNED` |
-| `T-086` | `GET /api/v1/leagues/:leagueId/trades/:tradeId` | Participant or commissioner safe view, no cross-team private leakage | `PLANNED` |
-| `T-087` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/accept` | Receiver only, full in-transaction revalidation, atomic transfer and invalidations | `PLANNED` |
-| `T-088` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/decline` | Receiver only, final state and notification | `PLANNED` |
-| `T-089` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/cancel` | Proposer only, completed/final-state conflict behavior | `PLANNED` |
+| `T-084` | `GET /api/v1/leagues/:leagueId/trades` | Authorized team views, commissioner safe inspection, private proposal isolation | `PLANNED` |
+| `T-085` | `POST /api/v1/leagues/:leagueId/trades` | Current proposing-team manager only; fresh standalone retention rejected; historical rows/proposals remain readable and executable/reversible as their state permits; exact completed creation retry replays before fresh grammar; no premature reservation; deadline and ownership validation | `PLANNED` |
+| `T-086` | `GET /api/v1/leagues/:leagueId/trades/:tradeId` | Participant or commissioner safe inspection, no cross-team private leakage and no implied write authority | `PLANNED` |
+| `T-087` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/accept` | Current receiving-team manager only; full in-transaction revalidation; no-Future-Considerations proposal completes atomically, while one containing Future Considerations persists an acceptance snapshot and moves nothing pending T-148 | `PLANNED` |
+| `T-088` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/decline` | Current receiving-team manager only, final state and notification | `PLANNED` |
+| `T-089` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/cancel` | Current proposing-team manager only, completed/final-state conflict behavior | `PLANNED` |
+| `T-148` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/approve` | Current commissioner or inherited platform administrator; only a receiver-accepted Future-Considerations proposal awaiting approval; full in-transaction revalidation, idempotent replay, and atomic completion | `IMPLEMENTED - CURRENT LOCAL TREE; FINAL M7-26 GATES AND HOSTED EVIDENCE PENDING (2026-08-20)` |
+
+There is no counter endpoint or counter service in the current implementation.
+Countering remains planned product scope and is not part of T-084 through T-089
+or T-148. A receiver may reject, then independently create a new proposal only
+when they are the current manager of that new proposing team.
 
 ---
 
@@ -510,8 +551,8 @@ perform no writes.
 | `T-094` | `GET /api/v1/leagues/:leagueId/seasons/:seasonId/standings` | Finalized results only, approved sorting, no write/rebuild | `PLANNED` |
 | `T-095` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-schedules` | Commissioner/member-admin authority, exact explicit NHL/playoff calendar plus `firstWeekStartsAtMs`; `confirmed: false` read-only exact preview; `confirmed: true` season `If-Match`/idempotency and exact `201`; atomically fills an all-null initial/reset calendar or requires an exact later-season match, writes the balanced schedule, and evidence-requeues only the same blocked genuine-inaugural readiness occurrence when that schedule was its missing prerequisite; no fixed-date substitution | `COMPLETE - LOCAL ONLY (2026-07-30); FAD-08 CORRECTIVE COMPOSITION CONTRACT-TESTED LOCALLY` |
 | `T-096` | `PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-weeks/:weekId` | Commissioner/member-admin exact `shift_week_one` body, Week 1 `If-Match`/idempotency, atomic boundary/job shift; manual movement only before automatic FAD opening, pairing-only actions preserve it, and later whole-Monday late-draft/completion recovery is server-owned rather than a browser override | `COMPLETE - LOCAL ONLY (2026-07-30)` |
-| `T-097` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections` | Commissioner/member-admin, append attributable version; after T-145, replacement canonical snapshot/provenance/notification commits in the same transaction or correction rolls back; no League Activity | `COMPLETE - LOCAL ONLY (2026-07-29)` |
-| `T-098` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/rebuilds` | Commissioner/member-admin recovery, official result versions only, non-final derived snapshots only, never creates or replaces T-145 evidence, no League Activity | `COMPLETE - LOCAL ONLY (2026-07-29)` |
+| `T-097` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/matchup-results/:resultId/corrections` | Normal commissioner/member-admin standings correction: contextual no-write preview beside the affected standings result, then confirmed attributable result version plus rebuilt current standings atomically; after T-145, replacement canonical snapshot/provenance/notification commits in the same transaction or correction rolls back; no League Activity | `COMPLETE - LOCAL ONLY (2026-07-29)` |
+| `T-098` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/rebuilds` | Recovery-only commissioner/member-admin command, absent from normal standings UI; official result versions only, non-final derived snapshots only, never creates or replaces T-145 evidence, no League Activity | `COMPLETE - LOCAL ONLY (2026-07-29)` |
 | `T-145` | `POST /api/v1/leagues/:leagueId/seasons/:seasonId/standings/finalizations` | Commissioner/member-admin, season `If-Match`, idempotency, exact result-set hash and typed confirmation; terminal complete sources, immutable final snapshot and links, audit/member notifications/scoped outbox atomic, no League Activity | `COMPLETE - LOCAL ONLY (2026-07-29)` |
 
 ---
@@ -716,9 +757,10 @@ These endpoints are approved in-season work and are not required for the initial
 | --- | --- | --- | --- |
 | `T-109` | `GET /api/v1/leagues/:leagueId/activity` | Cursor pagination, approved event types, no matchup/standings entries | `PLANNED` |
 | `T-110` | `GET /api/v1/leagues/:leagueId/security-audit` | Approved league-member safe view, protected metadata, read-only | `PLANNED` |
-| `T-111` | `GET /api/v1/notifications` | Caller-owned notifications only, listing does not mark read | `PLANNED` |
+| `T-111` | `GET /api/v1/notifications` | Caller-owned cursor page; `readStatus=all|unread|read` defaults to `all`; listing is strictly read-only | `PLANNED` |
 | `T-112` | `POST /api/v1/notifications/:notificationId/read` | Owner only, idempotent read transition | `PLANNED` |
 | `T-113` | `POST /api/v1/notifications/read-all` | Caller scope only, bounded update, idempotent | `PLANNED` |
+| `T-147` | `POST /api/v1/notifications/read-batch` | Exact 1-100 unique displayed IDs; caller ownership, all-or-none validation, transactionality, and idempotent replay; normal UI sends only after that captured unread batch renders and keeps it visible for the mounted visit | `IMPLEMENTED - CURRENT LOCAL TREE; FINAL M7-26 GATES AND HOSTED EVIDENCE PENDING (2026-08-20)` |
 
 ---
 
@@ -747,30 +789,31 @@ the tables now retain evidence-backed current statuses.
 
 | ID | Method and path | Key proof beyond global matrix | Status |
 | --- | --- | --- | --- |
-| `T-126` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/navigation` | Always-safe current descriptor, multiple managed teams, optional exact season/team roster link, urgency priority, no competitor details, read-only | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-127` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/readiness?seasonId=:seasonId` | Commissioner-only operation plus latest immutable completed-attempt projection, selected and adjusted Week 1 before/after, adaptive clocks, exact three-field public diagnostics, no preflight/preview/retry/schedule/job/card write | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-128` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/readiness/retries` | Commissioner, exact blocked readiness operation `If-Match`/idempotency/confirmation; atomically resets the same job cleanly to pending, records one immutable receipt, advances blocked readiness one version without incrementing its attempt count, accepts no opening or schedule override, and exact replay always returns the stored receipt without writes | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-129` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId` | Viewer-filtered manager/commissioner/member overview, no pre-deadline side channel | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-130` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/private` | Exact team manager or active exact-card help authority, manager-first dual-role precedence, exact 22-slot private DTO, deadline-processing read-only mode, no-store, unauthorized/cross-scope `404`, byte and semantic no-write proof | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-131` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | League member only after publication, immutable safe summaries, no pre-deadline access | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-132` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | League member after publication, original 22 slots/conflicts/offers/outcomes preserved | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-133` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/eligible-players` | Authorized private editor; exact slot/search grammar, 200-code-point normalized search, deterministic order and exact-card/filter-bound cursor, no other-card nomination signal | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-134` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/revision-previews` | Authorized editor, exact add/edit/move/remove projection, ignored concurrency/idempotency headers, byte/table-hash/side-effect read-only proof | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-135` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/slots/:slotKey/candidate` | Exact card `If-Match`/idempotency, authority-before-replay, AAV-first quarter-increment player/slot/contract validation, derived total, hard whole-card cap rejection, original `201` replay | `AMENDMENT PENDING VERIFICATION (2026-08-14)` |
-| `T-136` | `PATCH /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Candidate only, authority-before-replay, card `If-Match`, AAV-first quarter-increment contract plus hard whole-card cap rejection, carryover locked, safe entry `404` | `AMENDMENT PENDING VERIFICATION (2026-08-14)` |
-| `T-137` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Candidate or compatible carryover, authority-before-replay, compatible open slot, Bench rules, card `If-Match`, atomic card revision plus authoritative roster movement for a carryover | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-138` | `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Candidate only, authority-before-replay, carryover denied, card `If-Match`, idempotency, no body, safe entry `404` | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-139` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Manager adaptive help boundary; normalized optional 500-code-point message, authority-before-replay, exact-card grant, immutable command result/private message, notification/audience atomic, fresh/existing `201`/`200` fidelity | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | League member after publication, paginated total/AAV/tie evidence; pending rows expose null decisions/ranks and `outcomeCode = pending`; fallback-only winner snapshot nullability; exact FAD auction-type enum; read-only | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-141` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner-safe jobs/allocations/initial and extension rollovers/queued/fallback/schedule-recovery state, no current blind bid or unrelated private content | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-142` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner allowlisted retry only, same service/occurrence, no winner/participant/timing/Week 1 override; `recover_schedule` is absent/rejected and only `complete_fad` may commit the atomic server-owned overrun recovery | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-143` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner locked-snapshot recomputation, complete downstream delta, table-hash read-only proof | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-144` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner reason/confirmation/fingerprint/`If-Match`, deterministic atomic reconciliation, original retained | `LOCAL VERIFIED - FAD-17 (2026-08-11)` |
-| `T-146` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId` | Authorized private editor; exact canonical 22-slot AAV-first body, derived totals, quarter/minimum/Bench validation, hard authoritative cap rejection, one card `If-Match` and idempotency intent, atomic whole-card replacement, nullable incomplete Candidate contract fields, server-owned carryover preservation, one version/revision advance, and no partial writes | `AMENDMENT PENDING VERIFICATION (2026-08-14)` |
+| `T-126` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/navigation` | Always-safe current descriptor, multiple managed teams, optional exact season/team roster link, urgency priority, no competitor details, read-only | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-127` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/readiness?seasonId=:seasonId` | Commissioner-only operation plus latest immutable completed-attempt projection, selected and adjusted Week 1 before/after, adaptive clocks, exact three-field public diagnostics, no preflight/preview/retry/schedule/job/card write | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-128` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/readiness/retries` | Commissioner, exact blocked readiness operation `If-Match`/idempotency/confirmation; atomically resets the same job cleanly to pending, records one immutable receipt, advances blocked readiness one version without incrementing its attempt count, accepts no opening or schedule override, and exact replay always returns the stored receipt without writes | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-129` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId` | Viewer-filtered manager/commissioner/member overview, no pre-deadline side channel | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-130` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/private` | Exact team manager or active exact-card help authority, manager-first dual-role precedence, exact 22-slot private DTO, deadline-processing read-only mode, no-store, unauthorized/cross-scope `404`, byte and semantic no-write proof | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-131` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | Active member after publication; viewer-filtered selected-team identity/status summaries; monetary/card/audit detail only for the selected team's current manager; no pre-deadline access | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-132` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | Legacy compatibility path after publication; selected-team identity/status projection, own-current-manager monetary detail only, no complete-card exposure, and normal UI redirect to FAD results | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-133` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/eligible-players` | Authorized private editor; exact slot/search grammar, 200-code-point normalized search, deterministic order and exact-card/filter-bound cursor, no other-card nomination signal | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-134` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/revision-previews` | Authorized editor, exact add/edit/move/remove projection, ignored concurrency/idempotency headers, byte/table-hash/side-effect read-only proof | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-135` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/slots/:slotKey/candidate` | Exact card `If-Match`/idempotency, authority-before-replay, AAV-first quarter-increment player/slot/contract validation, derived total, hard whole-card cap rejection, original `201` replay | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-136` | `PATCH /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Candidate only, authority-before-replay, card `If-Match`, AAV-first quarter-increment contract plus hard whole-card cap rejection, carryover locked, safe entry `404` | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-137` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Candidate or compatible carryover, authority-before-replay, compatible open slot, Bench rules, card `If-Match`, atomic card revision plus authoritative roster movement for a carryover | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-138` | `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Candidate only, authority-before-replay, carryover denied, card `If-Match`, idempotency, no body, safe entry `404` | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-139` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Manager adaptive help boundary; normalized optional 500-code-point message, authority-before-replay, exact-card grant, immutable command result/private message, notification/audience atomic, fresh/existing `201`/`200` fidelity | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results` | Active member after publication; paginated selected-team player identity/status for all, monetary/restricted-minimum/ranking/draw detail only for the selected team's current manager; commissioner/admin role alone does not widen; pending rows do not invent outcomes; read-only | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-141` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner-safe jobs/allocations/initial and extension rollovers/queued/fallback/schedule-recovery state, no current blind bid or unrelated private content | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-142` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner allowlisted retry only, same service/occurrence, no winner/participant/timing/Week 1 override; `recover_schedule` is absent/rejected and only `complete_fad` may commit the atomic server-owned overrun recovery | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-143` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner locked-snapshot recomputation, complete downstream delta, table-hash read-only proof | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-144` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner reason/confirmation/fingerprint/`If-Match`, deterministic atomic reconciliation, original retained | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-146` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId` | Authorized private editor; exact canonical 22-slot AAV-first body, derived totals, quarter/minimum/Bench validation, hard authoritative cap rejection, one card `If-Match` and idempotency intent, atomic whole-card replacement, nullable incomplete Candidate contract fields, server-owned carryover preservation, one version/revision advance, and no partial writes | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 
 ### FAD-17 Local Verification Record - 2026-08-11
 
-The status above is backed by exact Node.js `24.14.1` disposable-local evidence:
+The former FAD-17 `LOCAL VERIFIED` status was backed by exact Node.js `24.14.1`
+disposable-local evidence:
 `28/28` schema-22-to-49, fresh-schema, repository-catalog, reset/cutover, and
 real two-league fixture tests; `49/49` affected resolution service, real SQLite
 writer, and durable-job tests; and `202/202` representative mandatory-package
@@ -780,8 +823,9 @@ release matrix passes `40/40` across five desktop/mobile Chromium, Firefox, and
 WebKit projects with zero retries. GET and preview no-write proofs, no-bid later
 renomination, simultaneous unreserved aggregate wins, distinct Week 1/help
 chronology, disabled/nonblocking video, cross-league privacy, reconnect, and
-recovery are included. `LOCAL VERIFIED` does not claim a shared-staging or
-production deployment.
+recovery are included. That local evidence alone did not claim a shared-
+staging or production deployment; the later FAD-18 evidence recorded at the
+top of this checklist raised the listed rows to `STAGING VERIFIED`.
 
 ### 2026-07-29 FAD Decision-Package Endpoint Proof
 
@@ -936,8 +980,8 @@ FAD-08 local evidence recorded on `2026-08-08`: the behavior selection passed
 The repository, service, router, target-runtime, worker, handoff, and migration
 tests use disposable databases; T-126/T-127/T-129 prove no-write reads, and
 T-128 proves original-data/current-request replay with unchanged database bytes
-after terminal readiness success. There is no frontend caller or staging
-deployment at this checkpoint, and production remains untouched.
+after terminal readiness success. There was no frontend caller or staging
+deployment at that historical checkpoint, and production remained untouched.
 
 ### 2026-08-08 FAD-09 Internal Candidate Foundation Evidence
 
@@ -968,9 +1012,9 @@ summer-writer selection passes `262/262`, direct Candidate HTTP passes `36/36`,
 composed runtime passes `66/66`, the local staging verifier passes `9/9`, and
 reset bootstrap passes `8/8`, with no failure or skip. T-130 and T-133 through
 T-139 are composed and contract-tested locally, and the target endpoint
-inventory is exactly `110`. There is no frontend caller or shared-staging
-deployment or verification at this checkpoint, and production remains
-untouched.
+inventory is exactly `110`. There was no frontend caller or shared-staging
+deployment or verification at that historical checkpoint, and production
+remained untouched.
 
 - [x] `T-130` returns the exact private Candidate root and 22 ordered slots,
   manager-first authorization evidence, safe player/editor/help/intervention
@@ -1059,7 +1103,7 @@ combined aggregate. The local target endpoint inventory is exactly `113`.
   T-083 remained fail-closed for FAD-11, and T-141 through T-144 remained
   planned.
 
-There is no frontend caller at this checkpoint. Shared staging was not
+There was no frontend caller at this historical checkpoint. Shared staging was not
 deployed, migrated, or verified, and production was not opened or changed.
 
 ### 2026-08-10 FAD-11 Local Closure Evidence
@@ -1146,8 +1190,8 @@ the target endpoint inventory remains exactly `117`.
 - [x] `0049_require_canonical_fad_setup_exemption_publications.sql` is pinned
   at `29,571` bytes, `748` lines, and SHA-256
   `5109baabaeed39e06498c7c26274a41a48edfbbdee958e7dd6b278021a29ebc6`;
-  schema `49` is current with `131` application tables, `132` including the
-  ledger, and `131` repository-catalog entries.
+  schema `49` was the FAD-14 local target with `131` application tables, `132`
+  including the ledger, and `131` repository-catalog entries.
 - [x] Focused FAD-14 core passes `1,294/1,294` across `142` suites and `110`
   unique files; production JavaScript syntax passes `95/95`; schema-49 pin,
   runtime, reset, release, and staging-verifier selection passes `265/265`; and
@@ -1158,8 +1202,9 @@ the target endpoint inventory remains exactly `117`.
   `sportsDataIoLiveCapabilityArtifactFoundation.test.js`, in about
   `30m03.603s`.
 
-Migrations `0023` through `0049` remain local only. No FAD frontend, shared
-staging, or production environment was opened, migrated, deployed, or changed.
+Migrations `0023` through `0049` remained local only at this historical FAD-14
+checkpoint. No FAD frontend, shared staging, or production environment was
+opened, migrated, deployed, or changed at that checkpoint.
 
 - [x] `T-139` accepts before neither opening nor `helpOpensAtMs`, accepts
   exactly at that instant, and expires exactly at deadline. Opening with less
@@ -1401,7 +1446,7 @@ Removed IDs are not reused.
 
 ## Count Verification
 
-Current compatibility inventory:
+Reviewed 2026-07-18 compatibility baseline inventory (not composed runtime):
 
 ```text
 C-001 through C-034 = 34 routes
@@ -1411,8 +1456,12 @@ C-024 through C-029 = 6 conditional debug routes
 Target catalogue:
 
 ```text
-T-001 through T-146 = 146 approved target routes
+T-001 through T-148 = 148 approved target routes
 ```
+
+T-147 is notification displayed-batch acknowledgement. T-148 is approval of a
+receiver-accepted Future-Considerations trade. Neither ID represents a counter
+endpoint; no counter endpoint or service is implemented.
 
 Count changes require a matching API Contracts review.
 
@@ -1440,7 +1489,9 @@ Entry Draft rows may remain `PLANNED` for the initial release because that featu
 
 Free Agent Draft rows `T-126` through `T-144`, plus FAD-context cases for
 `T-076` through `T-083`, and atomic whole-card save `T-146` may not remain
-`PLANNED` for launch.
+`PLANNED` for launch. M7-26 closure also requires current-contract evidence for
+T-147 notification acknowledgement and T-148 trade approval; the dated FAD-18
+status does not substitute for the amended T-131/T-132/T-140 privacy gate.
 
 `T-145` is `COMPLETE - LOCAL ONLY` and may not regress to `PLANNED`. It must
 reach `STAGING VERIFIED` before the first official regular-season standings
@@ -1456,7 +1507,7 @@ Documentation verification:
 
 ```powershell
 Get-Content docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md
-Select-String -Path docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md -Pattern '^`APPROVED`$','C-034','T-145','T-146','Target Free Agent Draft Endpoints','T-145 Finalization and Correction Proof','GET and HEAD Safety','Compatibility Retirement','Count Verification'
+Select-String -Path docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md -Pattern '^`APPROVED`$','C-034','T-145','T-146','T-147','T-148','Target Free Agent Draft Endpoints','T-145 Finalization and Correction Proof','GET and HEAD Safety','Compatibility Retirement','Count Verification'
 ```
 
 Future compatibility manifest verification:

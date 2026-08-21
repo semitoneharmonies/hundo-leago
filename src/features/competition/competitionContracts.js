@@ -236,6 +236,32 @@ export function validateStandings(data) {
   validateHealth(data.health);
   integer(data.finalizedResultCount, "The finalized-result count is invalid.");
   integer(data.sourceResultVersion, "The standings source version is invalid.");
+  contract(Array.isArray(data.results), "The official result list is invalid.");
+  for (const result of data.results) {
+    object(result, "An official result is invalid.");
+    id(result.id, "An official result ID is invalid.");
+    integer(result.version, "An official result version is invalid.");
+    integer(result.versionNumber, "An official result history version is invalid.");
+    contract(
+      ["official", "corrected"].includes(result.status),
+      "An official result status is invalid."
+    );
+    object(result.week, "An official result week is invalid.");
+    id(result.week.id, "An official result week ID is invalid.");
+    integer(result.week.sequence, "An official result week number is invalid.");
+    integer(result.week.startsAtMs, "An official result week start is invalid.");
+    integer(result.week.endsAtMs, "An official result week end is invalid.");
+    object(result.matchup, "An official result matchup is invalid.");
+    id(result.matchup.id, "An official result matchup ID is invalid.");
+    validateTeam(result.matchup.homeTeam);
+    validateTeam(result.matchup.awayTeam);
+    integer(result.homeScoreHundredths, "An official home score is invalid.");
+    integer(result.awayScoreHundredths, "An official away score is invalid.");
+    contract(
+      ["home_win", "away_win", "tie"].includes(result.outcome),
+      "An official result outcome is invalid."
+    );
+  }
   contract(Array.isArray(data.rows), "The standings rows are invalid.");
   for (const row of data.rows) {
     object(row, "A standings row is invalid.");

@@ -33,6 +33,18 @@ prospect-rights release.
 On 2026-08-11, Grae clarified the player-data boundary: the FAD is a preseason
 event and requires only the persisted player catalogue, stable identity,
 effective position, and league-scoped eligibility/ownership/contract state.
+
+On 2026-08-20, Grae amended published result visibility and the manager-facing
+results workflow. Every active league member may see each Candidate player's
+identity and final `Signed`, `Not won`, or `Tied` result. Only a current manager
+of the selected team may see that team's submitted offer amount or contract
+term; commissioner or platform-administrator authority alone does not reveal
+them. The normal interface uses one selected-team results view and does not
+link to a separate original Candidate Card page. Historical revisions remain
+durable audit evidence, but every browser/API projection applies the same
+viewer privacy and a legacy card deep link redirects to the selected-team
+results view. This amendment supersedes older post-deadline language that
+exposes all teams' Candidate offer values or terms to every member.
 On 2026-08-14, Grae changed Candidate offers to AAV-first entry in exact
 `$0.25` increments, with a server-derived total, save-time contract and cap
 blocking, and an Active-AAV summary on the Candidate Card.
@@ -452,7 +464,9 @@ A manager with an active assignment may:
 * bid for an assigned team in open rapid auctions;
 * bid for an assigned team in a restricted tie auction only when that team is
   an approved participant;
-* view every league Candidate Card after the deadline.
+* view requested-player identities and final result statuses for every selected
+  league team after the deadline, with monetary fields only for a team they
+  currently manage.
 
 A manager may not:
 
@@ -524,10 +538,11 @@ actor and preserve useful before-and-after audit information.
 A platform administrator does not receive automatic private Candidate Card
 visibility.
 
-With an explicit active league membership, a platform administrator may
-exercise the same help-request-gated Candidate Card authority as the league
-commissioner. The action must identify the administrator and the commissioner
-authority being exercised.
+Through the guaranteed protected active league membership, a platform
+administrator may exercise the same help-request-gated Candidate Card authority
+as the league commissioner. The action must identify the administrator and the
+commissioner authority being exercised. Platform-administrator authority alone
+does not reveal another team's monetary result fields after the deadline.
 
 Platform recovery authority remains separate and must not become an ordinary
 private-card browsing path.
@@ -539,18 +554,17 @@ private-card browsing path.
 Before the deadline, an authenticated league member may not view another
 team's private Candidate Card.
 
-After the deadline, every active league member may view every Candidate Card
-from that league as an immutable read-only record.
+After the deadline, the complete Candidate Card remains immutable internal
+audit data rather than a league-wide record. In the selected-team result view,
+every active league member may see each requested player identity and the final
+`Signed`, `Not won`, or `Tied` status. Amount, AAV, term, calculated total,
+requested position, and restricted original-minimum values are visible only to
+the current manager of that selected team. Commissioner or
+platform-administrator authority alone does not reveal them.
 
-The post-deadline view includes:
-
-* carried players;
-* nominated free agents;
-* entered AAV values and terms;
-* calculated total values;
-* the requested Candidate Card position;
-* won, lost, tied, pending-auction, invalid, or unresolved outcome;
-* the final contract and owning team when resolved.
+Legacy history and Candidate Card reads must apply the same viewer projection.
+Normal UI uses only the selected-team result view; legacy history/card deep
+links redirect there.
 
 ---
 
@@ -943,8 +957,9 @@ At the exact deadline:
 * manager and commissioner card editing ends;
 * help grants end;
 * the participant and offer snapshot becomes immutable;
-* every active league member gains read-only access to all league Candidate
-  Cards;
+* viewer-filtered results become available: every active league member may see
+  requested-player identity and final status, while only the current manager of
+  the selected team may see that team's monetary fields;
 * every card with an unresolved carried-roster structural conflict or an over-
   cap projection is published as illegal and all of its new offers are
   excluded;
@@ -1116,12 +1131,13 @@ allowance of one later manager edit and the ordinary 75-minute cooldown after
 the opening bid and that edit.
 
 A manager who takes no action has not withdrawn the Candidate commitment; the
-Candidate contract remains the public minimum. It simply does not count as an active
-contending bid.
+Candidate contract remains the restricted-auction minimum. It simply does not
+count as an active contending bid.
 
-The original Candidate minimum total and term remain visible on the locked Candidate
-Cards. Blind-auction privacy applies to later bid edits and current edited
-values; it does not make already revealed Candidate Card history secret again.
+The original Candidate minimum total and term follow the post-deadline FAD
+viewer projection and are visible only to the current manager of the selected
+team. Blind-auction privacy also protects later bid edits and current edited
+values until resolution.
 
 ---
 
@@ -1420,8 +1436,8 @@ The area includes:
 * league status and countdown;
 * the manager's Candidate Card while private;
 * commissioner help status where authorized;
-* league-wide read-only cards after the deadline;
-* automatic allocation results;
+* viewer-filtered selected-team results after the deadline;
+* automatic allocation status and results;
 * restricted tie auctions;
 * open rapid auctions;
 * next rollover;
@@ -1459,11 +1475,10 @@ The normal roster page provides contextual access:
 * before opening: **Next season's Candidate Card opens when preseason FAD
   setup is complete**;
 * while open: **Build next season's roster**;
-* after the deadline and during the season: **View this season's Candidate
-  Card**.
+* after the deadline and during the season: **View this season's FAD results**.
 
-The in-season link opens the finalized historical read-only card for the viewed
-team.
+The in-season link opens the selected-team result view. Legacy historical-card
+deep links redirect to that view and do not expose the complete audit card.
 
 This preserves discoverability without keeping an inactive seasonal workflow
 in the main navigation.
@@ -1513,13 +1528,20 @@ keyboard-accessible controls.
 
 ## Post-Deadline Results
 
-Every league Candidate Card becomes read-only at the deadline.
+Every league Candidate Card becomes immutable internal audit data at the
+deadline; it does not become a league-wide readable record.
 
 The manager result view is one selected-team experience. It defaults to a team
 managed by the current user, provides a league-team selector for inspecting any
 team, shows `Signed`, `Not won`, and `Tied` totals, and offers simple player-name
 search. It does not show a second league-wide allocation feed or technical
 allocation-status filter.
+
+Every active league member may see the selected team's requested-player
+identities and final statuses. Amount, AAV, term, calculated total, requested
+position, and restricted original-minimum values are shown only when the
+current user is the current manager of that selected team. Commissioner or
+platform-administrator authority alone does not reveal those fields.
 
 For the selected team, each requested player maps to exactly one manager result:
 
@@ -1532,20 +1554,22 @@ For the selected team, each requested player maps to exactly one manager result:
 Manager results never show generic `Pending`. A restricted tie is absent from
 the Auctions list and result actions for a nonparticipant. A participant sees
 only the eligible team or teams they currently manage, never the other tie
-participants or their bidding detail. Commissioner and internal audit evidence
-remain available through their authorized surfaces.
+participants or their bidding detail. Internal audit evidence remains available
+only through its protected audit surface; ordinary commissioner or
+platform-administrator role authority does not bypass the monetary projection.
 
-The published card preserves incomplete saved rows as non-participating
-historical requests. They must be visibly identified as incomplete and not
-won; they must not be rewritten as valid offers or silently removed from what
-the team saved.
+The internal audit card preserves incomplete saved rows as non-participating
+historical requests. The viewer-filtered result preserves requested-player
+identity and a non-winning final status without exposing unauthorized offer
+details.
 
-The original card must not be rewritten to look as though the manager requested
-only the players eventually won. Its manager-facing history groups the original
-requested-player rows by Forward, Defence, and Bench and keeps their submitted
-AAV, term, and calculated total. Carried obligations remain preserved in
-authoritative roster and FAD history without adding empty or carryover rows to
-this requested-player view.
+The original internal audit card must not be rewritten to look as though the
+manager requested only the players eventually won. The selected-team result
+groups the original requested-player rows by Forward, Defence, and Bench. It
+keeps submitted AAV, term, and calculated total only for the current manager of
+that team; other active members receive identity and final status only. Carried
+obligations remain preserved in authoritative roster and FAD history without
+adding empty or carryover rows to this requested-player view.
 
 ---
 
@@ -1651,7 +1675,8 @@ The commissioner may:
 * review non-sensitive league completion state before the deadline;
 * respond to help requests;
 * edit a requesting team's card before the deadline;
-* view every card after the deadline;
+* view the same viewer-filtered post-deadline results as any active member,
+  including monetary fields only for a selected team they currently manage;
 * retry a due automatic-allocation operation;
 * administer rapid auctions under the Auction specification;
 * inspect correction-required operational state;
@@ -1866,7 +1891,8 @@ Required tests include:
 * help-grant expiry at the deadline;
 * platform-administrator membership and scoped authority;
 * league isolation;
-* post-deadline league-wide read-only visibility;
+* post-deadline viewer projection for identity, final status, and selected-team
+  manager-only monetary fields;
 * public denial;
 * no private information in notifications or errors.
 
@@ -1909,7 +1935,8 @@ Required tests include:
   leaders;
 * no cooldown before a participant's opening improvement, followed by the
   ordinary 75-minute bid-activity cooldown;
-* public original Candidate minimum values with private later bids/edits;
+* original Candidate minimum values visible only to the current manager of the
+  selected team, with later bids/edits remaining private;
 * Candidate-minimum admission below the ordinary joining minimum and normal
   minimum enforcement on the opening improvement;
 * ordinary joining-team one-edit allowance after every tied team's opening
@@ -2008,7 +2035,7 @@ Required tests include:
 - [x] The complete Candidate Card must have no unresolved carried-roster structural conflict and must be cap compliant.
 - [x] A carried-roster-conflicted or over-cap card locks as illegal, excludes every new offer, preserves every carryover, publishes the reason, and receives no post-deadline repair.
 - [x] Managers cannot view another team's card before the deadline.
-- [x] All league cards become read-only to league members at the deadline.
+- [x] All league cards lock as immutable internal evidence at the deadline; active members receive viewer-filtered selected-team results, not complete-card reads.
 - [x] Conflict-free incomplete, cap-compliant cards lock and individually valid entries still resolve; a candidate-only conflict is excluded individually.
 
 ## Approved Help Rules
@@ -2038,7 +2065,7 @@ Required tests include:
 - [x] Restricted tie auctions are available only to teams tied on both highest total and term.
 - [x] Tied Candidate offers create equal-status minimums rather than bids or active leaders; a team's first strict improvement is its opening bid and then receives the ordinary joining-team edit allowance.
 - [x] A valid tied Candidate minimum may sit below the ordinary joining minimum, but an active improvement must meet that minimum.
-- [x] Original Candidate minimum values remain public through locked cards while later auction bids and edits remain blind.
+- [x] Original Candidate minimum values follow the FAD viewer projection and remain visible only to the current manager of the selected team, while later auction bids and edits remain blind.
 - [x] At least one tied team must have an eligible current active strict improvement at resolution; if improvements are absent, invalid, or commissioner-removed, no draw occurs and the player enters a fresh league-wide 24-hour auction with no leader.
 - [x] The tied floor applies across terms by total first and AAV second; restricted improvements must rank strictly above it and fallback bids may equal it.
 - [x] Exact top ties in open and restricted FAD auctions use one auditable equal-chance draw; ordinary weekly tie rules remain unchanged.
@@ -2061,8 +2088,8 @@ Required tests include:
 
 - [x] The FAD has a dedicated league area.
 - [x] Main navigation shows FAD only while the seasonal workflow is active.
-- [x] The roster page links to active preparation or historical Candidate Cards.
-- [x] The original locked card remains visible rather than being rewritten to show only winners.
+- [x] The roster page links to active preparation or the selected-team FAD result view; legacy historical-card deep links redirect to that result view.
+- [x] The internal audit card preserves the original requests, while every active member sees identity and final status and only the current manager of the selected team sees its monetary fields.
 - [x] A league-specific FAD video is optional for Season 2.
 - [x] A short, league-specific AI-generated FAD video is required beginning in Season 3.
 - [x] Presentation generation can never alter or delay authoritative FAD results.

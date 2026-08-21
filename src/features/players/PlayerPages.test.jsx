@@ -187,7 +187,7 @@ describe("authenticated player pages", () => {
       `/leagues/${leagueId}/players/${playerOneId}`
     );
     await view.user.type(
-      screen.getByRole("searchbox", { name: "Search by player name" }),
+      screen.getByRole("combobox", { name: "Search by player name" }),
       "alex"
     );
     await view.user.click(screen.getByRole("button", { name: "Search" }));
@@ -219,7 +219,7 @@ describe("authenticated player pages", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders stable player details and provider fields", async () => {
+  it("renders useful player details without exposing provider identifiers", async () => {
     const fetchImpl = baseFetch((parsed) => {
       if (
         parsed.pathname ===
@@ -244,7 +244,9 @@ describe("authenticated player pages", () => {
     expect(
       await screen.findByRole("heading", { name: "Alex Example" })
     ).toBeInTheDocument();
-    expect(screen.getByText("nhl: 8470001")).toBeInTheDocument();
+    expect(screen.queryByText("nhl: 8470001")).not.toBeInTheDocument();
+    expect(screen.queryByText("Provider identifiers")).not.toBeInTheDocument();
+    expect(screen.queryByText(/authoritative/i)).not.toBeInTheDocument();
     expect(screen.getByText("Last-season statistics")).toBeInTheDocument();
     expect(screen.getByText("SportsDataIO Discovery Lab last-season data")).toBeInTheDocument();
     expect(screen.getByText("90")).toBeInTheDocument();

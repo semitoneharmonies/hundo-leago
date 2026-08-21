@@ -4,6 +4,7 @@ import {
   auctionAavCents,
   auctionTotalPreview,
   initialAuctionOffer,
+  sourceLabel,
   validateAuctionOffer,
 } from "./auctionUi.js";
 
@@ -88,5 +89,18 @@ describe("auction UI offer guidance", () => {
         { bid: { totalValueCents: 625, termYears: 1, aavCents: 625 } }
       )
     ).toEqual({ aav: "6.25", term: "1" });
+  });
+
+  it("uses plain auction labels for the current competition phase", () => {
+    expect(sourceLabel({ sourceKind: "ordinary_weekly" })).toBe("Auction");
+    expect(sourceLabel({ sourceKind: "fad_restricted" })).toBe(
+      "Free Agent Draft Rapid Auction"
+    );
+    expect(sourceLabel({ sourceKind: "fad_open_rapid" })).toBe(
+      "Free Agent Draft Rapid Auction"
+    );
+    expect(sourceLabel({ sourceKind: "fad_open_rapid" })).not.toContain(
+      "FAD"
+    );
   });
 });

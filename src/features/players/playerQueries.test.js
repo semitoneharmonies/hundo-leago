@@ -83,4 +83,35 @@ describe("league player catalog queries", () => {
     expect(request.mock.calls[0][0]).toContain(`teamId=${teamId}`);
     expect(query.queryKey).toContain(teamId);
   });
+
+  it("sends catalog filters to the server before pagination", async () => {
+    const request = vi.fn(async () => ({
+      data: [],
+      page: { nextCursor: null, hasMore: false },
+    }));
+    const query = leaguePlayerInfiniteQuery(
+      { request },
+      leagueId,
+      {
+        position: "D",
+        nhlTeam: "VAN",
+        ownership: "free",
+        minimumGames: 25,
+      }
+    );
+
+    await query.queryFn({
+      pageParam: null,
+      signal: new AbortController().signal,
+    });
+
+    const requestUrl = request.mock.calls[0][0];
+    expect(requestUrl).toContain("position=D");
+    expect(requestUrl).toContain("nhlTeam=VAN");
+    expect(requestUrl).toContain("ownership=free");
+    expect(requestUrl).toContain("minimumGames=25");
+    expect(query.queryKey).toEqual(
+      expect.arrayContaining(["D", "VAN", "free", 25])
+    );
+  });
 });

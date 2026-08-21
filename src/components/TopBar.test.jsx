@@ -305,5 +305,13 @@ describe("top bar navigation", () => {
     expect(
       screen.getByText(/Navigation League · Platform administrator/)
     ).toBeInTheDocument();
+    const accountMenu = document.querySelector(".hl-account-menu");
+    expect(
+      within(accountMenu).queryByRole("link", { name: "Notifications" })
+    ).toBeNull();
+    expect(screen.getByRole("link", { name: "Notifications" }))
+      .toHaveClass("hl-notification-link");
+    expect(screen.getByRole("link", { name: "Notifications" }))
+      .toHaveAttribute("href", "/notifications");
   });
 });

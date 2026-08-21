@@ -14,7 +14,7 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-08-18**
+Last reviewed: **2026-08-20**
 
 ---
 
@@ -26,7 +26,64 @@ inline actions, and authoritative Players team filtering are deployed and
 verified in staging on schema `52`. The release record is
 `docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
 
-Production was not changed.
+This release completed the M7-25 dependency sequence and its FAD-18 isolated
+shared-staging gate. The exact frontend application commit is
+`50f2414cdda5926942975577f70114b5868917a9`, the preserved frontend source head
+is `2ba016c9d5e6b016a150a62da757f28a9c0140c0`, the backend commit is
+`9a2f5e8f06b054c84e37d086c1c3a43d0fafbc68`, the final Render deploy is
+`dep-da2147e417fc73brkqmg`, and the final Netlify deploy is
+`6a8420054c9c5a624d86b2c3`. M7-25 is archived, and M7-26 is the sole active
+full-site UI-review plan.
+
+Production was not changed and remains unauthorized for this release.
+
+---
+
+## 2026-08-20 M7-26 Active Local Tree (Not Released)
+
+M7-26 remains the sole active work plan. The current shared local backend tree
+targets schema `54` with `54` migration files, `133` application tables and
+repository-catalog entries, and `134` physical tables including
+`schema_migrations`. The composed target runtime registers `123` routes. The
+conceptual API catalogue contains `148` entries after T-147 notification batch
+acknowledgement and T-148 trade approval; conceptual catalogue count and
+composed runtime-route count are different measures.
+
+The active local implementation is being reconciled to these boundaries:
+
+* FAD results reveal selected-team player identity and Signed/Not won/Tied
+  status to active members, but monetary, restricted-minimum, and audit detail
+  only to that selected team's current manager;
+* notification listing is read-only and the normal UI acknowledges exactly the
+  captured displayed unread batch through T-147 after render;
+* only the current proposing-team manager creates/cancels a trade and only the
+  current receiving-team manager accepts/rejects it; commissioner authority is
+  limited to safe inspection, T-148 Future-Considerations approval, and
+  separate recovery; there is no implemented counter endpoint or service;
+* standalone existing retention is rejected in new proposals while historical
+  retention remains readable; normal standings correction is contextual and
+  atomic while rebuild is recovery-only; and signed-Prospect decisions remain
+  current-manager-only with IR legality/no-return and affected-trade
+  cancellation; and
+* every active platform administrator has a protected active `member`
+  membership in every non-deleted league, and commissioner transfer changes the
+  one canonical pointer and both roles atomically.
+
+The signed-Prospect buyout/pending-`prospect_right`-trade cancellation gap is a
+known staging limitation and separate P1 production-promotion follow-up outside
+the contained M7-26 isolated-staging UI-review gate. The current command fails
+atomically and leaves buyout/trade state unchanged, so there is no observed
+partial-write risk; focused M7-26 prospect movement remains complete. T-074
+remains `PLANNED`. Final M7-26 full-suite, browser, dependency, staging
+migration/deploy, and hosted acceptance evidence has not yet been recorded.
+Nothing in this section claims a production change.
+
+Older implementation-state narratives and dated test/deployment records below
+are retained as historical evidence. Where they describe JSON as the only
+current local persistence, schema `49`/`52` as the current local target, 117
+runtime contracts as the current inventory, complete Candidate Cards as
+league-visible, or older M7 work as active, this dated M7-26 section and the
+current canonical product/technical specifications govern the active tree.
 
 ---
 
@@ -1960,8 +2017,8 @@ schema `22` without the temporary migration bridge, and Netlify deploy
 fixed two-/three-colour switching, the matching preview, and no browser
 console errors without submitting a profile write. The complete frontend
 suite passed `135/135`; the final backend Render build passed `986/986`.
-Those identities are historical release evidence, not the current FAD-18
-rollback pair. Exact release evidence is recorded in
+Those identities are historical release evidence, not the final M7-25/FAD-18
+release identities. Exact release evidence is recorded in
 `docs/07-testing/release-runs/M7_TEAM_IDENTITY_TEMPLATES_2026-07-27.md`.
 
 The annual Free Agent Draft product rules were approved on `2026-07-27`, the
@@ -1976,10 +2033,17 @@ final-hour nomination queueing, no-bid unclaimed outcomes, no cap/slot
 reservation, binding aggregate wins, and rollover extensions beyond the
 initial seven when required.
 
-The FAD technical design and contained M7-25 dependency sequence remain active.
-`FAD-01` through `FAD-17` are complete locally; `FAD-18` is the sole active
-isolated-staging slice. The
-migration `0023` through `0029` impact audit is complete, and corrective
+The FAD technical design remains approved. The contained M7-25 dependency
+sequence, including `FAD-01` through `FAD-18`, completed its isolated
+shared-staging gate on `2026-08-18` and is archived at
+`docs/06-work-plans/archive/M7-25_FREE_AGENT_DRAFT_IMPLEMENTATION_SEQUENCE.md`.
+Its final staging target is schema `52`; exact release and rollback evidence is
+recorded in
+`docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`. M7-26 is
+the sole active implementation plan. The migration details below preserve the
+historical dependency checkpoints that led to that release.
+
+The migration `0023` through `0029` impact audit completed, and corrective
 migration `0030` remains the frozen schema-30 decision-package boundary after
 the pre-staging T-145 current-generation compatibility correction, at
 `636,077` bytes with SHA-256
@@ -2141,8 +2205,8 @@ repository passed `10/10`. Independent review's terminal player-source P2 was
 corrected; refreshed verification leaves no remaining P1 or P2 issue.
 At FAD-06 closure, FAD-linked `T-080` through `T-083` remained deliberately
 fail-closed until FAD-11, and no restricted auction could activate. FAD-08
-through FAD-17 have since closed locally; FAD-18 is now the sole active
-isolated-staging slice.
+through FAD-17 later closed locally, and FAD-18 subsequently completed the
+schema-52 isolated shared-staging gate on `2026-08-18`.
 
 The closed-write reset evidence, first-administrator and
 reset-original-league continuity, `T-035` trade-deadline command, and `T-036`
@@ -2341,80 +2405,94 @@ chronology, read-only, privacy, restart, and recovery cases pass. T-076 through
 T-083 and T-126 through T-144 are therefore `LOCAL VERIFIED`.
 
 No FAD shared-staging or production environment was opened, migrated, deployed,
-or changed through FAD-17; migrations `0023` through `0049` remain local only.
+or changed through FAD-17; migrations `0023` through `0049` remained local only
+at that checkpoint. FAD-18 later advanced the isolated staging environment to
+schema `52`; production remained untouched.
 
-The `2026-08-11` pre-mutation read-only hosting inspection records the current
-Render staging rollback identity as deploy `dep-d9kmv0ijobas73fsp8kg` at
+The `2026-08-11` pre-mutation read-only hosting inspection recorded the then-
+current Render staging rollback identity as deploy `dep-d9kmv0ijobas73fsp8kg`
+at
 backend commit `fa85e75c904389284a030459cd8a68f452cdac02`, still on the existing
-schema-22 database path. The current ready Netlify staging rollback deploy is
+schema-22 database path. The then-ready Netlify staging rollback deploy was
 `6a6bede0e1742b6b750017cb`. The published frontend source head inspected was
 `29d4d89ea6def41464fc48b6390e7f567c480039`; the published backend bridge
 implementation plus checksum-fix head was
 `26cf9606b8ee1f33efeb9e667cd265f947bc5387`, whose bridge implementation began
-at `1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd`. Neither source head was
-deployed by that inspection. The final backend candidate was pending an
+at `1ad052300ef00e82c16e6abfe2d0f1cc5a15dfbd`. Neither source head had been
+deployed at that inspection. The final backend candidate was pending an
 operator-reviewed provider-manifest commit at the time of inspection. Grae's
 later 2026-08-11 clarification removes that manifest from the FAD candidate
-gate, but the provider-independent preflight amendment still requires
-implementation and verification before a new final-candidate identity can be
-claimed. No environment, disk, database, or production mutation is claimed.
+gate. At that checkpoint, the provider-independent preflight amendment still
+required implementation and verification before a new final-candidate identity
+could be claimed. The inspection itself changed no environment, disk, database,
+or production resource.
 
-Grae authorized the isolated FAD-18 staging gate, which is now the sole active
-slice. Exact published source heads now exist, but deployment remains blocked
-until attached-service operator access is confirmed; offsite object storage,
-encryption, current backup, and clean-restore evidence exist; and the approved
-reset/import, one schema-49 migration report, final candidate/deploy identities,
-and rollback record are complete. The SportsDataIO probe manifest, paid key,
-live observation, signing configuration, and capability artifact are explicitly
+At that checkpoint, Grae had authorized the isolated FAD-18 staging gate, but
+deployment remained blocked pending attached-service operator access, offsite
+object storage and encryption, a current backup and clean restore, the approved
+reset/import and schema-49 migration report, final candidate/deploy identities,
+and the rollback record. The SportsDataIO probe manifest, paid key, live
+observation, signing configuration, and capability artifact had already been
 removed from the FAD-18 blocker set by Grae's 2026-08-11 clarification.
 
-The FAD-18 local preflight discovers `158` focused and adjacent tests: `156`
-pass, zero fail, and two intentional Windows link-capability cases skip. It
-pins a contiguous base-22-to-target-49 migration source, `131` catalog entries,
+The FAD-18 local preflight discovered `158` focused and adjacent tests: `156`
+passed, zero failed, and two intentional Windows link-capability cases skipped.
+It pinned a contiguous base-22-to-target-49 migration source, `131` catalog entries,
 `49` post-reset require-empty tables, valid reset-policy coverage, and a
-quiesced Render probe blueprint. This local result does not satisfy any missing
-resource, backup, restore, reset, deploy, or operator evidence. Its provider-
+quiesced Render probe blueprint. This local result did not satisfy the then-
+missing resource, backup, restore, reset, deploy, or operator evidence. Its provider-
 tool coverage remains historical implementation evidence only and does not
 create an external-provider prerequisite for FAD.
 
-The FAD-18 staging maintenance-hold bridge is implemented and published to the
-backend `staging` branch but has not been deployed. Exact `true` is accepted
+At the pre-deployment checkpoint, the FAD-18 staging maintenance-hold bridge
+was implemented and published to the backend `staging` branch but had not yet
+been deployed. Exact `true` was accepted
 only for the staging/production-Node, closed-write,
 jobs/FAD/email/debug/backup-disabled, capture-only, provider-probe boundary.
-That provider-probe prerequisite is now a known code/configuration conflict:
-the amended FAD-18 candidate must support the same hold with provider
+That provider-probe prerequisite was a known code/configuration conflict: the
+amended FAD-18 candidate had to support the same hold with provider
 composition and the complete automatic matchup-occurrence runner disabled.
-This document does not claim that amendment has been implemented or tested.
-It dispatches before the target runtime import, opens no database, and exposes
+At that checkpoint the amendment was not yet implemented or tested. The bridge
+dispatches before the target runtime import, opens no database, and exposes
 only generic exact-path GET/HEAD liveness and readiness; every other request is
 maintenance `503`. Hold readiness means only that this listener is live, not
 that the application or database is ready. Missing or exact `false` preserves
 ordinary startup, and every malformed or drifted hold fails before either
 runtime starts.
 
-The amended external sequence is bridge-on-old-schema-22, final preflight,
+The approved external sequence was bridge-on-old-schema-22, final preflight,
 exact-final-build-held backup plus distinct clean-restore verification, and
 complete fresh-path schema-49 reset/import handoff. Provider discovery and a
-manifest commit are omitted. Only then may the same build activate hold-false
+manifest commit were omitted. Only then could the same build activate hold-false
 on the new path with provider composition and all automatic matchup occurrences
 disabled while FAD, Entry Draft, auction, trade, and outbox jobs remain
 available subject to their own gates. The old
 schema-22 file remains
-untouched and is paired with the prior build for rollback. No bridge, backup,
-reset/import, deploy, provider call, or shared database action has occurred
-locally.
+untouched and paired with the prior build for rollback. No bridge, backup,
+reset/import, deploy, provider call, or shared database action had occurred at
+the local checkpoint described above.
 
 Exact Node `24.14.1` historical maintenance-transition tests pass `35/35`: hold
 `6/6`, discovery `14/14`, publisher `9/9`, and independent verifier `6/6`. The
 historical broader entrypoint, Render, preflight, target-runtime, hold, and
 provider matrix passes `125/125`. The complete six-file provider-capability
 family discovers `106` tests: `104` pass, two intentional Windows link-
-capability cases skip, and none fail, cancel, or remain todo. Those results do
-not prove the new provider-independent FAD startup path; focused amendment tests
-remain required.
+capability cases skip, and none fail, cancel, or remain todo. At that
+checkpoint, those results did not prove the new provider-independent FAD
+startup path; focused amendment tests remained required.
 
-Production remains blocked and untouched. No M4, M5, M6, or M7 implementation
-is deployed or enabled in production.
+FAD-18 subsequently completed that isolated staging sequence. The encrypted
+pre-migration backup and distinct clean restore passed; the final backend
+commit `9a2f5e8f06b054c84e37d086c1c3a43d0fafbc68` migrated staging to schema `52`;
+Render deploy `dep-da2147e417fc73brkqmg` passed the hosted Node `24.14.1` suite
+at `3,356/3,356`; and Netlify deploy `6a8420054c9c5a624d86b2c3` serves frontend
+application commit `50f2414cdda5926942975577f70114b5868917a9` with preserved source head
+`2ba016c9d5e6b016a150a62da757f28a9c0140c0`. The authenticated, non-mutating
+staging walkthrough passed. M7-25 is complete and archived; M7-26 is the sole
+active UI-review plan.
+
+Production remains untouched and unauthorized. No M4, M5, M6, or M7
+implementation is deployed or enabled in production.
 
 The active schedule will be maintained in:
 

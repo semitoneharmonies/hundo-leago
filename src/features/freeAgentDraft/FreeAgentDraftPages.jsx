@@ -16,10 +16,7 @@ import { useRealtime } from "../../shared/realtime/realtimeContext.js";
 import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { CandidateCardBuilder } from "./CandidateCardBuilder.jsx";
-import {
-  PublishedCandidateCards,
-  PublishedCandidateCardView,
-} from "./FreeAgentDraftResults.jsx";
+import { PublishedCandidateCards } from "./FreeAgentDraftResults.jsx";
 import {
   eligibleCandidatePlayersQuery,
   freeAgentDraftKeys,
@@ -96,17 +93,6 @@ function FadGate({ context, title, children }) {
   );
 }
 
-function durationLabel(milliseconds) {
-  if (milliseconds <= 0) return "Closed";
-  const minutes = Math.floor(milliseconds / 60_000);
-  const days = Math.floor(minutes / 1_440);
-  const hours = Math.floor((minutes % 1_440) / 60);
-  const remainingMinutes = minutes % 60;
-  if (days > 0) return `${days}d ${hours}h ${remainingMinutes}m`;
-  if (hours > 0) return `${hours}h ${remainingMinutes}m`;
-  return `${Math.max(0, remainingMinutes)}m`;
-}
-
 function useClientClockSample(observationIdentity) {
   const [sample, setSample] = useState({
     observationIdentity: null,
@@ -126,86 +112,13 @@ function useClientClockSample(observationIdentity) {
     : null;
 }
 
-function ServerClock({
-  serverNowMs,
-  serverObservedAtClientMs,
-  targetMs,
-  label,
-  timeZone,
-}) {
-  const [clientNowMs, setClientNowMs] = useState(() => Date.now());
-  const estimatedServerNowMs =
-    serverNowMs + (clientNowMs - serverObservedAtClientMs);
-
-  useEffect(() => {
-    const timer = globalThis.setInterval(
-      () =>
-        setClientNowMs(Date.now()),
-      30_000
-    );
-    return () => globalThis.clearInterval(timer);
-  }, []);
-
-  return (
-    <div className={styles.clock}>
-      <span>{label}</span>
-      <strong>
-        {durationLabel(targetMs - estimatedServerNowMs)}
-      </strong>
-      <small>{shortLeagueDateTime(targetMs, timeZone)}</small>
-    </div>
-  );
-}
-
 function OverviewHero({
   overview,
-  observedAtClientMs,
   title = "Free Agent Draft",
   headingId = "fad-page-title",
   headingLevel = "h1",
 }) {
   const Heading = headingLevel;
-  const timing = (
-    <div className={styles.clockGrid}>
-      <ServerClock
-        serverNowMs={overview.serverNowMs}
-        serverObservedAtClientMs={observedAtClientMs}
-        targetMs={overview.candidateDeadlineAtMs}
-        label="Candidate Card deadline"
-        timeZone={overview.timeZone}
-      />
-      {overview.nextRolloverAtMs !== null && (
-        <ServerClock
-          serverNowMs={overview.serverNowMs}
-          serverObservedAtClientMs={observedAtClientMs}
-          targetMs={overview.nextRolloverAtMs}
-          label="Next auction rollover"
-          timeZone={overview.timeZone}
-        />
-      )}
-      <div className={styles.clock}>
-        <span>Week 1 starts</span>
-        <strong>
-          {shortLeagueDateTime(
-            overview.frozenFadFirstMatchupStartsAtMs,
-            overview.timeZone
-          )}
-        </strong>
-      </div>
-      {overview.competitionFirstMatchupStartsAtMs !==
-        overview.frozenFadFirstMatchupStartsAtMs && (
-        <div className={styles.clock}>
-          <span>Updated Week 1 start</span>
-          <strong>
-            {shortLeagueDateTime(
-              overview.competitionFirstMatchupStartsAtMs,
-              overview.timeZone
-            )}
-          </strong>
-        </div>
-      )}
-    </div>
-  );
   return (
     <header className={styles.hero}>
       <div className={styles.heroTop}>
@@ -213,7 +126,13 @@ function OverviewHero({
           <Heading id={headingId}>{title}</Heading>
         </div>
       </div>
-      {timing}
+      <p className={styles.deadlineLine}>
+        <strong>Candidate card deadline:</strong>{" "}
+        {shortLeagueDateTime(
+          overview.candidateDeadlineAtMs,
+          overview.timeZone
+        )}
+      </p>
     </header>
   );
 }
@@ -224,14 +143,12 @@ function InactiveDraft({ league }) {
       <PageHeading
         eyebrow={league.name}
         title="Free Agent Draft"
-        description="Candidate Cards become available automatically after the Entry Draft or approved no-draft transition finishes and readiness succeeds."
         id="fad-page-title"
       />
       <Surface className={styles.panel}>
         <h2>No active Free Agent Draft</h2>
         <p>
-          There is no manual setup or opening control. Managers will be notified
-          when every Candidate Card opens in one committed readiness operation.
+          Managers will be notified when Candidate Cards are ready.
         </p>
       </Surface>
     </>
@@ -482,7 +399,6 @@ export function DraftsPage() {
       <PageHeading
         eyebrow={context.league?.name || "League"}
         title="Drafts"
-        description="Live draft work and permanent league draft results live together here."
         id="fad-page-title"
       />
       <DraftTypeNavigation leagueId={leagueId} selected={selected} />
@@ -956,26 +872,13 @@ export function CandidateCardPage() {
           <ErrorBlock error={overview.error} fallback="The Free Agent Draft could not be loaded." />
         </Surface>
       ) : !PREPARATION_PHASES.has(overview.data.phase) ? (
-        <>
-          <OverviewHero
-            overview={overview.data}
-            observedAtClientMs={overview.dataUpdatedAt}
-            title="Published Candidate Card"
-          />
-          <PublishedCandidateCardView
-            key={`${realtime.privacyEpoch}:${leagueId}:${fadId}:${teamId}`}
-            httpClient={context.session.httpClient}
-            leagueId={leagueId}
-            fadId={fadId}
-            teamId={teamId}
-            currentUserId={context.session.user.id}
-          />
-          <p className="hl-page-backlink">
-            <Link to={routePaths.leagueFreeAgentDrafts(leagueId)}>
-              Back to Drafts
-            </Link>
-          </p>
-        </>
+        <Navigate
+          replace
+          to={`${routePaths.draftFreeAgentAllocationResults(
+            leagueId,
+            fadId
+          )}?teamId=${encodeURIComponent(teamId)}`}
+        />
       ) : rosterNavigation.isPending ? (
         <Surface>
           <LoadingBlock>

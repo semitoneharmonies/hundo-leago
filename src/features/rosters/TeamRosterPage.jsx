@@ -1,31 +1,39 @@
-import { useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowLeftRight,
   ArrowUp,
   CircleDollarSign,
+  FileSignature,
   GripVertical,
   HeartPulse,
   List,
   Megaphone,
   Rows3,
   ShieldCheck,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
+  ErrorBlock,
   PositionTag,
   StatusBadge,
   TableScroll,
+  TeamMark,
 } from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
   buyOutRosterContract,
+  declineProspectFantasyElc,
   moveRosterPlayer,
+  releaseUnsignedProspectRights,
   saveRosterDisplayOrder,
   setTradeBlock,
+  signProspectFantasyElc,
   teamWorkspaceKeys,
 } from "./teamWorkspaceQueries.js";
 
@@ -46,6 +54,14 @@ function fantasyPointsPerGame(statistics) {
   if (!statistics) return null;
   if (statistics.gamesPlayed === 0) return 0;
   return statistics.fantasyPointsHundredths / 100 / statistics.gamesPlayed;
+}
+
+function nhlTeamAbbreviation(player) {
+  return (
+    player.nhlTeamAbbreviation ||
+    player.provider?.nhlTeamAbbreviation ||
+    "—"
+  );
 }
 
 function orderedPlayers(players, respectDisplayOrder = false) {
@@ -137,9 +153,30 @@ function endPointerCapture(event) {
   }
 }
 
-function RosterActions({ leagueId, teamId, player, pending, onAction }) {
-  const assetType = player.contract ? "contract" : "prospect_right";
-  const assetId = player.contract?.id || player.playerId;
+function RosterActions({
+  leagueId,
+  teamId,
+  player,
+  pending,
+  onAction,
+  prospectDecisionAllowed = false,
+}) {
+  const assetType =
+    player.rosterCategory === "Prospect"
+      ? "prospect_right"
+      : "contract";
+  const assetId =
+    assetType === "prospect_right"
+      ? player.playerId
+      : player.contract?.id;
+  const unsignedProspect =
+    player.rosterCategory === "Prospect" &&
+    player.ownershipKind === "Prospect Right" &&
+    !player.contract;
+  const signedProspect =
+    player.rosterCategory === "Prospect" &&
+    player.ownershipKind === "Prospect Right" &&
+    player.contract?.type === "fantasy_elc";
   const irDisabled =
     player.rosterCategory !== "Active" || !player.injuredReserveEligible;
   const rosterMove =
@@ -147,52 +184,165 @@ function RosterActions({ leagueId, teamId, player, pending, onAction }) {
       ? { type: "bench", label: "Move to bench", Icon: ArrowDown }
       : player.rosterCategory === "Bench"
         ? { type: "active", label: "Move to active", Icon: ArrowUp }
+        : player.rosterCategory === "Injured Reserve"
+          ? {
+              type: "active",
+              label: "Move to active",
+              Icon: ArrowUp,
+              title: `Move ${player.name} to active before moving them to the bench`,
+            }
         : null;
 
   return (
     <div className="hl-roster-actions">
-      <button
-        type="button"
-        className="hl-roster-action"
-        disabled={pending || !player.contract}
-        onClick={() => onAction("buyout", player)}
-        aria-label={`Buy out ${player.name}`}
-        title={
-          player.contract
-            ? `Buy out ${player.name}`
-            : "This player does not have an active contract."
-        }
-      >
-        <CircleDollarSign aria-hidden="true" />
-        <span>Buyout</span>
-      </button>
-      <button
-        type="button"
-        className="hl-roster-action"
-        disabled={pending || irDisabled}
-        onClick={() => onAction("ir", player)}
-        aria-label={`Move ${player.name} to injured reserve`}
-        title={
-          irDisabled
-            ? `${player.name} is not currently eligible for injured reserve`
-            : `Move ${player.name} to injured reserve`
-        }
-      >
-        <HeartPulse aria-hidden="true" />
-        <span>Move to IR</span>
-      </button>
-      {rosterMove && (
-        <button
-          type="button"
-          className="hl-roster-action"
-          disabled={pending}
-          onClick={() => onAction(rosterMove.type, player)}
-          aria-label={`${rosterMove.label} ${player.name}`}
-          title={`${rosterMove.label} ${player.name}`}
-        >
-          <rosterMove.Icon aria-hidden="true" />
-          <span>{rosterMove.label}</span>
-        </button>
+      {unsignedProspect && prospectDecisionAllowed && (
+        <>
+          {[
+            [
+              "prospect-sign-prospect",
+              "Sign ELC and keep in prospects",
+              FileSignature,
+            ],
+            ["prospect-sign-active", "Sign ELC and move to active", ArrowUp],
+            ["prospect-sign-bench", "Sign ELC and move to bench", ArrowDown],
+            [
+              "prospect-sign-ir",
+              "Sign ELC and move to injured reserve",
+              HeartPulse,
+            ],
+          ].map(([type, label, Icon]) => (
+            <button
+              key={type}
+              type="button"
+              className="hl-roster-action"
+              disabled={
+                pending ||
+                (type === "prospect-sign-ir" &&
+                  !player.injuredReserveEligible)
+              }
+              onClick={() => onAction(type, player)}
+              aria-label={`${label} ${player.name}`}
+              title={
+                type === "prospect-sign-ir" &&
+                !player.injuredReserveEligible
+                  ? `${player.name} is not currently eligible for injured reserve`
+                  : `${label} ${player.name}`
+              }
+            >
+              {createElement(Icon, { "aria-hidden": true })}
+              <span>{label}</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            className="hl-roster-action"
+            disabled={pending}
+            onClick={() => onAction("prospect-decline", player)}
+            aria-label={`Decline ELC for ${player.name}`}
+            title={`Decline ELC for ${player.name} and release their rights`}
+          >
+            <XCircle aria-hidden="true" />
+            <span>Decline ELC</span>
+          </button>
+          <button
+            type="button"
+            className="hl-roster-action"
+            disabled={pending}
+            onClick={() => onAction("prospect-release", player)}
+            aria-label={`Release unsigned prospect rights for ${player.name}`}
+            title={`Release unsigned prospect rights for ${player.name}`}
+          >
+            <Trash2 aria-hidden="true" />
+            <span>Release rights</span>
+          </button>
+        </>
+      )}
+      {signedProspect && (
+        <>
+          {[
+            ["active", "Move to active", ArrowUp],
+            ["bench", "Move to bench", ArrowDown],
+            ["ir", "Move to injured reserve", HeartPulse],
+          ].map(([type, label, Icon]) => (
+            <button
+              key={type}
+              type="button"
+              className="hl-roster-action"
+              disabled={
+                pending ||
+                (type === "ir" && !player.injuredReserveEligible)
+              }
+              onClick={() => onAction(type, player)}
+              aria-label={`${label} ${player.name}`}
+              title={
+                type === "ir" && !player.injuredReserveEligible
+                  ? `${player.name} is not currently eligible for injured reserve`
+                  : `${label} ${player.name}`
+              }
+            >
+              {createElement(Icon, { "aria-hidden": true })}
+              <span>{label}</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            className="hl-roster-action"
+            disabled={pending}
+            onClick={() => onAction("buyout", player)}
+            aria-label={`Buy out ${player.name}`}
+            title={`Buy out ${player.name}`}
+          >
+            <CircleDollarSign aria-hidden="true" />
+            <span>Buyout</span>
+          </button>
+        </>
+      )}
+      {player.rosterCategory !== "Prospect" && (
+        <>
+          <button
+            type="button"
+            className="hl-roster-action"
+            disabled={pending || !player.contract}
+            onClick={() => onAction("buyout", player)}
+            aria-label={`Buy out ${player.name}`}
+            title={
+              player.contract
+                ? `Buy out ${player.name}`
+                : "This player does not have an active contract."
+            }
+          >
+            <CircleDollarSign aria-hidden="true" />
+            <span>Buyout</span>
+          </button>
+          <button
+            type="button"
+            className="hl-roster-action"
+            disabled={pending || irDisabled}
+            onClick={() => onAction("ir", player)}
+            aria-label={`Move ${player.name} to injured reserve`}
+            title={
+              irDisabled
+                ? `${player.name} is not currently eligible for injured reserve`
+                : `Move ${player.name} to injured reserve`
+            }
+          >
+            <HeartPulse aria-hidden="true" />
+            <span>Move to IR</span>
+          </button>
+          {rosterMove && (
+            <button
+              type="button"
+              className="hl-roster-action"
+              disabled={pending}
+              onClick={() => onAction(rosterMove.type, player)}
+              aria-label={`${rosterMove.label} ${player.name}`}
+              title={rosterMove.title || `${rosterMove.label} ${player.name}`}
+            >
+              <rosterMove.Icon aria-hidden="true" />
+              <span>{rosterMove.label}</span>
+            </button>
+          )}
+        </>
       )}
       <Link
         className="hl-roster-action"
@@ -238,8 +388,14 @@ function TradeRequestAction({
   sourceTeamId,
   player,
 }) {
-  const assetType = player.contract ? "contract" : "prospect_right";
-  const assetId = player.contract?.id || player.playerId;
+  const assetType =
+    player.rosterCategory === "Prospect"
+      ? "prospect_right"
+      : "contract";
+  const assetId =
+    assetType === "prospect_right"
+      ? player.playerId
+      : player.contract?.id;
   return (
     <Link
       className="hl-roster-action is-request"
@@ -291,6 +447,7 @@ function CategoryTable({
   onAction,
   actionPending = false,
   canRequestTrade = false,
+  prospectDecisionAllowed = false,
   leagueId,
   requestingTeamId = null,
   viewedTeamId,
@@ -339,6 +496,13 @@ function CategoryTable({
         <h2 id={headingId}>{category.title}</h2>
         <span>{capacity}</span>
       </div>
+      {category.key === "Prospect" && prospectDecisionAllowed && (
+        <p className="hl-form-note" role="note">
+          Before signing, confirm the player has signed their real-life NHL
+          entry-level contract. A fantasy ELC is $3 over three seasons and
+          cannot be undone here.
+        </p>
+      )}
       {players.length === 0 ? (
         <p className="hl-roster-category__empty">
           No players occupy this category.
@@ -528,9 +692,7 @@ function CategoryTable({
                   </td>
                   <td className="hl-player-col-age">{player.age ?? "—"}</td>
                   <td className="hl-player-col-nhl">
-                    {player.nhlTeamAbbreviation ||
-                      player.provider?.nhlTeamAbbreviation ||
-                      "—"}
+                    {nhlTeamAbbreviation(player)}
                   </td>
                   <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.gamesPlayed ?? "—"}</td>
                   <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.goals ?? "—"}</td>
@@ -558,6 +720,7 @@ function CategoryTable({
                             player={player}
                             pending={actionPending}
                             onAction={onAction}
+                            prospectDecisionAllowed={prospectDecisionAllowed}
                           />
                         )}
                         {canRequestTrade && (
@@ -594,6 +757,9 @@ function chunk(values, size, count) {
 function LinePlayer({
   player,
   canManage,
+  category = "Active",
+  muted = false,
+  actions = null,
   team,
   tradeRequestPath,
   draggingId,
@@ -612,6 +778,7 @@ function LinePlayer({
       className={teamColourClass(
         [
           "hl-line-player hl-line-player--team",
+          muted ? "hl-line-player--bench" : "",
           draggingId === player.ownershipId ? "is-dragging" : "",
           dragTargetId === player.ownershipId ? "is-drop-target" : "",
         ]
@@ -621,7 +788,7 @@ function LinePlayer({
       )}
       style={teamColourStyle(team)}
       data-roster-order-id={canManage ? player.ownershipId : undefined}
-      data-roster-category="Active"
+      data-roster-category={category}
       onDragOver={(event) => {
         if (canManage) {
           event.preventDefault();
@@ -629,21 +796,30 @@ function LinePlayer({
         }
       }}
       onDrop={(event) => {
+        if (!canManage) return;
         event.preventDefault();
         event.stopPropagation();
         const sourceId =
           (typeof event.dataTransfer.getData === "function"
             ? event.dataTransfer.getData("text/plain")
             : "") || draggingId;
-        onCategoryDrop(sourceId, "Active", player.ownershipId);
+        onCategoryDrop(sourceId, category, player.ownershipId);
       }}
     >
       {canManage && (
         <button
           type="button"
           className="hl-line-player__drag-handle"
-          aria-label={`Drag ${player.name} to reorder`}
-          title={`Drag ${player.name} to reorder`}
+          aria-label={
+            category === "Active"
+              ? `Drag ${player.name} to reorder`
+              : `Drag ${player.name} between Bench and Active`
+          }
+          title={
+            category === "Active"
+              ? `Drag ${player.name} to reorder`
+              : `Drag ${player.name} between Bench and Active`
+          }
           draggable
           onDragStart={(event) => {
             event.dataTransfer.effectAllowed = "move";
@@ -661,7 +837,7 @@ function LinePlayer({
           onPointerUp={(event) => {
             const targetId = pointerDropTargetId(event) || dragTargetId;
             const targetCategory =
-              pointerDropTargetCategory(event) || "Active";
+              pointerDropTargetCategory(event) || category;
             endPointerCapture(event);
             onCategoryDrop(
               player.ownershipId,
@@ -674,6 +850,7 @@ function LinePlayer({
             onDragEnd();
           }}
           onKeyDown={(event) => {
+            if (category !== "Active") return;
             if (event.key === "ArrowUp") {
               event.preventDefault();
               onMove(player.ownershipId, -1);
@@ -685,7 +862,9 @@ function LinePlayer({
         >
           <GripVertical aria-hidden="true" />
           <span className="hl-visually-hidden">
-            Use the up and down arrow keys to change order.
+            {category === "Active"
+              ? "Use the up and down arrow keys to change order."
+              : "Drag this player onto the active lineup to move them."}
           </span>
         </button>
       )}
@@ -707,6 +886,9 @@ function LinePlayer({
         >
           <ArrowLeftRight aria-hidden="true" />
         </Link>
+      )}
+      {actions && (
+        <div className="hl-line-player__actions">{actions}</div>
       )}
     </div>
   );
@@ -847,6 +1029,103 @@ function HockeyLines({
   );
 }
 
+function BenchStrip({
+  players,
+  canManage,
+  actionPending,
+  orderPending,
+  canRequestTrade,
+  leagueId,
+  requestingTeamId,
+  team,
+  draggingId,
+  dragTargetId,
+  onDragStart,
+  onDragTarget,
+  onDragEnd,
+  onCategoryDrop,
+  onMove,
+  onAction,
+}) {
+  const displayedPlayers = orderedPlayers(players);
+  const dragEnabled = canManage && !actionPending && !orderPending;
+  return (
+    <section
+      className="hl-surface hl-bench-strip"
+      aria-labelledby="roster-bench-cards"
+      data-roster-category="Bench"
+      onDragOver={(event) => {
+        if (!dragEnabled) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(event) => {
+        if (!dragEnabled || event.defaultPrevented) return;
+        event.preventDefault();
+        const sourceId =
+          (typeof event.dataTransfer.getData === "function"
+            ? event.dataTransfer.getData("text/plain")
+            : "") || draggingId;
+        onCategoryDrop(sourceId, "Bench", null, displayedPlayers);
+      }}
+    >
+      <div className="hl-roster-category__heading">
+        <h2 id="roster-bench-cards">Bench</h2>
+        <span>
+          {players.length}/4 used · {Math.max(0, 4 - players.length)} available
+        </span>
+      </div>
+      {players.length === 0 ? (
+        <p className="hl-roster-category__empty">
+          No players occupy this category.
+        </p>
+      ) : (
+        <div className="hl-bench-strip__cards">
+          {displayedPlayers.map((player) => (
+            <LinePlayer
+              key={player.ownershipId}
+              player={player}
+              canManage={dragEnabled}
+              category="Bench"
+              muted
+              team={team}
+              tradeRequestPath={
+                canRequestTrade
+                  ? routePaths.leagueTradeForRequestedAsset(
+                      leagueId,
+                      requestingTeamId,
+                      team.id,
+                      player.contract ? "contract" : "prospect_right",
+                      player.contract?.id || player.playerId
+                    )
+                  : null
+              }
+              draggingId={draggingId}
+              dragTargetId={dragTargetId}
+              onDragStart={onDragStart}
+              onDragTarget={onDragTarget}
+              onDragEnd={onDragEnd}
+              onCategoryDrop={onCategoryDrop}
+              onMove={onMove}
+              actions={
+                canManage ? (
+                  <RosterActions
+                    leagueId={leagueId}
+                    teamId={team.id}
+                    player={player}
+                    pending={actionPending}
+                    onAction={onAction}
+                  />
+                ) : null
+              }
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function DraftPicks({
   canOffer,
   httpClient,
@@ -924,11 +1203,7 @@ function DraftPicks({
             crossOrigin="use-credentials"
             alt=""
           />
-        ) : (
-          <span aria-hidden="true">
-            {originalTeam.name.slice(0, 2).toUpperCase()}
-          </span>
-        )}
+        ) : null}
         <small aria-hidden="true">{pick.position}</small>
       </span>
     );
@@ -1084,10 +1359,8 @@ export function TeamRosterPage({
         queryKey: teamWorkspaceKeys.detail(league.id, team.id),
       });
     },
-    onError: (error) => {
-      setSaveMessage(
-        error.message || "The line order could not be saved. Refresh and retry."
-      );
+    onError: () => {
+      setSaveMessage("The line order could not be saved.");
     },
   });
 
@@ -1099,6 +1372,42 @@ export function TeamRosterPage({
           league.id,
           team.id,
           player
+        );
+      }
+      const prospectDestination = {
+        "prospect-sign-prospect": "Prospect",
+        "prospect-sign-active": "Active",
+        "prospect-sign-bench": "Bench",
+        "prospect-sign-ir": "Injured Reserve",
+      }[type];
+      if (prospectDestination) {
+        return signProspectFantasyElc(
+          httpClient,
+          league.id,
+          team.id,
+          player.playerId,
+          {
+            destinationCategory: prospectDestination,
+            expectedVersion: player.ownershipVersion,
+          }
+        );
+      }
+      if (type === "prospect-decline") {
+        return declineProspectFantasyElc(
+          httpClient,
+          league.id,
+          team.id,
+          player.playerId,
+          player.ownershipVersion
+        );
+      }
+      if (type === "prospect-release") {
+        return releaseUnsignedProspectRights(
+          httpClient,
+          league.id,
+          team.id,
+          player.playerId,
+          player.ownershipVersion
         );
       }
       const destinationCategory = {
@@ -1149,10 +1458,16 @@ export function TeamRosterPage({
         }
       );
     },
-    onSuccess: async (_result, { type, player }) => {
-      setSaveMessage(
+    onSuccess: async (result, { type, player }) => {
+      const actionMessage =
         type === "buyout"
           ? `${player.name} was bought out.`
+          : type.startsWith("prospect-sign-")
+            ? `${player.name} signed a fantasy ELC.`
+            : type === "prospect-decline"
+              ? `${player.name}'s fantasy ELC was declined and their rights were released.`
+              : type === "prospect-release"
+                ? `${player.name}'s unsigned prospect rights were released.`
           : type === "ir"
             ? `${player.name} was moved to injured reserve.`
             : type === "bench"
@@ -1161,16 +1476,25 @@ export function TeamRosterPage({
                 ? `${player.name} was moved to the active roster.`
             : `${player.name} was ${
                 player.onTradeBlock ? "removed from" : "added to"
-              } the trade block.`
+              } the trade block.`;
+      const cancelledTradeCount = Array.isArray(
+        result?.automaticallyCancelledTradeIds
+      )
+        ? result.automaticallyCancelledTradeIds.length
+        : 0;
+      setSaveMessage(
+        cancelledTradeCount > 0
+          ? `${actionMessage} ${cancelledTradeCount} pending trade ${
+              cancelledTradeCount === 1 ? "proposal was" : "proposals were"
+            } automatically cancelled.`
+          : actionMessage
       );
       await queryClient.invalidateQueries({
         queryKey: teamWorkspaceKeys.detail(league.id, team.id),
       });
     },
-    onError: (error) => {
-      setSaveMessage(
-        error.message || "The roster action could not be completed."
-      );
+    onError: () => {
+      setSaveMessage("The roster action could not be completed.");
     },
   });
 
@@ -1178,7 +1502,31 @@ export function TeamRosterPage({
     if (
       type === "buyout" &&
       !globalThis.confirm(
-        `Buy out ${player.name}'s contract? This creates an authoritative buyout penalty and cannot be undone here.`
+        `Buy out ${player.name}'s contract? This creates a buyout penalty and cannot be undone here.`
+      )
+    ) {
+      return;
+    }
+    if (
+      type.startsWith("prospect-sign-") &&
+      !globalThis.confirm(
+        `Sign ${player.name} to a $3, three-season fantasy ELC? Confirm their real-life NHL entry-level contract first. Any pending trade proposals containing these unsigned rights will be automatically cancelled.`
+      )
+    ) {
+      return;
+    }
+    if (
+      type === "prospect-decline" &&
+      !globalThis.confirm(
+        `Decline ${player.name}'s fantasy ELC and release their prospect rights? This cannot be undone here, and any pending trade proposals containing the rights will be automatically cancelled.`
+      )
+    ) {
+      return;
+    }
+    if (
+      type === "prospect-release" &&
+      !globalThis.confirm(
+        `Release the unsigned prospect rights for ${player.name}? This cannot be undone here, and any pending trade proposals containing the rights will be automatically cancelled.`
       )
     ) {
       return;
@@ -1335,19 +1683,15 @@ export function TeamRosterPage({
         style={teamColourStyle(team)}
       >
         <div className="hl-roster-identity">
-          <div className="hl-team-logo">
-            {team.logoReference ? (
-              <img
-                src={httpClient.resourceUrl(team.logoReference)}
-                crossOrigin="use-credentials"
-                alt={`${team.name} logo`}
-              />
-            ) : (
-              <span aria-hidden="true">
-                {team.name.slice(0, 2).toUpperCase()}
-              </span>
-            )}
-          </div>
+          <TeamMark
+            team={team}
+            logoUrl={
+              team.logoReference
+                ? httpClient.resourceUrl(team.logoReference)
+                : null
+            }
+            className="hl-team-logo"
+          />
           <div>
             <p className="hl-eyebrow">
               {league.name} · {season.label}
@@ -1400,7 +1744,7 @@ export function TeamRosterPage({
         <div className="hl-roster-illegal" role="alert">
           <strong>Illegal roster</strong>
           <span>
-            {legality.reasons.length} authoritative issue
+            {legality.reasons.length} roster issue
             {legality.reasons.length === 1 ? "" : "s"} must be fixed
             before this roster is legal.
           </span>
@@ -1442,11 +1786,17 @@ export function TeamRosterPage({
           <Rows3 aria-hidden="true" /> Hockey lines
         </button>
       </div>
-      {saveMessage && (
+      {(mutation.isError || actionMutation.isError) && (
+        <ErrorBlock
+          error={mutation.error || actionMutation.error}
+          fallback={saveMessage}
+          impact="The roster remains unchanged."
+          recovery="Refresh the roster, review the player’s current status, and try again."
+        />
+      )}
+      {saveMessage && !mutation.isError && !actionMutation.isError && (
         <p
-          className={`hl-form-message${
-            mutation.isError || actionMutation.isError ? " is-error" : ""
-          }`}
+          className="hl-form-message"
           role="status"
         >
           {saveMessage}
@@ -1469,8 +1819,30 @@ export function TeamRosterPage({
             onCategoryDrop={handleRosterDrop}
             onMove={move}
           />
+          <BenchStrip
+            players={workspace.players.filter(
+              ({ rosterCategory }) => rosterCategory === "Bench"
+            )}
+            canManage={workspace.canManage}
+            actionPending={actionMutation.isPending}
+            orderPending={mutation.isPending}
+            canRequestTrade={canRequestTrade}
+            leagueId={league.id}
+            requestingTeamId={requestingTeam?.id || null}
+            team={team}
+            draggingId={draggingId}
+            dragTargetId={dragTargetId}
+            onDragStart={setDraggingId}
+            onDragTarget={setDragTargetId}
+            onDragEnd={endDrag}
+            onCategoryDrop={handleRosterDrop}
+            onMove={move}
+            onAction={runRosterAction}
+          />
           <div className="hl-roster-categories">
-            {CATEGORY_DETAILS.filter(({ key }) => key !== "Active").map(
+            {CATEGORY_DETAILS.filter(
+              ({ key }) => !["Active", "Bench"].includes(key)
+            ).map(
               (category) => (
                 <CategoryTable
                   key={category.key}
@@ -1492,6 +1864,7 @@ export function TeamRosterPage({
                   onAction={runRosterAction}
                   actionPending={actionMutation.isPending}
                   canRequestTrade={canRequestTrade}
+                  prospectDecisionAllowed={managesViewedTeam}
                   requestingTeamId={requestingTeam?.id || null}
                   viewedTeamId={team.id}
                 />
@@ -1530,6 +1903,7 @@ export function TeamRosterPage({
               onAction={runRosterAction}
               actionPending={actionMutation.isPending}
               canRequestTrade={canRequestTrade}
+              prospectDecisionAllowed={managesViewedTeam}
               requestingTeamId={requestingTeam?.id || null}
               viewedTeamId={team.id}
             />

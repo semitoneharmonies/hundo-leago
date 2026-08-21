@@ -130,13 +130,11 @@ export function auctionTotalPreview(value, termValue) {
 }
 
 export function sourceLabel(auction) {
-  if (auction.sourceKind === "ordinary_weekly") return "Weekly auction";
-  if (auction.sourceKind === "fad_restricted") return "Restricted Candidate tie";
-  if (auction.fadOrigin === "restricted_no_improvement_fallback") {
-    return "League-wide FAD fallback";
+  if (auction.sourceKind === "ordinary_weekly") return "Auction";
+  if (["fad_restricted", "fad_open_rapid"].includes(auction.sourceKind)) {
+    return "Free Agent Draft Rapid Auction";
   }
-  if (auction.fadOrigin === "queued_nomination") return "Queued FAD nomination";
-  return "FAD rapid auction";
+  return "Auction";
 }
 
 export function capabilityMessage(reasonCode) {
@@ -153,7 +151,7 @@ export function capabilityMessage(reasonCode) {
     TEAM_NOT_PARTICIPANT: "This team is not an eligible participant in this auction.",
     COOLDOWN_ACTIVE: "The server-enforced edit cooldown is still active.",
     EDIT_LIMIT_REACHED: "This bid has used every manager edit.",
-    PLAYER_QUARANTINED: "The player is awaiting an authoritative FAD result or recovery.",
+    PLAYER_QUARANTINED: "The player is awaiting a Free Agent Draft result or recovery.",
     RECOVERY_NOT_AVAILABLE: "This action is unavailable while recovery is pending.",
   }[reasonCode] || "This action is not currently available.";
 }

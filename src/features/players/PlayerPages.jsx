@@ -5,6 +5,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { routePaths } from "../../app/routePaths.js";
 import {
   EmptyBlock,
+  ErrorBlock,
   LoadingBlock,
   PageHeading,
   StatusBadge,
@@ -20,12 +21,7 @@ import {
 
 function ErrorMessage({ error }) {
   if (!error) return null;
-  return (
-    <div role="alert">
-      <p>{error.message || "The player request could not be completed."}</p>
-      {error.requestId && <p>Request ID: {error.requestId}</p>}
-    </div>
-  );
+  return <ErrorBlock error={error} fallback="The player request could not be completed." />;
 }
 
 function usePlayerContext(leagueId) {
@@ -73,11 +69,6 @@ function PlayerGate({ context, title, children }) {
       <PageHeading
         eyebrow={context.league.name}
         title={title}
-        description={
-          title === "Players"
-            ? "Search and inspect the authoritative player database."
-            : "Authoritative player identity and provider details."
-        }
       />
       {children}
     </main>
@@ -426,20 +417,6 @@ export function PlayerDetailPage() {
               <p>Last-season statistics are not available for this player.</p>
             )}
           </section>
-          {player.data.externalIds.length > 0 && (
-            <section className="hl-profile-identifiers" aria-labelledby="provider-identifiers-heading">
-              <h3 id="provider-identifiers-heading">Provider identifiers</h3>
-              <ul>
-                {player.data.externalIds.map((externalId) => (
-                  <li
-                    key={`${externalId.provider}:${externalId.externalValue}`}
-                  >
-                    {externalId.provider}: {externalId.externalValue}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
         </Surface>
       )}
       <p className="hl-page-backlink">

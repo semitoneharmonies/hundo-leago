@@ -116,6 +116,9 @@ export function validateTeam(value) {
         value.currentManager.assignmentId.length > 0 &&
         typeof value.currentManager.userId === "string" &&
         typeof value.currentManager.displayName === "string" &&
+        (value.currentManager.isProtectedPlatformAdministrator === undefined ||
+          typeof value.currentManager.isProtectedPlatformAdministrator ===
+            "boolean") &&
         Number.isSafeInteger(value.currentManager.version),
       "The team manager is invalid."
     );
@@ -154,6 +157,11 @@ export function validateMembershipList(data) {
       typeof membership.user.displayName === "string",
       "A league member identity is invalid."
     );
+    contract(
+      membership.isProtectedPlatformAdministrator === undefined ||
+        typeof membership.isProtectedPlatformAdministrator === "boolean",
+      "A league membership protection state is invalid."
+    );
   }
   return true;
 }
@@ -182,7 +190,9 @@ export function validateAdminUsers(data) {
     contract(
       typeof user.displayName === "string" &&
         typeof user.email === "string" &&
-        typeof user.status === "string",
+        typeof user.status === "string" &&
+        (user.isPlatformAdministrator === undefined ||
+          typeof user.isPlatformAdministrator === "boolean"),
       "An administrative user is invalid."
     );
   }

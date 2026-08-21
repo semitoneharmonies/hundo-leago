@@ -35,6 +35,15 @@ const FAD_FIXTURE_MODULE = path.join(
   'release',
   'createFreeAgentDraftBrowserFixture.js'
 )
+const PLAYER_CATALOG_REPOSITORY_MODULE = path.join(
+  BACKEND_DIRECTORY,
+  'src',
+  'infrastructure',
+  'persistence',
+  'sqlite',
+  'SqlitePlayerCatalogRepository.js'
+)
+const PLAYER_CATALOG_PATH = path.join(BACKEND_DIRECTORY, 'players.json')
 const MIGRATIONS_DIRECTORY = path.join(
   BACKEND_DIRECTORY,
   'database',
@@ -85,6 +94,8 @@ function assertLocalFiles() {
     VITE_ENTRY,
     RELEASE_RUNTIME_MODULE,
     FAD_FIXTURE_MODULE,
+    PLAYER_CATALOG_REPOSITORY_MODULE,
+    PLAYER_CATALOG_PATH,
     MIGRATIONS_DIRECTORY,
   ]
   const missing = required.filter((candidate) => !fs.existsSync(candidate))
@@ -100,6 +111,9 @@ function loadBackendSeams() {
   const require = createRequire(import.meta.url)
   const { createReleaseQaRuntime } = require(RELEASE_RUNTIME_MODULE)
   const { createFreeAgentDraftBrowserFixture } = require(FAD_FIXTURE_MODULE)
+  const { createSqlitePlayerCatalogRepository } = require(
+    PLAYER_CATALOG_REPOSITORY_MODULE
+  )
   if (typeof createReleaseQaRuntime !== 'function') {
     fail(
       'FAD_E2E_RUNTIME_EXPORT_MISSING',
@@ -112,9 +126,58 @@ function loadBackendSeams() {
       'The Free Agent Draft browser fixture export is unavailable.'
     )
   }
+  if (typeof createSqlitePlayerCatalogRepository !== 'function') {
+    fail(
+      'FAD_E2E_PLAYER_CATALOG_SEAM_MISSING',
+      'The connected local FAD test player-catalog seam is unavailable.'
+    )
+  }
   return Object.freeze({
     createFreeAgentDraftBrowserFixture,
     createReleaseQaRuntime,
+    createSqlitePlayerCatalogRepository,
+  })
+}
+
+function seedBrowserPlayerCatalog(database, createRepository) {
+  const catalog = JSON.parse(fs.readFileSync(PLAYER_CATALOG_PATH, 'utf8'))
+  const selected = [
+    ...catalog
+      .filter(({ active, position }) => active === true && position === 'F')
+      .slice(0, 500),
+    ...catalog
+      .filter(({ active, position }) => active === true && position === 'D')
+      .slice(0, 300),
+  ]
+  if (selected.length < 800) {
+    fail(
+      'FAD_E2E_PLAYER_CATALOG_INCOMPLETE',
+      'The connected local FAD test player catalog is incomplete.'
+    )
+  }
+  const repository = createRepository({
+    database,
+    createId: () => crypto.randomUUID(),
+    now: () => 1_700_000_000_100,
+  })
+  repository.applyCatalog({
+    sourceOperationId: '20000000-0000-4000-8000-000000000001',
+    provider: 'sportsdataio-discovery-lab',
+    capturedAtMs: 1_700_000_000_000,
+    rows: selected.map((player) => ({
+      providerPlayerId: String(player.id),
+      firstName: player.firstName,
+      lastName: player.lastName,
+      fullName: player.fullName,
+      birthDate: player.birthDate,
+      status: 'active',
+      sourcePosition: player.position,
+      normalizedPosition: player.position,
+      nhlTeamAbbreviation: player.teamAbbrev ?? null,
+      active: true,
+      sourceVersion: 'players-json-2026',
+      sourceUpdatedAtMs: 1_700_000_000_000,
+    })),
   })
 }
 
@@ -249,6 +312,7 @@ export async function startLocalFadStack() {
   const {
     createFreeAgentDraftBrowserFixture,
     createReleaseQaRuntime,
+    createSqlitePlayerCatalogRepository,
   } = loadBackendSeams()
   const password = crypto.randomBytes(32).toString('base64url')
   let started
@@ -261,6 +325,10 @@ export async function startLocalFadStack() {
       password,
       port: 0,
     })
+    seedBrowserPlayerCatalog(
+      started.runtime.database,
+      createSqlitePlayerCatalogRepository
+    )
     const manifest = await createFreeAgentDraftBrowserFixture({
       runtime: started.runtime,
     })

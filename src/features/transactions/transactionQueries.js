@@ -17,7 +17,13 @@ export const transactionKeys = Object.freeze({
   auction: (leagueId, auctionId) => ["league", leagueId, "auction", auctionId],
   trades: (leagueId) => ["league", leagueId, "trades"],
   trade: (leagueId, tradeId) => ["league", leagueId, "trade", tradeId],
-  activity: (leagueId, cursor = null) => ["league", leagueId, "activity", cursor],
+  activity: (leagueId, category = "all", cursor = null) => [
+    "league",
+    leagueId,
+    "activity",
+    category,
+    cursor,
+  ],
 });
 
 export function auctionsQuery(httpClient, leagueId) {
@@ -82,11 +88,16 @@ export function tradeQuery(httpClient, leagueId, tradeId) {
   });
 }
 
-export function activityQuery(httpClient, leagueId, cursor = null) {
-  const query = new URLSearchParams({ limit: "25" });
+export function activityQuery(
+  httpClient,
+  leagueId,
+  cursor = null,
+  category = "all"
+) {
+  const query = new URLSearchParams({ limit: "25", category });
   if (cursor) query.set("cursor", cursor);
   return queryOptions({
-    queryKey: transactionKeys.activity(leagueId, cursor),
+    queryKey: transactionKeys.activity(leagueId, category, cursor),
     queryFn: async ({ signal }) => {
       const response = await httpClient.request(
         `/api/v1/leagues/${part(leagueId)}/activity?${query}`,
@@ -134,6 +145,8 @@ async function emptyTradeCommand(httpClient, leagueId, tradeId, action, idempote
 
 export const acceptTrade = (client, leagueId, tradeId, key) =>
   emptyTradeCommand(client, leagueId, tradeId, "accept", key);
+export const approveTrade = (client, leagueId, tradeId, key) =>
+  emptyTradeCommand(client, leagueId, tradeId, "approve", key);
 export const declineTrade = (client, leagueId, tradeId, key) =>
   emptyTradeCommand(client, leagueId, tradeId, "decline", key);
 export const cancelTrade = (client, leagueId, tradeId, key) =>

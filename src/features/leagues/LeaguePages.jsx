@@ -5,10 +5,12 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { routePaths } from "../../app/routePaths.js";
 import {
   EmptyBlock,
+  ErrorBlock,
   LoadingBlock,
   PageHeading,
   StatusBadge,
   Surface,
+  TeamMark,
 } from "../../components/HundoUi.jsx";
 import { TeamRosterPage } from "../rosters/TeamRosterPage.jsx";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
@@ -19,6 +21,8 @@ import {
   assignLeagueCommissioner,
   createLeague,
   leagueDetailQuery,
+  leagueKeys,
+  leagueMembershipsQuery,
   leagueTeamsQuery,
   removeInaccessibleLeagueQueries,
   teamDetailQuery,
@@ -33,13 +37,38 @@ import { leagueAuthorityLabel } from "../../shared/leagueAuthority.js";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import { createIntentKey } from "../accounts/accountApi.js";
 
-function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
+function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
   const queryClient = useQueryClient();
   const users = usersQuery;
   const [leagueName, setLeagueName] = useState("");
   const [createdLeague, setCreatedLeague] = useState(null);
+  const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [commissionerUserId, setCommissionerUserId] = useState("");
   const [message, setMessage] = useState("");
+  const availableLeagues =
+    createdLeague && !leagues.some(({ id }) => id === createdLeague.id)
+      ? [...leagues, createdLeague]
+      : leagues;
+  const selectedLeague =
+    availableLeagues.find(({ id }) => id === selectedLeagueId) || null;
+  const memberships = useQuery({
+    ...leagueMembershipsQuery(
+      httpClient,
+      selectedLeagueId || "pending"
+    ),
+    enabled: Boolean(selectedLeagueId),
+  });
+  const currentCommissioner =
+    memberships.data?.find(
+      ({ permissionCategory, status }) =>
+        permissionCategory === "commissioner" && status === "active"
+    ) || null;
+  const eligibleUsers = (users.data || []).filter(
+    ({ id, isPlatformAdministrator, status }) =>
+      status === "active" &&
+      isPlatformAdministrator !== true &&
+      id !== currentCommissioner?.user.id
+  );
   const createMutation = useMutation({
     mutationFn: () =>
       createLeague(
@@ -49,6 +78,7 @@ function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
       ),
     onSuccess: async (result) => {
       setCreatedLeague(result.league);
+      setSelectedLeagueId(result.league.id);
       setLeagueName("");
       setMessage(
         `${result.league.name} was created. Choose its commissioner below.`
@@ -61,11 +91,11 @@ function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
     mutationFn: () =>
       assignLeagueCommissioner(
         httpClient,
-        createdLeague.id,
+        selectedLeague.id,
         commissionerUserId,
         createIntentKey("commissioner-assignment")
       ),
-    onSuccess: () => {
+    onSuccess: async () => {
       const selected = users.data?.find(
         ({ id }) => id === commissionerUserId
       );
@@ -75,6 +105,12 @@ function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
         }. It becomes active after acceptance.`
       );
       setCommissionerUserId("");
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: leagueKeys.memberships(selectedLeague.id),
+        }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.all }),
+      ]);
     },
     onError: () => setMessage(""),
   });
@@ -112,7 +148,27 @@ function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
           {createMutation.isPending ? "Creating…" : "Create league"}
         </button>
       </form>
-      {createdLeague && (
+      {availableLeagues.length > 0 && (
+        <label className="hl-field">
+          League to manage
+          <select
+            value={selectedLeagueId}
+            onChange={(event) => {
+              setSelectedLeagueId(event.target.value);
+              setCommissionerUserId("");
+              setMessage("");
+            }}
+          >
+            <option value="">Choose a league</option>
+            {availableLeagues.map((league) => (
+              <option key={league.id} value={league.id}>
+                {league.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {selectedLeague && (
         <form
           className="hl-feature-form hl-admin-commissioner-form"
           onSubmit={(event) => {
@@ -121,11 +177,21 @@ function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
             assignmentMutation.mutate();
           }}
         >
-          <h3>Assign commissioner for {createdLeague.name}</h3>
-          {users.isPending ? (
+          <h3>
+            {currentCommissioner ? "Transfer" : "Set initial"} commissioner
+            for {selectedLeague.name}
+          </h3>
+          {currentCommissioner && (
+            <p>
+              Current commissioner: {currentCommissioner.user.displayName}.
+              The transfer becomes atomic when the proposed replacement
+              accepts.
+            </p>
+          )}
+          {users.isPending || memberships.isPending ? (
             <LoadingBlock>Loading eligible users…</LoadingBlock>
-          ) : users.isError ? (
-            <SafeQueryError error={users.error} />
+          ) : users.isError || memberships.isError ? (
+            <SafeQueryError error={users.error || memberships.error} />
           ) : (
             <>
               <label className="hl-field">
@@ -138,7 +204,7 @@ function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
                   }
                 >
                   <option value="">Choose a user</option>
-                  {users.data.map((user) => (
+                  {eligibleUsers.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.displayName} ({user.email})
                     </option>
@@ -152,7 +218,9 @@ function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
                   assignmentMutation.isPending || !commissionerUserId
                 }
               >
-                Send commissioner assignment
+                {currentCommissioner
+                  ? "Send commissioner transfer"
+                  : "Send commissioner assignment"}
               </button>
             </>
           )}
@@ -170,10 +238,12 @@ function PlatformAdminLeaguePanel({ httpClient, usersQuery }) {
 
 function SafeQueryError({ error }) {
   return (
-    <div role="alert">
-      <p>{error?.message || "The league request could not be completed."}</p>
-      {error?.requestId && <p>Request ID: {error.requestId}</p>}
-    </div>
+    <ErrorBlock
+      error={error}
+      fallback="The league request could not be completed."
+      impact="League information is unavailable until the request succeeds."
+      recovery="Refresh the page and try again."
+    />
   );
 }
 
@@ -277,6 +347,7 @@ export function LeagueSelectionPage() {
             {platformAdministrator && (
               <PlatformAdminLeaguePanel
                 httpClient={session.httpClient}
+                leagues={leaguesQuery.data || []}
                 usersQuery={adminUsers}
               />
             )}
@@ -371,7 +442,6 @@ export function LeagueTeamsPage() {
             <PageHeading
               eyebrow={authorized.name}
               title="Teams"
-              description="Open any team’s authoritative roster, contracts, and cap projection."
               id="teams-title"
             />
             {teamsQuery.data.length === 0 ? (
@@ -393,22 +463,17 @@ export function LeagueTeamsPage() {
                             team
                           )}
                         >
-                          <span
+                          <TeamMark
+                            team={team}
+                            logoUrl={
+                              team.logoReference
+                                ? session.httpClient.resourceUrl(
+                                    team.logoReference
+                                  )
+                                : null
+                            }
                             className="hl-teams-index__mark"
-                            aria-hidden="true"
-                          >
-                            {team.logoReference ? (
-                              <img
-                                src={session.httpClient.resourceUrl(
-                                  team.logoReference
-                                )}
-                                crossOrigin="use-credentials"
-                                alt=""
-                              />
-                            ) : (
-                              team.name.slice(0, 2).toUpperCase()
-                            )}
-                          </span>
+                          />
                           <span className="hl-teams-index__identity">
                             <strong>{team.name}</strong>
                             <small>

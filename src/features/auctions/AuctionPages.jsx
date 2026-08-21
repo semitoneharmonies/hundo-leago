@@ -208,16 +208,13 @@ function FormFeedback({ error, fallback, id, message, focusKey }) {
   }, [error, focusKey, message]);
   if (error) {
     return (
-      <div
-        className={styles.error}
+      <ErrorBlock
+        elementRef={feedbackRef}
+        error={error}
+        fallback={error.message || fallback}
         id={id}
-        role="alert"
         tabIndex={-1}
-        ref={feedbackRef}
-      >
-        <strong>{error.message || fallback || "The request could not be completed."}</strong>
-        {error.requestId && <span>Request ID: {error.requestId}</span>}
-      </div>
+      />
     );
   }
   if (message) {
@@ -238,15 +235,16 @@ function FormFeedback({ error, fallback, id, message, focusKey }) {
 }
 
 function TotalContractPreview({ aav, describedBy, term }) {
+  const total = auctionTotalPreview(aav, term);
   return (
-    <label>
+    <label className={styles.calculatedField}>
       Total contract value (calculated)
-      <input
+      <output
         aria-describedby={describedBy}
         aria-label="Total contract value"
-        readOnly
-        value={auctionTotalPreview(aav, term)}
-      />
+      >
+        {total ? `$${total}` : "—"}
+      </output>
     </label>
   );
 }
@@ -351,7 +349,12 @@ function PlayerCombobox({
           {players.isPending ? (
             <span role="status">Searching available players…</span>
           ) : players.isError ? (
-            <span role="alert">{players.error.message}</span>
+            <ErrorBlock
+              error={players.error}
+              fallback="Available players could not be searched."
+              impact="You cannot select a player for this auction yet."
+              recovery="Check the player name and try again."
+            />
           ) : suggestions.length === 0 ? (
             <span>No searchable available players match that search.</span>
           ) : (
@@ -858,7 +861,6 @@ function AuctionsPrivateContent({ context, leagueId }) {
       <PageHeading
         eyebrow={context.league?.name}
         title="Auctions"
-        description="Nominate an available player or manage a tie that needs your bid."
         id="auction-page-title"
       />
       {auctions.isPending ? (
@@ -1024,9 +1026,9 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
   }
 
   const success = mutation.data?.code === "AUCTION_BID_SUBMITTED"
-    ? "Your opening bid was accepted and authoritative auction state was refreshed."
+    ? "Your opening bid was accepted and the auction was refreshed."
     : mutation.data?.code === "AUCTION_BID_EDITED"
-      ? "Your bid edit was accepted and authoritative auction state was refreshed."
+      ? "Your bid edit was accepted and the auction was refreshed."
       : null;
   const shownError = conflictMessage
     ? new Error(conflictMessage)
@@ -1210,20 +1212,20 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
       setConfirmed(false);
       setEditor(null);
       if (variables.kind === "edit") {
-        setReceipt("The sealed bid replacement was accepted and authoritative auction state was refreshed.");
+        setReceipt("The sealed bid replacement was accepted and the auction was refreshed.");
       } else if (variables.kind === "remove") {
-        setReceipt("The bid removal was recorded and authoritative auction and activity state were refreshed.");
+        setReceipt("The bid removal was recorded and the auction history was refreshed.");
       } else if (variables.kind === "cancel") {
         setReceipt(
           result.auction.status === "correction_required"
-            ? "The cancellation was recorded. This restricted FAD result now requires the linked recovery workflow."
-            : "The auction cancellation was recorded and authoritative auction and activity state were refreshed."
+            ? "The cancellation was recorded. This restricted Free Agent Draft result now requires the linked recovery workflow."
+            : "The auction cancellation was recorded and its history was refreshed."
         );
       } else {
         setReceipt(
           result.status === "already_succeeded"
-            ? "The server reports that this resolution request already succeeded. Authoritative auction state was refreshed."
-            : "The resolution request was accepted. Authoritative auction state will refresh from the server; no winner was selected in this form."
+            ? "This auction was already resolved. The latest result is shown."
+            : "The resolution request was accepted. The result will appear when processing finishes."
         );
       }
       await Promise.all([
@@ -1560,8 +1562,8 @@ function DrawEvidence({ auction }) {
     <Surface className={styles.panel} aria-labelledby="draw-evidence-title">
       <div className={styles.panelHeader}>
         <div>
-          <p className="hl-eyebrow">FAD-only fairness record</p>
-          <h2 id="draw-evidence-title">Exact-top draw evidence</h2>
+          <p className="hl-eyebrow">Free Agent Draft</p>
+          <h2 id="draw-evidence-title">Tie-break fairness</h2>
         </div>
         <StatusBadge tone={reveal?.selectionUsed ? "success" : "neutral"}>
           {auction.status === "active"
@@ -1589,27 +1591,6 @@ function DrawEvidence({ auction }) {
       ) : (
         <p>The fairness reveal is unavailable while correction is required.</p>
       )}
-      <details className={styles.technicalEvidence}>
-        <summary>Technical fairness evidence</summary>
-        <dl>
-          <div><dt>Commitment</dt><dd><code>{evidence?.commitmentHex || auction.drawCommitment}</code></dd></div>
-          {reveal && (
-            <>
-              <div><dt>Algorithm version</dt><dd>{reveal.algorithmVersion}</dd></div>
-              <div><dt>Nonce</dt><dd><code>{reveal.nonceHex}</code></dd></div>
-              <div><dt>Selection used</dt><dd>{reveal.selectionUsed ? "Yes" : "No"}</dd></div>
-              {reveal.selectionUsed && (
-                <>
-                  <div><dt>Draw digest</dt><dd><code>{reveal.digestHex}</code></dd></div>
-                  <div><dt>Counter</dt><dd>{reveal.counter}</dd></div>
-                  <div><dt>Selected position</dt><dd>{reveal.selectedIndex + 1} of {reveal.orderedBidIds.length}</dd></div>
-                  <div><dt>Ordered tied bid IDs</dt><dd><ol>{reveal.orderedBidIds.map((bidId) => <li key={bidId}><code>{bidId}</code></li>)}</ol></dd></div>
-                </>
-              )}
-            </>
-          )}
-        </dl>
-      </details>
     </Surface>
   );
 }
@@ -1621,7 +1602,7 @@ function TerminalResult({ auction, timeZone }) {
     <Surface className={styles.panel} aria-labelledby="auction-result-title">
       <div className={styles.panelHeader}>
         <div>
-          <p className="hl-eyebrow">Authoritative terminal state</p>
+          <p className="hl-eyebrow">Final result</p>
           <h2 id="auction-result-title">Auction result</h2>
         </div>
         <StatusBadge tone={statusTone(auction.status)}>
@@ -1683,7 +1664,7 @@ function AuctionDetailContent({ auction, context, leagueId }) {
         {auction.sourceKind !== "ordinary_weekly" && auction.status === "active" && (
           <p className={styles.timingNotice}>
             This path stays active through its recorded rapid rollover. If an
-            additional FAD cycle is required, the server keeps the FAD open and
+            additional Free Agent Draft cycle is required, the server keeps the Free Agent Draft open and
             owns that extension; opening this page never advances or resolves it.
           </p>
         )}
@@ -1759,7 +1740,7 @@ function AuctionDetailPrivateContent({ auctionId, context, leagueId }) {
         </>
       ) : auction.isPending ? (
         <Surface>
-          <LoadingBlock>Loading authoritative auction detail…</LoadingBlock>
+          <LoadingBlock>Loading auction details…</LoadingBlock>
         </Surface>
       ) : auction.isError && auction.error?.status === 404 ? (
         <Navigate replace to={routePaths.leagueAuctions(leagueId)} />

@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { navigateToAppPath } from '../support/navigation.js'
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -27,22 +29,30 @@ export class FreeAgentDraftPage {
     await this.page
       .getByRole('button', { name: 'Menu', exact: true })
       .click()
-    const link = this.page.getByRole('link', {
-      name: 'Free Agent Draft',
+    const draftsLink = this.page.getByRole('link', {
+      name: 'Drafts',
       exact: true,
     })
-    await expect(link).toBeVisible()
-    await link.click()
-    await expect(this.page).toHaveURL(/\/free-agent-draft(?:\/|$)/)
+    await expect(draftsLink).toBeVisible()
+    await draftsLink.click()
+    await expect(
+      this.page.getByRole('heading', { name: 'Drafts', exact: true })
+    ).toBeVisible()
+    const freeAgentDraftLink = this.page.getByRole('link', {
+      name: /Free Agent Draft/,
+    })
+    await expect(freeAgentDraftLink).toBeVisible()
+    await freeAgentDraftLink.click()
+    await expect(this.page).toHaveURL(/\/drafts\/free-agent(?:\/|$)/)
   }
 
   async openCurrent(league) {
-    await this.page.goto(this.currentPath(league))
+    await navigateToAppPath(this.page, this.currentPath(league))
     await expect(this.page).toHaveURL(/\/free-agent-draft(?:\/|$)/)
   }
 
   async openOverview(league) {
-    await this.page.goto(this.overviewPath(league))
+    await navigateToAppPath(this.page, this.overviewPath(league))
     await expect(
       this.page.getByRole('heading', { name: 'Free Agent Draft', exact: true })
     ).toBeVisible()
@@ -72,14 +82,24 @@ export class FreeAgentDraftPage {
   }
 
   async openCard(league, team) {
-    await this.page.goto(this.cardPath(league, team))
+    await navigateToAppPath(this.page, this.cardPath(league, team))
   }
 
   async expectPrivateCard(marker) {
     await expect(
       this.page.getByRole('heading', { name: 'Candidate Card', exact: true })
     ).toBeVisible()
-    await expect(this.page.getByText(marker, { exact: true })).toBeVisible()
+    await expect
+      .poll(() =>
+        this.page
+          .locator('input')
+          .evaluateAll(
+            (inputs, expectedValue) =>
+              inputs.some((input) => input.value === expectedValue),
+            marker
+          )
+      )
+      .toBe(true)
   }
 
   async expectPrivateCardUnavailable() {
@@ -101,13 +121,19 @@ export class FreeAgentDraftPage {
 
   async expectSlotMatrix() {
     await expect(
-      this.page.getByRole('region', { name: 'Forwards' }).getByRole('article')
+      this.page
+        .getByRole('region', { name: 'Forwards' })
+        .getByLabel(/^F\d{2} player name$/)
     ).toHaveCount(12)
     await expect(
-      this.page.getByRole('region', { name: 'Defence' }).getByRole('article')
+      this.page
+        .getByRole('region', { name: 'Defence' })
+        .getByLabel(/^D\d{2} player name$/)
     ).toHaveCount(6)
     await expect(
-      this.page.getByRole('region', { name: 'Bench' }).getByRole('article')
+      this.page
+        .getByRole('region', { name: 'Bench' })
+        .getByLabel(/^B\d{2} player name$/)
     ).toHaveCount(4)
   }
 
@@ -125,23 +151,15 @@ export class FreeAgentDraftPage {
 
   async exerciseEditorKeyboardFocus() {
     const forwards = this.page.getByRole('region', { name: 'Forwards' })
-    const article = forwards
-      .getByRole('article')
-      .filter({
-        has: this.page.getByRole('button', { name: 'Add candidate' }),
-      })
-      .first()
-    const add = article.getByRole('button', { name: 'Add candidate' })
-    await add.focus()
-    await add.press('Enter')
-    const editor = this.page.getByRole('region', {
-      name: /Add a candidate to/,
-    })
-    const form = editor.getByRole('form', { name: /Add a candidate to/ })
-    await expect(form).toBeVisible()
-    const close = editor.getByRole('button', { name: 'Close', exact: true })
-    await close.focus()
-    await close.press('Enter')
-    await expect(article).toBeFocused()
+    const playerInput = forwards.getByRole('combobox', {
+      name: /^F\d{2} player name$/,
+    }).first()
+    const label = await playerInput.getAttribute('aria-label')
+    const slot = /^F\d{2}/.exec(label || '')?.[0]
+    if (!slot) throw new Error('An editable forward slot is required.')
+    await playerInput.focus()
+    await expect(playerInput).toBeFocused()
+    await playerInput.press('Tab')
+    await expect(forwards.getByLabel(`${slot} AAV`)).toBeFocused()
   }
 }

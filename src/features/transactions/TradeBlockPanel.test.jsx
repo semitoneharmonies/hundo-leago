@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { createQueryClient } from "../../shared/query/queryClient.js";
@@ -49,6 +49,16 @@ describe("league trade block", () => {
         normalizedPosition: "F",
         rosterCategory: "Active",
         onTradeBlock: true,
+        age: 24,
+        nhlTeamAbbreviation: "MTL",
+        contract: { aavCents: 500 },
+        statistics: {
+          gamesPlayed: 10,
+          goals: 3,
+          assists: 4,
+          nhlPoints: 7,
+          fantasyPointsHundredths: 850,
+        },
       },
       {
         ownershipId: "55555555-5555-4555-8555-555555555555",
@@ -60,12 +70,27 @@ describe("league trade block", () => {
       },
     ]);
 
-    expect(await screen.findByRole("heading", { name: "League trade block" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Trade block" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Current Player Name/ })).toHaveAttribute(
       "href",
       `/leagues/${leagueId}/players/${playerId}`
     );
-    expect(screen.getByText(/Current Team Name · F · Active/)).toBeInTheDocument();
+    const table = screen.getByRole("table", {
+      name: "Players currently available on the trade block",
+    });
+    const playerRow = within(table)
+      .getByRole("link", { name: "Current Player Name" })
+      .closest("tr");
+    expect(within(playerRow).getByText("Current Team Name")).toBeInTheDocument();
+    expect(within(playerRow).getByLabelText("F position, Active")).toBeInTheDocument();
+    expect(within(playerRow).getByText("$5.00")).toBeInTheDocument();
+    expect(within(playerRow).getByText("24")).toBeInTheDocument();
+    expect(within(playerRow).getByText("MTL")).toBeInTheDocument();
+    expect(within(playerRow).getByText("8.50")).toBeInTheDocument();
+    expect(within(playerRow).getByText("0.85")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/available for trade conversations/i)
+    ).toBeNull();
     expect(screen.queryByText("Unavailable Player")).not.toBeInTheDocument();
   });
 

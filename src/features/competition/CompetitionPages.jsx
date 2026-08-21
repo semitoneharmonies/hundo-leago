@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
   EmptyBlock,
+  ErrorBlock,
   LoadingBlock,
   PageHeading,
   StatusBadge,
@@ -30,14 +31,10 @@ import {
   resultCorrectionCommand,
   scheduleCommand,
   standingsQuery,
-  standingsRebuildCommand,
   weekTransitionCommand,
 } from "./competitionQueries.js";
 
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
-const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" };
-const field = { display: "grid", gap: 5, minWidth: 180 };
-const input = { padding: 8, borderRadius: 6, border: "1px solid #475569" };
 
 function operationId() {
   return globalThis.crypto?.randomUUID?.() || "00000000-0000-4000-8000-000000000001";
@@ -45,6 +42,27 @@ function operationId() {
 
 function points(value) {
   return (Number(value || 0) / 100).toFixed(2);
+}
+
+function matchupStatusLabel(status) {
+  return {
+    scheduled: "Scheduled",
+    live: "Live",
+    final: "Final",
+    completed: "Final",
+  }[status] || "Status unavailable";
+}
+
+function scoreInputValue(value) {
+  return (Number(value) / 100).toFixed(2);
+}
+
+function scoreInputHundredths(value) {
+  const match = /^(0|[1-9]\d*)(?:\.(\d{1,2}))?$/.exec(value.trim());
+  if (!match) return null;
+  const hundredths =
+    Number(match[1]) * 100 + Number((match[2] || "").padEnd(2, "0"));
+  return Number.isSafeInteger(hundredths) ? hundredths : null;
 }
 
 function weekLabel(sequence, startsAtMs, endsAtMs) {
@@ -72,13 +90,55 @@ function weekLabel(sequence, startsAtMs, endsAtMs) {
   return `Week ${sequence}: ${startMonth === endMonth ? `${startMonth} ` : ""}${startText}–${endText}`;
 }
 
-function ErrorMessage({ error }) {
+function competitionErrorGuidance(error, context) {
+  if (context === "schedule") {
+    if (error?.code === "MATCHUP_PRECONDITION_FAILED") {
+      return {
+        fallback: "The schedule preview is out of date.",
+        impact: "No schedule was created or changed.",
+        recovery: "Refresh the preview so it uses the latest season settings, then review it again.",
+      };
+    }
+    if (error?.code === "FAD_WEEK_ONE_FROZEN") {
+      return {
+        fallback: "Week 1 can no longer be moved.",
+        impact: "The existing competition schedule remains unchanged.",
+        recovery: "Candidate Cards are already open. Review the frozen Week 1 date before changing the surrounding schedule.",
+      };
+    }
+    return {
+      fallback: "The schedule preview is not ready.",
+      impact: "No schedule was created or changed.",
+      recovery: "Check that every league team, the NHL regular-season calendar, and the Week 1 date are complete, then try the preview again.",
+    };
+  }
+  if (context === "week") {
+    return {
+      fallback: "The week transition preview is not ready.",
+      impact: "The selected matchup week remains unchanged.",
+      recovery: "Refresh the matchup weeks, choose the current week again, and retry the preview.",
+    };
+  }
+  return {
+    fallback: "The competition request could not be completed.",
+    impact: "The latest competition information is unavailable.",
+    recovery: "Refresh the page and try again.",
+  };
+}
+
+function ErrorMessage({ error, context, onRetry }) {
   if (!error) return null;
+  const guidance = competitionErrorGuidance(error, context);
   return (
-    <div role="alert">
-      <p>{error.message || "The competition request could not be completed."}</p>
-      {error.requestId && <p>Request ID: {error.requestId}</p>}
-    </div>
+    <ErrorBlock
+      error={error}
+      {...guidance}
+      action={onRetry ? (
+        <button className="hl-button hl-button--secondary" type="button" onClick={onRetry}>
+          Try the preview again
+        </button>
+      ) : null}
+    />
   );
 }
 
@@ -134,13 +194,6 @@ function CompetitionGate({ context, title, children }) {
       <PageHeading
         eyebrow={context.league.name}
         title={title}
-        description={
-          title === "Matchups"
-            ? "Authoritative head-to-head scoring by matchup period."
-            : title === "Standings"
-              ? "Official W-L-T league table from finalized results."
-              : "Preview-and-confirm competition administration."
-        }
       />
       {children}
     </main>
@@ -478,9 +531,9 @@ function MatchupCard({ matchup, teams = [] }) {
           <b>{points(homeScore)} FP</b>
           <small>fantasy points</small>
         </div>
-        <div>
+        <div className="hl-matchup-score__center">
           <StatusBadge tone={matchup.status === "live" ? "live" : "neutral"}>
-            {matchup.status}
+            {matchupStatusLabel(matchup.status)}
           </StatusBadge>
           <span>VS</span>
         </div>
@@ -500,7 +553,7 @@ function MatchupCard({ matchup, teams = [] }) {
         <p>
           {official
             ? "Player scoring details are temporarily unavailable."
-            : "Scoring begins after the roster lock and baseline are available."}
+            : "The week starts on Monday."}
         </p>
       ) : (
         <>
@@ -596,7 +649,7 @@ function MatchupCard({ matchup, teams = [] }) {
           </TableScroll>
         </>
       )}
-      {matchup.result?.status === "corrected" && <p className="hl-inline-copy">Official result corrected (version {matchup.result.currentVersion.versionNumber}).</p>}
+      {matchup.result?.status === "corrected" && <p className="hl-inline-copy">Official result corrected.</p>}
     </section>
   );
 }
@@ -604,6 +657,12 @@ function MatchupCard({ matchup, teams = [] }) {
 export function LeagueStandingsPage() {
   const { leagueId } = useParams();
   const context = useCompetitionContext(leagueId);
+  const queryClient = useQueryClient();
+  const [correctionDraft, setCorrectionDraft] = useState(null);
+  const [correctionPreview, setCorrectionPreview] = useState(null);
+  const [correctionNotice, setCorrectionNotice] = useState("");
+  const correctionHeadingRef = useRef(null);
+  const correctionTriggerRef = useRef(null);
   const enabled = context.session.status === "authenticated" && Boolean(context.league && context.seasonId);
   const standings = useQuery({
     ...standingsQuery(context.session.httpClient, leagueId, context.seasonId),
@@ -616,6 +675,86 @@ export function LeagueStandingsPage() {
   const currentTeams = new Map(
     (teams.data || []).map((team) => [team.id, team])
   );
+  const commissioner = hasCommissionerAuthority(
+    context.league?.membership
+  );
+  const correctionMutation = useMutation({
+    mutationFn: ({ confirmed, draft, version }) => {
+      const homeScoreHundredths = scoreInputHundredths(draft.homeScore);
+      const awayScoreHundredths = scoreInputHundredths(draft.awayScore);
+      if (homeScoreHundredths === null || awayScoreHundredths === null) {
+        throw new Error("Enter each score as a non-negative number with no more than two decimals.");
+      }
+      return resultCorrectionCommand(
+        context.session.httpClient,
+        leagueId,
+        context.seasonId,
+        draft.resultId,
+        {
+          confirmed,
+          homeScoreHundredths,
+          awayScoreHundredths,
+          ...(draft.reason.trim() ? { reason: draft.reason.trim() } : {}),
+        },
+        version,
+        confirmed ? operationId() : undefined
+      );
+    },
+    onSuccess(data, variables) {
+      if (!variables.confirmed) {
+        setCorrectionPreview(data.preview);
+        return;
+      }
+      setCorrectionDraft(null);
+      setCorrectionPreview(null);
+      setCorrectionNotice("Result corrected. Standings updated.");
+      globalThis.setTimeout(() => correctionTriggerRef.current?.focus(), 0);
+      queryClient.invalidateQueries({
+        queryKey: ["league", leagueId, "season", context.seasonId],
+      });
+    },
+  });
+
+  const correctionResultId = correctionDraft?.resultId || null;
+  useEffect(() => {
+    if (!correctionResultId) return;
+    correctionHeadingRef.current?.focus();
+  }, [correctionResultId]);
+
+  function editResult(result, trigger) {
+    correctionTriggerRef.current = trigger;
+    setCorrectionDraft({
+      resultId: result.id,
+      homeScore: scoreInputValue(result.homeScoreHundredths),
+      awayScore: scoreInputValue(result.awayScoreHundredths),
+      reason: "",
+    });
+    setCorrectionPreview(null);
+    setCorrectionNotice("");
+    correctionMutation.reset();
+  }
+
+  function closeCorrection() {
+    const trigger = correctionTriggerRef.current;
+    setCorrectionDraft(null);
+    setCorrectionPreview(null);
+    correctionMutation.reset();
+    globalThis.setTimeout(() => trigger?.focus(), 0);
+  }
+
+  function updateCorrectionDraft(fieldName, value) {
+    setCorrectionDraft((current) => ({ ...current, [fieldName]: value }));
+    setCorrectionPreview(null);
+    correctionMutation.reset();
+  }
+
+  const selectedResult = standings.data?.results.find(
+    ({ id }) => id === correctionDraft?.resultId
+  );
+  const correctionReady =
+    correctionDraft !== null &&
+    scoreInputHundredths(correctionDraft.homeScore) !== null &&
+    scoreInputHundredths(correctionDraft.awayScore) !== null;
   return (
     <CompetitionGate context={context} title="Standings">
       {standings.isPending || teams.isPending ? <Surface><LoadingBlock>Loading official standings…</LoadingBlock></Surface>
@@ -637,12 +776,9 @@ export function LeagueStandingsPage() {
                       const team = currentTeams.get(item.teamId) || null;
                       return (
                       <tr
-                        className="hl-standings-team-row"
+                        className={teamColourClass("hl-standings-team-row")}
                         key={item.teamId}
-                        style={{
-                          "--standings-primary": team?.primaryColour || "#16324f",
-                          "--standings-secondary": team?.secondaryColour || "#f7f7f7",
-                        }}
+                        style={teamColourStyle(team)}
                       >
                         <td>{item.rank}</td><th scope="row">{team?.name || item.teamDisplayName}</th>
                         <td>{item.gamesPlayed}</td><td>{item.wins}</td><td>{item.losses}</td>
@@ -658,7 +794,213 @@ export function LeagueStandingsPage() {
                 </TableScroll>
                 </Surface>
               )}
-              <p className="hl-standings-note">{standings.data.finalizedResultCount} finalized results counted.</p>
+              <p className="hl-standings-note">Scores updated weekly.</p>
+              {commissioner && standings.data.results.length > 0 ? (
+                <Surface className="hl-standings-results">
+                  <header>
+                    <h2>Official results</h2>
+                  </header>
+                  <TableScroll label="Official matchup results">
+                    <table className="hl-data-table hl-standings-results__table">
+                      <thead>
+                        <tr>
+                          <th>Week</th>
+                          <th>Matchup</th>
+                          <th>Score</th>
+                          <th><span className="hl-visually-hidden">Actions</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {standings.data.results.map((result) => (
+                          <tr key={result.id}>
+                            <td>
+                              {weekLabel(
+                                result.week.sequence,
+                                result.week.startsAtMs,
+                                result.week.endsAtMs
+                              )}
+                            </td>
+                            <th scope="row">
+                              {result.matchup.homeTeam.name} vs {result.matchup.awayTeam.name}
+                            </th>
+                            <td className="is-mono">
+                              {points(result.homeScoreHundredths)} - {points(result.awayScoreHundredths)}
+                            </td>
+                            <td>
+                              <button
+                                className="hl-button hl-button--quiet"
+                                type="button"
+                                aria-label={`Edit ${result.matchup.homeTeam.name} vs ${result.matchup.awayTeam.name} result`}
+                                onClick={(event) => editResult(result, event.currentTarget)}
+                              >
+                                Edit
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </TableScroll>
+                </Surface>
+              ) : null}
+              {commissioner && selectedResult && correctionDraft ? (
+                <Surface
+                  className="hl-result-correction"
+                  aria-label={`Edit ${selectedResult.matchup.homeTeam.name} vs ${selectedResult.matchup.awayTeam.name} result`}
+                >
+                  <header>
+                    <p className="hl-eyebrow">
+                      {weekLabel(
+                        selectedResult.week.sequence,
+                        selectedResult.week.startsAtMs,
+                        selectedResult.week.endsAtMs
+                      )}
+                    </p>
+                    <h2 ref={correctionHeadingRef} tabIndex={-1}>
+                      {selectedResult.matchup.homeTeam.name} vs {selectedResult.matchup.awayTeam.name}
+                    </h2>
+                  </header>
+                  <p>
+                    Update the official result. Confirming also recalculates the standings.
+                  </p>
+                  <div className="hl-result-correction__fields">
+                    <label className="hl-field">
+                      {selectedResult.matchup.homeTeam.name} score
+                      <input
+                        inputMode="decimal"
+                        value={correctionDraft.homeScore}
+                        onChange={(event) =>
+                          updateCorrectionDraft("homeScore", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className="hl-field">
+                      {selectedResult.matchup.awayTeam.name} score
+                      <input
+                        inputMode="decimal"
+                        value={correctionDraft.awayScore}
+                        onChange={(event) =>
+                          updateCorrectionDraft("awayScore", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className="hl-field">
+                      Note (optional)
+                      <input
+                        value={correctionDraft.reason}
+                        onChange={(event) =>
+                          updateCorrectionDraft("reason", event.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+                  <ErrorMessage error={correctionMutation.error} />
+                  {correctionPreview ? (
+                    <section
+                      className="hl-commissioner-preview"
+                      aria-label="Result correction preview"
+                    >
+                      <p className="hl-eyebrow">Review before confirming</p>
+                      <p>
+                        {selectedResult.matchup.homeTeam.name} {points(correctionPreview.currentVersion.homeScoreHundredths)} - {points(correctionPreview.currentVersion.awayScoreHundredths)} {selectedResult.matchup.awayTeam.name}
+                        {" to "}
+                        {selectedResult.matchup.homeTeam.name} {points(correctionPreview.proposedVersion.homeScoreHundredths)} - {points(correctionPreview.proposedVersion.awayScoreHundredths)} {selectedResult.matchup.awayTeam.name}
+                      </p>
+                      {correctionPreview.standingsImpact.changedTeamIds.length === 0 ? (
+                        <p>The visible standings rows will not change.</p>
+                      ) : (
+                        <TableScroll label="Projected standings after correction">
+                          <table className="hl-data-table hl-correction-standings-table">
+                            <caption>Projected standings after correction</caption>
+                            <thead>
+                              <tr>
+                                <th>Rank</th>
+                                <th>Team</th>
+                                <th>W</th>
+                                <th>L</th>
+                                <th>T</th>
+                                <th>PTS</th>
+                                <th>DIFF</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {correctionPreview.standingsImpact.projectedRows.map((standing) => (
+                                <tr
+                                  key={standing.teamId}
+                                  className={
+                                    correctionPreview.standingsImpact.changedTeamIds.includes(standing.teamId)
+                                      ? "is-affected"
+                                      : undefined
+                                  }
+                                >
+                                  <td>{standing.rank}</td>
+                                  <th scope="row">
+                                    {currentTeams.get(standing.teamId)?.name || standing.teamDisplayName}
+                                  </th>
+                                  <td>{standing.wins}</td>
+                                  <td>{standing.losses}</td>
+                                  <td>{standing.ties}</td>
+                                  <td>{standing.standingsPoints}</td>
+                                  <td>{points(standing.fantasyPointsDifferentialHundredths)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </TableScroll>
+                      )}
+                      <div className="hl-button-row">
+                        <button
+                          className="hl-button hl-button--primary"
+                          type="button"
+                          onClick={() =>
+                            correctionMutation.mutate({
+                              confirmed: true,
+                              draft: correctionDraft,
+                              version: correctionPreview.expectedVersion,
+                            })
+                          }
+                          disabled={correctionMutation.isPending}
+                        >
+                          Confirm correction and update standings
+                        </button>
+                        <button
+                          className="hl-button hl-button--quiet"
+                          type="button"
+                          onClick={closeCorrection}
+                          disabled={correctionMutation.isPending}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </section>
+                  ) : (
+                    <div className="hl-button-row">
+                      <button
+                        className="hl-button hl-button--primary"
+                        type="button"
+                        onClick={() =>
+                          correctionMutation.mutate({
+                            confirmed: false,
+                            draft: correctionDraft,
+                          })
+                        }
+                        disabled={!correctionReady || correctionMutation.isPending}
+                      >
+                        Preview correction
+                      </button>
+                      <button
+                        className="hl-button hl-button--quiet"
+                        type="button"
+                        onClick={closeCorrection}
+                        disabled={correctionMutation.isPending}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </Surface>
+              ) : null}
+              {correctionNotice ? <p role="status">{correctionNotice}</p> : null}
             </>
           )}
       <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>
@@ -691,49 +1033,27 @@ function PreviewAction({
             "Regular season ends",
             previewTimestamp(preview?.lastWeekEndsAtMs),
           ],
-          ["Current season version", preview?.expectedVersion ?? "Unavailable"],
         ]
-      : title === "Week transition"
-        ? [
-            [
-              "Current status",
-              humanizeStatus(preview?.currentStatus),
-            ],
-            [
-              "Transition time",
-              previewTimestamp(preview?.effectiveAtMs),
-            ],
-            ["Current week version", preview?.expectedVersion ?? "Unavailable"],
-          ]
-        : title === "Result correction"
-          ? [
-              ["Selected result", "Official matchup result"],
-              ["Current result version", preview?.expectedVersion ?? "Unavailable"],
-            ]
-          : [
-              [
-                "Current standings snapshot",
-                preview?.currentSnapshotId ? "Available" : "Not created yet",
-              ],
-              [
-                "Next snapshot version",
-                preview?.nextSnapshotVersion ?? "Unavailable",
-              ],
-              [
-                "Finalized results included",
-                preview?.projection?.finalizedResultCount ?? 0,
-              ],
-              [
-                "Teams in projection",
-                preview?.projection?.rows?.length ?? 0,
-              ],
-            ];
+      : [
+          [
+            "Current status",
+            humanizeStatus(preview?.currentStatus),
+          ],
+          [
+            "Transition time",
+            previewTimestamp(preview?.effectiveAtMs),
+          ],
+        ];
 
   return (
     <section className="hl-surface hl-preview-action" style={card}>
       <h2>{title}</h2>
       {children}
-      <ErrorMessage error={mutation.error} />
+      <ErrorMessage
+        error={mutation.error}
+        context={title === "Schedule generation" ? "schedule" : "week"}
+        onRetry={onPreview}
+      />
       {!preview ? (
         <button className="hl-button hl-button--primary" type="button" onClick={onPreview} disabled={mutation.isPending || previewDisabled}>
           Preview {title.toLowerCase()}
@@ -753,36 +1073,6 @@ function PreviewAction({
                 </div>
               ))}
             </dl>
-            {title === "Standings rebuild" &&
-            preview?.projection?.rows?.length > 0 ? (
-              <TableScroll label="Projected standings after rebuild">
-                <table className="hl-data-table hl-commissioner-preview__table">
-                  <caption>Projected standings after rebuild</caption>
-                  <thead>
-                    <tr>
-                      <th>Rank</th>
-                      <th>Team</th>
-                      <th>W</th>
-                      <th>L</th>
-                      <th>T</th>
-                      <th>PTS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.projection.rows.map((standing) => (
-                      <tr key={standing.teamId}>
-                        <td>{standing.rank}</td>
-                        <th scope="row">{standing.teamDisplayName}</th>
-                        <td>{standing.wins}</td>
-                        <td>{standing.losses}</td>
-                        <td>{standing.ties}</td>
-                        <td>{standing.standingsPoints}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </TableScroll>
-            ) : null}
           </section>
           <div className="hl-button-row">
           <button className="hl-button hl-button--primary" type="button" onClick={onConfirm} disabled={mutation.isPending || confirmDisabled}>
@@ -821,15 +1111,25 @@ export function CommissionerCompetitionPage() {
   const queryClient = useQueryClient();
   const [schedulePreview, setSchedulePreview] = useState(null);
   const [weekPreview, setWeekPreview] = useState(null);
-  const [resultPreview, setResultPreview] = useState(null);
-  const [standingsPreview, setStandingsPreview] = useState(null);
   const [weekId, setWeekId] = useState("");
-  const [resultId, setResultId] = useState("");
-  const [homeScore, setHomeScore] = useState("");
-  const [awayScore, setAwayScore] = useState("");
-  const [correctionReason, setCorrectionReason] = useState("");
-  const [rebuildReason, setRebuildReason] = useState("");
   const seasonId = context.seasonId;
+  const commissioner = hasCommissionerAuthority(
+    context.league?.membership
+  );
+  const weeks = useQuery({
+    ...matchupWeeksQuery(context.session.httpClient, leagueId, seasonId),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league && seasonId && commissioner),
+  });
+  const availableWeeks = weeks.data?.weeks || [];
+  const defaultWeek =
+    availableWeeks.find(({ status }) => status !== "final") ||
+    availableWeeks[0] ||
+    null;
+  const selectedWeekId = availableWeeks.some(({ id }) => id === weekId)
+    ? weekId
+    : defaultWeek?.id || "";
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["league", leagueId, "season", seasonId] });
   const scheduleMutation = useMutation({
@@ -841,60 +1141,17 @@ export function CommissionerCompetitionPage() {
   });
   const weekMutation = useMutation({
     mutationFn: ({ confirmed, version }) => weekTransitionCommand(
-      context.session.httpClient, leagueId, seasonId, weekId, confirmed, version, confirmed ? operationId() : undefined
+      context.session.httpClient, leagueId, seasonId, selectedWeekId, confirmed, version, confirmed ? operationId() : undefined
     ),
     onSuccess(data, variables) {
       if (!variables.confirmed) setWeekPreview(data.preview);
       else { setWeekPreview(null); invalidate(); }
     },
   });
-  const resultMutation = useMutation({
-    mutationFn: ({ confirmed, version }) => resultCorrectionCommand(
-      context.session.httpClient,
-      leagueId,
-      seasonId,
-      resultId,
-      confirmed ? {
-        confirmed: true,
-        homeScoreHundredths: Number(homeScore),
-        awayScoreHundredths: Number(awayScore),
-        reason: correctionReason,
-      } : { confirmed: false },
-      version,
-      confirmed ? operationId() : undefined
-    ),
-    onSuccess(data, variables) {
-      if (!variables.confirmed) setResultPreview(data.preview);
-      else { setResultPreview(null); invalidate(); }
-    },
-  });
-  const standingsMutation = useMutation({
-    mutationFn: ({ confirmed, version }) => standingsRebuildCommand(
-      context.session.httpClient,
-      leagueId,
-      seasonId,
-      confirmed ? {
-        confirmed: true,
-        expectedCurrentSnapshotId: standingsPreview.currentSnapshotId,
-        reason: rebuildReason,
-      } : { confirmed: false },
-      version,
-      confirmed ? operationId() : undefined
-    ),
-    onSuccess(data, variables) {
-      if (!variables.confirmed) setStandingsPreview(data.preview);
-      else { setStandingsPreview(null); invalidate(); }
-    },
-  });
-
-  const commissioner = hasCommissionerAuthority(
-    context.league?.membership
-  );
   return (
     <CompetitionGate context={context} title="Commissioner competition tools">
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
-          <p>Every change requires a fresh preview, matching version, and explicit confirmation.</p>
           <CommissionerFadPanel
             leagueId={leagueId}
             seasonId={seasonId}
@@ -904,29 +1161,34 @@ export function CommissionerCompetitionPage() {
             onPreview={() => scheduleMutation.mutate({ confirmed: false })}
             onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedVersion })} />
           <PreviewAction title="Week transition" mutation={weekMutation} preview={weekPreview}
-            previewDisabled={!weekId}
-            confirmDisabled={!weekId}
+            previewDisabled={!selectedWeekId || weeks.isPending || weeks.isError}
+            confirmDisabled={!selectedWeekId}
             onPreview={() => weekMutation.mutate({ confirmed: false })}
             onConfirm={() => weekMutation.mutate({ confirmed: true, version: weekPreview.expectedVersion })}>
-            <label style={field}>Week ID<input style={input} value={weekId} onChange={(event) => { setWeekId(event.target.value); setWeekPreview(null); }} /></label>
-          </PreviewAction>
-          <PreviewAction title="Result correction" mutation={resultMutation} preview={resultPreview}
-            previewDisabled={!resultId}
-            confirmDisabled={!resultId || !correctionReason || !/^\d+$/.test(homeScore) || !/^\d+$/.test(awayScore)}
-            onPreview={() => resultMutation.mutate({ confirmed: false })}
-            onConfirm={() => resultMutation.mutate({ confirmed: true, version: resultPreview.expectedVersion })}>
-            <div style={row}>
-              <label style={field}>Result ID<input style={input} value={resultId} onChange={(event) => { setResultId(event.target.value); setResultPreview(null); }} /></label>
-              <label style={field}>Home score (hundredths)<input style={input} inputMode="numeric" value={homeScore} onChange={(event) => setHomeScore(event.target.value)} /></label>
-              <label style={field}>Away score (hundredths)<input style={input} inputMode="numeric" value={awayScore} onChange={(event) => setAwayScore(event.target.value)} /></label>
-              <label style={field}>Reason<input style={input} value={correctionReason} onChange={(event) => setCorrectionReason(event.target.value)} /></label>
-            </div>
-          </PreviewAction>
-          <PreviewAction title="Standings rebuild" mutation={standingsMutation} preview={standingsPreview}
-            confirmDisabled={!rebuildReason}
-            onPreview={() => standingsMutation.mutate({ confirmed: false })}
-            onConfirm={() => standingsMutation.mutate({ confirmed: true, version: standingsPreview.expectedVersion })}>
-            <label style={field}>Reason<input style={input} value={rebuildReason} onChange={(event) => setRebuildReason(event.target.value)} /></label>
+            {weeks.isPending ? <LoadingBlock>Loading matchup weeks...</LoadingBlock> : null}
+            {weeks.isError ? <ErrorMessage error={weeks.error} /> : null}
+            {!weeks.isPending && !weeks.isError && availableWeeks.length === 0 ? (
+              <EmptyBlock title="No matchup weeks are available." />
+            ) : null}
+            {!weeks.isPending && !weeks.isError && availableWeeks.length > 0 ? (
+              <label className="hl-field">
+                Week
+                <select
+                  value={selectedWeekId}
+                  onChange={(event) => {
+                    setWeekId(event.target.value);
+                    setWeekPreview(null);
+                    weekMutation.reset();
+                  }}
+                >
+                  {availableWeeks.map((week) => (
+                    <option key={week.id} value={week.id}>
+                      {weekLabel(week.sequence, week.startsAtMs, week.endsAtMs)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
           </PreviewAction>
         </>
       )}

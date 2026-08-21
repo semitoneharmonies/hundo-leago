@@ -12,17 +12,18 @@ const teamOneId = "44444444-4444-4444-8444-444444444444";
 const teamTwoId = "55555555-5555-4555-8555-555555555555";
 const teamThreeId = "66666666-6666-4666-8666-666666666666";
 
-function manager(assignmentId, version) {
+function manager(assignmentId, version, protectedAdministrator = false) {
   return {
     assignmentId,
     userId: managerId,
     displayName: "Test Manager",
+    isProtectedPlatformAdministrator: protectedAdministrator,
     acceptedAtMs: 1,
     version,
   };
 }
 
-function setup() {
+function setup({ protectedAdministrator = false } = {}) {
   const request = vi.fn(async (path, options = {}) => {
     if (path === `/api/v1/leagues/${leagueId}/memberships`) {
       return {
@@ -34,6 +35,7 @@ function setup() {
               version: 1,
               status: "active",
               permissionCategory: "commissioner",
+              isProtectedPlatformAdministrator: false,
               user: {
                 id: commissionerId,
                 displayName: "League Commissioner",
@@ -44,6 +46,7 @@ function setup() {
               version: 2,
               status: "active",
               permissionCategory: "manager",
+              isProtectedPlatformAdministrator: protectedAdministrator,
               user: { id: managerId, displayName: "Test Manager" },
             },
           ],
@@ -73,7 +76,11 @@ function setup() {
     {
       id: teamOneId,
       name: "Alpha One",
-      currentManager: manager("assignment-team-one", 4),
+      currentManager: manager(
+        "assignment-team-one",
+        4,
+        protectedAdministrator
+      ),
     },
     {
       id: teamTwoId,
@@ -177,5 +184,21 @@ describe("commissioner team assignments", () => {
         "Test Manager was unassigned from Alpha One. Their league membership and other team assignments are unchanged."
       )
     ).toBeInTheDocument();
+  });
+
+  it("does not offer membership removal or team unassignment for a protected administrator", async () => {
+    setup({ protectedAdministrator: true });
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Protected administrator")).toHaveLength(2);
+    });
+    expect(
+      screen.queryByRole("button", {
+        name: "Unassign Test Manager from Alpha One",
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Remove from league" })
+    ).not.toBeInTheDocument();
   });
 });

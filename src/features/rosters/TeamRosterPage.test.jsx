@@ -117,6 +117,7 @@ function workspace() {
         normalizedPosition: "F",
         rosterCategory: "Active",
         ownershipKind: "Contract",
+        nhlTeamAbbreviation: "MTL",
         slotNumber: 1,
         displayOrder: 0,
         age: 26,
@@ -149,6 +150,29 @@ function workspace() {
         displayOrder: null,
         age: null,
         contract: null,
+        statistics: null,
+      },
+      {
+        ownershipId: "90909090-9090-4090-8090-909090909090",
+        ownershipVersion: 3,
+        playerId: "91919191-9191-4191-8191-919191919191",
+        name: "Injured Player",
+        normalizedPosition: "F",
+        rosterCategory: "Injured Reserve",
+        ownershipKind: "Contract",
+        slotNumber: 1,
+        displayOrder: null,
+        age: 29,
+        injuredReserveEligible: true,
+        contract: {
+          id: "92929292-9292-4292-8292-929292929292",
+          version: 2,
+          type: "Standard",
+          originalTotalValueCents: 600,
+          originalTermYears: 2,
+          aavCents: 300,
+          remainingYears: 2,
+        },
         statistics: null,
       },
     ],
@@ -259,6 +283,20 @@ describe("authoritative team roster page", () => {
   it("shows readable cap components, roster views, and owned picks", async () => {
     const data = workspace();
     data.team.logoReference = "/api/v1/team-logos/target-owls";
+    data.players.splice(1, 0, {
+      ...data.players[0],
+      ownershipId: benchOwnershipId,
+      playerId: benchPlayerId,
+      name: "Bench Player",
+      rosterCategory: "Bench",
+      slotNumber: 1,
+      displayOrder: null,
+      contract: {
+        ...data.players[0].contract,
+        id: benchContractId,
+        aavCents: 300,
+      },
+    });
     const view = renderWithProviders(
       <TeamRosterPage
         workspace={data}
@@ -337,6 +375,7 @@ describe("authoritative team roster page", () => {
       .getByRole("rowheader", { name: "Active Player" })
       .closest("tr");
     expect(within(activeRow).getAllByText("10")).toHaveLength(2);
+    expect(within(activeRow).getByText("MTL")).toBeInTheDocument();
     expect(within(activeRow).getByText("12.50")).toBeInTheDocument();
     expect(within(activeRow).getByText("1.25")).toBeInTheDocument();
     expect(screen.queryByText("Limit")).not.toBeInTheDocument();
@@ -381,6 +420,21 @@ describe("authoritative team roster page", () => {
     expect(screen.getByText("Active Player").closest(".hl-line-player")).toHaveClass(
       "hl-line-player--team"
     );
+    const benchRegion = screen.getByRole("region", { name: "Bench" });
+    expect(
+      within(benchRegion).queryByRole("region", { name: "Bench table" })
+    ).not.toBeInTheDocument();
+    expect(
+      within(benchRegion).getByText("Bench Player").closest(".hl-line-player")
+    ).toHaveClass("hl-line-player--bench");
+    expect(
+      within(benchRegion).getByRole("button", {
+        name: "Move to active Bench Player",
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Prospects table" })
+    ).toBeInTheDocument();
   });
 
   it("distinguishes commissioner roster actions from manager actions", () => {
@@ -414,6 +468,11 @@ describe("authoritative team roster page", () => {
     expect(notice).toHaveTextContent(
       "not as actions by this team's manager"
     );
+    expect(
+      screen.queryByRole("button", {
+        name: "Sign ELC and keep in prospects Prospect Player",
+      })
+    ).not.toBeInTheDocument();
   });
 
   it("does not label a manager's own roster actions as commissioner actions", () => {
@@ -525,6 +584,9 @@ describe("authoritative team roster page", () => {
     const activeRow = screen
       .getByRole("rowheader", { name: "Active Player" })
       .closest("tr");
+    const injuredRow = screen
+      .getByRole("rowheader", { name: "Injured Player" })
+      .closest("tr");
     expect(
       within(activeRow).getByRole("button", {
         name: "Buy out Active Player",
@@ -553,6 +615,33 @@ describe("authoritative team roster page", () => {
         name: "Add Active Player to the trade block",
       })
     ).toBeEnabled();
+    expect(
+      within(injuredRow).getByRole("button", {
+        name: "Move to active Injured Player",
+      })
+    ).toHaveAttribute(
+      "title",
+      "Move Injured Player to active before moving them to the bench"
+    );
+
+    await within(injuredRow)
+      .getByRole("button", { name: "Move to active Injured Player" })
+      .click();
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "/roster/90909090-9090-4090-8090-909090909090/move"
+        ),
+        expect.objectContaining({
+          method: "POST",
+          body: {
+            confirmedIllegal: false,
+            destinationCategory: "Active",
+            expectedVersion: 3,
+          },
+        })
+      )
+    );
 
     await within(activeRow)
       .getByRole("button", {
@@ -631,6 +720,201 @@ describe("authoritative team roster page", () => {
     );
     expect(confirm).toHaveBeenCalledOnce();
     confirm.mockRestore();
+  });
+
+  it("lets the team manager sign, decline, or release an unsigned prospect by keyboard-accessible commands", async () => {
+    const data = workspace();
+    data.players[1].injuredReserveEligible = true;
+    data.team.currentManager = {
+      userId: "manager-user",
+      displayName: "League Manager",
+      version: 1,
+    };
+    const httpClient = {
+      request: vi.fn(async () => ({
+        data: {
+          automaticallyCancelledTradeIds: [
+            "10101010-1010-4010-8010-101010101010",
+          ],
+        },
+      })),
+    };
+    const confirm = vi.spyOn(globalThis, "confirm").mockReturnValue(true);
+    const view = renderWithProviders(
+      <TeamRosterPage
+        workspace={data}
+        teams={[data.team]}
+        currentUserId="manager-user"
+        managerName="League Manager"
+        onTeamChange={() => {}}
+        httpClient={httpClient}
+      />
+    );
+
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "confirm the player has signed their real-life NHL entry-level contract"
+    );
+    const keepButton = screen.getByRole("button", {
+      name: "Sign ELC and keep in prospects Prospect Player",
+    });
+    expect(keepButton).toBeEnabled();
+    for (const destination of [
+      "active",
+      "bench",
+      "injured reserve",
+    ]) {
+      expect(
+        screen.getByRole("button", {
+          name: `Sign ELC and move to ${destination} Prospect Player`,
+        })
+      ).toBeEnabled();
+    }
+    keepButton.focus();
+    expect(keepButton).toHaveFocus();
+    await view.user.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(`/prospects/${prospectPlayerId}/sign`),
+        expect.objectContaining({
+          method: "POST",
+          body: {
+            destinationCategory: "Prospect",
+            expectedVersion: 1,
+          },
+        })
+      )
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "1 pending trade proposal was automatically cancelled"
+    );
+
+    await view.user.click(
+      screen.getByRole("button", {
+        name: "Decline ELC for Prospect Player",
+      })
+    );
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(`/prospects/${prospectPlayerId}/decline`),
+        expect.objectContaining({
+          method: "POST",
+          body: { confirmed: true, expectedVersion: 1 },
+        })
+      )
+    );
+
+    const releaseButton = screen.getByRole("button", {
+      name: "Release unsigned prospect rights for Prospect Player",
+    });
+    releaseButton.focus();
+    await view.user.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `/prospect-rights/${prospectPlayerId}`
+        ),
+        expect.objectContaining({
+          method: "DELETE",
+          body: { confirmed: true, expectedVersion: 1 },
+        })
+      )
+    );
+    expect(confirm).toHaveBeenCalledTimes(3);
+    for (const [message] of confirm.mock.calls) {
+      expect(message).toContain("pending trade proposals");
+      expect(message).toContain("automatically cancelled");
+    }
+    confirm.mockRestore();
+  });
+
+  it("keeps a signed ELC prospect cap-exempt until an explicit accessible promotion", async () => {
+    const data = workspace();
+    data.team.currentManager = {
+      userId: "manager-user",
+      displayName: "League Manager",
+      version: 1,
+    };
+    data.players[1] = {
+      ...data.players[1],
+      ownershipVersion: 2,
+      ownershipKind: "Prospect Right",
+      injuredReserveEligible: false,
+      contract: {
+        id: "78787878-7878-4787-8787-787878787878",
+        version: 1,
+        type: "fantasy_elc",
+        originalTotalValueCents: 300,
+        originalTermYears: 3,
+        aavCents: 100,
+        remainingYears: 3,
+      },
+    };
+    const httpClient = {
+      request: vi.fn(async () => ({
+        data: {
+          automaticallyCancelledTradeIds: [
+            "10101010-1010-4010-8010-101010101010",
+          ],
+        },
+      })),
+    };
+    const view = renderWithProviders(
+      <TeamRosterPage
+        workspace={data}
+        teams={[data.team]}
+        currentUserId="manager-user"
+        managerName="League Manager"
+        onTeamChange={() => {}}
+        httpClient={httpClient}
+      />
+    );
+
+    expect(
+      screen.getByRole("rowheader", { name: "Prospect Player" })
+    ).toBeInTheDocument();
+    const tradeLink = screen.getByRole("link", {
+      name: "Add Prospect Player to a trade",
+    });
+    expect(tradeLink.getAttribute("href")).toContain(
+      "assetType=prospect_right"
+    );
+    expect(tradeLink.getAttribute("href")).toContain(
+      `assetId=${prospectPlayerId}`
+    );
+    expect(httpClient.request).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", {
+        name: "Sign ELC and keep in prospects Prospect Player",
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Move to injured reserve Prospect Player",
+      })
+    ).toBeDisabled();
+
+    const benchButton = screen.getByRole("button", {
+      name: "Move to bench Prospect Player",
+    });
+    benchButton.focus();
+    expect(benchButton).toHaveFocus();
+    await view.user.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(httpClient.request).toHaveBeenCalledWith(
+        expect.stringContaining(`/roster/${prospectOwnershipId}/move`),
+        expect.objectContaining({
+          method: "POST",
+          body: {
+            confirmedIllegal: false,
+            destinationCategory: "Bench",
+            expectedVersion: 2,
+          },
+        })
+      )
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "1 pending trade proposal was automatically cancelled"
+    );
   });
 
   it("saves same-position pointer drag ordering", async () => {

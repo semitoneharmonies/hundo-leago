@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { infiniteQueryOptions } from "@tanstack/react-query";
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("socket.io-client", () => ({
@@ -590,11 +590,13 @@ function renderRoute({
   fetchImpl,
   queryClient,
   realtime = { status: "disconnected", privacyEpoch: 0 },
+  additionalRoute = null,
 }) {
   return renderWithProviders(
     <RealtimeContext.Provider value={realtime}>
       <Routes>
         <Route path={route} element={element} />
+        {additionalRoute}
       </Routes>
     </RealtimeContext.Provider>,
     {
@@ -604,6 +606,16 @@ function renderRoute({
       config,
       sessionOptions: { fetchImpl },
     }
+  );
+}
+
+function ResultsLocation() {
+  const location = useLocation();
+  return (
+    <p data-testid="results-location">
+      {location.pathname}
+      {location.search}
+    </p>
   );
 }
 
@@ -700,7 +712,7 @@ describe("league Drafts area", () => {
     ).toBe(true);
   });
 
-  it("shows one selected team's results and opens the original card read-only inside Drafts", async () => {
+  it("shows concise selected-team results without linking to the original card", async () => {
     const requests = [];
     const fetchImpl = baseFetch((parsed) => {
       requests.push(parsed.pathname);
@@ -721,7 +733,7 @@ describe("league Drafts area", () => {
       }
       throw new Error(`Unexpected request: ${parsed.pathname}`);
     });
-    const view = renderDraftsRoute(
+    renderDraftsRoute(
       fetchImpl,
       routePaths.leagueFreeAgentDrafts(leagueId)
     );
@@ -729,7 +741,15 @@ describe("league Drafts area", () => {
     expect(
       await screen.findByRole("heading", { name: "Free Agent Draft results" })
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Team results" })).toBeInTheDocument();
+    const resultsHeading = screen.getByRole("heading", { name: "Team results" });
+    expect(resultsHeading).toBeInTheDocument();
+    expect(screen.getByText("Candidate card deadline:")).toBeInTheDocument();
+    expect(screen.queryByText(/Next auction rollover/i)).toBeNull();
+    expect(screen.queryByText(/Week 1 starts/i)).toBeNull();
+    const teamPicker = await screen.findByLabelText("Team");
+    expect(
+      resultsHeading.parentElement.parentElement.nextElementSibling
+    ).toContainElement(teamPicker);
     expect(await screen.findByText("Won Player")).toBeInTheDocument();
     expect(screen.getByText("Tied Player")).toBeInTheDocument();
     expect(screen.getByText("Not Won Player")).toBeInTheDocument();
@@ -741,27 +761,13 @@ describe("league Drafts area", () => {
         pathname.endsWith(`/free-agent-drafts/${fadId}/results`)
       )
     ).toBe(false);
-    const cardLink = screen.getByRole("link", { name: "View original Candidate Card" });
-    expect(cardLink).toHaveAttribute(
-      "href",
-      routePaths.draftFreeAgentCard(leagueId, fadId, teamId)
-    );
-
-    await view.user.click(cardLink);
     expect(
-      await screen.findByRole("heading", {
-        level: 1,
-        name: "Published Candidate Card",
-      })
-    ).toBeInTheDocument();
-    expect(document.querySelectorAll("[data-slot-key]")).toHaveLength(3);
-    expect(screen.queryByRole("button", { name: /save|help|move|remove/i })).toBeNull();
-    expect(screen.getByRole("link", { name: "Back to Drafts" })).toHaveAttribute(
-      "href",
-      routePaths.leagueFreeAgentDrafts(leagueId)
-    );
+      screen.queryByRole("link", { name: "View original Candidate Card" })
+    ).toBeNull();
     expect(
-      requests.some((pathname) => pathname.endsWith(`/candidate-cards/${teamId}/private`))
+      requests.some((pathname) =>
+        pathname.endsWith(`/candidate-cards/${teamId}/private`)
+      )
     ).toBe(false);
   });
 
@@ -1204,37 +1210,33 @@ describe("FAD-15 Candidate Card frontend", () => {
 });
 
 describe("FAD-16 published Candidate Card and allocation history", () => {
-  it("refreshes a stable published-card deep link without mounting private-card authorization", async () => {
+  it("redirects a stable post-deadline card link to that team's results", async () => {
     const requests = [];
     const fetchImpl = baseFetch((parsed) => {
       requests.push(parsed);
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
         return envelope(publishedOverview());
       }
-      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
-        return envelope(publishedResultsCard());
-      }
-      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(teamsFound([leagueTeam(teamId, "Candidate Owls", currentManager())]));
-      }
       throw new Error(`Unexpected request: ${parsed.pathname}`);
     });
 
-    renderRoute({ fetchImpl });
+    renderRoute({
+      fetchImpl,
+      additionalRoute: (
+        <Route
+          path="/leagues/:leagueId/drafts/free-agent/:fadId/results"
+          element={<ResultsLocation />}
+        />
+      ),
+    });
 
-    expect(await screen.findByRole("heading", { name: "Published Candidate Card" })).toBeInTheDocument();
-    expect(await screen.findByText("Won Player")).toBeInTheDocument();
-    expect(screen.getByText("Candidate Owls")).toBeInTheDocument();
-    expect(screen.getByText("Original card")).toBeInTheDocument();
-    expect(screen.queryByText(/Immutable locked request/)).toBeNull();
-    expect(document.querySelectorAll("[data-slot-key]")).toHaveLength(3);
-    expect(screen.getByLabelText("F02 AAV")).toHaveValue("$3.00");
-    expect(screen.getByLabelText("F02 total contract value")).toHaveValue("$6.00");
-    expect(screen.getByRole("link", { name: "Place bid" })).toHaveAttribute(
-      "href",
-      routePaths.leagueAuctionFocus(leagueId, restrictedAuctionId)
+    expect(await screen.findByTestId("results-location")).toHaveTextContent(
+      `${routePaths.draftFreeAgentAllocationResults(
+        leagueId,
+        fadId
+      )}?teamId=${teamId}`
     );
-    expect(screen.queryByRole("button", { name: /candidate|carryover|move|remove|help/i })).toBeNull();
+    expect(screen.queryByText("Original card")).not.toBeInTheDocument();
     expect(
       requests.some((request) =>
         request.pathname.endsWith(`/candidate-cards/${teamId}/private`)
@@ -1245,23 +1247,17 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     ).toBe(false);
   });
 
-  it("withholds published Candidate Card history during realtime reauthorization", async () => {
+  it("withholds the post-deadline results redirect during realtime reauthorization", async () => {
     const fetchImpl = baseFetch((parsed) => {
       if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
         return envelope(publishedOverview());
-      }
-      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/history`)) {
-        return envelope(publishedCandidateCard());
-      }
-      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
-        return envelope(teamsFound());
       }
       throw new Error(`Unexpected request: ${parsed.pathname}`);
     });
     function PublishedHistoryReauthorizationHarness() {
       const [realtime, setRealtime] = React.useState({
-        status: "connected",
-        privacyEpoch: 0,
+        status: "reauthorizing",
+        privacyEpoch: 1,
       });
       return (
         <>
@@ -1281,6 +1277,10 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
                 path="/leagues/:leagueId/free-agent-draft/:fadId/cards/:teamId"
                 element={<CandidateCardPage />}
               />
+              <Route
+                path="/leagues/:leagueId/drafts/free-agent/:fadId/results"
+                element={<ResultsLocation />}
+              />
             </Routes>
           </RealtimeContext.Provider>
         </>
@@ -1293,16 +1293,15 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
       sessionOptions: { fetchImpl },
     });
 
-    expect(await screen.findByText("Published Candidate")).toBeInTheDocument();
-    await view.user.click(screen.getByRole("button", { name: "Reauthorize history" }));
-    expect(screen.queryByText("Published Candidate")).toBeNull();
     expect(
-      screen.getByText(/Reauthorizing league-only Candidate Card history/i)
+      await screen.findByText(/Reauthorizing league-only Candidate Card history/i)
     ).toBeInTheDocument();
     await view.user.click(
       screen.getByRole("button", { name: "Finish history reauthorization" })
     );
-    expect(await screen.findByText("Published Candidate")).toBeInTheDocument();
+    expect(await screen.findByTestId("results-location")).toHaveTextContent(
+      `?teamId=${teamId}`
+    );
   });
 
   it("maps the selected managed team's Candidate Card to won, not won, and actionable tie results", async () => {
@@ -1341,14 +1340,19 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
       throw new Error(`Unexpected request: ${parsed.pathname}`);
     });
     const view = renderRoute({
-      path: routePaths.freeAgentDraftResults(leagueId, fadId),
+      path: `${routePaths.freeAgentDraftResults(
+        leagueId,
+        fadId
+      )}?teamId=${secondTeamId}`,
       route: "/leagues/:leagueId/free-agent-draft/:fadId/results",
       element: <FreeAgentDraftResultsPage />,
       fetchImpl,
     });
 
     const teamPicker = await screen.findByLabelText("Team");
-    expect(teamPicker).toHaveValue(teamId);
+    expect(teamPicker).toHaveValue(secondTeamId);
+    expect(await screen.findByText("Other Team Player")).toBeInTheDocument();
+    await view.user.selectOptions(teamPicker, teamId);
     expect(await screen.findByText("Won Player")).toBeInTheDocument();
     const totals = screen.getByLabelText("Candidate Owls result totals");
     expect(within(totals).getByText("Signed").nextSibling).toHaveTextContent("1");
@@ -1361,11 +1365,7 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     );
     expect(screen.queryByText(/Pending|immutable|server/i)).toBeNull();
 
-    await view.user.selectOptions(teamPicker, secondTeamId);
-    expect(await screen.findByText("Other Team Player")).toBeInTheDocument();
-    expect(screen.getAllByText("Not won")).toHaveLength(2);
-    expect(screen.queryByRole("link", { name: "Place bid" })).toBeNull();
-    expect(historyRequests).toEqual([teamId, secondTeamId]);
+    expect(historyRequests).toEqual([secondTeamId, teamId]);
   });
 
   it("withholds and remounts published result evidence across realtime reauthorization", async () => {

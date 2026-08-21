@@ -158,8 +158,12 @@ A commissioner may:
 * perform authorized contract actions for teams in the assigned league;
 * correct contracts, retained salary, and buyout penalties;
 * resolve auctions manually;
-* reverse trades through the approved trade workflow;
-* perform the approved manual prospect-signing decision for a team.
+* reverse trades through the approved trade workflow.
+
+Prospect sign, decline, and unsigned-rights release decisions belong to the
+current team manager. Commissioner or platform-administrator authority alone
+does not grant that decision; a commissioner may use only a separately
+authorized correction workflow.
 
 A commissioner correction must be explicit and identified as a correction.
 
@@ -510,7 +514,10 @@ Retention lasts for every remaining year of the underlying contract and ends whe
 
 The retention slot becomes available immediately when the obligation ends.
 
-A completed retained amount cannot be edited, split, or voluntarily cancelled. The entire obligation may change responsible teams through an approved trade, reversal, or commissioner correction.
+A completed retained amount cannot be edited, split, voluntarily cancelled, or
+selected as a standalone asset in a new proposal. Its responsible team may
+change only through safe reversal or an explicit commissioner correction of a
+persisted record.
 
 The obligation does not end because:
 
@@ -523,18 +530,14 @@ Expiration and rollover must advance and end retention records idempotently.
 
 ---
 
-## Trading Existing Obligations
+## Existing Obligations In New Trades
 
-An existing retained-salary obligation may be traded as a whole.
-
-The transfer preserves:
-
-* retained AAV;
-* remaining obligation years;
-* underlying contract and player references;
-* original retaining team and transaction history.
-
-The receiving team becomes the responsible team, assumes the cap charge, and uses one retention slot. Acceptance must validate the receiving team’s slot availability and the one-obligation-per-team rule.
+An existing retained-salary obligation is not selectable as a standalone asset
+in a new proposal. New retained salary may be requested only within the
+outgoing contracted-player asset that creates it. Persisted historical
+retention records remain readable for accounting, correction, and safe reversal
+with their retained AAV, remaining schedule, underlying references, and history
+unchanged.
 
 An existing buyout-penalty obligation may also be traded as a whole. Its annual amount, remaining schedule, underlying buyout reference, and history remain unchanged while the receiving team assumes the cap charge.
 
@@ -1116,12 +1119,12 @@ and the FAD-related amendments on 2026-07-27.
 - [x] The current owner player amount is original AAV minus cumulative retained AAV.
 - [x] Retention ends with the underlying contract term.
 - [x] Existing retention remains unchanged after a later buyout.
-- [x] Existing retention and buyout-penalty obligations may be traded as whole obligation records.
+- [x] Buyout-penalty obligations may be traded as whole obligation records; existing retention remains with its responsible team and is not selectable in a fresh proposal, while historical retention proposals/assets remain readable and executable or reversible when their recorded state permits and exact completed creation retries replay the original result.
 - [x] A buyout eliminates the contract and immediately releases the player to free agency.
 - [x] The annual buyout penalty is 25% of full underlying AAV, rounded to the nearest hundredth.
 - [x] The penalty applies in every remaining year and does not decay.
 - [x] Auction and direct automatic FAD signings have a 14-day buyout lock that follows the player through trade.
-- [x] A buyout cancels pending trades involving the player.
+- [x] A buyout must atomically cancel pending trades involving the player, including a signed player still rostered as `Prospect` whose proposal snapshot uses `prospect_right`; the known staging limitation fails without partial writes and remains a separate P1 production-promotion follow-up outside the M7-26 isolated-staging gate.
 
 ## Approved Permission, Cap, and History Rules
 
@@ -1177,9 +1180,9 @@ and the FAD-related amendments on 2026-07-27.
 - [x] The exact 50% retention ceiling is rounded down to the nearest cent when half of original AAV contains a fraction of a cent.
 - [x] Each separate active retention obligation uses one retention slot for its currently responsible team.
 - [x] One team may hold only one active retention obligation on the same underlying contract.
-- [x] A retained-salary amount cannot be edited, split, or voluntarily cancelled; the whole obligation may move only through an approved trade, reversal, or commissioner correction.
-- [x] A retained-salary obligation may transfer as a whole through an approved trade without changing its amount or remaining schedule.
-- [x] The receiving team becomes responsible for the traded retention cap charge and retention slot.
+- [x] A retained-salary amount cannot be edited, split, voluntarily cancelled, or selected as a standalone asset in a new proposal; its responsible team may change only through safe reversal or explicit commissioner correction.
+- [x] New retained salary may be requested only within an outgoing contracted-player trade asset.
+- [x] Persisted historical retention proposals/assets remain readable and executable or reversible when their recorded state permits, without changing the obligation amount/schedule; exact completed creation retries replay the original result before fresh asset-grammar validation.
 - [x] When a retention obligation ends at contract expiration, its retention slot becomes available immediately.
 - [x] The current owner’s player amount is rounded to the nearest hundredth after subtracting every retained AAV record.
 - [x] Contract views show every current responsible team, original retaining team, and retained AAV to authenticated members of the league.

@@ -15,6 +15,23 @@ Grae approved the Season 2 permission baseline recorded in this document on 2026
 
 Grae approved the FAD-related permission amendments on 2026-07-27.
 
+Grae approved the full-site UI and administrator-protection amendment on
+2026-08-20. Every active platform administrator has protected persisted access
+to every league. That access is represented by an active membership so normal
+stable-identity, audit, and league-context rules still apply, but it is created
+or reconciled automatically and no commissioner may edit, deactivate, remove,
+or indirectly end it. Platform administrators may create leagues and inherit
+the ordinary commissioner tools inside every league without taking the sole
+commissioner role. Non-administrator league isolation is unchanged. A league
+has exactly one current commissioner and changing that commissioner is an
+atomic platform-administrator-authorized transfer.
+
+For a trade containing Future Considerations, receiving-manager acceptance is
+not completion authority. It moves the proposal to an awaiting-commissioner-
+approval state without transferring assets. Current commissioner or inherited
+platform-administrator approval, followed by complete current-state
+revalidation, is required before the trade may complete.
+
 ---
 
 ## Document Purpose
@@ -269,7 +286,11 @@ Approved platform-administrator responsibilities include:
 
 Only a platform administrator may assign or remove a league commissioner.
 
-A platform administrator may perform commissioner actions without taking the commissioner role, but must have an explicit active membership in the affected league.
+A platform administrator may perform commissioner actions without taking the
+commissioner role. Every active platform administrator is guaranteed one
+protected active `member` membership in every non-deleted league; ordinary
+membership, commissioner, and team-manager workflows may not end, reclassify,
+or assign that protected membership.
 
 A platform administrator may deactivate or delete a league after an explicit `Are you sure?` confirmation. The action requires administrator approval and must follow the applicable backup, audit, and production-safety requirements.
 
@@ -288,7 +309,10 @@ Platform-administrator actions must:
 * preserve audit information;
 * follow production-safety and recovery requirements.
 
-A platform administrator may not view or operate inside a league without an explicit active membership in that league.
+A platform administrator may not view or operate inside a league if the
+required protected active membership is missing. That condition is invariant
+corruption and must fail closed until the approved reconciliation path restores
+the membership; it is not a supported normal role state.
 
 ---
 
@@ -548,10 +572,12 @@ Passwords, password-reset secrets, session tokens, recovery secrets, and other c
 
 No user, including a commissioner, may view a competing active bid amount or contract term. Commissioner bid-administration authority does not include an active-bid reveal.
 
-For a restricted FAD tie auction, the original Candidate minimum total and term are
-already league-visible through the locked Candidate Cards. That historical
-minimum remains visible. Any later bid or edited total or term is protected as an active
-competing bid and must not be revealed before resolution.
+For a restricted FAD tie auction, the original Candidate minimum total and term
+follow the same post-deadline viewer projection as every other monetary FAD
+field. They are visible only to the current manager of the selected team.
+Commissioner or platform-administrator authority alone does not reveal them.
+Any later bid or edited total or term remains protected as an active competing
+bid and must not be revealed before resolution.
 
 Before the Candidate Card deadline:
 
@@ -562,8 +588,12 @@ Before the Candidate Card deadline:
   access to that team's card until the deadline;
 * the help grant does not reveal any other Candidate Card.
 
-After the deadline, every active league member may view every Candidate Card
-in that league as a read-only record.
+After the deadline, the complete Candidate Card remains internal audit data.
+Every active league member may view the requested player identity and final
+`Signed`, `Not won`, or `Tied` result. Amount, AAV, term, derived total, and
+restricted original-minimum values are visible only to the current manager of
+the selected team. The frontend and every legacy history/card API must enforce
+that same viewer projection.
 
 The frontend and backend must use these same visibility rules.
 
@@ -649,29 +679,31 @@ The following matrix records the approved Season 2 permission baseline.
 | Log in and log out | Own account | Own account | Own account | Login only |
 | Create a league | Yes | No, unless separately a platform administrator | No | No |
 | Assign or remove a league commissioner | Yes | No | No | No |
-| View private league data | With active league membership | Assigned league | Member league | No |
+| View private league data | With the guaranteed protected active league membership | Assigned league | Member league | No |
 | View public league rosters | Yes | Yes | Yes | Yes |
 | Edit league settings | Platform administration only | No in initial release | No | No |
 | Add an upcoming-season team | Yes, before the applicable Entry Draft setup freeze or, on an approved no-draft path, before automatic FAD readiness opens cards | Assigned league within the same window | No | No |
 | Deactivate or permanently erase a team | Yes, after Entry Draft completion or approved no-draft transition and before automatic FAD readiness opens cards | Assigned league within the same window; platform-administrator approval required | No | No |
-| Rename or edit a team profile | With active league authority | Assigned league | Assigned team where authorized | No |
+| Rename or edit a team profile | With protected membership and inherited league authority; not by becoming manager or commissioner | Assigned league | Assigned team where authorized | No |
 | Assign managers to teams | Yes | Assigned league | No | No |
-| Manage a team roster | With active membership and administrative authority | Any team in assigned league | Assigned team | No |
-| View a private Candidate Card before deadline | Assigned team or help-request scope with active membership | Own managed team, or a team that requested help | Assigned team | No |
-| Edit a Candidate Card before deadline | Assigned team or help-request scope with active membership | Own managed team, or a team that requested help | Assigned team | No |
-| View Candidate Cards after deadline | Member league | Assigned league | Member league | No |
+| Manage a team roster | With protected membership and inherited administrative authority; not through a team-manager assignment | Any team in assigned league | Assigned team | No |
+| View a private Candidate Card before deadline | Exact help-request scope with protected membership; never platform role alone | Own managed team, or a team that requested help | Assigned team | No |
+| Edit a Candidate Card before deadline | Exact help-request scope with protected membership; never platform role alone | Own managed team, or a team that requested help | Assigned team | No |
+| View FAD results after deadline | Requested-player identity and final status; monetary fields only when current manager of selected team | Requested-player identity and final status; monetary fields only for own managed selected team | Requested-player identity and final status; monetary fields only for own managed selected team | No |
 | Submit or edit auction bids | With active membership and administrative authority | Any team in assigned league | Assigned team | No |
 | Bid in a restricted FAD tie auction | Eligible tied team with active membership and authority | Only for an eligible tied team | Assigned team only when eligible | No |
 | Withdraw an auction bid | With active membership and administrative authority | Assigned league | No | No |
 | Resolve auctions manually | With active membership and administrative authority | Assigned league | No | No |
-| Propose, accept, reject, or cancel a trade | With active membership and administrative authority | Any team in assigned league | Assigned team where authorized | No |
+| Propose or cancel a trade | Only when separately the proposing team manager | Only when separately the proposing team manager | Proposing assigned team | No |
+| Accept or reject a trade | Only when separately the receiving team manager | Only when the receiving team manager | Receiving assigned team | No |
+| Approve a Future-Considerations trade awaiting commissioner approval | Yes, through inherited commissioner authority | Assigned league | No | No |
 | Reverse a trade | With active membership and administrative authority | Assigned league | No | No |
 | Buy out a player | With active membership and administrative authority | Any team in assigned league | Assigned owning team | No |
 | Correct contracts or cap obligations | With active membership and administrative authority | Assigned league | No | No |
 | Configure matchup schedules | With active membership and administrative authority | Assigned league | No | No |
 | Correct matchup locks, baselines, or results | With active membership and administrative authority | Assigned league | No | No |
 | Directly edit standings | No hidden edit | No hidden edit | No | No |
-| Rebuild standings from corrected results | With active membership and administrative authority | Assigned league | No | No |
+| Run recovery-only standings rebuild from corrected results | With active membership and administrative authority | Assigned league | No | No |
 | Initiate backup or snapshot restoration | Yes | Assigned league | No | No |
 | Approve backup or snapshot restoration | Yes | No | No | No |
 | View league activity, bids, trades, and correction reasons | Member league | Assigned league | Member league | No |
@@ -751,12 +783,23 @@ The Auction specification must define:
 
 The Trade specification must define:
 
-* manager authority to propose, accept, reject, and cancel for assigned teams;
-* commissioner authority to propose, accept, reject, cancel, and reverse for any team in the assigned league;
+* manager authority to propose or cancel for the proposing assigned team and to
+  accept or reject only for the receiving assigned team;
+* commissioner and inherited platform-administrator read-only safe inspection
+  plus authority to approve only
+  a Future-Considerations proposal already accepted into `Awaiting
+  Commissioner Approval`;
+* commissioner recovery and reversal authority through separately identified
+  actions, never by impersonating normal receiver acceptance;
 * visibility of pending proposals in the normal proposal interface;
 * visibility of completed, rejected, expired, and cancelled proposals through League Activity.
 
-The normal manager trade workflow requires authorization from each participating team. A commissioner may complete or correct both sides through a clearly identified commissioner action.
+The normal manager trade workflow requires authorization from each
+participating team. Acceptance without Future Considerations completes
+atomically. Acceptance with Future Considerations moves no assets and projects
+`Awaiting Commissioner Approval`; only the current commissioner or inherited
+platform administrator may approve that state after revalidation. Correction
+and reversal remain separately identified recovery actions.
 
 ---
 
@@ -801,7 +844,8 @@ The Free Agent Draft specification must define:
 * manager-requested commissioner help access during the final 48 hours;
 * commissioner actor attribution for assisted edits;
 * automatic help-grant expiry at the deadline;
-* league-wide read-only Candidate Card visibility after the deadline;
+* post-deadline viewer-filtered results while complete Candidate Cards remain
+  internal audit data;
 * open rapid-auction authority;
 * team-scoped restricted tie-auction eligibility;
 * automatic deadline and resolution authority;
@@ -1069,7 +1113,7 @@ FAD-related amendments on 2026-07-27.
 
 - [x] One user may hold more than one role in the same league.
 - [x] A commissioner may simultaneously manage a team in that league.
-- [x] A platform administrator needs an explicit league membership to view or operate inside a league.
+- [x] Every active platform administrator has one guaranteed protected active `member` membership in every non-deleted league; missing membership is invariant corruption and fails closed.
 - [x] Each league has exactly one commissioner.
 - [x] Each team has exactly one manager at a time, and the assignment may be transferred.
 - [x] One manager may control more than one team in the same league.
@@ -1081,7 +1125,7 @@ FAD-related amendments on 2026-07-27.
 - [x] Users may also create their own accounts through the home-page sign-up form.
 - [x] A league commissioner may not create user accounts.
 - [x] Only a platform administrator may assign or remove league commissioners.
-- [x] A platform administrator may perform commissioner actions without taking the commissioner role, but requires an active membership in the league.
+- [x] A platform administrator performs inherited commissioner actions through the guaranteed protected membership without taking commissioner or team-manager roles.
 - [x] Every platform-level recovery action is administrator-only unless a specific action is also granted to commissioners.
 - [x] A platform administrator may deactivate or delete a league after an `Are you sure?` confirmation and administrator approval.
 
@@ -1094,7 +1138,7 @@ FAD-related amendments on 2026-07-27.
 - [x] Commissioners may perform ordinary roster moves for any team in their league.
 - [x] Commissioners may submit, edit, and remove auction bids in their league.
 - [x] Commissioners may resolve auctions manually.
-- [x] Commissioners may propose, accept, reject, cancel, and reverse trades.
+- [x] Commissioner authority provides safe inspection, approval only for Future-Considerations proposals already awaiting approval, and separate reversal or recovery actions; it does not allow proposal, receiver-response, or cancellation writes unless the actor separately manages the applicable team.
 - [x] Commissioners may execute buyouts for teams.
 - [x] Commissioners may correct contracts, retained salary, and buyout penalties.
 - [x] Commissioners may make draft selections for teams.
@@ -1108,7 +1152,7 @@ FAD-related amendments on 2026-07-27.
 - [x] Managers may perform every approved normal roster move for their assigned teams.
 - [x] Managers have complete manual authority over prospect signing decisions until automatic real-life contract detection and execution are implemented.
 - [x] Managers may submit and edit auction bids but may not withdraw them.
-- [x] Managers may propose, accept, reject, and cancel trades for their assigned teams.
+- [x] Managers may propose or cancel for a proposing assigned team and may accept or reject only for a receiving assigned team.
 - [x] Managers may buy out eligible players owned by their assigned teams.
 - [x] The legal active roster locks automatically; managers do not submit a separate matchup lineup.
 - [x] Managers may edit their team name, team colours, pattern template, and team logo.
@@ -1118,7 +1162,7 @@ FAD-related amendments on 2026-07-27.
 - [x] Unauthenticated visitors have read-only access to approved public information.
 - [x] Rosters from every league are public; no other league information is public in the initial release.
 - [x] Before the Candidate Card deadline, commissioner authority may reveal another team's private card only after that team's manager requests help; a commissioner managing their own team retains manager-role access to that card.
-- [x] After the deadline, every active league member may view every league Candidate Card read-only.
+- [x] After the deadline, every active league member may view requested-player identity and final status; only the current manager of the selected team may view that team's monetary result fields, and the complete Candidate Card remains internal audit data.
 - [x] Every authenticated user in a league may view active auction identity, participants, bid count, deadlines, and only that user’s own bid amount and term.
 - [x] No user, including a commissioner, may view a competing active bid amount or term.
 - [x] Every authenticated user in a league may view resolved bid amounts and terms through League Activity.
