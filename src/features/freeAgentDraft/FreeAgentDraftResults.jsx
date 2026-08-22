@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useInfiniteQuery,
   useQuery,
@@ -140,6 +140,7 @@ export function PublishedCandidateCards({
   leagueId,
   fadId,
   currentUserId,
+  onSelectedTeamIdChange,
 }) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -175,6 +176,12 @@ export function PublishedCandidateCards({
       : summaries[0]?.teamId || "";
   const selectedSummary =
     summaries.find(({ teamId }) => teamId === selectedTeamId) || null;
+
+  useEffect(() => {
+    if (typeof onSelectedTeamIdChange === "function" && selectedSummary) {
+      onSelectedTeamIdChange(selectedSummary.teamId);
+    }
+  }, [onSelectedTeamIdChange, selectedSummary]);
 
   return (
     <Surface className={styles.panel} as="section" aria-labelledby="published-candidate-cards-title">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
@@ -17,6 +17,8 @@ import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { CandidateCardBuilder } from "./CandidateCardBuilder.jsx";
 import { PublishedCandidateCards } from "./FreeAgentDraftResults.jsx";
+import { ReleaseQaT132Diagnostic } from "./ReleaseQaT132Diagnostic.jsx";
+import { isReleaseQaT132DiagnosticRequested } from "./releaseQaT132Diagnostic.js";
 import {
   eligibleCandidatePlayersQuery,
   freeAgentDraftKeys,
@@ -279,6 +281,7 @@ function FreeAgentDraftResultsExperience({
   observedAtClientMs,
   overview,
   privacyEpoch,
+  onSelectedTeamIdChange,
   embedded = false,
 }) {
   return (
@@ -296,6 +299,7 @@ function FreeAgentDraftResultsExperience({
         leagueId={leagueId}
         fadId={fadId}
         currentUserId={context.session.user.id}
+        onSelectedTeamIdChange={onSelectedTeamIdChange}
       />
     </>
   );
@@ -1031,8 +1035,31 @@ export function FreeAgentDraftAllocationResultsPage() {
 
 export function FreeAgentDraftResultsPage() {
   const { leagueId, fadId } = useParams();
+  const [searchParams] = useSearchParams();
+  const [releaseQaSelection, setReleaseQaSelection] = useState(null);
   const context = useFadContext(leagueId);
   const realtime = useRealtime();
+  const releaseQaT132Requested = isReleaseQaT132DiagnosticRequested(
+    context.session.appEnv,
+    searchParams
+  );
+  const captureReleaseQaSelectedTeamId = useCallback(
+    (teamId) => {
+      setReleaseQaSelection((current) =>
+        current?.leagueId === leagueId &&
+        current?.fadId === fadId &&
+        current?.teamId === teamId
+          ? current
+          : Object.freeze({ leagueId, fadId, teamId })
+      );
+    },
+    [fadId, leagueId]
+  );
+  const releaseQaSelectedTeamId =
+    releaseQaSelection?.leagueId === leagueId &&
+    releaseQaSelection?.fadId === fadId
+      ? releaseQaSelection.teamId
+      : null;
   const overview = useQuery({
     ...freeAgentDraftOverviewQuery(context.session.httpClient, leagueId, fadId),
     enabled:
@@ -1040,31 +1067,49 @@ export function FreeAgentDraftResultsPage() {
   });
 
   return (
-    <FadGate context={context} title="Free Agent Draft results">
-      {realtime.status === "reauthorizing" ? (
-        <Surface>
-          <LoadingBlock>Reauthorizing league-only Free Agent Draft results…</LoadingBlock>
-        </Surface>
-      ) : overview.isPending ? (
-        <Surface>
-          <LoadingBlock>Loading Free Agent Draft status…</LoadingBlock>
-        </Surface>
-      ) : overview.isError ? (
-        <Surface>
-          <ErrorBlock error={overview.error} fallback="The Free Agent Draft could not be loaded." />
-        </Surface>
-      ) : PREPARATION_PHASES.has(overview.data.phase) ? (
-        <Navigate replace to={routePaths.freeAgentDraft(leagueId, fadId)} />
-      ) : (
-        <FreeAgentDraftResultsExperience
-          context={context}
-          fadId={fadId}
-          leagueId={leagueId}
-          observedAtClientMs={overview.dataUpdatedAt}
-          overview={overview.data}
-          privacyEpoch={realtime.privacyEpoch}
-        />
-      )}
-    </FadGate>
+    <>
+      <FadGate context={context} title="Free Agent Draft results">
+        {realtime.status === "reauthorizing" ? (
+          <Surface>
+            <LoadingBlock>Reauthorizing league-only Free Agent Draft results…</LoadingBlock>
+          </Surface>
+        ) : overview.isPending ? (
+          <Surface>
+            <LoadingBlock>Loading Free Agent Draft status…</LoadingBlock>
+          </Surface>
+        ) : overview.isError ? (
+          <Surface>
+            <ErrorBlock error={overview.error} fallback="The Free Agent Draft could not be loaded." />
+          </Surface>
+        ) : PREPARATION_PHASES.has(overview.data.phase) ? (
+          <Navigate replace to={routePaths.freeAgentDraft(leagueId, fadId)} />
+        ) : (
+          <FreeAgentDraftResultsExperience
+            context={context}
+            fadId={fadId}
+            leagueId={leagueId}
+            observedAtClientMs={overview.dataUpdatedAt}
+            overview={overview.data}
+            privacyEpoch={realtime.privacyEpoch}
+            onSelectedTeamIdChange={
+              releaseQaT132Requested
+                ? captureReleaseQaSelectedTeamId
+                : undefined
+            }
+          />
+        )}
+      </FadGate>
+      <ReleaseQaT132Diagnostic
+        active={
+          context.session.status === "authenticated" && Boolean(context.league)
+        }
+        appEnv={context.session.appEnv}
+        fadId={fadId}
+        httpClient={context.session.httpClient}
+        leagueId={leagueId}
+        requested={releaseQaT132Requested}
+        selectedTeamId={releaseQaSelectedTeamId}
+      />
+    </>
   );
 }

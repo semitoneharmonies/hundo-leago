@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { infiniteQueryOptions } from "@tanstack/react-query";
 import React from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("socket.io-client", () => ({
@@ -30,6 +30,7 @@ const seasonId = "22222222-2222-4222-8222-222222222222";
 const fadId = "33333333-3333-4333-8333-333333333333";
 const teamId = "44444444-4444-4444-8444-444444444444";
 const secondTeamId = "55555555-5555-4555-8555-555555555555";
+const routeReuseFadId = "56565656-5656-4656-8656-565656565656";
 const cardId = "66666666-6666-4666-8666-666666666666";
 const assignmentId = "77777777-7777-4777-8777-777777777777";
 const helpId = "88888888-8888-4888-8888-888888888888";
@@ -43,6 +44,12 @@ const config = Object.freeze({
   apiOrigin: "http://localhost:4000",
   socketOrigin: "http://localhost:4000",
   buildId: null,
+});
+const stagingConfig = Object.freeze({
+  appEnv: "staging",
+  apiOrigin: "https://api-staging.hundoleago.com",
+  socketOrigin: "https://api-staging.hundoleago.com",
+  buildId: "release-qa-t132-test",
 });
 
 function envelope(data, status = 200) {
@@ -1336,6 +1343,207 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
         [teamId, secondTeamId].includes(requestedTeamId)
       )
     ).toBe(true);
+  });
+
+  it("mounts the explicit staging T132 diagnostic for the actual selected team through reauthorization", async () => {
+    const t132Requests = [];
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        return envelope(publishedOverview());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
+        return collectionEnvelope([publishedSummary()]);
+      }
+      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
+        return envelope(
+          teamsFound([leagueTeam(teamId, "Candidate Owls", currentManager())])
+        );
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/results`)) {
+        return collectionEnvelope(publishedResultsCard().results);
+      }
+      if (
+        parsed.pathname.endsWith(
+          `/free-agent-drafts/${fadId}/candidate-cards/${teamId}/history`
+        )
+      ) {
+        t132Requests.push(parsed.pathname);
+        return envelope(publishedResultsCard());
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+
+    function ReleaseQaReauthorizationHarness() {
+      const [realtime, setRealtime] = React.useState({
+        status: "connected",
+        privacyEpoch: 0,
+      });
+      return (
+        <>
+          <button
+            onClick={() =>
+              setRealtime({ status: "reauthorizing", privacyEpoch: 1 })
+            }
+          >
+            Reauthorize release QA
+          </button>
+          <RealtimeContext.Provider value={realtime}>
+            <Routes>
+              <Route
+                path="/leagues/:leagueId/free-agent-draft/:fadId/results"
+                element={<FreeAgentDraftResultsPage />}
+              />
+            </Routes>
+          </RealtimeContext.Provider>
+        </>
+      );
+    }
+
+    const view = renderWithProviders(<ReleaseQaReauthorizationHarness />, {
+      initialEntries: [
+        `${routePaths.freeAgentDraftResults(
+          leagueId,
+          fadId
+        )}?teamId=${teamId}&releaseQaT132=1`,
+      ],
+      enableSession: true,
+      config: stagingConfig,
+      sessionOptions: { fetchImpl },
+    });
+
+    const diagnostic = await screen.findByLabelText(
+      "Release QA T132 cache diagnostic"
+    );
+    expect(within(diagnostic).getByText("Selected team ID").nextSibling)
+      .toHaveTextContent(teamId);
+    expect(within(diagnostic).getByText("Offer projection").nextSibling)
+      .toHaveTextContent("complete");
+    expect(t132Requests).toHaveLength(1);
+
+    await view.user.click(
+      screen.getByRole("button", { name: "Reauthorize release QA" })
+    );
+    expect(
+      screen.getByText(/Reauthorizing league-only Free Agent Draft results/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Release QA T132 cache diagnostic")
+    ).toBeInTheDocument();
+  });
+
+  it("never pairs a retained release-QA team with a reused route's new FAD", async () => {
+    const t132Requests = [];
+    const nextTeam = team(secondTeamId, "Second Team");
+    const nextSummary = {
+      ...publishedSummary(nextTeam),
+      fadId: routeReuseFadId,
+    };
+    const nextCard = {
+      ...publishedResultsCard(nextTeam),
+      fadId: routeReuseFadId,
+    };
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        return envelope(publishedOverview());
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${routeReuseFadId}`)) {
+        return envelope({ ...publishedOverview(), fadId: routeReuseFadId });
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/candidate-cards`)) {
+        return collectionEnvelope([publishedSummary()]);
+      }
+      if (
+        parsed.pathname.endsWith(
+          `/free-agent-drafts/${routeReuseFadId}/candidate-cards`
+        )
+      ) {
+        return collectionEnvelope([nextSummary]);
+      }
+      if (parsed.pathname.endsWith(`/leagues/${leagueId}/teams`)) {
+        return envelope(
+          teamsFound([
+            leagueTeam(teamId, "Candidate Owls", currentManager()),
+            leagueTeam(secondTeamId, "Second Team"),
+          ])
+        );
+      }
+      if (parsed.pathname.endsWith("/results")) {
+        return collectionEnvelope(
+          parsed.pathname.includes(routeReuseFadId)
+            ? nextCard.results
+            : publishedResultsCard().results
+        );
+      }
+      if (parsed.pathname.endsWith("/history")) {
+        t132Requests.push(parsed.pathname);
+        return envelope(
+          parsed.pathname.includes(routeReuseFadId)
+            ? nextCard
+            : publishedResultsCard()
+        );
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+
+    function ReusedRouteHarness() {
+      const navigate = useNavigate();
+      return (
+        <>
+          <button
+            onClick={() =>
+              navigate(
+                `${routePaths.freeAgentDraftResults(
+                  leagueId,
+                  routeReuseFadId
+                )}?teamId=${secondTeamId}&releaseQaT132=1`
+              )
+            }
+          >
+            Open next FAD
+          </button>
+          <RealtimeContext.Provider
+            value={{ status: "connected", privacyEpoch: 0 }}
+          >
+            <Routes>
+              <Route
+                path="/leagues/:leagueId/free-agent-draft/:fadId/results"
+                element={<FreeAgentDraftResultsPage />}
+              />
+            </Routes>
+          </RealtimeContext.Provider>
+        </>
+      );
+    }
+
+    const view = renderWithProviders(<ReusedRouteHarness />, {
+      initialEntries: [
+        `${routePaths.freeAgentDraftResults(
+          leagueId,
+          fadId
+        )}?teamId=${teamId}&releaseQaT132=1`,
+      ],
+      enableSession: true,
+      config: stagingConfig,
+      sessionOptions: { fetchImpl },
+    });
+
+    const initialDiagnostic = await screen.findByLabelText(
+      "Release QA T132 cache diagnostic"
+    );
+    expect(within(initialDiagnostic).getByText(teamId)).toBeInTheDocument();
+    await view.user.click(screen.getByRole("button", { name: "Open next FAD" }));
+    await waitFor(() =>
+      expect(
+        within(
+          screen.getByLabelText("Release QA T132 cache diagnostic")
+        ).getByText(secondTeamId)
+      ).toBeInTheDocument()
+    );
+    await waitFor(() => expect(t132Requests).toHaveLength(2));
+    expect(t132Requests).toEqual([
+      `/api/v1/leagues/${leagueId}/free-agent-drafts/${fadId}/candidate-cards/${teamId}/history`,
+      `/api/v1/leagues/${leagueId}/free-agent-drafts/${routeReuseFadId}/candidate-cards/${secondTeamId}/history`,
+    ]);
   });
 
   it("withholds and remounts published result evidence across realtime reauthorization", async () => {
