@@ -548,11 +548,33 @@ and its exact isolated-staging closure is recorded at
 `FAD-01` through `FAD-18` and M7-25 are complete through isolated staging on
 schema `52`; production remained untouched and unauthorized. M7-26 is now the
 sole active work plan at `docs/06-work-plans/ACTIVE_WORK_PLAN.md`. Its current
-local candidate targets schema `54`, registers `123` runtime routes, and has a
-conceptual target catalogue from `T-001` through `T-148`; those local inventory
-facts do not claim M7-26 staging verification. A paid SportsDataIO key,
-provider probe manifest, live observation, and signed capability artifact were
-not FAD-18 requirements. The FAD uses the persisted player
+candidate targets schema `54`, registers `123` runtime routes, and has a
+conceptual target catalogue from `T-001` through `T-148`. Release
+`HL-20260821-1` remains active but is blocked on isolated staging. Its held
+Render suite, schema-`52`-to-`54` backup/migration gates, read-only authority
+and receipt checks, exact `3,440/3,440` final held backend gate, backed-up
+rotation of nine
+synthetic release-QA credentials, and exact Netlify publication have passed,
+and the first quiescent deploy passed health plus basic sequential
+three-account Chrome smoke. The shared staging QA credential was then exposed
+and is treated as compromised. Second rotation `HL-20260821-2` and exact
+zero-write replay passed; verified backup
+`adcbbbab-e857-4cae-af71-dbce95553ce5` is the strict sidecar restore point.
+The combined strict backend candidate passed its complete local gate and
+`3,502/3,502` hosted tests at exact backend
+`23971a4d66ee6383c6ad54339e769dbc9a76561e`; fixture preparation and exact
+zero-write replay also passed. Strict smoke then stopped after phase one when
+Manager B reached `complete 3/1/1` instead of required `complete 2/1/1`; no
+phase two ran. The temporary helper was removed, the full hold was restored,
+and abort recovery passed. Target deploy `dep-da51hjvqj5pc73bh8g3g` is `LIVE`
+on the exact backend after another `3,502/3,502` hosted pass; read-only target
+temp-copy verification and post-cutover backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807` passed. The release remains `BLOCKED`
+and M7-26 remains `ACTIVE`; there was no reopen, final job restoration,
+production change, or archive. Exact evidence is recorded at
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`. A paid
+SportsDataIO key, provider probe manifest, live observation, and signed
+capability artifact were not FAD-18 requirements. The FAD uses the persisted player
 catalogue for identity, name, position, and eligibility; player statistics do
 not participate in Candidate Card or allocation decisions. For the historical
 FAD-18 staging release, the shared automatic matchup-occurrence runner was
@@ -710,8 +732,14 @@ privacy, and publication contracts through schema `49`. FAD-15 through FAD-17
 then closed locally, and FAD-18 reached `STAGING VERIFIED` on schema `52` on
 2026-08-18. Its exact hosted evidence remains at
 `docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
-M7-26 is the sole active plan; its schema-`54` local candidate and revised FAD
-privacy projection still require that plan's hosted gates.
+M7-26 is the sole active plan. Its schema-`54` isolated-staging release is
+`BLOCKED` after strict phase one: Manager B reached `complete 3/1/1` instead of
+required `complete 2/1/1`, and no phase two ran. The helper was removed; abort
+recovery, held target cutover `dep-da51hjvqj5pc73bh8g3g`, target temp-copy
+verification, and post-cutover backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807` passed. The full hold remains active;
+there was no reopen, final job restoration, production change, or archive.
+Exact evidence remains in the M7-26 release record.
 The 2026-08-11 product clarification separates FAD deployment from all live-
 statistics-provider capability work. Provider-neutral post-game matchup-stat
 refresh is a later statistics/matchup follow-up, not a FAD technical gate.
@@ -883,11 +911,21 @@ ACTIVE
 M7-25 and `FAD-01` through `FAD-18` are complete through isolated staging.
 FAD-18 reached `STAGING VERIFIED` on schema `52` on 2026-08-18; the archived
 plan and exact release record preserve that historical evidence. M7-26 is the
-sole active full-site UI-review plan. Its current shared local candidate targets
-schema `54` with `54` migration files, registers `123` runtime routes, and
-extends the conceptual target catalogue through `T-148`. These are local
-candidate facts, not M7-26 hosted-staging verification. Production remained
-untouched and unauthorized.
+sole active full-site UI-review plan. Release `HL-20260821-1` has passed its
+held schema-`54` backup/migration, `3,440/3,440` final backend, backed-up
+synthetic-QA credential rotation, and exact Netlify publication boundaries.
+The first quiescent deploy passed health and basic three-account Chrome smoke,
+but its credential was then exposed and is treated as compromised. A second
+rotation and zero-write replay passed, and its exact strict pre-fixture restore
+point verified. Exact strict backend commit `23971a4d...` passed `3,502/3,502`
+on the held host, and fixture preparation plus zero-write replay passed. Strict
+smoke stopped after phase one when Manager B reached `complete 3/1/1` instead
+of required `complete 2/1/1`; no phase two ran. The temporary helper was
+removed. Abort recovery, target deploy `dep-da51hjvqj5pc73bh8g3g` on the exact
+backend with `3,502/3,502`, read-only target temp-copy verification, and post-
+cutover backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` passed. The release
+remains `BLOCKED`, M7-26 remains `ACTIVE`, and the full hold remains active.
+There was no reopen, final job restoration, production change, or archive.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -940,9 +978,23 @@ and
 `docs/06-work-plans/archive/M7-25_FREE_AGENT_DRAFT_IMPLEMENTATION_SEQUENCE.md`.
 M7-25's isolated-staging completion evidence remains at
 `docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`. M7-26 is
-active under Grae's continue-through-isolated-staging instruction. Its current
-schema-`54`, 123-runtime-route, `T-001`-through-`T-148` candidate is local only
-until the active plan's hosted gates pass. Production remains unauthorized.
+active under Grae's continue-through-isolated-staging instruction. Its exact
+blocked release record is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`: schema
+`54`, held automated and backup/recovery gates, synthetic release-QA credential
+rotation, Netlify publication, and initial basic quiescent role smoke have
+passed. The shared staging QA credential was then exposed, so a second
+rotation and its strict pre-fixture restore-point backup were completed and
+verified. The exact strict candidate's complete local and `3,502/3,502` held-
+hosted gates passed, and fixture preparation replayed with zero writes. Strict
+smoke stopped after phase one because Manager B reached `complete 3/1/1`
+instead of required `complete 2/1/1`; no phase two ran. The helper was removed,
+the full hold was restored, and abort recovery passed. Target deploy
+`dep-da51hjvqj5pc73bh8g3g` is `LIVE` on exact backend `23971a4d...` after
+`3,502/3,502`; target temp-copy verification and post-cutover backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807` passed. The release remains `BLOCKED`
+and M7-26 remains `ACTIVE`; there was no reopen, final job restoration,
+production change, or archive. Production remains unauthorized.
 
 A work plan is used for a contained current task such as:
 

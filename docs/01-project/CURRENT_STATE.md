@@ -14,7 +14,93 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-08-20**
+Last reviewed: **2026-08-22**
+
+---
+
+## 2026-08-21 M7-26 Isolated-Staging Release — Blocked and Held
+
+Release `HL-20260821-1` has reached its held schema-migration and frontend
+publication boundary, but it is not yet closed. The exact frontend candidate is
+`0e8eee92e2e323dd7f25ec3112988feaf23f96f0` (privacy/documentation commit
+`c119f119ffd4aa96635fe382792e704d535a7cbd`; broad UI commit
+`d82583dea2132d94e53a60853da6dddc549a0126`), and the current strict backend
+candidate is `23971a4d66ee6383c6ad54339e769dbc9a76561e`, following held credential-
+rotation candidate `fe6047552857376b490756ff63ac593d431ee561`, migration
+candidate `a747430500fbf6887dd748e5e3dfc0ecee77dc07`, and broad implementation
+commit `ac1e12baadce4fcc08b6fb680b34db6992a4f891`.
+
+Held migration deploy `dep-da4e092fngtc739dipm0` passed `3,428/3,428` hosted
+tests. Held final deploy `dep-da4gkpoed13c739gm0dg` passed the expanded
+`3,440/3,440` gate across `443` suites at exact commit `fe604755...`, produced
+zero post-start errors, returned public live/ready `200`, and kept session
+traffic at `503 SERVICE_MAINTENANCE` under the full safety hold.
+
+The strict candidate's complete local Node `24.14.1` gate discovered `3,502`
+tests across `443` suites: `3,500` passed, two Windows link-capability cases
+were intentionally skipped, and zero failed. Exact held deploy
+`dep-da4p5hu7bikc73aaeiq0` finished `LIVE` at
+`2026-08-22T13:05:02.585588Z` and passed all `3,502/3,502` hosted tests with
+zero skips/failures and clean startup. Its exact environment/full-hold/provider-
+absence and source/root/target/work/WAL/SHM boundaries passed; live/ready were
+`200` and session remained `503 SERVICE_MAINTENANCE`.
+
+The identity-bound staging database advanced additively from schema `52` to
+`54` only after encrypted backup `dd37f2ea-e3d2-4cd2-85bd-fb377431acce` and a
+distinct clean restore verified. Post-migration backup
+`ad6e1aaf-7e20-4c10-9671-30078f7d56a2` also verified. Repeated authority
+previews reported no mutation required, and the exhaustive pre/post FAD receipt
+scans were read-only and safe with zero persisted T-082/T-144 receipts.
+
+After another verified backup, the held staging-only command rotated all nine
+synthetic release-QA account credentials, revoked one active synthetic session,
+and wrote receipt `d5e9c784-db5f-42f6-8fcb-1918e93f26c0`. Its exact replay
+wrote zero rows, and post-rotation backup
+`a958cef3-db7b-445c-8a60-3e8b752aa85a` verified with integrity `ok` and zero
+foreign-key violations. No password value is retained in project evidence.
+
+Quiescent deploy `dep-da4hm30jo6nc73d26l80` became live at
+`2026-08-22T04:32:15Z` on exact `fe604755...`, passed `3,440/3,440` hosted
+tests with zero startup errors, returned live/ready `200`, and returned
+anonymous session `401 SESSION_REQUIRED` with `no-store` and staging CORS.
+Sequential Chrome smoke signed `Admin`, `Man A Leag A`, and `Man B Leag A` in
+and out cleanly, displayed each exact identity, and loaded the applicable Alpha
+and Gamma dashboards with zero alert banners. Notifications was not opened and
+FAD routes remained disabled, so their strict hosted gates were not exercised.
+
+The shared staging QA password was then disclosed in chat and is treated as
+compromised; its value is not recorded. Re-hold deploy
+`dep-da4j4r49v7es738bkih0` started at `2026-08-22T05:23:57Z`. Second rotation
+`HL-20260821-2` then replaced all nine synthetic release-QA credentials,
+revoked zero active sessions, wrote receipt
+`9152f844-d8cd-42f7-b0d5-b12f530ad618`, and replayed with zero writes. No
+password value is recorded. Verified backup
+`adcbbbab-e857-4cae-af71-dbce95553ce5` is the exact post-rotation/pre-fixture
+strict sidecar restore point.
+
+Netlify staging deploy `6a89709ffc9c88762ae8e74e` published exact frontend
+build `0e8eee92...`. Backup `adcbbbab...` reverified immediately before strict
+sidecar preparation with plaintext SHA `cf3ca07d...`, integrity `ok`, and zero
+foreign-key violations. Preparation reported `writeCount: 744`, recorded
+receipt `0ed590d8-832a-469a-848e-f91b0b37fe56`, and replayed with zero writes.
+
+Controlled-unhold deploy `dep-da4pvcrl550s738l8rmg` reached `LIVE` and passed
+its candidate gates, but strict smoke stopped after phase one. Manager A
+reached required `null 2/1/1`; Manager B reached `complete 3/1/1` instead of
+required `complete 2/1/1`. No return proposal or phase-two action ran. Sealed-
+baseline Netlify deploy `6a8a09c13d5e25282f64d2c7` removed the temporary
+same-cookie helper and its retired paths fail closed.
+
+The full hold was restored and remains active. Strict abort recovery and exact
+replay passed, and `DATABASE_PATH`-only target cutover deploy
+`dep-da51hjvqj5pc73bh8g3g` is `LIVE` on exact backend
+`23971a4d66ee6383c6ad54339e769dbc9a76561e` after passing `3,502/3,502` hosted
+tests. Read-only temporary-copy target verification passed, as did post-cutover
+backup `2044fcae-24e8-4392-a1ac-4064d9cd2807`. The release remains `BLOCKED`
+and M7-26 remains `ACTIVE`; staging was not reopened, final jobs were not
+restored, production remains untouched and unauthorized, and the plan was not
+archived. Exact evidence is recorded in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
 
 ---
 
@@ -39,7 +125,7 @@ Production was not changed and remains unauthorized for this release.
 
 ---
 
-## 2026-08-20 M7-26 Active Local Tree (Not Released)
+## 2026-08-20 M7-26 Candidate Baseline (Historical Pre-Release Snapshot)
 
 M7-26 remains the sole active work plan. The current shared local backend tree
 targets schema `54` with `54` migration files, `133` application tables and
@@ -74,9 +160,10 @@ known staging limitation and separate P1 production-promotion follow-up outside
 the contained M7-26 isolated-staging UI-review gate. The current command fails
 atomically and leaves buyout/trade state unchanged, so there is no observed
 partial-write risk; focused M7-26 prospect movement remains complete. T-074
-remains `PLANNED`. Final M7-26 full-suite, browser, dependency, staging
-migration/deploy, and hosted acceptance evidence has not yet been recorded.
-Nothing in this section claims a production change.
+remains `PLANNED`. At this dated snapshot, final M7-26 full-suite, browser,
+dependency, staging migration/deploy, and hosted acceptance evidence had not
+yet been recorded. The newer in-progress release section above supersedes that
+execution status. Nothing in either section claims a production change.
 
 Older implementation-state narratives and dated test/deployment records below
 are retained as historical evidence. Where they describe JSON as the only

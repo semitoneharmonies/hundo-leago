@@ -91,6 +91,157 @@ prove current projector-plus-strict-validator safety for legacy full-money
 evidence, contain only stable IDs/reason codes, report no malformed unsafe
 receipt, and show identical `total_changes()` before and after.
 
+## 2026-08-21 M7-26 Held-Staging Candidate Evidence (IN PROGRESS)
+
+The migration candidate `a747430500fbf6887dd748e5e3dfc0ecee77dc07`
+passed `3,428/3,428` tests in held Render deploy
+`dep-da4e092fngtc739dipm0`. The held backend candidate
+`fe6047552857376b490756ff63ac593d431ee561` passed the expanded
+`3,440/3,440` gate across `443` suites in held deploy
+`dep-da4gkpoed13c739gm0dg`. The final frontend candidate
+`0e8eee92e2e323dd7f25ec3112988feaf23f96f0` passed `386/386` tests across
+`58` files, the browser-authority gate, and `45/45` Playwright cases, and is
+published as Netlify staging deploy `6a89709ffc9c88762ae8e74e`.
+
+The exact staging database passed read-only T-082/T-144 receipt scans before
+schema migration at `52` and after migration at `54`. Both scans reported zero
+persisted receipts, zero malformed unsafe receipts, safe public replay, and a
+zero SQLite `total_changes()` delta. Repeated authority previews required no
+mutation, so no authority reconciliation ran. Backup, distinct clean restore,
+migration, post-migration backup, integrity, and foreign-key gates passed.
+
+The held staging-only credential command then rotated nine synthetic
+release-QA accounts, revoked one active synthetic session, produced receipt
+`d5e9c784-db5f-42f6-8fcb-1918e93f26c0`, replayed with zero writes, and was
+bounded by independently verified pre- and post-rotation encrypted backups.
+No password value is present in this checklist or the linked evidence.
+
+Quiescent deploy `dep-da4hm30jo6nc73d26l80` passed `3,440/3,440`, public
+health, anonymous session/CORS/cache, and sequential basic sign-in/dashboard/
+sign-out checks for `Admin`, `Man A Leag A`, and `Man B Leag A`. Notifications
+was not opened. FAD routes remained disabled, so T-131/T-132/T-140 selected-
+team monetary privacy, restricted-tie action, and manager-transfer cache
+invalidation were not exercised.
+
+The shared staging QA password was then disclosed in chat and is treated as
+compromised without recording its value. Second rotation `HL-20260821-2`
+rotated nine accounts, revoked zero sessions, wrote receipt
+`9152f844-d8cd-42f7-b0d5-b12f530ad618`, and replayed with zero writes. Verified
+backup `adcbbbab-e857-4cae-af71-dbce95553ce5` is its strict pre-fixture restore
+point.
+
+Grae explicitly selected strict hosted evidence for the remaining transfer
+gate. The planned isolated sidecar fixture must not rewrite Gamma League
+history; it requires live `A -> B -> A` smoke and restoration of exact backup
+`adcbbbab-e857-4cae-af71-dbce95553ce5` afterward. Pinned fixture preparation
+and replay passed. Live smoke stopped after phase one on exact T-132 counter
+drift. Abort materialization/replay, restored-target cutover
+`dep-da51hjvqj5pc73bh8g3g`, held target verification, and the post-cutover
+backup now pass. The strict privacy release remains blocked under the full
+hold.
+
+The release-bound `HL-20260821-3` four-command strict recovery family passed
+its focused exact-Node `24.14.1` gate at `56/56`, and the selective strict
+manager-outbox publisher separately passed `56/56`. Its combined complete
+local gate then passed `3,500` of `3,502` tests across `443` suites with only
+two intentional Windows capability skips and zero failures. Exact commit
+`23971a4d66ee6383c6ad54339e769dbc9a76561e` is published on `origin/staging`,
+and held deploy `dep-da4p5hu7bikc73aaeiq0` passed `3,502/3,502` with zero
+skips/failures, clean startup, exact pinned boundary checks, live/ready `200`,
+and session `503 SERVICE_MAINTENANCE`.
+
+The exact backup reverified before strict preparation. Preparation reported
+`writeCount: 744`, receipt `0ed590d8-832a-469a-848e-f91b0b37fe56`, and an exact
+zero-write replay. Controlled-unhold deploy `dep-da4pvcrl550s738l8rmg` passed;
+phase-one publisher invocation and exact replay passed, but the combined strict
+smoke failed its Manager B counter gate before phase two.
+
+Full-hold deploy `dep-da50hssaud7c73d3mqeg` then passed `3,502/3,502` on exact
+commit `23971a4d66ee6383c6ad54339e769dbc9a76561e`. Initial abort planning failed
+closed with `RELEASE_QA_STRICT_RESTORE_PATH_UNSAFE` on exact source WAL/SHM
+sidecars, with zero open source/sidecar file descriptors. Pre-checkpoint
+incident backup `44791a01-f62a-4729-b328-d3303bf79a12` verified plaintext
+SHA-256 `9d36b59a7b2d0d38ef47fc5bc0514a51cb5a754629e3242597b9d4400849a51f`.
+The guarded checkpoint returned `busy/log/checkpointed: 0/0/0`, integrity
+`ok`, foreign-key violations `0`, schema `54`, and absent sidecars.
+
+Abort planning passed at exact `to_b_accepted` / `published` / `none`. A
+manual-transcription execute was rejected with
+`RELEASE_QA_STRICT_RESTORE_PLAN_MISMATCH` and no target; byte-extracted execute
+passed at `replayed: false`, database mutations `0`, filesystem mutations `2`,
+`sourcePreserved: true`, and `targetVerified: true`. Immediate replay passed at
+`replayed: true`, both mutation counts `0`, and no temporary restore. Post-
+checkpoint incident backup `fa8c7b2d-04c9-4454-aae4-285673432fb7` verified the
+same plaintext SHA-256. Only `DATABASE_PATH` changed for target deploy
+`dep-da51hjvqj5pc73bh8g3g`. It completed `LIVE` at
+`2026-08-22T22:37:35.066844Z` on exact backend
+`23971a4d66ee6383c6ad54339e769dbc9a76561e`, passed all `443` suites and
+`3,502/3,502` hosted tests, and logged zero errors through
+`2026-08-22T22:38:46Z`. Public live/ready returned `200`/`no-store`; anonymous
+session returned `503 SERVICE_MAINTENANCE`/`no-store`.
+
+The fresh shell matched exact build/path/root/runtime/identity and full-hold
+values. Read-only temporary-copy verifier SHA-256
+`5f7de38f2673d3bb4c7d2b086b5d699afab1d173aceb86298d6e40eacb48b77f`
+returned `HL_POST_CUTOVER_TARGET_VERIFIED` without opening or mutating the
+authoritative target. It verified source SHA-256
+`859eda97cd4c55724907abb5cd91f8dd741dd4cab9f9543df8942a1e2310ee05`,
+target SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`,
+absent sidecars, abort activation-receipt SHA-256
+`009227a315708be575d553eb39d72797c6f18824f0cd63b6a95580d026cb67bb`,
+derived plan/state `to_b_accepted/published/none`, integrity `ok`, foreign keys
+`0`, schema/data-model/migrations `54`, checksum
+`6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89`,
+exact IDs, second-rotation receipt
+`9152f844-d8cd-42f7-b0d5-b12f530ad618`, active sessions `0`, strict-fixture
+absence including league `60c82aa0-54f9-4c93-83f5-73b0d6d6f63e`, preparation
+receipt `0ed590d8-832a-469a-848e-f91b0b37fe56`, and its transfer chain, plus
+temporary-copy removal.
+
+Post-cutover backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` verified from
+`staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.manifest.json`
+with encrypted SHA-256
+`cee039557278c41f59fa9d6a5b09cf4f69f1b9f3589cb3774420ef34be255162`,
+manifest checksum
+`08e3d3bde81843a683017d9952b30e02dd02978181a8644323cfbd590eca2ac8`,
+plaintext SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`,
+integrity `ok`, and foreign keys `0`. This is held recovery evidence, not a
+privacy-smoke pass or production evidence.
+
+The selective component is a release-only operational exception, not a new
+general endpoint family and therefore not assigned a durable `T-` number:
+
+| Release-only operation | Exact boundary | Current status |
+| --- | --- | --- |
+| `POST /api/v1/operations/release-qa/strict-manager-outbox` | In-process canonical publication of only the exact accepted Team 1 manager-assignment row; exact source-path/open-smoke environment, schema/checksum/frontend/deployed-backend/season bindings; global scheduler false; accepting Manager B for `team1-to-manager-b` or Manager A for `team1-return-to-manager-a`; credentialed cookie, current CSRF, allowed Origin/fetch metadata, exact four-key JSON body, confirmation, and `Idempotency-Key`; fresh target row claim+publish only, replay zero-write; target runtime/route not composed under hold (`503` maintenance server), and unmounted on hold-false target path or any drift (`404`) | `LOCAL COMPONENT 56/56 + COMBINED LOCAL 3,500 PASS/2 CAPABILITY SKIPS + HELD HOSTED 3,502/3,502 VERIFIED; HOSTED PHASE-ONE FRESH/REPLAY PASS; COMBINED STRICT SMOKE FAIL; ABORT TARGET MATERIALIZED/REPLAY VERIFIED; HELD TARGET CUTOVER/VERIFY/BACKUP PASS (2026-08-22)` |
+
+The surrounding Team 1 proposals and acceptances are direct authenticated API
+calls. Admin proposes to Manager B and back to Manager A with keys
+`HL-20260821-3-team1-to-b-propose` and
+`HL-20260821-3-team1-to-a-propose`; the emitted assignment IDs are accepted by
+Manager B and Manager A with keys `HL-20260821-3-team1-to-b-accept` and
+`HL-20260821-3-team1-to-a-accept`. The publisher calls use confirmations
+`PUBLISH-HL-20260821-3-TEAM1-TO-MANAGER-B` and
+`PUBLISH-HL-20260821-3-TEAM1-RETURN-TO-MANAGER-A` plus keys
+`HL-20260821-3-outbox-team1-to-manager-b` and
+`HL-20260821-3-outbox-team1-return-to-manager-a`. Exact request bodies, caller
+IDs, and two-cookie T-132 checkpoints are pinned in Testing Strategy and the
+release record. A failed/crashed publisher is never retried: re-hold and run
+the matching abort recovery. The restored target must not expose this route.
+
+These results advance the automated, persisted-receipt, held-hosted candidate,
+fixture-preparation, phase-one publisher, and abort-recovery gates, but they do
+not mark T-131, T-132, T-140, T-147, or T-148 `STAGING VERIFIED`. The combined
+live fixture smoke failed. Target cutover, re-verification, and backup pass,
+but fresh controlled reopening, Notifications, manager-transfer/cache,
+manager, commissioner, and platform-administrator role smoke remain
+`PENDING`.
+Exact evidence is recorded in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
+Production remains untouched and unauthorized.
+
 ---
 
 ## Testing Purpose
@@ -516,7 +667,7 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-079` | `PUT /api/v1/leagues/:leagueId/auctions/:auctionId/bids/mine` | Exact team row control; AAV-first quarter-increment input and derived total; total-first/AAV-second ranking; server-derived restricted, allocation-linked fallback, direct, or queued open-rapid context; restricted allowlist and active-participant improvement; ordinary starter/nonstarter edit allowance; current edit limit; 75-minute bid-activity cooldown; total/AAV floor; binding confirmation; no manager withdrawal; and immutable idempotent replay | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-080` | `PATCH /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Commissioner/member-admin stable bid administration, AAV-first quarter-increment input and derived total, actual authority attribution, required bid version/idempotency, no value reveal | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-081` | `DELETE /api/v1/leagues/:leagueId/auctions/:auctionId/bids/:bidId` | Exact confirmation, bid `If-Match`/idempotency, no reveal; restricted bid plus participant removal permanent and allocation linked | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
-| `T-082` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/cancel` | Exact confirmation, auction `If-Match`/idempotency; restricted cancellation atomically creates FAD correction/recovery and quarantine; nullable fresh or legacy-replayed FAD allocation passes through the current all-null money projector without rewriting its immutable receipt | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-082` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/cancel` | Exact confirmation, auction `If-Match`/idempotency; restricted cancellation atomically creates FAD correction/recovery and quarantine; nullable fresh or legacy-replayed FAD allocation passes through the current all-null money projector without rewriting its immutable receipt | `M7-26 HELD-STAGING AUTOMATED AND PERSISTED-RECEIPT GATES PASS; AUTHENTICATED HOSTED ROLE SMOKE PENDING (2026-08-21); historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-083` | `POST /api/v1/leagues/:leagueId/auctions/:auctionId/resolve` | Due-only `202` trigger with version/idempotency; same scheduler/retry service; atomic FAD draw or no-bid result; restricted strict-improvement winner or no-draw league-wide fallback; direct/queued rapid allocation/event/update and recovery remain atomic | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 
 ---
@@ -550,7 +701,7 @@ perform no writes.
 | `T-087` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/accept` | Current receiving-team manager only; full in-transaction revalidation; no-Future-Considerations proposal completes atomically, while one containing Future Considerations persists an acceptance snapshot and moves nothing pending T-148 | `PLANNED` |
 | `T-088` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/decline` | Current receiving-team manager only, final state and notification | `PLANNED` |
 | `T-089` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/cancel` | Current proposing-team manager only, completed/final-state conflict behavior | `PLANNED` |
-| `T-148` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/approve` | Current commissioner or inherited platform administrator; only a receiver-accepted Future-Considerations proposal awaiting approval; full in-transaction revalidation, idempotent replay, and atomic completion | `IMPLEMENTED - CURRENT LOCAL TREE; FINAL M7-26 GATES AND HOSTED EVIDENCE PENDING (2026-08-20)` |
+| `T-148` | `POST /api/v1/leagues/:leagueId/trades/:tradeId/approve` | Current commissioner or inherited platform administrator; only a receiver-accepted Future-Considerations proposal awaiting approval; full in-transaction revalidation, idempotent replay, and atomic completion | `M7-26 HELD-STAGING AUTOMATED GATE PASS; AUTHENTICATED HOSTED ROLE SMOKE PENDING (2026-08-21)` |
 
 There is no counter endpoint or counter service in the current implementation.
 Countering remains planned product scope and is not part of T-084 through T-089
@@ -779,7 +930,7 @@ These endpoints are approved in-season work and are not required for the initial
 | `T-111` | `GET /api/v1/notifications` | Caller-owned cursor page; `readStatus=all|unread|read` defaults to `all`; listing is strictly read-only | `PLANNED` |
 | `T-112` | `POST /api/v1/notifications/:notificationId/read` | Owner only, idempotent read transition | `PLANNED` |
 | `T-113` | `POST /api/v1/notifications/read-all` | Caller scope only, bounded update, idempotent | `PLANNED` |
-| `T-147` | `POST /api/v1/notifications/read-batch` | Exact 1-100 unique displayed IDs; caller ownership, all-or-none validation, transactionality, and idempotent replay; normal UI sends only after that captured unread batch renders and keeps it visible for the mounted visit | `IMPLEMENTED - CURRENT LOCAL TREE; FINAL M7-26 GATES AND HOSTED EVIDENCE PENDING (2026-08-20)` |
+| `T-147` | `POST /api/v1/notifications/read-batch` | Exact 1-100 unique displayed IDs; caller ownership, all-or-none validation, transactionality, and idempotent replay; normal UI sends only after that captured unread batch renders and keeps it visible for the mounted visit | `M7-26 HELD-STAGING AUTOMATED GATE PASS; AUTHENTICATED HOSTED ROLE SMOKE PENDING (2026-08-21)` |
 
 ---
 
@@ -813,8 +964,8 @@ the tables now retain evidence-backed current statuses.
 | `T-128` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/readiness/retries` | Commissioner, exact blocked readiness operation `If-Match`/idempotency/confirmation; atomically resets the same job cleanly to pending, records one immutable receipt, advances blocked readiness one version without incrementing its attempt count, accepts no opening or schedule override, and exact replay always returns the stored receipt without writes | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-129` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId` | Viewer-filtered manager/commissioner/member overview, no pre-deadline side channel | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-130` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/private` | Exact team manager or active exact-card help authority, manager-first dual-role precedence, exact 22-slot private DTO, deadline-processing read-only mode, no-store, unauthorized/cross-scope `404`, byte and semantic no-write proof | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
-| `T-131` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | Active member after publication; paginated exact league/season/FAD/team identity, team, lifecycle, and `{ signed, notWon, tied }` counts only; no money, card, slot, cap, editor, conflict, intervention, descriptor, resource ID, or pre-deadline access | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
-| `T-132` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | Legacy compatibility path after publication; exact selected-team identities/team plus final `results[]`, each row exactly player/status/nullable offer/nullable actionable tie-auction ID; no complete-card or audit exposure, and normal UI redirects to team-scoped T-140 results | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-131` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards` | Active member after publication; paginated exact league/season/FAD/team identity, team, lifecycle, and `{ signed, notWon, tied }` counts only; no money, card, slot, cap, editor, conflict, intervention, descriptor, resource ID, or pre-deadline access | `M7-26 HELD-STAGING AUTOMATED GATE PASS; AUTHENTICATED HOSTED ROLE SMOKE PENDING (2026-08-21); historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-132` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/history` | Legacy compatibility path after publication; exact selected-team identities/team plus final `results[]`, each row exactly player/status/nullable offer/nullable actionable tie-auction ID; no complete-card or audit exposure, and normal UI redirects to team-scoped T-140 results | `M7-26 HELD-STAGING AUTOMATED GATE PASS; AUTHENTICATED HOSTED ROLE SMOKE PENDING (2026-08-21); historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-133` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/eligible-players` | Authorized private editor; exact slot/search grammar, 200-code-point normalized search, deterministic order and exact-card/filter-bound cursor, no other-card nomination signal | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-134` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/revision-previews` | Authorized editor, exact add/edit/move/remove projection, ignored concurrency/idempotency headers, byte/table-hash/side-effect read-only proof | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-135` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/slots/:slotKey/candidate` | Exact card `If-Match`/idempotency, authority-before-replay, AAV-first quarter-increment player/slot/contract validation, derived total, hard whole-card cap rejection, original `201` replay | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
@@ -822,11 +973,11 @@ the tables now retain evidence-backed current statuses.
 | `T-137` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId/move` | Candidate or compatible carryover, authority-before-replay, compatible open slot, Bench rules, card `If-Match`, atomic card revision plus authoritative roster movement for a carryover | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-138` | `DELETE /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/entries/:entryId` | Candidate only, authority-before-replay, carryover denied, card `If-Match`, idempotency, no body, safe entry `404` | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-139` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId/help-requests` | Manager adaptive help boundary; normalized optional 500-code-point message, authority-before-replay, exact-card grant, immutable command result/private message, notification/audience atomic, fresh/existing `201`/`200` fidelity | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
-| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results?teamId=:teamId` | Active member after publication; exact required `teamId` plus bounded search/status/page grammar; final rows exactly player, Signed/Not won/Tied status, nullable complete selected-team-manager offer, and nullable manager-actionable tie-auction ID; pending/correction-required rows and every rank/winner/participant/draw/cap/card/audit field are omitted; commissioner/admin role alone does not widen; read-only | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-140` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/results?teamId=:teamId` | Active member after publication; exact required `teamId` plus bounded search/status/page grammar; final rows exactly player, Signed/Not won/Tied status, nullable complete selected-team-manager offer, and nullable manager-actionable tie-auction ID; pending/correction-required rows and every rank/winner/participant/draw/cap/card/audit field are omitted; commissioner/admin role alone does not widen; read-only | `M7-26 HELD-STAGING AUTOMATED GATE PASS; AUTHENTICATED HOSTED MANAGER-TRANSFER ROLE SMOKE PENDING (2026-08-21); historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-141` | `GET /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery` | Commissioner-safe jobs/allocations/initial and extension rollovers/queued/fallback/schedule-recovery state, no current blind bid or unrelated private content | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-142` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/recovery/actions` | Commissioner allowlisted retry only, same service/occurrence, no winner/participant/timing/Week 1 override; `recover_schedule` is absent/rejected and only `complete_fad` may commit the atomic server-owned overrun recovery | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
-| `T-143` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner locked-snapshot recomputation from complete internal money, complete downstream delta, table-hash read-only proof, and externally redacted all-null offer/winner/restricted/fallback/delta money; correction authority alone does not reveal values, and both complete-money and partial-null public tuples fail closed | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
-| `T-144` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner reason/confirmation/fingerprint/`If-Match`, deterministic atomic reconciliation using complete internal money, original retained, and externally redacted all-null offer/winner/restricted/fallback/delta money on fresh return and replay; correction authority alone does not reveal values, and both complete-money and partial-null public tuples fail closed | `M7-26 CURRENT CONTRACT GATES PENDING; historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-143` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/correction-previews` | Commissioner locked-snapshot recomputation from complete internal money, complete downstream delta, table-hash read-only proof, and externally redacted all-null offer/winner/restricted/fallback/delta money; correction authority alone does not reveal values, and both complete-money and partial-null public tuples fail closed | `M7-26 HELD-STAGING AUTOMATED GATE PASS; AUTHENTICATED HOSTED ROLE SMOKE PENDING (2026-08-21); historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
+| `T-144` | `POST /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/allocations/:allocationId/corrections` | Commissioner reason/confirmation/fingerprint/`If-Match`, deterministic atomic reconciliation using complete internal money, original retained, and externally redacted all-null offer/winner/restricted/fallback/delta money on fresh return and replay; correction authority alone does not reveal values, and both complete-money and partial-null public tuples fail closed | `M7-26 HELD-STAGING AUTOMATED AND PERSISTED-RECEIPT GATES PASS; AUTHENTICATED HOSTED ROLE SMOKE PENDING (2026-08-21); historical status: STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 | `T-146` | `PUT /api/v1/leagues/:leagueId/free-agent-drafts/:fadId/candidate-cards/:teamId` | Authorized private editor; exact canonical 22-slot AAV-first body, derived totals, quarter/minimum/Bench validation, hard authoritative cap rejection, one card `If-Match` and idempotency intent, atomic whole-card replacement, nullable incomplete Candidate contract fields, server-owned carryover preservation, one version/revision advance, and no partial writes | `STAGING VERIFIED - HL-20260818-1 (2026-08-18)` |
 
 ### FAD-17 Local Verification Record - 2026-08-11

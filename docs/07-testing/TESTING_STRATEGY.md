@@ -107,6 +107,448 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
+### M7-26 Held-Staging Evidence - 2026-08-21 (RELEASE BLOCKED; HELD RECOVERY PASS)
+
+The current frontend candidate has passed `386/386` tests across `58` files,
+ESLint, dependency inspection, exact staging build, `20/20` browser-authority
+compatibility cases across `164` shipped sources, and `45/45` Playwright
+cases. The pre-rotation backend discovered `3,428` tests across `443` suites
+locally: `3,426` passed and the only two skips were the intentional Windows
+link-capability cases. Held migration deploy
+`dep-da4e092fngtc739dipm0` at commit `a747430...` passed `3,428/3,428`; held
+final deploy `dep-da4gkpoed13c739gm0dg` at exact commit
+`fe6047552857376b490756ff63ac593d431ee561` passed the expanded
+`3,440/3,440` hosted gate with no skips.
+
+Against the exact identity-bound staging database, the exhaustive public FAD
+receipt scan ran read-only on schema `52` before migration and schema `54`
+after migration. Each run reported zero T-082 receipts, zero T-144 receipts,
+zero malformed unsafe receipts, safe public replay, and a zero
+`total_changes()` delta. Because this staging fixture contains no persisted
+receipt in either family, constructed legacy full-money cases remain covered
+by the automated projector/validator gates rather than falsely claimed as
+hosted persisted-receipt replays.
+
+Repeated authority previews returned `mutationRequired: false` with all six
+mutation arrays empty, so no authority reconciliation ran. Schema `52` to
+`54`, both encrypted backup verifications, the distinct clean restore, and
+post-migration integrity/foreign-key checks passed. Netlify staging deploy
+`6a89709ffc9c88762ae8e74e` published exact frontend build
+`0e8eee92e2e323dd7f25ec3112988feaf23f96f0`.
+
+Under the full hold, a separately verified pre-rotation backup protected the
+first credential write. The staging-only command rotated nine synthetic
+release-QA accounts, revoked one active synthetic session, recorded receipt
+`d5e9c784-db5f-42f6-8fcb-1918e93f26c0`, and replayed with zero writes. A
+post-rotation backup then verified with integrity `ok` and zero foreign-key
+violations. No password or secret appears in the evidence.
+
+Quiescent deploy `dep-da4hm30jo6nc73d26l80` passed the exact `3,440/3,440`
+hosted gate, zero-startup-error check, public health, anonymous session/CORS/
+cache contract, and sequential basic Chrome sign-in/dashboard/sign-out smoke
+for the administrator and two Alpha League manager accounts. Notifications was
+not opened. FAD routes remained disabled, so the strict selected-team tie and
+manager-transfer privacy/cache gates were not run. No split-evidence approval
+has been given; the complete gates remain part of final acceptance.
+
+Grae subsequently selected the strict hosted-evidence path. The planned gate
+uses an isolated sidecar fixture, does not rewrite Gamma League's historical
+records, runs the live `A -> B -> A` smoke, and restores its exact pre-fixture
+backup afterward. The pre-fixture restore point is now verified backup
+`adcbbbab-e857-4cae-af71-dbce95553ce5`.
+
+The shared staging QA password was then disclosed in chat and is treated as
+compromised without recording its value. Second rotation `HL-20260821-2`
+rotated nine accounts, revoked zero sessions, wrote receipt
+`9152f844-d8cd-42f7-b0d5-b12f530ad618`, and replayed with zero writes. Its
+fresh post-rotation/pre-fixture backup independently verified.
+
+#### M7-26 strict recovery and selective publisher test contract
+
+Under exact Node `24.14.1`, the release-bound `HL-20260821-3` four-command
+restore family passed `56/56` focused tests and the selective manager-outbox
+publisher separately passed `56/56`, plus syntax and package parsing. These
+are frozen component gates, not hosted execution evidence. The restore tests
+pin the single staging service, source path, absent inactive target, backup
+manifest, storage object, encrypted/plaintext/manifest hashes, schema `54`,
+migration checksum set, environment/database identities, and frontend build
+`0e8eee92e2e323dd7f25ec3112988feaf23f96f0`. The executing backend build is
+captured from `APP_BUILD_ID` in the exact plan and receipt.
+
+The combined strict candidate subsequently passed the complete local Node
+`24.14.1` gate across `443` suites and `3,502` tests: `3,500` passed, the two
+Windows link-capability cases were intentionally skipped, and zero failed. Its
+durable TAP SHA-256 is
+`ED2BCC54D252925548658DA95E32E6C5152C8A52AE1681ED5D0388DE6516CCF6`.
+Exact commit `23971a4d66ee6383c6ad54339e769dbc9a76561e` is published on
+`origin/staging`. Exact held deploy `dep-da4p5hu7bikc73aaeiq0` finished `LIVE`
+at `2026-08-22T13:05:02.585588Z`, passed `3,502/3,502` with zero skips/failures
+and clean startup, and passed the pinned environment/full-hold/provider-
+absence plus source/root/target/work/WAL/SHM boundaries. Live/ready returned
+`200`; session remained `503 SERVICE_MAINTENANCE`.
+
+The exact backup then reverified with plaintext SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`, SQLite
+integrity `ok`, and zero foreign-key violations. Strict preparation reported
+`replayed: false`, `writeCount: 744`, receipt
+`0ed590d8-832a-469a-848e-f91b0b37fe56`, and the frozen fixture identifiers;
+its immediate exact replay reported `replayed: true` and `writeCount: 0`.
+Controlled-unhold deploy `dep-da4pvcrl550s738l8rmg` reached `LIVE` on exact
+commit `23971a4d66ee6383c6ad54339e769dbc9a76561e`, passed `3,502/3,502`, its
+pinned open-smoke runtime boundaries, liveness/readiness, anonymous-session/
+CORS/cache checks, clean startup, and two-minute log observation. The strict
+hosted run subsequently executed phase one but failed its exact Manager B
+counter gate. No restore or activation result is inferred from that rejected
+smoke.
+
+Automated restore safety evidence covers:
+
+- refusal outside the full staging hold or on wrong environment, database,
+  service argument, source, target, backup, schema, checksum, build, path,
+  sidecar, or typed-plan evidence;
+- operator-asserted attached-service context without a false claim that the
+  command independently queried Render;
+- separate normal plan/execute and abort plan/execute namespaces whose plans,
+  confirmations, and receipts cannot cross modes;
+- both plan modes reporting zero authoritative-database and zero durable-
+  filesystem mutations while accurately disclosing temporary plaintext
+  materialization in a deterministic private `0700` work area and verified
+  cleanup;
+- preservation and fail-closed refusal for an unexpected existing work area,
+  plus allowlisted cleanup for process-local failures; abrupt-termination
+  residue remains a manual-review blocker under the hold;
+- normal execute-time semantic proof of the commissioner-created initial Team
+  1 assignment, exact platform-Admin-proposed and manager-accepted
+  `A -> B -> A` chain, unchanged Team 2 assignment, both exact publisher rows
+  `published` once with attempt `1`, row version `3`, exact payload/audience,
+  and no auction bid/resolution/allocation/allocation-event drift;
+- abort classification limited to `prepared_only` (`none/none`),
+  `to_b_pending` (exact proposal/idempotency/one delivered notification,
+  `none/none`), `to_b_accepted` (phase one
+  `pending|publishing|failed|published`, return `none`),
+  `return_to_a_pending` (phase one `published`, exact return
+  proposal/idempotency/one delivered notification, return `none`), and
+  `return_to_a_accepted` (phase one `published`, return
+  `pending|publishing|failed|published`), including publisher-crash
+  `publishing` states;
+- `sourceSemanticChainCompleted: true` only for `return_to_a_accepted`, while
+  every abort output/receipt reports `smokeCompleted: false`,
+  `hostedSmokeCompleted: false`, `releaseBlocked: true`, and
+  `rollbackOnly: true`; every unclassified or inconsistent state fails closed;
+- candidate verification for the exact second-rotation receipt, zero active
+  sessions, integrity, foreign keys, schema, checksum, identity, and absence
+  of the sidecar fixture;
+- no-replace publication of only the inactive target and mode-specific durable
+  receipt, preservation of the source, cleanup on partial publication/source
+  drift, rejection of target/receipt tamper, and the one-way recovery rule that
+  only receipt-present/target-absent may resume after manual work-area review;
+  and
+- exact replay with zero authoritative-database and durable-filesystem
+  mutation, no temporary plaintext work, no object-store request, and no
+  encryption-key resolution.
+
+The selective publisher component evidence covers the in-process
+`POST /api/v1/operations/release-qa/strict-manager-outbox` route. It mounts
+only on the exact source database and exact open-smoke bindings while
+`SCHEDULED_JOBS_ENABLED=false`. Under the full hold the target runtime and
+route are not composed and the maintenance server returns
+`503 SERVICE_MAINTENANCE`; with the hold false, the restored target or binding
+drift leaves the route unmounted and returns `404`. Browser security requires
+the exact accepting-manager session, current `X-CSRF-Token`, allowed staging Origin,
+compatible fetch metadata, credentialed cookies, JSON content type, and the
+exact phase `Idempotency-Key`. Each body contains exactly `backendBuildId`,
+`confirmation`, `phase`, and `releaseId`.
+
+Phase one requires Manager B
+`c2684bf0-d30d-4b37-ae14-66620259798e`, phase
+`team1-to-manager-b`, confirmation
+`PUBLISH-HL-20260821-3-TEAM1-TO-MANAGER-B`, and key
+`HL-20260821-3-outbox-team1-to-manager-b`. Phase two requires Manager A
+`e9f723c4-32d2-4823-a1d4-233fe0ce2f45`, phase
+`team1-return-to-manager-a`, confirmation
+`PUBLISH-HL-20260821-3-TEAM1-RETURN-TO-MANAGER-A`, and key
+`HL-20260821-3-outbox-team1-return-to-manager-a`. The surrounding direct Admin
+proposal and accepting-manager acceptance calls must have the four fixed keys
+`HL-20260821-3-team1-to-b-propose`,
+`HL-20260821-3-team1-to-b-accept`,
+`HL-20260821-3-team1-to-a-propose`, and
+`HL-20260821-3-team1-to-a-accept`.
+
+A fresh publisher success uses only the canonical Socket.IO publication
+service, performs exactly two database writes for the target event claim and
+published transition, and proves the scheduler remained disabled. Gamma,
+Team 2, job state, and unrelated outbox state remain byte-equivalent; exact
+already-published replay is zero-write. A failure, crash, or persisted
+`failed`/`publishing` state is never retried: the operator re-holds and selects
+abort recovery.
+
+Grae has authorized a temporary canonical-origin same-cookie action helper for
+this strict staging run. Its first hosted publication stopped before any
+action on canonical-URL and response-header drift. Corrected deploy
+`6a89e2c867e39d41cc630a26` passed the hosted artifact/header and inert-
+initialization gates and executed phase one. The exact T-132 Manager B counter
+then failed, so the release is blocked. Exact sealed-baseline deploy
+`6a8a09c13d5e25282f64d2c7` passed remote helper-removal verification. Abort
+materialization and exact replay pass; restored-target cutover deploy
+`dep-da51hjvqj5pc73bh8g3g`, target verification, and post-cutover backup also
+pass under the unchanged full hold. No full privacy-smoke pass is inferred. The
+helper gate requires:
+
+- the overlay is additive under
+  `/release-qa/hl-20260821-3/` on exact origin
+  `https://staging.hundoleago.com`; its only accepted page URL is exact
+  extensionless
+  `https://staging.hundoleago.com/release-qa/hl-20260821-3/strict-manager-transfer`,
+  and any uppercase-path or `.html` redirect fails before action; every path
+  from Netlify baseline deploy
+  `6a89709ffc9c88762ae8e74e` remains byte-identical, including frontend build
+  `0e8eee92e2e323dd7f25ec3112988feaf23f96f0`, `dist/index.html` SHA-256
+  `1982ECF04CC456D989F7B42F15F3CED49A5D825DF0DEDD948DEAFFE8D8C1ADC8`, and
+  `dist/assets/index-CI54gRot.js` at `527839` bytes with SHA-256
+  `5B2336E5B1E099EF32747B48124C331495CEFAD1511E26D244E09D5567460394`;
+  the helper/marker responses are `Cache-Control: no-store` with
+  `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `X-Robots-Tag: noindex, nofollow, noarchive`, and
+  the exact narrow response CSP including `frame-ancestors 'none'` and
+  `object-src 'none'`; the HTML meta CSP omits only the inapplicable
+  `frame-ancestors` directive; the single header authority is an exact
+  temporary helper-scoped `netlify.toml` rule for
+  `/release-qa/hl-20260821-3/*`, no helper `_headers` artifact exists, all
+  global/non-helper rules and responses remain unchanged, and no separate
+  `netlify.app` origin or Render `FRONTEND_BUILD_ID` change is permitted;
+- after normal static document/script/style loading, initialization issues zero
+  script-initiated API, fetch, XHR, or WebSocket requests and performs no
+  write; explicit controls may read the session, each clicked proposal may
+  additionally perform only exact read-only Team 1 precheck
+  `GET /api/v1/leagues/60c82aa0-54f9-4c93-83f5-73b0d6d6f63e/teams/ebc815c7-8a41-4326-8faf-04548aa91c76`,
+  and each clicked acceptance may additionally perform only exact read-only
+  pending-assignment precheck
+  `GET /api/v1/team-manager-assignments/<exact assignmentId emitted by the proposal>`;
+  neither state/predecessor check runs during initialization or in the
+  background, and each POST still requires exact actor verification, write
+  arming, a separate explicit action, and a fresh session/CSRF read;
+- its separate same-cookie action tab constructs an actual isolated TanStack
+  Query `QueryClient` whose cache contains exactly zero FAD queries before,
+  during, and after each action, without `RealtimeProvider`, Socket.IO, or any
+  reference to the mounted application's QueryClient;
+- its only modes are `propose-to-b` by Admin with key
+  `HL-20260821-3-team1-to-b-propose`, `accept-and-publish-to-b` by Manager B
+  with keys `HL-20260821-3-team1-to-b-accept` and
+  `HL-20260821-3-outbox-team1-to-manager-b`, `propose-to-a` by Admin with key
+  `HL-20260821-3-team1-to-a-propose`, and `accept-and-publish-to-a` by Manager
+  A with keys `HL-20260821-3-team1-to-a-accept` and
+  `HL-20260821-3-outbox-team1-return-to-manager-a`; each publisher mode makes
+  only the approved fresh call and its immediate identical replay; and
+- immediately before every POST, including a publisher replay, the helper
+  fetches exact canonical-origin
+  `/release-qa/hl-20260821-3/enabled.json` with `cache: no-store`,
+  `credentials: same-origin`, and `redirect: error`; it requires status `200`,
+  exact `response.url`, response type `basic`, media type `application/json`,
+  and the exact eight-key object: `contractVersion: 1`, `enabled: true`,
+  release `HL-20260821-3`, expiry `2026-08-23T07:00:00.000Z`, frontend build
+  `0e8eee92e2e323dd7f25ec3112988feaf23f96f0`, backend build
+  `23971a4d66ee6383c6ad54339e769dbc9a76561e`, frontend origin
+  `https://staging.hundoleago.com`, and API origin
+  `https://api-staging.hundoleago.com`. The helper fails before any POST at or
+  after that exact expiry. No arbitrary URL/body/key, background write,
+  automatic retry, password/cookie/token output, or Notifications read is
+  permitted.
+
+After browser evidence is captured, the temporary helper-scoped
+`netlify.toml` block must be removed and the exact original configuration
+restored before the exact audited baseline `dist/` is redeployed without
+rebuilding it. Remote checks must re-prove the original index/bundle/all-path
+hashes, unchanged non-helper global headers, and that the helper and marker
+paths now resolve only to the normal SPA fallback. Because that fallback
+cannot satisfy the marker's exact media-type/payload check, a stale helper tab
+must stop before any later write. These cleanup checks and the entire helper
+gate are staging-only; production remains untouched and unauthorized.
+
+Corrected helper overlay deploy `6a89e2c867e39d41cc630a26`, title
+`HL-20260821-3-strict-action-helper-v2`, was ready/published at
+`2026-08-22T17:56:25.803Z`. Hosted verification passed `64` baseline and `8`
+helper byte/header gates and preserved the pinned main application artifact.
+An inert double-browser reload from `2026-08-22T18:04:01.882Z` through
+`2026-08-22T18:04:06.741Z` produced zero Render request logs. Both helpers
+reported `READY` with actual isolated QueryClient query/mutation caches empty;
+session verification matched the exact Admin and Manager B fixture identities.
+Every executed phase-one POST passed fresh-session/current-CSRF,
+per-POST marker/expiry, and empty-QueryClient assertions. The proposal passed
+the exact Team 1 state/predecessor GET, and acceptance passed the exact pending-
+assignment GET; no other action-time state precheck ran.
+
+Phase-one hosted execution recorded:
+
+- Admin proposal `201`, assignment
+  `17746270-0706-4420-8efd-2f476dc00c68`;
+- persistent Manager A `complete 1/0/0` and Manager B `null 1/0/0` before
+  acceptance;
+- Manager B acceptance `200`;
+- publisher event `acd9b9e8-9947-4988-8057-579737724869`, fresh response
+  `200` / `replayed: false` / `databaseWriteCount: 2` /
+  `schedulerRemainedDisabled: true`, followed immediately by exact response
+  `200` / `replayed: true` / `databaseWriteCount: 0`; and
+- settled Manager A `null 2/1/1`, which passed, and settled Manager B
+  `complete 3/1/1`, which failed the exact required `complete 2/1/1` gate.
+
+An extra focus-triggered refetch is plausible but unproven and is not a waiver.
+Strict execution stopped. Notifications was never opened; no return proposal,
+phase-two acceptance, or phase-two publisher call ran; no password value is
+retained. Expected abort classification is `to_b_accepted`, phase one
+`published`, return `none`. Partial-hold deploy `dep-da50g0v40ujc73aa5i4g`
+was manually canceled at `2026-08-22T20:39:55Z` and never reached `LIVE`. The
+exact full-hold matrix was merge-set without a `DATABASE_PATH` change;
+replacement deploy `dep-da50hssaud7c73d3mqeg` started at that timestamp on
+exact backend `23971a4d66ee6383c6ad54339e769dbc9a76561e` and is now `LIVE`
+after passing its exact `3,502/3,502` gate and full runtime-hold checks.
+
+The first abort plan failed closed with
+`RELEASE_QA_STRICT_RESTORE_PATH_UNSAFE`: exact source `-wal` and `-shm`
+sidecars were present, although a read-only process check found zero open file
+descriptors on the source and those sidecars. Pre-checkpoint incident backup
+`44791a01-f62a-4729-b328-d3303bf79a12` verified from manifest
+`staging/backups/hundo-leago_staging_20260822T213849188Z_44791a01-f62a-4729-b328-d3303bf79a12.manifest.json`
+at plaintext SHA-256
+`9d36b59a7b2d0d38ef47fc5bc0514a51cb5a754629e3242597b9d4400849a51f`.
+The guarded canonical WAL checkpoint reported
+`busy/log/checkpointed: 0/0/0`, integrity `ok`, zero foreign-key violations,
+schema `54`, and absent WAL/SHM sidecars.
+
+Abort planning then passed with exact classification `to_b_accepted`, phase
+one `published`, and return `none`. The first execute used a manually
+transcribed plan value and was rejected with
+`RELEASE_QA_STRICT_RESTORE_PLAN_MISMATCH`; it failed safely and left the target
+absent. Execution with the exact byte-extracted values passed with
+`replayed: false`, authoritative-database mutations `0`, durable-filesystem
+mutations `2`, `sourcePreserved: true`, and `targetVerified: true`. Immediate
+exact replay passed with `replayed: true`, both mutation counts `0`, and no
+temporary plaintext restore. Post-checkpoint incident backup
+`fa8c7b2d-04c9-4454-aae4-285673432fb7` verified from manifest
+`staging/backups/hundo-leago_staging_20260822T214720472Z_fa8c7b2d-04c9-4454-aae4-285673432fb7.manifest.json`
+at the same plaintext SHA-256.
+
+Only `DATABASE_PATH` was changed to the verified target while the full hold
+remained intact. Deploy `dep-da51hjvqj5pc73bh8g3g` started at
+`2026-08-22T21:46:55.442059Z` and completed `LIVE` at
+`2026-08-22T22:37:35.066844Z` on exact backend
+`23971a4d66ee6383c6ad54339e769dbc9a76561e`. Its hosted gate passed `443`
+suites and `3,502/3,502` tests with zero fail/cancel/skip/todo in
+`3006420.142708ms`; upload took `1.9s`, compression `0.2s`, and the build was
+successful at `2026-08-22T22:37:16.851Z`. New instance
+`srv-d9eo2turnols73ekb830-qx9zx` started at `2026-08-22T22:37:29.025Z`, was
+live at `2026-08-22T22:37:35.170Z`, and logged zero errors through
+`2026-08-22T22:38:46Z`. Public live/ready returned `200`, `no-store`, and
+`{status:'ok'}`.
+
+Fresh-shell evidence matched the exact backend/frontend builds, target path,
+persistent root, staging/production runtime, environment/database IDs, and
+every full-hold value. Read-only temporary-copy verifier SHA-256
+`5f7de38f2673d3bb4c7d2b086b5d699afab1d173aceb86298d6e40eacb48b77f`
+returned `HL_POST_CUTOVER_TARGET_VERIFIED`, with
+`authoritativeDatabaseOpened: false` and authoritative mutations `0`. It
+proved source SHA-256
+`859eda97cd4c55724907abb5cd91f8dd741dd4cab9f9543df8942a1e2310ee05`,
+target SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`,
+absent source/target sidecars, and activation-receipt SHA-256
+`009227a315708be575d553eb39d72797c6f18824f0cd63b6a95580d026cb67bb`.
+The abort receipt/derived plan passed in restore mode
+`aborted-strict-smoke-rollback` at exact state
+`to_b_accepted/published/none`: semantic, smoke, and hosted completion false;
+release-blocked and rollback-only true.
+
+The target verified integrity `ok`, foreign-key violations `0`, schema/data-
+model `54`, `54` migrations, checksum
+`6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89`,
+exact IDs, second-rotation receipt
+`9152f844-d8cd-42f7-b0d5-b12f530ad618`, zero active sessions, strict-fixture
+absence including league `60c82aa0-54f9-4c93-83f5-73b0d6d6f63e`, preparation
+receipt `0ed590d8-832a-469a-848e-f91b0b37fe56`, and its transfer chain, plus
+temporary-copy removal. Post-cutover backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807` verified from manifest
+`staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.manifest.json`
+with encrypted SHA-256
+`cee039557278c41f59fa9d6a5b09cf4f69f1b9f3589cb3774420ef34be255162`,
+manifest checksum
+`08e3d3bde81843a683017d9952b30e02dd02978181a8644323cfbd590eca2ac8`,
+plaintext SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`,
+integrity `ok`, and zero foreign-key violations. Anonymous session remained
+`503 SERVICE_MAINTENANCE` with `no-store`. Recovery passes; the privacy release
+remains blocked and the full hold stays active.
+
+Helper rollback submitted the exact sealed baseline and restored Netlify
+configuration to canonical staging with title
+`HL-20260821-3-remove-strict-action-helper-baseline`. Deploy
+`6a8a09c13d5e25282f64d2c7` was created at
+`2026-08-22T20:42:41.902Z`, published at `2026-08-22T20:42:43.080Z`, and is
+current/ready. Netlify exited `0`. The remote gate passed `64/64` baseline byte
+checks, `8/8` original header checks, and `8/8` retired helper-path checks
+across canonical staging and the immutable deploy origin. Each retired
+extensionless HTML, JS, CSS, and marker path returned the exact `472`-byte SPA
+index fallback with SHA-256
+`1982ECF04CC456D989F7B42F15F3CED49A5D825DF0DEDD948DEAFFE8D8C1ADC8`; the
+physical `.html` path also fell back. The marker is now `text/html` and
+non-JSON, so stale helpers fail closed before a POST. Helper removal is
+`PASS`.
+
+The frozen T-132 acceptance contract required two independent cookie jars and
+these exact settled checkpoints. It now explains the phase-one rejection; it
+does not authorize resuming phase two after `STOP`:
+
+1. Record environment, database, and fixture prechecks under the full hold.
+   After controlled unhold, Jar X signs in as Admin, performs Admin role/privacy
+   prechecks, proposes Team 1 to Manager B, signs Admin out, signs Manager A in,
+   opens Team 1 results with `?releaseQaT132=1`, and keeps that component
+   mounted through both events: initial offer `complete`, counters `1/0/0`
+   for loads/evictions/successful refetches.
+2. Jar Y signs Manager B in and opens the same selected-team result plus
+   diagnostic before acceptance: initial offer `null`, counters `1/0/0`.
+   Manager B accepts and performs phase one from a separate Jar-Y action tab
+   with the same cookie and a separate QueryClient. After settlement, Jar X is
+   `null` at `2/1/1`, Jar Y is `complete` at `2/1/1`, and the original T-132
+   Query object has been removed and replaced.
+3. Jar Y signs Manager B out, signs Admin in to propose the return to Manager
+   A, signs Admin out, signs Manager B back in, and remounts Team 1. The fresh
+   Jar-Y checkpoint is `complete` at `1/0/0`; persistent Jar X remains `null`
+   at cumulative `2/1/1`.
+4. Manager A accepts and performs phase two from a separate Jar-X action tab.
+   After settlement, persistent Jar X is `complete` at cumulative `3/2/2`;
+   remounted Jar Y is `null` at `2/1/1`. Jar Y is not reported cumulatively
+   across its sign-out/remount.
+
+Every settled checkpoint is `state=loaded` and `fetchStatus=idle`; transient
+pending/refetching is acceptable only while settling. T-131 and T-140 must
+independently refetch and flip complete offer/action versus null/no-action;
+only the T-132 diagnostic proves physical Query replacement. Evidence stores
+no money or raw HTTP/Socket.IO payload.
+
+Hosted acceptance must not infer activation from component tests. After
+complete smoke or any recognized failure, the service returns to the full
+hold; the matching normal or abort plan/execute and replay results are
+recorded; then the operator changes only `DATABASE_PATH` to the pinned target
+and redeploys under hold. Post-handoff testing proves source/receipt
+preservation, target hash and database evidence, second rotation, zero active
+sessions, fixture/transfer absence, and a new verified incident-preservation
+backup before controlled reopening. Account email stays disabled in capture
+mode until explicit restored-outbox reconciliation evidence authorizes a
+change. The materializer never changes Render configuration and supplies no
+generic, in-place, or production restore capability.
+
+This is not M7-26 closure evidence. Held preparation and controlled-unhold
+runtime gates passed, but strict phase-one smoke is rejected on exact Manager
+B counter drift. The normal restore path is no longer eligible. Re-hold deploy
+`dep-da50g0v40ujc73aa5i4g` was canceled and never live; exact full-hold
+replacement `dep-da50hssaud7c73d3mqeg` passed. Strict abort plan/execute/replay
+also passed. `DATABASE_PATH`-only target deploy
+`dep-da51hjvqj5pc73bh8g3g`, target re-verification, and the verified post-
+cutover backup pass under full hold. Fresh controlled reopening, Notifications
+and the remaining desktop/mobile role checks, final runtime flags/job
+restoration, and observation remain `PENDING`.
+Production remains untouched and unauthorized.
+The release record is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
+
 ### FAD-06 Auction Read Closure Evidence - 2026-08-02
 
 The final local auction-family gate passed `161/161` tests across `22` suites

@@ -849,17 +849,66 @@ release is recorded at
 Production remained untouched and unauthorized. M7-26 is the sole active
 full-site UI-review plan.
 
-The active shared local M7-26 tree now targets schema `54` with `54` migration
-files, `133` application tables/repository-catalog entries, and `134` physical
-tables including `schema_migrations`. Its composed runtime registers `123`
-routes and its conceptual contract catalogue contains `148` entries after
-T-147 notification batch acknowledgement and T-148 trade approval. These are
-current local inventory facts, not a completed gate, shared-staging release, or
-production claim. M7-26 remains `ACTIVE` until the exact completion conditions
-in `ACTIVE_WORK_PLAN.md` pass. The known signed-Prospect buyout/pending-trade
-limitation is a separate P1 production-promotion follow-up outside this
-isolated-staging UI-review gate; it fails atomically without partial writes, and
-T-074 remains `PLANNED`.
+The M7-26 candidate targets schema `54` with `54` migration files, `133`
+application tables/repository-catalog entries, and `134` physical tables
+including `schema_migrations`. Its composed runtime registers `123` routes and
+its conceptual contract catalogue contains `148` entries after T-147
+notification batch acknowledgement and T-148 trade approval.
+
+Release `HL-20260821-1` remains active but is blocked on isolated staging.
+Held Render deploy `dep-da4e092fngtc739dipm0` passed `3,428/3,428` tests at
+exact backend commit
+`a747430500fbf6887dd748e5e3dfc0ecee77dc07`; verified backup/restore preceded
+the schema-`52`-to-`54` migration; repeated authority previews required no
+reconciliation; and pre/post public FAD receipt scans were read-only and safe.
+Held final deploy `dep-da4gkpoed13c739gm0dg` then passed `3,440/3,440` tests at
+exact commit `fe6047552857376b490756ff63ac593d431ee561`. A verified backup
+preceded rotation of nine synthetic release-QA credentials and one synthetic
+session revocation; its exact receipt replay wrote zero rows, and the
+post-rotation backup verified. Netlify deploy `6a89709ffc9c88762ae8e74e` published
+exact frontend commit `0e8eee92e2e323dd7f25ec3112988feaf23f96f0` after the
+privacy/documentation candidate `c119f119ffd4aa96635fe382792e704d535a7cbd`.
+
+Quiescent deploy `dep-da4hm30jo6nc73d26l80` passed `3,440/3,440`, health,
+session/CORS/cache, and basic sequential Chrome smoke for the administrator and
+two manager accounts. Notifications and strict FAD tie/manager-transfer gates
+were not run because FAD routes remained disabled. The shared staging QA
+password was then disclosed in chat and is treated as compromised without
+recording its value.
+
+Second rotation `HL-20260821-2` then replaced all nine synthetic credentials,
+revoked zero sessions, wrote its exact receipt, and replayed with zero writes.
+Verified backup `adcbbbab-e857-4cae-af71-dbce95553ce5` is the exact strict
+sidecar restore point. The isolated sidecar and release-bound fresh-path
+restore materializer focused gates pass. Their combined exact Node `24.14.1`
+candidate then passed `3,500` of `3,502` local tests with only two intentional
+Windows capability skips and zero failures, was committed/published at
+`23971a4d66ee6383c6ad54339e769dbc9a76561e`, and passed `3,502/3,502` hosted
+tests with clean startup in held deploy `dep-da4p5hu7bikc73aaeiq0`. All pinned
+environment/full-hold/provider-absence and path/sidecar boundaries passed.
+The exact backup reverified, and strict sidecar preparation reported
+`writeCount: 744`, receipt `0ed590d8-832a-469a-848e-f91b0b37fe56`, then an
+exact zero-write replay. Controlled-unhold deploy
+`dep-da4pvcrl550s738l8rmg` reached `LIVE`, but strict smoke stopped after phase
+one: Manager A reached required `null 2/1/1`, while Manager B reached
+`complete 3/1/1` instead of required `complete 2/1/1`. No return proposal or
+phase-two action ran. Sealed-baseline Netlify deploy
+`6a8a09c13d5e25282f64d2c7` removed the temporary helper.
+
+The full hold was restored and remains active. Abort recovery and exact replay
+passed. `DATABASE_PATH`-only target deploy `dep-da51hjvqj5pc73bh8g3g` is
+`LIVE` on exact backend `23971a4d66ee6383c6ad54339e769dbc9a76561e` after
+passing `3,502/3,502` hosted tests; read-only temporary-copy target
+verification and post-cutover backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807` also passed. The release remains
+`BLOCKED` and M7-26 remains `ACTIVE`. Staging was not reopened, final jobs were
+not restored, production remains untouched and unauthorized, and no archive
+transition occurred. Detailed evidence is in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
+
+The known signed-Prospect buyout/pending-trade limitation is a separate P1
+production-promotion follow-up outside this isolated-staging UI-review gate; it
+fails atomically without partial writes, and T-074 remains `PLANNED`.
 
 The historical migration-impact audit, corrective schema-30 boundary,
 scheduled `T-037` rollover, reset/backup rehearsal, and integrated `FAD-01`
@@ -1351,8 +1400,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Execute M7-26 full-site UI review through its approved isolated-staging gate
-Implementation status: M7-25 AND FAD-18 COMPLETE - STAGING VERIFIED 2026-08-18 / STAGING SCHEMA 52 / BACKEND 9A2F5E8 / RENDER DEP-DA2147E417FC73BRKQMG / FRONTEND APP 50F2414 / SOURCE HEAD 2BA016C / NETLIFY 6A8420054C9C5A624D86B2C3 / HOSTED BACKEND 3,356 OF 3,356 / M7-26 SOLE ACTIVE PLAN / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Keep staging on the full hold and resolve the frozen Manager B diagnostic-counter failure before any new strict run, reopening, job restoration, or closeout
+Implementation status: M7-26 ACTIVE / RELEASE HL-20260821-1 BLOCKED AFTER PHASE ONE / MANAGER A NULL 2/1/1 PASS / MANAGER B COMPLETE 3/1/1 FAIL VS REQUIRED 2/1/1 / NO PHASE TWO / HELPER REMOVED / STRICT BACKEND 23971A4D / TARGET DEP-DA51HJVQJ5PC73BH8G3G LIVE / HOSTED 3,502 OF 3,502 PASS / TARGET TEMP-COPY VERIFICATION PASS / POST-CUTOVER BACKUP 2044FCAE-24E8-4392-A1AC-4064D9CD2807 PASS / FULL HOLD ACTIVE / NO REOPEN, FINAL JOB RESTORATION, PRODUCTION CHANGE, OR ARCHIVE / FRONTEND 0E8EEE92 / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Branches: staging and staging
 ```
