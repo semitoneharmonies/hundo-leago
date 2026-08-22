@@ -28,17 +28,44 @@ function ReleaseQaT132Probe({ fadId, httpClient, leagueId, teamId }) {
   const evictionGeneration = useRef(0);
   const completedGeneration = useRef(0);
   const removedQuery = useRef(null);
+  const successfulQueries = useRef(new WeakSet());
   const [evidence, setEvidence] = useState({
     evictions: 0,
-    successfulLoads: 0,
-    successfulRefetches: 0,
+    successfulQueries: 0,
+    successfulReplacements: 0,
     completedGeneration: 0,
   });
 
   useEffect(() => {
     const queryCache = queryClient.getQueryCache();
     const targetKey = freeAgentDraftKeys.historyCard(leagueId, fadId, teamId);
-    return queryCache.subscribe((event) => {
+
+    function recordSuccessfulQuery(candidate) {
+      if (
+        !candidate ||
+        candidate.state.status !== "success" ||
+        queryCache.find({ queryKey: targetKey, exact: true }) !== candidate ||
+        successfulQueries.current.has(candidate)
+      ) {
+        return;
+      }
+
+      const generation = evictionGeneration.current;
+      const completedRefetch = generation > completedGeneration.current;
+      if (completedRefetch && candidate === removedQuery.current) return;
+
+      successfulQueries.current.add(candidate);
+      completedGeneration.current = generation;
+      setEvidence((current) => ({
+        ...current,
+        successfulQueries: current.successfulQueries + 1,
+        successfulReplacements:
+          current.successfulReplacements + (completedRefetch ? 1 : 0),
+        completedGeneration: generation,
+      }));
+    }
+
+    const unsubscribe = queryCache.subscribe((event) => {
       if (!exactQueryKey(event.query?.queryKey, targetKey)) return;
 
       if (event.type === "removed") {
@@ -54,22 +81,13 @@ function ReleaseQaT132Probe({ fadId, httpClient, leagueId, teamId }) {
       if (event.type !== "updated" || event.action?.type !== "success") {
         return;
       }
-      if (queryCache.find({ queryKey: targetKey, exact: true }) !== event.query) {
-        return;
-      }
-
-      const generation = evictionGeneration.current;
-      const completedRefetch = generation > completedGeneration.current;
-      if (completedRefetch && event.query === removedQuery.current) return;
-      completedGeneration.current = generation;
-      setEvidence((current) => ({
-        ...current,
-        successfulLoads: current.successfulLoads + 1,
-        successfulRefetches:
-          current.successfulRefetches + (completedRefetch ? 1 : 0),
-        completedGeneration: generation,
-      }));
+      recordSuccessfulQuery(event.query);
     });
+
+    recordSuccessfulQuery(
+      queryCache.find({ queryKey: targetKey, exact: true })
+    );
+    return unsubscribe;
   }, [fadId, leagueId, queryClient, teamId]);
 
   const hasFreshProjection =
@@ -97,9 +115,9 @@ function ReleaseQaT132Probe({ fadId, httpClient, leagueId, teamId }) {
         <div><dt>State</dt><dd>{state}</dd></div>
         <div><dt>Offer projection</dt><dd>{offerClassification}</dd></div>
         <div><dt>Fetch status</dt><dd>{query.fetchStatus}</dd></div>
-        <div><dt>Observed successful loads</dt><dd>{evidence.successfulLoads}</dd></div>
+        <div><dt>Successful Query instances</dt><dd>{evidence.successfulQueries}</dd></div>
         <div><dt>Physical evictions</dt><dd>{evidence.evictions}</dd></div>
-        <div><dt>Successful refetches</dt><dd>{evidence.successfulRefetches}</dd></div>
+        <div><dt>Successful replacements</dt><dd>{evidence.successfulReplacements}</dd></div>
       </dl>
     </Surface>
   );

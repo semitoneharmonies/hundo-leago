@@ -9,6 +9,7 @@ import {
 } from "../../shared/realtime/realtimeInvalidation.js";
 import { renderWithProviders } from "../../test/render.jsx";
 import { freeAgentDraftInvalidationActions } from "./freeAgentDraftInvalidation.js";
+import { publishedCandidateCardQuery } from "./freeAgentDraftQueries.js";
 import { ReleaseQaT132Diagnostic } from "./ReleaseQaT132Diagnostic.jsx";
 import {
   classifyReleaseQaT132Offers,
@@ -194,6 +195,78 @@ describe("release-QA T132 diagnostic", () => {
     expect(diagnostic).not.toHaveTextContent(/\$|AAV|totalValueCents|1,?950|975/iu);
   });
 
+  it("counts an already-successful cached Query exactly once", async () => {
+    const queryClient = createQueryClient();
+    const client = httpClient([card(completeOffer)]);
+    await queryClient.fetchQuery(
+      publishedCandidateCardQuery(client, IDS.league, IDS.fad, IDS.team)
+    );
+
+    renderDiagnostic({ client, queryClient });
+
+    expect(await screen.findByText("complete")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        diagnosticValue("Successful Query instances")
+      ).toHaveTextContent("1")
+    );
+    expect(client.request).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores same-Query focus-style successes before physical replacement", async () => {
+    const queryClient = createQueryClient();
+    const client = httpClient([
+      card(completeOffer),
+      card(completeOffer),
+      card(null),
+    ]);
+    renderDiagnostic({ client, queryClient });
+    expect(await screen.findByText("complete")).toBeInTheDocument();
+    const queryKey = [
+      "league",
+      IDS.league,
+      "free-agent-draft",
+      IDS.fad,
+      "history-card",
+      IDS.team,
+    ];
+    const initialQuery = queryClient.getQueryCache().find({
+      queryKey,
+      exact: true,
+    });
+
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey, exact: true });
+    });
+    expect(client.request).toHaveBeenCalledTimes(2);
+    expect(
+      queryClient.getQueryCache().find({ queryKey, exact: true })
+    ).toBe(initialQuery);
+    expect(
+      diagnosticValue("Successful Query instances")
+    ).toHaveTextContent("1");
+    expect(diagnosticValue("Physical evictions")).toHaveTextContent("0");
+    expect(diagnosticValue("Successful replacements")).toHaveTextContent("0");
+
+    await act(async () => {
+      await applyRealtimeInvalidation(
+        queryClient,
+        managerAssignmentEnvelope(1),
+        [freeAgentDraftInvalidationActions]
+      );
+    });
+    expect(await screen.findByText("null")).toBeInTheDocument();
+    await waitFor(() => expect(client.request).toHaveBeenCalledTimes(3));
+    expect(
+      queryClient.getQueryCache().find({ queryKey, exact: true })
+    ).not.toBe(initialQuery);
+    expect(
+      diagnosticValue("Successful Query instances")
+    ).toHaveTextContent("2");
+    expect(diagnosticValue("Physical evictions")).toHaveTextContent("1");
+    expect(diagnosticValue("Successful replacements")).toHaveTextContent("1");
+  });
+
   it("classifies a fully redacted projection as null without payload details", async () => {
     renderDiagnostic({ client: httpClient([card(null)]) });
 
@@ -219,6 +292,13 @@ describe("release-QA T132 diagnostic", () => {
     ]);
     renderDiagnostic({ client, queryClient });
     expect(await screen.findByText("complete")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(diagnosticValue("Successful Query instances")).toHaveTextContent(
+        "1"
+      )
+    );
+    expect(diagnosticValue("Physical evictions")).toHaveTextContent("0");
+    expect(diagnosticValue("Successful replacements")).toHaveTextContent("0");
     const initialQuery = queryClient.getQueryCache().find({
       queryKey: [
         "league",
@@ -245,8 +325,11 @@ describe("release-QA T132 diagnostic", () => {
       exact: true,
     });
     expect(replacementQuery).not.toBe(initialQuery);
+    expect(diagnosticValue("Successful Query instances")).toHaveTextContent(
+      "2"
+    );
     expect(diagnosticValue("Physical evictions")).toHaveTextContent("1");
-    expect(diagnosticValue("Successful refetches")).toHaveTextContent("1");
+    expect(diagnosticValue("Successful replacements")).toHaveTextContent("1");
 
     await act(async () => {
       await applyRealtimeInvalidation(
@@ -257,7 +340,10 @@ describe("release-QA T132 diagnostic", () => {
     });
     expect(await screen.findByText("complete")).toBeInTheDocument();
     await waitFor(() => expect(client.request).toHaveBeenCalledTimes(3));
+    expect(diagnosticValue("Successful Query instances")).toHaveTextContent(
+      "3"
+    );
     expect(diagnosticValue("Physical evictions")).toHaveTextContent("2");
-    expect(diagnosticValue("Successful refetches")).toHaveTextContent("2");
+    expect(diagnosticValue("Successful replacements")).toHaveTextContent("2");
   });
 });
