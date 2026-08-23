@@ -107,7 +107,42 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Held-Staging Evidence - 2026-08-21 (RELEASE BLOCKED; HELD RECOVERY PASS)
+### M7-26 Fresh Strict Rerun - 2026-08-22 (ACTIVE; FULL HOLD)
+
+Release `HL-20260822-1` reruns the complete hosted privacy gate from the clean
+held database restored after the rejected prior attempt. It must not resume the
+old transfer chain or reuse its helper marker, idempotency keys, publisher
+confirmations, fixture receipt, target, or activation receipt.
+
+The corrected staging-only T-132 diagnostic counts each distinct successful
+TanStack Query instance once. It records physical evictions and successful
+replacements separately, so focus-triggered updates on one Query object do not
+inflate the comparator. The exact two-cookie sequence remains strict:
+
+```text
+1/0/0 -> 2/1/1 -> 3/2/2
+```
+
+Exact frontend build `4dfe12d1366314e3d9df722c50771324647743c9`
+passes `402/402` tests across `59` files, ESLint, the `20/20` browser-authority
+gate across `164` shipped sources, `45/45` Playwright cases, and the
+staging-configured production build. Sealed Netlify baseline
+`6a8a3880f946cc39a2bf2bb6` passes `64/64` remote byte checks. The fresh backend
+contract passes its focused `63/63` gate; its exact commit, complete gate, and
+hosted gate remain `PENDING`.
+
+The active database/backup contract and gate ledger are recorded only in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`. The final
+interactive-review matrix keeps the scheduler, account email, debug routes,
+live provider, and backup schedule disabled. Provider-neutral statistics/job
+operation, T-067/T-093 late-legality evidence, T-074 buyout cancellation, and
+production migration remain separate launch gates rather than waivers or
+scope additions to this rerun. So do the account/session contract gaps: T-005
+must return promised memberships/defaults, and T-004/T-006/T-007/T-009/T-011
+revocation or replacement must proactively disconnect affected live Socket.IO
+clients. None is claimed fixed by this rerun.
+
+### Historical M7-26 Held-Staging Evidence - 2026-08-21 (BLOCKED; RECOVERED)
 
 The current frontend candidate has passed `386/386` tests across `58` files,
 ESLint, dependency inspection, exact staging build, `20/20` browser-authority
@@ -163,7 +198,7 @@ rotated nine accounts, revoked zero sessions, wrote receipt
 `9152f844-d8cd-42f7-b0d5-b12f530ad618`, and replayed with zero writes. Its
 fresh post-rotation/pre-fixture backup independently verified.
 
-#### M7-26 strict recovery and selective publisher test contract
+#### Historical `HL-20260821-3` strict recovery and publisher contract
 
 Under exact Node `24.14.1`, the release-bound `HL-20260821-3` four-command
 restore family passed `56/56` focused tests and the selective manager-outbox

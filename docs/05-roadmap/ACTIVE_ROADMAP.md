@@ -855,7 +855,27 @@ including `schema_migrations`. Its composed runtime registers `123` routes and
 its conceptual contract catalogue contains `148` entries after T-147
 notification batch acknowledgement and T-148 trade approval.
 
-Release `HL-20260821-1` remains active but is blocked on isolated staging.
+### Fresh M7-26 rerun - 2026-08-22
+
+Release `HL-20260822-1` is the only active execution. It starts from the clean
+held schema-`54` database and verified post-cutover backup produced by the
+recovered prior attempt. Exact frontend build
+`4dfe12d1366314e3d9df722c50771324647743c9` is published as sealed Netlify
+baseline `6a8a3880f946cc39a2bf2bb6`; its complete local and remote gates pass.
+The fresh backend contract passes its focused `63/63` gate, but the exact
+backend commit, complete gate, and held deploy remain `PENDING`.
+
+The full hold remains active. The fresh fixture, complete two-phase strict
+privacy/cache smoke, helper removal, normal restore or bounded abort,
+post-cutover verification/backup, final interactive-review matrix, hosted
+desktop/mobile review, observation, and closeout remain. Exact evidence and
+placeholders are in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
+Production remains untouched and unauthorized.
+
+### Historical M7-26 attempt - 2026-08-21 (blocked and recovered)
+
+Release `HL-20260821-1` was active but became blocked on isolated staging.
 Held Render deploy `dep-da4e092fngtc739dipm0` passed `3,428/3,428` tests at
 exact backend commit
 `a747430500fbf6887dd748e5e3dfc0ecee77dc07`; verified backup/restore preceded
@@ -906,9 +926,16 @@ not restored, production remains untouched and unauthorized, and no archive
 transition occurred. Detailed evidence is in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
 
-The known signed-Prospect buyout/pending-trade limitation is a separate P1
-production-promotion follow-up outside this isolated-staging UI-review gate; it
-fails atomically without partial writes, and T-074 remains `PLANNED`.
+This historical release remains blocked; it is no longer the active execution.
+
+Separate launch gates remain outside the strict rerun: T-005 membership/default
+bootstrap completion; proactive live Socket.IO disconnect after session
+revocation or replacement in T-004/T-006/T-007/T-009/T-011; provider-neutral
+statistics/matchup job operation; T-067/T-093 late-legal already-underway-game
+exclusion; T-074 atomic buyout cancellation for both contract and
+`prospect_right` pending-trade assets; and the production migration that still
+requires separate explicit authority. The current T-074 path fails atomically
+without a partial write and remains `PLANNED`.
 
 The historical migration-impact audit, corrective schema-30 boundary,
 scheduled `T-037` rollover, reset/backup rehearsal, and integrated `FAD-01`
@@ -1400,10 +1427,11 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Keep staging on the full hold and resolve the frozen Manager B diagnostic-counter failure before any new strict run, reopening, job restoration, or closeout
-Implementation status: M7-26 ACTIVE / RELEASE HL-20260821-1 BLOCKED AFTER PHASE ONE / MANAGER A NULL 2/1/1 PASS / MANAGER B COMPLETE 3/1/1 FAIL VS REQUIRED 2/1/1 / NO PHASE TWO / HELPER REMOVED / STRICT BACKEND 23971A4D / TARGET DEP-DA51HJVQJ5PC73BH8G3G LIVE / HOSTED 3,502 OF 3,502 PASS / TARGET TEMP-COPY VERIFICATION PASS / POST-CUTOVER BACKUP 2044FCAE-24E8-4392-A1AC-4064D9CD2807 PASS / FULL HOLD ACTIVE / NO REOPEN, FINAL JOB RESTORATION, PRODUCTION CHANGE, OR ARCHIVE / FRONTEND 0E8EEE92 / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Complete the HL-20260822-1 backend gate and exact held deploy, then run the fresh strict fixture, full A-to-B-to-A privacy gate, restore, final interactive-review activation, observation, and closeout
+Implementation status: M7-26 ACTIVE / RELEASE HL-20260822-1 ACTIVE / FRONTEND 4DFE12D + NETLIFY 6A8A3880 PASS / BACKEND EXACT COMMIT PENDING / SOURCE + UNUSED TARGET + BACKUP 2044FCAE VERIFIED / FULL HOLD ACTIVE / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
-Branches: staging and staging
+Local branches: codex/m7-26-completion and codex/m7-26-completion
+Deployment branches: staging and staging
 ```
 
 The governing designs are defined in:
@@ -1418,6 +1446,18 @@ docs/04-technical-specs/SECURITY.md
 docs/04-technical-specs/FREE_AGENT_DRAFT.md
 docs/06-work-plans/ACTIVE_WORK_PLAN.md
 ```
+
+The ordered remaining gates are: exact backend candidate; intentional held
+F/B deploy; fresh fixture and replay; strict two-cookie A-to-B-to-A smoke;
+sealed helper removal; normal restore/cutover and backup; final staging matrix;
+desktop/mobile role review; observation; and documentation closeout. Staging
+must remain held until the applicable gate authorizes the next transition.
+
+## Historical Milestone Evidence
+
+The dated totals and status narrative below preserve earlier milestone
+evidence. They do not override the current action, current release record, or
+environment matrix above.
 
 M2-01 through M2-14 and the external staging gate are complete. M3-01
 is complete locally: the focused security verifier, full lint, build,

@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26 FULL-SITE UI REVIEW; STAGING RELEASE BLOCKED; HELD RECOVERY PASS`
+`ACTIVE - M7-26 FULL-SITE UI REVIEW; FRESH STRICT RERUN; FULL HOLD ACTIVE`
 
 ## Work Plan ID
 
@@ -21,10 +21,36 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-21 Staging Execution Status
+## 2026-08-22 Fresh Staging Rerun Status
+
+Release `HL-20260822-1` is the only active M7-26 execution. It starts from the
+clean held database recovered from the rejected `HL-20260821-3` attempt; it
+does not resume or rewrite that attempt. The frontend diagnostic correction is
+exact build `4dfe12d1366314e3d9df722c50771324647743c9`, published as sealed
+Netlify baseline `6a8a3880f946cc39a2bf2bb6`. The fresh backend build remains
+`PENDING` until its complete gate, review, commit, and publication pass.
+Render service `srv-d9eo2turnols73ekb830` remains on branch `staging` with
+auto-deploy disabled and persistent mount `/opt/render/project/data`. Publishing
+the backend does not deploy it; after publication, only the exact F/B build-ID
+merge update and one intentional held deploy may advance the run.
+
+The current authoritative source is
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`;
+the unused inactive target is
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`.
+Verified backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` is the exact clean
+pre-fixture restore point. The full hold remains active. Fresh fixture
+preparation, hosted A-to-B-to-A privacy acceptance, clean restoration,
+interactive-review activation, observation, and closeout are pending.
+
+Exact current evidence and placeholders are recorded in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
+Production remains untouched and unauthorized.
+
+## Historical 2026-08-21 Attempt - Blocked and Recovered
 
 Checkpoints 1 through 5 and the local implementation portion of Checkpoint 6
-are complete. The final `100%` checkpoint is not yet earned because unheld
+were complete. The final release gate was not earned because unheld
 hosted acceptance failed its exact phase-one Manager B counter gate. The
 release is blocked. Strict abort materialization and exact zero-mutation replay
 have passed. The restored-target `DATABASE_PATH`-only cutover, held target
@@ -32,10 +58,11 @@ verification, and post-cutover backup also pass. The full hold remains active;
 privacy acceptance, controlled reopening, final runtime flags/job restoration,
 observation, and documentation closeout remain pending.
 
-The exact frontend candidate is
+The historical frontend candidate was
 `0e8eee92e2e323dd7f25ec3112988feaf23f96f0`, following privacy/documentation
 commit `c119f119ffd4aa96635fe382792e704d535a7cbd` and broad UI commit
-`d82583dea2132d94e53a60853da6dddc549a0126`. The strict backend candidate is
+`d82583dea2132d94e53a60853da6dddc549a0126`. The historical strict backend
+candidate was
 `23971a4d66ee6383c6ad54339e769dbc9a76561e`, following held credential-
 rotation candidate `fe6047552857376b490756ff63ac593d431ee561`, migration
 candidate `a747430500fbf6887dd748e5e3dfc0ecee77dc07`, and broad implementation
@@ -118,7 +145,7 @@ deploy `dep-da51hjvqj5pc73bh8g3g` is `LIVE` on the same exact backend and
 passed its hosted, runtime-identity, held-target, post-cutover backup, and
 maintenance-response gates. The release remains blocked because the strict
 privacy smoke failed its frozen Manager B counter.
-Exact evidence is maintained in
+Exact immutable evidence is maintained in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
 Production remains untouched and unauthorized.
 
@@ -148,8 +175,9 @@ dedicated staging services, and hosted role-based acceptance after every local
 gate passes.
 
 The approved deployment target for this plan is isolated staging. In addition
-to its already recorded additive staging migration, this plan authorizes only
-the exact `HL-20260821-3` staging fresh-path materialization and external
+to its already recorded additive staging migration and recovered historical
+attempt, this plan authorizes only the exact `HL-20260822-1` staging fresh-path
+materialization and external
 `DATABASE_PATH` handoff defined below. It does not authorize any other staging
 environment-variable change, reset, or restore, or any production branch
 merge, deployment, data correction, configuration change, reset, restore, or
@@ -159,46 +187,36 @@ The review is authoritative for the requested user experience. Where it
 changes an older approved product or technical rule, the affected canonical
 specification must be reconciled before dependent code is implemented.
 
-## Progress Weighting
+## Release Progress Reporting
 
-| Review section | Weight |
-| --- | ---: |
-| Site-wide language, errors, identity, and shared UI | 5% |
-| League dashboard | 6% |
-| Teams page | 2% |
-| Team roster pages and hockey-lines Bench | 6% |
-| Future collectible player card | 0% - deferred |
-| Drafts and Free Agent Draft results/privacy | 5% |
-| Players catalog and autocomplete | 4% |
-| Auctions | 2% |
-| Trades and Future Considerations | 8% |
-| Matchups | 3% |
-| Standings and contextual result correction | 10% |
-| League Activity | 5% |
-| Notifications | 5% |
-| League Rules display audit | 4% |
-| Account-menu cleanup | 1% |
-| Commissioner competition tools | 8% |
-| Commissioner roster tools | 2% |
-| Commissioner and administrator permissions | 11% |
-| Administrator-only surfaces | 3% |
-| Documentation, automated/browser verification, deployment, and hosted smoke test | 10% |
-| **Total** | **100%** |
+This plan is reported by named gates, not a completion percentage. UI scope,
+local automated verification, hosted deployment, data recovery, authenticated
+smoke, runtime activation, and documentation closeout are separate gates. A
+completed implementation section must not be used to imply that a later
+release or recovery gate is nearly complete.
 
-Progress is earned only when the applicable implementation and proportional
-verification pass. The cumulative checkpoints are `17%`, `34%`, `52%`,
-`72%`, `90%`, and `100%`.
+Every status update must state:
+
+1. which named gates passed;
+2. which named gate is running;
+3. which named gates remain;
+4. whether staging is held or open; and
+5. whether production remains untouched and unauthorized.
+
+Elapsed time from an earlier implementation checkpoint is not an ETA. Any ETA
+must be based on the actual remaining deploy, recovery, and hosted-observation
+steps and must be revised when a new hard gate is discovered.
 
 ## Approved Scope and Checkpoints
 
-### Checkpoint 1 - 17%
+### Checkpoint 1
 
 Implement the shared plain-language/error and team-identity presentation,
 dashboard, Teams, shared matchup-card treatment, Matchups copy, and account
 menu cleanup. Preserve approved recent activity, team-directory behavior,
 matchup data, notification bell, and main navigation.
 
-### Checkpoint 2 - 34%
+### Checkpoint 2
 
 Implement roster and Hockey Lines presentation, verify IR and Prospect moves,
 complete server-side Players filters before pagination, fix autocomplete
@@ -206,14 +224,14 @@ overflow/results, simplify the Drafts results presentation and privacy, and
 correct Auctions total-value and phase labels. Preserve Favorites, active-line
 cards, Trade and Request trade actions, and working player-detail navigation.
 
-### Checkpoint 3 - 52%
+### Checkpoint 3
 
 Implement the simplified trade asset model, manager acceptance followed by
 commissioner approval for Future Considerations, the shared detailed Trade
 block, plain-language League Activity, and the unread-first Notifications
 workflow with a separate Previous notifications view.
 
-### Checkpoint 4 - 72%
+### Checkpoint 4
 
 Implement compact branded Standings, contextual commissioner result
 correction with preview and automatic recalculation, and the audited
@@ -225,7 +243,7 @@ uniquely supports team-transfer, category, position, and slot/re-slot
 corrections not covered by Add player, Remove player, or Correct contract;
 present that purpose plainly.
 
-### Checkpoint 5 - 90%
+### Checkpoint 5
 
 Audit the displayed League Rules against canonical behavior, protect platform
 administrators from commissioner membership or team-access changes, guarantee
@@ -237,7 +255,7 @@ The existing Beta League duplicate-commissioner presentation must be repaired
 only through the canonical commissioner pointer and an explicit reversible
 staging data operation. No production data repair is authorized by this plan.
 
-### Checkpoint 6 - 100%
+### Checkpoint 6
 
 Finish canonical documentation, complete focused and full backend/frontend
 tests, lint, production build, desktop/mobile/keyboard/accessibility browser
@@ -359,7 +377,7 @@ POST /api/v1/operations/release-qa/strict-manager-outbox
 ```
 
 It mounts only on the pinned source `DATABASE_PATH` with release
-`HL-20260821-3`, environment `test:release-qa`, database
+`HL-20260822-1`, environment `test:release-qa`, database
 `m7-release-qa-fixture`, schema `54`, the pinned migration checksums and
 frontend build, an exact SHA-shaped deployed `APP_BUILD_ID`, season `2026` /
 NHL `20262027`, and this exact smoke boundary:
@@ -369,9 +387,9 @@ APP_ENV=staging
 NODE_ENV=production
 APP_ENVIRONMENT_ID=test:release-qa
 DATABASE_ID=m7-release-qa-fixture
-DATABASE_PATH=/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema51-aav-20260815T082700Z.sqlite3
+DATABASE_PATH=/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
 PERSISTENT_DATA_ROOT=/opt/render/project/data/hundo-staging
-FRONTEND_BUILD_ID=0e8eee92e2e323dd7f25ec3112988feaf23f96f0
+FRONTEND_BUILD_ID=4dfe12d1366314e3d9df722c50771324647743c9
 APP_BUILD_ID=<exact deployed backend commit SHA>
 CURRENT_SEASON_LABEL=2026
 CURRENT_NHL_SEASON_KEY=20262027
@@ -395,13 +413,23 @@ SPORTSDATAIO_NHL_LIVE_CAPABILITY_ARTIFACT: absent
 SPORTSDATAIO_NHL_LIVE_PROBE_MANIFEST: absent
 ```
 
+This same matrix is the required final interactive-review matrix after strict
+smoke, clean restore/cutover, and held verification pass. It intentionally
+keeps the scheduler, account email, debug routes, live provider, and scheduled
+backups disabled; it is not evidence that production job operation is ready.
+
 Under the full hold the target runtime and route are not composed, and the
 maintenance server returns `503 SERVICE_MAINTENANCE`. With the hold false, the
 restored target path or any binding drift leaves the route unmounted and an
 external request returns `404`. It is not a general outbox or scheduler
 control.
 
-#### Temporary same-cookie action helper authorization (`PHASE ONE REJECTED`)
+#### Historical `HL-20260821-3` helper contract and rejected phase one
+
+This subsection through the fresh-rerun heading below is immutable historical
+evidence, not current action authority. Its release ID, helper path, marker,
+expiry, build IDs, idempotency keys, confirmations, hashes, and deploys must not
+be reused. The full record is the 2026-08-21 release record.
 
 Grae authorized a temporary release-QA browser helper solely to issue the
 already-approved direct calls above from each actor's real staging cookie jar.
@@ -761,20 +789,63 @@ If either publisher invocation fails, crashes, or leaves the target row
 `failed` or `publishing`, do not retry it. Immediately restore the full hold,
 preserve the failure state, and use the strict abort plan/execute path below.
 
-### M7-26 strict staging restore exception
+#### Fresh `HL-20260822-1` same-cookie helper authorization
+
+The fresh helper may exist only as an additive overlay on sealed Netlify
+baseline `6a8a3880f946cc39a2bf2bb6`, under exact lowercase path
+`/release-qa/hl-20260822-1/`. It must preserve all `33` application files and
+these pinned baseline identities:
+
+```text
+Frontend build: 4dfe12d1366314e3d9df722c50771324647743c9
+index.html:     472 bytes / 90620768a37b57b905a35cd576077cd4c4f1a760da28fc8c1c8a9347458383ca
+main bundle:    assets/index-BFtuYVmF.js / 527839 bytes / 19ee27ed0fa33016e9614b5dd63095b3f1d3af1fc8f33616b4c30a3c961cd201
+CSS:            assets/index-C-yMyteT.css / 108551 bytes / 74aab8400795639840c5efeff9e14ffe5539b71dda1a09c523e50edf63c1ab88
+```
+
+The marker must bind release `HL-20260822-1`, the frontend build above, the
+eventual exact backend commit, canonical frontend/API origins, and an explicit
+future expiry. Backend build and expiry are `PENDING`; the helper must not be
+deployed or enabled while either is a placeholder. Every marker check, header,
+CSP, inert-load, empty isolated QueryClient, same-cookie, explicit arming,
+fresh CSRF/session, exact-identity, no-secret, no-retry, and fail-closed rule in
+the historical contract remains required with only the fresh release-bound
+values changed.
+
+Fresh idempotency and publisher values must be derived from the release ID:
+
+```text
+HL-20260822-1-team1-to-b-propose
+HL-20260822-1-team1-to-b-accept
+HL-20260822-1-outbox-team1-to-manager-b
+PUBLISH-HL-20260822-1-TEAM1-TO-MANAGER-B
+HL-20260822-1-team1-to-a-propose
+HL-20260822-1-team1-to-a-accept
+HL-20260822-1-outbox-team1-return-to-manager-a
+PUBLISH-HL-20260822-1-TEAM1-RETURN-TO-MANAGER-A
+```
+
+Both phases run from a newly prepared fixture. The T-132 comparator counts
+distinct successful Query instances once and physical eviction/replacement
+separately: initial `1/0/0`, after A-to-B `2/1/1`, and after B-to-A `3/2/2`.
+The old `3/1/1` failure cannot be waived or treated as a valid extra refetch.
+After evidence capture, remove the helper and marker and republish the exact
+sealed baseline without a Vite rebuild.
+
+### M7-26 fresh strict staging restore exception
 
 After the strict fixture reaches either complete smoke or an exact recognized
 incomplete/failed state, the service must return to the full maintenance hold
-before any restore command runs. Only release `HL-20260821-3`, Render service
+before any restore command runs. Only release `HL-20260822-1`, Render service
 `srv-d9eo2turnols73ekb830`, environment `test:release-qa`, database
 `m7-release-qa-fixture`, source
-`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema51-aav-20260815T082700Z.sqlite3`,
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
 and inactive target
-`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`
 are authorized. The exact candidate is backup
-`adcbbbab-e857-4cae-af71-dbce95553ce5`, schema `54`, migration checksum set
+`2044fcae-24e8-4392-a1ac-4064d9cd2807`, schema `54`, migration checksum set
 `6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89`,
-and frontend build `0e8eee92e2e323dd7f25ec3112988feaf23f96f0`.
+and frontend build `4dfe12d1366314e3d9df722c50771324647743c9`.
 
 Backup and Restore records four exact commands. Use the normal
 `release:qa:strict-restore:plan` / `release:qa:strict-restore:execute` pair only
@@ -835,6 +906,24 @@ No script or migration in this plan may open, repair, reset, or otherwise
 modify production data. The user must be warned again before any later
 production correction of Beta League or another protected membership record.
 
+## Separate Launch Gates After M7-26
+
+The strict staging rerun must not absorb or hide these independently confirmed
+launch-hardening gaps:
+
+1. T-005 session bootstrap omits the approved memberships and selected-safe
+   defaults.
+2. Session revocation or replacement in T-004/T-006/T-007/T-009/T-011 does
+   not yet proactively disconnect the affected live Socket.IO clients.
+3. Provider-neutral statistics and matchup-occurrence job operation, the
+   T-067/T-093 late-legal game-source contract, and T-074 atomic cancellation
+   for contract plus `prospect_right` trade assets remain incomplete.
+4. Production still requires its own backup, rehearsal, explicit authority,
+   migration, deployment, first-write, observation, and rollback gates.
+
+These items are not fixed or waived by an M7-26 staging pass. They become the
+next launch-readiness gates after strict release closeout.
+
 ## Required Verification
 
 Frontend:
@@ -880,7 +969,7 @@ removing a recovery path before its replacement is verified.
 
 M7-26 is complete only when:
 
-1. all weighted checkpoints are implemented and verified;
+1. all checkpoints are implemented and verified;
 2. both repositories pass their focused and complete gates;
 3. required canonical specifications reflect the implemented behavior;
 4. exact frontend and backend commits are published separately to staging;

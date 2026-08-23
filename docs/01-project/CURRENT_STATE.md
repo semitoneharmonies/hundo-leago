@@ -18,9 +18,25 @@ Last reviewed: **2026-08-22**
 
 ---
 
-## 2026-08-21 M7-26 Isolated-Staging Release — Blocked and Held
+## Current Environment Matrix — 2026-08-22
 
-Release `HL-20260821-1` has reached its held schema-migration and frontend
+| Environment | Deployed or checked-in authority | Persistence, identity, and release state |
+| --- | --- | --- |
+| Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
+| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` in deploy `6a8a3880f946cc39a2bf2bb6`; Render is live on backend `23971a4d66ee6383c6ad54339e769dbc9a76561e` in deploy `dep-da51hjvqj5pc73bh8g3g` | SQLite schema `54`, target authentication, and multi-league authority use clean source `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`, protected by verified backup `2044fcae-24e8-4392-a1ac-4064d9cd2807`. The full safety hold remains active: public live/ready checks return `200`, while session traffic returns `503 SERVICE_MAINTENANCE`; writes, scheduled jobs, FAD routes, account email, debug routes, backup scheduling, and the live provider remain disabled. |
+| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch `codex/m7-26-completion` is still based on `23971a4d66ee6383c6ad54339e769dbc9a76561e` while the next exact release contract is prepared | Fresh release `HL-20260822-1` is `ACTIVE` and targets unused path `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`. The frontend diagnostic and complete local/Netlify gates pass; the exact backend build and every later hosted gate remain pending. The recovered `HL-20260821-3` attempt stays historical and blocked. No production change is claimed. |
+
+This matrix is the current environment authority. Dated sections below preserve
+historical release evidence and must not be read as overriding it.
+The fresh gate ledger is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`; the prior
+failure/recovery record remains the separate 2026-08-21 file.
+
+---
+
+## Dated Release Record: 2026-08-21 M7-26 Attempt — Blocked and Held
+
+Release `HL-20260821-1` reached its held schema-migration and frontend
 publication boundary, but it is not yet closed. The exact frontend candidate is
 `0e8eee92e2e323dd7f25ec3112988feaf23f96f0` (privacy/documentation commit
 `c119f119ffd4aa96635fe382792e704d535a7cbd`; broad UI commit
@@ -104,7 +120,7 @@ archived. Exact evidence is recorded in
 
 ---
 
-## 2026-08-18 Staging Release
+## Dated Release Record: 2026-08-18 Staging Release
 
 The selected-team Free Agent Draft results, simplified Candidate Card history,
 post-deadline auction nomination policy, restricted-tie manager privacy and
@@ -125,7 +141,7 @@ Production was not changed and remains unauthorized for this release.
 
 ---
 
-## 2026-08-20 M7-26 Candidate Baseline (Historical Pre-Release Snapshot)
+## Dated Candidate Record: 2026-08-20 M7-26 Pre-Release Snapshot
 
 M7-26 remains the sole active work plan. The current shared local backend tree
 targets schema `54` with `54` migration files, `133` application tables and
@@ -169,8 +185,8 @@ Older implementation-state narratives and dated test/deployment records below
 are retained as historical evidence. Where they describe JSON as the only
 current local persistence, schema `49`/`52` as the current local target, 117
 runtime contracts as the current inventory, complete Candidate Cards as
-league-visible, or older M7 work as active, this dated M7-26 section and the
-current canonical product/technical specifications govern the active tree.
+league-visible, or older M7 work as active, the current environment matrix and
+canonical product/technical specifications govern the active tree.
 
 ---
 
@@ -189,6 +205,13 @@ Temporary instability is acceptable in local development, feature branches, and 
 The authoritative operating and data-preservation rules are defined in:
 
 `docs/01-project/OPERATING_MODE.md`
+
+Environment scope matters throughout this document. Unless a section is
+explicitly labelled staging, local, candidate, or historical, the
+implementation snapshot from Hosting through Multi-League describes the
+legacy production deployment on `main`. The environment matrix above governs
+when any older sentence uses broader wording such as "current" or "the
+backend."
 
 ---
 
@@ -271,7 +294,7 @@ Development work should occur on separate branches and be verified before it is 
 
 ---
 
-## Current Technology
+## Production Technology (Legacy `main`)
 
 ### Frontend
 
@@ -292,19 +315,20 @@ Development work should occur on separate branches and be verified before it is 
 * Scheduled background jobs
 * Render persistent disk
 
-### Planned but not yet implemented
+### Not implemented on legacy production `main`
 
 * SQLite as the authoritative mutable league database;
 * secure multi-user authentication;
-* full league isolation through database relationships;
-* automated test coverage sufficient for releases;
-* a complete frontend-and-backend staging release-candidate environment.
+* full league isolation through database relationships.
+
+These target capabilities exist in the isolated staging candidate described in
+the environment matrix. They have not been promoted to production.
 
 ---
 
-## Current Data Storage
+## Production Data Storage (Legacy `main`)
 
-The backend currently uses file-backed JSON state.
+The production backend currently uses file-backed JSON state.
 
 Important files include:
 
@@ -342,7 +366,7 @@ Contains imported NHL statistics used by the frontend and matchup calculations.
 
 The current cache normally contains statistics for approximately 855–859 players, depending on source availability and season activity.
 
-### Current limitation
+### Legacy production limitation
 
 The JSON files were designed around one primary league.
 
@@ -350,7 +374,7 @@ They are not yet an appropriate long-term source of truth for secure multi-leagu
 
 ---
 
-## Persistence and Data Safety
+## Production Persistence and Data Safety (Legacy `main`)
 
 The backend is the authoritative source of league state.
 
@@ -381,9 +405,10 @@ The backup and restoration system has been used successfully, but the complete p
 
 ---
 
-## League Management Features
+## Production League-Management Baseline (Legacy `main`)
 
-The following core Season 1 systems exist and have been used by the league.
+The following core Season 1 systems exist in production and have been used by
+the league.
 
 ### Teams and rosters
 
@@ -568,7 +593,7 @@ The audit system should be preserved and expanded during the SQLite migration.
 
 ---
 
-## Player Database
+## Production Player-Database Baseline (Legacy `main`)
 
 A centralized player database is implemented.
 
@@ -606,7 +631,7 @@ The complete compatibility inventory and approved Season 2 target endpoint defin
 
 ---
 
-## Statistics System
+## Production Statistics Baseline (Legacy `main`)
 
 The backend imports and caches player statistics.
 
@@ -682,7 +707,7 @@ separate frontend slice must prevent those rows from being mistaken for Season
 
 ---
 
-## Matchups
+## Production Matchup Baseline (Legacy `main`)
 
 A significant matchup system has already been implemented.
 
@@ -761,7 +786,7 @@ The original roadmap should then be archived.
 
 ---
 
-## Standings
+## Production Standings Baseline (Legacy `main`)
 
 A read-only standings backend endpoint exists.
 
@@ -798,7 +823,7 @@ Future work must ensure standings:
 
 ---
 
-## Frontend Pages and Interfaces
+## Production Frontend Baseline (Legacy `main`)
 
 The frontend currently includes interfaces for major league-management functions.
 
@@ -836,7 +861,7 @@ The frontend is responsive in several important areas, but the complete site has
 
 ---
 
-## Authentication and Permissions
+## Production Authentication and Permissions (Legacy `main`)
 
 Secure user authentication is not yet implemented.
 
@@ -857,7 +882,7 @@ This is a launch-critical area for the 2026–27 season.
 
 ---
 
-## Multi-League Support
+## Production Multi-League Status (Legacy `main`)
 
 Multi-league support is not yet implemented.
 
@@ -887,18 +912,12 @@ Public self-service league creation is outside the current release scope.
 
 ---
 
-## Backend Refactor
+## Backend Candidate Architecture
 
-The backend was originally concentrated in a large `server.js` file.
-
-A behaviour-preserving refactor and the M2 SQLite foundation are
-complete on the backend branch:
-
-```text
-staging
-```
-
-The completed structure includes explicit boundaries under:
+The behaviour-preserving backend refactor, SQLite foundation, target security,
+league isolation, and later feature milestones are implemented in the
+candidate line. The backend is a modular monolith with explicit boundaries
+under:
 
 ```text
 src/bootstrap/
@@ -912,256 +931,41 @@ src/transport/http/routes/
 src/validators/
 ```
 
-The two imported root compatibility route adapters and the root league-store adapter remain intentionally temporary:
+The current checked-in backend base is `23971a4d...`. Its target runtime uses
+SQLite schema `54`, with `54` immutable migrations, `133` application
+tables (`134` including `schema_migrations`), and `123` composed runtime
+routes. The conceptual API catalogue contains `148` entries; that catalogue
+count is not a runtime-route count.
 
-```text
-routes/healthRoutes.js
-routes/leagueReadRoutes.js
-leagueStore.js
-```
+Target authentication, backend-derived authorization, multi-league isolation,
+transactions, recovery, jobs, outbox, and feature services are active only
+where the exact environment configuration permits them. The held staging
+candidate exercises that architecture; legacy production `main` does not.
 
-Backend-refactor work item `BR-00`, the Baseline and Safety Harness, is complete in backend commit:
-
-```text
-aa0718d Add BR-00 backend safety harness
-```
-
-The committed harness adds Node built-in characterization tests, handcrafted fixtures, isolated operating-system temporary runtimes, exact endpoint-inventory proof, read-only tree-hash proof, current league-store characterization, and bounded child-server cleanup.
-
-Post-commit verification on 2026-07-18 passed 16 of 16 focused characterization tests and 24 of 24 complete Node test entries. The endpoint inventory remained 34 total, six conditional matchup-debug routes, and 28 non-debug routes. Syntax, whitespace, protected repository JSON hash, and child-process cleanup checks also passed.
-
-The refactor and M2 foundation are committed and pushed to
-`origin/staging` at
-`734c52f865e1407dcd21fcc9ffa891ca4c022fb2`. That exact commit is
-deployed only to the dedicated Render staging service. It is not merged
-to or deployed from production `main`.
-
-Root `server.js` is now a 50-line lifecycle entrypoint. Route definitions, services, pure domain calculations, JSON repositories, scheduled jobs, external adapters, configuration, operations, validators, Socket.IO compatibility publishing, and feature composition have explicit module boundaries.
-
-The refactor preserves current compatibility behavior. It does not claim that current behavior already satisfies the approved Season 2 target rules or security model.
-
-The approved Architecture, Data Model, API Contracts, Backend Refactor, SQLite Migration, Security, Frontend Structure, Environment Setup, Deployment, and Backup and Restore specifications now define the target modular-monolith, SQLite, transaction, identity, league-isolation, history, job, API, compatibility, extraction, migration, authentication, application-security, frontend, hosting-environment, release, and recovery boundaries.
-
-The API review identified 34 current route registrations, including six conditional matchup-debug routes. All route definitions now have explicit route-module ownership, and root `server.js` owns none. The approved 14-stage Backend Refactor sequence from the Step 0 safety harness through the Step 13 completion gate is complete locally.
-
-The SQLite Migration specification selects Node 24.14.1 and exact `better-sqlite3` 12.11.1, deterministic copied-JSON import, explicit reset manifests, verified backups, a maintenance-window cutover, and no dual-write period. The Security specification selects Node `scrypt`, opaque server-side sessions, session-bound CSRF, exact credentialed CORS, durable rate limits, backend-derived authorization, and separate append-only security audit.
-
-The approved Active Roadmap defines dependency-ordered milestones from
-the canonical foundation through initial launch, required in-season
-completion, and deferred work. Milestone M1 is complete: `BR-00`
-through `BR-13` passed their gates. Milestone M2 is also complete:
-`M2-01` through `M2-14` and the external staging gate passed. Milestone
-M3 is complete locally. `M3-01` is complete on the focused frontend
-branch. The shipped credential list, browser password comparison,
-local-storage identity, browser actor claims, old login UI, and
-unguarded compatibility writes were removed or made fail-closed. The
-focused verifier, repository-wide lint, production build, isolated
-connected-browser visual and interaction checks, GET-only network
-timeline, anonymous reload, Socket.IO invalidation, complete backend
-suite, and protected-hash gates all passed. `M3-02` is also complete
-locally. It added validated security configuration, an injectable UTC
-clock, Node-crypto randomness, immutable bootstrap composition, and
-secret-redacted structured logging foundations. Its focused suite
-passed `15/15`, the cumulative foundation suite passed `104/104`, and
-the complete backend suite passed `276/276`. `M3-03` is also complete
-locally. It added the exact password policy, bounded asynchronous Node
-`scrypt`, safe user and isolated credential repositories, atomic
-credential replacement, and authority-free test-account creation. Its
-focused suite passed `15/15`, the combined security suite passed
-`30/30`, the cumulative foundation suite passed `119/119`, and the
-complete backend suite passed `292/292`. `M3-04` is also complete
-locally. It added opaque independent session and CSRF secrets,
-digest-only session persistence, one-active-session replacement,
-absolute and idle expiry, bounded activity refresh, revocation, and
-safe local and deployed cookie transport. Its focused suite passed
-`17/17`, the combined security suite passed `47/47`, the cumulative
-foundation suite passed `136/136`, and the complete backend suite
-passed `309/309`. On 2026-07-20 Grae approved stable versioned
-HMAC-SHA-256 CSRF derivation from each opaque random session token so
-reloads and multiple tabs work without recoverable CSRF storage or a
-bootstrap write. `M3-05` is complete locally. Exact origin
-configuration, stable derived CSRF bootstrap, constant-time unsafe
-verification, credentialed CORS, bounded preflight, JSON and Fetch
-Metadata enforcement, and API security headers passed `5/5` focused,
-`39/39` combined security, `143/143` cumulative foundation, and
-`316/316` complete backend tests. `M3-06` is complete locally.
-Purpose-bound opaque tokens, digest-only single-use transitions,
-append-only Security Audit, keyed privacy digests, and durable
-authentication rate limits passed `8/8` focused, `62/62` combined
-security, `151/151` cumulative foundation, and `324/324` complete
-backend tests. On 2026-07-20 Grae approved M3-07 option 1, and M3-07 is now
-complete locally. Atomic pending registration, 24-hour email verification,
-AES-256-GCM encrypted action-link outbox delivery, retry and interrupted
-claim recovery, terminal payload clearing, resend replacement, automatic
-initial session creation, target HTTP envelopes, exact request security,
-and generic public behavior passed `18/18` focused, `80/80` combined M3
-account/security, `169/169` cumulative foundation, and `342/342` complete
-backend tests under Node `24.14.1`. The initial migration, package lock,
-protected JSON, compatibility route inventory, and runtime registration
-remain unchanged. `M3-08` is complete locally. Credential authentication,
-sign-in, sign-out, read-only session bootstrap, password change and reset,
-self-deactivation and reactivation, encrypted reset/reactivation delivery,
-notifications, atomic rollback, replay, expiry, concurrency, and isolated
-HTTP contracts passed `50/50` focused regression, `116/116` combined M3
-account/security, `205/205` cumulative foundation, and `378/378` complete
-backend tests under Node `24.14.1`. `M3-09` is complete locally. Its
-one-time first-platform-administrator command, pending credential setup,
-forward-only migration `0002`, encrypted 72-hour setup delivery, permanent
-self-refusal, password completion, rollback, replay, expiry, concurrency,
-and isolated HTTP contracts passed `14/14` focused, `130/130` combined M3
-account/security/migration/bootstrap, `219/219` cumulative foundation, and
-`392/392` complete backend tests under Node `24.14.1`. `M3-10` is complete
-locally. Backend-derived platform-administrator authorization, atomic
-administrative league creation, planned current season, fixed settings,
-League Activity, Security Audit, scoped idempotency, exact replay, conflicts,
-simultaneous submissions, rollback, and isolated HTTP contracts passed
-`18/18` focused, `148/148` combined M3, `237/237` cumulative foundation,
-and `410/410` complete backend tests under Node `24.14.1`. `M3-11` initial
-commissioner proposal, acceptance, and active membership is complete. Its
-policy, specialized SQLite repository, atomic proposal/read/accept/decline
-service, notification and dual-audit evidence, idempotency, eligibility and
-ownership revalidation, rollback seams, simultaneous terminal action, and
-isolated HTTP contracts passed `16/16` focused, `164/164` combined M3,
-`253/253` cumulative foundation, and `426/426` complete backend tests under
-Node `24.14.1`. `M3-12` league-scoped authorization and authenticated
-read-only league visibility is complete. Its SELECT-only repository,
-backend-derived active-member and current-commissioner authority, two-league
-safe projections, full database immutability checks, and isolated GET HTTP
-contracts passed `10/10` focused, `174/174` combined M3, `263/263` cumulative
-foundation, and `436/436` complete backend tests under Node `24.14.1`.
-`M3-13` authenticated user and league Socket.IO rooms is complete. Its
-read-only session resolution, exact Origin and cookie authentication,
-backend-derived user and league rooms, current-state reauthorization, safe
-disconnection, full-database immutability checks, and metadata-only
-invalidation boundary passed `15/15` focused, `190/190` combined M3,
-`279/279` cumulative foundation, and `452/452` complete backend tests under
-Node `24.14.1`. `M3-14` team-scoped manager authorization and authenticated
-team Socket.IO rooms is complete. Its SELECT-only authority repository, exact
-current-manager checks, multi-team support, team-room reauthorization, and
-full-database immutability checks passed `7/7` focused, `197/197` combined M3,
-`286/286` cumulative foundation, and `459/459` complete backend tests under
-Node `24.14.1`. `M3-15` Option 1 is complete locally. Its immutable schema
-migration, explicit `create_team` and `manage_team` invitation intent,
-commissioner-authorized creation, invited-user safe read, atomic acceptance,
-decline without authority, notification, League Activity, Security Audit,
-idempotency, and isolated HTTP contracts passed `17/17` focused, `214/214`
-combined M3, `303/303` cumulative foundation, and `476/476` complete backend
-tests. `M3-16` authenticated team reads and commissioner-only Setup team
-creation is complete locally. SELECT-only member reads and atomic direct team
-creation passed `9/9` focused, `223/223` combined M3, `312/312` cumulative
-foundation, and `485/485` complete backend tests. `M3-17` active-member team
-manager assignment, transfer, acceptance, decline, and removal is complete
-locally. Its additive transfer-intent migration, atomic service, and isolated
-HTTP boundary passed `11/11` focused, `234/234` combined M3, `323/323`
-cumulative foundation, and `496/496` complete backend tests. `M3-18` team
-profile representation, safe logo storage, and versioned mutation is complete
-locally. Its additive logo-object migration, dependency-free raster policy,
-atomic service, safe team representation, binary read, and isolated HTTP
-boundary passed `16/16` focused, `250/250` combined M3, `339/339` cumulative
-foundation, and `512/512` complete backend tests. `M3-19` local target-runtime
-composition and API integration is complete locally. Its exact 36-endpoint
-dispatcher, explicit SQLite ownership, full account/league/team composition,
-authenticated Socket.IO attachment, integrated workflows, and failure-safe
-resource lifecycle passed `21/21` focused, `271/271` combined M3, `360/360`
-cumulative foundation, and `533/533` complete backend tests. `M3-20` account
-and league-selection frontend integration is complete with `57/57` frontend
-tests, `533/533` backend tests, lint, build, and the connected ordinary-Chrome
-gate passing. `M3-21` provider-backed account email and required notifications
-is complete with `12/12` focused provider/rendering/job tests and `546/546`
-complete backend tests. The M3 completion gate passed.
-Nothing was deployed, merged, or changed in production.
-
-`BR-01` extracted current compatibility configuration and process lifecycle. `BR-02` extracted player JSON access, normalization, indexing, search, reload, and compatibility routing. The stale player-cache reference defect is corrected: startup and reload now update the route-visible service cache. BR-02 verification passed 42 of 42 characterization tests and 50 of 50 complete Node test entries while preserving player source hashes and the 34/6/28 route inventory.
-
-`BR-03` moved statistics cache access, refresh orchestration, provider access, lock handling, atomic cache replacement, refresh token compatibility checks, and statistics routes behind repository, service, NHL adapter, and router boundaries. Verification passed 57 of 57 characterization tests and 65 of 65 complete Node test entries. Failed refreshes preserved the last valid cache, statistics refresh never changed league state, the route inventory remained 34/6/28, and no live NHL request occurred.
-
-`BR-04` extracted snapshot and backup listing, creation, and restore operations behind dedicated operation, repository, and compatibility-router boundaries. Verification passed 72 of 72 characterization tests and 80 of 80 complete Node test entries while preserving protected JSON hashes and the 34/6/28 route inventory. Current traversal, path disclosure, public exposure, body-supplied role, and write-queue defects remain documented and blocked pending the approved Security or later focused reliability work.
-
-`BR-05` extracted Pacific-time schedule construction, round-robin pairing, weekly scoring, standings calculation, current-week/status reads, and matchup read routing. Verification passed 86 of 86 characterization tests and 94 of 94 complete Node test entries, including spring/fall daylight-saving fixtures, scoring baselines, standings sorting, complete matchup-read tree hashes, protected JSON hashes, and the 34/6/28 route inventory.
-
-`BR-06` extracted schedule generation, one-week updates, shift-from behavior, and compatibility commissioner-role checks. Verification passed 98 of 98 characterization tests and 106 of 106 complete Node test entries. Current odd-team rejection, future-only editing, non-production force behavior, overlap validation, save-before-event ordering, protected JSON hashes, the 34/6/28 route inventory, and current response contracts were preserved.
-
-`BR-07` extracted roster-lock, baseline-capture, weekly-finalization, and rollover jobs into fixed-clock, awaited, overlap-guarded definitions and composed them through an explicit ordered scheduler boundary. Verification passed 119 of 119 characterization tests and 127 of 127 complete Node test entries. Duplicate, restart, missing-statistics, invalid-state, save-failure, event-failure, scheduler-overlap, accelerated-week, no-double-advance, and failed-finalization gates passed.
-
-`BR-08` extracted the current compatibility auction resolver, auction-resolution service and job, and automatic weekly-snapshot job while documenting their intentional differences from the approved Season 2 Auctions target. Verification passed 133 of 133 characterization tests and 141 of 141 complete Node test entries. No-bid, single-bid, multiple-bid, amount-tie, missing-team, buyout-lock, activity, exact-boundary, duplicate, restart, overlap, save-failure, event-failure, and one-snapshot-per-occurrence gates passed.
-
-`BR-09` extracted the broad `POST /api/league` compatibility write behind explicit validation, service, and router boundaries without generalizing it for new features. Verification passed 145 of 145 characterization tests and 153 of 153 complete Node test entries. Freeze, wipe, required-array, optional-matchup, commissioner, manager, server-owned-field preservation, save-failure, event-failure, response-contract, protected-hash, and 34/6/28 route-inventory gates passed.
-
-`BR-10` adapted the root league store into an explicit JSON league repository while preserving normalization, queued writes, atomic replacement, backup, schema, list, restore, and compatibility behavior. Verification passed 149 of 149 characterization tests and 157 of 157 complete Node test entries. The focused persistence gate passed 48 of 48 tests, the route inventory remained 34/6/28, and protected JSON and package-manifest hashes remained unchanged.
-
-`BR-11` restored explicit Socket.IO attachment and compatibility invalidation delivery, including safe HTTP behavior when Socket.IO is unavailable. Verification passed 152 of 152 characterization tests and 160 of 160 complete Node test entries. One attached Socket.IO instance, one connection handler, commit-before-event delivery, failure suppression, compatibility CORS, frontend one-refetch lifecycle, protected hashes, and the 34/6/28 route inventory were verified.
-
-`BR-12` removed the remaining debug route handlers and feature composition from root `server.js`, leaving startup and shutdown wiring only. Verification passed 160 of 160 characterization tests and 168 of 168 complete Node test entries. Root `server.js` is 50 lines with zero route handlers, feature imports, or filesystem calls. All 34 routes remain, the six debug routes remain flag-guarded, and protected hashes remain unchanged.
-
-`BR-13` completed the final behavior-preserving refactor gate. The focused architecture and evidence run passed 61 of 61 tests, the final characterization suite passed 164 of 164 tests, and the complete Node suite passed 172 of 172 test entries. Thin-root, explicit-boundary, exact API, read-only tree-hash, accelerated matchup-week, persistence isolation, protected-data, known-gap ownership, and JSON-adapter replaceability gates passed.
-
-The approved Testing Strategy now defines backend, frontend, browser, security, database, migration, job, recovery, staging, release, and production-smoke evidence. The approved Frontend Structure selects TanStack Query for server state, one shared HTTP client, one Socket.IO lifecycle, URL-derived stable league context, feature modules, and an incremental `FE-00` through `FE-11` extraction from the current large `App.jsx`.
-
-The approved Environment Setup defines isolated local, test, staging, and production resources, exact frontend and backend configuration contracts, Node `24.14.1`, a one-instance Render SQLite topology, fail-closed environment identity, and separate Netlify, Render, disk, database, secret, user, email, and backup boundaries.
-
-The approved Backup and Restore specification selects application-consistent SQLite backup, verified AES-256-GCM-encrypted offsite artifacts, hourly in-season and daily off-season protection, platform-administrator restore execution, post-restore session and token revocation, job and outbox reconciliation, and mandatory staging drills.
-
-The approved Deployment specification selects CI-gated staging, manual production publication of exact commits, compatibility-first backend and frontend ordering, explicit migrations, read-only production smoke, release records, first-write rollback boundaries, and separate code, configuration, and database recovery.
-
-The approved Backend Endpoint Checklist tracks all 34 current route
-registrations and all 144 approved target routes, including 19 dedicated FAD
-routes, with permanent IDs and evidence gates for characterization, contract
-tests, frontend connection, staging, production verification, and compatibility
-retirement.
-
-The approved Manual QA Checklist defines repeatable release-candidate acceptance across desktop, mobile, keyboard, accessibility, roles, two leagues, feature workflows, failures, reconnect, recovery, defect handling, and retest. The approved Release Checklist defines hard go/no-go gates from exact source commits through production authorization, read-only smoke, monitoring, rollback, and closeout.
-
-These specifications and checklists are approved design, not evidence that the target Season 2 implementation, migration, authentication system, environment infrastructure, deployment pipeline, recovery tooling, target endpoint catalogue, QA run, or release approval is complete. The behavior-preserving backend refactor sequence itself is complete locally.
+Exact milestone history belongs in `docs/06-work-plans/archive/`, route status
+belongs in `docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md`, and the active
+hosted release ledger is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`. Historical
+blocked/recovered evidence remains in the separate `2026-08-21` release
+record; it preserves older branch identities and intermediate test totals
+without making them current release inputs.
 
 ---
 
 ## Current Local Development State
 
-### Frontend
+The canonical workspaces and checked-in candidate identities are:
 
-The canonical frontend workspace is:
+| Repository | Workspace | Branch | Checked-in identity |
+| --- | --- | --- | --- |
+| Frontend | `E:\hundo-leago` | `codex/m7-26-completion` | `4dfe12d1366314e3d9df722c50771324647743c9` |
+| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | `23971a4d66ee6383c6ad54339e769dbc9a76561e` |
 
-```text
-E:\hundo-leago
-```
-
-Current local candidate work is on:
-
-```text
-m3-01-browser-authority
-```
-
-The committed head is:
-
-```text
-8ff255348a10039eb9e3e4c72da3be570c6b1860
-```
-
-The complete M2-M7 frontend candidate remains preserved as an unfrozen dirty
-worktree and is not represented by that committed head.
-
-### Backend
-
-The canonical backend workspace is:
-
-```text
-E:\hundo-leago-backend
-```
-
-Current backend candidate work is on:
-
-```text
-staging
-```
-
-The branch is synchronized with `origin/staging` at:
-
-```text
-734c52f865e1407dcd21fcc9ffa891ca4c022fb2
-```
-
-The complete M2-M7 backend candidate remains preserved as an unfrozen dirty
-worktree and is not represented by that committed head.
+The frontend identity is the fresh application candidate with the corrected
+strict privacy diagnostic. The backend identity is the last exact held
+candidate; release-contract edits are in progress, so no later backend build
+identity is yet authoritative. Only an exact committed identity may be used
+for publication or release evidence.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -1169,107 +973,37 @@ The compared files, branches, committed heads, and dirty-state inventories
 matched. The C-drive copies are not development, candidate, staging, or
 production inputs.
 
-Backend-refactor items `BR-00` through `BR-13`, M2 items `M2-01`
-through `M2-14`, and the external M2 staging gate are complete. Their
-exact plans and evidence are recorded under
-`docs/06-work-plans/archive/`.
-
-The final M2 gate used a dedicated protected Render staging environment,
-service, and persistent disk. The exact staging commit passed a clean
-build and `261/261` backend tests. Two real-disk imports, independent
-verifications, and recovery rehearsals passed without switching
-application authority.
-
-This staging publication is not evidence that the work exists on
-production `main`. Production was not deployed, migrated, reset, or
-switched to SQLite.
+Older milestone, branch, and test identities remain in the dated history below
+and in `docs/06-work-plans/archive/`. They are evidence of completed steps, not
+current release inputs. Production was not deployed, migrated, reset, or
+switched to SQLite by this local work.
 
 ---
 
 ## Automated Testing
 
-The backend now has an initial automated characterization foundation, but the project does not yet have enough automated test coverage to safely verify all core league behaviour.
+The fresh frontend application candidate `4dfe12d...` passes:
 
-The committed BR-00 foundation currently covers:
+* `402/402` component tests across `59` files;
+* repository-wide lint;
+* browser-authority verification across the shipped source inventory;
+* the exact staging-configured Vite build; and
+* the five-browser Playwright release matrix at `45/45` across desktop and
+  mobile Chromium, desktop Firefox, and desktop and mobile WebKit.
 
-* the exact 34/6/28 compatibility endpoint inventory;
-* current root-server startup against copied synthetic state;
-* all current GET routes leaving the complete temporary runtime tree unchanged;
-* current league-store load, normalization, save, backup, restore, queue, and atomic-rename failure behavior;
-* importable fixed-clock and fake-publisher test seams;
-* bounded child-process cleanup.
+The currently deployed held backend `23971a4d...` passed `3,502/3,502`
+hosted tests with zero failure or skip. Its database identity, schema,
+migration checksum, integrity, foreign keys, hold, and recovery boundaries
+also passed their recorded hosted checks.
 
-Completed BR-01 coverage additionally proves:
+Earlier milestone suites established characterization, read-only, security,
+authorization, league-isolation, migration, transaction, job, recovery,
+browser, and feature coverage. Their exact intermediate totals remain in the
+archived work plans and release records; they are not repeated here as if they
+were current candidate totals.
 
-* current compatibility configuration defaults and coercion;
-* current Express and Socket.IO CORS decisions;
-* application and transport construction without listening;
-* explicit temporary-path dependency composition;
-* tracked interval cleanup;
-* bounded, idempotent HTTP and Socket.IO shutdown;
-* removable SIGINT and SIGTERM handlers.
-
-Completed BR-02 coverage additionally proves player normalization, active search, endpoint limits and errors, route order, reload visibility, and unchanged player-file hashes.
-
-Completed BR-03 coverage additionally proves statistics cache reads, one-player lookup, debug behavior, refresh-token handling, NHL paging, refresh locking, minimum-count rejection, atomic replacement, shared HTTP/CLI orchestration, last-valid-cache preservation, and unchanged league-state hashes.
-
-Completed BR-04 coverage additionally proves recovery listing hashes, snapshot naming and contents, successful restore hashes and activity, missing/malformed restore immutability, repository delegation, current traversal behavior, and temporary-fixture-only recovery.
-
-Completed BR-05 coverage additionally proves explicit-time and timezone schedule calculations, daylight-saving boundaries, round-robin compatibility, weekly scoring baselines and diagnostics, standings results and tie breakers, read-service immutability, matchup response contracts, and complete read-only tree hashes.
-
-Completed BR-06 coverage additionally proves schedule generation and reset semantics, one-week future editing, development-only forced editing, Pacific calendar shifts, ordering and neighbor-overlap validation, failed-command immutability, save-before-event ordering, and compatible command responses.
-
-Completed BR-07 coverage additionally proves fixed-clock matchup job boundaries, awaited saves and event attempts, per-job and per-cycle overlap guards, durable compatibility markers, exact time boundaries, duplicate and restart behavior, missing-statistics safety, accelerated weekly execution, one-cycle advancement, and finalization-before-rollover gating.
-
-Completed BR-08 coverage additionally proves pure compatibility auction projection, current numeric bid ranking and earliest tie-breaking, current missing-team and bid-removal behavior, roster ordering, 14-day buyout locks, leading activity, Sunday Pacific occurrence IDs, one resolved auction cycle and weekly snapshot per marker, awaited persistence, overlap guards, retries, and commit-before-event ordering.
-
-Completed BR-09 coverage additionally proves ordered freeze, wipe, required-array, and optional-matchup validation; manager and commissioner projections; preservation of backend-owned fields and automatic markers; one load and one save; save-before-event ordering; current success and error mapping; generic failure behavior; and dedicated compatibility-router ownership.
-
-Completed BR-10 coverage additionally proves direct JSON repository construction, explicit and compatibility save methods, independent single-writer queues, legacy store delegation, missing and malformed source behavior, normalization, atomic rename failure safety, pre-write backups, deterministic pruning, list and restore behavior, and repository composition with no route-level concrete adapter import.
-
-Completed BR-11 coverage additionally proves explicit Socket.IO application attachment, exactly one connection handler, unchanged Socket.IO and HTTP CORS decisions, one compatibility invalidation after a committed save, no invalidation after save failure, safe HTTP success without Socket.IO, root publisher composition, transport shutdown, and the existing frontend's guarded one-listener, one-refetch, reconnect, and cleanup lifecycle.
-
-Completed BR-12 coverage additionally proves all six debug-route contracts and their disabled state, commissioner guards, state summaries, reset semantics, manual job responses, placeholder normalization, commit-before-event ordering, error mapping, explicit compatibility-runtime construction, idempotent snapshot-then-auction-then-matchup startup, thin-root source structure, route-source ownership, and unchanged full behavior.
-
-Completed BR-13 coverage additionally proves dependency direction across domain, services, routes, and jobs; explicit ownership for every compatibility endpoint; constrained concrete-adapter selection; all five replaceable JSON repository boundaries; the complete 61-test final evidence matrix; and unchanged full compatibility behavior across 172 Node test entries.
-
-Completed M2 coverage additionally proves the exact Node and SQLite
-runtime, migration ledger and checksums, strict schema, SQLite repository
-contracts, portable copied-source inventory, approved reset manifest,
-deterministic IDs and transforms, dry-run and persistent imports,
-reconciliation, backup, clean restore, independent semantic
-verification, and cutover/rollback rehearsal. The final exact-runtime
-suite passed `261/261` tests across `55` suites.
-
-The approved Testing Strategy now defines the required tools, layers, fixtures, gates, and evidence. The approved Backend Endpoint Checklist provides the exact route-level tracking structure, and the approved Manual QA and Release checklists provide staging acceptance and production go/no-go records. Their test foundations, endpoint evidence, QA runs, and release evidence have not yet all been completed.
-
-Current verification has relied heavily on:
-
-* manual browser testing;
-* curl requests;
-* endpoint inspection;
-* health checks;
-* commissioner actions;
-* direct state inspection.
-
-Season 2 requires repeatable testing for:
-
-* authentication;
-* permissions;
-* league isolation;
-* roster legality;
-* cap calculations;
-* contracts;
-* auctions;
-* trades;
-* buyouts;
-* matchup locks;
-* scoring;
-* rollover;
-* standings;
-* migrations;
-* backups and restoration.
-
+Automated success does not replace the unfinished hosted strict A-to-B-to-A
+acceptance run, a final runtime-flag review, or explicit production authority.
 Read-only endpoints must remain read-only.
 
 ---
@@ -1277,46 +1011,41 @@ Read-only endpoints must remain read-only.
 ## Staging Environment
 
 The target topology and configuration are documented in
-`docs/04-technical-specs/ENVIRONMENT_SETUP.md`. A dedicated backend
-staging environment now exists on Render:
+`docs/04-technical-specs/ENVIRONMENT_SETUP.md`. The isolated candidate uses:
 
+* frontend `staging.hundoleago.com` on a dedicated Netlify staging site;
 * protected, network-isolated environment
   `evm-d9eo1v3rjlhs73cpujvg`;
-* service `srv-d9eo2turnols73ekb830` on branch `staging`;
-* separately attached disk `dsk-d9eo2u6rnols73ekb8t0`;
-* staging-only paths, secret values, and `hundo-leago/staging` backup
-  prefix;
-* jobs, backup scheduling, debug routes, matchups, snapshots, and
-  auctions disabled.
+* backend `api-staging.hundoleago.com` on Render service
+  `srv-d9eo2turnols73ekb830`, branch `staging`, with auto-deploy disabled;
+* separately attached disk `dsk-d9eo2u6rnols73ekb8t0`, mounted at
+  `/opt/render/project/data`;
+* SQLite schema `54` at the clean restored authority path
+  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`;
+* staging-only users, leagues, secrets, storage paths, and
+  `hundo-leago/staging` encrypted-backup prefix; and
+* no production persistent disk, database, credential, or deployment
+  authority.
 
-The exact staging commit
-`734c52f865e1407dcd21fcc9ffa891ca4c022fb2` is healthy. M2 ran two
-complete current-data import, independent verification, backup, restore,
-cutover, and rollback rehearsals on the real staging disk. JSON remains
-application authority.
+The currently deployed identities are the exact Netlify and Render candidates
+in the environment matrix. Database identity, migration ledger, checksum,
+integrity, foreign keys, clean restore, and post-cutover encrypted backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807` have verified. The current database has
+no active session and no installed strict fixture.
 
-A staging Netlify frontend, test accounts, test leagues, and functional
-encrypted offsite backup target have not yet been established. The
-offsite endpoint and bucket remain nonfunctional staging placeholders,
-and backup scheduling is disabled.
+Staging remains intentionally unavailable for ordinary sign-in under the full
+safety hold. Maintenance and league writes are closed; scheduled jobs, FAD
+routes, account email, debug routes, backup scheduling, and the live provider
+are disabled. The prior strict privacy run failed before phase two, recovered
+to this clean boundary, and did not reopen staging. A fresh complete strict run
+is in progress with frontend candidate `4dfe12d...`; it must pass before any
+reopen or closure claim.
 
-Current development has used:
-
-* local frontend and backend servers;
-* OS-temporary SQLite migration roots;
-* the dedicated Render backend staging service and disk;
-* production deployments;
-* manual verification.
-
-Before Season 2 launches, staging must have:
-
-* separate frontend deployment;
-* separate backend deployment;
-* separate database and files;
-* test-only accounts;
-* test leagues;
-* non-production secrets;
-* no access to the production persistent disk.
+The approved post-rerun interactive-review matrix is maintenance hold false,
+writes open, FAD routes enabled, scheduler disabled, account email disabled in
+capture mode, debug routes disabled, live provider disabled with provider
+variables absent, and backup scheduling disabled. This matrix is pending; it
+is not the current held state and is not a production job-readiness claim.
 
 ---
 
@@ -1324,34 +1053,34 @@ Before Season 2 launches, staging must have:
 
 The following require attention before the 2026–27 launch:
 
-1. The completed M1 refactor and M2 SQLite migration foundation are
-   published to `origin/staging` and deployed only to the dedicated
-   staging service; they are not on production `main`.
-2. Mutable league data still uses file-backed JSON.
-3. Secure accounts, permissions, leagues, teams, memberships, account/league
-   frontend integration, and provider email are complete locally through the
-   M3 gate but remain isolated from production authority and are not deployed.
-4. Existing compatibility feature workflows are not yet converted to the
-   completed league-scoped target authority.
-5. Contracts are not yet complete for the new season model.
-6. Existing features are not yet scoped by league.
-7. The backend has a 725-test exact-runtime suite and the M3 frontend/browser
-   gates pass, but broader feature and integrated release-candidate coverage
-   remains incomplete.
-8. Dedicated backend staging exists, but staging frontend, test users,
-   test leagues, and full integrated release-candidate workflows remain
-   incomplete.
-9. SQLite backup, clean restore, and rollback are verified on the
-   staging disk, but encrypted offsite upload and offsite restore remain
-   unverified.
-10. Matchups and standings have not completed a full real season.
-11. Off-season scoring makes realistic matchup testing difficult without simulation tools.
-12. Some frontend cap displays may disagree.
-13. Existing documentation is duplicated, outdated, or stored in inconsistent locations.
-14. The frontend README still contains the default Vite template text.
-15. The old `STATUS.md` no longer accurately describes the application.
-16. The old Phase 3 roadmap mixes behavioural rules with completed engineering steps.
-17. The production deployment procedure is documented, but the broader three-person development workflow and role handoffs are not yet documented.
+1. M7-26 is not staging-verified. The original strict attempt failed its exact
+   privacy counter and phase two did not run; the fresh full rerun must pass
+   without weakening that acceptance contract.
+2. T-005 session bootstrap omits promised memberships/selected-safe defaults,
+   and T-004/T-006/T-007/T-009/T-011 session revocation or replacement does
+   not proactively disconnect affected live Socket.IO clients. These are
+   launch-hardening blockers, not M7-26 strict-rerun scope.
+3. Production remains the legacy JSON, no-target-authentication, single-league
+   deployment. Promotion requires a separately authorized, backed-up, exact
+   production migration and release; staging evidence cannot silently grant
+   that authority.
+4. Final staging reopen, scheduler, account-email, outbox, provider, backup-
+   schedule, and first-write flags must be reconciled and verified explicitly.
+   The current full hold must not be treated as the launch runtime matrix.
+5. The signed-Prospect buyout path still fails atomically when a pending
+   `prospect_right` trade requires cancellation. There is no observed partial
+   write, but the P1 production-promotion follow-up remains open.
+6. The late-legal matchup path still needs the approved whole-game exclusion
+   evidence for already-underway NHL games before season play.
+7. The provider-neutral completed-game statistics schedule and the intentionally
+   disabled shared matchup-occurrence runner must be restored or split and
+   verified before matchup operation begins.
+8. Matchups and standings have extensive automated and accelerated evidence
+   but have not yet operated a complete real Hundo Leago season.
+9. Current release summaries, checklists, and closeout documents must be kept
+   aligned to the exact final frontend build, backend build, database, backup,
+   runtime flags, and hosted evidence. A dated failure must remain historical
+   evidence rather than being rewritten as a pass.
 
 ---
 
@@ -1359,12 +1088,27 @@ The following require attention before the 2026–27 launch:
 
 The current priority order is:
 
-1. Complete M7-07 integrated local release rehearsal, browser verification,
-   recovery drills, and hosted-staging preflight without touching hosted state.
-2. Keep production reset, migration, deployment, and job startup blocked until
-   Grae gives explicit authority for their exact scope.
-3. Complete staging frontend, test identities, offsite backups, release
-   procedures, and launch testing through bounded M7 steps.
+1. Bind the fresh frontend application candidate to one exact reviewed backend
+   release contract without changing the sealed application build.
+2. Finish the complete local gates, review, separate repository commits, and
+   exact staging candidate publication.
+3. From the verified clean held database, prepare a fresh strict fixture and
+   run the entire hosted A-to-B-to-A privacy and authority gate. Do not resume
+   the failed attempt or skip phase one.
+4. Restore the required clean boundary, verify the final runtime/job matrix,
+   reconcile backups and outbox state, and reopen staging only after every hard
+   gate passes.
+5. Close M7-26 and align canonical documentation only to recorded evidence.
+   Keep production migration, reset, deployment, and first-write authority
+   blocked until Grae separately approves their exact scope.
+
+---
+
+## Dated Milestone and Release History
+
+The material below preserves implementation checkpoints and exact evidence
+that led to the present candidate. It is not the active priority list, current
+branch inventory, or current environment matrix.
 
 Architecture, Data Model, API Contracts, Backend Refactor, SQLite
 Migration, Security, Frontend Structure, Environment Setup, Deployment,

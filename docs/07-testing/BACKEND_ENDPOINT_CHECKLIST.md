@@ -91,7 +91,7 @@ prove current projector-plus-strict-validator safety for legacy full-money
 evidence, contain only stable IDs/reason codes, report no malformed unsafe
 receipt, and show identical `total_changes()` before and after.
 
-## 2026-08-21 M7-26 Held-Staging Candidate Evidence (IN PROGRESS)
+## Historical 2026-08-21 M7-26 Held-Staging Attempt (BLOCKED / RECOVERED)
 
 The migration candidate `a747430500fbf6887dd748e5e3dfc0ecee77dc07`
 passed `3,428/3,428` tests in held Render deploy
@@ -213,7 +213,7 @@ privacy-smoke pass or production evidence.
 The selective component is a release-only operational exception, not a new
 general endpoint family and therefore not assigned a durable `T-` number:
 
-| Release-only operation | Exact boundary | Current status |
+| Release-only operation | Exact boundary | Historical status |
 | --- | --- | --- |
 | `POST /api/v1/operations/release-qa/strict-manager-outbox` | In-process canonical publication of only the exact accepted Team 1 manager-assignment row; exact source-path/open-smoke environment, schema/checksum/frontend/deployed-backend/season bindings; global scheduler false; accepting Manager B for `team1-to-manager-b` or Manager A for `team1-return-to-manager-a`; credentialed cookie, current CSRF, allowed Origin/fetch metadata, exact four-key JSON body, confirmation, and `Idempotency-Key`; fresh target row claim+publish only, replay zero-write; target runtime/route not composed under hold (`503` maintenance server), and unmounted on hold-false target path or any drift (`404`) | `LOCAL COMPONENT 56/56 + COMBINED LOCAL 3,500 PASS/2 CAPABILITY SKIPS + HELD HOSTED 3,502/3,502 VERIFIED; HOSTED PHASE-ONE FRESH/REPLAY PASS; COMBINED STRICT SMOKE FAIL; ABORT TARGET MATERIALIZED/REPLAY VERIFIED; HELD TARGET CUTOVER/VERIFY/BACKUP PASS (2026-08-22)` |
 
@@ -231,16 +231,29 @@ IDs, and two-cookie T-132 checkpoints are pinned in Testing Strategy and the
 release record. A failed/crashed publisher is never retried: re-hold and run
 the matching abort recovery. The restored target must not expose this route.
 
-These results advance the automated, persisted-receipt, held-hosted candidate,
-fixture-preparation, phase-one publisher, and abort-recovery gates, but they do
-not mark T-131, T-132, T-140, T-147, or T-148 `STAGING VERIFIED`. The combined
-live fixture smoke failed. Target cutover, re-verification, and backup pass,
-but fresh controlled reopening, Notifications, manager-transfer/cache,
-manager, commissioner, and platform-administrator role smoke remain
-`PENDING`.
+These results advanced the historical automated, persisted-receipt, held-
+hosted candidate, fixture-preparation, phase-one publisher, and abort-recovery
+gates, but they did not mark T-131, T-132, T-140, T-147, or T-148 `STAGING
+VERIFIED`. The combined live fixture smoke failed. Target cutover, re-
+verification, and backup passed; this attempt is closed as blocked/recovered
+and must not be resumed.
 Exact evidence is recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
 Production remains untouched and unauthorized.
+
+## 2026-08-22 M7-26 Fresh Held-Staging Rerun (ACTIVE)
+
+Release `HL-20260822-1` is the sole active execution. It uses frontend build
+`4dfe12d1366314e3d9df722c50771324647743c9`, clean held source database
+`hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`, unused target
+`hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`, and verified
+backup `2044fcae-24e8-4392-a1ac-4064d9cd2807`. The fresh restore/outbox
+contract passes its focused exact-Node `24.14.1` gate at `63/63`; the exact
+backend commit, complete gate, held deploy, fixture, two-phase hosted smoke,
+restore/cutover, final activation, and closeout remain pending. No historical
+`HL-20260821-3` action key, receipt, helper marker, or incomplete transfer may
+be reused. Exact current evidence and placeholders live in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 ---
 
@@ -532,23 +545,51 @@ MATCHUPS_DEBUG=true  -> 34 registered routes
 
 # Part 5 - Target Session Endpoints
 
-All target rows in Parts 5 through 17 begin `PLANNED`.
+Target rows in Parts 5 through 17 were initially recorded as `PLANNED`; each
+table now records the highest evidence-backed current status.
+
+### Session-router reconciliation - 2026-08-22
+
+The current target runtime composes all T-001 through T-013 routes. Current
+Node `24.14.1` service, router, and composed-runtime tests prove T-001 through
+T-003 and T-008, T-012, and T-013 at `CONTRACT TESTED`; T-010 is implemented
+with exact self-only fields, `If-Match`, uniqueness, and versioned transaction
+guards, but has no exact-path HTTP contract test and is therefore only
+`IMPLEMENTED`.
+
+The remaining rows expose two real contract gaps rather than missing catalogue
+bookkeeping. T-005 returns safe user/session/CSRF data but omits the memberships
+and selected-safe defaults promised by `API_CONTRACTS.md`. The global Security
+contract requires an already-connected Socket.IO client to disconnect when its
+session is revoked or expires. Current HTTP/services revoke sessions for a
+replacement login, sign-out, password change/reset, and deactivation, but no
+production bridge proactively reauthorizes or disconnects those sockets. The
+existing socket test invokes reauthorization manually and therefore does not
+close that runtime gap. T-004, T-006, T-007, T-009, and T-011 remain blocked
+despite their otherwise strong HTTP, transaction, audit, and rollback tests.
+
+This reconciliation does not promote any row to `FRONTEND CONNECTED`, `LOCAL
+VERIFIED`, `STAGING VERIFIED`, or `PRODUCTION VERIFIED`: the recorded basic
+hosted sign-in, bootstrap, and sign-out smoke is not substituted for endpoint-
+by-endpoint hosted or manual evidence, and no hosted password-change, reset,
+deactivation, reactivation, profile-edit, or registration write is claimed
+here.
 
 | ID | Method and path | Key proof beyond global matrix | Status |
 | --- | --- | --- | --- |
-| `T-001` | `POST /api/v1/accounts` | Rate limits, matching password fields, unique normalized email/display name, no granted membership | `PLANNED` |
-| `T-002` | `POST /api/v1/accounts/email-verifications` | Single-use token, expiry, atomic activation and initial session | `PLANNED` |
-| `T-003` | `POST /api/v1/accounts/email-verification-requests` | Non-enumeration, replacement invalidates prior live link, rate limit | `PLANNED` |
-| `T-004` | `POST /api/v1/session` | Generic failure, rate limit, password verification, one active session | `PLANNED` |
-| `T-005` | `GET /api/v1/session` | Safe user and membership bootstrap, CSRF bootstrap, no credential fields | `PLANNED` |
-| `T-006` | `DELETE /api/v1/session` | Current session revoked, cookie cleared, Socket.IO disconnected | `PLANNED` |
-| `T-007` | `POST /api/v1/session/password` | Current-password check, matching new fields, all sessions revoked, signed-out response | `PLANNED` |
-| `T-008` | `POST /api/v1/password-reset-requests` | Non-enumeration, 30-minute single-use token, rate limit | `PLANNED` |
-| `T-009` | `POST /api/v1/password-resets` | Token expiry/use, matching password fields, session revocation, no automatic sign-in | `PLANNED` |
-| `T-010` | `PATCH /api/v1/account` | `If-Match`, unique display name, safe self-only fields | `PLANNED` |
-| `T-011` | `POST /api/v1/account/deactivation` | Current password, typed confirmation, membership effects, session revocation | `PLANNED` |
-| `T-012` | `POST /api/v1/account/reactivation-requests` | Non-enumeration, rate limit, single live link | `PLANNED` |
-| `T-013` | `POST /api/v1/account/reactivations` | Token and current password, no session creation, restored allowed state only | `PLANNED` |
+| `T-001` | `POST /api/v1/accounts` | Rate limits, matching password fields, unique normalized email/display name, no granted membership | `CONTRACT TESTED - CURRENT NODE 24.14.1 SERVICE + HTTP + COMPOSED RUNTIME (2026-08-22)` |
+| `T-002` | `POST /api/v1/accounts/email-verifications` | Single-use token, expiry, atomic activation and initial session | `CONTRACT TESTED - CURRENT NODE 24.14.1 SERVICE + HTTP (2026-08-22)` |
+| `T-003` | `POST /api/v1/accounts/email-verification-requests` | Non-enumeration, replacement invalidates prior live link, rate limit | `CONTRACT TESTED - CURRENT NODE 24.14.1 SERVICE + HTTP (2026-08-22)` |
+| `T-004` | `POST /api/v1/session` | Generic failure, rate limit, password verification, one active session | `BLOCKED - REPLACEMENT SESSION DOES NOT PROACTIVELY DISCONNECT THE REVOKED SESSION'S LIVE SOCKET; HTTP + TRANSACTION LOCALLY TESTED (2026-08-22)` |
+| `T-005` | `GET /api/v1/session` | Safe user and membership bootstrap, CSRF bootstrap, no credential fields | `BLOCKED - ROUTER/APPROVED-CONTRACT MISMATCH; USER/SESSION/CSRF + READ-ONLY LOCALLY TESTED (2026-07-20)` |
+| `T-006` | `DELETE /api/v1/session` | Current session revoked, cookie cleared, Socket.IO disconnected | `BLOCKED - LIVE SOCKET DISCONNECT NOT WIRED; HTTP REVOCATION + COOKIE CLEAR LOCALLY TESTED (2026-08-22)` |
+| `T-007` | `POST /api/v1/session/password` | Current-password check, matching new fields, all sessions revoked, signed-out response | `BLOCKED - REVOKED LIVE SOCKETS ARE NOT PROACTIVELY DISCONNECTED; HTTP + TRANSACTION LOCALLY TESTED (2026-08-22)` |
+| `T-008` | `POST /api/v1/password-reset-requests` | Non-enumeration, 30-minute single-use token, rate limit | `CONTRACT TESTED - CURRENT NODE 24.14.1 SERVICE + HTTP (2026-08-22)` |
+| `T-009` | `POST /api/v1/password-resets` | Token expiry/use, matching password fields, session revocation, no automatic sign-in | `BLOCKED - REVOKED LIVE SOCKETS ARE NOT PROACTIVELY DISCONNECTED; HTTP + TRANSACTION LOCALLY TESTED (2026-08-22)` |
+| `T-010` | `PATCH /api/v1/account` | `If-Match`, unique display name, safe self-only fields | `IMPLEMENTED - SERVICE/POLICY TESTED; EXACT-PATH HTTP CONTRACT TEST PENDING (2026-08-22)` |
+| `T-011` | `POST /api/v1/account/deactivation` | Current password, typed confirmation, membership effects, session revocation | `BLOCKED - REVOKED LIVE SOCKETS ARE NOT PROACTIVELY DISCONNECTED; HTTP + TRANSACTION LOCALLY TESTED (2026-08-22)` |
+| `T-012` | `POST /api/v1/account/reactivation-requests` | Non-enumeration, rate limit, single live link | `CONTRACT TESTED - CURRENT NODE 24.14.1 SERVICE + HTTP (2026-08-22)` |
+| `T-013` | `POST /api/v1/account/reactivations` | Token and current password, no session creation, restored allowed state only | `CONTRACT TESTED - CURRENT NODE 24.14.1 SERVICE + HTTP (2026-08-22)` |
 
 ---
 
@@ -638,7 +679,7 @@ All target rows in Parts 5 through 17 begin `PLANNED`.
 | `T-064` | `GET /api/v1/public/leagues/:leagueId/teams/:teamId/roster` | Exact public projection, no private fields, no normalization write | `PLANNED` |
 | `T-065` | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster` | Groups, slots, ownership, contracts, cap and legality reconcile | `PLANNED` |
 | `T-066` | `GET /api/v1/leagues/:leagueId/teams/:teamId/roster/legality` | Complete authoritative reasons, strictly read-only | `PLANNED` |
-| `T-067` | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster-moves` | Team control, group/slot rules, prospect no-return rule, warning behavior; when the move first restores late legality, fresh authoritative NHL game state drives one atomic roster snapshot/baseline/immutable player-game exclusion set, already-underway games are excluded in full, and replay/racing moves converge | `PLANNED` |
+| `T-067` | `POST /api/v1/leagues/:leagueId/teams/:teamId/roster/:ownershipId/move` | Team control, group/slot rules, prospect no-return rule, warning behavior; when the move first restores late legality, fresh authoritative NHL game state drives one atomic roster snapshot/baseline/immutable player-game exclusion set, already-underway games are excluded in full, and replay/racing moves converge | `PLANNED` |
 | `T-068` | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/sign` | Exact manager/team/right/version authority; server-derived `$3/3y` ELC and season plan; atomic remain-in-Prospects or legal Active/Bench/eligible-IR destination; strict illegality rejection, activity, rollback, late-lock coordination, and cancellation/history/socket publication for every pending proposal whose unsigned prospect-right snapshot is converted by signing | `LOCAL VERIFIED - M7-26 (2026-08-20)` |
 | `T-069` | `POST /api/v1/leagues/:leagueId/teams/:teamId/prospects/:playerId/decline` | Exact confirmation/version; current unsigned right only; distinct atomic decline, rights deletion, retained history/activity, affected pending-trade cancellation/publication, rollback, isolation, and late-lock coordination | `LOCAL VERIFIED - M7-26 (2026-08-20)` |
 | `T-070` | `DELETE /api/v1/leagues/:leagueId/teams/:teamId/prospect-rights/:playerId` | Exact confirmation/version; current manager and unsigned-right ownership; distinct atomic voluntary release, retained history/activity, affected pending-trade cancellation/publication, rollback, isolation, and late-lock coordination | `LOCAL VERIFIED - M7-26 (2026-08-20)` |

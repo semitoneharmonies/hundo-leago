@@ -875,7 +875,7 @@ The catalogue defines endpoint ownership and minimum contracts. Exact optional d
 | `POST /api/v1/session` | Public with rate limit | Log in with normalized email and password |
 | `GET /api/v1/session` | Authenticated | Return current user, memberships, selected-safe defaults, and CSRF bootstrap data |
 | `DELETE /api/v1/session` | Authenticated | Revoke the current session |
-| `POST /api/v1/session/password` | Authenticated | Change the current password and rotate the session |
+| `POST /api/v1/session/password` | Authenticated | Change the current password, revoke every session, and return signed out |
 | `POST /api/v1/password-reset-requests` | Public with rate limit | Send a 30-minute single-use reset link using a non-enumerating response |
 | `POST /api/v1/password-resets` | Public with single-use token | Set a matching new password, revoke sessions, and require sign-in |
 | `GET /api/v1/account` | Authenticated | Return the caller's safe account profile: stable ID, email, display name, status, and version |

@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`NOT EVALUATED`
+`HL-20260822-1 STAGING RERUN ACTIVE; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,45 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-21 M7-26 Staging Evaluation (BLOCKED; HELD RECOVERY PASS)
+## 2026-08-22 M7-26 Fresh Staging Evaluation (ACTIVE; FULL HOLD)
+
+Release `HL-20260822-1` is a clean rerun, not a continuation of the failed
+strict phase. Its exact active record is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
+
+Checked at this boundary:
+
+- clean schema-`54` source
+  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`;
+- unused target
+  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`;
+- verified incident-preservation backup
+  `2044fcae-24e8-4392-a1ac-4064d9cd2807`;
+- exact frontend build `4dfe12d1366314e3d9df722c50771324647743c9`;
+- sealed Netlify baseline deploy `6a8a3880f946cc39a2bf2bb6`; and
+- focused fresh backend contract gate `63/63`.
+
+The exact backend commit is `PENDING`. Therefore the backend complete gate,
+held F/B deploy, fresh fixture, full two-phase privacy smoke, helper removal,
+restore/cutover, final interactive-review activation, desktop/mobile review,
+observation, and closeout remain unchecked. No placeholder may be treated as
+release evidence.
+
+The final interactive-review matrix is hold false, writes open, FAD routes
+enabled, scheduler disabled, account email disabled/capture, debug disabled,
+live provider disabled with provider variables absent, and backup scheduling
+disabled. That matrix is applied only after the preceding strict and recovery
+gates pass.
+
+Production remains untouched and unauthorized. Provider-neutral
+statistics/matchup job operation, the late-legal T-067/T-093 contract, T-074
+buyout cancellation for contract and `prospect_right` assets, and the legacy-
+production migration remain separate launch gates. T-005 membership/default
+bootstrap and proactive live Socket.IO disconnect on T-004/T-006/T-007/T-009/
+T-011 session revocation/replacement are also unresolved launch-hardening
+gates. None is waived or silently added to this strict rerun.
+
+## Historical 2026-08-21 M7-26 Evaluation (BLOCKED; RECOVERED)
 
 Release `HL-20260821-1` is an isolated-staging D3 candidate with schema `52`
 to `54`. Its exact source commits, held Render and Netlify deploys, local and
@@ -218,13 +256,13 @@ marker path returned the exact `472`-byte SPA index fallback with SHA-256
 physical `.html` path also fell back. The marker is `text/html` and non-JSON,
 so stale helpers fail closed before a POST. Helper removal is `PASS`.
 
-This checklist remains `NOT EVALUATED` for production. The M7-26 staging record
-is `BLOCKED`. Re-hold, strict abort materialization/replay, restored-target
+This checklist remains `NOT EVALUATED` for production. This historical M7-26
+staging record is `BLOCKED`. Re-hold, strict abort materialization/replay, restored-target
 cutover, held target verification, and post-cutover backup pass. The full hold
-remains active; controlled reopening, remaining authenticated desktop/mobile
-role smoke, final runtime flags/job restoration, observation, and closeout are
-`PENDING`. No pending item is silently checked by this note. Production
-remains untouched and unauthorized.
+remained active; controlled reopening, remaining authenticated desktop/mobile
+role smoke, final runtime flags/job restoration, observation, and closeout were
+not completed by that attempt. Fresh release `HL-20260822-1` owns the current
+pending gates. Production remains untouched and unauthorized.
 
 ---
 
@@ -889,7 +927,7 @@ Additionally:
 - [ ] `RC-BKP-014` Restore authority remains platform-administrator-only after approved request.
 - [ ] `RC-BKP-015` Recovery-time and recovery-point targets are understood.
 - [ ] `RC-BKP-015A` The M7-26 strict operation uses only release
-  `HL-20260821-3`, service `srv-d9eo2turnols73ekb830`, environment
+  `HL-20260822-1`, service `srv-d9eo2turnols73ekb830`, environment
   `test:release-qa`, database `m7-release-qa-fixture`, the exact old/new paths,
   backup/manifest/storage hashes, schema `54`, migration checksum set, and
   frontend build pinned in Backup and Restore; the exact deployed backend
@@ -987,23 +1025,25 @@ Known recovery limitation:
   direct `{}` acceptance calls using the assignment IDs returned by the
   proposals. All four used credentialed cookies, current CSRF, allowed
   Origin/fetch metadata, exact bodies, and fixed keys
-  `HL-20260821-3-team1-to-b-propose`,
-  `HL-20260821-3-team1-to-b-accept`,
-  `HL-20260821-3-team1-to-a-propose`, and
-  `HL-20260821-3-team1-to-a-accept`.
+  `HL-20260822-1-team1-to-b-propose`,
+  `HL-20260822-1-team1-to-b-accept`,
+  `HL-20260822-1-team1-to-a-propose`, and
+  `HL-20260822-1-team1-to-a-accept`.
 - [ ] `RC-STG-011C` Manager B invoked phase `team1-to-manager-b` with
-  confirmation `PUBLISH-HL-20260821-3-TEAM1-TO-MANAGER-B` and key
-  `HL-20260821-3-outbox-team1-to-manager-b`; Manager A invoked phase
+  confirmation `PUBLISH-HL-20260822-1-TEAM1-TO-MANAGER-B` and key
+  `HL-20260822-1-outbox-team1-to-manager-b`; Manager A invoked phase
   `team1-return-to-manager-a` with confirmation
-  `PUBLISH-HL-20260821-3-TEAM1-RETURN-TO-MANAGER-A` and key
-  `HL-20260821-3-outbox-team1-return-to-manager-a`. Each exact body contained
+  `PUBLISH-HL-20260822-1-TEAM1-RETURN-TO-MANAGER-A` and key
+  `HL-20260822-1-outbox-team1-return-to-manager-a`. Each exact body contained
   only deployed `backendBuildId`, confirmation, phase, and release
-  `HL-20260821-3`; each fresh success reported exactly two target-event writes,
+  `HL-20260822-1`; each fresh success reported exactly two target-event writes,
   canonical Socket.IO publication, and scheduler still disabled while Gamma,
   Team 2, jobs, and unrelated outbox state remained unchanged.
 - [ ] `RC-STG-011D` Two independent cookie jars proved the T-132 physical-cache
-  choreography. Persistent Manager A moved from complete `1/0/0` to null
-  `2/1/1` to complete `3/2/2`; Manager B moved from null `1/0/0` to complete
+  choreography. Counters mean distinct successful Query instances / physical
+  evictions / successful replacements. Persistent Manager A moved from
+  complete `1/0/0` to null `2/1/1` to complete `3/2/2`; Manager B moved from
+  null `1/0/0` to complete
   `2/1/1`, then after sign-out/remount started complete `1/0/0` and ended null
   `2/1/1`. Publisher actions ran in separate same-cookie action tabs with
   separate QueryClients. Every settled checkpoint was loaded/idle; at each
@@ -1015,18 +1055,18 @@ Known recovery limitation:
   `failed`/`publishing` row. After the restored-path deploy, the selective
   publisher route was absent and no generic scheduler enablement was used.
 - [ ] `RC-STG-011F` The temporary helper was published only as an additive
-  `/release-qa/hl-20260821-3/` overlay on exact canonical origin
+  `/release-qa/hl-20260822-1/` overlay on exact canonical origin
   `https://staging.hundoleago.com`, with exact extensionless browser entry
   point
-  `https://staging.hundoleago.com/release-qa/hl-20260821-3/strict-manager-transfer`.
+  `https://staging.hundoleago.com/release-qa/hl-20260822-1/strict-manager-transfer`.
   No uppercase-path or `.html` redirect occurred. Remote hashes proved every
   path from
-  baseline deploy `6a89709ffc9c88762ae8e74e` byte-identical, including
-  frontend build `0e8eee92e2e323dd7f25ec3112988feaf23f96f0`,
+  baseline deploy `6a8a3880f946cc39a2bf2bb6` byte-identical, including
+  frontend build `4dfe12d1366314e3d9df722c50771324647743c9`,
   `dist/index.html` SHA-256
-  `1982ECF04CC456D989F7B42F15F3CED49A5D825DF0DEDD948DEAFFE8D8C1ADC8`, and
-  `dist/assets/index-CI54gRot.js` at `527839` bytes with SHA-256
-  `5B2336E5B1E099EF32747B48124C331495CEFAD1511E26D244E09D5567460394`.
+  `90620768a37b57b905a35cd576077cd4c4f1a760da28fc8c1c8a9347458383ca`, and
+  `dist/assets/index-BFtuYVmF.js` at `527839` bytes with SHA-256
+  `19ee27ed0fa33016e9614b5dd63095b3f1d3af1fc8f33616b4c30a3c961cd201`.
   No Vite rebuild, application-source change, bundle replacement, or frontend
   build-ID change occurred. Helper/marker responses had exact release-specific
   `Cache-Control: no-store`, `Referrer-Policy: no-referrer`,
@@ -1036,7 +1076,7 @@ Known recovery limitation:
   HTML meta CSP omitted only the inapplicable `frame-ancestors` directive. No
   separate `netlify.app` origin was used. The single header authority was the
   exact temporary helper-scoped `netlify.toml` rule for
-  `/release-qa/hl-20260821-3/*`; no helper `_headers` artifact existed, and the
+  `/release-qa/hl-20260822-1/*`; no helper `_headers` artifact existed, and the
   existing global and every non-helper route header rule/response remained
   unchanged.
 - [ ] `RC-STG-011G` After the normal static document/script/style requests,
@@ -1058,23 +1098,23 @@ Known recovery limitation:
   `RealtimeProvider`, created no Socket.IO listener, and did not share the
   mounted FAD page's application QueryClient.
 - [ ] `RC-STG-011I` The helper exposed exactly four fixed modes: Admin
-  `propose-to-b` with `HL-20260821-3-team1-to-b-propose`; Manager B
+  `propose-to-b` with `HL-20260822-1-team1-to-b-propose`; Manager B
   `accept-and-publish-to-b` with
-  `HL-20260821-3-team1-to-b-accept` and
-  `HL-20260821-3-outbox-team1-to-manager-b`; Admin `propose-to-a` with
-  `HL-20260821-3-team1-to-a-propose`; and Manager A
-  `accept-and-publish-to-a` with `HL-20260821-3-team1-to-a-accept` and
-  `HL-20260821-3-outbox-team1-return-to-manager-a`. Publisher modes issued
+  `HL-20260822-1-team1-to-b-accept` and
+  `HL-20260822-1-outbox-team1-to-manager-b`; Admin `propose-to-a` with
+  `HL-20260822-1-team1-to-a-propose`; and Manager A
+  `accept-and-publish-to-a` with `HL-20260822-1-team1-to-a-accept` and
+  `HL-20260822-1-outbox-team1-return-to-manager-a`. Publisher modes issued
   only one approved fresh call followed immediately by its identical replay.
 - [ ] `RC-STG-011J` Immediately before every POST, including each publisher
   replay, the helper fetched exact canonical-origin
-  `/release-qa/hl-20260821-3/enabled.json` with `cache: no-store`,
+  `/release-qa/hl-20260822-1/enabled.json` with `cache: no-store`,
   `credentials: same-origin`, and `redirect: error`. It required status `200`,
   exact response URL, response type `basic`, media type `application/json`,
   and exactly `contractVersion: 1`, `enabled: true`, release
-  `HL-20260821-3`, expiry `2026-08-23T07:00:00.000Z`, frontend build
-  `0e8eee92e2e323dd7f25ec3112988feaf23f96f0`, backend build
-  `23971a4d66ee6383c6ad54339e769dbc9a76561e`, frontend origin
+  `HL-20260822-1`, the exact future expiry set before helper deployment,
+  frontend build `4dfe12d1366314e3d9df722c50771324647743c9`, the exact fresh backend
+  commit set before helper deployment, frontend origin
   `https://staging.hundoleago.com`, and API origin
   `https://api-staging.hundoleago.com`, and failed before every POST at or
   after that exact expiry. After evidence capture, the exact audited baseline

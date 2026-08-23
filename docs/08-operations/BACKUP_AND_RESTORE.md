@@ -1023,64 +1023,63 @@ generic restore that would replace an authoritative staging or production
 database. The single M7-26 exception below does not remove that blocker for any
 other release, environment, backup, source path, or target path.
 
-### M7-26 staging-only strict restore materializer
+### M7-26 fresh staging-only strict restore materializer
 
 Grae authorized one release-bound isolated-staging restoration for strict
 hosted evidence. The backend exposes four narrow commands for that operation:
 the normal pair is available only after complete hosted smoke, while the abort
 pair is the rollback-only path from an exact recognized incomplete or failed
-smoke state. Under exact Node `24.14.1`, this four-command family has current
-focused component evidence at `56/56`; the required selective manager-outbox
-publisher separately has `56/56`. Their combined strict candidate subsequently
-passed the complete local Node `24.14.1` gate (`3,500` pass plus two intentional
-Windows capability skips of `3,502`, zero failures) and the exact held-hosted
-gate (`3,502/3,502`, zero skips/failures, clean startup) at commit
-`23971a4d66ee6383c6ad54339e769dbc9a76561e` and deploy
-`dep-da4p5hu7bikc73aaeiq0`. Those results are candidate/held-preparation
-evidence, not restore execution evidence.
+smoke state. Under exact Node `24.14.1`, the fresh release-bound restore and
+publisher contract passes its focused `63/63` gate. The exact backend commit,
+complete local gate, held-hosted gate, and deploy are `PENDING`. The historical
+`HL-20260821-3` component, complete, hosted, and abort-recovery evidence remains
+in the separately labelled historical subsection below; it cannot satisfy the
+fresh run.
 
 ```text
-npm run release:qa:strict-restore:plan -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema51-aav-20260815T082700Z.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260821-3' --manifest-object-key 'staging/backups/hundo-leago_staging_20260822T083634565Z_adcbbbab-e857-4cae-af71-dbce95553ce5.manifest.json'
+npm run release:qa:strict-restore:plan -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260822-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.manifest.json'
 
-npm run release:qa:strict-restore:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema51-aav-20260815T082700Z.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260821-3' --manifest-object-key 'staging/backups/hundo-leago_staging_20260822T083634565Z_adcbbbab-e857-4cae-af71-dbce95553ce5.manifest.json' --plan-id '<exact planId emitted by plan>' --confirmation '<exact confirmation emitted by plan>'
+npm run release:qa:strict-restore:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260822-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.manifest.json' --plan-id '<exact planId emitted by plan>' --confirmation '<exact confirmation emitted by plan>'
 
-npm run release:qa:strict-restore:abort:plan -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema51-aav-20260815T082700Z.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260821-3' --manifest-object-key 'staging/backups/hundo-leago_staging_20260822T083634565Z_adcbbbab-e857-4cae-af71-dbce95553ce5.manifest.json'
+npm run release:qa:strict-restore:abort:plan -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260822-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.manifest.json'
 
-npm run release:qa:strict-restore:abort:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema51-aav-20260815T082700Z.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260821-3' --manifest-object-key 'staging/backups/hundo-leago_staging_20260822T083634565Z_adcbbbab-e857-4cae-af71-dbce95553ce5.manifest.json' --plan-id '<exact planId emitted by abort plan>' --confirmation '<exact confirmation emitted by abort plan>'
+npm run release:qa:strict-restore:abort:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260822-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.manifest.json' --plan-id '<exact planId emitted by abort plan>' --confirmation '<exact confirmation emitted by abort plan>'
 ```
 
 The pinned contract is:
 
 ```text
-Release ID:                    HL-20260821-3
+Release ID:                    HL-20260822-1
 Operator-asserted service ID: srv-d9eo2turnols73ekb830
 Environment ID:               test:release-qa
 Database ID:                  m7-release-qa-fixture
 Schema version:               54
 Migration checksum set:       6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89
-Frontend build:               0e8eee92e2e323dd7f25ec3112988feaf23f96f0
-Source path:                  /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema51-aav-20260815T082700Z.sqlite3
-Inactive target path:         /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
-Activation receipt path:      /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3.activation-receipt.json
-Backup ID:                    adcbbbab-e857-4cae-af71-dbce95553ce5
-Backup created:               2026-08-22T08:36:34.565Z
-Backup reason:                pre-bulk-operation
-Backup backend build:         fe6047552857376b490756ff63ac593d431ee561
-Manifest object:              staging/backups/hundo-leago_staging_20260822T083634565Z_adcbbbab-e857-4cae-af71-dbce95553ce5.manifest.json
-Storage object:               staging/backups/hundo-leago_staging_20260822T083634565Z_adcbbbab-e857-4cae-af71-dbce95553ce5.sqlite3.gz.enc
-Encrypted SHA-256:            ee3a3b375f7bc86b845efd0f12bad69937732e973c1661353876952b2330e115
-Manifest checksum:            24898a9e872477cbe4170bea8dc18a8a94016709202e5fad47bd7ca97126a948
+Frontend build:               4dfe12d1366314e3d9df722c50771324647743c9
+Source path:                  /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
+Inactive target path:         /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
+Activation receipt path:      /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3.activation-receipt.json
+Backup ID:                    2044fcae-24e8-4392-a1ac-4064d9cd2807
+Backup created:               2026-08-22T22:40:11.048Z
+Backup completed:             2026-08-22T22:40:14.558Z
+Backup reason:                incident-preservation
+Retention:                    incident-preservation / no expiry
+Requested-by type:             platform_operation
+Requested-by ID:               HL-20260821-3-post-abort-cutover
+Backup backend build:         23971a4d66ee6383c6ad54339e769dbc9a76561e
+Manifest object:              staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.manifest.json
+Storage object:               staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.sqlite3.gz.enc
+Encrypted SHA-256:            cee039557278c41f59fa9d6a5b09cf4f69f1b9f3589cb3774420ef34be255162
+Manifest checksum:            08e3d3bde81843a683017d9952b30e02dd02978181a8644323cfbd590eca2ac8
 Plaintext SHA-256:             cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
 ```
 
-Immediately before strict fixture preparation, this exact backup reverified:
-its decrypted payload again matched the pinned plaintext SHA-256, SQLite
-integrity was `ok`, and foreign-key violations were zero. The held deploy also
-passed the exact environment/full-hold/provider-absence and source/root/target/
-private-work/WAL/SHM boundaries. Strict fixture preparation then reported
-`writeCount: 744`, receipt `0ed590d8-832a-469a-848e-f91b0b37fe56`, and an exact
-zero-write replay. That preparation leaves the normal restore correctly
-blocked until live smoke completes; it does not constitute strict restore
+The exact backup has reverified against the current held source: its decrypted
+payload matched the pinned plaintext SHA-256, SQLite integrity was `ok`,
+foreign-key violations were zero, and remote bytes/hash matched. The source
+WAL/SHM sidecars and fresh target/receipt were absent. Fresh fixture preparation
+and its exact zero-write replay are `PENDING`; the `HL-20260821-3` preparation
+receipt must not be reused. Preparation does not constitute strict restore
 planning, materialization, restore replay, `DATABASE_PATH` handoff, or
 activation.
 
@@ -1123,7 +1122,7 @@ inside this deterministic private `0700` work directory before verified
 cleanup:
 
 ```text
-/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3.strict-restore-work-v1
+/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3.strict-restore-work-v1
 ```
 
 Any pre-existing work directory is preserved and fails closed. Normal
