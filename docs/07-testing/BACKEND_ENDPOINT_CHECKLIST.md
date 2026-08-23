@@ -283,9 +283,43 @@ diagnostic evidence of a scratch-sidecar false negative; v2
 `61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0` corrected
 it. Recovery is complete under the full hold.
 No historical or current action key, receipt, fixture, helper marker, or
-incomplete transfer may be reused, and no replacement release is authorized.
-Exact current evidence lives in
+incomplete transfer may be reused. At that recovery boundary no replacement
+release was authorized. Exact historical evidence lives in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
+
+---
+
+## 2026-08-23 M7-26 Fresh Strict Release (AUTHORIZED / MINTED; EXECUTION PENDING)
+
+Grae requested and approved `HL-20260823-1` at
+`2026-08-23T23:23:29.877Z`. F
+`4dfe12d1366314e3d9df722c50771324647743c9` is frozen. B
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` is only the verified held starting
+baseline; executable B-prime and its focused, complete, publication, and hosted
+gates are pending.
+
+The authoritative source is exact path
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
+`37105664` bytes / SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh target
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
+is absent. Verified backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds exact
+manifest and `.sqlite3.gz.enc` storage-object prefix
+`staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`,
+`createdAt` `2026-08-23T22:56:20.203Z`, encrypted SHA-256
+`e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
+manifest checksum
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
+and verified plaintext `cf3ca07d...`. Its exact reason/retention/requester/
+expiry/backend metadata is recorded in the fresh run ledger.
+
+The full hold remains active. Fixture preparation/replay, fresh helper,
+controlled unhold, session verification, release-specific actions, publisher
+replays, T-131/T-132/T-140 comparator, restore, activation, and final review are
+all `PENDING`. No endpoint or database action has run for this release. Exact
+current evidence is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 ---
 

@@ -552,8 +552,9 @@ candidate targets schema `54`, registers `123` runtime routes, and has a
 conceptual target catalogue from `T-001` through `T-148`.
 
 Release `HL-20260822-1` is now `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`;
-M7-26 remains the sole
-active plan, but no replacement release is authorized. Frontend build
+M7-26 remains the sole active plan. Grae requested and approved fresh release
+`HL-20260823-1` at `2026-08-23T23:23:29.877Z`; it is minted under the full hold
+with execution not started. Frontend build
 `4dfe12d1366314e3d9df722c50771324647743c9` and sealed Netlify baseline
 `6a8a3880f946cc39a2bf2bb6` pass. Exact backend candidate
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on backend
@@ -576,6 +577,19 @@ zero sessions, fixture/transfer absence, and owned scratch cleanup. Fresh backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and its separate plaintext/integrity/
 foreign-key verification passed. Current
 evidence is `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
+
+The current release ledger is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. It binds F
+`4dfe12d1366314e3d9df722c50771324647743c9`, held starting B
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`, authoritative source
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`
+at `37105664` bytes / `cf3ca07d...`, and absent fresh target ending in
+`HL-20260823-1.sqlite3`. Verified backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds its exact manifest/storage
+objects, `2026-08-23T22:56:20.203Z` creation time, encrypted hash
+`e6c6269f...`, checksum `54df36b9...`, plaintext `cf3ca07d...`, and exact
+incident-preservation metadata. B-prime, helper, fixture preparation, unhold,
+actions, smoke, restore, activation, and final review all remain pending.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -941,8 +955,9 @@ session, or database changed. Exact `prepared_only` abort/replay and helper
 retirement passed; held clean-target cutover deploy
 `dep-da5mmpu417fc73807ptg`, corrected post-cutover verification, and fresh
 backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed under the unchanged full
-hold. No replacement release, controlled unhold, activation, or M7-26 closeout
-is authorized yet. The
+hold. Fresh `HL-20260823-1` is now authorized and minted, but its B-prime,
+helper, preparation, controlled unhold, actions, smoke, restore, activation,
+and M7-26 closeout remain pending. The
 failed/recovered 2026-08-21 attempt remains historical; production remains
 untouched and unauthorized.
 
@@ -988,7 +1003,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260822-1 BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE; NO REPLACEMENT RELEASE AUTHORIZED
+Status: ACTIVE - HL-20260823-1 AUTHORIZED / MINTED; FULL HOLD ACTIVE; EXECUTION NOT STARTED
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -998,15 +1013,18 @@ and
 M7-25's isolated-staging completion evidence remains at
 `docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`. M7-26 is
 active under Grae's continue-through-isolated-staging instruction. Its current
-runbook is the 2026-08-22 blocked/recovery record for `HL-20260822-1`; the 2026-08-21
-record is immutable failed/recovered history. Exact backend build
+runbook is the 2026-08-23 authorized/minted ledger for `HL-20260823-1`; the
+2026-08-22 and 2026-08-21 records are immutable blocked/recovered history.
+Exact held starting backend build
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is published and locally verified;
 held deploy `dep-da5l8drtqb8s73ar74sg`, fixture preparation/replay, helper
 publication, exact `prepared_only` abort/replay, and helper retirement are
 verified. Strict smoke never began. Held target cutover
 `dep-da5mmpu417fc73807ptg`, corrected post-cutover verification, and fresh
 backup now pass. Selection of any new authorized release, its final staging
-matrix, and M7-26 closeout remain.
+matrix, and M7-26 closeout remained pending at the `HL-20260822-1` recovery
+boundary. Fresh `HL-20260823-1` is now selected and minted; B-prime through
+final staging review and M7-26 closeout remain pending.
 Production remains untouched and unauthorized.
 
 A work plan is used for a contained current task such as:
@@ -1220,8 +1238,10 @@ materialized the clean target and replayed with zero mutations. Only
 `dep-da5mmpu417fc73807ptg`, corrected post-cutover verifier v2, and fresh backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` now pass. The clean target is the
 verified authoritative held source. The exception grants no new release or
-restore authority. The earlier `HL-20260821-3` abort recovery remains immutable
-historical evidence.
+restore authority by itself. Grae's separate `2026-08-23T23:23:29.877Z`
+approval authorizes only fresh `HL-20260823-1`; its new restore contract and
+all operational gates remain pending. The earlier `HL-20260821-3` abort
+recovery remains immutable historical evidence.
 
 Read for:
 

@@ -1244,6 +1244,50 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
+#### HL-20260823-1 fresh strict release binding - authorized, execution pending
+
+Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
+exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
+`4dfe12d1366314e3d9df722c50771324647743c9` and current held B
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` only as the starting baseline.
+Executable B-prime remains `PENDING`.
+
+```text
+Authoritative source: /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
+Source bytes:         37105664
+Source SHA-256:       cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+Fresh target:         /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3
+Target state:         absent
+```
+
+The release binds verified incident-preservation backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`:
+
+```text
+Manifest:             staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json
+Storage object:       staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.sqlite3.gz.enc
+Created at:           2026-08-23T22:56:20.203Z
+Encrypted SHA-256:    e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448
+Manifest checksum:    54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155
+Plaintext SHA-256:     cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+Reason:               incident-preservation
+Requested-by type:    platform_operation
+Requested-by ID:      HL-20260822-1-post-abort-cutover
+Retention class:      incident-preservation
+Expires at:           null
+Backend build ID:     8e313902feefcd683b0f5edd746a9dd2a9029a18
+SQLite integrity:     ok
+Foreign-key violations: 0
+```
+
+The full hold remains active. No B-prime, helper, fixture preparation, session,
+controlled unhold, action, publisher, smoke, restore, target materialization,
+activation, or new backup action has run for this release. All remain
+`PENDING`. Its restore plan and receipt must use only the new release namespace;
+no prior plan, receipt, target, work area, or release-specific value may be
+reused. Exact current gates are recorded in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
 #### HL-20260822-1 pre-action abort-recovery record
 
 Additive helper deploy `6a8b678ddbcf0b4ea8ba623c` passed its exact hosted
@@ -1329,8 +1373,10 @@ Foreign-key violations: 0
 
 The plaintext, integrity, and foreign-key fields passed in a separate
 `db:backup:verify` invocation. The clean target is now the verified and backed-
-up authoritative source under the unchanged full hold. This record grants no
-new release, restore, unhold, or production authority.
+up authoritative source under the unchanged full hold. At that recovery
+boundary this record granted no new release, restore, unhold, or production
+authority; the separate 2026-08-23 authorization is current and production
+remains unauthorized.
 
 #### HL-20260821-3 hosted abort-recovery record
 

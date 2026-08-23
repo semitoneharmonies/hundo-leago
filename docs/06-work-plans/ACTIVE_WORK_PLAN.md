@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260822-1 BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE; NO REPLACEMENT RELEASE AUTHORIZED`
+`ACTIVE - M7-26; HL-20260823-1 AUTHORIZED / MINTED; FULL HOLD ACTIVE; EXECUTION NOT STARTED`
 
 ## Work Plan ID
 
@@ -20,6 +20,42 @@ M7-26
 Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
+
+## 2026-08-23 Fresh Strict Release - Authorized, Minted, Execution Pending
+
+Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
+exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
+frontend application build
+`4dfe12d1366314e3d9df722c50771324647743c9` and current held backend
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` only as the starting baseline.
+The executable B-prime is `PENDING`.
+
+The authoritative held source is
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
+`37105664` bytes / SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh target
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
+is absent. Verified incident-preservation backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds manifest
+`staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json`,
+storage object with the identical prefix and `.sqlite3.gz.enc` suffix,
+`createdAt` `2026-08-23T22:56:20.203Z`, encrypted SHA-256
+`e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
+manifest checksum
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
+and verified plaintext `cf3ca07d...`. Reason/retention are
+`incident-preservation`, requested-by is
+`platform_operation` / `HL-20260822-1-post-abort-cutover`, `expiresAt` is
+`null`, and backend build is exact starting B.
+
+The full hold remains active. B-prime, helper construction/publication,
+fixture preparation/replay, session verification, controlled unhold, all
+release-specific actions and publisher replays, A-to-B-to-A smoke, restoration,
+target activation, final matrix, and closeout are `PENDING`. No value from
+either blocked predecessor may be resumed or reused. Production remains
+untouched and unauthorized. The exact gate ledger is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
 
@@ -95,9 +131,10 @@ SHA-256 `e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
 manifest checksum
 `54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`, and
 separate verification at plaintext `cf3ca07d...`, integrity `ok`, foreign keys
-`0`. The clean target is now the authoritative held source. No replacement
-release ID or authorization exists, and production remains untouched and
-unauthorized. Exact evidence is recorded in
+`0`. The clean target became the authoritative held source. At that recovery
+boundary no replacement release ID or authorization existed; the later
+`HL-20260823-1` record is current. Production remains untouched and
+unauthorized. Exact historical evidence is recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 ## Historical 2026-08-21 Attempt - Blocked and Recovered
@@ -233,8 +270,10 @@ attempt, this plan authorized only the exact `HL-20260822-1` staging fresh-path
 materialization and external `DATABASE_PATH` handoff defined below. That
 release authority is now spent by its strict stop and completed held recovery.
 Its target handoff, corrected post-cutover verification, and fresh backup have
-finished under the full hold. It does not authorize a replacement release or
-any other staging
+finished under the full hold. It does not itself authorize a replacement
+release. Grae's separate explicit `2026-08-23T23:23:29.877Z` approval now
+authorizes only `HL-20260823-1` and its ordered isolated-staging contract. It
+does not authorize any unrelated staging
 environment-variable change, reset, or restore, or any production branch
 merge, deployment, data correction, configuration change, reset, restore, or
 migration. Production remains a later explicit release decision.
@@ -1147,9 +1186,10 @@ M7-26 is complete only when:
 ## Closeout and Archive Transition
 
 M7-26 remains `PENDING`. Release `HL-20260822-1` is closed to further action as
-`BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`. The clean target
-is the authoritative held source and has a fresh verified backup. No new release
-is active or authorized.
+`BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`. Fresh release
+`HL-20260823-1` is authorized and minted but has not begun execution. Its clean
+held source and verified backup are bound, its target is absent, and every gate
+from B-prime through final review remains pending.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending
@@ -1161,5 +1201,4 @@ docs/06-work-plans/archive/M7-26_FULL_SITE_UI_REVIEW.md
 
 The active-plan path must not be emptied or replaced until the next contained
 work plan is deliberately selected. No archive move, M7-26 completion claim,
-replacement strict release, or controlled-unhold authority is made by this
-recovery update.
+production release or uncontrolled execution authority is made by this mint.

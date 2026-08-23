@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260822-1 BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 AUTHORIZED / MINTED; FULL HOLD ACTIVE; EXECUTION NOT STARTED; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -26,6 +26,36 @@ Launch-critical FAD release gates were added on 2026-07-27 and expanded for
 the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
+
+## 2026-08-23 M7-26 Fresh Strict Release (AUTHORIZED / MINTED; EXECUTION PENDING)
+
+Grae's exact requested/approved/recorded time is
+`2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
+`4dfe12d1366314e3d9df722c50771324647743c9`; B
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` is the held starting baseline,
+not yet the executable B-prime.
+
+The authoritative source is exact path
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
+`37105664` bytes / SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh target
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
+is absent. Bound backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` has exact
+manifest and `.sqlite3.gz.enc` storage object under prefix
+`staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`,
+`createdAt` `2026-08-23T22:56:20.203Z`, encrypted SHA-256
+`e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
+manifest checksum
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
+and verified plaintext `cf3ca07d...`. Exact reason, requester, retention,
+expiry, and backend-build metadata are bound in the new release record.
+
+The full hold remains active. B-prime, helper, preparation/replay, controlled
+unhold, session and action requests, publisher replays, privacy/cache smoke,
+restore, activation, final matrix, observation, and closeout are all
+`PENDING`. Pending is not release evidence. The current gate ledger is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -115,8 +145,9 @@ SHA-256 `e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
 manifest checksum
 `54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`, and
 separate verification at plaintext `cf3ca07d...`, integrity `ok`, and foreign
-keys `0`. Recovery is complete under the full hold. No placeholder may be
-treated as release evidence, and no new release is authorized.
+keys `0`. Recovery is complete under the full hold. At that recovery boundary,
+no placeholder could be treated as release evidence and no new release was
+authorized; the later `HL-20260823-1` record is current.
 
 The final interactive-review matrix is hold false, writes open, FAD routes
 enabled, scheduler disabled, account email disabled/capture, debug disabled,
@@ -330,8 +361,8 @@ remained active; controlled reopening, remaining authenticated desktop/mobile
 role smoke, final runtime flags/job restoration, observation, and closeout were
 not completed by that attempt. The subsequent `HL-20260822-1` rerun is also
 blocked and abort-recovered to a clean target, and it owns no further action
-authority; no replacement release is currently authorized. Production remains
-untouched and unauthorized.
+authority. Fresh `HL-20260823-1` was separately authorized later and does not
+resume either predecessor. Production remains untouched and unauthorized.
 
 ---
 
@@ -995,6 +1026,14 @@ Additionally:
 - [ ] `RC-BKP-013` Provider disk snapshot is secondary, not primary SQLite recovery.
 - [ ] `RC-BKP-014` Restore authority remains platform-administrator-only after approved request.
 - [ ] `RC-BKP-015` Recovery-time and recovery-point targets are understood.
+
+### Immutable `HL-20260822-1` RC-BKP-015A-J Evidence Fence
+
+The following release-specific subitems preserve the closed
+`HL-20260822-1` recovery checklist exactly. Their checked and unchecked marks
+are historical evidence only. None of these IDs, paths, states, receipts, or
+results satisfies `HL-20260823-1`, and none grants resume or reuse authority.
+
 - [ ] `RC-BKP-015A` The M7-26 strict operation uses only release
   `HL-20260822-1`, service `srv-d9eo2turnols73ekb830`, environment
   `test:release-qa`, database `m7-release-qa-fixture`, the exact old/new paths,
@@ -1048,6 +1087,14 @@ Additionally:
   reconciliation decision and evidence authorize any delivery/allowlist
   change.
 
+### Current `HL-20260823-1` Backup/Restore Boundary
+
+The fresh source and verified backup binding pass only as recorded in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. B-prime,
+fixture preparation, helper, smoke, new release-specific plan/execute or abort,
+target materialization, activation, and post-cutover backup remain `PENDING`.
+The historical RC-BKP-015A-J block above cannot be checked forward.
+
 Backup evidence:
 
 ```text
@@ -1071,6 +1118,9 @@ Known recovery limitation:
 - [ ] `RC-STG-004` Staging schema and migration checksum set match the candidate.
 - [ ] `RC-STG-005` Staging environment and database identities are not production.
 - [ ] `RC-STG-006` Two-league fixtures and roles are complete.
+
+### Immutable `HL-20260822-1` RC-STG-006A Evidence Fence
+
 - [ ] `RC-STG-006A` The `HL-20260822-1` fixture was prepared under the full
   hold by the exact release-bound CLI and typed confirmation recorded in
   Backup and Restore, then the identical CLI replayed. The sanitized results
@@ -1081,11 +1131,22 @@ Known recovery limitation:
   hosted gate did not begin before the strict-stop abort. This combined item
   remains unchecked; the emitted `actionableUntilMs` is closed evidence, not
   authority to resume.
+
+The preceding RC-STG-006A state is closed historical evidence. Fresh
+`HL-20260823-1` fixture preparation and exact replay are `PENDING` in its own
+ledger and must emit new release-bound values.
+
 - [ ] `RC-STG-007` Deployed CORS, cookies, CSRF, and Socket.IO tests pass.
 - [ ] `RC-STG-008` Account email capture/sandbox flows pass.
 - [ ] `RC-STG-009` NHL provider success/failure behavior passes.
 - [ ] `RC-STG-010` Scheduled-job and restart behavior pass.
 - [ ] `RC-STG-011` Backup and restore rehearsal pass.
+
+### Immutable `HL-20260822-1` RC-STG-011A-J Evidence Fence
+
+The following ten subitems preserve the closed helper/action/smoke/recovery
+contract. They cannot satisfy, seed, or authorize any `HL-20260823-1` action.
+
 - [ ] `RC-STG-011A` During the strict transfer smoke the global scheduler
   remained disabled. The release-only in-process
   `POST /api/v1/operations/release-qa/strict-manager-outbox` route mounted only
@@ -1210,6 +1271,16 @@ Known recovery limitation:
   another write. Cleanup passed through deploy `6a8b6b25126dabed39fa404d`
   and `10/10` retired-path checks. The combined item remains unchecked because
   neither smoke phase ran.
+
+### Current `HL-20260823-1` Staging Boundary
+
+Every release-specific counterpart to RC-STG-006A and RC-STG-011A-J is
+`PENDING`: B-prime and held deploy, fixture preparation/replay, helper
+construction/verification/publication, controlled unhold, sessions, fresh
+actions and publisher replays, privacy/cache smoke, re-hold, restore,
+activation, and final review. The authoritative live ledger is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
 - [ ] `RC-STG-012` Manual QA recommendation is pass.
 - [ ] `RC-STG-013` Rollback rehearsal uses exact prior frontend/backend candidates.
 - [ ] `RC-STG-014` No staging defect invalidates earlier evidence.

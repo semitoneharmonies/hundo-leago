@@ -898,9 +898,10 @@ clean target, abort receipt, full hold/provider absence, target integrity and
 identity, zero sessions, all ten fixture/transfer artifact counts `0`, and
 owned scratch cleanup without opening the authoritative database. Fresh backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and separate plaintext/integrity/
-foreign-key verification passed. M7-26 remains active, but no replacement
-release ID, helper, controlled unhold, smoke, restore exception, activation, or
-production authority exists. Exact evidence is in
+foreign-key verification passed. At that recovery boundary no replacement
+release ID, helper, controlled unhold, smoke, restore exception, activation,
+or production authority existed. Fresh `HL-20260823-1` was separately
+authorized later; production authority still does not exist. Exact historical evidence is in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 ### Historical M7-26 attempt - 2026-08-21 (blocked and recovered)
@@ -1457,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Preserve the completed held recovery for blocked release HL-20260822-1, then obtain explicit authority before minting or executing any new strict release
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HELPER DEPLOY 6A8B678 PASS THEN ORIGIN-GUARD STRICT STOP / NO UNHOLD, REQUEST, ACTION, OR BACKEND WRITE / PREPARED_ONLY ABORT + REPLAY PASS / HELPER RETIRED BY 6A8B6B2 / DATABASE_PATH-ONLY HELD CUTOVER DA5MMPU LIVE / CORRECTED POST-CUTOVER VERIFY + FRESH BACKUP E735E6A4 PASS / CLEAN TARGET AUTHORITATIVE UNDER FULL HOLD / NO REPLACEMENT RELEASE AUTHORIZED / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Execute newly authorized HL-20260823-1 in strict gate order from its verified clean held source; B-prime and every operational gate remain pending
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4DFE12D BOUND / HELD STARTING B 8E313902 BOUND / B-PRIME PENDING / CLEAN SOURCE + VERIFIED BACKUP E735E6A4 BOUND / FRESH TARGET ABSENT / FULL HOLD ACTIVE / HELPER, PREPARE, UNHOLD, ACTION, SMOKE, RESTORE, ACTIVATION, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1479,12 +1480,22 @@ docs/06-work-plans/ACTIVE_WORK_PLAN.md
 
 The held cutover, exact target/source/receipt/runtime verification, fresh
 incident-preservation backup, and `HL-20260822-1` recovery closeout are complete.
-The ordered remaining gate is Grae's explicit decision whether to authorize a
-separate fresh strict release. Only a new approved release may define its own
-release ID, backend contract, fixture, helper, controlled unhold, A-to-B-to-A
-smoke, restore, final staging matrix, desktop/mobile review, observation, and
-documentation closeout. Staging remains held, and the blocked release must not
-be resumed.
+Grae explicitly requested and approved fresh release `HL-20260823-1` at
+`2026-08-23T23:23:29.877Z`. It binds F
+`4dfe12d1366314e3d9df722c50771324647743c9`, held starting B
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`, authoritative source
+`...HL-20260822-1.sqlite3` (`37105664` bytes / `cf3ca07d...`), absent target
+`...HL-20260823-1.sqlite3`, and verified incident-preservation backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`. Its manifest and storage-object
+identities, `2026-08-23T22:56:20.203Z` creation time, metadata, encrypted hash
+`e6c6269f...`, checksum `54df36b9...`, and plaintext `cf3ca07d...` are exact.
+
+The ordered remaining gates are B-prime binding and local verification, held
+deployment proof, fixture preparation/replay, fresh helper construction and
+publication, controlled unhold, A-to-B-to-A smoke, full-hold restoration,
+release-specific restore/activation, final matrix, observation, and closeout.
+Every one is pending. Staging remains held, and neither blocked predecessor may
+be resumed or reused.
 
 ## Historical Milestone Evidence
 

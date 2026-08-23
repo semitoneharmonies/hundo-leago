@@ -107,6 +107,35 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
+### M7-26 Fresh Strict Release - 2026-08-23 (AUTHORIZED / MINTED; EXECUTION PENDING)
+
+Grae requested and approved `HL-20260823-1` at exact
+requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
+`4dfe12d1366314e3d9df722c50771324647743c9` and binds B
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` only as the verified held starting
+baseline. Exact executable B-prime remains pending.
+
+The authoritative full-hold source is
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
+`37105664` bytes / SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh target
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
+is absent. Backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` is verified and
+binds exact manifest/storage identities, `createdAt`
+`2026-08-23T22:56:20.203Z`, encrypted SHA-256
+`e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
+manifest checksum
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
+plaintext `cf3ca07d...`, and the recorded incident-preservation metadata.
+
+The full hold remains active. B-prime, fixture prepare/replay, fresh helper,
+controlled unhold, sessions, all actions and publisher replays, the exact
+two-cookie `1/0/0 -> 2/1/1 -> 3/2/2` comparator, restore, activation, final
+desktop/mobile matrix, and closeout are all `PENDING`. No test or action result
+from a predecessor may satisfy this release. Its live ledger is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
 ### M7-26 Fresh Strict Rerun - 2026-08-22 (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
 Release `HL-20260822-1` attempted the complete hosted privacy gate from the
@@ -183,9 +212,10 @@ diagnostic
 only; its pre-backup `SCRATCH_SIDECAR_PRESENT` stop was caused by its own
 transient scratch sidecars and was corrected in v2
 `61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0`. The full hold
-remains active, recovery is complete, and no new release is authorized.
+remained active and recovery completed. At that boundary no new release was
+authorized; the later `HL-20260823-1` record is current.
 
-The closed release contract and current recovery ledger are recorded only in
+The closed release contract and recovery ledger are recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`. The final
 interactive-review matrix keeps the scheduler, account email, debug routes,
 live provider, and backup schedule disabled. Provider-neutral statistics/job
