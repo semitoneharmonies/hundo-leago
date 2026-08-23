@@ -248,11 +248,16 @@ Release `HL-20260822-1` is the sole active execution. It uses frontend build
 `hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`, unused target
 `hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`, and verified
 backup `2044fcae-24e8-4392-a1ac-4064d9cd2807`. The fresh restore/outbox
-contract passes its focused exact-Node `24.14.1` gate at `63/63`; the exact
-backend commit, complete gate, held deploy, fixture, two-phase hosted smoke,
-restore/cutover, final activation, and closeout remain pending. No historical
-`HL-20260821-3` action key, receipt, helper marker, or incomplete transfer may
-be reused. Exact current evidence and placeholders live in
+contract at exact backend commit `8e313902feefcd683b0f5edd746a9dd2a9029a18`
+passes its isolated exact-Node `24.14.1` gate at `57/57` in `347.592s`.
+Under Node `24.14.1` / npm `11.11.0`, `npm run check` and `npm ls --all` exit
+`0`, while the complete suite passes `443` suites and `3,503` tests (`3,501`
+pass, zero fail, two intentional Windows skips, zero cancelled/todo) in
+`15172.429s`. Backend `origin/staging` resolves exactly to that commit. The
+held deploy, fixture, two-phase hosted smoke, restore/cutover, final activation,
+and closeout remain pending. No
+historical `HL-20260821-3` action key, receipt, helper marker, or incomplete
+transfer may be reused. Exact current evidence and placeholders live in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 ---

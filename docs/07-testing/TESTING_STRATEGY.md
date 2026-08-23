@@ -127,9 +127,15 @@ Exact frontend build `4dfe12d1366314e3d9df722c50771324647743c9`
 passes `402/402` tests across `59` files, ESLint, the `20/20` browser-authority
 gate across `164` shipped sources, `45/45` Playwright cases, and the
 staging-configured production build. Sealed Netlify baseline
-`6a8a3880f946cc39a2bf2bb6` passes `64/64` remote byte checks. The fresh backend
-contract passes its focused `63/63` gate; its exact commit, complete gate, and
-hosted gate remain `PENDING`.
+`6a8a3880f946cc39a2bf2bb6` passes `64/64` remote byte checks. Exact fresh
+backend commit `8e313902feefcd683b0f5edd746a9dd2a9029a18` passes its isolated
+strict-restore gate at `57/57` in `347.592s`. Under Node `24.14.1` / npm
+`11.11.0`, `npm run check` and `npm ls --all` exit `0`, and the complete suite
+passes `443` suites and `3,503` tests (`3,501` pass, zero fail, two intentional
+Windows skips, zero cancelled/todo) in `15172.429s`. Its full TAP SHA-256 is
+`aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`.
+Backend `origin/staging` resolves exactly to that commit. The hosted gate
+remains `PENDING`.
 
 The active database/backup contract and gate ledger are recorded only in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`. The final

@@ -553,9 +553,12 @@ conceptual target catalogue from `T-001` through `T-148`.
 
 Fresh release `HL-20260822-1` is the only active execution. Frontend build
 `4dfe12d1366314e3d9df722c50771324647743c9` and sealed Netlify baseline
-`6a8a3880f946cc39a2bf2bb6` pass; its exact backend commit and hosted gates
-remain pending under the full hold. Current evidence is
-`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
+`6a8a3880f946cc39a2bf2bb6` pass. Exact backend candidate
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on backend
+`origin/staging` and passes its complete local gate at `3,501/3,503`, with only
+two intentional Windows skips. Its held Render deploy and all later hosted
+gates remain pending under the full hold. Current
+evidence is `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -723,9 +726,12 @@ then closed locally, and FAD-18 reached `STAGING VERIFIED` on schema `52` on
 `docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
 M7-26 is the sole active plan. Fresh release `HL-20260822-1` reruns the exact
 schema-`54` hosted privacy comparator from the recovered clean boundary. Its
-frontend/Netlify baseline passes, its backend identity and later hosted gates
-remain pending, and the full hold remains active. The fresh and historical
-records are separate 2026-08-22 and 2026-08-21 files under `release-runs/`.
+frontend/Netlify baseline and exact local backend candidate
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` pass, and backend `origin/staging`
+resolves to that exact commit. The held backend deploy and later hosted gates
+remain pending, and the full hold remains active. The fresh
+and historical records are separate 2026-08-22 and 2026-08-21 files under
+`release-runs/`.
 The 2026-08-11 product clarification separates FAD deployment from all live-
 statistics-provider capability work. Provider-neutral post-game matchup-stat
 refresh is a later statistics/matchup follow-up, not a FAD technical gate.
@@ -900,9 +906,12 @@ plan and exact release record preserve that historical evidence. M7-26 is the
 sole active full-site UI-review plan. Fresh release `HL-20260822-1` uses exact
 frontend build `4dfe12d...`, Netlify baseline `6a8a3880f946cc39a2bf2bb6`, the
 clean held schema-`54` source, unused fresh target, and verified backup
-`2044fcae-24e8-4392-a1ac-4064d9cd2807`. The exact backend commit and all later
-hosted gates remain pending. The failed/recovered 2026-08-21 attempt remains
-historical; production remains untouched and unauthorized.
+`2044fcae-24e8-4392-a1ac-4064d9cd2807`. Exact backend commit
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on `origin/staging`
+and passes its focused and complete local gates; its held deploy and all later
+hosted gates remain pending. The
+failed/recovered 2026-08-21 attempt remains historical; production remains
+untouched and unauthorized.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -957,8 +966,9 @@ M7-25's isolated-staging completion evidence remains at
 `docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`. M7-26 is
 active under Grae's continue-through-isolated-staging instruction. Its live
 runbook is the fresh 2026-08-22 record for `HL-20260822-1`; the 2026-08-21
-record is immutable failed/recovered history. The backend exact-build
-placeholder, strict hosted gates, final staging matrix, and closeout must be
+record is immutable failed/recovered history. Exact backend build
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` is published and locally verified;
+its held deploy, strict hosted gates, final staging matrix, and closeout must be
 completed before archive. Production remains untouched and unauthorized.
 
 A work plan is used for a contained current task such as:

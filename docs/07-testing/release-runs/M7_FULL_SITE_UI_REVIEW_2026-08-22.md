@@ -2,7 +2,7 @@
 
 ## Status
 
-`DRAFT - ACTIVE; HELD BASELINE VERIFIED; STRICT RERUN PENDING`
+`DRAFT - ACTIVE; LOCAL F/B VERIFIED; HELD DEPLOY AND STRICT RERUN PENDING`
 
 Release `HL-20260822-1` defines the fresh end-to-end rerun from the clean held
 database produced by the recovered `HL-20260821-3` attempt. It does not resume,
@@ -14,9 +14,11 @@ docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md
 ```
 
 The frontend diagnostic correction and exact Netlify baseline are published.
-The fresh backend release contract is locally verified, but its exact commit
-and hosted deploy are still pending. The strict fixture has not been prepared,
-the controlled unhold has not begun, and no fresh A-to-B-to-A action has run.
+The fresh backend release contract is exact committed build
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` and passes its focused and complete
+local gates. Backend `origin/staging` resolves exactly to that commit. Its held
+hosted deploy is still pending. The strict fixture has not been prepared, the
+controlled unhold has not begun, and no fresh A-to-B-to-A action has run.
 
 Production remains untouched and unauthorized.
 
@@ -27,7 +29,7 @@ Release ID:                 HL-20260822-1
 Frontend branch:            staging
 Frontend application build: 4dfe12d1366314e3d9df722c50771324647743c9
 Backend branch:             staging
-Backend build:              PENDING - exact reviewed commit not yet created
+Backend build:              8e313902feefcd683b0f5edd746a9dd2a9029a18
 Schema:                     54
 Environment ID:             test:release-qa
 Database ID:                m7-release-qa-fixture
@@ -45,13 +47,13 @@ Source database:            /opt/render/project/data/hundo-staging/sqlite/hundo-
 Inactive target database:   /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
 ```
 
-The backend-build placeholder must be replaced with one exact tested commit
-before any fresh fixture preparation or controlled unhold. A branch name,
+The backend identity above is the exact tested commit; a branch name,
 working-tree state, or earlier backend commit is not an acceptable substitute.
-Because Render auto-deploy is off, publishing the backend commit does not
-deploy it. After publication, only `APP_BUILD_ID` and `FRONTEND_BUILD_ID` are
-to be merge-updated to the exact B/F identities before one intentional held
-deploy is triggered and observed. This paragraph records the plan, not a
+Backend `origin/staging` resolves exactly to it, but it is not yet hosted
+release evidence. Because Render auto-deploy is off, that publication did not
+deploy the commit. Only `APP_BUILD_ID` and `FRONTEND_BUILD_ID` are to be
+merge-updated to the exact B/F identities before one intentional held deploy
+is triggered and observed. This paragraph records the remaining plan, not a
 completed deploy.
 
 ## Contained Scope
@@ -99,6 +101,25 @@ Exact Node `24.14.1` evidence for frontend build
 - staging-configured Vite production build: pass across `1,786` modules.
 
 The build emitted only the existing main-chunk size warning.
+
+## Backend Local Gate
+
+Exact backend candidate `8e313902feefcd683b0f5edd746a9dd2a9029a18`
+binds frozen normalized diff SHA-256
+`7624c7b24319954a9a67da61346efab3d7485849aad3542eb321b2d6900a0235`.
+Its exact local runtime was Node `24.14.1` with npm `11.11.0`:
+
+- isolated strict-restore gate: `57/57` pass in `347.592s`;
+- `npm run check`: exit `0`;
+- `npm test`: `443` suites and `3,503` tests, with `3,501` pass, zero fail,
+  two intentional Windows skips, zero cancelled, and zero todo in
+  `15172.429s` (about `4h12m52s`); and
+- `npm ls --all`: exit `0`.
+
+The retained complete TAP SHA-256 is
+`aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`.
+This evidence proves the frozen local candidate only. It does not satisfy the
+held Render deploy or any later hosted gate.
 
 ## Sealed Frontend Artifact and Deployment
 
@@ -188,6 +209,40 @@ Public liveness and readiness return `200`; ordinary session traffic returns
 `503 SERVICE_MAINTENANCE`. There are zero active sessions and no installed
 strict fixture at the recorded clean boundary.
 
+## Fresh Fixture Command Handoff
+
+After the exact held F/B deployment passes, prepare the fixture by running this
+command once in the attached Render shell. Run the identical command a second
+time immediately afterward as the replay:
+
+```text
+npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
+
+npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
+```
+
+Both complete sanitized JSON results belong in this record. Fresh prepare must
+report `replayed: false` and its exact positive `databaseWriteCount`; replay
+must report `replayed: true` and `databaseWriteCount: 0`. The operation writes
+the currently authoritative source database, so its bytes are expected to
+change after the first command. It does not write the fresh target. The target,
+its WAL/SHM sidecars, and its activation receipt must stay absent through
+fixture preparation, replay, controlled unhold, hosted smoke, and restore
+planning; only the selected restore execute may materialize them under hold.
+Backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` remains the clean restore point.
+
+The returned `actionableUntilMs` is the operational deadline. It is the next
+daily FAD rollover at midnight `America/Vancouver`, which is `07:00Z` during
+Pacific daylight time; the calendar date depends on the invocation. The
+first preparation and its immediate zero-write replay each require at least
+four hours remaining, so during daylight time both must finish before
+`03:00Z`; begin earlier with operating margin. If neither invocation has begun
+and that margin is missed, keep the hold through rollover and prepare just
+after `07:00Z`. If the first invocation succeeds but replay does not, preserve
+the source and use the abort-restore path rather than waiting and resuming that
+release after rollover. Both hosted transfer phases must finish before the
+emitted deadline.
+
 ## Final Interactive-Review Matrix
 
 After the complete strict smoke, clean restore/cutover, and final verification
@@ -217,10 +272,10 @@ launch-ready.
 | Clean held source, unused target, and backup | `PASS` | Exact paths, hashes, identity, sidecar absence, backup verification, integrity, and foreign keys recorded above. |
 | Frontend diagnostic and complete local gate | `PASS` | Exact build `4dfe12d...`; `402/402`; ESLint, browser authority, Playwright, and build passed. |
 | Sealed Netlify application baseline | `PASS` | Deploy `6a8a3880f946cc39a2bf2bb6`; `64/64` remote byte checks passed. |
-| Backend focused strict contract | `PASS` | Exact Node `24.14.1` focused contract gate passed `63/63`; exact backend commit remains pending. |
-| Backend complete local gate and review | `PENDING` | Must pass before the exact backend commit is published. |
-| Exact held Render deploy with F/B identity | `PENDING` | Must bind frontend build `4dfe12d...` and the eventual exact backend commit. |
-| Fresh fixture preparation and zero-write replay | `PENDING` | Must use only `HL-20260822-1`, the pinned source, and the fresh unused target. |
+| Backend focused strict contract | `PASS` | Exact backend `8e313902...` under Node `24.14.1` passed the isolated strict-restore gate `57/57` in `347.592s`. |
+| Backend complete local gate and review | `PASS` | `npm run check` and `npm ls --all` exited `0`; `npm test` passed `443` suites / `3,503` tests with `3,501` pass, zero fail, two Windows skips, and zero cancelled/todo in `15172.429s`; TAP SHA-256 `aa07d1df...`. |
+| Exact held Render deploy with F/B identity | `PENDING` | Must bind frontend build `4dfe12d...` and backend build `8e313902...`; the currently deployed held Render backend remains `23971a4d...`. |
+| Fresh fixture preparation and zero-write replay | `PENDING` | Both exact invocations mutate/replay only the pinned source; the first records its emitted positive `databaseWriteCount`, the replay records `databaseWriteCount: 0`, and the fresh target remains absent. |
 | Hosted A-to-B-to-A privacy/cache smoke | `PENDING` | Both phases and every exact `1/0/0 -> 2/1/1 -> 3/2/2` comparator must pass. |
 | Helper removal and sealed-baseline restoration | `PENDING` | Remote bytes, headers, and retired helper paths must pass. |
 | Normal restore, replay, target handoff, and held verification | `PENDING` | Failure routes to the release-specific abort path; no retry or ad hoc SQL. |

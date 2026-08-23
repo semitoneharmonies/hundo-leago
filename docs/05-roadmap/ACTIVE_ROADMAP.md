@@ -862,8 +862,11 @@ held schema-`54` database and verified post-cutover backup produced by the
 recovered prior attempt. Exact frontend build
 `4dfe12d1366314e3d9df722c50771324647743c9` is published as sealed Netlify
 baseline `6a8a3880f946cc39a2bf2bb6`; its complete local and remote gates pass.
-The fresh backend contract passes its focused `63/63` gate, but the exact
-backend commit, complete gate, and held deploy remain `PENDING`.
+Exact backend commit `8e313902feefcd683b0f5edd746a9dd2a9029a18`
+passes its isolated strict-restore gate at `57/57` and its complete local gate
+at `3,501/3,503`, with zero failures and only two intentional Windows skips.
+Backend `origin/staging` resolves exactly to that commit. The exact held deploy
+remains `PENDING`.
 
 The full hold remains active. The fresh fixture, complete two-phase strict
 privacy/cache smoke, helper removal, normal restore or bounded abort,
@@ -1427,8 +1430,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Complete the HL-20260822-1 backend gate and exact held deploy, then run the fresh strict fixture, full A-to-B-to-A privacy gate, restore, final interactive-review activation, observation, and closeout
-Implementation status: M7-26 ACTIVE / RELEASE HL-20260822-1 ACTIVE / FRONTEND 4DFE12D + NETLIFY 6A8A3880 PASS / BACKEND EXACT COMMIT PENDING / SOURCE + UNUSED TARGET + BACKUP 2044FCAE VERIFIED / FULL HOLD ACTIVE / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Complete the exact held F/B deploy for published backend 8e313902, then run the fresh strict fixture, full A-to-B-to-A privacy gate, restore, final interactive-review activation, observation, and closeout
+Implementation status: M7-26 ACTIVE / RELEASE HL-20260822-1 ACTIVE / FRONTEND 4DFE12D + NETLIFY 6A8A3880 PASS / BACKEND 8E313902 LOCAL + ORIGIN/STAGING PUBLICATION PASS; HELD DEPLOY PENDING / SOURCE + UNUSED TARGET + BACKUP 2044FCAE VERIFIED / FULL HOLD ACTIVE / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1447,8 +1450,8 @@ docs/04-technical-specs/FREE_AGENT_DRAFT.md
 docs/06-work-plans/ACTIVE_WORK_PLAN.md
 ```
 
-The ordered remaining gates are: exact backend candidate; intentional held
-F/B deploy; fresh fixture and replay; strict two-cookie A-to-B-to-A smoke;
+The ordered remaining gates are: intentional held F/B deploy; fresh fixture
+and replay; strict two-cookie A-to-B-to-A smoke;
 sealed helper removal; normal restore/cutover and backup; final staging matrix;
 desktop/mobile role review; observation; and documentation closeout. Staging
 must remain held until the applicable gate authorizes the next transition.

@@ -14,7 +14,7 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-08-22**
+Last reviewed: **2026-08-23**
 
 ---
 
@@ -24,7 +24,7 @@ Last reviewed: **2026-08-22**
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
 | Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` in deploy `6a8a3880f946cc39a2bf2bb6`; Render is live on backend `23971a4d66ee6383c6ad54339e769dbc9a76561e` in deploy `dep-da51hjvqj5pc73bh8g3g` | SQLite schema `54`, target authentication, and multi-league authority use clean source `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`, protected by verified backup `2044fcae-24e8-4392-a1ac-4064d9cd2807`. The full safety hold remains active: public live/ready checks return `200`, while session traffic returns `503 SERVICE_MAINTENANCE`; writes, scheduled jobs, FAD routes, account email, debug routes, backup scheduling, and the live provider remain disabled. |
-| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch `codex/m7-26-completion` is still based on `23971a4d66ee6383c6ad54339e769dbc9a76561e` while the next exact release contract is prepared | Fresh release `HL-20260822-1` is `ACTIVE` and targets unused path `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`. The frontend diagnostic and complete local/Netlify gates pass; the exact backend build and every later hosted gate remain pending. The recovered `HL-20260821-3` attempt stays historical and blocked. No production change is claimed. |
+| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at exact release candidate `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260822-1` is `ACTIVE` and targets unused path `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`. The frontend diagnostic and complete local/Netlify gates pass, and the backend focused, complete local, and publication gates pass. The held backend deployment and every later hosted gate remain pending. The recovered `HL-20260821-3` attempt stays historical and blocked. No production change is claimed. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -931,7 +931,8 @@ src/transport/http/routes/
 src/validators/
 ```
 
-The current checked-in backend base is `23971a4d...`. Its target runtime uses
+The current checked-in backend candidate is
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`. Its target runtime uses
 SQLite schema `54`, with `54` immutable migrations, `133` application
 tables (`134` including `schema_migrations`), and `123` composed runtime
 routes. The conceptual API catalogue contains `148` entries; that catalogue
@@ -959,13 +960,13 @@ The canonical workspaces and checked-in candidate identities are:
 | Repository | Workspace | Branch | Checked-in identity |
 | --- | --- | --- | --- |
 | Frontend | `E:\hundo-leago` | `codex/m7-26-completion` | `4dfe12d1366314e3d9df722c50771324647743c9` |
-| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | `23971a4d66ee6383c6ad54339e769dbc9a76561e` |
+| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | `8e313902feefcd683b0f5edd746a9dd2a9029a18` |
 
 The frontend identity is the fresh application candidate with the corrected
-strict privacy diagnostic. The backend identity is the last exact held
-candidate; release-contract edits are in progress, so no later backend build
-identity is yet authoritative. Only an exact committed identity may be used
-for publication or release evidence.
+strict privacy diagnostic. The backend identity is the exact committed fresh
+release contract, and backend `origin/staging` resolves exactly to it. It is
+locally verified but is not yet the deployed Render identity. Only this exact
+committed identity may now be used for deployment or release evidence.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -990,6 +991,16 @@ The fresh frontend application candidate `4dfe12d...` passes:
 * the exact staging-configured Vite build; and
 * the five-browser Playwright release matrix at `45/45` across desktop and
   mobile Chromium, desktop Firefox, and desktop and mobile WebKit.
+
+Exact backend candidate `8e313902feefcd683b0f5edd746a9dd2a9029a18`
+passes under Node `24.14.1` and npm `11.11.0`: the isolated strict-restore gate
+passed `57/57` in `347.592s`; `npm run check` exited `0`; the complete gate
+passed `443` suites and `3,503` tests (`3,501` pass, zero fail, two intentional
+Windows skips, zero cancelled/todo) in `15172.429s` (about `4h12m52s`); and
+`npm ls --all` exited `0`. The complete TAP SHA-256 is
+`aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`, and the
+frozen normalized backend diff SHA-256 is
+`7624c7b24319954a9a67da61346efab3d7485849aad3542eb321b2d6900a0235`.
 
 The currently deployed held backend `23971a4d...` passed `3,502/3,502`
 hosted tests with zero failure or skip. Its database identity, schema,
@@ -1088,10 +1099,11 @@ The following require attention before the 2026–27 launch:
 
 The current priority order is:
 
-1. Bind the fresh frontend application candidate to one exact reviewed backend
-   release contract without changing the sealed application build.
-2. Finish the complete local gates, review, separate repository commits, and
-   exact staging candidate publication.
+1. Commit and publish the reconciled documentation evidence without changing
+   the sealed frontend application build or published backend candidate
+   `8e313902feefcd683b0f5edd746a9dd2a9029a18`.
+2. Trigger one intentional held F/B deploy and verify the exact build identities
+   and full-hold runtime before any fixture write or controlled unhold.
 3. From the verified clean held database, prepare a fresh strict fixture and
    run the entire hosted A-to-B-to-A privacy and authority gate. Do not resume
    the failed attempt or skip phase one.

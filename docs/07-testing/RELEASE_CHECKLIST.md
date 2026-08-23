@@ -43,10 +43,18 @@ Checked at this boundary:
   `2044fcae-24e8-4392-a1ac-4064d9cd2807`;
 - exact frontend build `4dfe12d1366314e3d9df722c50771324647743c9`;
 - sealed Netlify baseline deploy `6a8a3880f946cc39a2bf2bb6`; and
-- focused fresh backend contract gate `63/63`.
+- exact backend build `8e313902feefcd683b0f5edd746a9dd2a9029a18`,
+  whose isolated strict-restore gate passed `57/57` in `347.592s` and whose
+  complete local suite passed `443` suites / `3,503` tests with `3,501` pass,
+  zero fail, two intentional Windows skips, and zero cancelled/todo in
+  `15172.429s` under Node `24.14.1` / npm `11.11.0`.
 
-The exact backend commit is `PENDING`. Therefore the backend complete gate,
-held F/B deploy, fresh fixture, full two-phase privacy smoke, helper removal,
+Backend `npm run check` and `npm ls --all` both exit `0`. The full TAP SHA-256
+is `aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`, and
+the frozen normalized backend diff SHA-256 is
+`7624c7b24319954a9a67da61346efab3d7485849aad3542eb321b2d6900a0235`.
+Backend `origin/staging` resolves exactly to the backend build above. The held
+F/B deploy, fresh fixture, full two-phase privacy smoke, helper removal,
 restore/cutover, final interactive-review activation, desktop/mobile review,
 observation, and closeout remain unchecked. No placeholder may be treated as
 release evidence.
@@ -1002,6 +1010,16 @@ Known recovery limitation:
 - [ ] `RC-STG-004` Staging schema and migration checksum set match the candidate.
 - [ ] `RC-STG-005` Staging environment and database identities are not production.
 - [ ] `RC-STG-006` Two-league fixtures and roles are complete.
+- [ ] `RC-STG-006A` The `HL-20260822-1` fixture was prepared under the full
+  hold by the exact release-bound CLI and typed confirmation recorded in
+  Backup and Restore, then the identical CLI replayed. The sanitized results
+  record `replayed: false` with the emitted positive `databaseWriteCount`, then
+  `replayed: true` with `databaseWriteCount: 0`. Prepare mutated only the pinned
+  source; the fresh target, its WAL/SHM sidecars, and activation receipt stayed
+  absent until the selected restore execute. The hosted gate completed before
+  the emitted `actionableUntilMs`, using the daily midnight
+  `America/Vancouver` rollover (`07:00Z` during Pacific daylight time) rather
+  than a reusable calendar date.
 - [ ] `RC-STG-007` Deployed CORS, cookies, CSRF, and Socket.IO tests pass.
 - [ ] `RC-STG-008` Account email capture/sandbox flows pass.
 - [ ] `RC-STG-009` NHL provider success/failure behavior passes.
@@ -1123,8 +1141,9 @@ Known recovery limitation:
   without rebuilding. Original hashes and non-helper global headers re-passed,
   helper/marker paths resolved only through the normal SPA fallback, and that
   invalid marker response made every stale helper tab fail closed before
-  another write. This cleanup subgate is `PASS`; the combined item remains
-  unchecked because phase two did not run.
+  another write. Record this cleanup subgate as `PASS` only after the fresh
+  helper is retired and its hosted removal evidence passes; the combined item
+  remains unchecked until both smoke phases and cleanup have passed.
 - [ ] `RC-STG-012` Manual QA recommendation is pass.
 - [ ] `RC-STG-013` Rollback rehearsal uses exact prior frontend/backend candidates.
 - [ ] `RC-STG-014` No staging defect invalidates earlier evidence.

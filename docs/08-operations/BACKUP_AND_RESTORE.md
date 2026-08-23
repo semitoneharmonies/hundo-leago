@@ -1030,8 +1030,13 @@ hosted evidence. The backend exposes four narrow commands for that operation:
 the normal pair is available only after complete hosted smoke, while the abort
 pair is the rollback-only path from an exact recognized incomplete or failed
 smoke state. Under exact Node `24.14.1`, the fresh release-bound restore and
-publisher contract passes its focused `63/63` gate. The exact backend commit,
-complete local gate, held-hosted gate, and deploy are `PENDING`. The historical
+publisher contract at exact backend commit
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` passes its isolated `57/57` gate in
+`347.592s`. Under npm `11.11.0`, `npm run check` and `npm ls --all` exit `0`,
+and the complete local suite passes `443` suites / `3,503` tests with `3,501`
+pass, zero fail, two intentional Windows skips, and zero cancelled/todo in
+`15172.429s`. Backend `origin/staging` resolves exactly to that commit. The
+held-hosted gate and deploy are `PENDING`. The historical
 `HL-20260821-3` component, complete, hosted, and abort-recovery evidence remains
 in the separately labelled historical subsection below; it cannot satisfy the
 fresh run.
@@ -1082,6 +1087,39 @@ and its exact zero-write replay are `PENDING`; the `HL-20260821-3` preparation
 receipt must not be reused. Preparation does not constitute strict restore
 planning, materialization, restore replay, `DATABASE_PATH` handoff, or
 activation.
+
+Fixture preparation precedes the four restore commands above and deliberately
+mutates the pinned source. The second invocation is the replay; there is no
+separate replay script:
+
+```text
+npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
+
+npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
+```
+
+Retain both sanitized results. The first result must be `replayed: false` with
+the exact positive `databaseWriteCount` emitted by the operation. The second
+must be `replayed: true` with `databaseWriteCount: 0`. That full field name is
+canonical; `writeCount` in older historical prose is only shorthand. The first
+command is expected to change the source bytes, so its clean pre-fixture hash
+is not a post-prepare invariant. The verified backup remains the clean restore
+point.
+
+The target, target WAL/SHM sidecars, and activation receipt must remain absent
+through preparation, replay, controlled unhold, hosted smoke, and restore
+planning. Only a successful selected normal or abort restore execute may
+materialize the target and receipt under the full hold. The actionable
+restricted-auction boundary is the next daily midnight in
+`America/Vancouver`; during Pacific daylight time it is `07:00Z`. Treat the
+returned `actionableUntilMs` as authoritative rather than recording a reusable
+calendar date. Both the first preparation and its immediate zero-write replay
+require at least four hours of remaining horizon, so during daylight time both
+must finish before `03:00Z`; begin earlier with operating margin. If neither
+invocation has begun and that margin is missed, keep the hold through rollover
+and prepare just after `07:00Z` for the next daily window. If the first
+invocation succeeds but replay does not, preserve the mutated source and use
+the abort-restore path; never wait and resume that release after rollover.
 
 All four commands run only from the attached Render service shell while the exact
 source path is current and the full hold is active:

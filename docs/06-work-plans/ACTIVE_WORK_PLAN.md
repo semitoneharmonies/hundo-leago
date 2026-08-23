@@ -27,12 +27,22 @@ Release `HL-20260822-1` is the only active M7-26 execution. It starts from the
 clean held database recovered from the rejected `HL-20260821-3` attempt; it
 does not resume or rewrite that attempt. The frontend diagnostic correction is
 exact build `4dfe12d1366314e3d9df722c50771324647743c9`, published as sealed
-Netlify baseline `6a8a3880f946cc39a2bf2bb6`. The fresh backend build remains
-`PENDING` until its complete gate, review, commit, and publication pass.
+Netlify baseline `6a8a3880f946cc39a2bf2bb6`. Exact backend build
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` is committed and locally verified.
+Under exact Node `24.14.1` / npm `11.11.0`, its isolated strict-restore gate
+passed `57/57` in `347.592s`, `npm run check` exited `0`, `npm test` passed
+`443` suites and `3,503` tests (`3,501` pass, zero fail, two intentional
+Windows skips, zero cancelled/todo) in `15172.429s`, and `npm ls --all` exited
+`0`. The full TAP SHA-256 is
+`aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`; the
+frozen normalized diff SHA-256 is
+`7624c7b24319954a9a67da61346efab3d7485849aad3542eb321b2d6900a0235`.
+Backend `origin/staging` resolves exactly to
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`. The held deploy remains pending.
 Render service `srv-d9eo2turnols73ekb830` remains on branch `staging` with
-auto-deploy disabled and persistent mount `/opt/render/project/data`. Publishing
-the backend does not deploy it; after publication, only the exact F/B build-ID
-merge update and one intentional held deploy may advance the run.
+auto-deploy disabled and persistent mount `/opt/render/project/data`. That
+publication did not deploy the backend; only the exact F/B build-ID merge
+update and one intentional held deploy may advance the run.
 
 The current authoritative source is
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`;
@@ -413,10 +423,12 @@ SPORTSDATAIO_NHL_LIVE_CAPABILITY_ARTIFACT: absent
 SPORTSDATAIO_NHL_LIVE_PROBE_MANIFEST: absent
 ```
 
-This same matrix is the required final interactive-review matrix after strict
-smoke, clean restore/cutover, and held verification pass. It intentionally
-keeps the scheduler, account email, debug routes, live provider, and scheduled
-backups disabled; it is not evidence that production job operation is ready.
+The same flag posture is required for final interactive review after strict
+smoke, clean restore/cutover, and held verification pass, but `DATABASE_PATH`
+must then identify the verified fresh `HL-20260822-1` target and the strict
+publisher route must be absent. The final posture intentionally keeps the
+scheduler, account email, debug routes, live provider, and scheduled backups
+disabled; it is not evidence that production job operation is ready.
 
 Under the full hold the target runtime and route are not composed, and the
 maintenance server returns `503 SERVICE_MAINTENANCE`. With the hold false, the
@@ -789,6 +801,47 @@ If either publisher invocation fails, crashes, or leaves the target row
 `failed` or `publishing`, do not retry it. Immediately restore the full hold,
 preserve the failure state, and use the strict abort plan/execute path below.
 
+#### Fresh `HL-20260822-1` fixture preparation handoff
+
+Fixture preparation is an intentional write to the pinned authoritative source
+database, not to the fresh inactive target. Run the exact prepare command below
+once under the full hold, then run the identical command once more as the
+idempotency replay:
+
+```text
+npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
+
+npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
+```
+
+Capture the complete sanitized JSON from both invocations. The first must
+report `replayed: false` and the operation's exact positive
+`databaseWriteCount`; the second must report `replayed: true` and
+`databaseWriteCount: 0`. `databaseWriteCount` is the actual sanitized field
+name; the older `writeCount` wording elsewhere in historical narrative is only
+shorthand and must not be copied into fresh evidence.
+
+Before either command, the inactive target, its WAL/SHM sidecars, and its
+activation receipt must be absent. They remain absent throughout prepare,
+replay, controlled unhold, and hosted smoke. The source bytes are expected to
+change on the first prepare because the fixture is installed there; backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807`, not a post-prepare source hash, remains
+the clean restore point. Only the selected normal or abort restore execute may
+materialize the target and activation receipt under the restored full hold.
+
+The fixture's restricted auction ends at the next daily FAD rollover: midnight
+in `America/Vancouver`. During Pacific daylight time that boundary is
+`07:00Z`; use the emitted `actionableUntilMs` rather than a hard-coded calendar
+date. Both the first preparation and its immediate zero-write replay enforce at
+least four hours before that boundary, so during daylight time both must finish
+before `03:00Z`; begin earlier with operating margin. If neither invocation has
+begun and that margin is missed, keep the full hold, wait until just after the
+`07:00Z` rollover, reverify the source/backup and target absence, and prepare
+against the new daily window. If the first invocation succeeds but replay does
+not, preserve the mutated source and follow the abort-restore path; never wait
+and resume that release after rollover. Complete both hosted phases before the
+emitted deadline.
+
 #### Fresh `HL-20260822-1` same-cookie helper authorization
 
 The fresh helper may exist only as an additive overlay on sealed Netlify
@@ -803,10 +856,10 @@ main bundle:    assets/index-BFtuYVmF.js / 527839 bytes / 19ee27ed0fa33016e9614b
 CSS:            assets/index-C-yMyteT.css / 108551 bytes / 74aab8400795639840c5efeff9e14ffe5539b71dda1a09c523e50edf63c1ab88
 ```
 
-The marker must bind release `HL-20260822-1`, the frontend build above, the
-eventual exact backend commit, canonical frontend/API origins, and an explicit
-future expiry. Backend build and expiry are `PENDING`; the helper must not be
-deployed or enabled while either is a placeholder. Every marker check, header,
+The marker must bind release `HL-20260822-1`, the frontend build above, exact
+backend commit `8e313902feefcd683b0f5edd746a9dd2a9029a18`, canonical frontend/API origins,
+and an explicit future expiry. The expiry is `PENDING`; the helper must not be
+deployed or enabled while it is a placeholder. Every marker check, header,
 CSP, inert-load, empty isolated QueryClient, same-cookie, explicit arming,
 fresh CSRF/session, exact-identity, no-secret, no-retry, and fail-closed rule in
 the historical contract remains required with only the fresh release-bound
