@@ -1023,7 +1023,7 @@ generic restore that would replace an authoritative staging or production
 database. The single M7-26 exception below does not remove that blocker for any
 other release, environment, backup, source path, or target path.
 
-### M7-26 fresh staging-only strict restore materializer
+### M7-26 release-bound staging-only strict restore materializer - closed record
 
 Grae authorized one release-bound isolated-staging restoration for strict
 hosted evidence. The backend exposes four narrow commands for that operation:
@@ -1039,8 +1039,10 @@ pass, zero fail, two intentional Windows skips, and zero cancelled/todo in
 deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B; its build, all
 `3,503/3,503` hosted tests across `443` suites, zero-startup-error check,
 live/readiness `200`/`no-store`, and held league `503`/`no-store` checks pass.
-The fresh fixture prepare and immediate zero-write replay also pass under the
-full hold. The historical
+The fresh fixture prepare and immediate zero-write replay also passed under the
+full hold. Release `HL-20260822-1` subsequently stopped at its pre-action helper
+origin guard and used the exact abort pair recorded below; it is blocked and no
+longer active. The historical
 `HL-20260821-3` component, complete, hosted, and abort-recovery evidence remains
 in the separately labelled historical subsection below; it cannot satisfy the
 fresh run.
@@ -1093,9 +1095,9 @@ preparation receipt was not reused. Preparation does not constitute strict
 restore planning, materialization, restore replay, `DATABASE_PATH` handoff, or
 activation.
 
-Fixture preparation precedes the four restore commands above and deliberately
-mutates the pinned source. The second invocation is the replay; there is no
-separate replay script:
+In the closed release sequence, fixture preparation preceded the four restore
+commands above and deliberately mutated the pinned source. The second
+invocation was the replay; there was no separate replay script:
 
 ```text
 npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
@@ -1124,17 +1126,20 @@ non-symlink, same-device file of `37761024` bytes, SHA-256
 the activation receipt, and the deterministic restore work directory are all
 absent. Exact B/F and the full hold remain bound.
 
-The target, target WAL/SHM sidecars, activation receipt, and restore work area
-must remain absent through controlled unhold, hosted smoke, and restore
-planning. Only a successful selected normal or abort restore execute may
-materialize the target and receipt under the full hold. The exact actionable
-boundary is `2026-08-24T07:00:00.000Z`; both hosted transfer phases must finish
-before it. If the hosted gate cannot complete in time, preserve the mutated
-source, restore the full hold, and use the abort-restore path rather than
-preparing again or resuming after rollover.
+At the pre-abort boundary, the target, target WAL/SHM sidecars, activation
+receipt, and restore work area were required to remain absent through any
+controlled unhold, hosted smoke, and restore planning. Only the selected normal
+or abort restore execute could materialize the target and receipt under the
+full hold. The recorded actionable boundary was
+`2026-08-24T07:00:00.000Z`; both hosted transfer phases would have had to finish
+before it. The hosted gate instead stopped before either phase, and the selected
+abort execute materialized the clean target and receipt. These are historical
+pre-abort decision rules; they grant no authority to prepare again, resume the
+release, or reuse any release-bound value.
 
-All four commands run only from the attached Render service shell while the exact
-source path is current and the full hold is active:
+The closed contract allowed its four commands only from the attached Render
+service shell while the exact source path was current and the full hold was
+active:
 
 ```text
 STAGING_MAINTENANCE_HOLD=true
@@ -1159,7 +1164,8 @@ SPORTSDATAIO_NHL_LIVE_PROBE_MANIFEST: absent
 BACKUP_SCHEDULE_ENABLED=false
 ```
 
-The operator must verify the Render service separately before invocation. The
+The operator was required to verify the Render service separately before
+invocation. The
 command compares the supplied service ID with its compiled release contract,
 but it does not independently query Render to prove which service owns the
 shell. The current deployed backend build is captured from `APP_BUILD_ID` and
@@ -1181,8 +1187,9 @@ Abrupt termination may leave the deterministic work directory as a recovery
 blocker; it requires manual inspection under the full hold and must never be
 blindly deleted or bypassed.
 
-Normal execution remains blocked until the complete exact hosted strict smoke
-is present in the source database: Team 1 has the commissioner-created initial
+Under the closed contract, normal execution was blocked unless the complete
+exact hosted strict smoke was present in the source database: Team 1 had the
+commissioner-created initial
 Manager A assignment followed by platform-administrator-proposed and manager-
 accepted `A -> B -> A` transfers; Team 2 remains on its original Manager B
 assignment; both corresponding accepted-assignment outbox rows have their
@@ -1193,8 +1200,8 @@ occurred. The candidate backup must independently verify schema, checksums,
 environment/database identity, the second credential-rotation receipt, zero
 active sessions, and absence of the strict sidecar fixture.
 
-Abort planning and execution are instead restricted to one of these five
-finite source-state classifications:
+Abort planning and execution were restricted to one of these five finite
+source-state classifications:
 
 1. `prepared_only`: only the initial fixture exists; phase-one and return
    publication states are both `none`.
@@ -1216,9 +1223,10 @@ abort result and receipt reports `restoreMode: aborted-strict-smoke-rollback`,
 `smokeCompleted: false`, `hostedSmokeCompleted: false`,
 `releaseBlocked: true`, and `rollbackOnly: true`. An unclassified or internally
 inconsistent source fails closed and must not be repaired with ad hoc SQL or a
-generic restore. If either exact manager-outbox publisher call fails or leaves
-`failed` or `publishing`, do not retry it: restore the full hold, preserve the
-evidence, and use the abort plan/execute pair.
+generic restore. The closed contract prohibited retry after either exact
+manager-outbox publisher call failed or remained `failed` or `publishing`; it
+instead required restoration of the full hold, evidence preservation, and the
+abort plan/execute pair.
 
 The first successful normal or abort execute invocation creates exactly two
 durable files: the verified inactive target and its mode-specific activation
@@ -1229,10 +1237,100 @@ hashes, performs no object-store request, encryption-key resolution, or
 temporary restore, and reports zero authoritative-database and zero durable-
 filesystem mutations. A normal plan/receipt cannot be supplied to an abort
 execute, and an abort plan/receipt cannot be supplied to a normal execute.
-After an interrupted target publication, only an exact verified receipt with
-an absent target may resume by publishing that target after any work-area
-residue is manually reviewed; a target without its receipt fails closed. Any
-mismatch or unexpected path also fails closed.
+Under the pre-execution recovery rule, only an exact verified receipt with an
+absent target could resume interrupted target publication after manual review
+of any work-area residue; a target without its receipt failed closed. Any
+mismatch or unexpected path also failed closed. That rule does not authorize a
+new invocation or resumption of `HL-20260822-1` now that abort materialization
+and exact replay are complete.
+
+#### HL-20260822-1 pre-action abort-recovery record
+
+Additive helper deploy `6a8b678ddbcf0b4ea8ba623c` passed its exact hosted
+byte/header gates, but a physical `.html` browser entry immediately reported
+`STRICT_STOP / ORIGIN_GUARD / EXACT_STAGING_ORIGIN_REQUIRED`. Every control
+remained disabled. The tab was closed without replacement, the full hold never
+lifted, Render recorded zero requests from `21:35Z` through `21:42Z`, and no
+session, publisher, endpoint, or backend write ran. The release-specific
+contract required abort recovery.
+
+Abort plan
+`release-qa-strict-restore-abort-v1-59641427f2021cbb3285f6ef59635301fbcdb93177288827afd787fed1a28a99`
+returned exact classifier `prepared_only`, publication states `none/none`,
+source SHA-256 `c26fdebc...`, absent target, zero authoritative-database and
+durable-filesystem mutations, and verified deterministic temporary cleanup.
+
+The matching abort execute returned
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED` with `replayed: false`, zero
+authoritative-database mutations, two durable-filesystem mutations,
+`sourcePreserved: true`, `targetVerified: true`, `releaseBlocked: true`, and
+`rollbackOnly: true`. The clean target plaintext SHA-256 is
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`; the
+activation-receipt SHA-256 is
+`b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`.
+Immediate exact replay reported `replayed: true`, zero mutations in both
+categories, and no temporary work.
+
+Helper-retirement deploy `6a8b6b25126dabed39fa404d`, title
+`HL-20260822-1-abort-retire-helper-baseline`, published at
+`2026-08-23T21:50:30.415Z` with five header rules and no functions. Baseline
+byte checks and all `10/10` retired helper-path checks passed across canonical
+and immutable origins; every retired path returned the exact `472`-byte
+`text/html` index fallback with SHA-256 `90620768...`.
+
+Only `DATABASE_PATH` was merge-updated to the clean target. Held cutover deploy
+`dep-da5mmpu417fc73807ptg` started at `2026-08-23T21:51:35.442888Z` and reached
+`LIVE` at `2026-08-23T22:41:18.393652Z` as the newest deploy on exact backend
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`. Its build succeeded, and the
+hosted gate passed `443` suites / `3,503` tests with all `3,503` passing and zero
+fail/cancel/skip/todo in `2941574.017632ms`. Instance `mq8dr` recorded zero
+startup errors; live/readiness returned `200`/`no-store`, and leagues remained
+held at `503 SERVICE_MAINTENANCE`/`no-store`. The materializer did not alter
+Render configuration.
+
+The first retained post-cutover verifier artifact, SHA-256
+`6157adfd598cbf9d7d306dd849822e494ffefe7aee29f3eb14ce2ea4d9ec38c7`,
+stopped before backup as `SCRATCH_SIDECAR_PRESENT`. This is diagnostic evidence
+of a false negative caused only by transient sidecars owned by its scratch copy,
+not evidence of authoritative-target drift. The corrected exact-Node-`24`
+verifier v2 artifact, SHA-256
+`61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0` and `19298`
+bytes, returned
+`HL_POST_CUTOVER_TARGET_VERIFIED` and proved:
+
+```text
+Preserved source:         37761024 bytes / c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238
+Authoritative target:     37105664 bytes / cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+Activation receipt:       4430 bytes / b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592
+SQLite integrity:         ok
+Foreign-key violations:   0
+Schema/data/migrations:   54/54/54
+Migration checksum:       6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89
+Credential rotation:      9152f844-d8cd-42f7-b0d5-b12f530ad618
+Active sessions:          0
+Fixture/transfer counts:  0 across all 10 checked categories
+```
+
+The corrected verifier re-proved the full hold and required provider-variable
+absence without opening the authoritative database. Its owned scratch WAL was
+`0` bytes and scratch SHM was `32768` bytes; both were removed, and its
+temporary verification copy was removed.
+
+Fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed:
+
+```text
+Manifest:          staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json
+Encrypted SHA-256: e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448
+Manifest checksum: 54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155
+Plaintext SHA-256: cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+SQLite integrity:  ok
+Foreign-key violations: 0
+```
+
+The plaintext, integrity, and foreign-key fields passed in a separate
+`db:backup:verify` invocation. The clean target is now the verified and backed-
+up authoritative source under the unchanged full hold. This record grants no
+new release, restore, unhold, or production authority.
 
 #### HL-20260821-3 hosted abort-recovery record
 

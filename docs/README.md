@@ -551,18 +551,30 @@ sole active work plan at `docs/06-work-plans/ACTIVE_WORK_PLAN.md`. Its current
 candidate targets schema `54`, registers `123` runtime routes, and has a
 conceptual target catalogue from `T-001` through `T-148`.
 
-Fresh release `HL-20260822-1` is the only active execution. Frontend build
+Release `HL-20260822-1` is now `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`;
+M7-26 remains the sole
+active plan, but no replacement release is authorized. Frontend build
 `4dfe12d1366314e3d9df722c50771324647743c9` and sealed Netlify baseline
 `6a8a3880f946cc39a2bf2bb6` pass. Exact backend candidate
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on backend
-`origin/staging` and passes its complete local gate at `3,501/3,503`, with only
-two intentional Windows skips. Held Render deploy
-`dep-da5l8drtqb8s73ar74sg` is `LIVE` on that exact backend and passed all
-`3,503/3,503` hosted tests across `443` suites with zero fail, cancel, skip, or
-todo. Public live/readiness checks pass while league traffic remains blocked by
-the full hold. Fresh fixture preparation and its immediate zero-write replay
-also pass; the helper, smoke, restore, and activation gates remain pending.
-Current
+`origin/staging` and passed its complete local gate. Held Render deploy
+`dep-da5l8drtqb8s73ar74sg` passed all `3,503/3,503` hosted tests while league
+traffic remained blocked by the full hold. Fresh fixture preparation/replay
+and helper publication passed, but a physical `.html` browser entry
+immediately produced `STRICT_STOP / ORIGIN_GUARD /
+EXACT_STAGING_ORIGIN_REQUIRED` before session, arming, action, API request, or
+write. The tab was closed, the hold never lifted, and strict smoke never began.
+Exact `prepared_only` abort plan/execute/replay materialized the clean target
+with zero authoritative-database mutations; sealed-baseline deploy
+`6a8b6b25126dabed39fa404d` retired the helper. Only `DATABASE_PATH` was then
+changed to the clean target. Held cutover deploy
+`dep-da5mmpu417fc73807ptg` is newest and `LIVE` on exact B after all `3,503`
+hosted tests and its startup/held-health gates passed. Corrected post-cutover
+verifier v2 returned `HL_POST_CUTOVER_TARGET_VERIFIED`, proving the source,
+authoritative clean target, abort receipt, full hold, target identity/integrity,
+zero sessions, fixture/transfer absence, and owned scratch cleanup. Fresh backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and its separate plaintext/integrity/
+foreign-key verification passed. Current
 evidence is `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
@@ -729,14 +741,19 @@ privacy, and publication contracts through schema `49`. FAD-15 through FAD-17
 then closed locally, and FAD-18 reached `STAGING VERIFIED` on schema `52` on
 2026-08-18. Its exact hosted evidence remains at
 `docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`.
-M7-26 is the sole active plan. Fresh release `HL-20260822-1` reruns the exact
+M7-26 is the sole active plan. Release `HL-20260822-1` attempted the exact
 schema-`54` hosted privacy comparator from the recovered clean boundary. Its
 frontend/Netlify baseline and exact local backend candidate
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` pass, and backend `origin/staging`
 resolves to that exact commit. Held backend deploy
-`dep-da5l8drtqb8s73ar74sg` and the fresh fixture/zero-write replay pass on the
-same commit; the full hold remains active. The helper, strict smoke, restore,
-and activation gates remain pending. The fresh
+`dep-da5l8drtqb8s73ar74sg` and the fresh fixture/zero-write replay passed on the
+same commit. The helper overlay passed its hosted byte/header gates, but an
+inert physical `.html` entry triggered the mandatory origin-guard strict stop
+before any request or action. Exact `prepared_only` abort/replay and
+sealed-baseline helper retirement passed. The full hold never lifted; held
+target cutover deploy `dep-da5mmpu417fc73807ptg`, corrected post-cutover
+verification, and fresh backup passed. The clean target is the authoritative
+held source, and no new strict release is authorized. The fresh
 and historical records are separate 2026-08-22 and 2026-08-21 files under
 `release-runs/`.
 The 2026-08-11 product clarification separates FAD deployment from all live-
@@ -910,15 +927,22 @@ ACTIVE
 M7-25 and `FAD-01` through `FAD-18` are complete through isolated staging.
 FAD-18 reached `STAGING VERIFIED` on schema `52` on 2026-08-18; the archived
 plan and exact release record preserve that historical evidence. M7-26 is the
-sole active full-site UI-review plan. Fresh release `HL-20260822-1` uses exact
+sole active full-site UI-review plan. Blocked release `HL-20260822-1` used exact
 frontend build `4dfe12d...`, Netlify baseline `6a8a3880f946cc39a2bf2bb6`, the
 pinned schema-`54` source (clean at the recorded pre-fixture boundary and now
-intentionally fixture-bearing), unused fresh target, and verified backup
+preserved fixture-bearing), release-specific target, and verified backup
 `2044fcae-24e8-4392-a1ac-4064d9cd2807`. Exact backend commit
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on `origin/staging`
 and passes its focused, complete local, and held-hosted gates. Deploy
-`dep-da5l8drtqb8s73ar74sg` and fresh fixture preparation/replay pass; helper,
-strict smoke, restoration, activation, and closeout remain pending. The
+`dep-da5l8drtqb8s73ar74sg` and fresh fixture preparation/replay passed. Helper
+deploy `6a8b678ddbcf0b4ea8ba623c` passed hosted artifact/header checks, then a
+physical `.html` entry hit the mandatory origin guard before the full hold,
+session, or database changed. Exact `prepared_only` abort/replay and helper
+retirement passed; held clean-target cutover deploy
+`dep-da5mmpu417fc73807ptg`, corrected post-cutover verification, and fresh
+backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed under the unchanged full
+hold. No replacement release, controlled unhold, activation, or M7-26 closeout
+is authorized yet. The
 failed/recovered 2026-08-21 attempt remains historical; production remains
 untouched and unauthorized.
 
@@ -964,7 +988,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - FRESH STRICT RERUN; FULL HOLD ACTIVE
+Status: ACTIVE - HL-20260822-1 BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE; NO REPLACEMENT RELEASE AUTHORIZED
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -973,14 +997,17 @@ and
 `docs/06-work-plans/archive/M7-25_FREE_AGENT_DRAFT_IMPLEMENTATION_SEQUENCE.md`.
 M7-25's isolated-staging completion evidence remains at
 `docs/07-testing/release-runs/FAD_AUCTIONS_PLAYERS_UX_2026-08-18.md`. M7-26 is
-active under Grae's continue-through-isolated-staging instruction. Its live
-runbook is the fresh 2026-08-22 record for `HL-20260822-1`; the 2026-08-21
+active under Grae's continue-through-isolated-staging instruction. Its current
+runbook is the 2026-08-22 blocked/recovery record for `HL-20260822-1`; the 2026-08-21
 record is immutable failed/recovered history. Exact backend build
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is published and locally verified;
-held deploy `dep-da5l8drtqb8s73ar74sg` and fixture preparation/replay are also
-verified. The helper, strict hosted smoke, restore, final staging matrix, and
-closeout must be completed before archive. Production remains untouched and
-unauthorized.
+held deploy `dep-da5l8drtqb8s73ar74sg`, fixture preparation/replay, helper
+publication, exact `prepared_only` abort/replay, and helper retirement are
+verified. Strict smoke never began. Held target cutover
+`dep-da5mmpu417fc73807ptg`, corrected post-cutover verification, and fresh
+backup now pass. Selection of any new authorized release, its final staging
+matrix, and M7-26 closeout remain.
+Production remains untouched and unauthorized.
 
 A work plan is used for a contained current task such as:
 
@@ -1124,7 +1151,7 @@ The file is marked:
 ```text
 APPROVED
 ACTIVE
-HL-20260822-1 STAGING RERUN ACTIVE; PRODUCTION NOT EVALUATED
+HL-20260822-1 BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE; PRODUCTION NOT EVALUATED
 ```
 
 Approval of the template does not mark a release ready.
@@ -1185,10 +1212,16 @@ APPROVED
 
 Render disk snapshots remain secondary protection. The primary recovery artifact is the verified application-created encrypted offsite backup.
 
-The active M7-26 exception is release `HL-20260822-1`, using the clean
-schema-`54` source, an unused release-specific target, and verified backup
-`2044fcae-24e8-4392-a1ac-4064d9cd2807`. The earlier `HL-20260821-3` abort
-recovery remains historical evidence and is not reusable authority.
+The M7-26 exception for release `HL-20260822-1` used the fixture-bearing
+schema-`54` source, release-specific target, and verified backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807`. Its exact `prepared_only` abort
+materialized the clean target and replayed with zero mutations. Only
+`DATABASE_PATH` was changed afterward; held cutover deploy
+`dep-da5mmpu417fc73807ptg`, corrected post-cutover verifier v2, and fresh backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` now pass. The clean target is the
+verified authoritative held source. The exception grants no new release or
+restore authority. The earlier `HL-20260821-3` abort recovery remains immutable
+historical evidence.
 
 Read for:
 

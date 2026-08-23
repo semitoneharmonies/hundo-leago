@@ -23,14 +23,83 @@ Last reviewed: **2026-08-23**
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` in deploy `6a8a3880f946cc39a2bf2bb6`; Render is live on exact backend `8e313902feefcd683b0f5edd746a9dd2a9029a18` in held deploy `dep-da5l8drtqb8s73ar74sg` | The held deploy passed `443` suites / `3,503` tests with all `3,503` passing, zero fail/cancel/skip/todo, clean startup, live/readiness `200`, and league traffic `503 SERVICE_MAINTENANCE`. The schema-`54` source passed the fresh pre-fixture boundary and now contains the fresh strict fixture after exact prepare/replay; backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` remains the clean restore point, and the target/sidecars/receipt/work area remained absent. The full hold remains active. |
-| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at exact release candidate `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260822-1` is `ACTIVE` and targets unused path `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`. Frontend local/Netlify, backend local/publication/held-hosted, and fixture prepare/replay gates pass. Helper, smoke, restore, activation, observation, and closeout remain pending. The recovered `HL-20260821-3` attempt stays historical and blocked. No production change is claimed. |
+| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` after helper-retirement deploy `6a8b6b25126dabed39fa404d`; Render's newest deploy `dep-da5mmpu417fc73807ptg` is `LIVE` on exact backend `8e313902feefcd683b0f5edd746a9dd2a9029a18` with `DATABASE_PATH` bound to the clean target | Release `HL-20260822-1` stopped before controlled unhold, session verification, or any action. Exact `prepared_only` abort execute/replay preserved the fixture-bearing source and materialized the clean target at plaintext SHA-256 `cf3ca07d...`. The cutover hosted gate, corrected post-cutover verifier, and fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` pass under the unchanged full hold. The clean target is the authoritative held source. |
+| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at exact release candidate `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Release `HL-20260822-1` is `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`. Helper publication, origin-guard stop evidence, exact abort materialization/replay, helper retirement, clean-target cutover, post-cutover verification, and fresh backup are recorded. The strict smoke never began, no replacement release is authorized, and M7-26 remains active pending Grae's deliberate next-release decision. No production change is claimed. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
 The fresh gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`; the prior
 failure/recovery record remains the separate 2026-08-21 file.
+
+---
+
+## Dated Release Record: 2026-08-22 M7-26 Rerun — Blocked, Abort-Recovered, Verified Held Recovery Complete
+
+Release `HL-20260822-1` published additive helper deploy
+`6a8b678ddbcf0b4ea8ba623c`, title
+`HL-20260822-1-strict-helper-fe6d2dd`, at
+`2026-08-23T21:35:11.134Z`. Canonical and immutable verification passed the
+four exact helper-file byte/header checks and preserved the sealed critical
+application files. A browser then opened the physical `.html` path rather than
+the sole authorized extensionless path. Initialization immediately rendered
+`STRICT_STOP / ORIGIN_GUARD / EXACT_STAGING_ORIGIN_REQUIRED`, left every
+session/arm/action control disabled, and made no script-initiated request. The
+tab was closed and no replacement was opened. Render logs from `21:35Z` through
+`21:42Z` recorded zero requests; the full hold never lifted and no session,
+proposal, acceptance, publisher, replay, or backend write ran.
+
+The release-specific helper contract made that strict stop terminal. Abort
+plan `release-qa-strict-restore-abort-v1-59641427f2021cbb3285f6ef59635301fbcdb93177288827afd787fed1a28a99`
+classified the source exactly `prepared_only` with publication states
+`none/none`, source SHA-256 `c26fdebc...`, absent target, zero authoritative-
+database and durable-filesystem mutations, and verified temporary cleanup.
+Abort execute returned `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`,
+`replayed: false`, zero authoritative-database mutations, two durable-
+filesystem mutations, `sourcePreserved: true`, `targetVerified: true`,
+`releaseBlocked: true`, and `rollbackOnly: true`. The clean target has
+plaintext SHA-256 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`;
+the receipt SHA-256 is
+`b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`.
+The identical replay reported `replayed: true`, zero mutations in both
+categories, and no temporary work.
+
+Sealed-baseline deploy `6a8b6b25126dabed39fa404d`, title
+`HL-20260822-1-abort-retire-helper-baseline`, published at
+`2026-08-23T21:50:30.415Z` with five header rules and no functions. Baseline
+byte checks and all `10/10` retired helper-path checks passed across canonical
+and immutable origins; every retired path returned the `472`-byte `text/html`
+index fallback with SHA-256 `90620768...`. Only `DATABASE_PATH` was then
+merge-updated to the clean target. Held deploy `dep-da5mmpu417fc73807ptg`
+started at `2026-08-23T21:51:35.442888Z` and reached `LIVE` at
+`2026-08-23T22:41:18.393652Z` as the newest deploy on exact backend
+`8e313902...`. Its `443` suites / `3,503` hosted tests all passed in
+`2941574.017632ms`; instance `mq8dr` had zero startup errors, health/readiness
+returned `200`/`no-store`, and leagues remained held at
+`503 SERVICE_MAINTENANCE`/`no-store`.
+
+Corrected exact-Node-`24` verifier v2, SHA-256
+`61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0` and `19298`
+bytes, returned `HL_POST_CUTOVER_TARGET_VERIFIED`. It preserved source
+`37761024` bytes / `c26fdebc...`, verified authoritative target `37105664`
+bytes / `cf3ca07d...` and receipt `4430` bytes / `b846edcf...`, proved the full
+hold/provider absence, integrity `ok`, foreign keys `0`, schema/data/migrations
+`54/54/54`, exact checksum and credential-rotation receipt, zero sessions, and
+all ten fixture/transfer artifact counts `0`. It never opened the authoritative
+database; owned scratch WAL/SHM and the temporary copy were removed. Retained
+verifier v1 SHA-256
+`6157adfd598cbf9d7d306dd849822e494ffefe7aee29f3eb14ce2ea4d9ec38c7` is
+diagnostic only: it stopped
+`SCRATCH_SIDECAR_PRESENT` before backup on its own transient scratch sidecars.
+
+Fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and separate verification
+passed with encrypted SHA-256
+`e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
+manifest checksum
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
+plaintext SHA-256 `cf3ca07d...`, integrity `ok`, and foreign keys `0`. The clean
+target is now the authoritative held source. No new release ID, helper, unhold,
+smoke, activation, or production authority exists.
 
 ---
 
@@ -1009,8 +1078,8 @@ The currently deployed held backend `8e313902...` in deploy
 Build and startup passed, instance `srv-d9eo2turnols73ekb830-wrhvw` recorded
 zero startup error logs, public live/readiness returned `200` with `no-store`,
 and `/api/v1/leagues` returned held `503 SERVICE_MAINTENANCE` with `no-store`.
-No newer deploy existed at the evidence boundary. The fresh full-hold/source/
-target/sidecar/receipt/work-area preflight and backup re-verification then
+No newer deploy existed at that pre-cutover evidence boundary. The fresh
+full-hold/source/target/sidecar/receipt/work-area preflight and backup re-verification then
 passed before exact fixture preparation and its immediate zero-write replay.
 
 Earlier milestone suites established characterization, read-only, security,
@@ -1037,32 +1106,37 @@ The target topology and configuration are documented in
   `srv-d9eo2turnols73ekb830`, branch `staging`, with auto-deploy disabled;
 * separately attached disk `dsk-d9eo2u6rnols73ekb8t0`, mounted at
   `/opt/render/project/data`;
-* SQLite schema `54` at the authoritative source path
+* SQLite schema `54`; the preserved fixture-bearing source remains at
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
-  which was the verified clean pre-fixture restore boundary and now contains
-  the exact fresh strict fixture;
+  while newest verified live deploy `dep-da5mmpu417fc73807ptg` points at clean,
+  authoritative held source
+  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`
+  and backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` verifies it;
 * staging-only users, leagues, secrets, storage paths, and
   `hundo-leago/staging` encrypted-backup prefix; and
 * no production persistent disk, database, credential, or deployment
   authority.
 
-The currently deployed identities are the exact Netlify and Render candidates
-in the environment matrix. Database identity, migration ledger, checksum,
-integrity, foreign keys, clean pre-fixture restore, and post-cutover encrypted
-backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` have verified. Exact fixture
-prepare/replay intentionally advanced the held source to `37761024` bytes /
-SHA-256 `c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238`;
-source sidecars, the fresh target and its sidecars, activation receipt, and
-restore work area remain absent.
+The current identities are the exact Netlify and Render boundaries in the
+environment matrix. Fixture prepare/replay intentionally advanced the
+preserved source to `37761024` bytes / SHA-256
+`c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238`.
+Exact abort materialization/replay then created the clean target and activation
+receipt while preserving that source; target plaintext SHA-256 is
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+The helper is retired and its paths fail closed. Newest held deploy
+`dep-da5mmpu417fc73807ptg`, corrected verifier v2, owned-scratch cleanup, and
+fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` pass. The clean target is
+the verified and backed-up authoritative source under the full hold.
 
 Staging remains intentionally unavailable for ordinary sign-in under the full
 safety hold. Maintenance and league writes are closed; scheduled jobs, FAD
 routes, account email, debug routes, backup scheduling, and the live provider
-are disabled. The prior strict privacy run failed before phase two, recovered
-to the clean pre-fixture boundary, and did not reopen staging. The fresh held
-deploy and fixture prepare/replay now pass; helper publication, strict smoke,
-restore, activation, observation, and closeout remain pending before any reopen
-or closure claim.
+are disabled. Both strict attempts are blocked: the 2026-08-21 run failed after
+phase one, while `HL-20260822-1` stopped at its pre-action origin guard before
+controlled unhold or smoke. Its `prepared_only` abort/replay and helper
+retirement pass. Staging did not reopen; clean-target cutover and post-cutover
+verification/backup pass. No replacement release is active or authorized.
 
 The approved post-rerun interactive-review matrix is maintenance hold false,
 writes open, FAD routes enabled, scheduler disabled, account email disabled in
@@ -1077,8 +1151,11 @@ is not the current held state and is not a production job-readiness claim.
 The following require attention before the 2026–27 launch:
 
 1. M7-26 is not staging-verified. The original strict attempt failed its exact
-   privacy counter and phase two did not run; the fresh full rerun must pass
-   without weakening that acceptance contract.
+   privacy counter; `HL-20260822-1` then stopped before smoke at the mandatory
+   origin guard and is blocked and abort-recovered to a clean target. Any
+   further full rerun needs a new,
+   explicitly authorized release contract and must pass without weakening the
+   acceptance contract.
 2. T-005 session bootstrap omits promised memberships/selected-safe defaults,
    and T-004/T-006/T-007/T-009/T-011 session revocation or replacement does
    not proactively disconnect affected live Socket.IO clients. These are
@@ -1111,20 +1188,18 @@ The following require attention before the 2026–27 launch:
 
 The current priority order is:
 
-1. Commit and publish the reconciled documentation evidence without changing
-   the sealed frontend application build or published backend candidate
-   `8e313902feefcd683b0f5edd746a9dd2a9029a18`.
-2. Publish and verify only the fresh additive helper overlay on the sealed
-   Netlify baseline while the full hold remains active.
-3. Run the entire hosted A-to-B-to-A privacy and authority gate before the
-   emitted fixture deadline. Do not resume the failed attempt or skip phase one.
-4. Remove the helper, restore the sealed baseline, restore the required clean
-   boundary through the selected normal or abort path, verify the final
-   runtime/job matrix, reconcile backups and outbox state, and reopen staging
-   only after every hard gate passes.
-5. Close M7-26 and align canonical documentation only to recorded evidence.
-   Keep production migration, reset, deployment, and first-write authority
-   blocked until Grae separately approves their exact scope.
+1. Preserve the completed `HL-20260822-1` held recovery evidence and unchanged
+   full hold. Do not reopen its helper,
+   resume its smoke, reuse its fixture/actions, or treat its deadline as active.
+2. Obtain Grae's explicit release ID, source/target/backup, helper, backend-
+   contract, controlled-unhold, and restore authorization before beginning any
+   further strict rerun. No replacement release is currently active.
+3. If authorized, create a fresh release record and bind every new release-
+   specific identity before any helper publication, unhold, session check, or
+   action.
+4. Close M7-26 only after a separately authorized strict release and all final
+   staging gates pass. Keep production migration, reset, deployment, and
+   first-write authority blocked until Grae separately approves exact scope.
 
 ---
 

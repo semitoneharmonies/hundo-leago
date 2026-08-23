@@ -107,12 +107,13 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Rerun - 2026-08-22 (ACTIVE; FULL HOLD)
+### M7-26 Fresh Strict Rerun - 2026-08-22 (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
-Release `HL-20260822-1` reruns the complete hosted privacy gate from the clean
-held database restored after the rejected prior attempt. It must not resume the
-old transfer chain or reuse its helper marker, idempotency keys, publisher
-confirmations, fixture receipt, target, or activation receipt.
+Release `HL-20260822-1` attempted the complete hosted privacy gate from the
+clean held database restored after the rejected prior attempt. It is now
+blocked and abort-recovered to a clean target. It must not be resumed or have
+its helper marker, idempotency keys, publisher confirmations, fixture receipt,
+target, or activation receipt reused.
 
 The corrected staging-only T-132 diagnostic counts each distinct successful
 TanStack Query instance once. It records physical evictions and successful
@@ -148,12 +149,43 @@ fixture preparation then reported `replayed: false` /
 `databaseWriteCount: 744`; its immediate identical replay reported
 `replayed: true` / `databaseWriteCount: 0`. Both bind receipt
 `88a56507-73fd-47f9-ac66-c305f0075d24` and deadline
-`2026-08-24T07:00:00.000Z`. Post-fixture held preflight records source
-`37761024` bytes / SHA-256 `c26fdebc...` with source sidecars, fresh
-target/sidecars, activation receipt, and restore work area absent. Helper,
-smoke, restore, and activation gates remain `PENDING` under the full hold.
+`2026-08-24T07:00:00.000Z`. Post-fixture held preflight recorded source
+`37761024` bytes / SHA-256 `c26fdebc...` and an absent target boundary.
 
-The active database/backup contract and gate ledger are recorded only in
+Helper deploy `6a8b678ddbcf0b4ea8ba623c` passed its canonical/immutable
+four-file byte/header and sealed-critical-file gates. A physical `.html`
+browser entry then failed the exact-path initialization guard as `STRICT_STOP /
+ORIGIN_GUARD / EXACT_STAGING_ORIGIN_REQUIRED`, with all controls disabled. The
+tab was closed without replacement. The full hold never lifted and Render
+recorded zero requests from `21:35Z` through `21:42Z`, so no session check,
+action, endpoint call, or persistent write ran. The hosted comparator was never
+started; its acceptance remains unproved.
+
+Abort plan/execute/replay passed at exact `prepared_only` / `none/none`. The
+plan made zero mutations and cleaned temporary work; execute preserved the
+source and materialized the clean target at SHA-256 `cf3ca07d...` with receipt
+SHA-256 `b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`;
+the immediate replay made zero mutations and no temporary work. Sealed-baseline
+deploy `6a8b6b25126dabed39fa404d` retired the helper, and all `10/10` retired path
+checks passed. Only `DATABASE_PATH` then changed; held cutover deploy
+`dep-da5mmpu417fc73807ptg` is newest and `LIVE` on exact B after all `3,503`
+hosted tests, zero-startup-error, and held health/readiness/maintenance gates
+passed. Corrected exact-Node-`24` verifier v2 returned
+`HL_POST_CUTOVER_TARGET_VERIFIED`; it proved the preserved source,
+authoritative clean target and abort receipt, full hold/provider absence,
+target identity/integrity/schema/checksum/rotation receipt, zero sessions, all
+ten fixture/transfer artifact counts `0`, and owned scratch cleanup without
+opening the authoritative database. Fresh backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and separate plaintext/integrity/
+foreign-key verification passed. Retained verifier v1
+`6157adfd598cbf9d7d306dd849822e494ffefe7aee29f3eb14ce2ea4d9ec38c7` is
+diagnostic
+only; its pre-backup `SCRATCH_SIDECAR_PRESENT` stop was caused by its own
+transient scratch sidecars and was corrected in v2
+`61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0`. The full hold
+remains active, recovery is complete, and no new release is authorized.
+
+The closed release contract and current recovery ledger are recorded only in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`. The final
 interactive-review matrix keeps the scheduler, account email, debug routes,
 live provider, and backup schedule disabled. Provider-neutral statistics/job

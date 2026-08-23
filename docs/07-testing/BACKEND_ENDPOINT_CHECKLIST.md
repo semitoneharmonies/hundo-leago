@@ -241,40 +241,50 @@ Exact evidence is recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
 Production remains untouched and unauthorized.
 
-## 2026-08-22 M7-26 Fresh Held-Staging Rerun (ACTIVE)
+## 2026-08-22 M7-26 Fresh Held-Staging Rerun (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
-Release `HL-20260822-1` is the sole active execution. It uses frontend build
-`4dfe12d1366314e3d9df722c50771324647743c9`, pinned held source database
-`hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3` (clean at the
-recorded pre-fixture boundary and now intentionally fixture-bearing), with
-unused target
-`hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`, and verified
-backup `2044fcae-24e8-4392-a1ac-4064d9cd2807`. The fresh restore/outbox
-contract at exact backend commit `8e313902feefcd683b0f5edd746a9dd2a9029a18`
-passes its isolated exact-Node `24.14.1` gate at `57/57` in `347.592s`.
-Under Node `24.14.1` / npm `11.11.0`, `npm run check` and `npm ls --all` exit
-`0`, while the complete suite passes `443` suites and `3,503` tests (`3,501`
-pass, zero fail, two intentional Windows skips, zero cancelled/todo) in
-`15172.429s`. Backend `origin/staging` resolves exactly to that commit. The
-held deploy is now `PASS`: `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B,
-all `3,503/3,503` hosted tests across `443` suites passed with zero
-fail/cancel/skip/todo in `2954563.480743ms`, startup recorded zero errors,
-live/readiness returned `200`/`no-store`, and `/api/v1/leagues` remained held
-at `503 SERVICE_MAINTENANCE`/`no-store`.
+Release `HL-20260822-1` is no longer active. Its exact frontend/backend local,
+publication, held-hosted, backup, and fixture prepare/replay evidence remains
+valid. Helper deploy `6a8b678ddbcf0b4ea8ba623c` passed canonical and
+immutable byte/header checks for all four helper files while preserving the
+sealed application. A physical `.html` browser entry then immediately returned
+`STRICT_STOP / ORIGIN_GUARD / EXACT_STAGING_ORIGIN_REQUIRED` with every control
+disabled. The tab was closed without replacement. The full hold never lifted;
+Render logged zero requests from `21:35Z` through `21:42Z`; no session check,
+proposal, acceptance, publisher, replay, endpoint call, or backend write ran.
+The T-131/T-132/T-140 two-phase hosted comparator therefore remains unverified.
 
-Fresh exact-B/F full-hold preflight and backup verification passed before
-fixture preparation. Prepare emitted receipt
-`88a56507-73fd-47f9-ac66-c305f0075d24`, FAD
-`f474f00b-111c-4dec-8592-ffcbaf97e655`, restricted auction
-`551f475b-352f-4c06-831a-534b9750754a`, deadline
-`2026-08-24T07:00:00.000Z`, and `databaseWriteCount: 744`; its immediate exact
-replay returned the same identities with `databaseWriteCount: 0`. Post-fixture
-held preflight records source `37761024` bytes / SHA-256 `c26fdebc...` with
-source sidecars, fresh target/sidecars, activation receipt, and restore work
-area absent. Helper, two-phase hosted smoke, restore/cutover, final activation,
-and closeout remain pending. No
-historical `HL-20260821-3` action key, receipt, helper marker, or incomplete
-transfer may be reused. Exact current evidence and placeholders live in
+The required abort plan classified exact `prepared_only` with publication
+states `none/none`, source SHA-256 `c26fdebc...`, absent target, zero mutations,
+and verified temporary cleanup. Abort execute/replay preserved the source,
+materialized and verified the clean target at plaintext SHA-256 `cf3ca07d...`,
+created receipt SHA-256
+`b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`, and
+reported mutations `0/2` then `0/0`; both classify the release blocked and
+rollback-only. Helper-retirement deploy `6a8b6b25126dabed39fa404d` restored the
+sealed baseline, and all `10/10` retired helper-path checks passed on canonical
+and immutable origins.
+
+Only `DATABASE_PATH` was then merge-updated to target
+`hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`. Held cutover deploy
+`dep-da5mmpu417fc73807ptg` reached `LIVE` as newest on exact B after `443`
+suites / `3,503` hosted tests all passed in `2941574.017632ms`; instance
+`mq8dr`, zero startup errors, live/readiness `200`/`no-store`, and held leagues
+`503 SERVICE_MAINTENANCE`/`no-store` passed. Corrected exact-Node-`24` verifier
+v2 returned `HL_POST_CUTOVER_TARGET_VERIFIED`: the preserved source,
+authoritative target, abort receipt, full hold/provider absence, target
+identity/integrity/schema/checksum/rotation receipt, zero sessions, all ten
+fixture/transfer artifact counts `0`, and owned scratch cleanup verified without
+opening the authoritative database. Fresh backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed, and separate verification proved
+plaintext `cf3ca07d...`, integrity `ok`, and foreign keys `0`. Retained verifier
+v1 `6157adfd598cbf9d7d306dd849822e494ffefe7aee29f3eb14ce2ea4d9ec38c7` is
+diagnostic evidence of a scratch-sidecar false negative; v2
+`61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0` corrected
+it. Recovery is complete under the full hold.
+No historical or current action key, receipt, fixture, helper marker, or
+incomplete transfer may be reused, and no replacement release is authorized.
+Exact current evidence lives in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 ---

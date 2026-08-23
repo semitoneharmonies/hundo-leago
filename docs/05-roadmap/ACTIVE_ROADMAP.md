@@ -855,33 +855,53 @@ including `schema_migrations`. Its composed runtime registers `123` routes and
 its conceptual contract catalogue contains `148` entries after T-147
 notification batch acknowledgement and T-148 trade approval.
 
-### Fresh M7-26 rerun - 2026-08-22
+### Fresh M7-26 rerun - 2026-08-22 (blocked; abort-recovered; verified held recovery complete)
 
-Release `HL-20260822-1` is the only active execution. It starts from the clean
-held schema-`54` database and verified post-cutover backup produced by the
-recovered prior attempt. Exact frontend build
-`4dfe12d1366314e3d9df722c50771324647743c9` is published as sealed Netlify
-baseline `6a8a3880f946cc39a2bf2bb6`; its complete local and remote gates pass.
-Exact backend commit `8e313902feefcd683b0f5edd746a9dd2a9029a18`
-passes its isolated strict-restore gate at `57/57` and its complete local gate
-at `3,501/3,503`, with zero failures and only two intentional Windows skips.
-Backend `origin/staging` resolves exactly to that commit. Exact held deploy
-`dep-da5l8drtqb8s73ar74sg` is `LIVE` on that build and passed all `3,503/3,503`
-hosted tests across `443` suites with zero fail, cancel, skip, or todo, clean
-startup, public live/readiness `200`, and held league traffic `503`.
+Release `HL-20260822-1` is no longer active. Exact frontend build
+`4dfe12d1366314e3d9df722c50771324647743c9`, sealed Netlify baseline
+`6a8a3880f946cc39a2bf2bb6`, exact backend commit
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`, held deploy
+`dep-da5l8drtqb8s73ar74sg`, backup verification, and fixture prepare/replay all
+passed their recorded gates. Additive helper deploy
+`6a8b678ddbcf0b4ea8ba623c`, title
+`HL-20260822-1-strict-helper-fe6d2dd`, published at
+`2026-08-23T21:35:11.134Z`; canonical and immutable checks passed all four
+helper-file byte/header boundaries and preserved the sealed critical files.
 
-The fresh full-hold/source/target/sidecar/receipt/work-area preflight and exact
-backup re-verification passed. Fixture preparation then passed with receipt
-`88a56507-73fd-47f9-ac66-c305f0075d24`, `databaseWriteCount: 744`, and an
-immediate exact replay at `databaseWriteCount: 0`. The full hold remains
-active; post-fixture source SHA-256 is `c26fdebc...`, with all source/target
-sidecar and inactive-target/receipt/work-area absence re-proven. Helper
-publication/removal, the complete two-phase strict privacy/cache smoke, normal
-restore or bounded abort, post-cutover verification/backup, final interactive-
-review matrix, hosted desktop/mobile review, observation, and closeout remain.
-Exact evidence and placeholders are in
+A browser then opened the physical `.html` path instead of the sole authorized
+extensionless path. Initialization immediately reported `STRICT_STOP /
+ORIGIN_GUARD / EXACT_STAGING_ORIGIN_REQUIRED`, kept every control disabled,
+and made no request. The tab was closed without replacement. The full hold
+never lifted, Render logged zero requests from `21:35Z` through `21:42Z`, and no
+session check, proposal, acceptance, publisher, replay, or backend write ran.
+The strict smoke therefore never began, and the release-specific contract made
+abort recovery mandatory.
+
+The exact abort plan classified `prepared_only` with `none/none`, source
+SHA-256 `c26fdebc...`, absent target, zero mutations, and verified temporary
+cleanup. Abort execute/replay preserved the source, materialized and verified
+the clean target at plaintext SHA-256 `cf3ca07d...`, created receipt SHA-256
+`b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`, and
+reported first/replay mutations `0/2` then `0/0`. Both record
+`releaseBlocked: true` and `rollbackOnly: true`. Sealed-baseline deploy
+`6a8b6b25126dabed39fa404d` retired the helper at
+`2026-08-23T21:50:30.415Z`; baseline checks and all `10/10` retired helper-path
+checks passed across canonical and immutable origins.
+
+Only `DATABASE_PATH` was then merge-updated to the clean target. Held cutover
+deploy `dep-da5mmpu417fc73807ptg` reached `LIVE` at
+`2026-08-23T22:41:18.393652Z` as the newest deploy on exact B after all `3,503`
+hosted tests passed. Instance/startup and held health/readiness/maintenance
+checks passed. Corrected exact-Node-`24` verifier v2 returned
+`HL_POST_CUTOVER_TARGET_VERIFIED`, proving the preserved source, authoritative
+clean target, abort receipt, full hold/provider absence, target integrity and
+identity, zero sessions, all ten fixture/transfer artifact counts `0`, and
+owned scratch cleanup without opening the authoritative database. Fresh backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and separate plaintext/integrity/
+foreign-key verification passed. M7-26 remains active, but no replacement
+release ID, helper, controlled unhold, smoke, restore exception, activation, or
+production authority exists. Exact evidence is in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
-Production remains untouched and unauthorized.
 
 ### Historical M7-26 attempt - 2026-08-21 (blocked and recovered)
 
@@ -1437,8 +1457,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Publish the fresh helper, run the full A-to-B-to-A privacy gate, remove the helper, restore, complete final interactive-review activation, observation, and closeout
-Implementation status: M7-26 ACTIVE / RELEASE HL-20260822-1 ACTIVE / FRONTEND 4DFE12D + NETLIFY 6A8A3880 PASS / BACKEND 8E313902 LOCAL + ORIGIN/STAGING PUBLICATION + HELD DEPLOY DA5L8DRT PASS / FIXTURE PREPARE + ZERO-WRITE REPLAY PASS / FULL HOLD ACTIVE / HELPER + SMOKE + RESTORE + ACTIVATION PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Preserve the completed held recovery for blocked release HL-20260822-1, then obtain explicit authority before minting or executing any new strict release
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HELPER DEPLOY 6A8B678 PASS THEN ORIGIN-GUARD STRICT STOP / NO UNHOLD, REQUEST, ACTION, OR BACKEND WRITE / PREPARED_ONLY ABORT + REPLAY PASS / HELPER RETIRED BY 6A8B6B2 / DATABASE_PATH-ONLY HELD CUTOVER DA5MMPU LIVE / CORRECTED POST-CUTOVER VERIFY + FRESH BACKUP E735E6A4 PASS / CLEAN TARGET AUTHORITATIVE UNDER FULL HOLD / NO REPLACEMENT RELEASE AUTHORIZED / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1457,11 +1477,14 @@ docs/04-technical-specs/FREE_AGENT_DRAFT.md
 docs/06-work-plans/ACTIVE_WORK_PLAN.md
 ```
 
-The ordered remaining gates are: fresh helper publication and authorization;
-strict two-cookie A-to-B-to-A smoke; sealed helper removal; normal restore/
-cutover and backup; final staging matrix; desktop/mobile role review;
-observation; and documentation closeout. Staging must remain held until the
-applicable gate authorizes the next transition.
+The held cutover, exact target/source/receipt/runtime verification, fresh
+incident-preservation backup, and `HL-20260822-1` recovery closeout are complete.
+The ordered remaining gate is Grae's explicit decision whether to authorize a
+separate fresh strict release. Only a new approved release may define its own
+release ID, backend contract, fixture, helper, controlled unhold, A-to-B-to-A
+smoke, restore, final staging matrix, desktop/mobile review, observation, and
+documentation closeout. Staging remains held, and the blocked release must not
+be resumed.
 
 ## Historical Milestone Evidence
 

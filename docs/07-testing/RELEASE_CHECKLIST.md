@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260822-1 STAGING RERUN ACTIVE; PRODUCTION NOT EVALUATED`
+`HL-20260822-1 BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,10 +27,11 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-22 M7-26 Fresh Staging Evaluation (ACTIVE; FULL HOLD)
+## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
-Release `HL-20260822-1` is a clean rerun, not a continuation of the failed
-strict phase. Its exact active record is
+Release `HL-20260822-1` was a clean rerun, not a continuation of the failed
+strict phase. It is now blocked and abort-recovered to a clean target. Its
+exact record is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 Checked across the recorded pre-fixture and post-fixture boundaries:
@@ -38,10 +39,12 @@ Checked across the recorded pre-fixture and post-fixture boundaries:
 - clean pre-fixture schema-`54` source
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
   which is now the intentional post-fixture source described below;
-- unused target
+- release-specific target, initially unused and now materialized by abort
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`;
 - verified incident-preservation backup
   `2044fcae-24e8-4392-a1ac-4064d9cd2807`;
+- fresh verified authoritative-source backup
+  `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`;
 - exact frontend build `4dfe12d1366314e3d9df722c50771324647743c9`;
 - sealed Netlify baseline deploy `6a8a3880f946cc39a2bf2bb6`; and
 - exact backend build `8e313902feefcd683b0f5edd746a9dd2a9029a18`,
@@ -60,20 +63,60 @@ deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B after its build and all
 skip, or todo in `2954563.480743ms`. Instance
 `srv-d9eo2turnols73ekb830-wrhvw` recorded zero startup error logs; live/ready
 returned `200`/`no-store` and `/api/v1/leagues` returned held
-`503 SERVICE_MAINTENANCE`/`no-store`; no newer deploy existed at the evidence
-boundary.
+`503 SERVICE_MAINTENANCE`/`no-store`; no newer deploy existed at that
+pre-cutover evidence boundary.
 
 The exact-B/F full-hold/source/target/sidecar/receipt/work-area preflight and
 backup re-verification passed. Fresh prepare created receipt
 `88a56507-73fd-47f9-ac66-c305f0075d24` with `databaseWriteCount: 744`; its
 immediate identical replay used the same IDs/times/counts and returned
-`databaseWriteCount: 0`. The actionable deadline is
-`2026-08-24T07:00:00.000Z`. Post-fixture held preflight records source
+`databaseWriteCount: 0`. The recorded actionable deadline was
+`2026-08-24T07:00:00.000Z`; the strict stop and abort closed this release before
+either hosted phase, so that deadline grants no resume or reuse authority.
+Post-fixture held preflight records source
 `37761024` bytes / SHA-256 `c26fdebc...` and absent source sidecars, fresh
-target/sidecars, activation receipt, and restore work area. Helper publication,
-full two-phase privacy smoke, helper removal, restore/cutover, final
-interactive-review activation, desktop/mobile review, observation, and
-closeout remain unchecked. No placeholder may be treated as release evidence.
+target/sidecars, activation receipt, and restore work area. Helper deploy
+`6a8b678ddbcf0b4ea8ba623c` passed its hosted byte/header gates, but the first
+browser entry used the physical `.html` path and immediately reported
+`STRICT_STOP / ORIGIN_GUARD / EXACT_STAGING_ORIGIN_REQUIRED`. All controls
+remained disabled; the tab was closed; the hold never lifted; Render logged
+zero requests from `21:35Z` through `21:42Z`; and no session, action, endpoint,
+or backend write ran. The two-phase privacy smoke did not begin.
+
+The exact `prepared_only` / `none/none` abort plan/execute/replay passed,
+preserving the source and materializing the clean target at SHA-256
+`cf3ca07d...` with receipt SHA-256
+`b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`.
+Helper-retirement deploy `6a8b6b25126dabed39fa404d` restored the sealed
+baseline and passed all retired-path checks. Only `DATABASE_PATH` changed;
+held cutover deploy `dep-da5mmpu417fc73807ptg` is newest and `LIVE` on exact B.
+Its `443` suites / `3,503` hosted tests all passed with zero
+fail/cancel/skip/todo in `2941574.017632ms`; instance `mq8dr` had zero startup
+errors, live/readiness returned `200`/`no-store`, and leagues remained held at
+`503 SERVICE_MAINTENANCE`/`no-store`.
+
+Corrected exact-Node-`24` verifier v2
+(`61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0`, `19298`
+bytes) returned
+`HL_POST_CUTOVER_TARGET_VERIFIED`. It proved source `37761024` bytes /
+`c26fdebc...`, authoritative target `37105664` bytes / `cf3ca07d...`, receipt
+`4430` bytes / `b846edcf...`, the full hold/provider absence, integrity `ok`,
+foreign keys `0`, schema/data/migrations `54/54/54`, exact checksum and rotation
+receipt, zero sessions, and all ten fixture/transfer artifact counts `0`. It
+never opened the authoritative database and removed its owned scratch WAL/SHM
+and temporary copy. Retained v1
+(`6157adfd598cbf9d7d306dd849822e494ffefe7aee29f3eb14ce2ea4d9ec38c7`) is
+diagnostic only: its pre-backup
+`SCRATCH_SIDECAR_PRESENT` stop was a false negative caused by its own transient
+scratch sidecars.
+
+Fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed with encrypted
+SHA-256 `e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
+manifest checksum
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`, and
+separate verification at plaintext `cf3ca07d...`, integrity `ok`, and foreign
+keys `0`. Recovery is complete under the full hold. No placeholder may be
+treated as release evidence, and no new release is authorized.
 
 The final interactive-review matrix is hold false, writes open, FAD routes
 enabled, scheduler disabled, account email disabled/capture, debug disabled,
@@ -285,8 +328,10 @@ staging record is `BLOCKED`. Re-hold, strict abort materialization/replay, resto
 cutover, held target verification, and post-cutover backup pass. The full hold
 remained active; controlled reopening, remaining authenticated desktop/mobile
 role smoke, final runtime flags/job restoration, observation, and closeout were
-not completed by that attempt. Fresh release `HL-20260822-1` owns the current
-pending gates. Production remains untouched and unauthorized.
+not completed by that attempt. The subsequent `HL-20260822-1` rerun is also
+blocked and abort-recovered to a clean target, and it owns no further action
+authority; no replacement release is currently authorized. Production remains
+untouched and unauthorized.
 
 ---
 
@@ -960,7 +1005,7 @@ Additionally:
   service and every full-hold flag before plan/execute; no provider-verified
   service-identity claim is inferred from the command's operator-asserted
   `--service-id` argument.
-- [ ] `RC-BKP-015C` Restore plan output records zero authoritative-database and
+- [x] `RC-BKP-015C` Restore plan output records zero authoritative-database and
   zero durable-filesystem mutations while disclosing deterministic private
   temporary plaintext work and verified cleanup. Any pre-existing or crash-
   residue work directory stops the operation for manual review under hold.
@@ -971,19 +1016,19 @@ Additionally:
   the inactive target and receipt. The source remains preserved and exact replay performs
   zero authoritative-database and durable-filesystem mutation without an
   object-store request or encryption-key resolution.
-- [ ] `RC-BKP-015E` The operator changed only `DATABASE_PATH` to the verified
+- [x] `RC-BKP-015E` The operator changed only `DATABASE_PATH` to the verified
   inactive target and redeployed under the full hold; the materializer itself
   did not change Render configuration or activate the target.
-- [ ] `RC-BKP-015F` Post-handoff checks prove old-source and receipt
+- [x] `RC-BKP-015F` Post-handoff checks prove old-source and receipt
   preservation, target hash/identity/schema/checksum/integrity/foreign keys,
   second credential-rotation receipt, zero active sessions, strict fixture
   absence, and an independently verified incident-preservation backup before
   fresh controlled activation.
-- [ ] `RC-BKP-015G` The operator selected exactly one matching command pair:
+- [x] `RC-BKP-015G` The operator selected exactly one matching command pair:
   normal plan/execute only after complete hosted smoke, or abort plan/execute
   after an exact recognized incomplete/failed smoke. Plan ID, confirmation,
   and receipt mode never crossed between normal and abort namespaces.
-- [ ] `RC-BKP-015H` Abort accepted exactly one finite classification:
+- [x] `RC-BKP-015H` Abort accepted exactly one finite classification:
   `prepared_only` (`none/none`), `to_b_pending` (exact B proposal,
   idempotency, and one delivered notification; no acceptance; `none/none`),
   `to_b_accepted` (phase one `pending|publishing|failed|published`; return
@@ -998,7 +1043,7 @@ Additionally:
   the release without manual SQL or generic restore. A `failed` or
   `publishing` publisher row was not retried; the operator restored the full
   hold and used the abort pair.
-- [ ] `RC-BKP-015J` After normal or abort restoration, account email remains
+- [x] `RC-BKP-015J` After normal or abort restoration, account email remains
   disabled with `EMAIL_DELIVERY_MODE=capture` until a separate restored-outbox
   reconciliation decision and evidence authorize any delivery/allowlist
   change.
@@ -1032,10 +1077,10 @@ Known recovery limitation:
   record `replayed: false` with the emitted positive `databaseWriteCount`, then
   `replayed: true` with `databaseWriteCount: 0`. Prepare mutated only the pinned
   source; the fresh target, its WAL/SHM sidecars, and activation receipt stayed
-  absent until the selected restore execute. The hosted gate completed before
-  the emitted `actionableUntilMs`, using the daily midnight
-  `America/Vancouver` rollover (`07:00Z` during Pacific daylight time) rather
-  than a reusable calendar date.
+  absent until the selected abort execute. Preparation/replay passed, but the
+  hosted gate did not begin before the strict-stop abort. This combined item
+  remains unchecked; the emitted `actionableUntilMs` is closed evidence, not
+  authority to resume.
 - [ ] `RC-STG-007` Deployed CORS, cookies, CSRF, and Socket.IO tests pass.
 - [ ] `RC-STG-008` Account email capture/sandbox flows pass.
 - [ ] `RC-STG-009` NHL provider success/failure behavior passes.
@@ -1093,7 +1138,11 @@ Known recovery limitation:
   `https://staging.hundoleago.com`, with exact extensionless browser entry
   point
   `https://staging.hundoleago.com/release-qa/hl-20260822-1/strict-manager-transfer`.
-  No uppercase-path or `.html` redirect occurred. Remote hashes proved every
+  Remote deployment checks passed, but the browser opened the physical
+  `.html` path rather than that authorized entry point. The helper immediately
+  returned `STRICT_STOP / ORIGIN_GUARD / EXACT_STAGING_ORIGIN_REQUIRED`; this
+  browser-entry requirement failed and the composite item remains unchecked.
+  Remote hashes nevertheless proved every
   path from
   baseline deploy `6a8a3880f946cc39a2bf2bb6` byte-identical, including
   frontend build `4dfe12d1366314e3d9df722c50771324647743c9`,
@@ -1122,10 +1171,11 @@ Known recovery limitation:
   inside each clicked proposal, and exact read-only pending-assignment precheck
   `GET /api/v1/team-manager-assignments/<exact assignmentId emitted by the proposal>`
   inside each clicked acceptance. Those state/predecessor checks never ran on
-  initialization or in the background. Every POST required verified exact
-  identity, write arming, and a separate action click; no background write,
-  automatic retry, arbitrary request input, secret output, or Notifications
-  read occurred.
+  initialization or in the background. The inert initialization subgate passed
+  through zero Render requests from `21:35Z` through `21:42Z`; no session or
+  action-time read was attempted. Every POST would have required verified
+  exact identity, write arming, and a separate action click, but no POST ran.
+  The unexercised action-time portions keep this combined item unchecked.
 - [ ] `RC-STG-011H` The separate same-cookie helper tab constructed an actual
   isolated TanStack Query `QueryClient` whose query cache contained exactly
   zero FAD queries before, during, and after every action. It mounted no
@@ -1146,9 +1196,9 @@ Known recovery limitation:
   `credentials: same-origin`, and `redirect: error`. It required status `200`,
   exact response URL, response type `basic`, media type `application/json`,
   and exactly `contractVersion: 1`, `enabled: true`, release
-  `HL-20260822-1`, the exact future expiry set before helper deployment,
-  frontend build `4dfe12d1366314e3d9df722c50771324647743c9`, the exact fresh backend
-  commit set before helper deployment, frontend origin
+  `HL-20260822-1`, expiry `2026-08-24T07:00:00.000Z`, frontend build
+  `4dfe12d1366314e3d9df722c50771324647743c9`, exact backend commit
+  `8e313902feefcd683b0f5edd746a9dd2a9029a18`, frontend origin
   `https://staging.hundoleago.com`, and API origin
   `https://api-staging.hundoleago.com`, and failed before every POST at or
   after that exact expiry. After evidence capture, the exact audited baseline
@@ -1157,9 +1207,9 @@ Known recovery limitation:
   without rebuilding. Original hashes and non-helper global headers re-passed,
   helper/marker paths resolved only through the normal SPA fallback, and that
   invalid marker response made every stale helper tab fail closed before
-  another write. Record this cleanup subgate as `PASS` only after the fresh
-  helper is retired and its hosted removal evidence passes; the combined item
-  remains unchecked until both smoke phases and cleanup have passed.
+  another write. Cleanup passed through deploy `6a8b6b25126dabed39fa404d`
+  and `10/10` retired-path checks. The combined item remains unchecked because
+  neither smoke phase ran.
 - [ ] `RC-STG-012` Manual QA recommendation is pass.
 - [ ] `RC-STG-013` Rollback rehearsal uses exact prior frontend/backend candidates.
 - [ ] `RC-STG-014` No staging defect invalidates earlier evidence.

@@ -2,12 +2,12 @@
 
 ## Status
 
-`DRAFT - ACTIVE; HELD F/B DEPLOY + FIXTURE VERIFIED; STRICT SMOKE PENDING`
+`BLOCKED / ABORT-RECOVERED; CLEAN TARGET AUTHORITATIVE UNDER VERIFIED FULL HOLD; RECOVERY COMPLETE`
 
-Release `HL-20260822-1` defines the fresh end-to-end rerun from the clean held
-database produced by the recovered `HL-20260821-3` attempt. It does not resume,
-waive, or rewrite that failed attempt. The historical failure and recovery
-record is:
+Release `HL-20260822-1` was defined as the fresh end-to-end rerun from the clean
+held database produced by the recovered `HL-20260821-3` attempt. It did not
+resume, waive, or rewrite that failed attempt. The historical failure and
+recovery record is:
 
 ```text
 docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md
@@ -17,9 +17,16 @@ The frontend diagnostic correction and exact Netlify baseline are published.
 The fresh backend release contract is exact committed build
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` and passes its focused and complete
 local gates. Backend `origin/staging` resolves exactly to that commit. Its held
-hosted deploy and fresh fixture prepare/replay pass. The controlled unhold has
-not begun, the helper has not been published, and no fresh A-to-B-to-A action
-has run.
+hosted deploy and fresh fixture prepare/replay pass. The helper overlay was
+published and passed its hosted artifact/header gates, but the first browser
+entry used the physical `.html` path and immediately hit the mandatory origin
+guard. The tab was closed without replacement. The full hold never lifted; no
+session or action request ran; and fresh A-to-B-to-A smoke never began. The
+exact `prepared_only` abort/replay and helper retirement passed. Only
+`DATABASE_PATH` was then changed to the clean target. The held cutover, corrected
+post-cutover verification, and fresh encrypted backup all passed under the
+unchanged full hold. The clean target is now the authoritative held source.
+This release is blocked and cannot be resumed.
 
 Production remains untouched and unauthorized.
 
@@ -46,30 +53,43 @@ Netlify staging site ID:    95af8aa7-0b13-4954-af6d-855762acb147
 Netlify staging site name:  hundoleago-staging
 Netlify baseline deploy:    6a8a3880f946cc39a2bf2bb6
 Netlify deploy message:     HL-20260822-1-frontend-baseline-4dfe12d
+Netlify helper deploy:      6a8b678ddbcf0b4ea8ba623c
+Netlify helper published:   2026-08-23T21:35:11.134Z
+Netlify retirement deploy:  6a8b6b25126dabed39fa404d
+Netlify retirement time:    2026-08-23T21:50:30.415Z
 Canonical frontend:         https://staging.hundoleago.com
-Immutable frontend:         https://6a8a3880f946cc39a2bf2bb6--hundoleago-staging.netlify.app
-Source database:            /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
-Inactive target database:   /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
+Current immutable frontend: https://6a8b6b25126dabed39fa404d--hundoleago-staging.netlify.app
+Preserved source database:  /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
+Materialized clean target:  /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
+Held cutover deploy:        dep-da5mmpu417fc73807ptg
+Held cutover started:       2026-08-23T21:51:35.442888Z
+Held cutover LIVE:          2026-08-23T22:41:18.393652Z
+Held cutover instance:      mq8dr
+Held cutover status:        LIVE / newest / exact B / full hold verified
+Post-cutover verifier:      v2 SHA-256 61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0 / 19298 bytes / HL_POST_CUTOVER_TARGET_VERIFIED
+Fresh held-source backup:   e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6
 ```
 
 The backend identity above is the exact tested commit; a branch name,
 working-tree state, or earlier backend commit is not an acceptable substitute.
-Backend `origin/staging` and held Render deploy `dep-da5l8drtqb8s73ar74sg`
-resolve exactly to it. The deploy also binds exact frontend build
-`4dfe12d1366314e3d9df722c50771324647743c9`. No newer deploy existed at the
-evidence boundary. The old `23971a4d...` / `dep-da51hjvqj5pc73bh8g3g`
+Backend `origin/staging`, prior held deploy `dep-da5l8drtqb8s73ar74sg`, and
+newest held cutover deploy `dep-da5mmpu417fc73807ptg` resolve exactly to it.
+The newest deploy also binds exact frontend build
+`4dfe12d1366314e3d9df722c50771324647743c9`, is `LIVE`, and owns the verified
+current held boundary. The old `23971a4d...` /
+`dep-da51hjvqj5pc73bh8g3g`
 identity remains previous historical recovery evidence and backup provenance,
 not current deployment truth.
 
 ## Contained Scope
 
-This rerun closes only the M7-26 isolated-staging release gates. Its code
+This rerun was scoped only to the M7-26 isolated-staging release gates. Its code
 change makes the staging-only T-132 diagnostic count distinct successful
 TanStack Query instances once and count physical eviction/replacement
 separately. It does not weaken the frozen privacy comparator or change normal
 product behavior.
 
-The strict browser sequence remains:
+The planned strict browser sequence was:
 
 ```text
 Initial mounted page:       1 successful Query instance / 0 evictions / 0 replacements
@@ -77,9 +97,11 @@ After A -> B publication:   2 successful Query instances / 1 eviction / 1 replac
 After B -> A publication:   3 successful Query instances / 2 evictions / 2 replacements
 ```
 
-The fresh run must execute both transfer phases from its own fresh fixture and
-release-specific idempotency keys. It must not reuse an action, receipt,
-activation target, or helper marker from `HL-20260821-3`.
+The planned fresh run required both transfer phases from its own fresh fixture
+and release-specific idempotency keys. Had the smoke begun, it could not have
+reused an action, receipt, activation target, or helper marker from
+`HL-20260821-3`. The smoke did not begin, and this spent plan grants no resume
+or reuse authority.
 
 ## Historical Boundary
 
@@ -137,7 +159,7 @@ Held deploy `dep-da5l8drtqb8s73ar74sg` started at
 recorded zero startup error logs. Public live and readiness returned `200`,
 `Cache-Control: no-store`, and status `ok`; `/api/v1/leagues` returned `503`,
 `Cache-Control: no-store`, and `SERVICE_MAINTENANCE`. No newer deploy existed
-at the evidence boundary.
+at that pre-cutover evidence boundary.
 
 ## Sealed Frontend Artifact and Deployment
 
@@ -242,8 +264,12 @@ BACKUP_SCHEDULE_ENABLED=false
 
 Public liveness and readiness return `200`; ordinary session traffic returns
 `503 SERVICE_MAINTENANCE`. There were zero active sessions and no installed
-strict fixture at the clean pre-fixture boundary; the fresh strict fixture is
-now intentionally installed while the full hold remains active.
+strict fixture at the clean pre-fixture boundary. The release-specific fixture
+was later installed only in the preserved source
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`.
+The clean target ending in `HL-20260822-1.sqlite3` is now authoritative, and the
+corrected verifier proved all ten fixture/transfer artifact counts are zero
+there while the full hold remains active.
 
 ## Fresh Fixture Execution Record
 
@@ -299,19 +325,151 @@ security_audit_events=1; team_manager_assignments=4; teams=4
 The immediate identical replay returned the same IDs, times, public counts,
 role/manager facts, and inserted-row counts with `replayed: true` and
 `databaseWriteCount: 0`. The operation changed only the authoritative source;
-the fresh target, sidecars, activation receipt, and work area remained absent.
+the fresh target, sidecars, activation receipt, and work area remained absent
+at this pre-abort boundary.
 Backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` remains the clean restore point.
-Do not run preparation again during this smoke attempt.
+Do not run preparation again. The recorded actionable deadline was
+`2026-08-24T07:00:00.000Z`, but the strict-stop abort closed this release before
+smoke; that deadline supplies no authority to resume it.
 
-The exact operational deadline is `2026-08-24T07:00:00.000Z`. Both hosted
-transfer phases must finish before it. If the hosted gate cannot complete in
-time, preserve the source, restore the full hold, and use the abort-restore
-path rather than preparing again or resuming after rollover.
+## Helper Publication and Pre-Action Strict Stop
+
+Netlify deploy `6a8b678ddbcf0b4ea8ba623c`, title
+`HL-20260822-1-strict-helper-fe6d2dd`, reached ready/published state at
+`2026-08-23T21:35:11.134Z`. Canonical and immutable verification passed the
+exact byte and response-header contract for all four helper runtime files and
+preserved every sealed critical application file. Publication itself was a
+pass.
+
+The first browser entry used the physical
+`/release-qa/hl-20260822-1/strict-manager-transfer.html` path rather than the
+sole authorized extensionless URL. The page stayed on that path and
+initialization immediately reported:
+
+```text
+status: STRICT_STOP
+action: ORIGIN_GUARD
+reason: EXACT_STAGING_ORIGIN_REQUIRED
+```
+
+The verify-session control, write arm, and every action remained disabled. The
+tab was closed and no replacement was opened. The full hold never lifted.
+Render request logs from `2026-08-23T21:35Z` through `21:42Z` contained zero
+requests, consistent with the helper's statically verified zero-request
+initialization. No session check, activation-marker fetch, Team 1 read,
+assignment read, proposal, acceptance, publisher call, publisher replay,
+Socket.IO connection, or backend write occurred.
+
+The release-specific README and runtime classified any rendered `STRICT_STOP`
+as terminal and required strict abort recovery. This was therefore a
+pre-action browser-boundary failure, not a privacy/cache smoke result. No
+T-131/T-132/T-140 checkpoint was attempted or earned, and this release must not
+be reopened or resumed.
+
+## Exact Abort Materialization and Replay
+
+The selected abort plan ID was:
+
+```text
+release-qa-strict-restore-abort-v1-59641427f2021cbb3285f6ef59635301fbcdb93177288827afd787fed1a28a99
+```
+
+Its complete sanitized result classified exact `prepared_only`, with phase-one
+and return publication states `none/none`, source SHA-256 `c26fdebc...`, absent
+target, zero authoritative-database mutations, zero durable-filesystem
+mutations, and verified deterministic temporary-work cleanup.
+
+The matching abort execute returned
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED` with:
+
+```text
+replayed:                        false
+authoritativeDatabaseMutations: 0
+durableFilesystemMutations:     2
+sourcePreserved:                true
+targetVerified:                 true
+releaseBlocked:                 true
+rollbackOnly:                   true
+target plaintext SHA-256:       cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+activation receipt SHA-256:     b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592
+```
+
+The immediate identical replay reported `replayed: true`, zero authoritative-
+database mutations, zero durable-filesystem mutations, and no temporary work.
+The fixture-bearing source remains preserved; the clean target and exact abort
+receipt are the only durable artifacts created by first execution.
+
+## Helper Retirement and Verified Held Target Handoff
+
+Netlify deploy `6a8b6b25126dabed39fa404d`, title
+`HL-20260822-1-abort-retire-helper-baseline`, published at
+`2026-08-23T21:50:30.415Z` with five header rules and no functions. It
+republished the exact sealed baseline without rebuilding the application.
+Baseline byte checks passed, and all `10/10` retired helper-path checks passed
+across canonical staging and the immutable deploy origin. Every retired helper
+path returned the exact `472`-byte `text/html` SPA index fallback with SHA-256
+`90620768a37b57b905a35cd576077cd4c4f1a760da28fc8c1c8a9347458383ca`.
+
+Only `DATABASE_PATH` was merge-updated from the preserved source to the clean
+target. No hold, route, scheduler, email, debug, provider, backup-schedule,
+build, branch, or other setting changed. Held cutover deploy
+`dep-da5mmpu417fc73807ptg` started at `2026-08-23T21:51:35.442888Z` and reached
+`LIVE` at `2026-08-23T22:41:18.393652Z` as the newest deploy on exact backend
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`. Its build succeeded, and the
+hosted gate passed `443` suites / `3,503` tests with `3,503` pass and zero fail,
+cancel, skip, or todo in
+`2941574.017632ms`. Instance `mq8dr` recorded zero startup errors. Live and
+readiness returned `200` / `Cache-Control: no-store`; `/api/v1/leagues`
+returned held `503 SERVICE_MAINTENANCE` / `Cache-Control: no-store`.
+
+### Corrected post-cutover verifier
+
+The retained first verifier artifact, SHA-256
+`6157adfd598cbf9d7d306dd849822e494ffefe7aee29f3eb14ce2ea4d9ec38c7`, stopped as
+`SCRATCH_SIDECAR_PRESENT` before backup. That result is diagnostic evidence of
+a false negative caused only by the verifier's transient owned scratch
+sidecars; it did not open the authoritative database or establish target drift.
+
+The corrected exact-Node-`24` verifier v2 artifact, SHA-256
+`61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0` and
+`19298` bytes, passed as `HL_POST_CUTOVER_TARGET_VERIFIED`. It proved:
+
+```text
+preserved source:  37761024 bytes / c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238
+authoritative target: 37105664 bytes / cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+activation receipt: 4430 bytes / b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592
+SQLite integrity: ok
+foreign-key violations: 0
+schema / data model / applied migrations: 54 / 54 / 54
+migration checksum: 6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89
+active sessions: 0
+credential-rotation receipt: 9152f844-d8cd-42f7-b0d5-b12f530ad618
+fixture/transfer artifact counts: 0 across all 10 checked categories
+```
+
+The verifier re-proved every full-hold flag and required provider-variable
+absence without opening the authoritative database. Its owned scratch WAL was
+`0` bytes and scratch SHM was `32768` bytes; both were removed, and the
+temporary verification copy was removed.
+
+### Fresh authoritative-source backup
+
+Fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed with encrypted
+SHA-256 `e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448` and
+manifest
+`staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json`,
+whose checksum is
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`.
+Separate `db:backup:verify` passed with plaintext SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`,
+integrity `ok`, and zero foreign-key violations. The clean target is therefore
+the verified and backed-up authoritative source under the unchanged full hold.
 
 ## Final Interactive-Review Matrix
 
-After the complete strict smoke, clean restore/cutover, and final verification
-pass, staging is to reopen only with this explicit matrix:
+This release did not earn reopening. If a separate future release is explicitly
+authorized and completes its strict smoke, clean restore/cutover, and final
+verification, staging may reopen only with this explicit matrix:
 
 ```text
 STAGING_MAINTENANCE_HOLD=false
@@ -339,15 +497,16 @@ launch-ready.
 | Sealed Netlify application baseline | `PASS` | Deploy `6a8a3880f946cc39a2bf2bb6`; `64/64` remote byte checks passed. |
 | Backend focused strict contract | `PASS` | Exact backend `8e313902...` under Node `24.14.1` passed the isolated strict-restore gate `57/57` in `347.592s`. |
 | Backend complete local gate and review | `PASS` | `npm run check` and `npm ls --all` exited `0`; `npm test` passed `443` suites / `3,503` tests with `3,501` pass, zero fail, two Windows skips, and zero cancelled/todo in `15172.429s`; TAP SHA-256 `aa07d1df...`. |
-| Exact held Render deploy with F/B identity | `PASS` | Deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B/F; build passed; hosted gate passed `443` suites / `3,503` tests with `3,503` pass and zero fail/cancel/skip/todo; startup/health/maintenance checks passed; no newer deploy existed. |
+| Exact held Render deploy with F/B identity | `PASS` | Deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B/F; build passed; hosted gate passed `443` suites / `3,503` tests with `3,503` pass and zero fail/cancel/skip/todo; startup/health/maintenance checks passed; no newer deploy existed at that pre-cutover evidence boundary, and current authority is the later cutover row. |
 | Fresh fixture preparation and zero-write replay | `PASS` | Receipt `88a56507...`; first invocation `replayed: false` / `databaseWriteCount: 744`; exact replay `replayed: true` / `databaseWriteCount: 0`; deadline `2026-08-24T07:00:00.000Z`. |
 | Post-fixture held source and inactive-target boundary | `PASS` | Source is `37761024` bytes / SHA-256 `c26fdebc...`; exact B/F/full hold remain; source sidecars, fresh target/sidecars, activation receipt, and restore work area are absent. |
-| Fresh helper publication and authorization | `PENDING` | Set an exact future marker expiry, publish only the additive sealed-baseline overlay, and pass the helper artifact/header/inert-load gates before controlled unhold. |
-| Hosted A-to-B-to-A privacy/cache smoke | `PENDING` | Both phases and every exact `1/0/0 -> 2/1/1 -> 3/2/2` comparator must pass. |
-| Helper removal and sealed-baseline restoration | `PENDING` | Remote bytes, headers, and retired helper paths must pass. |
-| Normal restore, replay, target handoff, and held verification | `PENDING` | Failure routes to the release-specific abort path; no retry or ad hoc SQL. |
-| Post-cutover backup and final interactive matrix | `PENDING` | Reopen only after backup, runtime, role, desktop/mobile, and observation gates pass. |
-| Documentation closeout | `PENDING` | Replace placeholders only with captured evidence; then archive M7-26. |
+| Fresh helper publication and authorization | `PASS THEN STRICT STOP` | Deploy `6a8b678...` passed canonical/immutable four-file byte/header and sealed-file gates. Physical `.html` browser entry immediately hit `ORIGIN_GUARD`; all controls remained disabled. |
+| Hosted A-to-B-to-A privacy/cache smoke | `NOT STARTED / BLOCKED` | Full hold never lifted; zero Render requests; no session, action, or comparator checkpoint ran. This release cannot resume. |
+| Abort plan, execute, and exact replay | `PASS` | Exact `prepared_only` / `none/none`; plan mutations `0/0`; first execute `0/2`; replay `0/0`; clean target `cf3ca07d...`; receipt `b846edcf...`; source preserved. |
+| Helper removal and sealed-baseline restoration | `PASS` | Deploy `6a8b6b25126dabed39fa404d`; baseline bytes and `10/10` retired-path checks passed across canonical and immutable origins. |
+| `DATABASE_PATH`-only held target handoff | `PASS` | Deploy `dep-da5mmpu417fc73807ptg` is newest and `LIVE` on exact B; `443` hosted suites / `3,503` tests all passed; instance/startup/health/maintenance gates passed under the full hold. |
+| Post-cutover held verification and backup | `PASS` | Corrected verifier v2 returned `HL_POST_CUTOVER_TARGET_VERIFIED`; source/target/receipt, full hold, target identity/integrity/schema/checksum/session/fixture absence, owned scratch cleanup, and backup `e735e6a4...` all verified. |
+| Final interactive matrix and M7-26 closeout | `NOT AUTHORIZED` | `HL-20260822-1` is blocked and abort-recovered to a clean target. A new release needs separate explicit authority; production remains untouched. |
 
 ## Separate Launch Gates
 
