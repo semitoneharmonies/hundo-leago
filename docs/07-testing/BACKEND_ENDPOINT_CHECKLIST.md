@@ -244,8 +244,10 @@ Production remains untouched and unauthorized.
 ## 2026-08-22 M7-26 Fresh Held-Staging Rerun (ACTIVE)
 
 Release `HL-20260822-1` is the sole active execution. It uses frontend build
-`4dfe12d1366314e3d9df722c50771324647743c9`, clean held source database
-`hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`, unused target
+`4dfe12d1366314e3d9df722c50771324647743c9`, pinned held source database
+`hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3` (clean at the
+recorded pre-fixture boundary and now intentionally fixture-bearing), with
+unused target
 `hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`, and verified
 backup `2044fcae-24e8-4392-a1ac-4064d9cd2807`. The fresh restore/outbox
 contract at exact backend commit `8e313902feefcd683b0f5edd746a9dd2a9029a18`
@@ -254,7 +256,22 @@ Under Node `24.14.1` / npm `11.11.0`, `npm run check` and `npm ls --all` exit
 `0`, while the complete suite passes `443` suites and `3,503` tests (`3,501`
 pass, zero fail, two intentional Windows skips, zero cancelled/todo) in
 `15172.429s`. Backend `origin/staging` resolves exactly to that commit. The
-held deploy, fixture, two-phase hosted smoke, restore/cutover, final activation,
+held deploy is now `PASS`: `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B,
+all `3,503/3,503` hosted tests across `443` suites passed with zero
+fail/cancel/skip/todo in `2954563.480743ms`, startup recorded zero errors,
+live/readiness returned `200`/`no-store`, and `/api/v1/leagues` remained held
+at `503 SERVICE_MAINTENANCE`/`no-store`.
+
+Fresh exact-B/F full-hold preflight and backup verification passed before
+fixture preparation. Prepare emitted receipt
+`88a56507-73fd-47f9-ac66-c305f0075d24`, FAD
+`f474f00b-111c-4dec-8592-ffcbaf97e655`, restricted auction
+`551f475b-352f-4c06-831a-534b9750754a`, deadline
+`2026-08-24T07:00:00.000Z`, and `databaseWriteCount: 744`; its immediate exact
+replay returned the same identities with `databaseWriteCount: 0`. Post-fixture
+held preflight records source `37761024` bytes / SHA-256 `c26fdebc...` with
+source sidecars, fresh target/sidecars, activation receipt, and restore work
+area absent. Helper, two-phase hosted smoke, restore/cutover, final activation,
 and closeout remain pending. No
 historical `HL-20260821-3` action key, receipt, helper marker, or incomplete
 transfer may be reused. Exact current evidence and placeholders live in

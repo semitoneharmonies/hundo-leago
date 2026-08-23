@@ -23,8 +23,8 @@ Last reviewed: **2026-08-23**
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` in deploy `6a8a3880f946cc39a2bf2bb6`; Render is live on backend `23971a4d66ee6383c6ad54339e769dbc9a76561e` in deploy `dep-da51hjvqj5pc73bh8g3g` | SQLite schema `54`, target authentication, and multi-league authority use clean source `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`, protected by verified backup `2044fcae-24e8-4392-a1ac-4064d9cd2807`. The full safety hold remains active: public live/ready checks return `200`, while session traffic returns `503 SERVICE_MAINTENANCE`; writes, scheduled jobs, FAD routes, account email, debug routes, backup scheduling, and the live provider remain disabled. |
-| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at exact release candidate `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260822-1` is `ACTIVE` and targets unused path `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`. The frontend diagnostic and complete local/Netlify gates pass, and the backend focused, complete local, and publication gates pass. The held backend deployment and every later hosted gate remain pending. The recovered `HL-20260821-3` attempt stays historical and blocked. No production change is claimed. |
+| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` in deploy `6a8a3880f946cc39a2bf2bb6`; Render is live on exact backend `8e313902feefcd683b0f5edd746a9dd2a9029a18` in held deploy `dep-da5l8drtqb8s73ar74sg` | The held deploy passed `443` suites / `3,503` tests with all `3,503` passing, zero fail/cancel/skip/todo, clean startup, live/readiness `200`, and league traffic `503 SERVICE_MAINTENANCE`. The schema-`54` source passed the fresh pre-fixture boundary and now contains the fresh strict fixture after exact prepare/replay; backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` remains the clean restore point, and the target/sidecars/receipt/work area remained absent. The full hold remains active. |
+| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at exact release candidate `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260822-1` is `ACTIVE` and targets unused path `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`. Frontend local/Netlify, backend local/publication/held-hosted, and fixture prepare/replay gates pass. Helper, smoke, restore, activation, observation, and closeout remain pending. The recovered `HL-20260821-3` attempt stays historical and blocked. No production change is claimed. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -964,9 +964,10 @@ The canonical workspaces and checked-in candidate identities are:
 
 The frontend identity is the fresh application candidate with the corrected
 strict privacy diagnostic. The backend identity is the exact committed fresh
-release contract, and backend `origin/staging` resolves exactly to it. It is
-locally verified but is not yet the deployed Render identity. Only this exact
-committed identity may now be used for deployment or release evidence.
+release contract, backend `origin/staging` resolves exactly to it, and held
+Render deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on that identity. Only this
+exact committed and deployed identity may now be used for later release
+evidence.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -1002,10 +1003,15 @@ Windows skips, zero cancelled/todo) in `15172.429s` (about `4h12m52s`); and
 frozen normalized backend diff SHA-256 is
 `7624c7b24319954a9a67da61346efab3d7485849aad3542eb321b2d6900a0235`.
 
-The currently deployed held backend `23971a4d...` passed `3,502/3,502`
-hosted tests with zero failure or skip. Its database identity, schema,
-migration checksum, integrity, foreign keys, hold, and recovery boundaries
-also passed their recorded hosted checks.
+The currently deployed held backend `8e313902...` in deploy
+`dep-da5l8drtqb8s73ar74sg` passed `443` hosted suites / `3,503` tests with all
+`3,503` passing and zero fail, cancel, skip, or todo in `2954563.480743ms`.
+Build and startup passed, instance `srv-d9eo2turnols73ekb830-wrhvw` recorded
+zero startup error logs, public live/readiness returned `200` with `no-store`,
+and `/api/v1/leagues` returned held `503 SERVICE_MAINTENANCE` with `no-store`.
+No newer deploy existed at the evidence boundary. The fresh full-hold/source/
+target/sidecar/receipt/work-area preflight and backup re-verification then
+passed before exact fixture preparation and its immediate zero-write replay.
 
 Earlier milestone suites established characterization, read-only, security,
 authorization, league-isolation, migration, transaction, job, recovery,
@@ -1031,8 +1037,10 @@ The target topology and configuration are documented in
   `srv-d9eo2turnols73ekb830`, branch `staging`, with auto-deploy disabled;
 * separately attached disk `dsk-d9eo2u6rnols73ekb8t0`, mounted at
   `/opt/render/project/data`;
-* SQLite schema `54` at the clean restored authority path
-  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`;
+* SQLite schema `54` at the authoritative source path
+  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
+  which was the verified clean pre-fixture restore boundary and now contains
+  the exact fresh strict fixture;
 * staging-only users, leagues, secrets, storage paths, and
   `hundo-leago/staging` encrypted-backup prefix; and
 * no production persistent disk, database, credential, or deployment
@@ -1040,17 +1048,21 @@ The target topology and configuration are documented in
 
 The currently deployed identities are the exact Netlify and Render candidates
 in the environment matrix. Database identity, migration ledger, checksum,
-integrity, foreign keys, clean restore, and post-cutover encrypted backup
-`2044fcae-24e8-4392-a1ac-4064d9cd2807` have verified. The current database has
-no active session and no installed strict fixture.
+integrity, foreign keys, clean pre-fixture restore, and post-cutover encrypted
+backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` have verified. Exact fixture
+prepare/replay intentionally advanced the held source to `37761024` bytes /
+SHA-256 `c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238`;
+source sidecars, the fresh target and its sidecars, activation receipt, and
+restore work area remain absent.
 
 Staging remains intentionally unavailable for ordinary sign-in under the full
 safety hold. Maintenance and league writes are closed; scheduled jobs, FAD
 routes, account email, debug routes, backup scheduling, and the live provider
 are disabled. The prior strict privacy run failed before phase two, recovered
-to this clean boundary, and did not reopen staging. A fresh complete strict run
-is in progress with frontend candidate `4dfe12d...`; it must pass before any
-reopen or closure claim.
+to the clean pre-fixture boundary, and did not reopen staging. The fresh held
+deploy and fixture prepare/replay now pass; helper publication, strict smoke,
+restore, activation, observation, and closeout remain pending before any reopen
+or closure claim.
 
 The approved post-rerun interactive-review matrix is maintenance hold false,
 writes open, FAD routes enabled, scheduler disabled, account email disabled in
@@ -1102,14 +1114,14 @@ The current priority order is:
 1. Commit and publish the reconciled documentation evidence without changing
    the sealed frontend application build or published backend candidate
    `8e313902feefcd683b0f5edd746a9dd2a9029a18`.
-2. Trigger one intentional held F/B deploy and verify the exact build identities
-   and full-hold runtime before any fixture write or controlled unhold.
-3. From the verified clean held database, prepare a fresh strict fixture and
-   run the entire hosted A-to-B-to-A privacy and authority gate. Do not resume
-   the failed attempt or skip phase one.
-4. Restore the required clean boundary, verify the final runtime/job matrix,
-   reconcile backups and outbox state, and reopen staging only after every hard
-   gate passes.
+2. Publish and verify only the fresh additive helper overlay on the sealed
+   Netlify baseline while the full hold remains active.
+3. Run the entire hosted A-to-B-to-A privacy and authority gate before the
+   emitted fixture deadline. Do not resume the failed attempt or skip phase one.
+4. Remove the helper, restore the sealed baseline, restore the required clean
+   boundary through the selected normal or abort path, verify the final
+   runtime/job matrix, reconcile backups and outbox state, and reopen staging
+   only after every hard gate passes.
 5. Close M7-26 and align canonical documentation only to recorded evidence.
    Keep production migration, reset, deployment, and first-write authority
    blocked until Grae separately approves their exact scope.

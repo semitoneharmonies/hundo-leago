@@ -134,8 +134,24 @@ strict-restore gate at `57/57` in `347.592s`. Under Node `24.14.1` / npm
 passes `443` suites and `3,503` tests (`3,501` pass, zero fail, two intentional
 Windows skips, zero cancelled/todo) in `15172.429s`. Its full TAP SHA-256 is
 `aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`.
-Backend `origin/staging` resolves exactly to that commit. The hosted gate
-remains `PENDING`.
+Backend `origin/staging` resolves exactly to that commit. Held deploy
+`dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B after `443` hosted suites /
+`3,503` tests all passed with zero fail, cancel, skip, or todo in
+`2954563.480743ms`. Its build/startup, zero-startup-error, live/readiness
+`200`/`no-store`, and held `/api/v1/leagues` `503`/`no-store` gates pass.
+
+The fresh exact-B/F full-hold preflight proved source plaintext SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`, absent
+target/sidecars/receipt/work area, and reverified backup `2044fcae...` with the
+same plaintext hash, integrity `ok`, and zero foreign-key violations. Exact
+fixture preparation then reported `replayed: false` /
+`databaseWriteCount: 744`; its immediate identical replay reported
+`replayed: true` / `databaseWriteCount: 0`. Both bind receipt
+`88a56507-73fd-47f9-ac66-c305f0075d24` and deadline
+`2026-08-24T07:00:00.000Z`. Post-fixture held preflight records source
+`37761024` bytes / SHA-256 `c26fdebc...` with source sidecars, fresh
+target/sidecars, activation receipt, and restore work area absent. Helper,
+smoke, restore, and activation gates remain `PENDING` under the full hold.
 
 The active database/backup contract and gate ledger are recorded only in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`. The final

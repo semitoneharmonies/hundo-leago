@@ -865,14 +865,21 @@ baseline `6a8a3880f946cc39a2bf2bb6`; its complete local and remote gates pass.
 Exact backend commit `8e313902feefcd683b0f5edd746a9dd2a9029a18`
 passes its isolated strict-restore gate at `57/57` and its complete local gate
 at `3,501/3,503`, with zero failures and only two intentional Windows skips.
-Backend `origin/staging` resolves exactly to that commit. The exact held deploy
-remains `PENDING`.
+Backend `origin/staging` resolves exactly to that commit. Exact held deploy
+`dep-da5l8drtqb8s73ar74sg` is `LIVE` on that build and passed all `3,503/3,503`
+hosted tests across `443` suites with zero fail, cancel, skip, or todo, clean
+startup, public live/readiness `200`, and held league traffic `503`.
 
-The full hold remains active. The fresh fixture, complete two-phase strict
-privacy/cache smoke, helper removal, normal restore or bounded abort,
-post-cutover verification/backup, final interactive-review matrix, hosted
-desktop/mobile review, observation, and closeout remain. Exact evidence and
-placeholders are in
+The fresh full-hold/source/target/sidecar/receipt/work-area preflight and exact
+backup re-verification passed. Fixture preparation then passed with receipt
+`88a56507-73fd-47f9-ac66-c305f0075d24`, `databaseWriteCount: 744`, and an
+immediate exact replay at `databaseWriteCount: 0`. The full hold remains
+active; post-fixture source SHA-256 is `c26fdebc...`, with all source/target
+sidecar and inactive-target/receipt/work-area absence re-proven. Helper
+publication/removal, the complete two-phase strict privacy/cache smoke, normal
+restore or bounded abort, post-cutover verification/backup, final interactive-
+review matrix, hosted desktop/mobile review, observation, and closeout remain.
+Exact evidence and placeholders are in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 Production remains untouched and unauthorized.
 
@@ -1430,8 +1437,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Complete the exact held F/B deploy for published backend 8e313902, then run the fresh strict fixture, full A-to-B-to-A privacy gate, restore, final interactive-review activation, observation, and closeout
-Implementation status: M7-26 ACTIVE / RELEASE HL-20260822-1 ACTIVE / FRONTEND 4DFE12D + NETLIFY 6A8A3880 PASS / BACKEND 8E313902 LOCAL + ORIGIN/STAGING PUBLICATION PASS; HELD DEPLOY PENDING / SOURCE + UNUSED TARGET + BACKUP 2044FCAE VERIFIED / FULL HOLD ACTIVE / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Publish the fresh helper, run the full A-to-B-to-A privacy gate, remove the helper, restore, complete final interactive-review activation, observation, and closeout
+Implementation status: M7-26 ACTIVE / RELEASE HL-20260822-1 ACTIVE / FRONTEND 4DFE12D + NETLIFY 6A8A3880 PASS / BACKEND 8E313902 LOCAL + ORIGIN/STAGING PUBLICATION + HELD DEPLOY DA5L8DRT PASS / FIXTURE PREPARE + ZERO-WRITE REPLAY PASS / FULL HOLD ACTIVE / HELPER + SMOKE + RESTORE + ACTIVATION PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1450,11 +1457,11 @@ docs/04-technical-specs/FREE_AGENT_DRAFT.md
 docs/06-work-plans/ACTIVE_WORK_PLAN.md
 ```
 
-The ordered remaining gates are: intentional held F/B deploy; fresh fixture
-and replay; strict two-cookie A-to-B-to-A smoke;
-sealed helper removal; normal restore/cutover and backup; final staging matrix;
-desktop/mobile role review; observation; and documentation closeout. Staging
-must remain held until the applicable gate authorizes the next transition.
+The ordered remaining gates are: fresh helper publication and authorization;
+strict two-cookie A-to-B-to-A smoke; sealed helper removal; normal restore/
+cutover and backup; final staging matrix; desktop/mobile role review;
+observation; and documentation closeout. Staging must remain held until the
+applicable gate authorizes the next transition.
 
 ## Historical Milestone Evidence
 

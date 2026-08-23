@@ -33,10 +33,11 @@ Release `HL-20260822-1` is a clean rerun, not a continuation of the failed
 strict phase. Its exact active record is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
-Checked at this boundary:
+Checked across the recorded pre-fixture and post-fixture boundaries:
 
-- clean schema-`54` source
-  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`;
+- clean pre-fixture schema-`54` source
+  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
+  which is now the intentional post-fixture source described below;
 - unused target
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`;
 - verified incident-preservation backup
@@ -53,11 +54,26 @@ Backend `npm run check` and `npm ls --all` both exit `0`. The full TAP SHA-256
 is `aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`, and
 the frozen normalized backend diff SHA-256 is
 `7624c7b24319954a9a67da61346efab3d7485849aad3542eb321b2d6900a0235`.
-Backend `origin/staging` resolves exactly to the backend build above. The held
-F/B deploy, fresh fixture, full two-phase privacy smoke, helper removal,
-restore/cutover, final interactive-review activation, desktop/mobile review,
-observation, and closeout remain unchecked. No placeholder may be treated as
-release evidence.
+Backend `origin/staging` resolves exactly to the backend build above. Held F/B
+deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B after its build and all
+`3,503/3,503` hosted tests across `443` suites passed with zero fail, cancel,
+skip, or todo in `2954563.480743ms`. Instance
+`srv-d9eo2turnols73ekb830-wrhvw` recorded zero startup error logs; live/ready
+returned `200`/`no-store` and `/api/v1/leagues` returned held
+`503 SERVICE_MAINTENANCE`/`no-store`; no newer deploy existed at the evidence
+boundary.
+
+The exact-B/F full-hold/source/target/sidecar/receipt/work-area preflight and
+backup re-verification passed. Fresh prepare created receipt
+`88a56507-73fd-47f9-ac66-c305f0075d24` with `databaseWriteCount: 744`; its
+immediate identical replay used the same IDs/times/counts and returned
+`databaseWriteCount: 0`. The actionable deadline is
+`2026-08-24T07:00:00.000Z`. Post-fixture held preflight records source
+`37761024` bytes / SHA-256 `c26fdebc...` and absent source sidecars, fresh
+target/sidecars, activation receipt, and restore work area. Helper publication,
+full two-phase privacy smoke, helper removal, restore/cutover, final
+interactive-review activation, desktop/mobile review, observation, and
+closeout remain unchecked. No placeholder may be treated as release evidence.
 
 The final interactive-review matrix is hold false, writes open, FAD routes
 enabled, scheduler disabled, account email disabled/capture, debug disabled,

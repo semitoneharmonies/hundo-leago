@@ -2,7 +2,7 @@
 
 ## Status
 
-`DRAFT - ACTIVE; LOCAL F/B VERIFIED; HELD DEPLOY AND STRICT RERUN PENDING`
+`DRAFT - ACTIVE; HELD F/B DEPLOY + FIXTURE VERIFIED; STRICT SMOKE PENDING`
 
 Release `HL-20260822-1` defines the fresh end-to-end rerun from the clean held
 database produced by the recovered `HL-20260821-3` attempt. It does not resume,
@@ -17,8 +17,9 @@ The frontend diagnostic correction and exact Netlify baseline are published.
 The fresh backend release contract is exact committed build
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` and passes its focused and complete
 local gates. Backend `origin/staging` resolves exactly to that commit. Its held
-hosted deploy is still pending. The strict fixture has not been prepared, the
-controlled unhold has not begun, and no fresh A-to-B-to-A action has run.
+hosted deploy and fresh fixture prepare/replay pass. The controlled unhold has
+not begun, the helper has not been published, and no fresh A-to-B-to-A action
+has run.
 
 Production remains untouched and unauthorized.
 
@@ -37,6 +38,10 @@ Render staging service:     srv-d9eo2turnols73ekb830
 Render branch:              staging
 Render auto-deploy:         no / trigger off
 Render persistent mount:    /opt/render/project/data
+Render held deploy:         dep-da5l8drtqb8s73ar74sg
+Render deploy started:      2026-08-23T20:12:39.566001Z
+Render deploy LIVE:         2026-08-23T21:02:43.868008Z
+Render instance:            srv-d9eo2turnols73ekb830-wrhvw
 Netlify staging site ID:    95af8aa7-0b13-4954-af6d-855762acb147
 Netlify staging site name:  hundoleago-staging
 Netlify baseline deploy:    6a8a3880f946cc39a2bf2bb6
@@ -49,12 +54,12 @@ Inactive target database:   /opt/render/project/data/hundo-staging/sqlite/hundo-
 
 The backend identity above is the exact tested commit; a branch name,
 working-tree state, or earlier backend commit is not an acceptable substitute.
-Backend `origin/staging` resolves exactly to it, but it is not yet hosted
-release evidence. Because Render auto-deploy is off, that publication did not
-deploy the commit. Only `APP_BUILD_ID` and `FRONTEND_BUILD_ID` are to be
-merge-updated to the exact B/F identities before one intentional held deploy
-is triggered and observed. This paragraph records the remaining plan, not a
-completed deploy.
+Backend `origin/staging` and held Render deploy `dep-da5l8drtqb8s73ar74sg`
+resolve exactly to it. The deploy also binds exact frontend build
+`4dfe12d1366314e3d9df722c50771324647743c9`. No newer deploy existed at the
+evidence boundary. The old `23971a4d...` / `dep-da51hjvqj5pc73bh8g3g`
+identity remains previous historical recovery evidence and backup provenance,
+not current deployment truth.
 
 ## Contained Scope
 
@@ -118,8 +123,21 @@ Its exact local runtime was Node `24.14.1` with npm `11.11.0`:
 
 The retained complete TAP SHA-256 is
 `aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`.
-This evidence proves the frozen local candidate only. It does not satisfy the
-held Render deploy or any later hosted gate.
+This evidence proves the frozen local candidate; the held hosted evidence is
+recorded separately below.
+
+## Backend Held Hosted Gate
+
+Held deploy `dep-da5l8drtqb8s73ar74sg` started at
+`2026-08-23T20:12:39.566001Z` and finished `LIVE` at
+`2026-08-23T21:02:43.868008Z` on exact backend
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`. The build succeeded. Instance
+`srv-d9eo2turnols73ekb830-wrhvw` passed `443` suites / `3,503` tests with all
+`3,503` passing, zero fail, cancel, skip, or todo, in `2954563.480743ms`, and
+recorded zero startup error logs. Public live and readiness returned `200`,
+`Cache-Control: no-store`, and status `ok`; `/api/v1/leagues` returned `503`,
+`Cache-Control: no-store`, and `SERVICE_MAINTENANCE`. No newer deploy existed
+at the evidence boundary.
 
 ## Sealed Frontend Artifact and Deployment
 
@@ -150,7 +168,7 @@ application.
 
 ## Held Database and Backup Boundary
 
-The currently authoritative held source is a regular, non-symlink SQLite file:
+The clean pre-fixture source boundary was a regular, non-symlink SQLite file:
 
 ```text
 Path:              /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
@@ -159,8 +177,8 @@ Plain SHA-256:      cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aaca
 WAL/SHM sidecars:  absent
 ```
 
-The fresh inactive target, its WAL/SHM sidecars, and its activation receipt
-were all absent at the boundary check.
+The fresh inactive target, its WAL/SHM sidecars, activation receipt, and
+deterministic restore work directory were all absent at the boundary check.
 
 The exact clean-boundary backup is:
 
@@ -184,9 +202,26 @@ Foreign-key errors:  0
 Remote bytes/hash:   verified
 ```
 
-The canonical backup verifier was rerun against that exact object and passed.
-No additional pre-fixture backup is required unless the source bytes or
-identity change before preparation.
+The canonical backup verifier was rerun against that exact object immediately
+before preparation and passed with plaintext SHA-256 `cf3ca07d...`, integrity
+`ok`, and zero foreign-key violations. The exact B/F, environment/database
+identity, and full-hold matrix also passed preflight.
+
+After fixture prepare and replay, a fresh held-shell preflight recorded the
+current authoritative source as:
+
+```text
+Path:              /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
+Bytes:             37761024
+Plain SHA-256:      c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238
+mtimeMs:            1787519337691.8423
+Physical type:      regular, non-symlink, real path, same device
+Source WAL/SHM:     absent
+Fresh target:       absent
+Target WAL/SHM:     absent
+Activation receipt: absent
+Restore work area:  absent
+```
 
 ## Current Held Runtime
 
@@ -206,14 +241,15 @@ BACKUP_SCHEDULE_ENABLED=false
 ```
 
 Public liveness and readiness return `200`; ordinary session traffic returns
-`503 SERVICE_MAINTENANCE`. There are zero active sessions and no installed
-strict fixture at the recorded clean boundary.
+`503 SERVICE_MAINTENANCE`. There were zero active sessions and no installed
+strict fixture at the clean pre-fixture boundary; the fresh strict fixture is
+now intentionally installed while the full hold remains active.
 
-## Fresh Fixture Command Handoff
+## Fresh Fixture Execution Record
 
-After the exact held F/B deployment passes, prepare the fixture by running this
-command once in the attached Render shell. Run the identical command a second
-time immediately afterward as the replay:
+After the exact held F/B deployment and preflight passed, the operator ran this
+command once in the attached Render shell and immediately ran the identical
+command a second time as the replay:
 
 ```text
 npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
@@ -221,27 +257,56 @@ npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/d
 npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
 ```
 
-Both complete sanitized JSON results belong in this record. Fresh prepare must
-report `replayed: false` and its exact positive `databaseWriteCount`; replay
-must report `replayed: true` and `databaseWriteCount: 0`. The operation writes
-the currently authoritative source database, so its bytes are expected to
-change after the first command. It does not write the fresh target. The target,
-its WAL/SHM sidecars, and its activation receipt must stay absent through
-fixture preparation, replay, controlled unhold, hosted smoke, and restore
-planning; only the selected restore execute may materialize them under hold.
-Backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` remains the clean restore point.
+The complete sanitized first result is bound by:
 
-The returned `actionableUntilMs` is the operational deadline. It is the next
-daily FAD rollover at midnight `America/Vancouver`, which is `07:00Z` during
-Pacific daylight time; the calendar date depends on the invocation. The
-first preparation and its immediate zero-write replay each require at least
-four hours remaining, so during daylight time both must finish before
-`03:00Z`; begin earlier with operating margin. If neither invocation has begun
-and that margin is missed, keep the hold through rollover and prepare just
-after `07:00Z`. If the first invocation succeeds but replay does not, preserve
-the source and use the abort-restore path rather than waiting and resuming that
-release after rollover. Both hosted transfer phases must finish before the
-emitted deadline.
+```text
+Operation/release:             HL-20260822-1
+FAD ID:                        f474f00b-111c-4dec-8592-ffcbaf97e655
+Restricted-auction ID:         551f475b-352f-4c06-831a-534b9750754a
+Actionable until (ms):         1787554800000
+Actionable until (UTC):        2026-08-24T07:00:00.000Z
+Receipt event ID:              88a56507-73fd-47f9-ac66-c305f0075d24
+Fixture fingerprint:           1a097b50afa8915c7cd98154dc455604965739c6d61213ac9caec90a6487620b
+Prepared at (ms):              1787519331074
+Active / selected teams:       4 / 2
+Tied players:                  1
+Restricted participants:      2
+Replayed:                      false
+Database write count:          744
+```
+
+Its exact inserted-row counts are:
+
+```text
+auction_contexts=1; auctions=1; candidate_card_entries=2;
+candidate_card_revisions=10; candidate_card_snapshot_entries=88;
+candidate_card_snapshots=4; candidate_cards=4;
+free_agent_draft_allocation_events=3;
+free_agent_draft_auction_participants=2; free_agent_draft_draws=1;
+free_agent_draft_player_allocations=1;
+free_agent_draft_readiness_attempts=1;
+free_agent_draft_readiness_operations=1; free_agent_draft_rollovers=7;
+free_agent_draft_teams=4; free_agent_drafts=1; idempotency_requests=2;
+job_runs=203; league_activity=3; league_memberships=4;
+league_player_positions=1; league_settings=1; leagues=1;
+matchup_operations=1; matchup_schedule_job_bindings=192;
+matchup_weeks=32; matchups=64; notifications=14;
+outbox_event_audiences=29; outbox_events=29;
+season_matchup_schedule_generations=1; seasons=1;
+security_audit_events=1; team_manager_assignments=4; teams=4
+```
+
+The immediate identical replay returned the same IDs, times, public counts,
+role/manager facts, and inserted-row counts with `replayed: true` and
+`databaseWriteCount: 0`. The operation changed only the authoritative source;
+the fresh target, sidecars, activation receipt, and work area remained absent.
+Backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` remains the clean restore point.
+Do not run preparation again during this smoke attempt.
+
+The exact operational deadline is `2026-08-24T07:00:00.000Z`. Both hosted
+transfer phases must finish before it. If the hosted gate cannot complete in
+time, preserve the source, restore the full hold, and use the abort-restore
+path rather than preparing again or resuming after rollover.
 
 ## Final Interactive-Review Matrix
 
@@ -269,13 +334,15 @@ launch-ready.
 
 | Gate | Status | Evidence or stop condition |
 | --- | --- | --- |
-| Clean held source, unused target, and backup | `PASS` | Exact paths, hashes, identity, sidecar absence, backup verification, integrity, and foreign keys recorded above. |
+| Pre-fixture clean restore boundary | `PASS` | Exact source/target paths, source hash `cf3ca07d...`, identity, sidecar/target/receipt/work-area absence, and backup `2044fcae...` verification recorded above. |
 | Frontend diagnostic and complete local gate | `PASS` | Exact build `4dfe12d...`; `402/402`; ESLint, browser authority, Playwright, and build passed. |
 | Sealed Netlify application baseline | `PASS` | Deploy `6a8a3880f946cc39a2bf2bb6`; `64/64` remote byte checks passed. |
 | Backend focused strict contract | `PASS` | Exact backend `8e313902...` under Node `24.14.1` passed the isolated strict-restore gate `57/57` in `347.592s`. |
 | Backend complete local gate and review | `PASS` | `npm run check` and `npm ls --all` exited `0`; `npm test` passed `443` suites / `3,503` tests with `3,501` pass, zero fail, two Windows skips, and zero cancelled/todo in `15172.429s`; TAP SHA-256 `aa07d1df...`. |
-| Exact held Render deploy with F/B identity | `PENDING` | Must bind frontend build `4dfe12d...` and backend build `8e313902...`; the currently deployed held Render backend remains `23971a4d...`. |
-| Fresh fixture preparation and zero-write replay | `PENDING` | Both exact invocations mutate/replay only the pinned source; the first records its emitted positive `databaseWriteCount`, the replay records `databaseWriteCount: 0`, and the fresh target remains absent. |
+| Exact held Render deploy with F/B identity | `PASS` | Deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B/F; build passed; hosted gate passed `443` suites / `3,503` tests with `3,503` pass and zero fail/cancel/skip/todo; startup/health/maintenance checks passed; no newer deploy existed. |
+| Fresh fixture preparation and zero-write replay | `PASS` | Receipt `88a56507...`; first invocation `replayed: false` / `databaseWriteCount: 744`; exact replay `replayed: true` / `databaseWriteCount: 0`; deadline `2026-08-24T07:00:00.000Z`. |
+| Post-fixture held source and inactive-target boundary | `PASS` | Source is `37761024` bytes / SHA-256 `c26fdebc...`; exact B/F/full hold remain; source sidecars, fresh target/sidecars, activation receipt, and restore work area are absent. |
+| Fresh helper publication and authorization | `PENDING` | Set an exact future marker expiry, publish only the additive sealed-baseline overlay, and pass the helper artifact/header/inert-load gates before controlled unhold. |
 | Hosted A-to-B-to-A privacy/cache smoke | `PENDING` | Both phases and every exact `1/0/0 -> 2/1/1 -> 3/2/2` comparator must pass. |
 | Helper removal and sealed-baseline restoration | `PENDING` | Remote bytes, headers, and retired helper paths must pass. |
 | Normal restore, replay, target handoff, and held verification | `PENDING` | Failure routes to the release-specific abort path; no retry or ad hoc SQL. |

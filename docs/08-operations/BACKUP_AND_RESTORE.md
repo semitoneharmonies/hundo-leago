@@ -1035,8 +1035,12 @@ publisher contract at exact backend commit
 `347.592s`. Under npm `11.11.0`, `npm run check` and `npm ls --all` exit `0`,
 and the complete local suite passes `443` suites / `3,503` tests with `3,501`
 pass, zero fail, two intentional Windows skips, and zero cancelled/todo in
-`15172.429s`. Backend `origin/staging` resolves exactly to that commit. The
-held-hosted gate and deploy are `PENDING`. The historical
+`15172.429s`. Backend `origin/staging` resolves exactly to that commit. Held
+deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on exact B; its build, all
+`3,503/3,503` hosted tests across `443` suites, zero-startup-error check,
+live/readiness `200`/`no-store`, and held league `503`/`no-store` checks pass.
+The fresh fixture prepare and immediate zero-write replay also pass under the
+full hold. The historical
 `HL-20260821-3` component, complete, hosted, and abort-recovery evidence remains
 in the separately labelled historical subsection below; it cannot satisfy the
 fresh run.
@@ -1079,13 +1083,14 @@ Manifest checksum:            08e3d3bde81843a683017d9952b30e02dd02978181a8644323
 Plaintext SHA-256:             cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
 ```
 
-The exact backup has reverified against the current held source: its decrypted
-payload matched the pinned plaintext SHA-256, SQLite integrity was `ok`,
-foreign-key violations were zero, and remote bytes/hash matched. The source
-WAL/SHM sidecars and fresh target/receipt were absent. Fresh fixture preparation
-and its exact zero-write replay are `PENDING`; the `HL-20260821-3` preparation
-receipt must not be reused. Preparation does not constitute strict restore
-planning, materialization, restore replay, `DATABASE_PATH` handoff, or
+The exact backup reverified against the clean held source immediately before
+preparation: its decrypted payload matched the pinned plaintext SHA-256,
+SQLite integrity was `ok`, foreign-key violations were zero, and remote
+bytes/hash matched. The source WAL/SHM sidecars and fresh
+target/receipt/work area were absent. Fresh fixture
+preparation and its exact zero-write replay are `PASS`; the `HL-20260821-3`
+preparation receipt was not reused. Preparation does not constitute strict
+restore planning, materialization, restore replay, `DATABASE_PATH` handoff, or
 activation.
 
 Fixture preparation precedes the four restore commands above and deliberately
@@ -1098,28 +1103,35 @@ npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/d
 npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
 ```
 
-Retain both sanitized results. The first result must be `replayed: false` with
-the exact positive `databaseWriteCount` emitted by the operation. The second
-must be `replayed: true` with `databaseWriteCount: 0`. That full field name is
-canonical; `writeCount` in older historical prose is only shorthand. The first
-command is expected to change the source bytes, so its clean pre-fixture hash
-is not a post-prepare invariant. The verified backup remains the clean restore
-point.
+Both sanitized results were retained. They bind FAD
+`f474f00b-111c-4dec-8592-ffcbaf97e655`, restricted auction
+`551f475b-352f-4c06-831a-534b9750754a`, deadline
+`1787554800000` / `2026-08-24T07:00:00.000Z`, receipt
+`88a56507-73fd-47f9-ac66-c305f0075d24`, fingerprint
+`1a097b50afa8915c7cd98154dc455604965739c6d61213ac9caec90a6487620b`, and
+prepared time `1787519331074`. The first result reports `replayed: false` with
+`databaseWriteCount: 744`; the immediate identical replay reports
+`replayed: true` with `databaseWriteCount: 0` and the same IDs, times, public
+counts, and inserted-row counts. That full field name is canonical;
+`writeCount` in older historical prose is only shorthand. The first command
+changed the source bytes, so its clean pre-fixture hash is not a post-prepare
+invariant. The verified backup remains the clean restore point.
 
-The target, target WAL/SHM sidecars, and activation receipt must remain absent
-through preparation, replay, controlled unhold, hosted smoke, and restore
+The post-fixture held preflight records the source as a real regular,
+non-symlink, same-device file of `37761024` bytes, SHA-256
+`c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238`, and
+`mtimeMs: 1787519337691.8423`. Source WAL/SHM, the fresh target and its WAL/SHM,
+the activation receipt, and the deterministic restore work directory are all
+absent. Exact B/F and the full hold remain bound.
+
+The target, target WAL/SHM sidecars, activation receipt, and restore work area
+must remain absent through controlled unhold, hosted smoke, and restore
 planning. Only a successful selected normal or abort restore execute may
-materialize the target and receipt under the full hold. The actionable
-restricted-auction boundary is the next daily midnight in
-`America/Vancouver`; during Pacific daylight time it is `07:00Z`. Treat the
-returned `actionableUntilMs` as authoritative rather than recording a reusable
-calendar date. Both the first preparation and its immediate zero-write replay
-require at least four hours of remaining horizon, so during daylight time both
-must finish before `03:00Z`; begin earlier with operating margin. If neither
-invocation has begun and that margin is missed, keep the hold through rollover
-and prepare just after `07:00Z` for the next daily window. If the first
-invocation succeeds but replay does not, preserve the mutated source and use
-the abort-restore path; never wait and resume that release after rollover.
+materialize the target and receipt under the full hold. The exact actionable
+boundary is `2026-08-24T07:00:00.000Z`; both hosted transfer phases must finish
+before it. If the hosted gate cannot complete in time, preserve the mutated
+source, restore the full hold, and use the abort-restore path rather than
+preparing again or resuming after rollover.
 
 All four commands run only from the attached Render service shell while the exact
 source path is current and the full hold is active:

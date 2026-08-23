@@ -38,20 +38,34 @@ Windows skips, zero cancelled/todo) in `15172.429s`, and `npm ls --all` exited
 frozen normalized diff SHA-256 is
 `7624c7b24319954a9a67da61346efab3d7485849aad3542eb321b2d6900a0235`.
 Backend `origin/staging` resolves exactly to
-`8e313902feefcd683b0f5edd746a9dd2a9029a18`. The held deploy remains pending.
-Render service `srv-d9eo2turnols73ekb830` remains on branch `staging` with
-auto-deploy disabled and persistent mount `/opt/render/project/data`. That
-publication did not deploy the backend; only the exact F/B build-ID merge
-update and one intentional held deploy may advance the run.
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`. Held deploy
+`dep-da5l8drtqb8s73ar74sg` started at `2026-08-23T20:12:39.566001Z` and
+finished `LIVE` at `2026-08-23T21:02:43.868008Z` on that exact build. Its build
+succeeded; instance `srv-d9eo2turnols73ekb830-wrhvw` passed `443` suites and
+all `3,503` tests with zero fail, cancel, skip, or todo in
+`2954563.480743ms`, recorded zero startup error logs, returned `200`/`no-store`
+for live and ready with status `ok`, and returned `503`/`no-store`
+`SERVICE_MAINTENANCE` for `/api/v1/leagues`. No newer deploy existed at the
+evidence boundary. Render service `srv-d9eo2turnols73ekb830` remains on branch
+`staging` with auto-deploy disabled and persistent mount
+`/opt/render/project/data`.
 
 The current authoritative source is
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`;
 the unused inactive target is
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`.
 Verified backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` is the exact clean
-pre-fixture restore point. The full hold remains active. Fresh fixture
-preparation, hosted A-to-B-to-A privacy acceptance, clean restoration,
-interactive-review activation, observation, and closeout are pending.
+pre-fixture restore point. The fresh exact-B/F full-hold/source/target/sidecar/
+receipt/work-area preflight and backup re-verification passed. Fixture prepare
+then passed with receipt `88a56507-73fd-47f9-ac66-c305f0075d24`,
+`databaseWriteCount: 744`, and immediate exact replay with
+`databaseWriteCount: 0`. Post-fixture held preflight records source
+`37761024` bytes / SHA-256
+`c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238`, with
+source sidecars, fresh target/sidecars, activation receipt, and restore work
+area absent. The full hold remains active. Helper publication and removal,
+hosted A-to-B-to-A privacy acceptance, clean restoration, interactive-review
+activation, observation, and closeout are pending.
 
 Exact current evidence and placeholders are recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
@@ -400,7 +414,7 @@ DATABASE_ID=m7-release-qa-fixture
 DATABASE_PATH=/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
 PERSISTENT_DATA_ROOT=/opt/render/project/data/hundo-staging
 FRONTEND_BUILD_ID=4dfe12d1366314e3d9df722c50771324647743c9
-APP_BUILD_ID=<exact deployed backend commit SHA>
+APP_BUILD_ID=8e313902feefcd683b0f5edd746a9dd2a9029a18
 CURRENT_SEASON_LABEL=2026
 CURRENT_NHL_SEASON_KEY=20262027
 STAGING_MAINTENANCE_HOLD=false
@@ -803,10 +817,10 @@ preserve the failure state, and use the strict abort plan/execute path below.
 
 #### Fresh `HL-20260822-1` fixture preparation handoff
 
-Fixture preparation is an intentional write to the pinned authoritative source
-database, not to the fresh inactive target. Run the exact prepare command below
-once under the full hold, then run the identical command once more as the
-idempotency replay:
+Fixture preparation was an intentional write to the pinned authoritative
+source database, not to the fresh inactive target. The operator ran the exact
+prepare command below once under the full hold, then ran the identical command
+once more as the idempotency replay:
 
 ```text
 npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
@@ -814,33 +828,35 @@ npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/d
 npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
 ```
 
-Capture the complete sanitized JSON from both invocations. The first must
-report `replayed: false` and the operation's exact positive
-`databaseWriteCount`; the second must report `replayed: true` and
-`databaseWriteCount: 0`. `databaseWriteCount` is the actual sanitized field
-name; the older `writeCount` wording elsewhere in historical narrative is only
-shorthand and must not be copied into fresh evidence.
+Both complete sanitized results were captured. They bind FAD
+`f474f00b-111c-4dec-8592-ffcbaf97e655`, restricted auction
+`551f475b-352f-4c06-831a-534b9750754a`, actionable deadline
+`1787554800000` (`2026-08-24T07:00:00.000Z`), receipt
+`88a56507-73fd-47f9-ac66-c305f0075d24`, fingerprint
+`1a097b50afa8915c7cd98154dc455604965739c6d61213ac9caec90a6487620b`, and
+prepared time `1787519331074`. The first reports `replayed: false` and
+`databaseWriteCount: 744`; the immediate identical replay reports
+`replayed: true` and `databaseWriteCount: 0` with the same IDs, times, public
+counts, and inserted-row counts. `databaseWriteCount` is the canonical field;
+the older `writeCount` wording elsewhere in historical narrative is only
+shorthand and must not be copied into fresh evidence. Do not invoke preparation
+again during this smoke attempt.
 
-Before either command, the inactive target, its WAL/SHM sidecars, and its
-activation receipt must be absent. They remain absent throughout prepare,
-replay, controlled unhold, and hosted smoke. The source bytes are expected to
-change on the first prepare because the fixture is installed there; backup
+Before either command, the inactive target, its WAL/SHM sidecars, activation
+receipt, and deterministic restore work area were proven absent. They remained
+absent throughout prepare and replay and must remain absent through controlled
+unhold and hosted smoke. The source bytes changed on the first prepare because
+the fixture was installed there; backup
 `2044fcae-24e8-4392-a1ac-4064d9cd2807`, not a post-prepare source hash, remains
 the clean restore point. Only the selected normal or abort restore execute may
 materialize the target and activation receipt under the restored full hold.
 
-The fixture's restricted auction ends at the next daily FAD rollover: midnight
-in `America/Vancouver`. During Pacific daylight time that boundary is
-`07:00Z`; use the emitted `actionableUntilMs` rather than a hard-coded calendar
-date. Both the first preparation and its immediate zero-write replay enforce at
-least four hours before that boundary, so during daylight time both must finish
-before `03:00Z`; begin earlier with operating margin. If neither invocation has
-begun and that margin is missed, keep the full hold, wait until just after the
-`07:00Z` rollover, reverify the source/backup and target absence, and prepare
-against the new daily window. If the first invocation succeeds but replay does
-not, preserve the mutated source and follow the abort-restore path; never wait
-and resume that release after rollover. Complete both hosted phases before the
-emitted deadline.
+The fixture's exact emitted deadline is `2026-08-24T07:00:00.000Z`
+(`actionableUntilMs: 1787554800000`), the next daily FAD rollover at midnight
+in `America/Vancouver`. Complete both hosted phases before that deadline. If
+the hosted gate cannot complete in time, preserve the mutated source, restore
+the full hold, and follow the abort-restore path rather than preparing again or
+resuming after rollover.
 
 #### Fresh `HL-20260822-1` same-cookie helper authorization
 

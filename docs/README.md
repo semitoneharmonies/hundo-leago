@@ -556,8 +556,13 @@ Fresh release `HL-20260822-1` is the only active execution. Frontend build
 `6a8a3880f946cc39a2bf2bb6` pass. Exact backend candidate
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on backend
 `origin/staging` and passes its complete local gate at `3,501/3,503`, with only
-two intentional Windows skips. Its held Render deploy and all later hosted
-gates remain pending under the full hold. Current
+two intentional Windows skips. Held Render deploy
+`dep-da5l8drtqb8s73ar74sg` is `LIVE` on that exact backend and passed all
+`3,503/3,503` hosted tests across `443` suites with zero fail, cancel, skip, or
+todo. Public live/readiness checks pass while league traffic remains blocked by
+the full hold. Fresh fixture preparation and its immediate zero-write replay
+also pass; the helper, smoke, restore, and activation gates remain pending.
+Current
 evidence is `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
@@ -728,8 +733,10 @@ M7-26 is the sole active plan. Fresh release `HL-20260822-1` reruns the exact
 schema-`54` hosted privacy comparator from the recovered clean boundary. Its
 frontend/Netlify baseline and exact local backend candidate
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` pass, and backend `origin/staging`
-resolves to that exact commit. The held backend deploy and later hosted gates
-remain pending, and the full hold remains active. The fresh
+resolves to that exact commit. Held backend deploy
+`dep-da5l8drtqb8s73ar74sg` and the fresh fixture/zero-write replay pass on the
+same commit; the full hold remains active. The helper, strict smoke, restore,
+and activation gates remain pending. The fresh
 and historical records are separate 2026-08-22 and 2026-08-21 files under
 `release-runs/`.
 The 2026-08-11 product clarification separates FAD deployment from all live-
@@ -905,11 +912,13 @@ FAD-18 reached `STAGING VERIFIED` on schema `52` on 2026-08-18; the archived
 plan and exact release record preserve that historical evidence. M7-26 is the
 sole active full-site UI-review plan. Fresh release `HL-20260822-1` uses exact
 frontend build `4dfe12d...`, Netlify baseline `6a8a3880f946cc39a2bf2bb6`, the
-clean held schema-`54` source, unused fresh target, and verified backup
+pinned schema-`54` source (clean at the recorded pre-fixture boundary and now
+intentionally fixture-bearing), unused fresh target, and verified backup
 `2044fcae-24e8-4392-a1ac-4064d9cd2807`. Exact backend commit
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on `origin/staging`
-and passes its focused and complete local gates; its held deploy and all later
-hosted gates remain pending. The
+and passes its focused, complete local, and held-hosted gates. Deploy
+`dep-da5l8drtqb8s73ar74sg` and fresh fixture preparation/replay pass; helper,
+strict smoke, restoration, activation, and closeout remain pending. The
 failed/recovered 2026-08-21 attempt remains historical; production remains
 untouched and unauthorized.
 
@@ -968,8 +977,10 @@ active under Grae's continue-through-isolated-staging instruction. Its live
 runbook is the fresh 2026-08-22 record for `HL-20260822-1`; the 2026-08-21
 record is immutable failed/recovered history. Exact backend build
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is published and locally verified;
-its held deploy, strict hosted gates, final staging matrix, and closeout must be
-completed before archive. Production remains untouched and unauthorized.
+held deploy `dep-da5l8drtqb8s73ar74sg` and fixture preparation/replay are also
+verified. The helper, strict hosted smoke, restore, final staging matrix, and
+closeout must be completed before archive. Production remains untouched and
+unauthorized.
 
 A work plan is used for a contained current task such as:
 
