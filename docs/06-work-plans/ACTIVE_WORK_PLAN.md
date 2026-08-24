@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 AUTHORIZED / MINTED; FULL HOLD ACTIVE; EXECUTION NOT STARTED`
+`ACTIVE - M7-26; HL-20260823-1 B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING; FULL HOLD ACTIVE`
 
 ## Work Plan ID
 
@@ -21,14 +21,19 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Authorized, Minted, Execution Pending
+## 2026-08-23 Fresh Strict Release - B-Prime Local + Publication + Held Deploy Pass; Fixture Preparation Pending
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
 frontend application build
 `4dfe12d1366314e3d9df722c50771324647743c9` and current held backend
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` only as the starting baseline.
-The executable B-prime is `PENDING`.
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` as the starting baseline.
+Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
+exact two-file focused, complete, check, dependency, and backend
+`origin/staging` publication gates. Held deploy
+`dep-da5sh0e417fc738i254g`, started `2026-08-24T04:28:49.802474Z`, is newest
+and `LIVE` on exact B-prime after `3,503/3,503` hosted tests and its build,
+startup, zero-error, held-health, and external read-only gates passed.
 
 The authoritative held source is
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
@@ -49,12 +54,12 @@ and verified plaintext `cf3ca07d...`. Reason/retention are
 `platform_operation` / `HL-20260822-1-post-abort-cutover`, `expiresAt` is
 `null`, and backend build is exact starting B.
 
-The full hold remains active. B-prime, helper construction/publication,
-fixture preparation/replay, session verification, controlled unhold, all
-release-specific actions and publisher replays, A-to-B-to-A smoke, restoration,
-target activation, final matrix, and closeout are `PENDING`. No value from
-either blocked predecessor may be resumed or reused. Production remains
-untouched and unauthorized. The exact gate ledger is
+The full hold remains active. Fixture preparation/replay, helper
+construction/publication, controlled unhold, session verification, all
+release-specific actions and publisher replays,
+A-to-B-to-A smoke, restoration, target activation, final matrix, and closeout
+are `PENDING`. No value from either blocked predecessor may be resumed or
+reused. Production remains untouched and unauthorized. The exact gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
@@ -1094,8 +1099,9 @@ Immediate identical replay reported `replayed: true`, zero mutations in both
 categories, and no temporary work.
 
 Only `DATABASE_PATH` was then merge-updated to the clean target. Held cutover
-deploy `dep-da5mmpu417fc73807ptg` is newest and `LIVE` on exact B after its
-complete hosted gate passed. Corrected post-cutover verifier v2 returned
+deploy `dep-da5mmpu417fc73807ptg` was the then-newest `LIVE` deploy on exact B
+at the recovery boundary after its complete hosted gate passed. Corrected
+post-cutover verifier v2 returned
 `HL_POST_CUTOVER_TARGET_VERIFIED`, removed its owned scratch artifacts, and
 verified the clean target and abort receipt without opening the authoritative
 database. Fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and separate
@@ -1187,9 +1193,11 @@ M7-26 is complete only when:
 
 M7-26 remains `PENDING`. Release `HL-20260822-1` is closed to further action as
 `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`. Fresh release
-`HL-20260823-1` is authorized and minted but has not begun execution. Its clean
-held source and verified backup are bound, its target is absent, and every gate
-from B-prime through final review remains pending.
+`HL-20260823-1` is authorized and minted. Its clean held source and verified
+backup are bound, its target is absent, and B-prime implementation, local
+verification, backend publication, and held deployment/runtime gate pass.
+Fixture preparation/replay and every later gate through final review remain
+pending.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

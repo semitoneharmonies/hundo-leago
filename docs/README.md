@@ -554,11 +554,17 @@ conceptual target catalogue from `T-001` through `T-148`.
 Release `HL-20260822-1` is now `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`;
 M7-26 remains the sole active plan. Grae requested and approved fresh release
 `HL-20260823-1` at `2026-08-23T23:23:29.877Z`; it is minted under the full hold
-with execution not started. Frontend build
+with B-prime local verification and backend publication complete. Executable
+B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` is published on backend
+`origin/staging`; exact held deploy `dep-da5sh0e417fc738i254g` is newest and
+`LIVE` after all `3,503/3,503` hosted tests, build/startup, zero-error, held-
+health, and external read-only gates passed. Frontend build
 `4dfe12d1366314e3d9df722c50771324647743c9` and sealed Netlify baseline
-`6a8a3880f946cc39a2bf2bb6` pass. Exact backend candidate
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on backend
-`origin/staging` and passed its complete local gate. Held Render deploy
+`6a8a3880f946cc39a2bf2bb6` pass. For the blocked predecessor, exact backend
+candidate
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` was published on backend
+`origin/staging` at its recorded boundary and passed its complete local gate.
+Held Render deploy
 `dep-da5l8drtqb8s73ar74sg` passed all `3,503/3,503` hosted tests while league
 traffic remained blocked by the full hold. Fresh fixture preparation/replay
 and helper publication passed, but a physical `.html` browser entry
@@ -569,14 +575,15 @@ Exact `prepared_only` abort plan/execute/replay materialized the clean target
 with zero authoritative-database mutations; sealed-baseline deploy
 `6a8b6b25126dabed39fa404d` retired the helper. Only `DATABASE_PATH` was then
 changed to the clean target. Held cutover deploy
-`dep-da5mmpu417fc73807ptg` is newest and `LIVE` on exact B after all `3,503`
-hosted tests and its startup/held-health gates passed. Corrected post-cutover
+`dep-da5mmpu417fc73807ptg` was the then-newest `LIVE` deploy on exact B at the
+recovery boundary after all `3,503` hosted tests and its startup/held-health
+gates passed. Corrected post-cutover
 verifier v2 returned `HL_POST_CUTOVER_TARGET_VERIFIED`, proving the source,
 authoritative clean target, abort receipt, full hold, target identity/integrity,
 zero sessions, fixture/transfer absence, and owned scratch cleanup. Fresh backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and its separate plaintext/integrity/
-foreign-key verification passed. Current
-evidence is `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
+foreign-key verification passed. That predecessor's evidence is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
 
 The current release ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. It binds F
@@ -588,8 +595,13 @@ at `37105664` bytes / `cf3ca07d...`, and absent fresh target ending in
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds its exact manifest/storage
 objects, `2026-08-23T22:56:20.203Z` creation time, encrypted hash
 `e6c6269f...`, checksum `54df36b9...`, plaintext `cf3ca07d...`, and exact
-incident-preservation metadata. B-prime, helper, fixture preparation, unhold,
-actions, smoke, restore, activation, and final review all remain pending.
+incident-preservation metadata. B-prime
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its exact two-file,
+`57/57` focused, `443`-suite / `3,503`-test complete, check, dependency, and
+backend-publication gates. Its held deployment/runtime gate also passes on
+exact deploy `dep-da5sh0e417fc738i254g`. Fixture preparation/replay is next;
+helper construction/publication, unhold, actions, smoke, restore, activation,
+and final review all remain pending.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -758,8 +770,9 @@ then closed locally, and FAD-18 reached `STAGING VERIFIED` on schema `52` on
 M7-26 is the sole active plan. Release `HL-20260822-1` attempted the exact
 schema-`54` hosted privacy comparator from the recovered clean boundary. Its
 frontend/Netlify baseline and exact local backend candidate
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` pass, and backend `origin/staging`
-resolves to that exact commit. Held backend deploy
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` passed, and backend
+`origin/staging` resolved to that exact commit at the predecessor's recorded
+boundary. Held backend deploy
 `dep-da5l8drtqb8s73ar74sg` and the fresh fixture/zero-write replay passed on the
 same commit. The helper overlay passed its hosted byte/header gates, but an
 inert physical `.html` entry triggered the mandatory origin-guard strict stop
@@ -767,8 +780,11 @@ before any request or action. Exact `prepared_only` abort/replay and
 sealed-baseline helper retirement passed. The full hold never lifted; held
 target cutover deploy `dep-da5mmpu417fc73807ptg`, corrected post-cutover
 verification, and fresh backup passed. The clean target is the authoritative
-held source, and no new strict release is authorized. The fresh
-and historical records are separate 2026-08-22 and 2026-08-21 files under
+held source. At that recovery boundary no replacement release was authorized;
+fresh `HL-20260823-1` was later separately authorized and now uses executable
+B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`, published on current backend
+`origin/staging`. Its current record is the 2026-08-23 file; the blocked/
+recovered predecessors remain separate 2026-08-22 and 2026-08-21 files under
 `release-runs/`.
 The 2026-08-11 product clarification separates FAD deployment from all live-
 statistics-provider capability work. Provider-neutral post-game matchup-stat
@@ -946,8 +962,9 @@ frontend build `4dfe12d...`, Netlify baseline `6a8a3880f946cc39a2bf2bb6`, the
 pinned schema-`54` source (clean at the recorded pre-fixture boundary and now
 preserved fixture-bearing), release-specific target, and verified backup
 `2044fcae-24e8-4392-a1ac-4064d9cd2807`. Exact backend commit
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` is published on `origin/staging`
-and passes its focused, complete local, and held-hosted gates. Deploy
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` was published on `origin/staging`
+at that release boundary and passed its focused, complete local, and held-
+hosted gates. Deploy
 `dep-da5l8drtqb8s73ar74sg` and fresh fixture preparation/replay passed. Helper
 deploy `6a8b678ddbcf0b4ea8ba623c` passed hosted artifact/header checks, then a
 physical `.html` entry hit the mandatory origin guard before the full hold,
@@ -955,9 +972,11 @@ session, or database changed. Exact `prepared_only` abort/replay and helper
 retirement passed; held clean-target cutover deploy
 `dep-da5mmpu417fc73807ptg`, corrected post-cutover verification, and fresh
 backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed under the unchanged full
-hold. Fresh `HL-20260823-1` is now authorized and minted, but its B-prime,
-helper, preparation, controlled unhold, actions, smoke, restore, activation,
-and M7-26 closeout remain pending. The
+hold. Fresh `HL-20260823-1` is now authorized and minted. Its B-prime local
+verification, backend publication, and held deployment/runtime proof pass.
+Fixture preparation/replay is next; helper construction/publication,
+controlled unhold, actions, smoke, restore, activation, and M7-26 closeout
+remain pending. The
 failed/recovered 2026-08-21 attempt remains historical; production remains
 untouched and unauthorized.
 
@@ -1003,7 +1022,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 AUTHORIZED / MINTED; FULL HOLD ACTIVE; EXECUTION NOT STARTED
+Status: ACTIVE - HL-20260823-1 B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING; FULL HOLD ACTIVE
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -1015,16 +1034,20 @@ M7-25's isolated-staging completion evidence remains at
 active under Grae's continue-through-isolated-staging instruction. Its current
 runbook is the 2026-08-23 authorized/minted ledger for `HL-20260823-1`; the
 2026-08-22 and 2026-08-21 records are immutable blocked/recovered history.
-Exact held starting backend build
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` is published and locally verified;
+At the `HL-20260822-1` boundary, exact held backend build
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` was published and locally verified;
 held deploy `dep-da5l8drtqb8s73ar74sg`, fixture preparation/replay, helper
 publication, exact `prepared_only` abort/replay, and helper retirement are
 verified. Strict smoke never began. Held target cutover
 `dep-da5mmpu417fc73807ptg`, corrected post-cutover verification, and fresh
 backup now pass. Selection of any new authorized release, its final staging
 matrix, and M7-26 closeout remained pending at the `HL-20260822-1` recovery
-boundary. Fresh `HL-20260823-1` is now selected and minted; B-prime through
-final staging review and M7-26 closeout remain pending.
+boundary. Fresh `HL-20260823-1` is now selected and minted; exact B-prime
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes local verification and
+backend publication. Held deploy `dep-da5sh0e417fc738i254g` is newest and
+`LIVE` on exact B-prime after its hosted/runtime gates passed. Fixture
+preparation and every later gate through final staging review and M7-26
+closeout remain pending.
 Production remains untouched and unauthorized.
 
 A work plan is used for a contained current task such as:
@@ -1240,7 +1263,9 @@ materialized the clean target and replayed with zero mutations. Only
 verified authoritative held source. The exception grants no new release or
 restore authority by itself. Grae's separate `2026-08-23T23:23:29.877Z`
 approval authorizes only fresh `HL-20260823-1`; its new restore contract and
-all operational gates remain pending. The earlier `HL-20260821-3` abort
+B-prime local/publication/held-deployment gates now pass, while fixture
+preparation and all later operational data gates remain pending. The earlier
+`HL-20260821-3` abort
 recovery remains immutable historical evidence.
 
 Read for:

@@ -1244,13 +1244,16 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - authorized, execution pending
+#### HL-20260823-1 fresh strict release binding - B-prime local + publication + held deploy pass; fixture preparation pending
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
 `4dfe12d1366314e3d9df722c50771324647743c9` and current held B
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` only as the starting baseline.
-Executable B-prime remains `PENDING`.
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` as the starting baseline.
+Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
+exact local and backend `origin/staging` publication gates. Held deploy
+`dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact B-prime after its full
+hosted/runtime gate passed.
 
 ```text
 Authoritative source: /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
@@ -1280,12 +1283,15 @@ SQLite integrity:     ok
 Foreign-key violations: 0
 ```
 
-The full hold remains active. No B-prime, helper, fixture preparation, session,
-controlled unhold, action, publisher, smoke, restore, target materialization,
-activation, or new backup action has run for this release. All remain
-`PENDING`. Its restore plan and receipt must use only the new release namespace;
-no prior plan, receipt, target, work area, or release-specific value may be
-reused. Exact current gates are recorded in
+The full hold remains active. B-prime implementation/local verification and
+Git publication passed without a data, target, helper, or production action.
+The only later environment change was the exact `APP_BUILD_ID`-only merge that
+triggered the now-passed held deploy; the hold and `DATABASE_PATH` stayed
+unchanged. Fixture preparation, helper, controlled unhold, session, action,
+publisher, smoke, restore, target materialization, activation, and new backup
+action remain `PENDING`. Its restore plan and receipt must use
+only the new release namespace; no prior plan, receipt, target, work area, or
+release-specific value may be reused. Exact current gates are recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 #### HL-20260822-1 pre-action abort-recovery record

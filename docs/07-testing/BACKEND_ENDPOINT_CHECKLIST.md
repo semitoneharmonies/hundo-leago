@@ -267,7 +267,7 @@ and immutable origins.
 
 Only `DATABASE_PATH` was then merge-updated to target
 `hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`. Held cutover deploy
-`dep-da5mmpu417fc73807ptg` reached `LIVE` as newest on exact B after `443`
+`dep-da5mmpu417fc73807ptg` reached `LIVE` as then-newest on exact B after `443`
 suites / `3,503` hosted tests all passed in `2941574.017632ms`; instance
 `mq8dr`, zero startup errors, live/readiness `200`/`no-store`, and held leagues
 `503 SERVICE_MAINTENANCE`/`no-store` passed. Corrected exact-Node-`24` verifier
@@ -289,14 +289,19 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (AUTHORIZED / MINTED; EXECUTION PENDING)
+## 2026-08-23 M7-26 Fresh Strict Release (B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
 `4dfe12d1366314e3d9df722c50771324647743c9` is frozen. B
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` is only the verified held starting
-baseline; executable B-prime and its focused, complete, publication, and hosted
-gates are pending.
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` is the verified held starting
+baseline. Executable B-prime
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its exact two-file focused,
+complete, check, dependency, and `origin/staging` publication gates. Held
+deploy `dep-da5sh0e417fc738i254g`, started
+`2026-08-24T04:28:49.802474Z`, is newest and `LIVE` on exact B-prime after all
+`3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
+read-only gates passed.
 
 The authoritative source is exact path
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
@@ -317,8 +322,9 @@ expiry/backend metadata is recorded in the fresh run ledger.
 The full hold remains active. Fixture preparation/replay, fresh helper,
 controlled unhold, session verification, release-specific actions, publisher
 replays, T-131/T-132/T-140 comparator, restore, activation, and final review are
-all `PENDING`. No endpoint or database action has run for this release. Exact
-current evidence is
+all `PENDING`. No write endpoint or database action has run for this release;
+the external health/readiness/maintenance probes were read-only. Exact current
+evidence is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 ---

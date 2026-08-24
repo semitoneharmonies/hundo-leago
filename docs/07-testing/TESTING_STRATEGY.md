@@ -107,13 +107,18 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Release - 2026-08-23 (AUTHORIZED / MINTED; EXECUTION PENDING)
+### M7-26 Fresh Strict Release - 2026-08-23 (B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING)
 
 Grae requested and approved `HL-20260823-1` at exact
 requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
 `4dfe12d1366314e3d9df722c50771324647743c9` and binds B
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` only as the verified held starting
-baseline. Exact executable B-prime remains pending.
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` as the verified held starting
+baseline. Exact executable B-prime
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its focused `57/57`, complete
+`443`-suite / `3,503`-test, check, dependency, and backend `origin/staging`
+publication gates. Held deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE`
+on exact B-prime after `3,503/3,503` hosted tests and its
+build/startup, zero-error, held-health, and external read-only gates passed.
 
 The authoritative full-hold source is
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
@@ -129,11 +134,11 @@ manifest checksum
 `54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
 plaintext `cf3ca07d...`, and the recorded incident-preservation metadata.
 
-The full hold remains active. B-prime, fixture prepare/replay, fresh helper,
-controlled unhold, sessions, all actions and publisher replays, the exact
-two-cookie `1/0/0 -> 2/1/1 -> 3/2/2` comparator, restore, activation, final
-desktop/mobile matrix, and closeout are all `PENDING`. No test or action result
-from a predecessor may satisfy this release. Its live ledger is
+The full hold remains active. Fixture prepare/replay, fresh helper, controlled
+unhold, sessions, all actions and publisher replays,
+the exact two-cookie `1/0/0 -> 2/1/1 -> 3/2/2` comparator, restore, activation,
+final desktop/mobile matrix, and closeout are all `PENDING`. No test or action
+result from a predecessor may satisfy this release. Its live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 ### M7-26 Fresh Strict Rerun - 2026-08-22 (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
@@ -197,9 +202,9 @@ SHA-256 `b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`;
 the immediate replay made zero mutations and no temporary work. Sealed-baseline
 deploy `6a8b6b25126dabed39fa404d` retired the helper, and all `10/10` retired path
 checks passed. Only `DATABASE_PATH` then changed; held cutover deploy
-`dep-da5mmpu417fc73807ptg` is newest and `LIVE` on exact B after all `3,503`
-hosted tests, zero-startup-error, and held health/readiness/maintenance gates
-passed. Corrected exact-Node-`24` verifier v2 returned
+`dep-da5mmpu417fc73807ptg` was the then-newest `LIVE` deploy on exact B at the
+recovery boundary after all `3,503` hosted tests, zero-startup-error, and held
+health/readiness/maintenance gates passed. Corrected exact-Node-`24` verifier v2 returned
 `HL_POST_CUTOVER_TARGET_VERIFIED`; it proved the preserved source,
 authoritative clean target and abort receipt, full hold/provider absence,
 target identity/integrity/schema/checksum/rotation receipt, zero sessions, all

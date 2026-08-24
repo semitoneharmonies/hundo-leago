@@ -14,33 +14,38 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-08-23**
+Last reviewed: **2026-08-24**
 
 ---
 
-## Current Environment Matrix — 2026-08-23
+## Current Environment Matrix — 2026-08-24
 
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` after helper-retirement deploy `6a8b6b25126dabed39fa404d`; Render's newest deploy `dep-da5mmpu417fc73807ptg` is `LIVE` on exact backend `8e313902feefcd683b0f5edd746a9dd2a9029a18` with `DATABASE_PATH` bound to the clean target | Release `HL-20260822-1` stopped before controlled unhold, session verification, or any action. Exact `prepared_only` abort execute/replay preserved the fixture-bearing source and materialized the clean target at plaintext SHA-256 `cf3ca07d...`. The cutover hosted gate, corrected post-cutover verifier, and fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` pass under the unchanged full hold. The clean target is the authoritative held source. |
-| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at held starting baseline `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Release `HL-20260822-1` remains `BLOCKED / ABORT-RECOVERED`. Grae explicitly authorized and minted fresh release `HL-20260823-1` at `2026-08-23T23:23:29.877Z`. Its B-prime, helper, fixture, unhold, actions, smoke, restore, activation, and final matrix are all pending under the unchanged full hold. No production change is claimed. |
+| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` after helper-retirement deploy `6a8b6b25126dabed39fa404d`. Render's newest deploy `dep-da5sh0e417fc738i254g` is `LIVE` on exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; prior deploy `dep-da5mmpu417fc73807ptg` is deactivated | The B-prime hosted test, build/startup, zero-error, held-health, and external read-only gates pass. The clean source remains authoritative, the fresh target remains absent, and the full hold remains unchanged. Fixture preparation is next. |
+| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`, child of starting B `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260823-1` is authorized and minted. B-prime implementation, local verification, backend publication, and held deployment/runtime proof pass. Fixture preparation/replay, helper construction/publication, unhold, actions, smoke, restore, activation, and final matrix are pending under the unchanged full hold. No production change is claimed. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
 The fresh gate ledger is
-`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`; the prior
-failure/recovery record remains the separate 2026-08-21 file.
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`; the
+2026-08-22 and 2026-08-21 records remain immutable blocked/recovered history.
 
 ---
 
-## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release — Authorized and Minted
+## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release — B-Prime Local + Publication + Held Deploy Pass; Fixture Preparation Pending
 
 Grae requested and approved release `HL-20260823-1` at exact recorded time
 `2026-08-23T23:23:29.877Z`. The release binds frontend application build
 `4dfe12d1366314e3d9df722c50771324647743c9` and held backend
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` only as its starting baseline;
-the executable B-prime remains pending.
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` as its starting baseline.
+Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
+exact two-file focused, complete, check, dependency, and backend
+`origin/staging` publication gates. Exact held deploy
+`dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact B-prime after all
+`3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
+read-only gates passed.
 
 The authoritative held source is
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
@@ -60,11 +65,12 @@ verified plaintext SHA-256 `cf3ca07d...`. Remote manifest inspection verifies
 ID `HL-20260822-1-post-abort-cutover`, `expiresAt: null`, and backend build
 `8e313902...`.
 
-The full hold remains active. B-prime, helper construction/publication,
-release-specific actions, fixture preparation/replay, controlled unhold,
-session verification, A-to-B-to-A smoke, restore, target activation, and final
-review are all `PENDING`. No prior helper, fixture, action, key, receipt, or
-restore namespace may be reused. Exact authority and the gate ledger are in
+The full hold remains active. Fixture preparation/replay, helper
+construction/publication, controlled unhold, session
+verification, release-specific actions, A-to-B-to-A smoke, restore, target
+activation, and final review are all `PENDING`. No prior helper, fixture,
+action, key, receipt, or restore namespace may be reused. Exact authority and
+the gate ledger are in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 Production remains untouched and unauthorized.
 
@@ -1038,7 +1044,7 @@ src/validators/
 ```
 
 The current checked-in backend candidate is
-`8e313902feefcd683b0f5edd746a9dd2a9029a18`. Its target runtime uses
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54`. Its target runtime uses
 SQLite schema `54`, with `54` immutable migrations, `133` application
 tables (`134` including `schema_migrations`), and `123` composed runtime
 routes. The conceptual API catalogue contains `148` entries; that catalogue
@@ -1052,10 +1058,10 @@ candidate exercises that architecture; legacy production `main` does not.
 Exact milestone history belongs in `docs/06-work-plans/archive/`, route status
 belongs in `docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md`, and the active
 hosted release ledger is
-`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`. Historical
-blocked/recovered evidence remains in the separate `2026-08-21` release
-record; it preserves older branch identities and intermediate test totals
-without making them current release inputs.
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. Historical
+blocked/recovered evidence remains in the separate 2026-08-22 and 2026-08-21
+release records; they preserve older branch identities and intermediate test
+totals without making them current release inputs.
 
 ---
 
@@ -1066,14 +1072,14 @@ The canonical workspaces and checked-in candidate identities are:
 | Repository | Workspace | Branch | Checked-in identity |
 | --- | --- | --- | --- |
 | Frontend | `E:\hundo-leago` | `codex/m7-26-completion` | `4dfe12d1366314e3d9df722c50771324647743c9` |
-| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | `8e313902feefcd683b0f5edd746a9dd2a9029a18` |
+| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | `234547e4d8453b7515fc081ea6ebe4c2d022dc54` |
 
 The frontend identity is the fresh application candidate with the corrected
-strict privacy diagnostic. The backend identity is the exact committed fresh
-release contract, backend `origin/staging` resolves exactly to it, and held
-Render deploy `dep-da5l8drtqb8s73ar74sg` is `LIVE` on that identity. Only this
-exact committed and deployed identity may now be used for later release
-evidence.
+strict privacy diagnostic. The backend identity is the exact committed
+B-prime release contract and backend `origin/staging` resolves exactly to it.
+Held Render deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE` on that
+identity after its full hosted/runtime gate passed. Only this exact committed
+and deployed identity may be used for later release evidence.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -1099,25 +1105,26 @@ The fresh frontend application candidate `4dfe12d...` passes:
 * the five-browser Playwright release matrix at `45/45` across desktop and
   mobile Chromium, desktop Firefox, and desktop and mobile WebKit.
 
-Exact backend candidate `8e313902feefcd683b0f5edd746a9dd2a9029a18`
-passes under Node `24.14.1` and npm `11.11.0`: the isolated strict-restore gate
-passed `57/57` in `347.592s`; `npm run check` exited `0`; the complete gate
-passed `443` suites and `3,503` tests (`3,501` pass, zero fail, two intentional
-Windows skips, zero cancelled/todo) in `15172.429s` (about `4h12m52s`); and
-`npm ls --all` exited `0`. The complete TAP SHA-256 is
-`aa07d1df79e549c5b7828065d511c297737ef96c4c6cc422779850c802f8b663`, and the
-frozen normalized backend diff SHA-256 is
-`7624c7b24319954a9a67da61346efab3d7485849aad3542eb321b2d6900a0235`.
+Exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes under Node
+`24.14.1` and npm `11.11.0`: the final isolated strict-restore gate passed
+`57/57` in `313928.4501ms`; `npm run check` exited `0` in `831.494ms`; the
+canonical unfiltered complete gate passed `443` suites and `3,503` tests
+(`3,501` pass, zero fail, two expected Windows skips, zero cancelled/todo) in
+`16187267.7425ms`; and `npm ls --all` exited `0`. The complete TAP SHA-256 is
+`1b1a075e6eaa835043eafc734c856d85e0736e2d709352007886707371de55e3`, and the
+canonical two-file patch SHA-256 is
+`1d6054f6288079e28a42d0e0d65e6b42548788dfaeaf5d3ce028442efc144739`.
+The authoritative detailed evidence, including the corrected first focused
+diagnostic, file hashes, dependency-log hash, retained metadata, and temporary-
+root cleanup, is in the fresh release record.
 
-The currently deployed held backend `8e313902...` in deploy
-`dep-da5l8drtqb8s73ar74sg` passed `443` hosted suites / `3,503` tests with all
-`3,503` passing and zero fail, cancel, skip, or todo in `2954563.480743ms`.
-Build and startup passed, instance `srv-d9eo2turnols73ekb830-wrhvw` recorded
-zero startup error logs, public live/readiness returned `200` with `no-store`,
-and `/api/v1/leagues` returned held `503 SERVICE_MAINTENANCE` with `no-store`.
-No newer deploy existed at that pre-cutover evidence boundary. The fresh
-full-hold/source/target/sidecar/receipt/work-area preflight and backup re-verification then
-passed before exact fixture preparation and its immediate zero-write replay.
+Held B-prime deploy `dep-da5sh0e417fc738i254g` was triggered by an exact
+`APP_BUILD_ID`-only merge at `2026-08-24T04:28:49.802474Z`, finished `LIVE` at
+`2026-08-24T05:19:31.5435Z`, and is newest on exact B-prime. All `3,503/3,503`
+hosted tests passed in `2992028.95308ms`; build/startup, zero-error, external
+live/readiness `200`/`no-store`, and held leagues
+`503 SERVICE_MAINTENANCE`/`no-store` passed. Exact terminal details are in the
+fresh release record.
 
 Earlier milestone suites established characterization, read-only, security,
 authorization, league-isolation, migration, transaction, job, recovery,
@@ -1145,8 +1152,8 @@ The target topology and configuration are documented in
   `/opt/render/project/data`;
 * SQLite schema `54`; the preserved fixture-bearing source remains at
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
-  while newest verified live deploy `dep-da5mmpu417fc73807ptg` points at clean,
-  authoritative held source
+  while newest `LIVE` deploy `dep-da5sh0e417fc738i254g` on exact B-prime points
+  at clean, authoritative held source
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`
   and backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` verifies it;
 * staging-only users, leagues, secrets, storage paths, and
@@ -1161,16 +1168,18 @@ preserved source to `37761024` bytes / SHA-256
 Exact abort materialization/replay then created the clean target and activation
 receipt while preserving that source; target plaintext SHA-256 is
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
-The helper is retired and its paths fail closed. Newest held deploy
-`dep-da5mmpu417fc73807ptg`, corrected verifier v2, owned-scratch cleanup, and
-fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` pass. The clean target is
-the verified and backed-up authoritative source under the full hold.
+The helper is retired and its paths fail closed. Prior held deploy
+`dep-da5mmpu417fc73807ptg` is deactivated; newest `LIVE` deploy
+`dep-da5sh0e417fc738i254g` passes on exact B-prime. Corrected verifier v2,
+owned-scratch cleanup, and fresh backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` pass. The clean target is the verified
+and backed-up authoritative source under the full hold.
 
 Staging remains intentionally unavailable for ordinary sign-in under the full
 safety hold. Maintenance and league writes are closed; scheduled jobs, FAD
 routes, account email, debug routes, backup scheduling, and the live provider
-are disabled. Both strict attempts are blocked: the 2026-08-21 run failed after
-phase one, while `HL-20260822-1` stopped at its pre-action origin guard before
+are disabled. Both predecessor strict attempts are blocked: the 2026-08-21 run
+failed after phase one, while `HL-20260822-1` stopped at its pre-action origin guard before
 controlled unhold or smoke. Its `prepared_only` abort/replay and helper
 retirement pass. Staging did not reopen; clean-target cutover and post-cutover
 verification/backup pass. At that evidence boundary no replacement release was
@@ -1232,8 +1241,9 @@ The current priority order is:
    actions, or treat its deadline as active.
 2. Preserve the minted `HL-20260823-1` contract and exact source/target/backup,
    F, starting-B, and authorization identities.
-3. Bind and verify B-prime, prove its held deployment, then prepare/replay the
-   fresh fixture. Only after the emitted fixture deadline is bound may the
+3. Preserve the passed B-prime implementation, local-verification,
+   publication, and held-deployment/runtime evidence; prepare/replay the fresh
+   fixture. Only after the emitted fixture deadline is bound may the
    release-specific helper be constructed, verified, and published. Keep
    unhold, sessions, and actions blocked until every preceding gate passes and
    is recorded.

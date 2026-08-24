@@ -890,7 +890,7 @@ checks passed across canonical and immutable origins.
 
 Only `DATABASE_PATH` was then merge-updated to the clean target. Held cutover
 deploy `dep-da5mmpu417fc73807ptg` reached `LIVE` at
-`2026-08-23T22:41:18.393652Z` as the newest deploy on exact B after all `3,503`
+`2026-08-23T22:41:18.393652Z` as the then-newest deploy on exact B after all `3,503`
 hosted tests passed. Instance/startup and held health/readiness/maintenance
 checks passed. Corrected exact-Node-`24` verifier v2 returned
 `HL_POST_CUTOVER_TARGET_VERIFIED`, proving the preserved source, authoritative
@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Execute newly authorized HL-20260823-1 in strict gate order from its verified clean held source; B-prime and every operational gate remain pending
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4DFE12D BOUND / HELD STARTING B 8E313902 BOUND / B-PRIME PENDING / CLEAN SOURCE + VERIFIED BACKUP E735E6A4 BOUND / FRESH TARGET ABSENT / FULL HOLD ACTIVE / HELPER, PREPARE, UNHOLD, ACTION, SMOKE, RESTORE, ACTIVATION, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Prepare and replay the fresh HL-20260823-1 fixture under full hold; B-prime local, publication, and held deployment/runtime gates pass, and every later gate remains pending
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4dfe12d BOUND / HELD STARTING B 8e313902 BOUND / B-PRIME 234547e LOCAL + PUBLICATION PASS / dep-da5sh0e417fc738i254g NEWEST + LIVE + HELD RUNTIME PASS / CLEAN SOURCE + VERIFIED BACKUP e735e6a4 BOUND / FRESH TARGET ABSENT / FULL HOLD ACTIVE / PREPARE, HELPER, UNHOLD, ACTION, SMOKE, RESTORE, ACTIVATION, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1490,12 +1490,18 @@ Grae explicitly requested and approved fresh release `HL-20260823-1` at
 identities, `2026-08-23T22:56:20.203Z` creation time, metadata, encrypted hash
 `e6c6269f...`, checksum `54df36b9...`, and plaintext `cf3ca07d...` are exact.
 
-The ordered remaining gates are B-prime binding and local verification, held
-deployment proof, fixture preparation/replay, fresh helper construction and
-publication, controlled unhold, A-to-B-to-A smoke, full-hold restoration,
-release-specific restore/activation, final matrix, observation, and closeout.
-Every one is pending. Staging remains held, and neither blocked predecessor may
-be resumed or reused.
+Exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` now passes its two-file
+local and backend `origin/staging` publication gates. Held deploy
+`dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact B-prime after all
+`3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
+read-only runtime gates passed.
+
+The ordered remaining gates are fixture preparation/replay, fresh helper
+construction and publication, controlled unhold, A-to-B-to-A smoke, full-hold
+restoration, release-specific restore/activation, final matrix, observation,
+and closeout.
+Every remaining gate is pending. Staging remains held, and neither blocked
+predecessor may be resumed or reused.
 
 ## Historical Milestone Evidence
 

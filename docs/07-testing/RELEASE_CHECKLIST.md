@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 AUTHORIZED / MINTED; FULL HOLD ACTIVE; EXECUTION NOT STARTED; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING; FULL HOLD ACTIVE; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,13 +27,17 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (AUTHORIZED / MINTED; EXECUTION PENDING)
+## 2026-08-23 M7-26 Fresh Strict Release (B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
 `4dfe12d1366314e3d9df722c50771324647743c9`; B
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` is the held starting baseline,
-not yet the executable B-prime.
+`8e313902feefcd683b0f5edd746a9dd2a9029a18` is the held starting baseline.
+Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
+focused, complete, check, dependency, and backend `origin/staging` publication
+gates. Held deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact
+B-prime after `3,503/3,503` hosted tests and all build/startup, zero-error,
+held-health, and external read-only gates passed.
 
 The authoritative source is exact path
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
@@ -51,10 +55,11 @@ manifest checksum
 and verified plaintext `cf3ca07d...`. Exact reason, requester, retention,
 expiry, and backend-build metadata are bound in the new release record.
 
-The full hold remains active. B-prime, helper, preparation/replay, controlled
-unhold, session and action requests, publisher replays, privacy/cache smoke,
-restore, activation, final matrix, observation, and closeout are all
-`PENDING`. Pending is not release evidence. The current gate ledger is
+The full hold remains active. Fixture preparation/replay, helper
+construction/publication, controlled unhold, session verification,
+release-specific actions, publisher replays, privacy/cache smoke, restore,
+activation, final matrix, observation, and closeout are all `PENDING`. Pending
+is not release evidence. The current gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
@@ -119,8 +124,9 @@ preserving the source and materializing the clean target at SHA-256
 `b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`.
 Helper-retirement deploy `6a8b6b25126dabed39fa404d` restored the sealed
 baseline and passed all retired-path checks. Only `DATABASE_PATH` changed;
-held cutover deploy `dep-da5mmpu417fc73807ptg` is newest and `LIVE` on exact B.
-Its `443` suites / `3,503` hosted tests all passed with zero
+held cutover deploy `dep-da5mmpu417fc73807ptg` was the then-newest `LIVE`
+deploy on exact B at the recovery boundary. Its `443` suites / `3,503` hosted
+tests all passed with zero
 fail/cancel/skip/todo in `2941574.017632ms`; instance `mq8dr` had zero startup
 errors, live/readiness returned `200`/`no-store`, and leagues remained held at
 `503 SERVICE_MAINTENANCE`/`no-store`.
@@ -1090,9 +1096,11 @@ results satisfies `HL-20260823-1`, and none grants resume or reuse authority.
 ### Current `HL-20260823-1` Backup/Restore Boundary
 
 The fresh source and verified backup binding pass only as recorded in
-`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. B-prime,
-fixture preparation, helper, smoke, new release-specific plan/execute or abort,
-target materialization, activation, and post-cutover backup remain `PENDING`.
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. B-prime
+implementation, local verification, and backend publication pass. Its held
+deploy/runtime proof also passes. Fixture preparation, helper, smoke, new
+release-specific plan/execute or abort, target materialization, activation, and
+post-cutover backup remain `PENDING`.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:
@@ -1274,8 +1282,8 @@ contract. They cannot satisfy, seed, or authorize any `HL-20260823-1` action.
 
 ### Current `HL-20260823-1` Staging Boundary
 
-Every release-specific counterpart to RC-STG-006A and RC-STG-011A-J is
-`PENDING`: B-prime and held deploy, fixture preparation/replay, helper
+Every remaining release-specific counterpart to RC-STG-006A and RC-STG-011A-J
+is `PENDING`: fixture preparation/replay, helper
 construction/verification/publication, controlled unhold, sessions, fresh
 actions and publisher replays, privacy/cache smoke, re-hold, restore,
 activation, and final review. The authoritative live ledger is
