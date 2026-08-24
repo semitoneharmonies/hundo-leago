@@ -554,7 +554,8 @@ conceptual target catalogue from `T-001` through `T-148`.
 Release `HL-20260822-1` is now `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`;
 M7-26 remains the sole active plan. Grae requested and approved fresh release
 `HL-20260823-1` at `2026-08-23T23:23:29.877Z`; it is minted under the full hold
-with B-prime local verification and backend publication complete. Executable
+with B-prime local verification, backend publication, held deployment/runtime,
+fresh fixture preparation/replay, and held postflight complete. Executable
 B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` is published on backend
 `origin/staging`; exact held deploy `dep-da5sh0e417fc738i254g` is newest and
 `LIVE` after all `3,503/3,503` hosted tests, build/startup, zero-error, held-
@@ -599,9 +600,14 @@ incident-preservation metadata. B-prime
 `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its exact two-file,
 `57/57` focused, `443`-suite / `3,503`-test complete, check, dependency, and
 backend-publication gates. Its held deployment/runtime gate also passes on
-exact deploy `dep-da5sh0e417fc738i254g`. Fixture preparation/replay is next;
-helper construction/publication, unhold, actions, smoke, restore, activation,
-and final review all remain pending.
+exact deploy `dep-da5sh0e417fc738i254g`. The clean starting source boundary
+remains `37105664` bytes / `cf3ca07d...` and backup `e735e6a4...` remains its
+verified restore point. Fresh prepare/replay passed at `729` then `0` writes;
+held verifier v2 then proved the current fixture-bearing source at `37744640`
+bytes / `b4163695...`, target family absent, authoritative source unopened,
+scratch mutations `0`, and cleanup complete. Helper construction and local
+verification are next; helper publication, unhold, actions, smoke, restore,
+activation, and final review all remain pending.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -779,8 +785,8 @@ inert physical `.html` entry triggered the mandatory origin-guard strict stop
 before any request or action. Exact `prepared_only` abort/replay and
 sealed-baseline helper retirement passed. The full hold never lifted; held
 target cutover deploy `dep-da5mmpu417fc73807ptg`, corrected post-cutover
-verification, and fresh backup passed. The clean target is the authoritative
-held source. At that recovery boundary no replacement release was authorized;
+verification, and fresh backup passed. At that recovery boundary the clean
+target became the authoritative held source and no replacement release was authorized;
 fresh `HL-20260823-1` was later separately authorized and now uses executable
 B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`, published on current backend
 `origin/staging`. Its current record is the 2026-08-23 file; the blocked/
@@ -973,9 +979,10 @@ retirement passed; held clean-target cutover deploy
 `dep-da5mmpu417fc73807ptg`, corrected post-cutover verification, and fresh
 backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed under the unchanged full
 hold. Fresh `HL-20260823-1` is now authorized and minted. Its B-prime local
-verification, backend publication, and held deployment/runtime proof pass.
-Fixture preparation/replay is next; helper construction/publication,
-controlled unhold, actions, smoke, restore, activation, and M7-26 closeout
+verification, backend publication, held deployment/runtime, fresh fixture
+prepare/replay, and held postflight proof pass. Helper construction and local
+verification are next; helper publication, controlled unhold, actions, smoke,
+restore, activation, and M7-26 closeout
 remain pending. The
 failed/recovered 2026-08-21 attempt remains historical; production remains
 untouched and unauthorized.
@@ -1022,7 +1029,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING; FULL HOLD ACTIVE
+Status: ACTIVE - HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING; FULL HOLD ACTIVE
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -1045,9 +1052,10 @@ matrix, and M7-26 closeout remained pending at the `HL-20260822-1` recovery
 boundary. Fresh `HL-20260823-1` is now selected and minted; exact B-prime
 `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes local verification and
 backend publication. Held deploy `dep-da5sh0e417fc738i254g` is newest and
-`LIVE` on exact B-prime after its hosted/runtime gates passed. Fixture
-preparation and every later gate through final staging review and M7-26
-closeout remain pending.
+`LIVE` on exact B-prime after its hosted/runtime gates passed. Fresh fixture
+prepare/replay and held postflight now pass; helper construction is next, and
+every gate from helper publication through final staging review and M7-26
+closeout remains pending.
 Production remains untouched and unauthorized.
 
 A work plan is used for a contained current task such as:
@@ -1262,9 +1270,10 @@ materialized the clean target and replayed with zero mutations. Only
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` now pass. The clean target is the
 verified authoritative held source. The exception grants no new release or
 restore authority by itself. Grae's separate `2026-08-23T23:23:29.877Z`
-approval authorizes only fresh `HL-20260823-1`; its new restore contract and
-B-prime local/publication/held-deployment gates now pass, while fixture
-preparation and all later operational data gates remain pending. The earlier
+approval authorizes only fresh `HL-20260823-1`; its new restore contract,
+B-prime local/publication/held-deployment gates, fresh fixture prepare/replay,
+and held postflight now pass, while helper construction/publication and all
+later operational data gates remain pending. The earlier
 `HL-20260821-3` abort
 recovery remains immutable historical evidence.
 

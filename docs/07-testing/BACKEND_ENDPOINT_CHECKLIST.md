@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING)
+## 2026-08-23 M7-26 Fresh Strict Release (FIXTURE PREPARE/REPLAY + HELD POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -303,10 +303,14 @@ deploy `dep-da5sh0e417fc738i254g`, started
 `3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
 read-only gates passed.
 
-The authoritative source is exact path
+The clean pre-fixture source boundary was exact path
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
 `37105664` bytes / SHA-256
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh prepare/replay passed at `729` then `0` writes. Held verifier v2 then
+proved that same path is the current authoritative fixture-bearing source at
+`37744640` bytes / SHA-256
+`b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
 is absent. Verified backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds exact
@@ -319,11 +323,12 @@ manifest checksum
 and verified plaintext `cf3ca07d...`. Its exact reason/retention/requester/
 expiry/backend metadata is recorded in the fresh run ledger.
 
-The full hold remains active. Fixture preparation/replay, fresh helper,
-controlled unhold, session verification, release-specific actions, publisher
+The full hold remains active. Fresh helper construction/local verification is
+next. Helper publication, controlled unhold, session verification,
+release-specific actions, publisher
 replays, T-131/T-132/T-140 comparator, restore, activation, and final review are
-all `PENDING`. No write endpoint or database action has run for this release;
-the external health/readiness/maintenance probes were read-only. Exact current
+all `PENDING`. No write endpoint or action request has run; fixture preparation
+is the only authoritative database mutation so far. Exact current
 evidence is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 

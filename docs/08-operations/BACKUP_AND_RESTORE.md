@@ -1244,7 +1244,7 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - B-prime local + publication + held deploy pass; fixture preparation pending
+#### HL-20260823-1 fresh strict release binding - fixture prepare/replay + held postflight pass; helper construction pending
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
@@ -1256,11 +1256,11 @@ exact local and backend `origin/staging` publication gates. Held deploy
 hosted/runtime gate passed.
 
 ```text
-Authoritative source: /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
-Source bytes:         37105664
-Source SHA-256:       cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
-Fresh target:         /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3
-Target state:         absent
+Authoritative source:       /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
+Clean boundary bytes/SHA:   37105664 / cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+Fixture source bytes/SHA:   37744640 / b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103
+Fresh target:               /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3
+Target state:               absent
 ```
 
 The release binds verified incident-preservation backup
@@ -1287,9 +1287,13 @@ The full hold remains active. B-prime implementation/local verification and
 Git publication passed without a data, target, helper, or production action.
 The only later environment change was the exact `APP_BUILD_ID`-only merge that
 triggered the now-passed held deploy; the hold and `DATABASE_PATH` stayed
-unchanged. Fixture preparation, helper, controlled unhold, session, action,
-publisher, smoke, restore, target materialization, activation, and new backup
-action remain `PENDING`. Its restore plan and receipt must use
+unchanged. Fresh fixture prepare/replay then passed at `729` and `0` writes;
+held postflight verified source `37744640` / `b4163695...`, exact fixture and
+privacy evidence, target-family absence, zero scratch mutations, and cleanup.
+The clean `cf3ca07d...` backup remains the restore boundary. Helper construction
+is next; helper publication, controlled unhold, session, action, publisher,
+smoke, restore, target materialization, activation, and new backup action remain
+`PENDING`. Its restore plan and receipt must use
 only the new release namespace; no prior plan, receipt, target, work area, or
 release-specific value may be reused. Exact current gates are recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.

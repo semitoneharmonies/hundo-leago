@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING; FULL HOLD ACTIVE; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING; FULL HOLD ACTIVE; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING)
+## 2026-08-23 M7-26 Fresh Strict Release (FIXTURE PREPARE/REPLAY + HELD POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -39,10 +39,13 @@ gates. Held deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact
 B-prime after `3,503/3,503` hosted tests and all build/startup, zero-error,
 held-health, and external read-only gates passed.
 
-The authoritative source is exact path
+The clean pre-fixture source boundary was exact path
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
 `37105664` bytes / SHA-256
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh prepare/replay passed at `729` then `0` writes. Held verifier v2 proved
+the current fixture-bearing source at `37744640` bytes / SHA-256
+`b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
 is absent. Bound backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` has exact
@@ -55,8 +58,8 @@ manifest checksum
 and verified plaintext `cf3ca07d...`. Exact reason, requester, retention,
 expiry, and backend-build metadata are bound in the new release record.
 
-The full hold remains active. Fixture preparation/replay, helper
-construction/publication, controlled unhold, session verification,
+The full hold remains active. Helper construction/local verification is next.
+Helper publication, controlled unhold, session verification,
 release-specific actions, publisher replays, privacy/cache smoke, restore,
 activation, final matrix, observation, and closeout are all `PENDING`. Pending
 is not release evidence. The current gate ledger is
@@ -1098,7 +1101,8 @@ results satisfies `HL-20260823-1`, and none grants resume or reuse authority.
 The fresh source and verified backup binding pass only as recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. B-prime
 implementation, local verification, and backend publication pass. Its held
-deploy/runtime proof also passes. Fixture preparation, helper, smoke, new
+deploy/runtime, fixture prepare/replay, and held postflight proof also pass.
+Helper construction/publication, smoke, new
 release-specific plan/execute or abort, target materialization, activation, and
 post-cutover backup remain `PENDING`.
 The historical RC-BKP-015A-J block above cannot be checked forward.
@@ -1141,8 +1145,10 @@ Known recovery limitation:
   authority to resume.
 
 The preceding RC-STG-006A state is closed historical evidence. Fresh
-`HL-20260823-1` fixture preparation and exact replay are `PENDING` in its own
-ledger and must emit new release-bound values.
+`HL-20260823-1` fixture preparation and exact replay now `PASS` only in its own
+ledger with new release-bound receipt/fingerprint/deadline, dynamic `729` then
+`0` writes, and held postflight proof. This does not check forward any helper,
+unhold, action, smoke, restore, or activation gate.
 
 - [ ] `RC-STG-007` Deployed CORS, cookies, CSRF, and Socket.IO tests pass.
 - [ ] `RC-STG-008` Account email capture/sandbox flows pass.
@@ -1282,8 +1288,8 @@ contract. They cannot satisfy, seed, or authorize any `HL-20260823-1` action.
 
 ### Current `HL-20260823-1` Staging Boundary
 
-Every remaining release-specific counterpart to RC-STG-006A and RC-STG-011A-J
-is `PENDING`: fixture preparation/replay, helper
+The fresh release-specific counterpart to RC-STG-006A now passes as recorded in
+the live ledger. Every counterpart to RC-STG-011A-J remains `PENDING`: helper
 construction/verification/publication, controlled unhold, sessions, fresh
 actions and publisher replays, privacy/cache smoke, re-hold, restore,
 activation, and final review. The authoritative live ledger is

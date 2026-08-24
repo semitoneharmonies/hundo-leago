@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING; FULL HOLD ACTIVE`
+`ACTIVE - M7-26; HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING; FULL HOLD ACTIVE`
 
 ## Work Plan ID
 
@@ -21,7 +21,7 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - B-Prime Local + Publication + Held Deploy Pass; Fixture Preparation Pending
+## 2026-08-23 Fresh Strict Release - Fixture Prepare/Replay + Held Postflight Pass; Helper Construction Pending
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
@@ -35,10 +35,13 @@ exact two-file focused, complete, check, dependency, and backend
 and `LIVE` on exact B-prime after `3,503/3,503` hosted tests and its build,
 startup, zero-error, held-health, and external read-only gates passed.
 
-The authoritative held source is
+The clean pre-fixture source boundary was
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
 `37105664` bytes / SHA-256
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh prepare/replay passed with `729` then `0` writes. Held postflight then
+verified that same path as the current fixture-bearing source at `37744640`
+bytes / SHA-256 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
 is absent. Verified incident-preservation backup
@@ -54,8 +57,8 @@ and verified plaintext `cf3ca07d...`. Reason/retention are
 `platform_operation` / `HL-20260822-1-post-abort-cutover`, `expiresAt` is
 `null`, and backend build is exact starting B.
 
-The full hold remains active. Fixture preparation/replay, helper
-construction/publication, controlled unhold, session verification, all
+The full hold remains active. Helper construction/local verification is next.
+Helper publication, controlled unhold, session verification, all
 release-specific actions and publisher replays,
 A-to-B-to-A smoke, restoration, target activation, final matrix, and closeout
 are `PENDING`. No value from either blocked predecessor may be resumed or
@@ -1193,11 +1196,11 @@ M7-26 is complete only when:
 
 M7-26 remains `PENDING`. Release `HL-20260822-1` is closed to further action as
 `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`. Fresh release
-`HL-20260823-1` is authorized and minted. Its clean held source and verified
-backup are bound, its target is absent, and B-prime implementation, local
-verification, backend publication, and held deployment/runtime gate pass.
-Fixture preparation/replay and every later gate through final review remain
-pending.
+`HL-20260823-1` is authorized and minted. Its clean backup boundary and current
+fixture-bearing held source are bound, its target is absent, and B-prime implementation, local
+verification, backend publication, held deployment/runtime, fixture
+prepare/replay, and held postflight gates pass. Helper construction is next;
+every later gate through final review remains pending.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

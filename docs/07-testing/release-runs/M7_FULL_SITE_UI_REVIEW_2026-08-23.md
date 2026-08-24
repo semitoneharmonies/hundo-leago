@@ -2,7 +2,7 @@
 
 ## Status
 
-`AUTHORIZED / MINTED; B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING; FULL HOLD ACTIVE`
+`AUTHORIZED / MINTED; B-PRIME + HELD DEPLOY + FRESH FIXTURE/POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING; FULL HOLD ACTIVE`
 
 Release `HL-20260823-1` is a new isolated-staging release. It does not reopen,
 resume, or reuse blocked release `HL-20260822-1`. Production remains untouched
@@ -30,9 +30,9 @@ Frontend application build (F):  4dfe12d1366314e3d9df722c50771324647743c9
 Held backend baseline (B):       8e313902feefcd683b0f5edd746a9dd2a9029a18
 Executable backend (B-prime):   234547e4d8453b7515fc081ea6ebe4c2d022dc54
 Environment:                    isolated staging
-Source database:                /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
-Source bytes:                   37105664
-Source plaintext SHA-256:       cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+Clean starting source:          /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
+Clean starting bytes:           37105664
+Clean starting SHA-256:         cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
 Fresh inactive target:          /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3
 Fresh target state:             absent
 ```
@@ -41,9 +41,9 @@ Backend `8e313902feefcd683b0f5edd746a9dd2a9029a18` remains the verified held
 starting baseline. Executable B-prime
 `234547e4d8453b7515fc081ea6ebe4c2d022dc54` is its exact child and now passes
 implementation, local verification, and backend `origin/staging` publication.
-Its held hosted deploy now passes. Fixture preparation remains the next gate;
-helper construction/publication, controlled unhold, session check, and action
-remain blocked behind it.
+Its held hosted deploy, fresh fixture prepare/replay, and held postflight now
+pass. Helper construction/local verification is next; helper publication,
+controlled unhold, session check, and action remain blocked behind it.
 
 ## B-Prime Implementation, Local Verification, and Publication
 
@@ -170,8 +170,155 @@ SportsDataIO provider variables=absent
 BACKUP_SCHEDULE_ENABLED=false
 ```
 
-Minting is documentation-only. It does not lift the hold, create the target,
-prepare a fixture, publish a helper, make an API request, or write the database.
+Minting itself was documentation-only. It did not lift the hold, create the
+target, prepare a fixture, publish a helper, make an API request, or write the
+database.
+
+## Fresh Fixture Prepare, Replay, and Held Postflight
+
+The exact release-bound prepare command has SHA-256
+`139365438f47f0a95f14787738e31fcf347b195c2993219b9d41b708d88eb444`.
+It ran under the unchanged full hold on exact B-prime against only the
+authoritative source. Its two sanitized retained outputs are:
+
+```text
+First:  E:\hundo-leago\.netlify\strict-release-HL-20260823-1\fixture-first-result.json
+Bytes:  2736
+SHA:    b60d9c8a4937a6553ac1c19324aa22fcc8184bf967f07decbb4128857d61efce
+
+Replay: E:\hundo-leago\.netlify\strict-release-HL-20260823-1\fixture-replay-result.json
+Bytes:  2733
+SHA:    5c85561e72c413c5ad902a84e1f4d24e11ed4380c4a4dcd01705419015b42634
+```
+
+Both outputs have the same exact `29`-key release payload and differ only in
+the required idempotency fields: first `replayed: false` /
+`databaseWriteCount: 729`, replay `replayed: true` /
+`databaseWriteCount: 0`. They bind:
+
+```text
+code:                    RELEASE_QA_FAD_PRIVACY_GATE_PREPARED
+contractVersion:         1
+operationId:             HL-20260823-1
+environmentId:           test:release-qa
+databaseId:              m7-release-qa-fixture
+schemaVersion:           54
+fixture kind/name:       strict_fad_privacy_gate / Gamma Strict Privacy Gate
+leagueId:                60c82aa0-54f9-4c93-83f5-73b0d6d6f63e
+seasonId:                6867d0b4-cb78-478e-b8d0-c727dcca1825
+fadId:                   f47032fd-57a2-443b-89a6-ce32894f2fc1
+restrictedAuctionId:     5805b26e-71ca-40ae-92b8-f7dc9ce1a7e2
+receiptEventId:          2c1230c3-ee2c-4c1b-8218-5e3fe2172873
+fixtureFingerprint:      8ed083f60c6e4c9850d12dc49e0fc1ab8aa2cc681705886f0c2c10f4275ac59c
+preparedAtMs:            1787554959702
+preparedAt:              2026-08-24T07:02:39.702Z
+actionableUntilMs:       1787641200000
+actionableUntil:         2026-08-25T07:00:00Z
+safeUntil:               2026-08-25T03:00:00Z
+active/selected teams:   4 / 2
+tied players:            1
+restricted participants: 2
+```
+
+The exact emitted `35`-table insertion map is:
+
+```text
+auction_contexts=1
+auctions=1
+candidate_card_entries=2
+candidate_card_revisions=10
+candidate_card_snapshot_entries=88
+candidate_card_snapshots=4
+candidate_cards=4
+free_agent_draft_allocation_events=3
+free_agent_draft_auction_participants=2
+free_agent_draft_draws=1
+free_agent_draft_player_allocations=1
+free_agent_draft_readiness_attempts=1
+free_agent_draft_readiness_operations=1
+free_agent_draft_rollovers=7
+free_agent_draft_teams=4
+free_agent_drafts=1
+idempotency_requests=2
+job_runs=197
+league_activity=3
+league_memberships=4
+league_player_positions=1
+league_settings=1
+leagues=1
+matchup_operations=1
+matchup_schedule_job_bindings=186
+matchup_weeks=31
+matchups=62
+notifications=14
+outbox_event_audiences=29
+outbox_events=29
+season_matchup_schedule_generations=1
+seasons=1
+security_audit_events=1
+team_manager_assignments=4
+teams=4
+```
+
+The positive write count is dynamic, not a fixed `744`: `729 = 264 + (31 ×
+15)`. The emitted schedule has `31` matchup weeks, `197 = (31 × 6) + 11`
+job runs, `186 = 31 × 6` schedule-job bindings, and `62 = 31 × 2` matchups.
+The exact replay bound this same map and made zero writes.
+
+The first held postflight verifier safely stopped at
+`privacy-role-matrix / TIED_PLAYER_ID_MISSING` because it checked the production
+projection's nonexistent `row.player.id` instead of its documented
+`row.player.playerId`. The original verifier remains preserved at
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\post-fixture-verifier.sh`,
+`49791` bytes / SHA-256
+`554666cb7e7a2d73b5e9825f825c0d9873be491ce6cf4b9b0c458e2134082b84`;
+its sanitized `111`-byte failure result has SHA-256
+`8b6216dd942791069ef03b5989726bb3a128076a97cb277bb0dbffbb68f6a767`
+at
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\post-fixture-verifier-failure-v1.json`.
+This was a verifier-only false assertion and granted no pass.
+
+Frozen v2 changes only those two field references. It is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\post-fixture-verifier-v2.sh`,
+`49821` bytes / SHA-256
+`0d5d473617ff033bfe1e9f032a2a0f658d07e35b8e0e742c93ed3a6ab4b99a18`.
+Its retained result is
+`.netlify/strict-release-HL-20260823-1/post-fixture-verifier-v2-result.json`,
+`9574` bytes / SHA-256
+`258d3b589ed7ec14a42ca0ad70cf2e09eb11788c3f55c9794c56cdf0d43fbabe`.
+It returned `HL_POST_FIXTURE_SOURCE_VERIFIED` at
+`2026-08-24T07:37:31.521Z` with `84148479ms` remaining before the actionable
+deadline, under Node `24.14.1` on exact B-prime and F.
+
+Postflight proves:
+
+* `authoritativeDatabaseOpened: false`; only an exclusive owned scratch copy
+  was opened read-only, with `scratchDatabaseMutationCount: 0`;
+* the current fixture-bearing source is `37744640` bytes, SHA-256
+  `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`,
+  `mtimeMs: 1787554966495`, `mtimeIso: 2026-08-24T07:02:46.495Z`, and
+  `mtimeNs: 1787554966495529258`;
+* source WAL/SHM, target/WAL/SHM, activation receipt, and restore work area are
+  absent; the clean `37105664` / `cf3ca07d...` backup remains the rollback
+  boundary;
+* integrity is `ok`, foreign-key violations are `0`, schema and data-model
+  versions are `54`, all `54` migrations match checksum set
+  `6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89`,
+  exact database identity matches, and active sessions are `0`;
+* all `9` fixture accounts retain their exact aggregate state, the credential
+  rotation receipt remains exact, Gamma League remains active/completed, the
+  full four-role privacy and restricted-auction matrices pass, and every
+  pre-smoke proposal/acceptance/idempotency/notification/outbox count is `0`;
+* the complete full-hold matrix remains exact and provider fields remain
+  absent; and
+* the observed scratch WAL was `0` bytes, scratch SHM was `32768` bytes, both
+  sidecars and the owned temporary copy were removed, and
+  `temporaryCopyRemoved: true`.
+
+No helper construction/local-verification or publication gate had passed at
+this postflight boundary. No controlled unhold, session request, API action,
+publisher, smoke, restore, target materialization, activation, or production
+action occurred.
 
 ## Release-Specific Isolation
 
@@ -191,13 +338,13 @@ part of this mint.
 | --- | --- | --- |
 | Release authorization and UTC identity | `PASS` | Explicit authority and exact timestamps above; `HL-20260823-1` was unused in both clean repositories before mint. |
 | Frozen F and held starting B | `PASS` | Exact F and B above. B is baseline only. |
-| Clean authoritative source and fresh target absence | `PASS` | Source path/size/hash and absent release-specific target are bound above. |
+| Bound starting/current source and fresh target absence | `PASS` | Clean starting and current fixture-bearing source path/size/hash evidence and absent release-specific target are bound above. |
 | Verified source backup binding | `PASS` | Exact object identity, metadata, hashes, plaintext, integrity, and foreign-key verification are bound above. |
 | B-prime implementation, local gates, and publication | `PASS` | Exact commit/parent/two-file diff and hashes; syntax/diff checks; final `57/57` focused gate; `443` suites / `3,503` full tests; check/dependency evidence; backend HEAD and `origin/staging` identity are bound above. |
 | B-prime held deployment and runtime verification | `PASS` | Exact deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE` on B-prime after `443` suites / `3,503` hosted tests all passed, build/startup and zero-error gates passed, external live/ready returned `200`/`no-store`, and anonymous leagues remained held at `503 SERVICE_MAINTENANCE`/`no-store`. |
-| Fresh fixture preparation and exact replay | `PENDING` | No preparation command has run. |
-| Release-specific helper construction and local verification | `PENDING` | No new helper files exist. |
-| Helper publication and canonical/immutable proof | `PENDING` | No helper deploy has been requested. |
+| Fresh fixture preparation, exact replay, and held postflight | `PASS` | Exact command and retained results above bind first `729`, replay `0`, the full 35-table map, release IDs/fingerprint/deadline, authoritative fixture-bearing source evidence, full hold, target-family absence, privacy/pre-smoke matrices, zero scratch mutations, and owned cleanup. |
+| Release-specific helper construction and local verification | `PENDING` | Construction and local verification have not yet passed. |
+| Helper publication and canonical/immutable proof | `PENDING` | Publication and hosted proof have not begun. |
 | Controlled unhold and session verification | `PENDING` | Full hold remains active. |
 | A-to-B-to-A action, publisher, replay, and privacy/cache smoke | `PENDING` | No release-specific session, action, or publisher request has run. |
 | Full-hold restoration and strict restore/abort path | `PENDING` | No restore plan or command has run. |
@@ -221,10 +368,12 @@ At mint time:
 * no B-prime, helper, preparation, smoke, restore, activation, or production
   action had occurred.
 
-After mint, B-prime implementation, final local verification, commit, and
-backend `origin/staging` publication passed exactly as recorded above. The
-held deployment/runtime gate now also passes exactly as recorded above. The
-source remains held, the fresh target remains absent, and no fixture, helper,
+After mint, B-prime implementation, final local verification, commit, backend
+`origin/staging` publication, held deployment/runtime, fresh fixture
+prepare/replay, and held postflight passed exactly as recorded above. The
+fixture-bearing source remains authoritative under the full hold, its clean
+backup boundary remains verified, and the fresh target remains absent. No
+helper construction/local-verification or publication gate has passed, and no
 controlled unhold, session request, action request, publisher, restore,
-activation, database, or production action has occurred for this release.
-Fresh fixture preparation and exact replay are the next `PENDING` gate.
+activation, or production action has occurred. Helper construction and local
+verification are the next `PENDING` gate.

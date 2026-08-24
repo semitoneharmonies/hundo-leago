@@ -107,7 +107,7 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Release - 2026-08-23 (B-PRIME LOCAL + PUBLICATION + HELD DEPLOY PASS; FIXTURE PREPARATION PENDING)
+### M7-26 Fresh Strict Release - 2026-08-23 (FIXTURE PREPARE/REPLAY + HELD POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING)
 
 Grae requested and approved `HL-20260823-1` at exact
 requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
@@ -120,10 +120,13 @@ publication gates. Held deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE`
 on exact B-prime after `3,503/3,503` hosted tests and its
 build/startup, zero-error, held-health, and external read-only gates passed.
 
-The authoritative full-hold source is
+The clean pre-fixture source boundary was
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
 `37105664` bytes / SHA-256
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh prepare/replay passed at `729` then `0` writes. Held postflight verified
+that same path as the current fixture-bearing source at `37744640` bytes /
+SHA-256 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
 is absent. Backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` is verified and
@@ -134,8 +137,9 @@ manifest checksum
 `54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
 plaintext `cf3ca07d...`, and the recorded incident-preservation metadata.
 
-The full hold remains active. Fixture prepare/replay, fresh helper, controlled
-unhold, sessions, all actions and publisher replays,
+The full hold remains active. Fresh helper construction/local verification is
+next. Helper publication, controlled unhold, sessions, all actions and
+publisher replays,
 the exact two-cookie `1/0/0 -> 2/1/1 -> 3/2/2` comparator, restore, activation,
 final desktop/mobile matrix, and closeout are all `PENDING`. No test or action
 result from a predecessor may satisfy this release. Its live ledger is

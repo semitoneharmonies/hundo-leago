@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Prepare and replay the fresh HL-20260823-1 fixture under full hold; B-prime local, publication, and held deployment/runtime gates pass, and every later gate remains pending
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4dfe12d BOUND / HELD STARTING B 8e313902 BOUND / B-PRIME 234547e LOCAL + PUBLICATION PASS / dep-da5sh0e417fc738i254g NEWEST + LIVE + HELD RUNTIME PASS / CLEAN SOURCE + VERIFIED BACKUP e735e6a4 BOUND / FRESH TARGET ABSENT / FULL HOLD ACTIVE / PREPARE, HELPER, UNHOLD, ACTION, SMOKE, RESTORE, ACTIVATION, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Construct and locally verify the fresh HL-20260823-1 helper against its emitted fixture deadline; B-prime, held deployment/runtime, fixture prepare/replay, and held postflight gates pass, and every later gate remains pending
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4dfe12d BOUND / HELD STARTING B 8e313902 BOUND / B-PRIME 234547e LOCAL + PUBLICATION PASS / dep-da5sh0e417fc738i254g NEWEST + LIVE + HELD RUNTIME PASS / CLEAN BACKUP BOUNDARY + VERIFIED BACKUP e735e6a4 PRESERVED / FIXTURE-BEARING SOURCE b4163695 VERIFIED / FRESH TARGET ABSENT / FULL HOLD ACTIVE / PREPARE + REPLAY + POSTFLIGHT PASS / HELPER, UNHOLD, ACTION, SMOKE, RESTORE, ACTIVATION, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1483,7 +1483,7 @@ incident-preservation backup, and `HL-20260822-1` recovery closeout are complete
 Grae explicitly requested and approved fresh release `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. It binds F
 `4dfe12d1366314e3d9df722c50771324647743c9`, held starting B
-`8e313902feefcd683b0f5edd746a9dd2a9029a18`, authoritative source
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`, clean starting source
 `...HL-20260822-1.sqlite3` (`37105664` bytes / `cf3ca07d...`), absent target
 `...HL-20260823-1.sqlite3`, and verified incident-preservation backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`. Its manifest and storage-object
@@ -1494,10 +1494,13 @@ Exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` now passes its two-file
 local and backend `origin/staging` publication gates. Held deploy
 `dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact B-prime after all
 `3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
-read-only runtime gates passed.
+read-only runtime gates passed. Fresh fixture prepare/replay then passed with
+`729` and `0` writes. Held postflight verified the current fixture-bearing
+source at `37744640` bytes / `b4163695...`, with target family absent, full hold
+intact, no authoritative open, zero scratch mutations, and cleanup complete.
 
-The ordered remaining gates are fixture preparation/replay, fresh helper
-construction and publication, controlled unhold, A-to-B-to-A smoke, full-hold
+The ordered remaining gates are fresh helper construction/local verification,
+helper publication, controlled unhold, A-to-B-to-A smoke, full-hold
 restoration, release-specific restore/activation, final matrix, observation,
 and closeout.
 Every remaining gate is pending. Staging remains held, and neither blocked
