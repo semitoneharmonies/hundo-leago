@@ -107,7 +107,7 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Release - 2026-08-23 (FIXTURE PREPARE/REPLAY + HELD POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING)
+### M7-26 Fresh Strict Release - 2026-08-23 (HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT)
 
 Grae requested and approved `HL-20260823-1` at exact
 requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
@@ -137,13 +137,57 @@ manifest checksum
 `54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
 plaintext `cf3ca07d...`, and the recorded incident-preservation metadata.
 
-The full hold remains active. Fresh helper construction/local verification is
-next. Helper publication, controlled unhold, sessions, all actions and
-publisher replays,
-the exact two-cookie `1/0/0 -> 2/1/1 -> 3/2/2` comparator, restore, activation,
-final desktop/mobile matrix, and closeout are all `PENDING`. No test or action
-result from a predecessor may satisfy this release. Its live ledger is
+Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` passes
+its exact local gate with canonical helper/original/overlay SHA-256 values
+`43cd106d...` / `2d8069ca...` / `c6b553c5...`, syntax `5/5`, both verifiers,
+Vitest `14/14`, lint exit `0`, and a byte-identical isolated build. API deploy
+`6a8bfef3ac0ff74a373404d8` was rejected before browser or unhold after its
+header rules were absent. Corrected CLI deploy
+`6a8c006abe46c8fb6269c40c` is current/`READY`, has exact six-header/two-redirect
+processing and no functions, and passes all canonical/immutable public bytes,
+headers, marker/runtime, absence, normal-app, and held-runtime checks. Fresh tab
+`1600151197` reached `READY_NO_SESSION_REQUEST`, both QueryClient caches were
+empty, the browser observed only the pinned CSS and JavaScript, and no API,
+session, action, or write ran.
+
+The full hold remains active. Controlled unhold and session verification are
+next. All actions and publisher replays, the exact two-cookie
+`1/0/0 -> 2/1/1 -> 3/2/2` comparator, restore, activation, final
+desktop/mobile matrix, and closeout are `PENDING`. No test or action result from
+a predecessor may satisfy this release. Its live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
+For this release only, controlled-unhold testing begins with one merge-only
+`replace: false` delta: `STAGING_MAINTENANCE_HOLD=false`,
+`LEAGUE_WRITE_MODE=open`, and `FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. Every
+other B-prime/F/environment/database/source/root/season binding and every
+disabled job, email/capture, debug, backup, or provider value remains exact.
+The merge itself must create exactly one API-triggered B-prime deploy; no
+`trigger_deploy` call is allowed. Before action testing, require its full
+`443`-suite / `3,503`-test hosted pass, build/startup and zero-error evidence,
+exact runtime and versioned health checks, anonymous-session/CORS/cache proof,
+no newer/competing deploy, and then one correct-role session proof in the exact
+unexpired helper commit/deploy at the lowercase extensionless URL.
+
+The only action-test keys, in order, are:
+
+```text
+HL-20260823-1-team1-to-b-propose
+HL-20260823-1-team1-to-b-accept
+HL-20260823-1-outbox-team1-to-manager-b
+PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B
+HL-20260823-1-team1-to-a-propose
+HL-20260823-1-team1-to-a-accept
+HL-20260823-1-outbox-team1-return-to-manager-a
+PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
+```
+
+Each publisher test includes one approved request and its immediate identical
+zero-write replay. Ambiguous environment state is inspected, never retried;
+drift, wrong/multiple deploy, failed proof, expiry, or `STRICT_STOP` prohibits
+every action and requires exact three-key re-hold plus fresh fail-closed
+recovery. The similarly named `HL-20260822-1` strategy below is historical and
+cannot satisfy this sequence.
 
 ### M7-26 Fresh Strict Rerun - 2026-08-22 (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 

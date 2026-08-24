@@ -2,7 +2,7 @@
 
 ## Status
 
-`AUTHORIZED / MINTED; B-PRIME + HELD DEPLOY + FRESH FIXTURE/POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING; FULL HOLD ACTIVE`
+`AUTHORIZED / MINTED; B-PRIME + HELD DEPLOY + FRESH FIXTURE/POSTFLIGHT + HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT; FULL HOLD ACTIVE`
 
 Release `HL-20260823-1` is a new isolated-staging release. It does not reopen,
 resume, or reuse blocked release `HL-20260822-1`. Production remains untouched
@@ -41,9 +41,10 @@ Backend `8e313902feefcd683b0f5edd746a9dd2a9029a18` remains the verified held
 starting baseline. Executable B-prime
 `234547e4d8453b7515fc081ea6ebe4c2d022dc54` is its exact child and now passes
 implementation, local verification, and backend `origin/staging` publication.
-Its held hosted deploy, fresh fixture prepare/replay, and held postflight now
-pass. Helper construction/local verification is next; helper publication,
-controlled unhold, session check, and action remain blocked behind it.
+Its held hosted deploy, fresh fixture prepare/replay, held postflight, helper
+construction/local verification, and corrected helper publication now pass.
+Controlled unhold and session verification are next; every action remains
+blocked behind them.
 
 ## B-Prime Implementation, Local Verification, and Publication
 
@@ -118,8 +119,9 @@ suites / `3,503` tests / `3,503` pass / zero fail, cancel, skip, or todo in
 `2026-08-24T05:19:31.635633617Z`. Startup and post-live logs contained zero
 errors through `2026-08-24T05:26:18.764595906Z`.
 
-External read-only probes passed: `/health/live` and `/health/ready` each
-returned `200`, `Cache-Control: no-store`, and `{ "status": "ok" }`;
+External read-only probes passed: `/api/v1/health/live` and
+`/api/v1/health/ready` each returned `200`, `Cache-Control: no-store`, and
+`{ "status": "ok" }`;
 anonymous `/api/v1/leagues` remained held at `503`, `Cache-Control: no-store`,
 and `SERVICE_MAINTENANCE`. All full-hold and storage settings, including
 `DATABASE_PATH`, remained unchanged. No data, source, target, helper, or
@@ -316,9 +318,213 @@ Postflight proves:
   `temporaryCopyRemoved: true`.
 
 No helper construction/local-verification or publication gate had passed at
-this postflight boundary. No controlled unhold, session request, API action,
-publisher, smoke, restore, target materialization, activation, or production
-action occurred.
+this postflight boundary. Those two gates passed later as recorded below. No
+controlled unhold, session request, API action, publisher, smoke, restore,
+target materialization, activation, or production action occurred.
+
+## Helper Construction and Local Verification
+
+Frontend commit
+`e898e72272e5a052867832dcf9f128e5b8d5730e` is published on frontend
+`origin/staging`. It binds the fresh helper only to release `HL-20260823-1`, F
+`4dfe12d1366314e3d9df722c50771324647743c9`, B-prime
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54`, and expiry
+`2026-08-25T07:00:00.000Z`. The enablement marker contains exactly eight keys:
+`contractVersion`, `enabled`, `releaseId`, `frontendBuildId`, `backendBuildId`,
+`frontendOrigin`, `apiOrigin`, and `expiresAt`; it contains no receipt or
+fingerprint.
+
+The independently reproduced canonical local inventories are:
+
+```text
+Helper source set:       9 files / 190262 bytes / 43cd106ddd967103f3d0255b7b9c7ac97aeaed3c867e050f863739d49526245c
+Sealed/new original:    33 files / 1932120 bytes / 2d8069ca1aa61e02b5be14b09b97ded73b8363ae5e699c0e712f32026903ae6c
+Additive helper overlay: 37 files / 2038441 bytes / c6b553c53e508be16323a933c5fed67408917d434ea3065dc2e2b9c0d178010e
+netlify.toml:             2187 bytes / f3ef483a4a15c5a57b1dee5af1b3485c6bf841042dd59c5ddae3c7aaaa070e98
+Generated helper bundle:  97425 bytes / 1157c2d4a4b557f57e6438164c1ed241e7f1379db7c77b83a8b7434bf750d0ae
+```
+
+The helper is an exact mechanical retarget of the retired predecessor across
+all nine files while the predecessor remains HEAD-exact. Under exact Node
+`24.14.1` / npm `11.11.0`, syntax passed `5/5`, source and overlay verifiers
+passed, Vitest passed `14/14` with zero failures, ESLint exited `0`, and an
+isolated Vite build reproduced the exact bundle bytes. Static secret,
+credential, stale-release, stale-build, stale-expiry, stale-receipt,
+stale-fingerprint, conflict-marker, and `_headers` scans returned zero. The
+extensionless origin guard runs before query, session, network, or write work.
+
+## Helper Publication and Inert Browser Proof
+
+The first publication, API deploy `6a8bfef3ac0ff74a373404d8`, was created at
+`2026-08-24T08:21:07.459Z`, published at `2026-08-24T08:21:27.555Z`, and
+updated at `2026-08-24T08:21:34.933Z`. Its bytes were correct and it deployed
+no functions or edge functions, but Netlify processed zero header rules. The
+helper therefore returned the default cache policy and omitted its required
+security headers. That deploy was rejected before any browser tab, controlled
+unhold, session, action, API request, or write.
+
+Corrected CLI deploy `6a8c006abe46c8fb6269c40c`, titled
+`HL-20260823-1-strict-helper-e898e72`, was created at
+`2026-08-24T08:27:22.453Z`, published at `2026-08-24T08:27:23.890Z`, and
+updated at `2026-08-24T08:27:28.640Z`. It is `READY`, current, and newest;
+`deploy_source` is `cli`, deploy time is `1` second, exactly six header rules
+and two redirect rules were processed, and no functions or edge functions were
+deployed.
+
+Both its immutable HTTPS URL and canonical staging origin matched all `36`
+public files byte-for-byte: the `32` publicly served sealed-baseline files plus
+the exact four helper runtime files. The sealed `_redirects` control file was
+represented by the two processed rules. The canonical and immutable helper
+files matched these exact SHA-256 values: marker `f4bc16bbc54208c9ef9cc6963e0633f1339cb991ca22d36f3c4b2dfb5b0c6a13`,
+CSS `bb5dc71562d3639b83f068aaee75fd7c399cd00a97cab73cb57c8e0ec355a7d8`,
+extensionless HTML `efd83c071e30d02228222376e0a32c2f86be389f087b52fefe279c99eff2a226`,
+and JavaScript `1157c2d4a4b557f57e6438164c1ed241e7f1379db7c77b83a8b7434bf750d0ae`.
+The canonical origin returned exact `no-store`, narrow CSP, `no-referrer`,
+`nosniff`, `DENY`, and `noindex, nofollow, noarchive` values on every helper
+resource and the extensionless route. The immutable deploy URL returned the
+same required five cache/CSP/security values and Netlify appended its automatic
+additional `noindex` token. Maps, source, tests, verifier, README, Vite config,
+and `_headers` were absent through normal fallback or `404`; stale identity
+scans were empty; the ordinary application index and main bundle remained
+byte-exact to F.
+
+The CLI-created ignored deploy-control file
+`helper-overlay-dist/.netlify/state.json` was `54` bytes with SHA-256
+`ecd3614a7d3794fdeb5a362e138a6756137f653b525d4294309279dcae60b2c7`; it was
+not deployed and returned `404`. After the browser proof, scoped cleanup at
+`2026-08-24T08:39:52.3923391Z` proved zero overlay-path or Netlify-deploy
+processes, revalidated the file as regular, non-reparse, and the sole entry,
+then removed only that exact file and its empty parent. Both are absent. The
+overlay verifier passed again and restored the exact canonical seal at `37`
+files / `2038441` bytes /
+`c6b553c53e508be16323a933c5fed67408917d434ea3065dc2e2b9c0d178010e`, with
+zero `.netlify/` entries and clean helper/`netlify.toml` tracked status.
+
+Exact held probes ran from `2026-08-24T08:32:13.889Z` through
+`2026-08-24T08:32:14.050Z`: `GET /api/v1/health/live` and
+`GET /api/v1/health/ready` each returned `200`, `Cache-Control: no-store`, and
+`{"status":"ok"}`; anonymous `GET /api/v1/leagues` returned `503`,
+`Cache-Control: no-store`, and `SERVICE_MAINTENANCE`. Render deploy
+`dep-da5sh0e417fc738i254g` remained newest and `LIVE` on exact B-prime, with
+instance `srv-d9eo2turnols73ekb830-t7cbj` still bound. The full hold remained
+unchanged.
+
+A new Chrome tab `1600151197` was created from `about:blank`; no existing user
+tab was touched. It navigated once, without query or fragment, to only
+`https://staging.hundoleago.com/release-qa/hl-20260823-1/strict-manager-transfer`.
+The settled proof from `2026-08-24T08:34:35.300Z` through
+`2026-08-24T08:35:13.552Z` reported `READY_NO_SESSION_REQUEST`,
+`queryClientPresent: true`, `queryCacheSize: 0`, `mutationCacheSize: 0`, and
+`fragmentAssignmentLoaded: false`. `STRICT_STOP` was absent, console logs were
+empty, and the browser observed exactly two assets: the pinned helper CSS and
+JavaScript, with zero `other`, API, session, action, fetch, XHR, WebSocket, or
+write resource. The session-verification control was enabled while all six
+action controls remained disabled. No cookie inspection, login, reload,
+physical `.html` request, unhold, click, session request, action, or write
+occurred. The clean tab is preserved for controlled continuation.
+
+## Current Controlled-Unhold and Action Authority
+
+This section is the sole current authority for the next gate. The fenced
+`HL-20260822-1` environment and action values elsewhere in the active documents
+are historical evidence only and must not be resumed, copied, or treated as an
+alternative authority.
+
+The only authorized Render configuration change is one merge-only update on
+workspace `tea-d4prbj7diees738tmg90`, service
+`srv-d9eo2turnols73ekb830`, with `replace: false` and exactly this three-key
+delta:
+
+```text
+STAGING_MAINTENANCE_HOLD=false
+LEAGUE_WRITE_MODE=open
+FREE_AGENT_DRAFT_ROUTES_ENABLED=true
+```
+
+No other environment key may be sent or changed. In particular, the update
+must preserve this exact release/runtime binding:
+
+```text
+APP_ENV=staging
+NODE_ENV=production
+APP_ENVIRONMENT_ID=test:release-qa
+DATABASE_ID=m7-release-qa-fixture
+DATABASE_PATH=/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
+PERSISTENT_DATA_ROOT=/opt/render/project/data/hundo-staging
+FRONTEND_BUILD_ID=4dfe12d1366314e3d9df722c50771324647743c9
+APP_BUILD_ID=234547e4d8453b7515fc081ea6ebe4c2d022dc54
+CURRENT_SEASON_LABEL=2026
+CURRENT_NHL_SEASON_KEY=20262027
+SCHEDULED_JOBS_ENABLED=false
+ACCOUNT_EMAIL_DELIVERY_ENABLED=false
+EMAIL_DELIVERY_MODE=capture
+DEBUG_ROUTES_ENABLED=false
+BACKUP_SCHEDULE_ENABLED=false
+SPORTSDATAIO_NHL_LIVE_MODE=disabled
+SPORTSDATAIO_NHL_API_KEY: absent
+SPORTSDATAIO_NHL_API_ORIGIN: absent
+SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR: absent
+SPORTSDATAIO_NHL_LIVE_API_KEY: absent
+SPORTSDATAIO_NHL_LIVE_API_ORIGIN: absent
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_SECRET: absent
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_KEY_VERSION: absent
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_ARTIFACT: absent
+SPORTSDATAIO_NHL_LIVE_PROBE_MANIFEST: absent
+```
+
+The merge itself triggers the required Render deploy on this service, as the
+earlier `APP_BUILD_ID`-only merge did. Do not call `trigger_deploy`. Before the
+merge, re-prove that `dep-da5sh0e417fc738i254g` is the sole newest `LIVE`
+deploy on exact B-prime and that the full-hold inverse of the three keys is
+still `true` / `closed` / `false`. The merge must produce exactly one new
+API-triggered deploy on exact B-prime. Before any helper session request or
+action, that deploy must be newest and `LIVE`, the prior held deploy must be
+deactivated, no competing or newer deploy may exist, and its hosted gate must
+pass `443` suites / `3,503` tests with all `3,503` passing, build/startup and
+zero-error checks, the exact runtime matrix above, versioned live/readiness
+`200` plus `Cache-Control: no-store`, and anonymous
+`GET /api/v1/session` `401 SESSION_REQUIRED` with the documented CORS/cache
+boundary. Only then may the preserved clean helper tab perform its single
+explicit session verification and prove the exact expected user/role before
+arming any write.
+
+The browser authority remains frontend helper commit
+`e898e72272e5a052867832dcf9f128e5b8d5730e`, corrected current Netlify deploy
+`6a8c006abe46c8fb6269c40c`, expiry `2026-08-25T07:00:00.000Z`, and only this
+lowercase extensionless URL:
+
+```text
+https://staging.hundoleago.com/release-qa/hl-20260823-1/strict-manager-transfer
+```
+
+After the deploy and session gates pass, the only fresh action namespace is:
+
+```text
+Proposal to Manager B:        HL-20260823-1-team1-to-b-propose
+Acceptance by Manager B:      HL-20260823-1-team1-to-b-accept
+Publisher to Manager B:       HL-20260823-1-outbox-team1-to-manager-b
+Publisher confirmation:       PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B
+Proposal back to Manager A:   HL-20260823-1-team1-to-a-propose
+Acceptance by Manager A:      HL-20260823-1-team1-to-a-accept
+Publisher back to Manager A:  HL-20260823-1-outbox-team1-return-to-manager-a
+Publisher confirmation:       PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
+```
+
+Each publisher operation permits one approved call followed immediately by
+its identical zero-write replay. The helper's fixed routes, bodies, caller
+identities, assignment handoff, fresh CSRF retrieval, marker check, and
+write-arm rules remain mandatory; the values above do not authorize a generic
+request.
+
+An ambiguous environment-update result must not be retried, and it must not be
+followed by a manual deploy. Any partial key drift, wrong or multiple deploy,
+wrong commit/path/build/runtime/session identity, failed hosted gate, newer
+deploy, expired/drifted helper, or `STRICT_STOP` blocks every action. Reconcile
+the provider state first, restore the full hold with only
+`STAGING_MAINTENANCE_HOLD=true`, `LEAGUE_WRITE_MODE=closed`, and
+`FREE_AGENT_DRAFT_ROUTES_ENABLED=false`, then use the release-specific
+fail-closed recovery path. No target, restore, activation, or production
+authority is added by this controlled-unhold contract.
 
 ## Release-Specific Isolation
 
@@ -327,10 +533,11 @@ confirmation, idempotency key, restore plan, receipt, target, and deploy title
 must be newly bound to `HL-20260823-1`. Nothing from `HL-20260821-3` or
 `HL-20260822-1` may be resumed or reused.
 
-The helper must authorize only the canonical extensionless staging URL. Its
-source, tests, verifier, immutable deploy identity, headers, expiration, and
-retirement proof remain pending. No helper file or `netlify.toml` change is
-part of this mint.
+The helper authorizes only the canonical extensionless staging URL. Its source,
+tests, verifier, immutable deploy identity, headers, and expiration now pass as
+recorded above. Controlled unhold and every action remain pending; retirement
+proof is required after browser evidence. No helper or `netlify.toml` value
+from either predecessor grants current authority.
 
 ## Gate Ledger
 
@@ -343,8 +550,8 @@ part of this mint.
 | B-prime implementation, local gates, and publication | `PASS` | Exact commit/parent/two-file diff and hashes; syntax/diff checks; final `57/57` focused gate; `443` suites / `3,503` full tests; check/dependency evidence; backend HEAD and `origin/staging` identity are bound above. |
 | B-prime held deployment and runtime verification | `PASS` | Exact deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE` on B-prime after `443` suites / `3,503` hosted tests all passed, build/startup and zero-error gates passed, external live/ready returned `200`/`no-store`, and anonymous leagues remained held at `503 SERVICE_MAINTENANCE`/`no-store`. |
 | Fresh fixture preparation, exact replay, and held postflight | `PASS` | Exact command and retained results above bind first `729`, replay `0`, the full 35-table map, release IDs/fingerprint/deadline, authoritative fixture-bearing source evidence, full hold, target-family absence, privacy/pre-smoke matrices, zero scratch mutations, and owned cleanup. |
-| Release-specific helper construction and local verification | `PENDING` | Construction and local verification have not yet passed. |
-| Helper publication and canonical/immutable proof | `PENDING` | Publication and hosted proof have not begun. |
+| Release-specific helper construction and local verification | `PASS` | Exact frontend commit, release/build/expiry binding, eight-key marker, canonical inventories and SHA-256 values, mechanical retarget, syntax `5/5`, both verifiers, Vitest `14/14`, ESLint `0`, byte-identical isolated build, and hygiene scans are bound above. |
+| Helper publication and canonical/immutable proof | `PASS` | Rejected API deploy `6a8bfef3ac0ff74a373404d8` preserved its pre-browser header failure; corrected current CLI deploy `6a8c006abe46c8fb6269c40c` passed exact bytes, headers, identities, absence checks, held probes, and the inert fresh-tab proof without unhold, session, action, or write. |
 | Controlled unhold and session verification | `PENDING` | Full hold remains active. |
 | A-to-B-to-A action, publisher, replay, and privacy/cache smoke | `PENDING` | No release-specific session, action, or publisher request has run. |
 | Full-hold restoration and strict restore/abort path | `PENDING` | No restore plan or command has run. |
@@ -370,10 +577,10 @@ At mint time:
 
 After mint, B-prime implementation, final local verification, commit, backend
 `origin/staging` publication, held deployment/runtime, fresh fixture
-prepare/replay, and held postflight passed exactly as recorded above. The
-fixture-bearing source remains authoritative under the full hold, its clean
+prepare/replay, held postflight, helper construction/local verification, and
+corrected helper publication/hosted proof passed exactly as recorded above.
+The fixture-bearing source remains authoritative under the full hold, its clean
 backup boundary remains verified, and the fresh target remains absent. No
-helper construction/local-verification or publication gate has passed, and no
 controlled unhold, session request, action request, publisher, restore,
-activation, or production action has occurred. Helper construction and local
+activation, or production action has occurred. Controlled unhold and session
 verification are the next `PENDING` gate.

@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING; FULL HOLD ACTIVE; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT + HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT; FULL HOLD ACTIVE; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (FIXTURE PREPARE/REPLAY + HELD POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING)
+## 2026-08-23 M7-26 Fresh Strict Release (HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -58,12 +58,60 @@ manifest checksum
 and verified plaintext `cf3ca07d...`. Exact reason, requester, retention,
 expiry, and backend-build metadata are bound in the new release record.
 
-The full hold remains active. Helper construction/local verification is next.
-Helper publication, controlled unhold, session verification,
-release-specific actions, publisher replays, privacy/cache smoke, restore,
-activation, final matrix, observation, and closeout are all `PENDING`. Pending
-is not release evidence. The current gate ledger is
+Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` passes
+its exact canonical local gate: helper/original/overlay SHA-256 values
+`43cd106d...` / `2d8069ca...` / `c6b553c5...`, syntax `5/5`, both verifiers,
+Vitest `14/14`, lint exit `0`, and byte-identical rebuild. API deploy
+`6a8bfef3ac0ff74a373404d8` is rejected pre-browser evidence because it omitted
+the helper headers. Corrected CLI deploy `6a8c006abe46c8fb6269c40c` is
+current/`READY`, processed six header and two redirect rules, deployed no
+functions, and passed exact bytes, headers, marker, absence, normal-app, and
+held-runtime checks. Fresh tab `1600151197` reached
+`READY_NO_SESSION_REQUEST` with empty query/mutation caches and exactly two
+pinned assets observed; no API, session, action, or write ran.
+
+The full hold remains active. Controlled unhold and session verification are
+next. Release-specific actions, publisher replays, privacy/cache smoke,
+restore, activation, final matrix, observation, and closeout are all `PENDING`.
+Pending is not release evidence. The current gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
+The following fresh items are the only current controlled-unhold/action
+checklist. They do not check forward any fenced `HL-20260822-1` item:
+
+- [ ] `RC-STG-006B23` Re-prove the exact held service/deploy/runtime/source and
+  helper boundary, then perform one `replace: false` merge containing only
+  `STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
+  `FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. Preserve exact B-prime, F,
+  environment/database/source/root/season and the disabled jobs, account-email/
+  capture, debug, backup, and provider-absence matrix. Do not call
+  `trigger_deploy`.
+- [ ] `RC-STG-006C23` The merge produces exactly one API-triggered deploy on
+  exact B-prime. It becomes sole newest `LIVE` only after `443` suites /
+  `3,503` hosted tests all pass, build/startup and zero-error checks pass, the
+  exact runtime matrix re-passes, versioned live/readiness return
+  `200`/`no-store`, and anonymous session returns `401 SESSION_REQUIRED` with
+  the required CORS/cache boundary.
+- [ ] `RC-STG-006D23` Helper commit
+  `e898e72272e5a052867832dcf9f128e5b8d5730e`, current deploy
+  `6a8c006abe46c8fb6269c40c`, expiry
+  `2026-08-25T07:00:00.000Z`, and the exact lowercase extensionless URL remain
+  valid; the preserved tab performs one exact session verification before any
+  write is armed.
+- [ ] `RC-STG-006E23` Use only
+  `HL-20260823-1-team1-to-b-propose`,
+  `HL-20260823-1-team1-to-b-accept`,
+  `HL-20260823-1-outbox-team1-to-manager-b`,
+  `HL-20260823-1-team1-to-a-propose`,
+  `HL-20260823-1-team1-to-a-accept`, and
+  `HL-20260823-1-outbox-team1-return-to-manager-a`, with confirmations
+  `PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B` and
+  `PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A`. Each publisher is followed
+  immediately by its identical zero-write replay.
+- [ ] `RC-STG-006F23` Any ambiguous update, partial drift, wrong/multiple/newer
+  deploy, failed gate/session, helper expiry, or `STRICT_STOP` causes no action,
+  no retry/manual deploy, exact three-key re-hold `true` / `closed` / `false`,
+  and the current release's fail-closed recovery path.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -1101,10 +1149,11 @@ results satisfies `HL-20260823-1`, and none grants resume or reuse authority.
 The fresh source and verified backup binding pass only as recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. B-prime
 implementation, local verification, and backend publication pass. Its held
-deploy/runtime, fixture prepare/replay, and held postflight proof also pass.
-Helper construction/publication, smoke, new
-release-specific plan/execute or abort, target materialization, activation, and
-post-cutover backup remain `PENDING`.
+deploy/runtime, fixture prepare/replay, held postflight proof, helper
+construction/local verification, and corrected helper publication/hosted proof
+also pass. Controlled unhold/session, smoke, new release-specific plan/execute
+or abort, target materialization, activation, and post-cutover backup remain
+`PENDING`.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:
@@ -1288,10 +1337,11 @@ contract. They cannot satisfy, seed, or authorize any `HL-20260823-1` action.
 
 ### Current `HL-20260823-1` Staging Boundary
 
-The fresh release-specific counterpart to RC-STG-006A now passes as recorded in
-the live ledger. Every counterpart to RC-STG-011A-J remains `PENDING`: helper
-construction/verification/publication, controlled unhold, sessions, fresh
-actions and publisher replays, privacy/cache smoke, re-hold, restore,
+The fresh release-specific counterpart to RC-STG-006A passes as recorded in the
+live ledger. The helper construction/local-verification and corrected
+publication/hosted-proof counterparts also pass. Every action-bearing
+counterpart to RC-STG-011A-J remains `PENDING`: controlled unhold, sessions,
+fresh actions and publisher replays, privacy/cache smoke, re-hold, restore,
 activation, and final review. The authoritative live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 

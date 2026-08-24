@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Construct and locally verify the fresh HL-20260823-1 helper against its emitted fixture deadline; B-prime, held deployment/runtime, fixture prepare/replay, and held postflight gates pass, and every later gate remains pending
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4dfe12d BOUND / HELD STARTING B 8e313902 BOUND / B-PRIME 234547e LOCAL + PUBLICATION PASS / dep-da5sh0e417fc738i254g NEWEST + LIVE + HELD RUNTIME PASS / CLEAN BACKUP BOUNDARY + VERIFIED BACKUP e735e6a4 PRESERVED / FIXTURE-BEARING SOURCE b4163695 VERIFIED / FRESH TARGET ABSENT / FULL HOLD ACTIVE / PREPARE + REPLAY + POSTFLIGHT PASS / HELPER, UNHOLD, ACTION, SMOKE, RESTORE, ACTIVATION, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Perform the controlled unhold and session verification for fresh HL-20260823-1; B-prime, held deployment/runtime, fixture prepare/replay, held postflight, helper local verification, and corrected helper publication/inert-load gates pass, and every action or later gate remains pending
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4dfe12d BOUND / HELPER COMMIT e898e72 LOCAL + PUBLICATION PASS / CORRECTED NETLIFY 6a8c006 CURRENT + READY / HELD STARTING B 8e313902 BOUND / B-PRIME 234547e LOCAL + PUBLICATION PASS / dep-da5sh0e417fc738i254g NEWEST + LIVE + HELD RUNTIME PASS / CLEAN BACKUP BOUNDARY + VERIFIED BACKUP e735e6a4 PRESERVED / FIXTURE-BEARING SOURCE b4163695 VERIFIED / FRESH TARGET ABSENT / FULL HOLD ACTIVE / PREPARE + REPLAY + POSTFLIGHT PASS / INERT TAB READY_NO_SESSION_REQUEST + EMPTY CACHES PASS / CONTROLLED UNHOLD, SESSION, ACTION, SMOKE, RESTORE, ACTIVATION, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1499,12 +1499,33 @@ read-only runtime gates passed. Fresh fixture prepare/replay then passed with
 source at `37744640` bytes / `b4163695...`, with target family absent, full hold
 intact, no authoritative open, zero scratch mutations, and cleanup complete.
 
-The ordered remaining gates are fresh helper construction/local verification,
-helper publication, controlled unhold, A-to-B-to-A smoke, full-hold
-restoration, release-specific restore/activation, final matrix, observation,
-and closeout.
-Every remaining gate is pending. Staging remains held, and neither blocked
-predecessor may be resumed or reused.
+Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` now
+passes its exact canonical local gate. API deploy
+`6a8bfef3ac0ff74a373404d8` was rejected before browser or unhold because its
+header rules were absent. Corrected current/`READY` CLI deploy
+`6a8c006abe46c8fb6269c40c` passes all public-file byte, exact helper-header,
+marker, absence, normal-app, and held-runtime checks with no functions. Fresh
+tab `1600151197` reached `READY_NO_SESSION_REQUEST`, both QueryClient caches
+were empty, exactly two pinned assets were observed, and no API, session,
+action, or write ran.
+
+The ordered remaining gates are controlled unhold and session verification,
+A-to-B-to-A actions/smoke, full-hold restoration, release-specific
+restore/activation, final matrix, observation, and closeout. Every remaining
+gate is pending. Staging remains held, and neither blocked predecessor may be
+resumed or reused.
+
+The next gate is now operationally bound only by the current 2026-08-23 run
+record: one merge-only `replace: false` Render update of
+`STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
+`FREE_AGENT_DRAFT_ROUTES_ENABLED=true`, with every other exact B-prime/F/
+source/runtime and disabled-provider value unchanged. The merge must create
+exactly one API-triggered B-prime deploy; do not call `trigger_deploy`.
+Complete hosted/runtime and exact-session proof precedes every fresh action key
+and publisher confirmation. Ambiguity, drift, a wrong or competing deploy, or
+`STRICT_STOP` blocks action and selects exact three-key re-hold plus the fresh
+release's fail-closed recovery path. This authority is specific to
+`HL-20260823-1`; the fenced `HL-20260822-1` contract remains historical.
 
 ## Historical Milestone Evidence
 

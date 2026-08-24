@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING; FULL HOLD ACTIVE`
+`ACTIVE - M7-26; HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT + HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT; FULL HOLD ACTIVE`
 
 ## Work Plan ID
 
@@ -21,7 +21,7 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Fixture Prepare/Replay + Held Postflight Pass; Helper Construction Pending
+## 2026-08-23 Fresh Strict Release - Helper Local/Publication Pass; Controlled Unhold + Session Next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
@@ -57,13 +57,78 @@ and verified plaintext `cf3ca07d...`. Reason/retention are
 `platform_operation` / `HL-20260822-1-post-abort-cutover`, `expiresAt` is
 `null`, and backend build is exact starting B.
 
-The full hold remains active. Helper construction/local verification is next.
-Helper publication, controlled unhold, session verification, all
-release-specific actions and publisher replays,
-A-to-B-to-A smoke, restoration, target activation, final matrix, and closeout
-are `PENDING`. No value from either blocked predecessor may be resumed or
-reused. Production remains untouched and unauthorized. The exact gate ledger is
+Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` passes
+its exact local gate. Canonical helper, sealed-original, and additive-overlay
+inventories are `9` / `190262` / `43cd106d...`, `33` / `1932120` /
+`2d8069ca...`, and `37` / `2038441` / `c6b553c5...`; syntax `5/5`, both
+verifiers, Vitest `14/14`, lint exit `0`, and a byte-identical isolated build
+pass. API deploy `6a8bfef3ac0ff74a373404d8` was rejected before browser,
+unhold, or action because its helper headers were absent. Corrected CLI deploy
+`6a8c006abe46c8fb6269c40c`, title
+`HL-20260823-1-strict-helper-e898e72`, is current/`READY`, processed the exact
+six header and two redirect rules, deployed no functions, and passed all `36`
+public-file byte checks on both canonical and immutable origins. Fresh tab
+`1600151197` reached `READY_NO_SESSION_REQUEST` with empty query/mutation
+caches, exactly the pinned CSS and JavaScript observed, and no API, session,
+action, or write.
+
+The full hold remains active. Controlled unhold and session verification are
+next. All release-specific actions and publisher replays, A-to-B-to-A smoke,
+restoration, target activation, final matrix, and closeout are `PENDING`. No
+value from either blocked predecessor may be resumed or reused. Production
+remains untouched and unauthorized. The exact gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
+### Exact current controlled-unhold handoff
+
+The current run record is the sole action authority; the closed
+`HL-20260822-1` block later in this plan is evidence only. On Render workspace
+`tea-d4prbj7diees738tmg90` and service `srv-d9eo2turnols73ekb830`, perform at
+most one merge-only update with `replace: false` and exactly:
+
+```text
+STAGING_MAINTENANCE_HOLD=false
+LEAGUE_WRITE_MODE=open
+FREE_AGENT_DRAFT_ROUTES_ENABLED=true
+```
+
+Preserve exact B-prime
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54`, F
+`4dfe12d1366314e3d9df722c50771324647743c9`, environment
+`test:release-qa`, database `m7-release-qa-fixture`, source
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
+persistent root `/opt/render/project/data/hundo-staging`, season `2026` /
+`20262027`, and the unchanged disabled scheduler, account-email/capture,
+debug, backup-schedule, and live-provider matrix with all nine provider inputs
+absent. The merge itself must create exactly one API-triggered deploy on exact
+B-prime; do not call `trigger_deploy`. Require its complete hosted test,
+build/startup, zero-error, runtime, versioned health, anonymous-session/CORS/
+cache, newest/`LIVE`, and no-competing-deploy proof before using the preserved
+helper. Then require one exact session verification in helper commit
+`e898e72272e5a052867832dcf9f128e5b8d5730e`, current deploy
+`6a8c006abe46c8fb6269c40c`, before its
+`2026-08-25T07:00:00.000Z` expiry and only at the lowercase extensionless URL.
+
+Only after those gates pass may the helper use this fresh fixed namespace:
+
+```text
+HL-20260823-1-team1-to-b-propose
+HL-20260823-1-team1-to-b-accept
+HL-20260823-1-outbox-team1-to-manager-b
+PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B
+HL-20260823-1-team1-to-a-propose
+HL-20260823-1-team1-to-a-accept
+HL-20260823-1-outbox-team1-return-to-manager-a
+PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
+```
+
+Each publisher call is followed immediately by its identical zero-write replay.
+An ambiguous update must not be retried or followed by a manual deploy. Any
+drift, wrong or multiple deploy, failed gate, wrong session, helper expiry, or
+`STRICT_STOP` means no action; reconcile state, restore only the exact full-hold
+three-key inverse `true` / `closed` / `false`, and enter the fresh release's
+fail-closed recovery path. No target, restore, activation, or production
+authority is implied.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
 
@@ -1197,10 +1262,12 @@ M7-26 is complete only when:
 M7-26 remains `PENDING`. Release `HL-20260822-1` is closed to further action as
 `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`. Fresh release
 `HL-20260823-1` is authorized and minted. Its clean backup boundary and current
-fixture-bearing held source are bound, its target is absent, and B-prime implementation, local
-verification, backend publication, held deployment/runtime, fixture
-prepare/replay, and held postflight gates pass. Helper construction is next;
-every later gate through final review remains pending.
+fixture-bearing held source are bound, its target is absent, and B-prime
+implementation, local verification, backend publication, held
+deployment/runtime, fixture prepare/replay, held postflight, helper
+construction/local verification, and corrected helper publication/hosted proof
+pass. Controlled unhold and session verification are next; every later gate
+through final review remains pending.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

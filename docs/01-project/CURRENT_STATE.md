@@ -23,8 +23,8 @@ Last reviewed: **2026-08-24**
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` after helper-retirement deploy `6a8b6b25126dabed39fa404d`. Render's newest deploy `dep-da5sh0e417fc738i254g` is `LIVE` on exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; prior deploy `dep-da5mmpu417fc73807ptg` is deactivated | The B-prime hosted/runtime gate, fresh fixture prepare/replay, and held postflight pass. The fixture-bearing source is authoritative under the unchanged full hold, the clean backup boundary remains verified, and the fresh target remains absent. Helper construction is next. |
-| Local/feature-branch candidate | Frontend branch `codex/m7-26-completion` is at application candidate `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`, child of starting B `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260823-1` is authorized and minted. B-prime implementation/local verification/publication, held deployment/runtime, fixture prepare/replay, and held postflight pass. Helper construction/publication, unhold, actions, smoke, restore, activation, and final matrix are pending under the unchanged full hold. No production change is claimed. |
+| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus the release-scoped helper from frontend commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in current corrected CLI deploy `6a8c006abe46c8fb6269c40c`. Render's newest deploy `dep-da5sh0e417fc738i254g` is `LIVE` on exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; prior deploy `dep-da5mmpu417fc73807ptg` is deactivated | The B-prime hosted/runtime, fresh fixture prepare/replay, held postflight, helper local-verification, helper publication, and inert-tab gates pass. The fixture-bearing source is authoritative under the unchanged full hold, the clean backup boundary remains verified, and the fresh target remains absent. Controlled unhold and session verification are next. |
+| Local/feature-branch candidate | Frontend branch and frontend `origin/staging` are at helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`, layered only on frozen application F `4dfe12d1366314e3d9df722c50771324647743c9`; backend branch and backend `origin/staging` are at executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`, child of starting B `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260823-1` is authorized and minted. B-prime implementation/local verification/publication, held deployment/runtime, fixture prepare/replay, held postflight, and helper construction/publication pass. Controlled unhold, sessions, actions, smoke, restore, activation, and final matrix are pending under the unchanged full hold. No production change is claimed. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -34,7 +34,7 @@ The fresh gate ledger is
 
 ---
 
-## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release — Fixture Prepare/Replay + Held Postflight Pass; Helper Construction Pending
+## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release — Helper Local/Publication Pass; Controlled Unhold + Session Next
 
 Grae requested and approved release `HL-20260823-1` at exact recorded time
 `2026-08-23T23:23:29.877Z`. The release binds frontend application build
@@ -70,14 +70,41 @@ verified plaintext SHA-256 `cf3ca07d...`. Remote manifest inspection verifies
 ID `HL-20260822-1-post-abort-cutover`, `expiresAt: null`, and backend build
 `8e313902...`.
 
-The full hold remains active. Helper construction/local verification is next.
-Helper publication, controlled unhold, session
-verification, release-specific actions, A-to-B-to-A smoke, restore, target
-activation, and final review are all `PENDING`. No prior helper, fixture,
-action, key, receipt, or restore namespace may be reused. Exact authority and
-the gate ledger are in
+Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` passes
+its exact local gate with canonical helper/original/overlay SHA-256 values
+`43cd106d...` / `2d8069ca...` / `c6b553c5...`, syntax `5/5`, both verifiers,
+Vitest `14/14`, lint exit `0`, and a byte-identical isolated rebuild. API deploy
+`6a8bfef3ac0ff74a373404d8` was rejected before browser or unhold because it
+processed no header rules. Corrected CLI deploy
+`6a8c006abe46c8fb6269c40c` is current/`READY`, processed six header and two
+redirect rules, deployed no functions, and passed exact bytes, headers, marker,
+absence, normal-app, and held-runtime checks. Fresh browser tab `1600151197`
+then reached `READY_NO_SESSION_REQUEST` with both QueryClient caches empty and
+exactly two static assets observed; no API, session, action, or write ran.
+
+The full hold remains active. Controlled unhold and session verification are
+next. Release-specific actions, A-to-B-to-A smoke, restore, target activation,
+and final review are all `PENDING`. No prior helper, fixture, action, key,
+receipt, or restore namespace may be reused. Exact authority and the gate
+ledger are in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 Production remains untouched and unauthorized.
+
+That current ledger exclusively binds the next operation: one merge-only
+`replace: false` update on workspace `tea-d4prbj7diees738tmg90` / service
+`srv-d9eo2turnols73ekb830` with exactly
+`STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
+`FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. It preserves exact B-prime, F,
+environment/database/source/root/season identity and every disabled or absent
+job, email, debug, backup, and provider setting. The merge itself must create
+exactly one API-triggered B-prime deploy; no separate `trigger_deploy` is
+allowed. That deploy's complete hosted/runtime gate and one exact helper
+session verification must pass before any fresh action. Any ambiguous update,
+drift, wrong or multiple deploy, failed gate, or `STRICT_STOP` blocks action
+and requires the exact three-key full-hold inverse plus fail-closed recovery.
+The helper remains bound to commit `e898e72272e5a052867832dcf9f128e5b8d5730e`,
+deploy `6a8c006abe46c8fb6269c40c`, expiry
+`2026-08-25T07:00:00.000Z`, and only its lowercase extensionless URL.
 
 ---
 
@@ -1179,9 +1206,11 @@ The helper is retired and its paths fail closed. Prior held deploy
 `dep-da5mmpu417fc73807ptg` is deactivated; newest `LIVE` deploy
 `dep-da5sh0e417fc738i254g` passes on exact B-prime. Fresh `HL-20260823-1`
 prepare/replay advanced that clean path to the current `37744640`-byte /
-`b4163695...` fixture-bearing source; held postflight and owned-scratch cleanup
-pass. Backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` remains the verified clean
-restore boundary under the full hold.
+`b4163695...` fixture-bearing source; held postflight, owned-scratch cleanup,
+helper local verification, corrected publication, and inert-tab proof pass.
+Current helper deploy `6a8c006abe46c8fb6269c40c` preserves exact F and the
+full hold. Backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` remains the verified
+clean restore boundary.
 
 Staging remains intentionally unavailable for ordinary sign-in under the full
 safety hold. Maintenance and league writes are closed; scheduled jobs, FAD
@@ -1210,8 +1239,10 @@ The following require attention before the 2026–27 launch:
    privacy counter; `HL-20260822-1` then stopped before smoke at the mandatory
    origin guard and is blocked and abort-recovered to a clean target. Fresh
    authorized release `HL-20260823-1` now passes B-prime, held deployment,
-   fixture prepare/replay, and held postflight, but must still complete the
-   helper-through-closeout sequence without weakening the acceptance contract.
+   fixture prepare/replay, held postflight, helper local verification, and
+   corrected helper publication/inert-load proof, but must still complete the
+   controlled-unhold-through-closeout sequence without weakening the acceptance
+   contract.
 2. T-005 session bootstrap omits promised memberships/selected-safe defaults,
    and T-004/T-006/T-007/T-009/T-011 session revocation or replacement does
    not proactively disconnect affected live Socket.IO clients. These are
@@ -1250,12 +1281,11 @@ The current priority order is:
 2. Preserve the minted `HL-20260823-1` contract and exact source/target/backup,
    F, starting-B, and authorization identities.
 3. Preserve the passed B-prime implementation, local-verification,
-   publication, held-deployment/runtime, fixture prepare/replay, and held
-   postflight evidence. Construct and locally verify the release-specific
-   helper against the emitted fixture deadline, then publish and verify it. Keep
-   unhold, sessions, and actions blocked until every preceding gate passes and
-   is recorded.
-4. Execute the authorized strict sequence fail-closed under the new namespace,
+   publication, held-deployment/runtime, fixture prepare/replay, held
+   postflight, helper local-verification, corrected publication, and inert-load
+   evidence. Keep the full hold and fixture/source/target boundaries exact.
+4. Perform controlled unhold and session verification next, then execute the
+   authorized strict action sequence fail-closed under the new namespace,
    including full-hold restoration and the newly bound restore path.
 5. Close M7-26 only after this separately authorized strict release and all final
    staging gates pass. Keep production migration, reset, deployment, and

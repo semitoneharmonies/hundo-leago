@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (FIXTURE PREPARE/REPLAY + HELD POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING)
+## 2026-08-23 M7-26 Fresh Strict Release (HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -323,14 +323,46 @@ manifest checksum
 and verified plaintext `cf3ca07d...`. Its exact reason/retention/requester/
 expiry/backend metadata is recorded in the fresh run ledger.
 
-The full hold remains active. Fresh helper construction/local verification is
-next. Helper publication, controlled unhold, session verification,
-release-specific actions, publisher
-replays, T-131/T-132/T-140 comparator, restore, activation, and final review are
-all `PENDING`. No write endpoint or action request has run; fixture preparation
-is the only authoritative database mutation so far. Exact current
-evidence is
+Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` passes
+its exact canonical local gate, including syntax `5/5`, both verifiers, Vitest
+`14/14`, lint, and byte-identical rebuild. API deploy
+`6a8bfef3ac0ff74a373404d8` was rejected before browser or unhold because its
+header rules were absent. Corrected current/`READY` CLI deploy
+`6a8c006abe46c8fb6269c40c` passes exact canonical/immutable bytes, all required
+helper headers, marker/runtime identity, absence checks, normal-app baseline,
+and held probes with no functions. Fresh tab `1600151197` reached
+`READY_NO_SESSION_REQUEST` with both QueryClient caches empty, exactly two
+pinned assets observed, and no API, session, action, or write.
+
+The full hold remains active. Controlled unhold and session verification are
+next. Release-specific actions, publisher replays, the T-131/T-132/T-140
+comparator, restore, activation, and final review are all `PENDING`. No write
+endpoint or action request has run; fixture preparation is the only
+authoritative database mutation so far. Exact current evidence is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
+That ledger now supplies the only current endpoint-opening authority. It binds
+one merge-only `replace: false` Render change to
+`STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
+`FREE_AGENT_DRAFT_ROUTES_ENABLED=true`, while preserving exact B-prime/F/
+environment/database/source/root/season identity and every other disabled or
+absent runtime setting. The merge itself must yield exactly one API-triggered
+B-prime deploy; `trigger_deploy` is not permitted. All hosted/runtime checks and
+one exact helper session proof must pass before the fixed proposal and
+acceptance endpoints or release-only
+`POST /api/v1/operations/release-qa/strict-manager-outbox` may be called. The
+fresh keys are `HL-20260823-1-team1-to-b-propose`,
+`HL-20260823-1-team1-to-b-accept`,
+`HL-20260823-1-outbox-team1-to-manager-b`,
+`HL-20260823-1-team1-to-a-propose`,
+`HL-20260823-1-team1-to-a-accept`, and
+`HL-20260823-1-outbox-team1-return-to-manager-a`; the publisher confirmations
+are `PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B` and
+`PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A`. Each publisher call requires
+its immediate identical zero-write replay. Ambiguity, drift, wrong/multiple
+deploy, failed session/runtime proof, expiry, or `STRICT_STOP` blocks every
+endpoint action and requires exact three-key re-hold plus fresh fail-closed
+recovery. The later fenced `HL-20260822-1` values remain non-authoritative.
 
 ---
 

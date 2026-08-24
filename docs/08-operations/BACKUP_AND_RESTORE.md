@@ -1244,7 +1244,7 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - fixture prepare/replay + held postflight pass; helper construction pending
+#### HL-20260823-1 fresh strict release binding - helper local/publication pass; controlled unhold + session next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
@@ -1290,13 +1290,45 @@ triggered the now-passed held deploy; the hold and `DATABASE_PATH` stayed
 unchanged. Fresh fixture prepare/replay then passed at `729` and `0` writes;
 held postflight verified source `37744640` / `b4163695...`, exact fixture and
 privacy evidence, target-family absence, zero scratch mutations, and cleanup.
-The clean `cf3ca07d...` backup remains the restore boundary. Helper construction
-is next; helper publication, controlled unhold, session, action, publisher,
-smoke, restore, target materialization, activation, and new backup action remain
-`PENDING`. Its restore plan and receipt must use
+Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` then
+passed its exact canonical local gate. API deploy
+`6a8bfef3ac0ff74a373404d8` was rejected before browser or unhold because its
+header rules were absent; corrected current/`READY` CLI deploy
+`6a8c006abe46c8fb6269c40c` passed exact bytes, headers, marker, absence,
+normal-app, held-probe, and inert-tab checks with no functions. Fresh tab
+`1600151197` reported `READY_NO_SESSION_REQUEST` with empty QueryClient caches
+and no API, session, action, or write. The clean `cf3ca07d...` backup remains
+the restore boundary under the unchanged full hold. Controlled unhold and
+session verification are next; action, publisher, smoke, restore, target
+materialization, activation, and new backup action remain `PENDING`. Its restore plan and receipt must use
 only the new release namespace; no prior plan, receipt, target, work area, or
 release-specific value may be reused. Exact current gates are recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
+The current controlled-unhold changes no database, backup, target, receipt, or
+work path. It authorizes one `replace: false` Render merge on workspace
+`tea-d4prbj7diees738tmg90` / service `srv-d9eo2turnols73ekb830` containing only
+`STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
+`FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. Exact B-prime, F,
+`test:release-qa` / `m7-release-qa-fixture`, the fixture-bearing source,
+persistent root, season, disabled scheduler/account-email/capture/debug/backup
+settings, and live-provider disablement plus all provider-variable absences
+remain unchanged. The environment merge itself must create exactly one
+API-triggered B-prime deploy; never add `trigger_deploy`. Its complete hosted,
+runtime, health, no-error, and exact-session gates must pass before a fresh
+action. Helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`, deploy
+`6a8c006abe46c8fb6269c40c`, expiry `2026-08-25T07:00:00.000Z`, the exact
+extensionless URL, and the fresh keys/confirmations frozen in the run record are
+mandatory.
+
+An ambiguous update is not retried or followed by a manual deploy. Any drift,
+wrong/multiple deploy, failed gate/session, expiry, or `STRICT_STOP` permits no
+action and immediately selects merge-only re-hold with exactly
+`STAGING_MAINTENANCE_HOLD=true`, `LEAGUE_WRITE_MODE=closed`, and
+`FREE_AGENT_DRAFT_ROUTES_ENABLED=false`, followed by the fresh release's
+classified fail-closed recovery path. Until a later smoke and restore gate
+passes, the current fixture-bearing source remains authoritative, the clean
+backup remains the rollback boundary, and the fresh target remains absent.
 
 #### HL-20260822-1 pre-action abort-recovery record
 

@@ -555,7 +555,8 @@ Release `HL-20260822-1` is now `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVER
 M7-26 remains the sole active plan. Grae requested and approved fresh release
 `HL-20260823-1` at `2026-08-23T23:23:29.877Z`; it is minted under the full hold
 with B-prime local verification, backend publication, held deployment/runtime,
-fresh fixture preparation/replay, and held postflight complete. Executable
+fresh fixture preparation/replay, held postflight, helper local verification,
+and corrected helper publication complete. Executable
 B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` is published on backend
 `origin/staging`; exact held deploy `dep-da5sh0e417fc738i254g` is newest and
 `LIVE` after all `3,503/3,503` hosted tests, build/startup, zero-error, held-
@@ -605,9 +606,33 @@ remains `37105664` bytes / `cf3ca07d...` and backup `e735e6a4...` remains its
 verified restore point. Fresh prepare/replay passed at `729` then `0` writes;
 held verifier v2 then proved the current fixture-bearing source at `37744640`
 bytes / `b4163695...`, target family absent, authoritative source unopened,
-scratch mutations `0`, and cleanup complete. Helper construction and local
-verification are next; helper publication, unhold, actions, smoke, restore,
-activation, and final review all remain pending.
+scratch mutations `0`, and cleanup complete. Frontend helper commit
+`e898e72272e5a052867832dcf9f128e5b8d5730e` passes its exact nine-file local
+gate: helper digest `43cd106d...`, sealed original `2d8069ca...`, additive
+overlay `c6b553c5...`, exact marker/runtime identities, syntax, both verifiers,
+Vitest `14/14`, lint, and byte-identical rebuild all pass. API deploy
+`6a8bfef3ac0ff74a373404d8` was rejected before browser or unhold because its
+header rules were absent. Corrected CLI deploy `6a8c006abe46c8fb6269c40c` is
+current/`READY`, processed all six helper header rules, deployed no functions,
+and passed exact canonical/immutable bytes and headers. Fresh tab `1600151197`
+then reached `READY_NO_SESSION_REQUEST` with empty query/mutation caches and
+exactly the pinned CSS and JavaScript observed; no API, session, action, or
+write ran. The full hold remains active. Controlled unhold and session
+verification are next; actions, smoke, restore, activation, and final review
+remain pending.
+
+The 2026-08-23 run record is now the sole current controlled-unhold authority.
+It permits one `replace: false` Render merge on the exact staging service with
+only `STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
+`FREE_AGENT_DRAFT_ROUTES_ENABLED=true`; every other release/runtime value stays
+bound to B-prime, F, the current fixture-bearing source, and the disabled-job/
+email/debug/backup/provider matrix. That merge itself must create exactly one
+API-triggered deploy on B-prime, so `trigger_deploy` is forbidden. Its complete
+hosted/runtime and exact-session proof must pass before any fresh
+`HL-20260823-1` action key or publisher confirmation is used. Ambiguous update
+state, drift, a wrong or competing deploy, or `STRICT_STOP` means no action,
+exact three-key re-hold, and release-specific fail-closed recovery. The fenced
+`HL-20260822-1` values remain history only.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -980,10 +1005,10 @@ retirement passed; held clean-target cutover deploy
 backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed under the unchanged full
 hold. Fresh `HL-20260823-1` is now authorized and minted. Its B-prime local
 verification, backend publication, held deployment/runtime, fresh fixture
-prepare/replay, and held postflight proof pass. Helper construction and local
-verification are next; helper publication, controlled unhold, actions, smoke,
-restore, activation, and M7-26 closeout
-remain pending. The
+prepare/replay, held postflight proof, helper construction/local verification,
+and corrected helper publication/hosted proof pass. Controlled unhold and
+session verification are next; actions, smoke, restore, activation, and M7-26
+closeout remain pending. The
 failed/recovered 2026-08-21 attempt remains historical; production remains
 untouched and unauthorized.
 
@@ -1029,7 +1054,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT PASS; HELPER CONSTRUCTION PENDING; FULL HOLD ACTIVE
+Status: ACTIVE - HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT + HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT; FULL HOLD ACTIVE
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -1053,9 +1078,10 @@ boundary. Fresh `HL-20260823-1` is now selected and minted; exact B-prime
 `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes local verification and
 backend publication. Held deploy `dep-da5sh0e417fc738i254g` is newest and
 `LIVE` on exact B-prime after its hosted/runtime gates passed. Fresh fixture
-prepare/replay and held postflight now pass; helper construction is next, and
-every gate from helper publication through final staging review and M7-26
-closeout remains pending.
+prepare/replay, held postflight, helper local verification, and corrected helper
+publication/hosted proof now pass. Controlled unhold and session verification
+are next, and every gate from action execution through final staging review and
+M7-26 closeout remains pending.
 Production remains untouched and unauthorized.
 
 A work plan is used for a contained current task such as:
@@ -1272,7 +1298,8 @@ verified authoritative held source. The exception grants no new release or
 restore authority by itself. Grae's separate `2026-08-23T23:23:29.877Z`
 approval authorizes only fresh `HL-20260823-1`; its new restore contract,
 B-prime local/publication/held-deployment gates, fresh fixture prepare/replay,
-and held postflight now pass, while helper construction/publication and all
+held postflight, helper construction/local verification, and corrected helper
+publication/hosted proof now pass, while controlled unhold/session and all
 later operational data gates remain pending. The earlier
 `HL-20260821-3` abort
 recovery remains immutable historical evidence.
