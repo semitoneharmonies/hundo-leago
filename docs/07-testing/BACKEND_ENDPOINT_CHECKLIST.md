@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -299,7 +299,7 @@ baseline. Executable B-prime
 `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its exact two-file focused,
 complete, check, dependency, and `origin/staging` publication gates. Held
 deploy `dep-da5sh0e417fc738i254g`, started
-`2026-08-24T04:28:49.802474Z`, is newest and `LIVE` on exact B-prime after all
+`2026-08-24T04:28:49.802474Z`, passed on exact B-prime after all
 `3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
 read-only gates passed.
 
@@ -334,21 +334,27 @@ and held probes with no functions. Fresh tab `1600151197` reached
 `READY_NO_SESSION_REQUEST` with both QueryClient caches empty, exactly two
 pinned assets observed, and no API, session, action, or write.
 
-The full hold remains active. Controlled unhold and session verification are
-next. Release-specific actions, publisher replays, the T-131/T-132/T-140
-comparator, restore, activation, and final review are all `PENDING`. No write
+The exact controlled-unhold merge produced sole newest/`LIVE` B-prime deploy
+`dep-da60sl0jo6nc73e0cfu0`; its hosted `3,503/3,503`, build/startup, zero-
+error, unheld runtime, health, unauthenticated CORS/cache, and mounted-route
+gates pass. Frozen v2 then emitted `HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at
+`2026-08-24T10:42:47.380Z`, re-proving source `37744640` / `b4163695...`, WAL
+`0`, SHM `32768`, target-family absence, privacy/pre-smoke state, and cleanup.
+Exact session verification is next. Release-specific actions, publisher
+replays, the T-131/T-132/T-140 comparator, re-hold, normal restore/replay,
+helper retirement, activation/verification/backup, and final review are all
+`PENDING`. No write
 endpoint or action request has run; fixture preparation is the only
 authoritative database mutation so far. Exact current evidence is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
-That ledger now supplies the only current endpoint-opening authority. It binds
-one merge-only `replace: false` Render change to
-`STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
-`FREE_AGENT_DRAFT_ROUTES_ENABLED=true`, while preserving exact B-prime/F/
-environment/database/source/root/season identity and every other disabled or
-absent runtime setting. The merge itself must yield exactly one API-triggered
-B-prime deploy; `trigger_deploy` is not permitted. All hosted/runtime checks and
-one exact helper session proof must pass before the fixed proposal and
+That ledger now supplies the only current endpoint-opening authority. The exact
+merge-only controlled unhold and all hosted/runtime/pre-smoke verification
+already pass. A fresh exact extensionless helper tab must first re-prove inert
+readiness, empty caches, no `STRICT_STOP`, and zero initialization traffic; one
+current release FAD `f47032fd...` mount and one exact helper session proof must
+still pass before the fixed
+proposal and
 acceptance endpoints or release-only
 `POST /api/v1/operations/release-qa/strict-manager-outbox` may be called. The
 fresh keys are `HL-20260823-1-team1-to-b-propose`,
@@ -362,7 +368,11 @@ are `PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B` and
 its immediate identical zero-write replay. Ambiguity, drift, wrong/multiple
 deploy, failed session/runtime proof, expiry, or `STRICT_STOP` blocks every
 endpoint action and requires exact three-key re-hold plus fresh fail-closed
-recovery. The later fenced `HL-20260822-1` values remain non-authoritative.
+recovery. Only after the exact action smoke succeeds does the same ledger
+authorize the exact re-hold, normal restore/replay, helper retirement,
+`DATABASE_PATH`-only activation, frozen normal post-cutover verifier, and fresh
+backup/verify. It stops before final staging reopening/review and production.
+The later fenced `HL-20260822-1` values remain non-authoritative.
 
 ---
 

@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT + HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT; FULL HOLD ACTIVE; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 B-PRIME + FIXTURE/POSTFLIGHT + HELPER + CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT; CONTROLLED UNHOLD ACTIVE; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -35,8 +35,8 @@ Grae's exact requested/approved/recorded time is
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is the held starting baseline.
 Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
 focused, complete, check, dependency, and backend `origin/staging` publication
-gates. Held deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact
-B-prime after `3,503/3,503` hosted tests and all build/startup, zero-error,
+gates. Held deploy `dep-da5sh0e417fc738i254g` passed on exact B-prime after
+`3,503/3,503` hosted tests and all build/startup, zero-error,
 held-health, and external read-only gates passed.
 
 The clean pre-fixture source boundary was exact path
@@ -70,34 +70,48 @@ held-runtime checks. Fresh tab `1600151197` reached
 `READY_NO_SESSION_REQUEST` with empty query/mutation caches and exactly two
 pinned assets observed; no API, session, action, or write ran.
 
-The full hold remains active. Controlled unhold and session verification are
-next. Release-specific actions, publisher replays, privacy/cache smoke,
-restore, activation, final matrix, observation, and closeout are all `PENDING`.
+The exact merge-only controlled unhold produced sole newest/`LIVE` B-prime
+deploy `dep-da60sl0jo6nc73e0cfu0`; hosted `3,503/3,503`, build/startup, zero-
+error, exact runtime, health, unauthenticated CORS/cache, and mounted-route gates
+pass. Frozen v2 pre-smoke verifier emitted
+`HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at `2026-08-24T10:42:47.380Z`, proving
+source `37744640` / `b4163695...`, WAL `0`, SHM `32768`, target-family absence,
+authoritative source unopened, and cleanup. Exact session verification is next.
+Release-specific actions, publisher replays, privacy/cache smoke, re-hold,
+normal restore/replay, helper retirement, activation/verification/backup, final
+matrix, observation, and closeout are all `PENDING`.
 Pending is not release evidence. The current gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 The following fresh items are the only current controlled-unhold/action
 checklist. They do not check forward any fenced `HL-20260822-1` item:
 
-- [ ] `RC-STG-006B23` Re-prove the exact held service/deploy/runtime/source and
-  helper boundary, then perform one `replace: false` merge containing only
+- [x] `RC-STG-006B23` Re-proved the exact held service/deploy/runtime/source and
+  helper boundary, then performed one `replace: false` merge containing only
   `STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
   `FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. Preserve exact B-prime, F,
   environment/database/source/root/season and the disabled jobs, account-email/
   capture, debug, backup, and provider-absence matrix. Do not call
   `trigger_deploy`.
-- [ ] `RC-STG-006C23` The merge produces exactly one API-triggered deploy on
-  exact B-prime. It becomes sole newest `LIVE` only after `443` suites /
+- [x] `RC-STG-006C23` The merge produced exactly one API-triggered deploy,
+  `dep-da60sl0jo6nc73e0cfu0`, on exact B-prime. It became sole newest `LIVE`
+  only after `443` suites /
   `3,503` hosted tests all pass, build/startup and zero-error checks pass, the
   exact runtime matrix re-passes, versioned live/readiness return
-  `200`/`no-store`, and anonymous session returns `401 SESSION_REQUIRED` with
-  the required CORS/cache boundary.
+  `200`/`no-store`, and anonymous session/leagues returned
+  `401 SESSION_REQUIRED` with the required CORS/cache boundary. Frozen v2
+  pre-smoke verification also passed with exact source/sidecar/target/privacy/
+  cleanup evidence.
 - [ ] `RC-STG-006D23` Helper commit
   `e898e72272e5a052867832dcf9f128e5b8d5730e`, current deploy
   `6a8c006abe46c8fb6269c40c`, expiry
   `2026-08-25T07:00:00.000Z`, and the exact lowercase extensionless URL remain
-  valid; the preserved tab performs one exact session verification before any
-  write is armed.
+  valid; open one fresh exact extensionless helper tab and re-prove
+  `READY_NO_SESSION_REQUEST`, empty query/mutation caches, no `STRICT_STOP`, and
+  zero initialization API/session/action/write traffic before login. Only that
+  tab plus current release FAD `f47032fd...`—never predecessor `0aee0824...`—
+  supplies the mount/session context before any write is armed. The
+  prior inert tab `1600151197` is no longer open and is historical proof only.
 - [ ] `RC-STG-006E23` Use only
   `HL-20260823-1-team1-to-b-propose`,
   `HL-20260823-1-team1-to-b-accept`,
@@ -112,6 +126,32 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   deploy, failed gate/session, helper expiry, or `STRICT_STOP` causes no action,
   no retry/manual deploy, exact three-key re-hold `true` / `closed` / `false`,
   and the current release's fail-closed recovery path.
+- [ ] `RC-STG-006G23` Only after the exact A-to-B-to-A smoke fully succeeds,
+  perform one merge-only `replace: false` re-hold containing only
+  `STAGING_MAINTENANCE_HOLD=true`, `LEAGUE_WRITE_MODE=closed`, and
+  `FREE_AGENT_DRAFT_ROUTES_ENABLED=false`; require the sole newest/`LIVE`
+  B-prime deploy and the complete hosted/full-hold runtime proof.
+- [ ] `RC-STG-006H23` Under that verified hold, run exactly one normal
+  `release:qa:strict-restore:plan`, one matching execute, and one byte-identical
+  replay using only the source, absent `HL-20260823-1` target, manifest, service,
+  release, and fresh emitted normal plan/confirmation bound in the run ledger.
+- [ ] `RC-STG-006I23` Retire only the current helper header block, verify the
+  sealed original, and publish it without rebuild to exact site
+  `95af8aa7-0b13-4954-af6d-855762acb147` with title
+  `HL-20260823-1-normal-retire-helper-baseline`; require all baseline and
+  retired-path proofs.
+- [ ] `RC-STG-006J23` Under full hold, merge only `DATABASE_PATH` to the verified
+  `HL-20260823-1` target; require exactly one newest/`LIVE` B-prime deploy and
+  complete hosted/held-runtime evidence.
+- [ ] `RC-STG-006K23` Run frozen `post-cutover-normal-verifier.sh`, `33869` bytes
+  / SHA-256 `c4dec9fe...`, verbatim in a fresh attached shell and require exact
+  pass code `HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED` plus the complete target,
+  receipt, source-smoke, zero-fixture, integrity, migration, rotation, scratch,
+  deploy, and external proof bound in the run ledger.
+- [ ] `RC-STG-006L23` Create and separately verify one fresh final backup with
+  exact requester literal `HL-20260823-1-post-normal-cutover`; bind every emitted
+  identity/hash/checksum/result, then stop before final staging reopening,
+  final UI review, closeout, or production.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -1337,12 +1377,12 @@ contract. They cannot satisfy, seed, or authorize any `HL-20260823-1` action.
 
 ### Current `HL-20260823-1` Staging Boundary
 
-The fresh release-specific counterpart to RC-STG-006A passes as recorded in the
-live ledger. The helper construction/local-verification and corrected
-publication/hosted-proof counterparts also pass. Every action-bearing
-counterpart to RC-STG-011A-J remains `PENDING`: controlled unhold, sessions,
-fresh actions and publisher replays, privacy/cache smoke, re-hold, restore,
-activation, and final review. The authoritative live ledger is
+The fresh release-specific counterparts through controlled-unhold runtime and
+unheld pre-smoke verification pass as recorded in the live ledger. Exact helper
+session verification and every action-bearing counterpart to RC-STG-011A-J
+remain `PENDING`, as do fresh actions and publisher replays, privacy/cache
+smoke, re-hold, normal restore/replay, helper retirement, activation/
+verification/backup, and final review. The authoritative live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 - [ ] `RC-STG-012` Manual QA recommendation is pass.

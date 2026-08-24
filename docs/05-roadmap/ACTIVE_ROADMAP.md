@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Perform the controlled unhold and session verification for fresh HL-20260823-1; B-prime, held deployment/runtime, fixture prepare/replay, held postflight, helper local verification, and corrected helper publication/inert-load gates pass, and every action or later gate remains pending
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4dfe12d BOUND / HELPER COMMIT e898e72 LOCAL + PUBLICATION PASS / CORRECTED NETLIFY 6a8c006 CURRENT + READY / HELD STARTING B 8e313902 BOUND / B-PRIME 234547e LOCAL + PUBLICATION PASS / dep-da5sh0e417fc738i254g NEWEST + LIVE + HELD RUNTIME PASS / CLEAN BACKUP BOUNDARY + VERIFIED BACKUP e735e6a4 PRESERVED / FIXTURE-BEARING SOURCE b4163695 VERIFIED / FRESH TARGET ABSENT / FULL HOLD ACTIVE / PREPARE + REPLAY + POSTFLIGHT PASS / INERT TAB READY_NO_SESSION_REQUEST + EMPTY CACHES PASS / CONTROLLED UNHOLD, SESSION, ACTION, SMOKE, RESTORE, ACTIVATION, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Perform the exact helper session verification for fresh HL-20260823-1; B-prime, held deployment/runtime, fixture prepare/replay, held postflight, helper local/publication/inert-load, controlled-unhold deployment/runtime, and unheld pre-smoke verifier gates pass, while every action and later gate remains pending
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4dfe12d BOUND / HELPER COMMIT e898e72 LOCAL + PUBLICATION PASS / CORRECTED NETLIFY 6a8c006 CURRENT + READY / HELD STARTING B 8e313902 BOUND / B-PRIME 234547e LOCAL + PUBLICATION PASS / HELD dep-da5sh0e417fc738i254g PASS + DEACTIVATED / CONTROLLED-UNHOLD dep-da60sl0jo6nc73e0cfu0 NEWEST + LIVE + RUNTIME PASS / CLEAN BACKUP BOUNDARY + VERIFIED BACKUP e735e6a4 PRESERVED / FIXTURE-BEARING SOURCE b4163695 + UNHELD V2 VERIFIED / FRESH TARGET ABSENT / CONTROLLED UNHOLD ACTIVE / PREPARE + REPLAY + POSTFLIGHT PASS / INERT TAB READY_NO_SESSION_REQUEST + EMPTY CACHES PASS / SESSION, ACTION, SMOKE, RE-HOLD, NORMAL RESTORE, HELPER RETIREMENT, ACTIVATION, VERIFICATION/BACKUP, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1492,7 +1492,7 @@ identities, `2026-08-23T22:56:20.203Z` creation time, metadata, encrypted hash
 
 Exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` now passes its two-file
 local and backend `origin/staging` publication gates. Held deploy
-`dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact B-prime after all
+`dep-da5sh0e417fc738i254g` passed on exact B-prime after all
 `3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
 read-only runtime gates passed. Fresh fixture prepare/replay then passed with
 `729` and `0` writes. Held postflight verified the current fixture-bearing
@@ -1507,25 +1507,34 @@ header rules were absent. Corrected current/`READY` CLI deploy
 marker, absence, normal-app, and held-runtime checks with no functions. Fresh
 tab `1600151197` reached `READY_NO_SESSION_REQUEST`, both QueryClient caches
 were empty, exactly two pinned assets were observed, and no API, session,
-action, or write ran.
+action, or write ran. The exact controlled-unhold merge then produced sole
+newest/`LIVE` B-prime deploy `dep-da60sl0jo6nc73e0cfu0`; its hosted
+`3,503/3,503`, build/startup, zero-error, exact runtime, health, unauthenticated
+CORS/cache, and mounted-route gates pass. Frozen unheld pre-smoke verifier v2
+then emitted `HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at
+`2026-08-24T10:42:47.380Z`, preserving source `37744640` / `b4163695...`, WAL
+`0`, SHM `32768`, target-family absence, and owned cleanup.
 
-The ordered remaining gates are controlled unhold and session verification,
-A-to-B-to-A actions/smoke, full-hold restoration, release-specific
-restore/activation, final matrix, observation, and closeout. Every remaining
-gate is pending. Staging remains held, and neither blocked predecessor may be
+The ordered remaining gates are exact session verification, A-to-B-to-A
+actions/smoke, full-hold restoration, release-specific normal restore/replay,
+helper retirement, target activation/verification and backup, then final
+matrix, observation, and closeout. Every remaining gate is pending. Staging is
+in the narrowly controlled unhold, and neither blocked predecessor may be
 resumed or reused.
 
 The next gate is now operationally bound only by the current 2026-08-23 run
-record: one merge-only `replace: false` Render update of
-`STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
-`FREE_AGENT_DRAFT_ROUTES_ENABLED=true`, with every other exact B-prime/F/
-source/runtime and disabled-provider value unchanged. The merge must create
-exactly one API-triggered B-prime deploy; do not call `trigger_deploy`.
-Complete hosted/runtime and exact-session proof precedes every fresh action key
-and publisher confirmation. Ambiguity, drift, a wrong or competing deploy, or
-`STRICT_STOP` blocks action and selects exact three-key re-hold plus the fresh
-release's fail-closed recovery path. This authority is specific to
-`HL-20260823-1`; the fenced `HL-20260822-1` contract remains historical.
+record: one fresh exact extensionless helper tab must first re-prove inert
+readiness, empty caches, no `STRICT_STOP`, and zero initialization traffic;
+mount current release FAD `f47032fd...` rather than predecessor `0aee0824...`;
+then one exact helper session proof precedes every fresh action key and
+publisher confirmation. Ambiguity, drift, a failed session, or `STRICT_STOP`
+blocks action and selects exact three-key re-hold plus the fresh release's
+fail-closed recovery path. Only after the full smoke succeeds does the same
+ledger authorize the exact re-hold deploy, normal plan/execute/replay, helper
+retirement, `DATABASE_PATH`-only target activation, frozen normal post-cutover
+verifier, and fresh backup/verify. It stops before final reopening/review and
+production. This authority is specific to `HL-20260823-1`; the fenced
+`HL-20260822-1` contract remains historical.
 
 ## Historical Milestone Evidence
 

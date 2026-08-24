@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 B-PRIME + HELD DEPLOY + FIXTURE/POSTFLIGHT + HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT; FULL HOLD ACTIVE`
+`ACTIVE - M7-26; HL-20260823-1 B-PRIME + FIXTURE/POSTFLIGHT + HELPER + CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT; CONTROLLED UNHOLD ACTIVE`
 
 ## Work Plan ID
 
@@ -21,18 +21,18 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Helper Local/Publication Pass; Controlled Unhold + Session Next
+## 2026-08-23 Fresh Strict Release - Controlled-Unhold Runtime Pass; Session + Actions Next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
 frontend application build
-`4dfe12d1366314e3d9df722c50771324647743c9` and current held backend
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` as the starting baseline.
+`4dfe12d1366314e3d9df722c50771324647743c9` and held starting backend baseline
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`.
 Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
 exact two-file focused, complete, check, dependency, and backend
 `origin/staging` publication gates. Held deploy
-`dep-da5sh0e417fc738i254g`, started `2026-08-24T04:28:49.802474Z`, is newest
-and `LIVE` on exact B-prime after `3,503/3,503` hosted tests and its build,
+`dep-da5sh0e417fc738i254g`, started `2026-08-24T04:28:49.802474Z`, passed on
+exact B-prime after `3,503/3,503` hosted tests and its build,
 startup, zero-error, held-health, and external read-only gates passed.
 
 The clean pre-fixture source boundary was
@@ -72,19 +72,26 @@ public-file byte checks on both canonical and immutable origins. Fresh tab
 caches, exactly the pinned CSS and JavaScript observed, and no API, session,
 action, or write.
 
-The full hold remains active. Controlled unhold and session verification are
-next. All release-specific actions and publisher replays, A-to-B-to-A smoke,
-restoration, target activation, final matrix, and closeout are `PENDING`. No
+The exact merge-only controlled unhold produced sole newest/`LIVE` B-prime
+deploy `dep-da60sl0jo6nc73e0cfu0`. Its hosted `3,503/3,503`, build/startup,
+zero-error, exact unheld runtime, health, unauthenticated CORS/cache, and mounted
+FAD route gates pass. Frozen v2 pre-smoke verification also passes with code
+`HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED`, source `37744640` / `b4163695...`, WAL
+`0`, SHM `32768`, target family absent, authoritative source unopened, and
+owned cleanup. Exact session verification is next. All release-specific actions
+and publisher replays, A-to-B-to-A smoke, re-hold, normal restore/replay, helper
+retirement, target activation/verification/backup, final matrix, and closeout
+are `PENDING`. No
 value from either blocked predecessor may be resumed or reused. Production
 remains untouched and unauthorized. The exact gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
-### Exact current controlled-unhold handoff
+### Exact current session and action handoff
 
 The current run record is the sole action authority; the closed
 `HL-20260822-1` block later in this plan is evidence only. On Render workspace
-`tea-d4prbj7diees738tmg90` and service `srv-d9eo2turnols73ekb830`, perform at
-most one merge-only update with `replace: false` and exactly:
+`tea-d4prbj7diees738tmg90` and service `srv-d9eo2turnols73ekb830`, the one
+merge-only `replace: false` update completed with exactly:
 
 ```text
 STAGING_MAINTENANCE_HOLD=false
@@ -92,7 +99,7 @@ LEAGUE_WRITE_MODE=open
 FREE_AGENT_DRAFT_ROUTES_ENABLED=true
 ```
 
-Preserve exact B-prime
+It preserved exact B-prime
 `234547e4d8453b7515fc081ea6ebe4c2d022dc54`, F
 `4dfe12d1366314e3d9df722c50771324647743c9`, environment
 `test:release-qa`, database `m7-release-qa-fixture`, source
@@ -100,11 +107,15 @@ Preserve exact B-prime
 persistent root `/opt/render/project/data/hundo-staging`, season `2026` /
 `20262027`, and the unchanged disabled scheduler, account-email/capture,
 debug, backup-schedule, and live-provider matrix with all nine provider inputs
-absent. The merge itself must create exactly one API-triggered deploy on exact
-B-prime; do not call `trigger_deploy`. Require its complete hosted test,
-build/startup, zero-error, runtime, versioned health, anonymous-session/CORS/
-cache, newest/`LIVE`, and no-competing-deploy proof before using the preserved
-helper. Then require one exact session verification in helper commit
+absent. The merge created exactly one API-triggered deploy on exact B-prime and
+no `trigger_deploy` call ran. Its complete hosted test, build/startup, zero-
+error, runtime, versioned health, anonymous-session/CORS/cache, newest/`LIVE`,
+no-competing-deploy, and v2 pre-smoke data gates pass. Prior inert tab
+`1600151197` is no longer open and is historical evidence only. The next
+operation is to open a fresh exact extensionless helper tab, re-prove
+`READY_NO_SESSION_REQUEST`, empty caches, no `STRICT_STOP`, and zero
+initialization traffic, mount current release FAD `f47032fd...` rather than
+predecessor `0aee0824...`, then perform one exact session verification in helper commit
 `e898e72272e5a052867832dcf9f128e5b8d5730e`, current deploy
 `6a8c006abe46c8fb6269c40c`, before its
 `2026-08-25T07:00:00.000Z` expiry and only at the lowercase extensionless URL.
@@ -128,7 +139,22 @@ drift, wrong or multiple deploy, failed gate, wrong session, helper expiry, or
 `STRICT_STOP` means no action; reconcile state, restore only the exact full-hold
 three-key inverse `true` / `closed` / `false`, and enter the fresh release's
 fail-closed recovery path. No target, restore, activation, or production
-authority is implied.
+authority is implied by the controlled-unhold pass.
+
+### Conditional successful-smoke handoff
+
+Only the current 2026-08-23 run record supplies operational authority after a
+fully successful exact smoke. It requires, in order, the exact merge-only
+three-key re-hold and sole B-prime deploy; one normal plan, one execute, and one
+byte-identical replay to the absent `HL-20260823-1` target; exact sealed-baseline
+helper retirement title `HL-20260823-1-normal-retire-helper-baseline` on site
+`95af8aa7-0b13-4954-af6d-855762acb147`; `DATABASE_PATH`-only target activation;
+frozen verifier `post-cutover-normal-verifier.sh` (`33869` bytes / SHA-256
+`c4dec9fe...`) with exact success code
+`HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED`; and a fresh backup plus separate
+verify requested by literal `HL-20260823-1-post-normal-cutover`. Every one of
+those gates is `PENDING`. This handoff stops before final staging reopening,
+final UI review, closeout, or production.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
 
@@ -217,9 +243,10 @@ were complete. The final release gate was not earned because unheld
 hosted acceptance failed its exact phase-one Manager B counter gate. The
 release is blocked. Strict abort materialization and exact zero-mutation replay
 have passed. The restored-target `DATABASE_PATH`-only cutover, held target
-verification, and post-cutover backup also pass. The full hold remains active;
-privacy acceptance, controlled reopening, final runtime flags/job restoration,
-observation, and documentation closeout remain pending.
+verification, and post-cutover backup also pass. At that historical boundary,
+the full hold remained active and privacy acceptance, controlled reopening,
+final runtime flags/job restoration, observation, and documentation closeout
+remained pending; the current 2026-08-23 ledger supersedes that runtime state.
 
 The historical frontend candidate was
 `0e8eee92e2e323dd7f25ec3112988feaf23f96f0`, following privacy/documentation
@@ -322,8 +349,9 @@ write replay. The workflow must not rewrite Gamma League history. The exact
 pre-fixture backup is `adcbbbab-e857-4cae-af71-dbce95553ce5`. The attempted
 live `A -> B -> A` smoke is incomplete and rejected after phase one; abort
 restoration of that exact backup, held target cutover/re-verification, and
-post-cutover backup now pass. The strict privacy gate remains failed and the
-full hold remains active.
+post-cutover backup now pass. At that historical boundary, the strict privacy
+gate remained failed and the full hold remained active; the current 2026-08-23
+ledger supersedes that runtime state.
 
 ## Authority and Boundary
 
@@ -1265,9 +1293,10 @@ M7-26 remains `PENDING`. Release `HL-20260822-1` is closed to further action as
 fixture-bearing held source are bound, its target is absent, and B-prime
 implementation, local verification, backend publication, held
 deployment/runtime, fixture prepare/replay, held postflight, helper
-construction/local verification, and corrected helper publication/hosted proof
-pass. Controlled unhold and session verification are next; every later gate
-through final review remains pending.
+construction/local verification, corrected helper publication/hosted proof,
+controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification pass.
+Exact session verification is next; every later gate through final review
+remains pending.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

@@ -107,7 +107,7 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Release - 2026-08-23 (HELPER LOCAL/PUBLICATION PASS; CONTROLLED UNHOLD + SESSION NEXT)
+### M7-26 Fresh Strict Release - 2026-08-23 (CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT)
 
 Grae requested and approved `HL-20260823-1` at exact
 requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
@@ -116,8 +116,8 @@ requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
 baseline. Exact executable B-prime
 `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its focused `57/57`, complete
 `443`-suite / `3,503`-test, check, dependency, and backend `origin/staging`
-publication gates. Held deploy `dep-da5sh0e417fc738i254g` is newest and `LIVE`
-on exact B-prime after `3,503/3,503` hosted tests and its
+publication gates. Held deploy `dep-da5sh0e417fc738i254g` passed on exact
+B-prime after `3,503/3,503` hosted tests and its
 build/startup, zero-error, held-health, and external read-only gates passed.
 
 The clean pre-fixture source boundary was
@@ -150,24 +150,31 @@ headers, marker/runtime, absence, normal-app, and held-runtime checks. Fresh tab
 empty, the browser observed only the pinned CSS and JavaScript, and no API,
 session, action, or write ran.
 
-The full hold remains active. Controlled unhold and session verification are
-next. All actions and publisher replays, the exact two-cookie
+The exact controlled-unhold merge produced sole newest/`LIVE` B-prime deploy
+`dep-da60sl0jo6nc73e0cfu0`; hosted `3,503/3,503`, build/startup, zero-error,
+exact unheld runtime, health, unauthenticated CORS/cache, and mounted-route gates
+pass. Frozen v2 pre-smoke verification also passes with exact code
+`HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED`, source `37744640` / `b4163695...`, WAL
+`0`, SHM `32768`, target-family absence, authoritative source unopened, and
+temporary cleanup. Exact session verification is next. All actions and
+publisher replays, the exact two-cookie
 `1/0/0 -> 2/1/1 -> 3/2/2` comparator, restore, activation, final
 desktop/mobile matrix, and closeout are `PENDING`. No test or action result from
 a predecessor may satisfy this release. Its live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
-For this release only, controlled-unhold testing begins with one merge-only
+For this release only, controlled-unhold testing used one merge-only
 `replace: false` delta: `STAGING_MAINTENANCE_HOLD=false`,
 `LEAGUE_WRITE_MODE=open`, and `FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. Every
 other B-prime/F/environment/database/source/root/season binding and every
-disabled job, email/capture, debug, backup, or provider value remains exact.
-The merge itself must create exactly one API-triggered B-prime deploy; no
-`trigger_deploy` call is allowed. Before action testing, require its full
-`443`-suite / `3,503`-test hosted pass, build/startup and zero-error evidence,
-exact runtime and versioned health checks, anonymous-session/CORS/cache proof,
-no newer/competing deploy, and then one correct-role session proof in the exact
-unexpired helper commit/deploy at the lowercase extensionless URL.
+disabled job, email/capture, debug, backup, or provider value remained exact.
+The resulting sole API-triggered B-prime deploy and the complete hosted/runtime/
+pre-smoke verification now pass; no `trigger_deploy` call ran. Before action
+testing, open a fresh exact lowercase extensionless helper tab and re-prove
+`READY_NO_SESSION_REQUEST`, empty query/mutation caches, no `STRICT_STOP`, and
+zero initialization API/session/action/write traffic; then require one correct-
+role session proof in the exact unexpired helper commit/deploy and mount current
+release FAD `f47032fd...`, never predecessor `0aee0824...`, before action.
 
 The only action-test keys, in order, are:
 
@@ -186,8 +193,14 @@ Each publisher test includes one approved request and its immediate identical
 zero-write replay. Ambiguous environment state is inspected, never retried;
 drift, wrong/multiple deploy, failed proof, expiry, or `STRICT_STOP` prohibits
 every action and requires exact three-key re-hold plus fresh fail-closed
-recovery. The similarly named `HL-20260822-1` strategy below is historical and
-cannot satisfy this sequence.
+recovery. Only after the exact smoke succeeds, the run ledger authorizes in
+order the exact re-hold deploy, normal plan/execute/identical replay, helper
+retirement, `DATABASE_PATH`-only target activation, frozen normal post-cutover
+verifier with pass code `HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED`, and fresh
+backup/separate verify using requester literal
+`HL-20260823-1-post-normal-cutover`. It stops before final reopening/review or
+production. The similarly named `HL-20260822-1` strategy below is historical
+and cannot satisfy this sequence.
 
 ### M7-26 Fresh Strict Rerun - 2026-08-22 (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 

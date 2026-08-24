@@ -1244,15 +1244,15 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - helper local/publication pass; controlled unhold + session next
+#### HL-20260823-1 fresh strict release binding - controlled-unhold runtime pass; session + actions next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
-`4dfe12d1366314e3d9df722c50771324647743c9` and current held B
-`8e313902feefcd683b0f5edd746a9dd2a9029a18` as the starting baseline.
+`4dfe12d1366314e3d9df722c50771324647743c9` and held starting B baseline
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`.
 Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
 exact local and backend `origin/staging` publication gates. Held deploy
-`dep-da5sh0e417fc738i254g` is newest and `LIVE` on exact B-prime after its full
+`dep-da5sh0e417fc738i254g` passed on exact B-prime after its full
 hosted/runtime gate passed.
 
 ```text
@@ -1283,7 +1283,7 @@ SQLite integrity:     ok
 Foreign-key violations: 0
 ```
 
-The full hold remains active. B-prime implementation/local verification and
+The release began under full hold. B-prime implementation/local verification and
 Git publication passed without a data, target, helper, or production action.
 The only later environment change was the exact `APP_BUILD_ID`-only merge that
 triggered the now-passed held deploy; the hold and `DATABASE_PATH` stayed
@@ -1298,25 +1298,36 @@ header rules were absent; corrected current/`READY` CLI deploy
 normal-app, held-probe, and inert-tab checks with no functions. Fresh tab
 `1600151197` reported `READY_NO_SESSION_REQUEST` with empty QueryClient caches
 and no API, session, action, or write. The clean `cf3ca07d...` backup remains
-the restore boundary under the unchanged full hold. Controlled unhold and
-session verification are next; action, publisher, smoke, restore, target
-materialization, activation, and new backup action remain `PENDING`. Its restore plan and receipt must use
+the restore boundary. Exact merge-only controlled-unhold deploy
+`dep-da60sl0jo6nc73e0cfu0` is now sole newest/`LIVE` on B-prime after hosted
+`3,503/3,503`, build/startup, zero-error, exact unheld runtime, health,
+unauthenticated CORS/cache, and mounted-route gates passed. Frozen v2 unheld
+pre-smoke verification emitted `HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at
+`2026-08-24T10:42:47.380Z`, re-proving source `37744640` / `b4163695...`, WAL
+`0`, SHM `32768`, target-family absence, authoritative source unopened, and
+cleanup. Exact session verification is next; action, publisher, smoke, re-hold,
+normal restore/replay, helper retirement, target materialization, activation/
+verification, and new backup action remain `PENDING`. Its restore plan and receipt must use
 only the new release namespace; no prior plan, receipt, target, work area, or
 release-specific value may be reused. Exact current gates are recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
-The current controlled-unhold changes no database, backup, target, receipt, or
-work path. It authorizes one `replace: false` Render merge on workspace
+The completed controlled unhold changed no database, backup, target, receipt,
+or work path. It used one `replace: false` Render merge on workspace
 `tea-d4prbj7diees738tmg90` / service `srv-d9eo2turnols73ekb830` containing only
 `STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
 `FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. Exact B-prime, F,
 `test:release-qa` / `m7-release-qa-fixture`, the fixture-bearing source,
 persistent root, season, disabled scheduler/account-email/capture/debug/backup
 settings, and live-provider disablement plus all provider-variable absences
-remain unchanged. The environment merge itself must create exactly one
-API-triggered B-prime deploy; never add `trigger_deploy`. Its complete hosted,
-runtime, health, no-error, and exact-session gates must pass before a fresh
-action. Helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`, deploy
+remained unchanged. The environment merge created exactly one API-triggered
+B-prime deploy and no `trigger_deploy` call ran. Its complete hosted, runtime,
+health, no-error, and v2 pre-smoke gates pass. Prior inert tab `1600151197` is
+no longer open; a fresh exact extensionless helper tab must re-prove inert
+readiness/empty caches/no `STRICT_STOP` before the exact session gate, which
+must still pass alongside current release FAD `f47032fd...`—not predecessor
+`0aee0824...`—before a fresh action. Helper commit
+`e898e72272e5a052867832dcf9f128e5b8d5730e`, deploy
 `6a8c006abe46c8fb6269c40c`, expiry `2026-08-25T07:00:00.000Z`, the exact
 extensionless URL, and the fresh keys/confirmations frozen in the run record are
 mandatory.
@@ -1329,6 +1340,29 @@ action and immediately selects merge-only re-hold with exactly
 classified fail-closed recovery path. Until a later smoke and restore gate
 passes, the current fixture-bearing source remains authoritative, the clean
 backup remains the rollback boundary, and the fresh target remains absent.
+
+After—and only after—the exact smoke succeeds completely, the 2026-08-23 run
+record is the sole operational authority for the normal recovery sequence. It
+requires the exact merge-only three-key re-hold and sole B-prime deploy; one
+normal `release:qa:strict-restore:plan`, one matching execute, and one byte-
+identical replay using the bound source, absent target, backup manifest, and
+fresh emitted normal plan/confirmation; sealed-baseline helper retirement to
+site `95af8aa7-0b13-4954-af6d-855762acb147` with exact title
+`HL-20260823-1-normal-retire-helper-baseline`; `DATABASE_PATH`-only activation
+to the verified fresh target; and frozen verifier
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\post-cutover-normal-verifier.sh`,
+`33869` bytes / SHA-256
+`c4dec9fef24bfa30e76a4b2f9f63cc5dd35e4c99a3e9841da4a629bdb764352b`,
+with exact pass code `HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED`.
+
+Only after that verifier and separate external held-runtime proof pass may one
+fresh incident-preservation backup and separate verification run with exact
+requester literal `HL-20260823-1-post-normal-cutover`. The exact commands,
+restore confirmation form, mutation/replay expectations, baseline verifier and
+Netlify command, target/receipt/work evidence, final backup commands, and stop
+conditions are frozen in the run record. Every step remains `PENDING`; this
+summary grants no alternate command path and stops before final staging
+reopening, final UI review, closeout, or production.
 
 #### HL-20260822-1 pre-action abort-recovery record
 
@@ -1540,13 +1574,15 @@ Foreign keys:      0
 A fresh-shell anonymous-session request returned
 `503 SERVICE_MAINTENANCE` with `Cache-Control: no-store`. Abort restoration,
 target cutover, post-cutover verification, and post-cutover backup are `PASS`.
-The full hold remains active and the release remains blocked; this recovery
-evidence does not authorize reopening or privacy-release closeout.
+At that historical `HL-20260821-3` boundary, the full hold remained active and
+the release remained blocked; this recovery evidence does not authorize
+reopening or privacy-release closeout.
 
 These commands never update Render configuration, redeploy the service, or
 make the target authoritative. Activation and rollback are separate operator
-actions: change only `DATABASE_PATH` between the two pinned paths while the
-full hold remains active, redeploy the exact compatible backend, and record
+actions: the historical procedure required changing only `DATABASE_PATH`
+between the two pinned paths while the full hold remained active, redeploying
+the exact compatible backend, and recording
 the Render configuration/deploy evidence. The old source remains preserved.
 Post-activation verification, incident-preservation backup, controlled job and
 route reopening, and observation remain required by the M7-26 work plan and
