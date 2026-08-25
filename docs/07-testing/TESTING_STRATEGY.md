@@ -107,7 +107,7 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Release - 2026-08-23 (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY NEXT)
+### M7-26 Fresh Strict Release - 2026-08-23 (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT)
 
 Grae requested and approved `HL-20260823-1` at exact
 requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
@@ -185,9 +185,10 @@ PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
 
 Only the first three keys and first publisher confirmation were used. The
 return keys/confirmation are forbidden. Exact three-key re-hold produced sole
-newest/`LIVE` deploy `dep-da6cu8h42hec738f2al0` after hosted `3,503/3,503`,
+newest/`LIVE` deploy `dep-da6cu8h42hec738f2al0` at that boundary after hosted
+`3,503/3,503`,
 build/startup, zero-error, health/readiness, and maintenance-blocked ordinary-
-route gates passed.
+route gates passed; it later deactivated at the verified held-B2 handoff.
 
 The old `18060`-byte / `9c323005...` main-only abort preflight ran and safely
 failed its bundled family fence because the authoritative source WAL/SHM were
@@ -215,33 +216,43 @@ and canonical `57541`-byte raw-diff SHA-256
 `eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
 Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
 affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the worktree
-is clean. Deployment, hosted suite, and B2 runtime verification remain pending.
+is clean.
 
-Testing proceeds only in this order: after read-only held-boundary reproof, one
-`update_environment_variables` call with `replace: false` containing only
-`APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`. Normal auto-deploy
-stays off; no `render.yaml` sync, other environment key, or `trigger_deploy`
-call is allowed. Require exactly one API deploy plus complete hosted/build/bare-
-maintenance-runtime proof with unchanged main/WAL/SHM and zero holders; then the
-new derivative `post-b2-abort-v2-source-verifier.sh` /
-`post-b2-abort-v2-source-verifier-result.json`, frozen and cold-audited before
-one run. It must copy main+WAL only, prove scratch SHM absent pre-
-open and privately created during the private SQLite open, prove source-family
-and scratch-main/WAL byte/hash stability, bind absent source/target rollback
-journals, and return pending exact code
-`HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`; a pins-only retarget of c036 is
-invalid. Only after that verifier passes may one abort-v2 plan, matching
-execute, and byte-identical replay run.
-Require contract/receipt `2`, `main-wal`, exact WAL identity/hash, abort-v2 plan
-namespace, exact `to_b_accepted` / `published` / `none`, plan `0/0`, execute
-`0/2`, replay `0/0`, source persistent-family preservation, canonical receipt,
-clean target, and the unchanged `.strict-restore-work-v1` matrices. Any
-nonzero, incomplete, disconnected, ambiguous, or mismatched boundary stops;
-plan ambiguity forbids execute and execute ambiguity forbids retry/replay. Then
-stop. Phase two/retry, normal restore, helper/Netlify change, retirement,
-activation, later verifier/backup, final review, and production require later
-authority. The similarly named `HL-20260822-1` strategy below is historical and
-cannot satisfy this sequence.
+The approved one-key environment merge produced exactly one API-triggered
+deploy, `dep-da6ghj67bikc738hbbv0`, sole newest/`LIVE` on exact B2. Hosted `443`
+suites / `3,519` tests all passed with zero fail/cancel/skip/todo; build/startup
+on instance `thxsc`, zero-error logs, live/readiness `200`/`no-store`, and
+session/leagues/current-FAD `503 SERVICE_MAINTENANCE`/`no-store` passed. Netlify
+remained unchanged current/`READY` `6a8c006abe46c8fb6269c40c`.
+
+Post-live shell proof `HL23_B2_POST_LIVE_HELD_FAMILY_VERIFIED` passed at
+`2026-08-25T04:11:28.902Z`, binding `20` runtime keys, nine absent providers,
+three stable source snapshots, two seven-process zero-holder scans, downstream
+absence, and current container device `66313`. Historical B-prime device `66332`
+is namespace-local only; all other family metadata/hashes are unchanged.
+
+Fresh derivative `post-b2-abort-v2-source-verifier.sh` (`35494` bytes / SHA-256
+`6d5cfe50ecee26199c3f0a2c922c99a84d3f97e2fe98b6256b36583e6e98b70c`)
+passed shell/JavaScript/static checks and independent cold audit. Its one-shot
+`6032`-byte result SHA-256
+`80c7cadec0664625b0c4fc6eb86fd49f5e58842534fdebbc1aead63f5fe65976`
+returned `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. It proves six stable
+source-family boundaries, two eight-process/`85`-descriptor zero-holder scans,
+main+WAL-only scratch with private SHM creation, unchanged source and scratch
+main/WAL, exact integrity/schema/semantic state, zero changes, both rollback-
+journal and downstream absence, and cleanup.
+
+Testing now authorizes exactly one abort-v2 plan only. Require contract `2`,
+`main-wal`, exact WAL identity/hash, abort-v2 plan namespace, exact
+`to_b_accepted` / `published` / `none`, target absent, both mutation counts
+`0`, and the exact `.strict-restore-work-v1` six-field temporary-work object.
+Any nonzero, incomplete, disconnected, ambiguous, or mismatched result stops.
+Execute and replay remain unauthorized until exact accepted-plan evidence is
+reconciled into a later amendment; their future acceptance targets remain
+`0/2` and `0/0`. Phase two/retry, normal restore, helper/Netlify change,
+retirement, activation, later verifier/backup, final review, and production
+require later authority. The similarly named `HL-20260822-1` strategy below is
+historical and cannot satisfy this sequence.
 
 ### M7-26 Fresh Strict Rerun - 2026-08-22 (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 

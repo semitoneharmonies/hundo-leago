@@ -23,8 +23,8 @@ Last reviewed: **2026-08-24**
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify still serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in current deploy `6a8c006abe46c8fb6269c40c`. Render's newest deploy `dep-da6cu8h42hec738f2al0` is `LIVE` on exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; controlled-unhold deploy `dep-da60sl0jo6nc73e0cfu0` is deactivated | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold is restored and verified. The main-only abort preflight safely failed on source WAL/SHM; a WAL-aware B-prime diagnostic passed but grants no B-prime abort-v1 authority. Exact abort-v2 B2 is minted/published but not deployed; the held B2 deploy, verifier, plan, execute, and replay gates remain pending. |
-| Local/feature-branch candidate | Stable frontend release artifacts remain application F `4dfe12d1366314e3d9df722c50771324647743c9` and helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`. Frontend HEAD and `origin/staging` may contain later non-deployed documentation-only evidence commits above that helper commit; they do not change the sealed F/helper bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | Exact B2 changes only the implementation and foundation-test files with SHA-256 `d49c870b...` / `3d9714ca...`, Git blobs `4a198c7...` / `53ce37c...`, numstat `369/18` / `830/2`, and `57541`-byte raw-diff SHA-256 `eb963d6b...`. Fresh release `HL-20260823-1` remains blocked. The sole next mutation is one `replace: false`, `APP_BUILD_ID=B2`-only held deployment merge; no `render.yaml`, second trigger, or other environment key is authorized. Fresh B2-pinned verification and evidence-bound v2 plan/execute/replay remain pending. Production is untouched and unauthorized. |
+| Isolated staging candidate | Netlify still serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in unchanged current deploy `6a8c006abe46c8fb6269c40c`. Render's sole newest/`LIVE` deploy is API-triggered `dep-da6ghj67bikc738hbbv0` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; held B-prime deploy `dep-da6cu8h42hec738f2al0` deactivated at safe handoff | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold remains exact. B2 hosted `3,519/3,519`, startup, zero-error, bare-maintenance, post-live family/zero-holder, and fresh B2-pinned verifier gates pass. The sole next authorized mutation is one exact abort-v2 plan; execute/replay and all downstream recovery remain unauthorized pending accepted-plan evidence and a later amendment. |
+| Local/feature-branch candidate | Stable frontend release artifacts remain application F `4dfe12d1366314e3d9df722c50771324647743c9` and helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`. Frontend HEAD and `origin/staging` may contain later non-deployed documentation-only evidence commits above that helper commit; they do not change the sealed F/helper bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | Exact B2 changes only the implementation and foundation-test files with SHA-256 `d49c870b...` / `3d9714ca...`, Git blobs `4a198c7...` / `53ce37c...`, numstat `369/18` / `830/2`, and `57541`-byte raw-diff SHA-256 `eb963d6b...`. Fresh release `HL-20260823-1` remains blocked. B2 deployment/runtime and fresh verifier gates pass; exactly one plan-only invocation is next. No execute, replay, normal restore, helper/Netlify change, activation, backup, or production action is authorized by this snapshot. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -34,7 +34,7 @@ The fresh gate ledger is
 
 ---
 
-## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Re-Hold Pass; Abort-v2 B2 Held Deploy Next
+## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Held B2 and Fresh Verifier Pass; Abort-v2 Plan Only Next
 
 Grae requested and approved release `HL-20260823-1` at exact recorded time
 `2026-08-23T23:23:29.877Z`. The release binds frontend application build
@@ -106,10 +106,11 @@ absence, privacy/pre-smoke data, authoritative source unopened, and owned
 temporary cleanup without action or write.
 
 That current ledger records the partial phase-one evidence and terminal
-operator-sequencing stop. Exact re-hold deploy `dep-da6cu8h42hec738f2al0` is
-sole newest/`LIVE` on B-prime after hosted `3,503/3,503`, build/startup,
-zero-error, health/readiness, and session/leagues/current-FAD maintenance proofs
-passed. Phase two, every action/publisher retry, and normal restore are
+operator-sequencing stop. Exact re-hold deploy `dep-da6cu8h42hec738f2al0`
+became sole newest/`LIVE` on B-prime at that boundary after hosted
+`3,503/3,503`, build/startup, zero-error, health/readiness, and session/leagues/
+current-FAD maintenance proofs passed; it later deactivated at the verified held-
+B2 handoff. Phase two, every action/publisher retry, and normal restore are
 forbidden.
 The helper remains bound to commit `e898e72272e5a052867832dcf9f128e5b8d5730e`,
 deploy `6a8c006abe46c8fb6269c40c`, expiry
@@ -121,7 +122,8 @@ WAL-aware diagnostic `c036a2b8...` and result `deda5da6...` then returned
 `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED` on B-prime. They bind main
 `37744640` / `b4163695...` / inode `131156`, WAL `568592` / `0dde02d1...` /
 inode `131151`, and SHM `32768` / `e03d9ff8...` / inode `131152`, all device
-`66332`, UID `1000`, mode `0600`, link count `1`, plus six stable snapshots,
+`66332` in the historical B-prime container mount namespace, UID `1000`, mode
+`0600`, link count `1`, plus six stable snapshots,
 two complete zero-holder process scans, exact semantic state, absent downstream
 artifacts, and cleanup. That diagnostic copied main, WAL, and SHM byte-for-byte
 into private scratch; SQLite opened only that copy, whose main/WAL stayed
@@ -141,32 +143,40 @@ Git blobs `4a198c71554b7e7c5fc8ee481cd79b51c1ef799f` and
 `eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
 Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
 affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the worktree
-is clean. B2 remains undeployed.
+is clean. The single approved `APP_BUILD_ID`-only merge produced sole newest/
+`LIVE` API deploy `dep-da6ghj67bikc738hbbv0` on exact B2. Hosted `443` suites /
+`3,519` tests all passed with zero fail/cancel/skip/todo; build/startup,
+post-start zero-error, health/readiness `200`/`no-store`, and maintenance-blocked
+session/leagues/current-FAD `503 SERVICE_MAINTENANCE`/`no-store` passed. Netlify
+remained unchanged on `6a8c006abe46c8fb6269c40c`.
 
-The sole next authorized mutation is one `update_environment_variables` call
-with `replace: false` and only
-`APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`, after
-read-only reproof of the current held Render deploy and unchanged current/
-`READY` Netlify deploy. Normal auto-deploy stays off; never sync `render.yaml`,
-include another key, or call `trigger_deploy`. Require exactly one API deploy
-and complete hosted/build/startup/zero-error, exact-B2, bare-maintenance,
-unchanged-main/WAL/SHM, and zero-holder evidence. Next comes a new derivative
-`post-b2-abort-v2-source-verifier.sh` /
-`post-b2-abort-v2-source-verifier-result.json`, frozen and cold-audited before
-use, requiring pending exact code
-`HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`; then separately evidence-bound
-abort-v2 plan, matching execute, and byte-identical replay. That verifier must
-copy only main+WAL, prove scratch SHM absent pre-open then privately created,
-prove source-family and scratch-main/WAL byte/hash stability, and prove source/
-target rollback-journal absence; `c036...` cannot be a pins-only
-substitute. Abort-v2 requires contract/receipt version `2`,
-`main-wal`, exact WAL binding, plan prefix
-`release-qa-strict-restore-abort-v2-`, and the unchanged
-`.strict-restore-work-v1` path. Acceptance remains plan absent/`0/0`, execute
-`0/2`, replay `0/0`; any mismatch or ambiguity hard-stops. Stop after replay.
-Checkpointing, source-sidecar removal, raw main-only copy, normal restore,
-helper/Netlify change, activation, later verification/backup, and production
-remain unauthorized.
+Post-live shell proof at `2026-08-25T04:11:28.902Z` returned
+`HL23_B2_POST_LIVE_HELD_FAMILY_VERIFIED`: all `20` runtime keys and nine absent
+provider fields were exact, three source snapshots were stable, two scans each
+covered seven processes with zero denied/holders, and downstream artifacts were
+absent. Current B2 device `66313` is the `thxsc` container's namespace-local
+identity; all remaining main/WAL/SHM metadata and hashes equal the historical
+B-prime proof.
+
+Fresh verifier `post-b2-abort-v2-source-verifier.sh` is `35494` bytes / SHA-256
+`6d5cfe50ecee26199c3f0a2c922c99a84d3f97e2fe98b6256b36583e6e98b70c`;
+local syntax/static/cold audit passed. Its one-shot `6032`-byte result SHA-256 is
+`80c7cadec0664625b0c4fc6eb86fd49f5e58842534fdebbc1aead63f5fe65976`,
+code `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. It binds six identical
+source-family boundaries, two complete eight-process/`85`-descriptor zero-holder
+scans, main+WAL-only scratch, private `32768`-byte SHM creation, unchanged source
+and scratch main/WAL, exact schema/integrity/semantic state, zero SQLite changes,
+both rollback-journal and downstream absence, and cleanup.
+
+The sole next authorized mutation is one exact abort-v2 plan. Require contract
+version `2`, `main-wal`, exact WAL binding, absent target, plan prefix
+`release-qa-strict-restore-abort-v2-`, the unchanged
+`.strict-restore-work-v1` path and exact temporary-work object, and mutation
+counts `0/0`. Any nonzero, mismatched, incomplete, disconnected, or ambiguous
+outcome hard-stops. Execute and replay remain unauthorized until the accepted
+plan is frozen into a later active-ledger amendment. Checkpointing, source-
+sidecar removal, raw main-only copy, normal restore, helper/Netlify change,
+activation, later verification/backup, and production remain unauthorized.
 
 ---
 
@@ -1166,18 +1176,18 @@ The canonical workspaces and stable release identities are:
 | Repository | Workspace | Branch | Release identity |
 | --- | --- | --- | --- |
 | Frontend | `E:\hundo-leago` | `codex/m7-26-completion` | Application F `4dfe12d1366314e3d9df722c50771324647743c9`; helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` |
-| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | Repository HEAD/`origin/staging`: abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; current deployed Render identity: executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` |
+| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | Repository HEAD/`origin/staging` and current sole newest/`LIVE` Render deploy: abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb` / `dep-da6ghj67bikc738hbbv0` |
 
 Frontend HEAD and `origin/staging` may advance through later non-deployed docs-
 only evidence commits above helper commit `e898e722...`; those commits do not
 change sealed application F or helper bytes. Backend HEAD and `origin/staging`
 resolve exactly to committed abort-v2 B2; the backend worktree is clean.
-Render deploy `dep-da6cu8h42hec738f2al0` is newest and `LIVE` on B-prime
-after the fail-closed re-hold hosted/runtime gate passed; controlled-unhold
-deploy `dep-da60sl0jo6nc73e0cfu0` is deactivated. Until the exact one-key B2
-held deployment passes, B-prime is read-only current-held and diagnostic
-evidence only; it grants no abort-v1 execution authority. The fresh verifier
-and every abort-v2 recovery command must bind the eventual exact deployed B2.
+Render deploy `dep-da6ghj67bikc738hbbv0` is newest and `LIVE` on exact B2 after
+the complete held hosted/runtime and fresh-verifier gates passed; B-prime re-hold
+deploy `dep-da6cu8h42hec738f2al0` and controlled-unhold deploy
+`dep-da60sl0jo6nc73e0cfu0` are deactivated. B-prime remains historical
+diagnostic evidence only and grants no abort-v1 authority. The exact B2-pinned
+plan is the sole next mutation; execute and replay remain gated and unauthorized.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -1228,7 +1238,11 @@ subsequently passed a second hosted `3,503/3,503` gate in
 health/auth-safe route probes. After the later strict stop, re-hold deploy
 `dep-da6cu8h42hec738f2al0` passed `443` suites / `3,503` hosted tests /
 `3,503` pass in `2972015.233072ms`, build/startup, zero-error, live/readiness,
-and maintenance-blocked ordinary-route gates. It is now sole newest/`LIVE`.
+and maintenance-blocked ordinary-route gates. It later deactivated at safe
+handoff to exact-B2 deploy `dep-da6ghj67bikc738hbbv0`, whose hosted gate passed
+`443` suites / `3,519` tests / `3,519` pass with zero fail/cancel/skip/todo in
+`2962634.893743ms`; the B2 build/startup/zero-error/held-runtime and post-live
+source-family gates also passed. B2 is now sole newest/`LIVE`.
 
 Earlier milestone suites established characterization, read-only, security,
 authorization, league-isolation, migration, transaction, job, recovery,
@@ -1256,13 +1270,12 @@ The target topology and configuration are documented in
   `/opt/render/project/data`;
 * SQLite schema `54`; the earlier predecessor fixture-bearing source remains at
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
-  while newest `LIVE` deploy `dep-da6cu8h42hec738f2al0` on exact B-prime points
+  while newest `LIVE` deploy `dep-da6ghj67bikc738hbbv0` on exact B2 points
   at the authoritative re-held source path
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`
   whose pre-action postflight identity was `37744640` bytes / `b4163695...`;
-  exact current post-write identity is now bound by the B-prime WAL-aware
-  diagnostic family recorded above, but must be freshly re-proved unchanged by
-  the future B2-pinned verifier before any abort-v2 plan;
+  exact current post-write identity is now bound by the passed B2 post-live and
+  fresh-verifier family evidence recorded above;
   backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` preserves its clean
   pre-fixture restore boundary;
 * staging-only users, leagues, secrets, storage paths, and
@@ -1287,7 +1300,9 @@ Current helper deploy `6a8c006abe46c8fb6269c40c` preserves exact F. Exact
 controlled-unhold merge/deploy `dep-da60sl0jo6nc73e0cfu0` passed and is now
 deactivated. Phase one reached accepted/published state, but operator sequencing
 selected `STRICT_STOP`; phase two never began. Re-hold deploy
-`dep-da6cu8h42hec738f2al0` is newest/`LIVE`; backup
+`dep-da6cu8h42hec738f2al0` later handed off safely to current newest/`LIVE`
+exact-B2 deploy `dep-da6ghj67bikc738hbbv0`; held runtime and fresh verifier
+gates pass. Backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` remains the verified clean restore
 boundary.
 
@@ -1368,21 +1383,17 @@ The current priority order is:
    postflight, helper local-verification, corrected publication, inert-load,
    controlled-unhold runtime, unheld v2, partial phase-one, strict-stop, and
    terminal re-hold evidence and the later B-prime WAL-aware diagnostic. Treat
-   that diagnostic as current read-only evidence, not B-prime execution
+   that diagnostic as historical read-only evidence, not B-prime execution
    authority.
-4. Preserve exact abort-v2 B2 mint/publication evidence. After current-boundary
-   reproof, use one `update_environment_variables` call with `replace: false`
-   containing only
-   `APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`; do not sync
-   `render.yaml`, include another key, or call `trigger_deploy`. Require exactly
-   one API deploy and the complete held bare-HTTP runtime plus unchanged family/
-   zero-holder proof.
-5. Freeze and pass a fresh B2-pinned WAL-aware verifier; only then run one exact
-   abort-v2 plan, its matching execute, and one byte-identical replay. Require
-   `to_b_accepted` / `published` / `none`, contract/receipt `2`, main+WAL
-   binding, and `0/0 -> 0/2 -> 0/0`; then stop.
-6. Keep phase two, retry, normal restore, helper retirement, activation,
-   verification, and backup blocked until emitted abort evidence is reconciled
+4. Preserve exact abort-v2 B2 mint/publication, sole-newest held deployment/
+   runtime, post-live family/zero-holder, unchanged Netlify, and fresh B2-pinned
+   verifier evidence.
+5. Run exactly one abort-v2 plan only. Require `to_b_accepted` / `published` /
+   `none`, contract `2`, `main-wal`, exact WAL binding, absent target, exact
+   temporary-work object, and `0/0`. Any mismatch or ambiguity hard-stops; freeze
+   even an accepted plan into the active ledger before any later mutation.
+6. Keep execute/replay, phase two, retry, normal restore, helper retirement,
+   activation, verification, and backup blocked until emitted abort evidence is reconciled
    and a separate post-abort authority amendment is approved.
 7. Close M7-26 only after this separately authorized strict release and all final
    staging gates pass. Keep production migration, reset, deployment, and

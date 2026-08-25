@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 MINT/PUBLISH PASS; HELD B2 DEPLOY NEXT; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -76,9 +76,10 @@ reached accepted state; publication event
 `974342b5-94e5-42d8-af20-9e07c35bc847` and immediate replay passed at
 `fresh 2` / `replay 0`. Chrome was Admin rather than required Manager A during
 publication, selecting `STRICT_STOP`. Phase two never began and no retry is
-allowed. Full re-hold deploy `dep-da6cu8h42hec738f2al0` now passes as sole
-newest/`LIVE` B-prime after hosted `3,503/3,503`, build/startup, zero-error,
-health/readiness, and maintenance-blocked ordinary-route gates.
+allowed. Full re-hold deploy `dep-da6cu8h42hec738f2al0` passed as sole newest/
+`LIVE` B-prime at that boundary after hosted `3,503/3,503`, build/startup,
+zero-error, health/readiness, and maintenance-blocked ordinary-route gates; it
+later deactivated at the verified held-B2 handoff.
 Pending is not release evidence. The current gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
@@ -94,10 +95,11 @@ The canonical `57541`-byte raw diff has SHA-256
 `eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
 Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
 affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the backend
-worktree is clean. Render remains
-sole newest/`LIVE` on held B-prime deploy `dep-da6cu8h42hec738f2al0`; normal
-auto-deploy is `no`/trigger off and no B2 deploy exists. Netlify remains
-unchanged current/`READY` deploy `6a8c006abe46c8fb6269c40c`.
+worktree is clean. Exact-B2 API deploy `dep-da6ghj67bikc738hbbv0` is sole
+newest/`LIVE`; normal auto-deploy remains `no`/trigger off. Hosted `3,519/3,519`,
+build/startup, zero-error, held external probes, post-live source-family/zero-
+holder proof, and the fresh B2-pinned verifier pass. Netlify remains unchanged
+current/`READY` deploy `6a8c006abe46c8fb6269c40c`.
 
 The following fresh items are the only current controlled-unhold/action
 checklist. They do not check forward any fenced `HL-20260822-1` item:
@@ -155,30 +157,26 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   and passing syntax/diff, focused `72/72` before the final narrow wrapper, and
   exact-final `5/5`. Backend HEAD and `origin/staging` both equal B2 and the
   backend worktree is clean.
-- [ ] `RC-STG-006J23` Re-prove current held Render
-  `dep-da6cu8h42hec738f2al0` and current/`READY` Netlify
-  `6a8c006abe46c8fb6269c40c`. Keep normal auto-deploy off. The sole next
-  mutation is one `update_environment_variables` call with `replace: false`
-  containing only
-  `APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`, preserving full hold,
-  source path, and every other setting; do not sync `render.yaml`, include
-  another key, or call `trigger_deploy`. Require exactly one API deploy and the
-  complete hosted suite, build/startup/zero-error, exact B2, bare maintenance
-  HTTP runtime, unchanged main/WAL/SHM, and zero database holders.
-- [ ] `RC-STG-006K23` Construct the new derivative
-  `post-b2-abort-v2-source-verifier.sh` and
-  `post-b2-abort-v2-source-verifier-result.json`; freeze, cold-audit, and run it
-  once. Bind its new exact hashes and pending exact success code
-  `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. Require exact B2/service/deploy/
-  hold/provider/backup, six stable source snapshots, two complete zero-holder
-  scans, unchanged source family, source/target rollback-journal and downstream
-  absence, exact semantic state, zero changes, and cleanup. Copy only scratch
-  main+WAL; require scratch SHM absent pre-open and privately owned/created during
-  the private SQLite open, the source family unchanged, and scratch main/WAL
-  bytes and hashes unchanged before/after recovery. A pins-only c036 derivative
-  or ambiguity stops.
-- [ ] `RC-STG-006L23` Only after `RC-STG-006K23` passes, run one exact abort-v2
-  plan. Require contract `2`, `main-wal`, exact WAL binding,
+- [x] `RC-STG-006J23` The single approved `replace: false`,
+  `APP_BUILD_ID=B2`-only merge produced exact API deploy
+  `dep-da6ghj67bikc738hbbv0`, sole newest/`LIVE` after `443` suites / `3,519`
+  tests all passed, build/startup/zero-error and bare-maintenance probes passed,
+  and Netlify stayed exact `6a8c006abe46c8fb6269c40c`. Post-live code
+  `HL23_B2_POST_LIVE_HELD_FAMILY_VERIFIED` bound `20` runtime keys, nine absent
+  providers, three stable source snapshots, two seven-process scans with zero
+  denied/holders, and downstream absence. Current namespace-local device is
+  `66313`; historical B-prime device `66332` remains historical only.
+- [x] `RC-STG-006K23` Fresh derivative
+  `post-b2-abort-v2-source-verifier.sh` is `35494` bytes / `1045` LF / SHA-256
+  `6d5cfe50ecee26199c3f0a2c922c99a84d3f97e2fe98b6256b36583e6e98b70c`;
+  syntax/static checks and cold audit pass. One-shot result is `6032` bytes /
+  SHA-256 `80c7cadec0664625b0c4fc6eb86fd49f5e58842534fdebbc1aead63f5fe65976`
+  with code `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. Six source boundaries,
+  two eight-process/`85`-descriptor zero-holder scans, main+WAL-only scratch,
+  private SHM creation, source/scratch stability, rollback-journal/downstream
+  absence, semantic state, zero changes, and cleanup pass.
+- [ ] `RC-STG-006L23` This is the sole next authorized mutation: run one exact
+  abort-v2 plan. Require contract `2`, `main-wal`, exact WAL binding,
   `release-qa-strict-restore-abort-v2-<sha256>`, `targetState: "absent"`, and
   mutation counts `0/0`. Its `temporaryFilesystemWork` must be exact:
   `performed: true`, `plaintextDatabaseMaterialized: true`, deterministic path
@@ -186,8 +184,11 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   `retained: false`, `processLocalCleanup: "verified"`, and
   `abruptTerminationRecovery: "fail-closed-at-deterministic-work-directory"`.
   Nonzero, incomplete, ambiguous, disconnected, or unknown output forbids
-  execute.
-- [ ] `RC-STG-006M23` Only after the exact plan passes, run one matching execute.
+  execute. Freeze and reconcile even an exact accepted plan before any next
+  mutation.
+- [ ] `RC-STG-006M23` `PENDING AUTHORITY`: do not execute under this amendment.
+  Only a later amendment after exact accepted-plan reconciliation may authorize
+  one matching execute.
   Require receipt version `2`, the exact main/WAL/SHM evidence, source
   persistent-family preservation, clean target, canonical receipt, absent target
   WAL/SHM/journal and work, and mutation counts `0/2`. Ambiguous execute forbids
@@ -1241,10 +1242,11 @@ implementation, local verification, and backend publication pass. Its held
 deploy/runtime, fixture prepare/replay, held postflight proof, helper
 construction/local verification, corrected helper publication/hosted proof,
 controlled-unhold runtime, partial phase one, and full re-hold pass. Exact
-abort-v2 B2 mint/publication also passes. Operator sequencing strict-stopped the
-smoke; phase two and normal recovery are forbidden. The one-key held B2 deploy,
-fresh post-B2 verifier, then abort-v2 plan/execute/identical replay remain
-ordered `PENDING` gates under the exact current ledger. Post-abort helper
+abort-v2 B2 mint/publication, held deployment/runtime, and fresh verifier gates
+also pass. Operator sequencing strict-stopped the smoke; phase two and normal
+recovery are forbidden. The abort-v2 plan only is the next authorized mutation;
+execute/replay remain `PENDING AUTHORITY` until accepted-plan reconciliation and
+a later amendment. Post-abort helper
 retirement, activation, verification, backup, and every later downstream step
 require a separate amendment.
 The historical RC-BKP-015A-J block above cannot be checked forward.
@@ -1433,10 +1435,10 @@ contract. They cannot satisfy, seed, or authorize any `HL-20260823-1` action.
 The fresh release-specific counterparts through controlled-unhold runtime and
 unheld pre-smoke verification passed as recorded in the live ledger. Phase one
 then reached accepted/published state, but operator sequencing selected
-`STRICT_STOP`; phase two never began. Full re-hold and exact abort-v2 B2
-mint/publication pass. The only pending executable counterparts are the single
-`APP_BUILD_ID`-only held B2 deployment, fresh B2-pinned verification, and
-evidence-bound plan/execute/identical replay;
+`STRICT_STOP`; phase two never began. Full re-hold, exact abort-v2 B2
+mint/publication and held deployment/runtime, and fresh B2-pinned verification
+pass. The only pending executable counterpart is the exact abort-v2 plan;
+execute/replay require accepted-plan evidence and a later amendment;
 normal restore and phase two are forbidden. Helper retirement, activation,
 verification/backup, and final review await a separate post-abort amendment.
 The authoritative live ledger is

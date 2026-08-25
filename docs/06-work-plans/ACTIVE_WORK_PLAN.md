@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 MINT/PUBLISH PASS; HELD B2 DEPLOY NEXT`
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT`
 
 ## Work Plan ID
 
@@ -21,7 +21,7 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Re-Hold Pass; Abort-v2 B2 Held Deploy Next
+## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Held B2 and Fresh Verifier Pass; Abort-v2 Plan Only Next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
@@ -115,11 +115,12 @@ PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
 Only the first three keys and first publisher confirmation were used. The
 return keys/confirmation were never used and are now forbidden. The exact
 full-hold inverse then ran once and produced deploy
-`dep-da6cu8h42hec738f2al0`, sole newest/`LIVE` on B-prime after hosted `443`
-suites / `3,503` tests / `3,503` pass, build/startup, zero-error, live/ready
+`dep-da6cu8h42hec738f2al0`, sole newest/`LIVE` on B-prime at that boundary after
+hosted `443` suites / `3,503` tests / `3,503` pass, build/startup, zero-error, live/ready
 `200`/`no-store`, and session/leagues/current-FAD
 `503 SERVICE_MAINTENANCE`/`no-store` gates passed. Prior unhold deploy
-`dep-da60sl0jo6nc73e0cfu0` is deactivated. No restore, target, receipt, helper,
+`dep-da60sl0jo6nc73e0cfu0` deactivated; the B-prime re-hold deploy later
+deactivated at the verified held-B2 handoff. No restore, target, receipt, helper,
 Netlify, `DATABASE_PATH`, backup, or production change occurred.
 
 ### Current abort-only handoff
@@ -139,7 +140,8 @@ Its `2747`-byte result SHA-256 is
 with code `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED`. It binds exact main
 `37744640` / `b4163695...` / inode `131156`, WAL `568592` / `0dde02d1...` /
 inode `131151`, and SHM `32768` / `e03d9ff8...` / inode `131152`, each device
-`66332`, UID `1000`, mode `0600`, link count `1`; six stable snapshots; two
+`66332` in the historical B-prime container mount namespace, UID `1000`, mode
+`0600`, link count `1`; six stable snapshots; two
 complete zero-holder process scans; exact `to_b_accepted` / `published` /
 `none`; target/receipt/work absence; and cleanup. That diagnostic copied source
 main/WAL/SHM into owned scratch and SQLite opened only that scratch family;
@@ -158,45 +160,58 @@ The canonical `57541`-byte raw diff has SHA-256
 `eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
 Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
 affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the backend
-worktree is clean. B2 is not deployed.
+worktree is clean.
 
-The authorized pending order is exact and fail-closed:
+The single authorized `APP_BUILD_ID`-only merge produced API deploy
+`dep-da6ghj67bikc738hbbv0`, sole newest/`LIVE` on exact B2 after hosted `443`
+suites / `3,519` tests / `3,519` pass and zero fail/cancel/skip/todo. Build,
+startup on instance `srv-d9eo2turnols73ekb830-thxsc`, zero-error, health/readiness
+`200`/`no-store`, and session/leagues/current-FAD
+`503 SERVICE_MAINTENANCE`/`no-store` gates passed. B-prime re-hold deploy
+`dep-da6cu8h42hec738f2al0` deactivated at safe handoff. Netlify remained exact
+current/`READY` `6a8c006abe46c8fb6269c40c`; normal auto-deploy remained off and
+no other environment, helper, database-path, backup, or production change ran.
 
-1. Re-prove held Render `dep-da6cu8h42hec738f2al0` and current/`READY` Netlify
-   `6a8c006abe46c8fb6269c40c`. With normal auto-deploy still off, use one
-   `update_environment_variables` call with `replace: false` whose only entry is
-   `APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`. Preserve full hold,
-   source `DATABASE_PATH`, and every other setting. Never sync `render.yaml`,
-   include another key, or call `trigger_deploy`. Require exactly one API deploy
-   and exact B2 hosted/build/startup/
-   zero-error evidence, the bare maintenance HTTP runtime, unchanged exact
-   main/WAL/SHM, and zero database holders.
-2. Construct the new derivative `post-b2-abort-v2-source-verifier.sh` and
-   `post-b2-abort-v2-source-verifier-result.json`, then freeze, cold-audit, and
-   run it once. Require pending exact code
-   `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`, exact B2/current service/deploy/
-   hold, six stable source-family snapshots, two complete zero-holder scans,
-   semantic and backup identity, and absent source/target rollback journals,
-   target family, receipt, and work. Copy scratch main+WAL only; prove scratch
-   SHM absent before the private SQLite open, privately owned/created during it,
-   the full source family unchanged, and scratch main/WAL bytes and hashes
-   unchanged before/after recovery. Retain the new exact script/result
-   hashes. The B-prime diagnostic cannot be retargeted as a pins-only verifier;
-   any mismatch or ambiguity stops before plan.
-3. Only then run one abort-v2 plan; only after its exact evidence passes run one
-   matching execute; only after unambiguous execute `0/2` run its byte-identical
-   replay once. Require contract/receipt `2`, `main-wal`, exact WAL binding,
-   `release-qa-strict-restore-abort-v2-` plan namespace, classifier
-   `to_b_accepted` / `published` / `none`, plan `0/0`, execute `0/2`, replay
-   `0/0`, source persistent-family preservation, clean target hash, canonical
-   receipt, and the unchanged `.strict-restore-work-v1` literal/matrices.
+Post-live proof at `2026-08-25T04:11:28.902Z` returned
+`HL23_B2_POST_LIVE_HELD_FAMILY_VERIFIED`: all `20` runtime keys including B2
+`APP_BUILD_ID`/`RENDER_GIT_COMMIT`, nine absent provider fields, three stable
+source snapshots, two seven-process scans with zero denied/holders, and complete
+downstream absence passed. Device `66313` is the current `thxsc` namespace-local
+mount identity; the historical `66332` value belongs only to B-prime `gzvbw`.
+Every inode/UID/mode/link/size/time/hash field remained exact.
 
-Any nonzero, incomplete, disconnected, ambiguous, or mismatched boundary stops;
-plan ambiguity forbids execute and execute ambiguity forbids blind retry/replay.
-Stop after accepted replay. Phase two, retry, normal restore, helper/Netlify
-change, post-abort retirement, activation, verifier, backup, final review,
-closeout, and production remain unauthorized pending a later evidence-bound
-amendment.
+Fresh verifier `post-b2-abort-v2-source-verifier.sh` is `35494` bytes / `1045`
+LF / SHA-256
+`6d5cfe50ecee26199c3f0a2c922c99a84d3f97e2fe98b6256b36583e6e98b70c`;
+syntax/static checks and independent cold audit returned `GO`. Its one-shot
+`6032`-byte result SHA-256
+`80c7cadec0664625b0c4fc6eb86fd49f5e58842534fdebbc1aead63f5fe65976`
+returned `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. Six boundaries retained
+family fingerprint `21efc183...`; both complete scans covered eight processes /
+`85` descriptors with zero denied/holders; main+WAL-only scratch privately
+created a `32768`-byte SHM; source and scratch main/WAL remained unchanged;
+integrity/FK/schema/migrations/checksum, `131` total / `2` active sessions,
+classifier `to_b_accepted` / `published` / `none`, zero changes, both journals,
+downstream absence, and cleanup passed.
+
+The authorized pending order is now exact and shorter:
+
+1. Run exactly one abort-v2 plan only. Require code
+   `RELEASE_QA_STRICT_RESTORE_ABORT_PLANNED`, contract version `2`, `main-wal`,
+   exact WAL binding, plan namespace `release-qa-strict-restore-abort-v2-`,
+   classifier `to_b_accepted` / `published` / `none`, target absent, both
+   mutation counts `0`, and the exact six-field temporary-work object using the
+   unchanged `.strict-restore-work-v1` literal.
+2. Freeze and reconcile the complete plan output into the active ledger. Any
+   nonzero, incomplete, disconnected, ambiguous, or mismatched result hard-
+   stops and leaves execute unauthorized.
+
+Execute and replay are not authorized by this plan revision. A later amendment
+may authorize one matching execute at `0/2` only after an exact accepted plan,
+and byte-identical replay at `0/0` only after an unambiguous accepted execute.
+Phase two, retry, normal restore, helper/Netlify change, post-abort retirement,
+activation, verifier, backup, final review, closeout, and production remain
+unauthorized pending later evidence-bound amendments.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
 
@@ -1339,11 +1354,11 @@ deployment/runtime, fixture prepare/replay, held postflight, helper
 construction/local verification, corrected helper publication/hosted proof,
 controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification
 passed. Phase one reached accepted/published state with `fresh 2` / `replay 0`,
-but phase two never began. Full re-hold and abort-v2 B2 mint/publication now
-pass. The one-key held B2 deploy is next; only after its complete gate may the
-fresh post-B2 verifier run, and only after that pass may abort-v2 plan, execute,
-and identical replay proceed. Normal recovery is forbidden and every post-abort
-gate awaits a separate amendment.
+but phase two never began. Full re-hold, abort-v2 B2 mint/publication, the held
+B2 deployment/runtime gate, and the fresh B2-pinned verifier now pass. The exact
+abort-v2 plan is the sole next mutation; execute/replay and every post-abort gate
+await accepted-plan evidence and a separate amendment. Normal recovery remains
+forbidden.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

@@ -1244,7 +1244,7 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; full re-hold pass; abort-v2 B2 held deploy next
+#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; held B2 and fresh verifier pass; abort-v2 plan only next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
@@ -1311,7 +1311,8 @@ release-specific value may be reused. Exact current gates are recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 Exact merge-only re-hold with only `true` / `closed` / `false` produced sole
-newest/`LIVE` B-prime deploy `dep-da6cu8h42hec738f2al0`. Hosted `443` suites /
+newest/`LIVE` B-prime deploy `dep-da6cu8h42hec738f2al0` at that boundary. Hosted
+`443` suites /
 `3,503` tests / `3,503` pass, build/startup, zero-error, live/readiness, and
 maintenance-blocked session/leagues/current-FAD gates passed. Prior unhold
 deploy `dep-da60sl0jo6nc73e0cfu0` is deactivated. The source path remains
@@ -1337,8 +1338,9 @@ Its `2747`-byte result SHA-256 is
 `deda5da68dabed9225b25165727e9c36d6cf46875947596e2b0f1b61afec1a9a`
 with code `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED`. It binds exact main
 `37744640` / `b4163695...` / inode `131156`, WAL `568592` / `0dde02d1...` /
-inode `131151`, and SHM `32768` / `e03d9ff8...` / inode `131152`; each is device
-`66332`, UID `1000`, mode `0600`, and link count `1`. Six stable snapshots and
+inode `131151`, and SHM `32768` / `e03d9ff8...` / inode `131152`; each was device
+`66332` in the historical B-prime container mount namespace, UID `1000`, mode
+`0600`, and link count `1`. Six stable snapshots and
 two complete zero-holder process scans passed. It copied source main/WAL/SHM
 byte-for-byte into owned scratch. Private scratch main/WAL hashes remained
 identical across recovery; only private scratch SHM changed. SQLite opened only
@@ -1360,58 +1362,60 @@ B2 preserves normal v1, upgrades abort contract/receipt to `2`, binds main+WAL,
 excludes authoritative SHM from SQLite, rejects rollback journals, and retains
 work-area version/literal v1. Diff/syntax, focused `72/72` before the final
 narrow wrapper, and exact-final affected `5/5` pass; backend HEAD and
-`origin/staging` equal B2 and the worktree is clean. B2 remains undeployed.
+`origin/staging` equal B2 and the worktree is clean.
 
-The only authorized pending operational sequence is:
+The approved one-key merge produced API deploy `dep-da6ghj67bikc738hbbv0`, sole
+newest/`LIVE` on exact B2; B-prime re-hold deploy
+`dep-da6cu8h42hec738f2al0` deactivated at the safe handoff. Hosted `443` suites /
+`3,519` tests all passed with zero fail/cancel/skip/todo. Build/startup on
+instance `thxsc`, zero-error, health/readiness `200`/`no-store`, and maintenance-
+blocked session/leagues/current-FAD `503 SERVICE_MAINTENANCE`/`no-store` passed.
+Netlify stayed current/`READY` `6a8c006abe46c8fb6269c40c`; no other environment,
+database-path, helper, backup, or production change occurred.
 
-1. With normal auto-deploy still off, re-prove current held Render
-   `dep-da6cu8h42hec738f2al0` and Netlify `6a8c006abe46c8fb6269c40c`, then use one
-   `update_environment_variables` call with `replace: false` whose only entry is
-   `APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`. Preserve full hold,
-   source `DATABASE_PATH`, and all other settings. Do not sync `render.yaml`,
-   include another environment key, or call `trigger_deploy`. Require exactly
-   one API deploy plus complete hosted suite/build/startup/zero-error, exact B2,
-   the bare maintenance HTTP runtime, unchanged exact main/WAL/SHM, and zero
-   database holders.
-2. Construct new derivative `post-b2-abort-v2-source-verifier.sh` and
-   `post-b2-abort-v2-source-verifier-result.json`; freeze, cold-audit, and run it
-   once. Retain its new exact hashes and require pending code
-   `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`, exact B2/service/deploy/hold,
-   six stable source snapshots, two complete zero-holder scans, unchanged
-   family, source/target rollback-journal and downstream absence, exact semantic/
-   backup identity, zero changes, and cleanup. Copy scratch main+WAL only; prove
-   scratch SHM absent pre-open and privately owned/created during the scratch
-   SQLite open, the source family unchanged, and scratch main/WAL sizes and
-   SHA-256 values byte-identical before/after recovery. The c036 diagnostic
-   cannot be retargeted with pins only. Any
-   mismatch stops before plan.
-3. Only then run one abort-v2 plan, one matching execute, and the byte-identical
-   execute once as replay, with each later action authorized only by the complete
-   accepted evidence from its predecessor.
+Post-live shell proof `HL23_B2_POST_LIVE_HELD_FAMILY_VERIFIED` passed at
+`2026-08-25T04:11:28.902Z`, binding all `20` runtime keys, nine absent provider
+fields, three stable source snapshots, two seven-process scans with zero denied/
+holders, and downstream absence. Device `66313` is the current B2 `thxsc`
+container's namespace-local mount identity; all other main/WAL/SHM metadata and
+hashes match the historical proof.
 
-The abort-v2 confirmation—not any normal or predecessor confirmation—must use
-the emitted `ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK` form and a
-`release-qa-strict-restore-abort-v2-<sha256>` plan. Require contract/receipt
-version `2`, `sourcePersistenceMode: "main-wal"`, exact WAL identity/hash, SHM
-observed but not included in SQLite inspection, exact classifier/backup/source,
-and plan target absent with mutation counts `0/0`. First execute must be
-unambiguous `0/2`, preserve the persistent source family, publish the exact
-clean target plus canonical v2 receipt, leave target WAL/SHM/journal and work
-absent, and report the full plan work matrix. Only then may identical replay run
-and prove identical target/receipt hashes, no restore/network/key/work access,
-and `0/0`.
+Fresh verifier `post-b2-abort-v2-source-verifier.sh` is `35494` bytes / SHA-256
+`6d5cfe50ecee26199c3f0a2c922c99a84d3f97e2fe98b6256b36583e6e98b70c`;
+local syntax/static/cold audit passed. Its one-shot `6032`-byte result SHA-256
+`80c7cadec0664625b0c4fc6eb86fd49f5e58842534fdebbc1aead63f5fe65976`
+returned `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. It proves six stable
+family boundaries with fingerprint `21efc183...`, two eight-process/`85`-
+descriptor zero-holder scans, main+WAL-only scratch, private `32768`-byte SHM
+creation, unchanged source and scratch main/WAL, integrity/FK/schema/migration/
+checksum and exact semantic state, zero changes, rollback-journal/downstream
+absence, and cleanup.
+
+The only authorized pending operational action is one abort-v2 plan. Its
+confirmation—not any normal or predecessor confirmation—must use the emitted
+`ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK` form and a
+`release-qa-strict-restore-abort-v2-<sha256>` plan. Require contract version `2`,
+`sourcePersistenceMode: "main-wal"`, exact WAL identity/hash, SHM observed but
+not included in SQLite inspection, exact classifier/backup/source, target
+absent, both mutation counts `0`, and the exact temporary-work object below.
+Any mismatch, ambiguity, disconnect, or nonzero output hard-stops. Freeze and
+reconcile even an exact accepted plan before any later mutation. Execute `0/2`
+and replay `0/0` remain future acceptance targets, not current authority; they
+require a later active-ledger amendment after accepted-plan evidence.
 
 The deterministic work path remains exactly
 `/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`.
-Plan/execute require performed/materialized `true`, retained `false`, cleanup
-`verified`, and fail-closed abrupt recovery; replay requires performed/
+The currently authorized plan requires performed/materialized `true`, retained
+`false`, cleanup `verified`, and fail-closed abrupt recovery. A future execute
+would require the same; a future replay would require performed/
 materialized `false`, retained `false`, cleanup `not-needed`, and the same
 fail-closed value. Any nonzero, incomplete, disconnected, ambiguous, or
 mismatched result stops. Plan ambiguity forbids execute; execute ambiguity
 forbids blind retry/replay and requires separately authorized reconciliation.
 
-Stop after accepted replay. Phase two/retry, normal restore, helper or Netlify
-change, checkpoint, source-sidecar removal, `DATABASE_PATH` activation, later
+Execute and replay are forbidden by this amendment. Phase two/retry, normal
+restore, helper or Netlify change, checkpoint, source-sidecar removal,
+`DATABASE_PATH` activation, later
 target verification/backup, reopening, final review, closeout, and production
 remain unauthorized pending a later evidence-bound amendment.
 

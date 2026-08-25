@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -346,10 +346,11 @@ never began; no retry is allowed. Exact current evidence is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 That ledger now supplies only abort-recovery authority. Exact re-hold deploy
-`dep-da6cu8h42hec738f2al0` is sole newest/`LIVE` on B-prime after hosted
-`3,503/3,503`, build/startup, zero-error, health/readiness, and maintenance-
+`dep-da6cu8h42hec738f2al0` became sole newest/`LIVE` on B-prime at that boundary
+after hosted `3,503/3,503`, build/startup, zero-error, health/readiness, and maintenance-
 blocked session/leagues/current-FAD gates passed; controlled-unhold deploy
-`dep-da60sl0jo6nc73e0cfu0` is deactivated. No return endpoint or publisher may
+`dep-da60sl0jo6nc73e0cfu0` deactivated. The B-prime re-hold deploy later
+deactivated at verified held-B2 handoff. No return endpoint or publisher may
 be called, and none of the phase-one requests may be retried.
 
 The former `18060`-byte / `9c323005...` main-only preflight ran and safely
@@ -377,30 +378,40 @@ the canonical `57541`-byte raw diff SHA-256 is
 `eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
 Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
 affected `5/5` pass; backend HEAD and `origin/staging` equal B2
-and the backend worktree is clean. B2 is not deployed.
+and the backend worktree is clean.
 
-The next mutation is one `update_environment_variables` call with
-`replace: false` whose only entry is
-`APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`, after re-proving
-current held Render and unchanged Netlify. Normal auto-deploy stays off; do not
-sync `render.yaml`, include another environment key, or call `trigger_deploy`.
-Require exactly one API deploy plus complete hosted/build/bare-maintenance-
-runtime evidence, unchanged exact main/WAL/SHM, and zero DB holders; then
-construct, freeze, cold-audit, and pass new derivative
-`post-b2-abort-v2-source-verifier.sh` /
-`post-b2-abort-v2-source-verifier-result.json` with pending exact code
-`HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. It must
-copy only main+WAL, prove scratch SHM absent before the private SQLite open and
-created during it, prove source-family and scratch-main/WAL byte/hash stability,
-bind source/target rollback-journal absence, and cannot be a
-pins-only retarget of the B-prime diagnostic.
+The approved one-key merge produced exactly one API-triggered deploy,
+`dep-da6ghj67bikc738hbbv0`, sole newest/`LIVE` on exact B2. Hosted `443` suites /
+`3,519` tests all passed with zero fail/cancel/skip/todo; build/startup on
+instance `thxsc`, zero-error, live/readiness `200`/`no-store`, and maintenance-
+blocked session/leagues/current-FAD `503 SERVICE_MAINTENANCE`/`no-store` passed.
+Netlify remained unchanged on current/`READY` `6a8c006abe46c8fb6269c40c`.
 
-Only after that verifier passes may the current run record's abort-v2 plan,
-matching execute, and byte-identical replay run. Require contract/receipt `2`,
+Post-live shell proof `HL23_B2_POST_LIVE_HELD_FAMILY_VERIFIED` passed at
+`2026-08-25T04:11:28.902Z`: all `20` runtime keys, nine absent providers, three
+stable source snapshots, two seven-process zero-holder scans, and downstream
+absence passed. Current namespace-local device is `66313`; historical B-prime
+device `66332` is not a cross-container identity.
+
+Fresh verifier script `35494` bytes / SHA-256
+`6d5cfe50ecee26199c3f0a2c922c99a84d3f97e2fe98b6256b36583e6e98b70c`
+passed local syntax, static checks, and cold audit. Its one-shot `6032`-byte
+result SHA-256
+`80c7cadec0664625b0c4fc6eb86fd49f5e58842534fdebbc1aead63f5fe65976`
+returned `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. Six stable
+family boundaries, two eight-process/`85`-descriptor zero-holder scans,
+main+WAL-only scratch, private SHM creation, unchanged source and scratch
+main/WAL, integrity/schema/semantic state, zero changes, rollback-journal and
+downstream absence, and cleanup pass.
+
+Only one exact abort-v2 plan is now authorized. Require contract `2`,
 `main-wal`, exact WAL binding, the `release-qa-strict-restore-abort-v2-`
-namespace, unchanged `.strict-restore-work-v1` literal, plan absent/`0/0`,
-execute `0/2`, replay `0/0`, canonical receipt, preserved source family, and
-exact clean target. Any mismatch or ambiguous boundary hard-stops. Then stop.
+namespace, unchanged `.strict-restore-work-v1` literal and exact temporary-work
+object, target absent, and mutation counts `0/0`. Any mismatch, ambiguity,
+disconnect, or nonzero outcome hard-stops. Execute `0/2` and replay `0/0` remain
+future acceptance targets, not current authority; accepted-plan evidence must be
+reconciled through a later amendment before execute. Execute and replay remain
+unauthorized by this checklist revision.
 Normal restore, phase two/retry, helper or Netlify change, checkpoint/sidecar
 removal, retirement, activation, later verifier/backup, reopening/review, and
 production require later authority. Historical `HL-20260822-1` values remain
