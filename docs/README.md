@@ -634,18 +634,52 @@ allowed. Re-hold deploy `dep-da6cu8h42hec738f2al0` is sole newest/`LIVE` after
 hosted `3,503/3,503`, build/startup, zero-error, health/readiness, and
 maintenance-blocked ordinary-route gates passed.
 
-The 2026-08-23 run record is the sole current recovery authority. The next gate
-is frozen abort preflight `18060` bytes / SHA-256 `9c323005...`, requiring code
-`HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` and separate external service proof. If
-both pass, only one exact abort plan, one matching abort execute, and one byte-
-identical replay may run for `to_b_accepted` / `published` / `none`, with
-semantic/smoke/hosted completion all false. Exact acceptance is plan absent/
-`0/0`, first execute `0/2`, replay `0/0`, and the full temporary-work matrices
-bound to one contract-owned deterministic path; any mismatch hard-stops. Then
-stop. Phase two, retry, and normal restore are forbidden. Helper retirement,
-activation, verifier, backup, final reopening/review, and closeout require
-emitted abort evidence and a separate authority amendment. Production remains
-untouched. The fenced `HL-20260822-1` values remain history only.
+The 2026-08-23 run record is the sole current recovery authority. The original
+`18060`-byte / `9c323005...` main-only abort verifier ran and safely failed its
+bundled family fence on the nonempty authoritative source WAL/SHM; the target,
+target WAL/SHM, receipt, and work area were absent. That verifier did not bind
+source/target rollback-journal absence; the new B2 derivative must. It did not
+authorize checkpointing, sidecar removal, abort-v1, or a main-only copy.
+
+Replacement B-prime diagnostic
+`wal-aware-abort-source-verifier.sh` is `24132` bytes / `685` LF lines /
+SHA-256 `c036a2b847fe97c8ff8eade5a633d2d6815404344e2f683e241edce4f596e51e`;
+its `2747`-byte result has SHA-256
+`deda5da68dabed9225b25165727e9c36d6cf46875947596e2b0f1b61afec1a9a`
+and code `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED`. It binds main
+`37744640` / `b4163695...`, WAL `568592` / `0dde02d1...`, and SHM `32768` /
+`e03d9ff8...`, zero holders, exact `to_b_accepted` / `published` / `none`,
+private copied-family recovery, target-family absence, and cleanup. That
+diagnostic raw-read and copied the source SHM byte-for-byte into owned scratch;
+SQLite opened only the private scratch family, whose main/WAL stayed unchanged
+while its SHM changed. SQLite never opened the authoritative source paths.
+
+The only local abort-v2 candidate is the exact two-file child of B-prime:
+implementation SHA-256 `d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
+and foundation-test SHA-256
+`3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`.
+Focused evidence is `72/72` before the final narrow normalization wrapper and
+`5/5` on the exact final affected group; the candidate is not yet committed,
+pushed, or deployed.
+
+Every next gate remains pending: commit/push only that exact child as B2;
+deploy exact B2 under the already-proven full hold with an `APP_BUILD_ID`-only
+merge and no `render.yaml` sync; construct, freeze, cold-audit, and pass the new
+derivative `post-b2-abort-v2-source-verifier.sh` plus
+`post-b2-abort-v2-source-verifier-result.json`; then run one evidence-bound
+abort-v2 plan, one matching execute, and one byte-identical replay. The new
+verifier must copy only main+WAL, prove scratch SHM absent before the private
+SQLite open and privately created during it, prove the source family and scratch
+main/WAL bytes and hashes unchanged across recovery, and return pending exact code
+`HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`; the B-prime diagnostic cannot be
+retargeted as a pins-only substitute. Abort-v2 uses contract/receipt version `2`, a
+`release-qa-strict-restore-abort-v2-` plan prefix, main+WAL binding, and the
+unchanged `.strict-restore-work-v1` literal. Plan/execute/replay acceptance
+remains `0/0`, `0/2`, `0/0`; ambiguity or any mismatch hard-stops. Then stop.
+Phase two, retry, normal restore, helper/Netlify change, checkpoint, sidecar
+removal, activation, verifier, backup, reopening/review, closeout, and
+production remain unauthorized. Historical `HL-20260822-1` abort-v1 evidence
+is preserved and cannot be reused.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -1070,7 +1104,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT PREFLIGHT NEXT
+Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; WAL-AWARE ABORT-V2 B2 CHAIN PENDING
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -1323,8 +1357,9 @@ held postflight, helper construction/local verification, corrected helper
 publication/hosted proof, controlled-unhold deployment/runtime, and unheld v2
 pre-smoke verification passed. Phase one is published partial evidence;
 operator sequencing strict-stopped the attempt, phase two never began, and full
-re-hold now passes. Only abort preflight/plan/execute/replay is currently
-authorized; downstream data gates remain pending a second amendment. The earlier
+re-hold now passes. Only the exact abort-v2 B2 commit/push, held deploy, fresh
+B2-pinned verifier, and evidence-bound plan/execute/identical replay chain is
+currently authorized; downstream data gates remain pending a later amendment. The earlier
 `HL-20260821-3` abort
 recovery remains immutable historical evidence.
 

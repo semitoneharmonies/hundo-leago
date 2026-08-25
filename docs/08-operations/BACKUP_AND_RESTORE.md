@@ -1314,52 +1314,98 @@ newest/`LIVE` B-prime deploy `dep-da6cu8h42hec738f2al0`. Hosted `443` suites /
 `3,503` tests / `3,503` pass, build/startup, zero-error, live/readiness, and
 maintenance-blocked session/leagues/current-FAD gates passed. Prior unhold
 deploy `dep-da60sl0jo6nc73e0cfu0` is deactivated. The source path remains
-authoritative under full hold; its exact current post-write identity must come
-from abort preflight, not the `37744640` / `b4163695...` pre-action baseline.
+authoritative under full hold; its exact current post-write family is bound by
+the B-prime WAL-aware diagnostic and must be freshly re-proved unchanged by the
+B2-pinned verifier before plan, not inferred from the pre-action main-only
+baseline.
 The clean backup remains the rollback boundary and the fresh target remains
 absent.
 
-The only next operation is frozen ignored
-`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\pre-abort-source-verifier.sh`,
-`18060` bytes / SHA-256
-`9c32300590c422cc5d1737cf536d2fadf91e3506979ec02e500bb26ea3a72d68`,
-requiring `HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` plus separate external service
-identity. Require exact `to_b_accepted` / phase-one `published` / return `none`,
-semantic/smoke/hosted completion all false, release blocked/rollback only,
-source/runtime/hold/provider/backup identity, target-family absence, and owned
-cleanup.
+The former main-only verifier
+`pre-abort-source-verifier.sh` (`18060` bytes / SHA-256 `9c323005...`) ran and
+safely failed `TARGET_FAMILY_OR_SIDECAR_PRESENT`. The target, target WAL/SHM,
+activation receipt, and work area were absent; that verifier did not bind source
+or target rollback-journal absence. Its bundled fence rejected the nonempty
+authoritative source WAL/SHM. No checkpoint, source-
+sidecar removal, plan, restore, or target write followed.
 
-Only after both proofs pass may the exact run-record commands execute one
-`release:qa:strict-restore:abort:plan`, one matching
-`release:qa:strict-restore:abort:execute`, and one byte-identical execute replay.
-The abort confirmation—not any normal or predecessor confirmation—must be the
-emitted `ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK` form bound to
-this release, service, environment, fixture IDs, and backup. Acceptance requires
-plan `targetState: "absent"` and exact mutation counts `0/0`, first execute exact
-mutation counts `0/2`, and replay exact mutation counts `0/0`, using fields
-`authoritativeDatabaseMutationCount` / `durableFilesystemMutationCount`. Plan
-and first execute require full `temporaryFilesystemWork` values
-`performed: true`, `plaintextDatabaseMaterialized: true`, exact
-`deterministicPrivateWorkDirectory`
-`/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`, `retained: false`,
-`processLocalCleanup: "verified"`, and
-`abruptTerminationRecovery: "fail-closed-at-deterministic-work-directory"`.
-Replay requires the full object
-with `performed: false`, `plaintextDatabaseMaterialized: false`, that same path,
-`retained: false`, `processLocalCleanup: "not-needed"`, and the same abrupt-
-termination value. Bind every emitted plan/receipt/hash/mutation/cleanup field
-and stop after replay. Any mismatch is a hard stop. A nonzero exit, incomplete
-or ambiguous output, shell disconnect, or unknown plan result forbids execute.
-If it occurs before a complete accepted first-execute `0/2` result, do not
-blindly retry or call the nominal replay: retain full hold, preserve evidence,
-and reconcile source, target, receipt, and work-area state under a separately
-authorized recovery decision. Replay authority exists only after the complete
-first result passes the exact matrix.
+Replacement B-prime diagnostic
+`wal-aware-abort-source-verifier.sh` is `24132` bytes / `685` LF lines /
+SHA-256 `c036a2b847fe97c8ff8eade5a633d2d6815404344e2f683e241edce4f596e51e`.
+Its `2747`-byte result SHA-256 is
+`deda5da68dabed9225b25165727e9c36d6cf46875947596e2b0f1b61afec1a9a`
+with code `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED`. It binds exact main
+`37744640` / `b4163695...` / inode `131156`, WAL `568592` / `0dde02d1...` /
+inode `131151`, and SHM `32768` / `e03d9ff8...` / inode `131152`; each is device
+`66332`, UID `1000`, mode `0600`, and link count `1`. Six stable snapshots and
+two complete zero-holder process scans passed. It copied source main/WAL/SHM
+byte-for-byte into owned scratch. Private scratch main/WAL hashes remained
+identical across recovery; only private scratch SHM changed. SQLite opened only
+the scratch family and never opened the authoritative paths. Integrity/foreign keys/schema/migrations,
+identity/rotation, semantic state, zero database changes, downstream absence,
+and cleanup passed. This diagnostic cannot authorize B-prime abort-v1.
 
-Phase two, retry, normal restore, helper retirement, `DATABASE_PATH` activation,
-post-activation target verification, backup, reopening, final review, closeout,
-and production are unauthorized. Post-abort retirement/activation/verifier/backup remains
-`PENDING` until a second authority amendment binds the emitted abort evidence.
+The exact local abort-v2 implementation/test hashes are
+`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
+and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`.
+The candidate preserves normal v1, upgrades abort contract/receipt to `2`, binds
+main+WAL, excludes authoritative SHM from SQLite, rejects rollback journals,
+and retains work-area version/literal v1. It remains uncommitted, unpublished,
+and undeployed; local focused evidence is `72/72` before its final narrow
+wrapper and `5/5` on the exact final affected group.
+
+The only authorized pending operational sequence is:
+
+1. Commit/push only that exact two-file child of B-prime as B2. Verify exact
+   parent/tree/file hashes and local/remote identity; ambiguity stops.
+2. With normal auto-deploy still off, re-prove current held Render
+   `dep-da6cu8h42hec738f2al0` and Netlify `6a8c006abe46c8fb6269c40c`, then use one
+   `replace: false` merge changing only `APP_BUILD_ID` to B2. Preserve full hold,
+   source `DATABASE_PATH`, and all other settings. Do not sync `render.yaml` and
+   do not trigger a second deploy. Require complete hosted suite/build/startup/
+   zero-error, exact B2, the bare maintenance HTTP runtime, unchanged exact
+   main/WAL/SHM, and zero database holders.
+3. Construct new derivative `post-b2-abort-v2-source-verifier.sh` and
+   `post-b2-abort-v2-source-verifier-result.json`; freeze, cold-audit, and run it
+   once. Retain its new exact hashes and require pending code
+   `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`, exact B2/service/deploy/hold,
+   six stable source snapshots, two complete zero-holder scans, unchanged
+   family, source/target rollback-journal and downstream absence, exact semantic/
+   backup identity, zero changes, and cleanup. Copy scratch main+WAL only; prove
+   scratch SHM absent pre-open and privately owned/created during the scratch
+   SQLite open, the source family unchanged, and scratch main/WAL sizes and
+   SHA-256 values byte-identical before/after recovery. The c036 diagnostic
+   cannot be retargeted with pins only. Any
+   mismatch stops before plan.
+4. Only then run one abort-v2 plan, one matching execute, and the byte-identical
+   execute once as replay, with each later action authorized only by the complete
+   accepted evidence from its predecessor.
+
+The abort-v2 confirmation—not any normal or predecessor confirmation—must use
+the emitted `ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK` form and a
+`release-qa-strict-restore-abort-v2-<sha256>` plan. Require contract/receipt
+version `2`, `sourcePersistenceMode: "main-wal"`, exact WAL identity/hash, SHM
+observed but not included in SQLite inspection, exact classifier/backup/source,
+and plan target absent with mutation counts `0/0`. First execute must be
+unambiguous `0/2`, preserve the persistent source family, publish the exact
+clean target plus canonical v2 receipt, leave target WAL/SHM/journal and work
+absent, and report the full plan work matrix. Only then may identical replay run
+and prove identical target/receipt hashes, no restore/network/key/work access,
+and `0/0`.
+
+The deterministic work path remains exactly
+`/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`.
+Plan/execute require performed/materialized `true`, retained `false`, cleanup
+`verified`, and fail-closed abrupt recovery; replay requires performed/
+materialized `false`, retained `false`, cleanup `not-needed`, and the same
+fail-closed value. Any nonzero, incomplete, disconnected, ambiguous, or
+mismatched result stops. Plan ambiguity forbids execute; execute ambiguity
+forbids blind retry/replay and requires separately authorized reconciliation.
+
+Stop after accepted replay. Phase two/retry, normal restore, helper or Netlify
+change, checkpoint, source-sidecar removal, `DATABASE_PATH` activation, later
+target verification/backup, reopening, final review, closeout, and production
+remain unauthorized pending a later evidence-bound amendment.
 
 #### HL-20260822-1 pre-action abort-recovery record
 

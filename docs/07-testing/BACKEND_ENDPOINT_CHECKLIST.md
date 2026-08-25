@@ -351,18 +351,46 @@ blocked session/leagues/current-FAD gates passed; controlled-unhold deploy
 `dep-da60sl0jo6nc73e0cfu0` is deactivated. No return endpoint or publisher may
 be called, and none of the phase-one requests may be retried.
 
-The next gate is frozen abort preflight `18060` bytes / SHA-256 `9c323005...`,
-requiring `HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` and separate external service
-proof. If both pass, the current run record authorizes exactly one abort plan,
-one matching abort execute, and one byte-identical replay for
-`to_b_accepted` / `published` / `none`, semantic/smoke/hosted completion all
-false, `releaseBlocked: true`, and `rollbackOnly: true`. Require the exact
-plan absent/`0/0`, first-execute `0/2`, replay `0/0`, and full plan/execute/
-replay `temporaryFilesystemWork` objects bound to the exact contract-owned path
-literal in the run record; any mismatch hard-stops. Then stop. Normal restore,
-phase two, and retry are forbidden. Retirement, activation, verifier, backup,
-reopening/review, and production require later authority. The fenced
-`HL-20260822-1` values remain non-authoritative.
+The former `18060`-byte / `9c323005...` main-only preflight ran and safely
+failed its bundled family fence on the nonempty source WAL/SHM; target family,
+receipt, and work were absent. No checkpoint, sidecar deletion, plan, or target
+write ran. Frozen B-prime WAL-aware diagnostic `c036a2b8...` and result
+`deda5da6...` returned `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED`, binding main
+`37744640` / `b4163695...`, WAL `568592` / `0dde02d1...`, SHM `32768` /
+`e03d9ff8...`, six stable snapshots, two complete zero-holder scans, exact
+`to_b_accepted` / `published` / `none`, downstream absence, and cleanup. It
+copied source main/WAL/SHM into owned scratch and SQLite opened only that scratch
+family; scratch main/WAL stayed unchanged while scratch SHM changed. SQLite
+never opened the authoritative paths. This is diagnostic only; B-prime abort-v1
+is forbidden.
+
+The exact local abort-v2 implementation/test hashes are
+`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
+and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`;
+focused evidence is `72/72` before the final narrow wrapper plus exact-final
+affected `5/5`. All next gates remain pending: commit/push only that exact child
+as B2; with normal auto-deploy off, deploy exact B2 through an
+`APP_BUILD_ID`-only merge under the unchanged full hold and without syncing
+`render.yaml`; require complete hosted/build/bare-maintenance-runtime evidence,
+unchanged exact main/WAL/SHM, and zero DB holders; then construct, freeze, cold-
+audit, and pass new derivative `post-b2-abort-v2-source-verifier.sh` /
+`post-b2-abort-v2-source-verifier-result.json` with pending exact code
+`HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. It must
+copy only main+WAL, prove scratch SHM absent before the private SQLite open and
+created during it, prove source-family and scratch-main/WAL byte/hash stability,
+bind source/target rollback-journal absence, and cannot be a
+pins-only retarget of the B-prime diagnostic.
+
+Only after that verifier passes may the current run record's abort-v2 plan,
+matching execute, and byte-identical replay run. Require contract/receipt `2`,
+`main-wal`, exact WAL binding, the `release-qa-strict-restore-abort-v2-`
+namespace, unchanged `.strict-restore-work-v1` literal, plan absent/`0/0`,
+execute `0/2`, replay `0/0`, canonical receipt, preserved source family, and
+exact clean target. Any mismatch or ambiguous boundary hard-stops. Then stop.
+Normal restore, phase two/retry, helper or Netlify change, checkpoint/sidecar
+removal, retirement, activation, later verifier/backup, reopening/review, and
+production require later authority. Historical `HL-20260822-1` values remain
+non-authoritative for this release.
 
 ---
 

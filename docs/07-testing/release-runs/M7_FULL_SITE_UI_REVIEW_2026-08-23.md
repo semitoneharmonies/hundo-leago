@@ -2,7 +2,7 @@
 
 ## Status
 
-`AUTHORIZED / MINTED; RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT PREFLIGHT NEXT`
+`AUTHORIZED / MINTED; RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; WAL-AWARE ABORT-V2 B2 CHAIN PENDING`
 
 Release `HL-20260823-1` is a new isolated-staging release. It does not reopen,
 resume, or reuse blocked release `HL-20260822-1`. Production remains untouched
@@ -45,7 +45,8 @@ Its held hosted deploy, fresh fixture prepare/replay, held postflight, helper
 construction/local verification, corrected helper publication, and controlled-
 unhold deployment/runtime verification passed. Phase one later reached accepted
 and published state, but the browser operator sequence failed closed before the
-return phase. Full re-hold now passes; abort-only preflight is next.
+return phase. Full re-hold now passes; the exact abort-v2 B2 commit/deploy/
+fresh-verifier/plan/execute/replay chain is pending.
 
 ## B-Prime Implementation, Local Verification, and Publication
 
@@ -626,37 +627,160 @@ league FAD navigation each returned `503`, `Cache-Control: no-store`, and
 restore, target, receipt, helper, Netlify, `DATABASE_PATH`, backup, or
 production change.
 
-## Current Abort-Only Recovery Authority
+## Current WAL-Aware Abort-Recovery Authority
 
-The only next gate is the frozen ignored verifier
-`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\pre-abort-source-verifier.sh`,
-exactly `18060` bytes with SHA-256
-`9c32300590c422cc5d1737cf536d2fadf91e3506979ec02e500bb26ea3a72d68`.
-Its cold audit is `GO`. Run it verbatim only in a fresh attached shell on the
-exact held B-prime service and require code
-`HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED`. It must report authoritative database
-unopened, owned-copy-only read verification and cleanup; exact source/runtime/
-hold/provider/backup identity; absent target, receipt, work, and target
-sidecars; and source state exactly `to_b_accepted` / phase-one `published` /
-return `none`, with `sourceSemanticChainCompleted`, `smokeCompleted`, and
-`hostedSmokeCompleted` all `false`, plus `releaseBlocked: true` and
-`rollbackOnly: true`. Its emitted
-`serviceIdentityIndependentlyVerified: false` is deliberate: current Render
-deploy/service identity and held external probes must be re-proved separately
-and must not be inferred from the script.
+The former main-only abort authority is superseded. Frozen
+`pre-abort-source-verifier.sh` (`18060` bytes / SHA-256
+`9c32300590c422cc5d1737cf536d2fadf91e3506979ec02e500bb26ea3a72d68`)
+ran and safely failed with diagnostic
+`TARGET_FAMILY_OR_SIDECAR_PRESENT`. The target, target `-wal`, target `-shm`,
+activation receipt, and deterministic work directory were actually absent. The
+old verifier did not bind source or target `-journal` absence; that is a new B2
+derivative gate. The bundled v1 family fence rejected the nonempty authoritative
+source `-wal`/`-shm`; it was not evidence of a target collision. No abort plan,
+execute, replay, checkpoint, source-sidecar removal, target publication, or
+`DATABASE_PATH` change followed that failure.
 
-Only after both preflight and separate external identity evidence pass may one
-abort plan run:
+The replacement read-only diagnostic is frozen ignored verifier
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\wal-aware-abort-source-verifier.sh`,
+exactly `24132` bytes / `685` LF lines / SHA-256
+`c036a2b847fe97c8ff8eade5a633d2d6815404344e2f683e241edce4f596e51e`.
+Its retained result and byte-identical ignored E-drive capture
+`wal-aware-abort-source-verifier-result.json` are `2747` bytes / SHA-256
+`deda5da68dabed9225b25165727e9c36d6cf46875947596e2b0f1b61afec1a9a`
+with code `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED`. This is diagnostic
+evidence on B-prime only, not authority to run B-prime's main-only abort-v1
+materializer.
+
+The diagnostic binds six stable authoritative-family snapshots and two complete
+`/proc` scans across eight processes with zero denied processes and zero holders.
+It binds this exact family on device `66332`, UID `1000`, mode `0600`, link count
+`1`:
+
+```text
+main: inode 131156; size 37744640; mtime/ctime ns 1787554966495529258;
+      SHA-256 b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103
+WAL:  inode 131151; size 568592; mtime/ctime ns 1787612907793135680;
+      SHA-256 0dde02d102f502b73e175f9c11741f13689c316cca4fbcb6c8146dc820884c1d
+SHM:  inode 131152; size 32768; mtime/ctime ns 1787612907789135562;
+      SHA-256 e03d9ff8a727d8e05e6231393df9f83f146d6a0b1b369050798c9acc481be17e
+```
+
+The diagnostic copied all three authoritative family members byte-for-byte into
+owned scratch. Private scratch main and WAL retained those exact sizes/hashes
+before and after read-only SQLite recovery; only private scratch SHM changed.
+The source SHM was therefore raw-read both for evidence/drift detection and for
+that private copy. SQLite opened only the scratch family and never opened any
+authoritative source path. Do not describe the authoritative family as wholly
+"unread": the exact statement is that SQLite never opened it. Integrity was `ok`, foreign-
+key violations were `0`, schema/migration counts were `54`/`54`, migration
+checksum set, database identity, and credential-rotation receipt were exact,
+sessions were `131` total / `2` active, and SQLite total changes were `0`.
+Classification was exact `to_b_accepted` / phase-one `published` / return
+`none`, with semantic/smoke/hosted completion all `false`, release blocked and
+rollback only both `true`. Source family stability, target-family/receipt/work
+absence, and owned scratch cleanup all passed.
+
+The only locally verified code candidate is the exact two-file abort-v2 diff on
+parent B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`:
+
+```text
+src/operations/release/materializeReleaseQaStrictRestore.js
+  369 insertions / 18 deletions
+  Git blob 4a198c71554b7e7c5fc8ee481cd79b51c1ef799f
+  SHA-256 d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889
+test/foundation/stagingReleaseQaStrictRestoreFoundation.test.js
+  830 insertions / 2 deletions
+  Git blob 53ce37cd04e48eb42323bab914d71ef3933c2c63
+  SHA-256 3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c
+```
+
+Diff/syntax checks passed; the focused foundation run passed `72/72` before the
+final narrow source-read normalization wrapper, and the exact final affected
+group passed `5/5`, including WAL and SHM drift rollback, SHM `EACCES`
+normalization, and read-only replay drift. Repository-local test cache/temp were
+removed and the backend worktree then contained only those two modified files.
+This remains an uncommitted, unpublished, undeployed candidate. No complete
+candidate suite or hosted candidate suite is yet recorded.
+
+The candidate leaves normal restore contract/receipt/result v1 unchanged and
+upgrades abort only to contract/receipt version `2` and plan namespace
+`release-qa-strict-restore-abort-v2-<sha256>`. Its deterministic work literal
+remains exactly
+`/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`.
+Abort-v2 binds main plus WAL identity/hash into the plan and receipt; it observes
+SHM presence/size for replay and checks full SHM identity/hash for within-
+invocation drift without copying SHM to scratch. It rejects source or target
+rollback journals and never checkpoints, deletes, renames, or opens the
+authoritative source with SQLite.
+
+Every following gate is still `PENDING`; none is recorded as passed by this
+amendment:
+
+1. Re-prove the backend worktree contains only the two exact files/hashes above,
+   commit them with exact parent B-prime, name the emitted child commit `B2`,
+   and push that exact commit to backend `origin/staging`. Any parent/tree/hash,
+   commit, push, or remote-head ambiguity hard-stops before deployment.
+2. Re-prove current Render deploy `dep-da6cu8h42hec738f2al0` is sole newest/
+   `LIVE` on B-prime under the already-passed full hold, and current Netlify
+   deploy `6a8c006abe46c8fb6269c40c` still serves sealed F/helper commit
+   `e898e72272e5a052867832dcf9f128e5b8d5730e`. Deploy exact B2 with a
+   `replace: false` `APP_BUILD_ID`-only merge while preserving
+   `STAGING_MAINTENANCE_HOLD=true`, `LEAGUE_WRITE_MODE=closed`,
+   `FREE_AGENT_DRAFT_ROUTES_ENABLED=false`, the source `DATABASE_PATH`, and every
+   other runtime value. Do not sync or apply `render.yaml`: its checked-in
+   blueprint contains `STAGING_MAINTENANCE_HOLD=false` and a generic database
+   path. Do not call a second deploy trigger. The maintenance-hold bootstrap is
+   the only permitted startup path because it serves health/maintenance without
+   importing or opening SQLite. Require the complete hosted suite, build,
+   startup, zero-error, exact B2/runtime, live/ready, and maintenance-blocked
+   ordinary-route gates before any verifier.
+3. Construct the new derivative ignored artifacts
+   `post-b2-abort-v2-source-verifier.sh` and
+   `post-b2-abort-v2-source-verifier-result.json`; freeze and cold-audit the
+   script, then run it once in a fresh attached shell. It must emit pending exact
+   code `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED` and independently bind exact
+   B2/service/deploy/hold/provider/backup identity, six stable source-family
+   snapshots, two complete zero-holder scans, the exact family above, absent
+   source and target rollback journals, exact target-family/receipt/work absence,
+   semantic classifier, zero database changes, and owned cleanup. It must copy
+   scratch main+WAL only, prove scratch SHM absent before opening scratch with
+   SQLite, observe an owned private SHM created during that open, prove the full
+   authoritative source family unchanged, and prove private scratch main/WAL
+   sizes and SHA-256 values byte-identical before/after recovery. Its new script/result byte counts and SHA-256
+   values must be retained. Any source-family drift or incomplete/ambiguous
+   result hard-stops; the B-prime `c036...`/`deda...` diagnostic cannot be
+   retargeted through pin changes or substitute for this gate.
+4. Only after step 3 is accepted may one abort-v2 plan run. Only after that exact
+   plan is accepted may one matching execute run. Only after an unambiguous
+   accepted first execute may the byte-identical execute command run once as
+   replay. The evidence and hard stops below govern each boundary.
+
+The current backend/Netlify state remains unchanged until those future actions
+actually complete. No checkpoint, authoritative sidecar removal, raw main-only
+classification/copy, B-prime abort-v1, normal restore, phase-two action, or
+action retry is authorized.
+
+After the fresh B2 verifier passes, the abort-v2 plan command is:
 
 ```text
 npm run release:qa:strict-restore:abort:plan -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json'
 ```
 
-Require exact code `RELEASE_QA_STRICT_RESTORE_ABORT_PLANNED`, the same
+Require exact code `RELEASE_QA_STRICT_RESTORE_ABORT_PLANNED`,
+`contractVersion: 2`, and a `planId` matching
+`release-qa-strict-restore-abort-v2-[a-f0-9]{64}`. Require the same
 `to_b_accepted` / `published` / `none` classifier, all three completion booleans
 `false`, `releaseBlocked: true`, `rollbackOnly: true`, the bound source/backup
 identities, `targetState: "absent"`, `authoritativeDatabaseMutationCount: 0`,
-and `durableFilesystemMutationCount: 0`. The plan's
+and `durableFilesystemMutationCount: 0`. The emitted family summary must be
+exactly `sourcePersistenceMode: "main-wal"`, source WAL SHA-256
+`0dde02d102f502b73e175f9c11741f13689c316cca4fbcb6c8146dc820884c1d`,
+`sourceWalSizeBytes: "568592"`, `sourceShmObserved: true`,
+`sourceWalIncludedInInspection: true`, `sourceShmIncludedInInspection: false`,
+and `sourcePersistentFamilyPreserved: true`. Verification must report
+`sourceSidecarsAbsent: false`, `sourcePersistentFamilyStable: true`, and the
+same WAL/SHM inspection booleans. The plan's
 `temporaryFilesystemWork` object must be field-for-field exact:
 
 ```json
@@ -670,7 +794,7 @@ and `durableFilesystemMutationCount: 0`. The plan's
 }
 ```
 
-Bind the exact emitted abort `planId` and confirmation. The work path above is
+Bind the exact emitted abort-v2 `planId` and confirmation. The work path above is
 the sole accepted literal, not an arbitrary emitted path. Any mismatch is a
 hard stop before execute. A nonzero exit, incomplete or ambiguous plan output,
 or shell disconnect leaves execute unauthorized: retain the full hold, preserve
@@ -681,12 +805,21 @@ execute:
 npm run release:qa:strict-restore:abort:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json' --plan-id '<exact emitted abort planId>' --confirmation '<exact emitted abort confirmation>'
 ```
 
-The exact confirmation must have form
+The exact abort-v2 confirmation must have form
 `ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK:<planId>:srv-d9eo2turnols73ekb830:HL-20260823-1:staging:test:release-qa:m7-release-qa-fixture:e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`.
-Require `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, `replayed: false`,
+Require `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, `contractVersion: 2`,
+`replayed: false`,
 `authoritativeDatabaseMutationCount: 0`, `durableFilesystemMutationCount: 2`,
-source preserved, target verified, `releaseBlocked: true`, and
-`rollbackOnly: true`. Its full `temporaryFilesystemWork` object must exactly
+source persistent family preserved, target verified at exact clean-backup
+plaintext SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`,
+`releaseBlocked: true`, and `rollbackOnly: true`. Require the same family
+summary as the plan and a canonical activation receipt with
+`formatVersion: 2`, the exact plan payload, the exact WAL identity fields
+(`sha256`, size, mtime ns, device, and inode), SHM observed/size, and the
+same inspection/preservation claims. The target `-wal`, `-shm`, and `-journal`
+and deterministic work directory must be absent after success. Its full
+`temporaryFilesystemWork` object must exactly
 match the plan's six-field object above, including the same contract-owned
 `deterministicPrivateWorkDirectory`. Bind every emitted identity, hash,
 receipt, mutation, and cleanup field. Any mismatch is a hard stop before
@@ -696,9 +829,10 @@ not authorize a blind retry or the nominal replay. Retain the full hold,
 preserve all evidence, and reconcile source, target, receipt, and work-area
 state under a separately authorized recovery decision. Only a complete accepted
 first-execute result authorizes running the exact byte-identical execute command
-once more. Require
-`replayed: true`, `authoritativeDatabaseMutationCount: 0`,
-`durableFilesystemMutationCount: 0`, and this exact full object:
+once more. Require `contractVersion: 2`, `replayed: true`,
+`authoritativeDatabaseMutationCount: 0`,
+`durableFilesystemMutationCount: 0`, the identical target hash, source-family
+summary, receipt SHA-256, and byte-identical receipt, and this exact full object:
 
 ```json
 {
@@ -713,7 +847,9 @@ once more. Require
 
 Any mismatch is a hard stop and cannot be recorded as accepted evidence.
 
-Stop after that replay. Phase two, any action/publisher retry, normal restore,
+Replay must perform no temporary work, object download/head, key resolution,
+restore, receipt write, target write, or source write. Stop after that replay.
+Phase two, any action/publisher retry, normal restore,
 normal confirmation, helper retirement, `DATABASE_PATH` activation, post-
 activation target verification, backup, reopening, closeout, and production
 are unauthorized.
@@ -748,8 +884,10 @@ The helper authorized only the canonical extensionless staging URL. Its source,
 tests, verifier, immutable deploy identity, headers, and expiration passed as
 recorded above. The action attempt is now terminal: phase one is partial
 evidence, phase two and retry are forbidden, the full hold is restored, and
-only abort preflight/plan/execute/replay is current authority. No helper or
-`netlify.toml` value from either predecessor grants current authority.
+only the exact abort-v2 B2 commit/push, held B2 deploy, fresh B2-pinned WAL
+verifier, and evidence-bound plan/execute/identical-replay chain above are
+current authority. No helper or `netlify.toml` value from either predecessor
+grants current authority.
 
 ## Gate Ledger
 
@@ -769,8 +907,12 @@ only abort preflight/plan/execute/replay is current authority. No helper or
 | Exact helper session and phase-one action/publication | `PARTIAL / TERMINAL` | Proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27` reached accepted state; publish event `974342b5-94e5-42d8-af20-9e07c35bc847` and exact publisher/replay `fresh 2` / `replay 0` are bound above. The later operator-sequencing mismatch makes these partial-release evidence only. |
 | Operator sequencing, phase two, and full privacy/cache smoke | `STRICT_STOP` | Chrome was Admin rather than Manager A during publication. Phase two never began, no return key/confirmation was used, no retry is allowed, and full smoke did not complete. |
 | Fail-closed full re-hold deployment and runtime | `PASS` | Exact merge-only inverse produced sole newest/LIVE B-prime deploy `dep-da6cu8h42hec738f2al0`; hosted `3,503/3,503`, build/startup, zero-error, health/readiness, and session/leagues/current-FAD maintenance proofs pass. |
-| Abort-only preflight | `PENDING` | Frozen `18060`-byte / `9c323005...` verifier has cold-audit GO but has not run; exact pass code and separate external service identity are mandatory. |
-| Abort plan, execute, and identical replay | `PENDING` | Only the exact abort-only commands, classifier, and acceptance matrix above are authorized: plan absent/`0/0` with its exact full temporary-work object; first execute `0/2` with the same object/path; replay `0/0` with its exact no-work object. Any mismatch or ambiguous command outcome hard-stops; plan ambiguity forbids execute, and first-execute ambiguity forbids blind retry/replay pending separately authorized state reconciliation. Stop after an accepted replay and bind emitted evidence before any further amendment. |
+| Main-only abort preflight | `SAFE-FAIL / SUPERSEDED` | Frozen `18060`-byte / `9c323005...` verifier ran and rejected the nonempty source WAL/SHM through its bundled family fence. Target/receipt/work were absent; no checkpoint, sidecar removal, plan, or target write followed. |
+| B-prime WAL-aware diagnostic | `DIAGNOSTIC VERIFIED / NOT EXECUTION AUTHORITY` | Frozen `24132`-byte / `c036...` verifier and `2747`-byte / `deda...` result bind the exact main/WAL/SHM family, zero holders, copied-family private recovery, accurate SHM read/copy terminology, semantic state, target-family absence, and cleanup. B-prime abort-v1 remains unauthorized. |
+| Exact two-file abort-v2 B2 commit and publication | `PENDING` | Commit only the two exact candidate files/hashes above with parent B-prime; record B2 and push that exact child to backend `origin/staging`. No candidate commit or push has occurred. |
+| Exact B2 held deployment/runtime | `PENDING` | Re-prove the current held environment before triggering; keep normal auto-deploy off, preserve the source path, merge only `APP_BUILD_ID=B2` with `replace: false`, never sync `render.yaml`, and require complete hosted/build/startup/zero-error plus held bare-HTTP runtime, unchanged main/WAL/SHM, and zero-holder evidence. Netlify remains unchanged. |
+| Fresh B2-pinned abort-v2 verifier | `PENDING` | New derivative `post-b2-abort-v2-source-verifier.sh` / `post-b2-abort-v2-source-verifier-result.json` must be frozen/cold-audited, use main+WAL-only scratch with SHM absent pre-open and privately created during open, prove source-family and scratch-main/WAL byte/hash stability, bind both rollback-journal fences, and emit `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. B-prime diagnostic hashes or pins-only edits cannot satisfy this gate. |
+| Abort-v2 plan, execute, and identical replay | `PENDING` | Only after the fresh verifier passes may the exact abort-v2 commands and acceptance matrix above run: v2 main-wal plan absent/`0/0`; first execute `0/2` with canonical v2 receipt; byte-identical replay `0/0` with no work. Any mismatch or ambiguous outcome hard-stops; plan ambiguity forbids execute, and first-execute ambiguity forbids blind retry/replay pending separately authorized state reconciliation. Stop after accepted replay and bind emitted evidence before any later amendment. |
 | Normal strict restore/replay | `NOT AUTHORIZED` | The successful-smoke condition never occurred. No normal plan, confirmation, execute, or replay may run. |
 | Post-abort helper retirement | `PENDING AUTHORITY` | Current helper remains published; retirement requires a second amendment after abort evidence is bound. |
 | Post-abort target activation, verification, and fresh backup | `PENDING AUTHORITY` | Target remains absent; activation, verifier, and backup require a second amendment after abort evidence is bound. |
@@ -802,7 +944,8 @@ accepted/published state with exact publisher/replay evidence, but the operator-
 sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry
 ran. Exact full re-hold deploy `dep-da6cu8h42hec738f2al0` now passes. The
 fixture-bearing source remains authoritative, its clean backup boundary remains
-verified, and the fresh target remains absent. Frozen abort-only preflight is
-the next `PENDING` gate. Normal recovery and every post-abort downstream step
+verified, and the fresh target remains absent. The exact abort-v2 B2 commit,
+held deployment, fresh B2 verifier, and plan/execute/replay gates remain
+`PENDING`. Normal recovery and every post-abort downstream step
 remain unauthorized pending the exact evidence and amendment boundaries above;
 production remains untouched.

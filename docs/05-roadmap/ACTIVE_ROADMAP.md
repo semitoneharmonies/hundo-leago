@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Run the frozen HL-20260823-1 abort-only preflight with separate external service proof; if and only if both pass, run one abort plan, one matching execute, and one byte-identical replay, then stop for evidence reconciliation
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD dep-da6cu8h42hec738f2al0 NEWEST + LIVE + HOSTED 3503/3503 + MAINTENANCE PROBES PASS / PHASE-ONE PROPOSAL e00e0512 + PUBLISH EVENT 974342b5 + FRESH2/REPLAY0 RETAINED / PRE-ACTION SOURCE b4163695 + CLEAN BACKUP e735e6a4 PRESERVED / TARGET ABSENT / ABORT PREFLIGHT 9c323005 PENDING / ABORT PLAN + EXECUTE + REPLAY AUTHORIZED NEXT / NORMAL RESTORE + PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT + ACTIVATION + VERIFICATION/BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Commit and push only the exact two-file abort-v2 candidate as B2; deploy exact B2 under the unchanged full hold without syncing render.yaml; construct, freeze, cold-audit, and require the new post-b2-abort-v2-source-verifier derivative; then, and only then, run one evidence-bound abort-v2 plan, matching execute, and byte-identical replay before stopping
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD dep-da6cu8h42hec738f2al0 NEWEST + LIVE ON B-PRIME + HOSTED 3503/3503 + MAINTENANCE PROBES PASS / NETLIFY 6a8c006 CURRENT + READY / MAIN-ONLY ABORT PREFLIGHT SAFE-FAILED ON SOURCE WAL+SHM / WAL-AWARE B-PRIME DIAGNOSTIC c036+deda VERIFIED BUT NOT EXECUTION AUTHORITY / EXACT TWO-FILE ABORT-V2 CANDIDATE d49c+3d97 LOCAL ONLY / B2 COMMIT+PUSH PENDING / B2 HELD DEPLOY PENDING / NEW DERIVATIVE POST-B2 ABORT-V2 VERIFIER PENDING / ABORT-V2 PLAN+EXECUTE+REPLAY PENDING / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1526,18 +1526,40 @@ suites / `3,503` tests all passed, build/startup and zero-error gates passed,
 and live/readiness plus maintenance-blocked session/leagues/current-FAD probes
 passed.
 
-The only next gate is the current run record's frozen `18060`-byte / SHA-256
-`9c323005...` abort preflight with exact code
-`HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` and separate external service proof. If
-both pass, one exact abort plan, one matching execute, and one byte-identical
-replay may run for exact `to_b_accepted` / `published` / `none` with semantic,
-smoke, and hosted completion all false. The run record's exact acceptance matrix
-is mandatory: plan absent/`0/0`, first execute `0/2`, replay `0/0`, and the full
-temporary-work objects with the identical contract-owned deterministic path;
-any mismatch hard-stops. Then stop. Phase two, retry, and normal restore are
-forbidden. Helper retirement, activation, verifier, backup, final review, and
-closeout require emitted abort evidence and a separate amendment. Production
-remains untouched; neither predecessor may be resumed or reused.
+The old `18060`-byte / `9c323005...` main-only abort preflight ran and safely
+failed its bundled family fence on the source WAL/SHM while target/receipt/work
+remained absent. B-prime WAL-aware diagnostic `c036a2b8...` and result
+`deda5da6...` instead bind the exact main `37744640` / `b4163695...`, WAL
+`568592` / `0dde02d1...`, SHM `32768` / `e03d9ff8...`, zero holders, exact
+`to_b_accepted` / `published` / `none`, private copied-family recovery,
+downstream absence, and cleanup. The diagnostic copied source main/WAL/SHM into
+owned scratch and opened only that scratch family; scratch main/WAL stayed
+unchanged while scratch SHM changed. SQLite never opened the authoritative
+paths. This diagnostic authorizes no B-prime abort-v1 action, checkpoint, or
+sidecar removal.
+
+The exact local abort-v2 implementation/test hashes are
+`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
+and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`;
+focused evidence is `72/72` before the final narrow wrapper plus `5/5` on the
+exact final affected group. No commit, push, or deploy exists yet. The current
+run record now authorizes only the ordered pending chain: exact two-file B2
+commit/push; exact B2 deployment with an `APP_BUILD_ID`-only merge under the
+unchanged full hold and no `render.yaml` sync; the new derivative
+`post-b2-abort-v2-source-verifier.sh` /
+`post-b2-abort-v2-source-verifier-result.json`, frozen and cold-audited before
+use, with pending code `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`; then one
+abort-v2 plan, matching execute, and byte-identical replay. That verifier must
+copy only main+WAL, prove scratch SHM absent before its private SQLite open and
+created during it, prove source-family and scratch-main/WAL byte/hash stability,
+and bind source/target rollback-journal absence. The B-prime
+diagnostic cannot satisfy it through pin changes alone. Contract/receipt v2
+binds main+WAL while preserving the exact
+`.strict-restore-work-v1` literal. Plan/execute/replay counts remain `0/0`,
+`0/2`, `0/0`; any mismatch or ambiguity hard-stops. Then stop. Normal restore,
+phase two/retry, helper or Netlify change, activation, verifier, backup, final
+review, closeout, and production remain unauthorized; neither predecessor may
+be resumed or reused.
 
 ## Historical Milestone Evidence
 

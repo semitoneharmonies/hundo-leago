@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT PREFLIGHT NEXT; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; WAL-AWARE ABORT-V2 B2 CHAIN PENDING; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -117,41 +117,67 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   build/startup, zero-error, health/readiness, and session/leagues/current-FAD
   `503 SERVICE_MAINTENANCE` gates pass. Prior `dep-da60sl0jo6nc73e0cfu0` is
   deactivated.
-- [ ] `RC-STG-006G23` Run frozen `pre-abort-source-verifier.sh`, exactly `18060`
-  bytes / SHA-256 `9c323005...`, verbatim and require
-  `HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED`, exact
-  `to_b_accepted` / `published` / `none`, semantic/smoke/hosted completion all
-  false, release blocked/rollback only, target-family absence, cleanup, and
-  separate external service identity proof.
-- [ ] `RC-STG-006H23` If and only if `RC-STG-006G23` passes, run the exact current
-  run-record abort plan, one matching execute, and one byte-identical replay.
-  Hard-require plan `targetState: "absent"` and mutation counts `0/0`; first
-  execute mutation counts `0/2`; and replay mutation counts `0/0`, using exact
-  fields `authoritativeDatabaseMutationCount` / `durableFilesystemMutationCount`.
-  Plan and first execute must expose the full `temporaryFilesystemWork` object
-  as `performed: true`, `plaintextDatabaseMaterialized: true`, the same exact
-  `deterministicPrivateWorkDirectory` literal
+- [x] `RC-STG-006G23` Preserve the main-only verifier as `SAFE-FAIL /
+  SUPERSEDED`, not pass evidence. It ran and returned
+  `TARGET_FAMILY_OR_SIDECAR_PRESENT` because source WAL/SHM were nonempty while
+  target family, receipt, and work were absent. No checkpoint, sidecar removal,
+  abort-v1 plan, or target write followed.
+- [x] `RC-STG-006H23` Preserve the B-prime WAL-aware run as `DIAGNOSTIC ONLY`.
+  Script `24132` bytes / `685` LF lines / SHA-256 `c036a2b8...` and result
+  `2747` bytes / SHA-256 `deda5da6...` / code
+  `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED` bind exact main `37744640` /
+  `b4163695...`, WAL `568592` / `0dde02d1...`, SHM `32768` / `e03d9ff8...`,
+  zero holders, semantic state, downstream absence, and cleanup. It copied all
+  three source-family members into owned scratch; SQLite opened only that copy,
+  whose main/WAL stayed unchanged while SHM changed. This grants no B-prime
+  abort-v1 execution authority.
+- [ ] `RC-STG-006I23` Re-prove the backend tree contains only the exact abort-v2
+  implementation/test hashes `d49c870b...` / `3d9714ca...` on parent B-prime;
+  commit them as emitted child B2 and push exact B2 to `origin/staging`. Require
+  exact parent/tree/hash/local/remote evidence. Any ambiguity stops.
+- [ ] `RC-STG-006J23` Re-prove current held Render
+  `dep-da6cu8h42hec738f2al0` and current/`READY` Netlify
+  `6a8c006abe46c8fb6269c40c`. Keep normal auto-deploy off. Deploy exact B2 with
+  one `replace: false` `APP_BUILD_ID`-only merge, preserving full hold and source
+  path; do not sync `render.yaml` or add another deploy trigger. Require the
+  complete hosted suite, build/startup/zero-error, exact B2, bare maintenance
+  HTTP runtime, unchanged main/WAL/SHM, and zero database holders.
+- [ ] `RC-STG-006K23` Construct the new derivative
+  `post-b2-abort-v2-source-verifier.sh` and
+  `post-b2-abort-v2-source-verifier-result.json`; freeze, cold-audit, and run it
+  once. Bind its new exact hashes and pending exact success code
+  `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. Require exact B2/service/deploy/
+  hold/provider/backup, six stable source snapshots, two complete zero-holder
+  scans, unchanged source family, source/target rollback-journal and downstream
+  absence, exact semantic state, zero changes, and cleanup. Copy only scratch
+  main+WAL; require scratch SHM absent pre-open and privately owned/created during
+  the private SQLite open, the source family unchanged, and scratch main/WAL
+  bytes and hashes unchanged before/after recovery. A pins-only c036 derivative
+  or ambiguity stops.
+- [ ] `RC-STG-006L23` Only after `RC-STG-006K23` passes, run one exact abort-v2
+  plan. Require contract `2`, `main-wal`, exact WAL binding,
+  `release-qa-strict-restore-abort-v2-<sha256>`, `targetState: "absent"`, and
+  mutation counts `0/0`. Its `temporaryFilesystemWork` must be exact:
+  `performed: true`, `plaintextDatabaseMaterialized: true`, deterministic path
   `/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`,
   `retained: false`, `processLocalCleanup: "verified"`, and
   `abruptTerminationRecovery: "fail-closed-at-deterministic-work-directory"`.
-  Replay must expose the full object as `performed: false`,
-  `plaintextDatabaseMaterialized: false`, that same exact path,
-  `retained: false`, `processLocalCleanup: "not-needed"`, and the same abrupt-
-  termination value. Bind every emitted plan/confirmation/receipt/hash/
-  mutation/cleanup field, then stop. Any mismatch is a hard stop. Nonzero,
-  incomplete, ambiguous, disconnected, or unknown plan output forbids execute.
-  The same outcome before a complete accepted first-execute `0/2` result
-  forbids blind retry and nominal replay; retain the full hold and evidence and
-  reconcile source/target/receipt/work state only under a separately authorized
-  recovery decision. Normal plan/execute/replay is not authorized.
-- [ ] `RC-STG-006I23` Post-abort helper retirement remains `PENDING AUTHORITY`.
+  Nonzero, incomplete, ambiguous, disconnected, or unknown output forbids
+  execute.
+- [ ] `RC-STG-006M23` Only after the exact plan passes, run one matching execute.
+  Require receipt version `2`, the exact main/WAL/SHM evidence, source
+  persistent-family preservation, clean target, canonical receipt, absent target
+  WAL/SHM/journal and work, and mutation counts `0/2`. Ambiguous execute forbids
+  blind retry and replay. Only an unambiguous accepted execute authorizes its
+  byte-identical replay once; require identical target/receipt hashes, no work or
+  external restore access, and `0/0`. Then stop.
+- [ ] `RC-STG-006N23` Post-abort helper retirement remains `PENDING AUTHORITY`.
   It requires a separate amendment after abort evidence is bound.
-- [ ] `RC-STG-006J23` Post-abort target activation remains `PENDING AUTHORITY`.
+- [ ] `RC-STG-006O23` Post-abort target activation remains `PENDING AUTHORITY`.
   No `DATABASE_PATH` change is authorized by this checklist revision.
-- [ ] `RC-STG-006K23` Post-abort target verification remains
-  `PENDING AUTHORITY`; the unused normal verifier is not abort authority.
-- [ ] `RC-STG-006L23` Post-abort backup, final staging reopening/review,
-  closeout, and production remain `PENDING AUTHORITY` after the mandatory stop.
+- [ ] `RC-STG-006P23` Post-abort target verification, backup, final staging
+  reopening/review, closeout, and production remain `PENDING AUTHORITY` after
+  the mandatory stop. Normal restore remains forbidden.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -1383,7 +1409,8 @@ The fresh release-specific counterparts through controlled-unhold runtime and
 unheld pre-smoke verification passed as recorded in the live ledger. Phase one
 then reached accepted/published state, but operator sequencing selected
 `STRICT_STOP`; phase two never began. Full re-hold passes. The only pending
-executable counterparts are abort preflight/plan/execute/identical replay;
+executable counterparts are exact abort-v2 B2 commit/push, held deployment,
+fresh B2-pinned verification, and evidence-bound plan/execute/identical replay;
 normal restore and phase two are forbidden. Helper retirement, activation,
 verification/backup, and final review await a separate post-abort amendment.
 The authoritative live ledger is
