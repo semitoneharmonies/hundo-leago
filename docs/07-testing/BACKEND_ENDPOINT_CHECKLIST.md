@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER + ABORT-V2 PLAN PASS; FIRST EXECUTE NEXT)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -404,14 +404,22 @@ main+WAL-only scratch, private SHM creation, unchanged source and scratch
 main/WAL, integrity/schema/semantic state, zero changes, rollback-journal and
 downstream absence, and cleanup pass.
 
-Only one exact abort-v2 plan is now authorized. Require contract `2`,
-`main-wal`, exact WAL binding, the `release-qa-strict-restore-abort-v2-`
-namespace, unchanged `.strict-restore-work-v1` literal and exact temporary-work
-object, target absent, and mutation counts `0/0`. Any mismatch, ambiguity,
-disconnect, or nonzero outcome hard-stops. Execute `0/2` and replay `0/0` remain
-future acceptance targets, not current authority; accepted-plan evidence must be
-reconciled through a later amendment before execute. Execute and replay remain
-unauthorized by this checklist revision.
+One exact abort-v2 plan ran once and passed at `0/0`. The detailed run ledger
+seals its `4777`-byte / `cef33b8f...` stdout, `4146`-byte / `30441740...`
+canonical result, `1809`-byte / `ec338025...` cleanup-aware metadata, empty
+stderr, and exact plan ID
+`release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+Contract `2`, `main-wal`, exact WAL/family/classifier binding, absent target,
+the exact `.strict-restore-work-v1` temporary-work object, and `0/0` pass.
+
+Only one matching first execute using that plan ID and exact recorded
+confirmation is now authorized. Require unambiguous contract `2`,
+`replayed: false`, `0/2`, exact temporary-work object, target SHA-256
+`cf3ca07d...`, and canonical receipt/persistent-family binding. Any mismatch,
+ambiguity, disconnect, missing output, or nonzero outcome forbids retry/replay
+and returns to full-hold reconciliation. Replay `0/0` remains a future
+acceptance target, not current authority; an accepted first execute must be
+frozen through a later amendment before replay.
 Normal restore, phase two/retry, helper or Netlify change, checkpoint/sidecar
 removal, retirement, activation, later verifier/backup, reopening/review, and
 production require later authority. Historical `HL-20260822-1` values remain

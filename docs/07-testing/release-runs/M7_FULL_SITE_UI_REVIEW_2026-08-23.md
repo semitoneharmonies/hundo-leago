@@ -2,7 +2,7 @@
 
 ## Status
 
-`AUTHORIZED / MINTED; RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH ABORT-V2 VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT`
+`AUTHORIZED / MINTED; RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH ABORT-V2 VERIFIER PASS; ABORT-V2 PLAN PASS; ONE MATCHING FIRST EXECUTE NEXT; REPLAY NOT AUTHORIZED`
 
 Release `HL-20260823-1` is a new isolated-staging release. It does not reopen,
 resume, or reuse blocked release `HL-20260822-1`. Production remains untouched
@@ -48,9 +48,10 @@ construction/local verification, corrected helper publication, and controlled-
 unhold deployment/runtime verification passed. Phase one later reached accepted
 and published state, but the browser operator sequence failed closed before the
 return phase. Full re-hold, exact abort-v2 B2 mint/publication, the held B2
-deployment/runtime gate, and the fresh B2-pinned verifier now pass. The sole
-next authorized mutation is one exact abort-v2 plan; execute and replay remain
-unauthorized until that plan is accepted and the active ledger is amended.
+deployment/runtime gate, the fresh B2-pinned verifier, and one exact abort-v2
+plan now pass. The sole next authorized mutation is one matching first execute;
+replay remains unauthorized until an exact accepted `0/2` execute is frozen and
+the active ledger is amended again.
 
 ## B-Prime Implementation, Local Verification, and Publication
 
@@ -793,32 +794,73 @@ sessions `131` total / `2` active, exact assignment
 semantic/smoke/hosted completion all `false`, release-blocked and rollback-only
 both `true`, SQLite changes `0`, both rollback journals and every downstream
 artifact absent, and owned cleanup complete. The verifier itself deliberately
-denied plan/execute authority until ledger acceptance; this amendment accepts
-the verifier evidence for one plan only.
+denied plan/execute authority until ledger acceptance; the preceding amendment
+accepted that verifier evidence for one plan only.
 
-## Current Abort-v2 Plan-Only Authority
+## Accepted Abort-v2 Plan Evidence
 
-The sole next authorized mutation is exactly one abort-v2 plan command:
+After an exact fresh-shell `pwd`, Git/build, full-hold, and authoritative-source
+guard on instance `thxsc`, with frontend HEAD/`origin/staging` exact
+`8e94431132e5edb33bce163a9d98d22adaf8e614` and clean and backend HEAD/
+`origin/staging` exact B2 and clean, the following plan command ran exactly once
+and exited `0`:
 
 ```text
 npm run release:qa:strict-restore:abort:plan -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json'
 ```
 
-Require exact code `RELEASE_QA_STRICT_RESTORE_ABORT_PLANNED`,
-`contractVersion: 2`, and a `planId` matching
-`release-qa-strict-restore-abort-v2-[a-f0-9]{64}`. Require the same
-`to_b_accepted` / `published` / `none` classifier, all three completion booleans
-`false`, `releaseBlocked: true`, `rollbackOnly: true`, the bound source/backup
-identities, `targetState: "absent"`, `authoritativeDatabaseMutationCount: 0`,
-and `durableFilesystemMutationCount: 0`. The emitted family summary must be
-exactly `sourcePersistenceMode: "main-wal"`, source WAL SHA-256
+Raw stdout is retained in ignored artifact
+`.netlify/strict-release-HL-20260823-1/abort-v2-plan-stdout.txt`, exactly `4777`
+bytes / five LF / zero CR / final LF with SHA-256
+`cef33b8f90b510fe6b9f034d2f1968dab9baddc1ae7f6dbc59ccf2bff3a798e1`.
+Canonical one-line result
+`.netlify/strict-release-HL-20260823-1/abort-v2-plan-result.json` is exactly
+`4146` bytes / one LF / zero CR / final LF with SHA-256
+`30441740eb87e4194b9d7c599d1a87d93765144303b6a5900cc799588d067e2a`.
+Stderr was empty, `0` bytes / SHA-256
+`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+
+Final cleanup-aware capture metadata
+`.netlify/strict-release-HL-20260823-1/abort-v2-plan-capture-metadata.json` is
+exactly `1809` bytes / one LF / zero CR / final LF with SHA-256
+`ec338025ffa5610365102f391bafed76b6624d8348d25b840bd53bdaf37f398d`.
+It binds authority commit `8e94431132e5edb33bce163a9d98d22adaf8e614`, one command, exit `0`,
+the local stdout/result seals, and exact remote mode-`0600` captures
+`/tmp/hl23-abort-v2-plan-20260825T050650Z-8e944311.stdout` and
+`/tmp/hl23-abort-v2-plan-20260825T050650Z-8e944311.stderr`. Both remote files
+were validated as regular non-symlinks with exact owner/mode/size/hash, removed
+only after local verification, and confirmed by marker
+`__HL23_CAPTURE_CLEANUP_OK__`. The agent-created shell tab was closed.
+The metadata's `executeAuthorized: false` and `replayAuthorized: false`
+correctly record the preceding plan-only authority at capture time; this
+amendment authorizes only the matching first execute and leaves replay false.
+
+The accepted result code is `RELEASE_QA_STRICT_RESTORE_ABORT_PLANNED` with
+`contractVersion: 2` and exact plan ID
+`release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+Its exact confirmation is:
+
+```text
+ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK:release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456:srv-d9eo2turnols73ekb830:HL-20260823-1:staging:test:release-qa:m7-release-qa-fixture:e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6
+```
+
+The result binds exact `to_b_accepted` / `published` / `none`, all three
+completion booleans `false`, `releaseBlocked: true`, `rollbackOnly: true`, the
+source/backup identities, `targetState: "absent"`,
+`authoritativeDatabaseMutationCount: 0`, and
+`durableFilesystemMutationCount: 0`. Its family summary is exactly
+`sourcePersistenceMode: "main-wal"`, source WAL SHA-256
 `0dde02d102f502b73e175f9c11741f13689c316cca4fbcb6c8146dc820884c1d`,
 `sourceWalSizeBytes: "568592"`, `sourceShmObserved: true`,
 `sourceWalIncludedInInspection: true`, `sourceShmIncludedInInspection: false`,
 and `sourcePersistentFamilyPreserved: true`. Verification must report
 `sourceSidecarsAbsent: false`, `sourcePersistentFamilyStable: true`, and the
-same WAL/SHM inspection booleans. The plan's
-`temporaryFilesystemWork` object must be field-for-field exact:
+same WAL/SHM inspection booleans. Emitted receipt, source-inspection, and
+candidate-inspection hashes are respectively
+`24adf2d36c1adae8674552d44fc99fb43fd875dd58be85008f0c00b35450e8c8`,
+`d41571620c9f2bf93968e83da0b7847770fb75ea1260765017edcabe45c2ccca`,
+and `362a799abf311110b5e651827e713a07e006ce8966792d3c49a8adef89673b3d`.
+The accepted plan's `temporaryFilesystemWork` object is field-for-field exact:
 
 ```json
 {
@@ -831,25 +873,26 @@ same WAL/SHM inspection booleans. The plan's
 }
 ```
 
-Bind the exact emitted abort-v2 `planId` and confirmation. The work path above is
-the sole accepted literal, not an arbitrary emitted path. Any mismatch is a
-hard stop. A nonzero exit, incomplete or ambiguous plan output, shell disconnect,
-or any output other than exact v2 `main-wal`, absent target, `0/0`, and the
-six-field temporary-work object leaves execute unauthorized. Preserve the full
-hold and all evidence, then stop for reconciliation. Even an exact accepted plan
-must be frozen into the active ledger before execute receives authority.
+Postflight proved source rollback journal, target family/journal, activation
+receipt, and deterministic work directory absent. Main/WAL/SHM retained exact
+SHA-256 values
+`b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103` /
+`0dde02d102f502b73e175f9c11741f13689c316cca4fbcb6c8146dc820884c1d` /
+`e03d9ff8a727d8e05e6231393df9f83f146d6a0b1b369050798c9acc481be17e`,
+device `66313`, and inodes `131156` / `131151` / `131152`. The final scan
+observed seven processes / `65` file descriptors / zero holders. Render
+remained sole newest/`LIVE` on exact B2 with no newer deploy and error logs
+empty through `2026-08-25T05:15:42Z`; Netlify remained unchanged.
 
-### Future Gated Execute and Replay Contract - Not Currently Authorized
+## Current One-Time First-Execute Authority - Replay Not Authorized
 
-The matching execute command is retained below as a future acceptance contract,
-not current execution authority:
+The sole next authorized mutation is exactly one matching first execute command
+using the accepted plan ID and confirmation byte-for-byte:
 
 ```text
-npm run release:qa:strict-restore:abort:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json' --plan-id '<exact emitted abort planId>' --confirmation '<exact emitted abort confirmation>'
+npm run release:qa:strict-restore:abort:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json' --plan-id 'release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456' --confirmation 'ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK:release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456:srv-d9eo2turnols73ekb830:HL-20260823-1:staging:test:release-qa:m7-release-qa-fixture:e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6'
 ```
 
-The exact abort-v2 confirmation must have form
-`ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK:<planId>:srv-d9eo2turnols73ekb830:HL-20260823-1:staging:test:release-qa:m7-release-qa-fixture:e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`.
 Require `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, `contractVersion: 2`,
 `replayed: false`,
 `authoritativeDatabaseMutationCount: 0`, `durableFilesystemMutationCount: 2`,
@@ -860,7 +903,9 @@ plaintext SHA-256
 summary as the plan and a canonical activation receipt with
 `formatVersion: 2`, the exact plan payload, the exact WAL identity fields
 (`sha256`, size, mtime ns, device, and inode), SHM observed/size, and the
-same inspection/preservation claims. The target `-wal`, `-shm`, and `-journal`
+same inspection/preservation claims. Its SHA-256 must equal the plan-bound
+`24adf2d36c1adae8674552d44fc99fb43fd875dd58be85008f0c00b35450e8c8`.
+The target `-wal`, `-shm`, and `-journal`
 and deterministic work directory must be absent after success. Its full
 `temporaryFilesystemWork` object must exactly
 match the plan's six-field object above, including the same contract-owned
@@ -870,9 +915,11 @@ replay. A nonzero exit, incomplete or ambiguous output, shell disconnect, or
 unknown commit/completion state before this full `0/2` result is accepted does
 not authorize a blind retry or the nominal replay. Retain the full hold,
 preserve all evidence, and reconcile source, target, receipt, and work-area
-state under a separately authorized recovery decision. Only a complete accepted
-first-execute result authorizes running the exact byte-identical execute command
-once more. Require `contractVersion: 2`, `replayed: true`,
+state under a separately authorized recovery decision. Do not retry and do not
+replay. Even a complete accepted first-execute result must be captured, frozen,
+and reconciled through another active-ledger amendment before replay can receive
+authority. A future replay acceptance contract would require
+`contractVersion: 2`, `replayed: true`,
 `authoritativeDatabaseMutationCount: 0`,
 `durableFilesystemMutationCount: 0`, the identical target hash, source-family
 summary, receipt SHA-256, and byte-identical receipt, and this exact full object:
@@ -888,9 +935,8 @@ summary, receipt SHA-256, and byte-identical receipt, and this exact full object
 }
 ```
 
-Any mismatch is a hard stop and cannot be recorded as accepted evidence. Execute
-and replay remain forbidden until an accepted plan is separately reconciled into
-the active authority documents.
+Any mismatch is a hard stop and cannot be recorded as accepted evidence. Replay
+remains forbidden under this amendment.
 
 If a later amendment authorizes it, replay must perform no temporary work,
 object download/head, key resolution, restore, receipt write, target write, or
@@ -900,8 +946,8 @@ normal confirmation, helper retirement, `DATABASE_PATH` activation, post-
 activation target verification, backup, reopening, closeout, and production
 are unauthorized.
 Post-abort helper retirement, activation, verifier, and backup remain `PENDING`
-until a second active-document authority amendment binds the emitted abort
-plan/execute/replay evidence. No predecessor or normal-mode literal, plan,
+until later active-document authority amendments bind the emitted abort execute/
+replay evidence. No predecessor or normal-mode literal, plan,
 receipt, target, key, or confirmation may be reused.
 
 ## Historical Conditional Successful-Smoke Authority - Never Activated
@@ -931,9 +977,11 @@ tests, verifier, immutable deploy identity, headers, and expiration passed as
 recorded above. The action attempt is now terminal: phase one is partial
 evidence, phase two and retry are forbidden, the full hold is restored, and
 exact abort-v2 B2 deployment/runtime and the fresh B2-pinned WAL verifier now
-pass. Only the exact abort-v2 plan above is current mutation authority; execute
-and replay require accepted-plan reconciliation and a later amendment. No
-helper or `netlify.toml` value from either predecessor grants current authority.
+pass. The exact abort-v2 plan above also passed and is frozen. Only its one
+matching first execute is current mutation authority; replay requires an exact
+accepted `0/2` execute, a new frozen evidence amendment, and separate authority.
+No helper or `netlify.toml` value from either predecessor grants current
+authority.
 
 ## Gate Ledger
 
@@ -958,11 +1006,12 @@ helper or `netlify.toml` value from either predecessor grants current authority.
 | Exact two-file abort-v2 B2 commit and publication | `PASS` | Exact B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct parent B-prime and tree `0a6a928d...`, changes only the two recorded paths with exact blobs/hashes/numstat and `57541`-byte / `eb963d6b...` raw-diff seal. Diff/syntax, focused `72/72`, and exact-final `5/5` pass; backend HEAD and `origin/staging` equal B2 and the backend worktree is clean. |
 | Exact B2 held deployment/runtime | `PASS` | Exact one-key merge produced sole newest/LIVE API deploy `dep-da6ghj67bikc738hbbv0` on B2; hosted `3,519/3,519`, build/startup, zero-error, held bare-HTTP, exact 20-key/nine-absent runtime, unchanged main/WAL/SHM, two zero-holder scans, downstream absence, and unchanged Netlify `6a8c006abe46c8fb6269c40c` pass. |
 | Fresh B2-pinned abort-v2 verifier | `PASS` | Frozen `35494`-byte / `6d5c...` derivative and `6032`-byte / `80c7...` one-shot result passed local syntax/static/cold audit and emitted `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`; six source boundaries, two `8`-process/`85`-descriptor zero-holder scans, main+WAL-only scratch, private SHM creation, source/scratch stability, rollback-journal/downstream absence, semantic state, zero changes, and cleanup are bound above. |
-| Abort-v2 plan | `AUTHORIZED NEXT / PENDING EXECUTION` | Run exactly one plan only. Require contract v2, `main-wal`, absent target, exact classifier/WAL binding, `release-qa-strict-restore-abort-v2-<sha256>`, both mutation counts `0`, and the exact six-field temporary-work object. Any mismatch, ambiguity, disconnect, or nonzero result hard-stops. |
-| Abort-v2 execute and identical replay | `PENDING AUTHORITY` | Do not execute under this amendment. An exact accepted plan must first be frozen and reconciled into the active ledger. A later amendment may authorize one matching `0/2` execute and, only after unambiguous acceptance, one byte-identical `0/0` replay. |
+| Abort-v2 plan | `PASS` | Exact one-shot exit `0`; stdout `4777` bytes / `cef33b8f...`, canonical result `4146` bytes / `30441740...`, cleanup-aware metadata `1809` bytes / `ec338025...`, and empty stderr are sealed above. Contract v2, exact plan ID `release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`, `main-wal`, absent target, classifier/WAL/family binding, exact six-field temporary-work object, and `0/0` pass. Remote captures were verified and removed after local verification. |
+| Abort-v2 first execute | `AUTHORIZED NEXT / PENDING EXECUTION` | Run exactly once with the exact command, accepted plan ID, and confirmation above. Require unambiguous exit/output, `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract v2, `replayed: false`, `0/2`, exact temporary-work object, target SHA-256 `cf3ca07d...`, canonical receipt, and persistent-family binding. Any mismatch, ambiguity, disconnect, or missing output forbids retry and replay and returns to full-hold reconciliation. |
+| Abort-v2 identical replay | `PENDING AUTHORITY` | Do not replay under this amendment. Even an exact accepted first execute must be frozen in another active-ledger amendment before one byte-identical `0/0` replay can receive authority. |
 | Normal strict restore/replay | `NOT AUTHORIZED` | The successful-smoke condition never occurred. No normal plan, confirmation, execute, or replay may run. |
-| Post-abort helper retirement | `PENDING AUTHORITY` | Current helper remains published; retirement requires a second amendment after abort evidence is bound. |
-| Post-abort target activation, verification, and fresh backup | `PENDING AUTHORITY` | Target remains absent; activation, verifier, and backup require a second amendment after abort evidence is bound. |
+| Post-abort helper retirement | `PENDING AUTHORITY` | Current helper remains published; retirement requires a later amendment after execute/replay evidence is bound. |
+| Post-abort target activation, verification, and fresh backup | `PENDING AUTHORITY` | Target remains absent before first execute; activation, verifier, and backup require a later amendment after execute/replay evidence is bound. |
 | Final desktop/mobile matrix, observation, and M7-26 closeout | `PENDING` | Requires every prior gate. |
 
 Any strict stop or failed gate stops the release immediately and invokes only
@@ -993,8 +1042,9 @@ ran. Exact full re-hold deploy `dep-da6cu8h42hec738f2al0` passed and later
 handed off safely to sole newest/`LIVE` exact-B2 deploy
 `dep-da6ghj67bikc738hbbv0`. Its hosted/runtime gate and the fresh B2 verifier
 pass exactly as recorded above. The fixture-bearing source remains
-authoritative, its clean backup boundary remains verified, and the fresh target,
-receipt, and work area remain absent. The sole next authorized mutation is the
-exact abort-v2 plan. Execute/replay, normal recovery, and every post-abort
-downstream step remain unauthorized pending accepted-plan evidence and another
-amendment; production remains untouched.
+authoritative, its clean backup boundary remains verified, and the accepted
+abort-v2 plan is frozen with target, receipt, and work area still absent. The
+sole next authorized mutation is exactly one matching first execute using the
+recorded plan ID and confirmation. Replay, retry, normal recovery, and every
+post-abort downstream step remain unauthorized pending exact accepted `0/2`
+evidence and another amendment; production remains untouched.

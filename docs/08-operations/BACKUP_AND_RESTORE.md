@@ -1244,7 +1244,7 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; held B2 and fresh verifier pass; abort-v2 plan only next
+#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; held B2, fresh verifier, and abort-v2 plan pass; first execute next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
@@ -1391,30 +1391,42 @@ creation, unchanged source and scratch main/WAL, integrity/FK/schema/migration/
 checksum and exact semantic state, zero changes, rollback-journal/downstream
 absence, and cleanup.
 
-The only authorized pending operational action is one abort-v2 plan. Its
-confirmation—not any normal or predecessor confirmation—must use the emitted
-`ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK` form and a
-`release-qa-strict-restore-abort-v2-<sha256>` plan. Require contract version `2`,
-`sourcePersistenceMode: "main-wal"`, exact WAL identity/hash, SHM observed but
-not included in SQLite inspection, exact classifier/backup/source, target
-absent, both mutation counts `0`, and the exact temporary-work object below.
-Any mismatch, ambiguity, disconnect, or nonzero output hard-stops. Freeze and
-reconcile even an exact accepted plan before any later mutation. Execute `0/2`
-and replay `0/0` remain future acceptance targets, not current authority; they
-require a later active-ledger amendment after accepted-plan evidence.
+One abort-v2 plan ran exactly once after the fresh-shell guards and passed at
+`0/0`. The detailed run ledger seals stdout `4777` bytes / `cef33b8f...`,
+canonical result `4146` bytes / `30441740...`, cleanup-aware metadata `1809`
+bytes / `ec338025...`, empty stderr, and exact plan ID
+`release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+Contract version `2`, `sourcePersistenceMode: "main-wal"`, exact WAL/family/
+classifier/backup/source binding, SHM observed but not included in SQLite
+inspection, target absent, both mutation counts `0`, and the exact temporary-
+work object below pass. Postflight retained exact main/WAL/SHM on current device
+`66313`, inodes `131156` / `131151` / `131152`, with seven processes / `65`
+descriptors / zero holders; journals and all downstream objects remained absent.
+
+The only authorized pending operational action is exactly one matching first
+execute using that plan ID and its exact recorded abort confirmation—not any
+normal or predecessor confirmation. Require unambiguous contract version `2`,
+`replayed: false`, database/filesystem mutation counts `0/2`, the exact
+temporary-work object, target SHA-256 `cf3ca07d...`, and canonical receipt/
+persistent-family binding. Any mismatch, ambiguity, disconnect, missing output,
+or nonzero result forbids retry and replay and returns to full-hold
+reconciliation. Replay `0/0` is a future acceptance target, not current
+authority; exact accepted first-execute evidence must be frozen into another
+active-ledger amendment before replay.
 
 The deterministic work path remains exactly
 `/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`.
-The currently authorized plan requires performed/materialized `true`, retained
-`false`, cleanup `verified`, and fail-closed abrupt recovery. A future execute
-would require the same; a future replay would require performed/
+The accepted plan and currently authorized first execute require performed/
+materialized `true`, retained `false`, cleanup `verified`, and fail-closed
+abrupt recovery. A future replay would require performed/
 materialized `false`, retained `false`, cleanup `not-needed`, and the same
 fail-closed value. Any nonzero, incomplete, disconnected, ambiguous, or
-mismatched result stops. Plan ambiguity forbids execute; execute ambiguity
-forbids blind retry/replay and requires separately authorized reconciliation.
+mismatched result stops. Execute ambiguity forbids retry/replay and requires
+separately authorized full-hold reconciliation.
 
-Execute and replay are forbidden by this amendment. Phase two/retry, normal
-restore, helper or Netlify change, checkpoint, source-sidecar removal,
+Exactly one matching first execute is authorized by this amendment; retry and
+replay are forbidden. Phase two, normal restore, helper or Netlify change,
+checkpoint, source-sidecar removal,
 `DATABASE_PATH` activation, later
 target verification/backup, reopening, final review, closeout, and production
 remain unauthorized pending a later evidence-bound amendment.

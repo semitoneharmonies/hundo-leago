@@ -107,7 +107,7 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Release - 2026-08-23 (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT)
+### M7-26 Fresh Strict Release - 2026-08-23 (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER + ABORT-V2 PLAN PASS; FIRST EXECUTE NEXT)
 
 Grae requested and approved `HL-20260823-1` at exact
 requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
@@ -242,14 +242,24 @@ main+WAL-only scratch with private SHM creation, unchanged source and scratch
 main/WAL, exact integrity/schema/semantic state, zero changes, both rollback-
 journal and downstream absence, and cleanup.
 
-Testing now authorizes exactly one abort-v2 plan only. Require contract `2`,
-`main-wal`, exact WAL identity/hash, abort-v2 plan namespace, exact
-`to_b_accepted` / `published` / `none`, target absent, both mutation counts
-`0`, and the exact `.strict-restore-work-v1` six-field temporary-work object.
-Any nonzero, incomplete, disconnected, ambiguous, or mismatched result stops.
-Execute and replay remain unauthorized until exact accepted-plan evidence is
-reconciled into a later amendment; their future acceptance targets remain
-`0/2` and `0/0`. Phase two/retry, normal restore, helper/Netlify change,
+One exact abort-v2 plan ran once and passed at `0/0`. The detailed run record
+seals stdout `4777` bytes / `cef33b8f...`, result `4146` bytes /
+`30441740...`, cleanup-aware metadata `1809` bytes / `ec338025...`, empty
+stderr, and exact plan ID
+`release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+Contract `2`, `main-wal`, exact WAL/family/classifier binding, absent target,
+both mutation counts `0`, and the exact `.strict-restore-work-v1` six-field
+temporary-work object pass.
+
+Testing now authorizes exactly one matching first execute using that plan ID
+and exact recorded confirmation. Require unambiguous contract `2`,
+`replayed: false`, `0/2`, the exact temporary-work object, target SHA-256
+`cf3ca07d...`, and canonical receipt/persistent-family binding. Any nonzero,
+incomplete, missing, disconnected, ambiguous, or mismatched result forbids
+retry/replay and returns to full-hold reconciliation. Replay remains
+unauthorized until exact accepted execute evidence is frozen into a later
+amendment; its future acceptance target remains `0/0`. Phase two/retry, normal
+restore, helper/Netlify change,
 retirement, activation, later verifier/backup, final review, and production
 require later authority. The similarly named `HL-20260822-1` strategy below is
 historical and cannot satisfy this sequence.

@@ -695,13 +695,25 @@ descriptor zero-holder scans, main+WAL-only scratch and private SHM creation,
 unchanged source and scratch main/WAL, exact integrity/schema/semantic state,
 zero changes, journal/downstream absence, and cleanup.
 
-The sole next authorized mutation is one exact abort-v2 plan only. Abort-v2 uses
-contract version `2`, a `release-qa-strict-restore-abort-v2-` plan prefix,
-`main-wal` binding, absent target, and the unchanged `.strict-restore-work-v1`
-literal and exact six-field temporary-work object. Require `0/0`; ambiguity,
-disconnect, nonzero output, or any mismatch hard-stops. Execute and replay remain
-unauthorized until an accepted plan is frozen into a later active-ledger
-amendment; future acceptance targets remain `0/2` and `0/0`.
+One exact abort-v2 plan ran once after the fresh-shell guards and passed at
+`0/0`. Its accepted plan ID is
+`release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+Ignored stdout is `4777` bytes / SHA-256 `cef33b8f...`; the canonical result is
+`4146` bytes / SHA-256 `30441740...`; final cleanup-aware capture metadata is
+`1809` bytes / SHA-256 `ec338025...`; stderr was empty. Contract `2`,
+`main-wal`, exact classifier/WAL/family binding, absent target, the unchanged
+`.strict-restore-work-v1` literal and exact six-field temporary-work object,
+and both mutation counts `0` pass. Verified remote mode-`0600` captures were
+removed only after local verification.
+
+The sole next authorized mutation is exactly one matching first execute using
+that plan ID and its exact recorded confirmation. Require unambiguous contract-
+`2` materialization with `replayed: false`, `0/2`, the exact temporary-work
+object, target SHA-256 `cf3ca07d...`, and canonical receipt/persistent-family
+binding. Ambiguity, disconnect, missing output, nonzero exit, or any mismatch
+forbids retry and replay and returns to full-hold reconciliation. Replay remains
+`PENDING AUTHORITY` until an exact accepted execute is frozen into another
+active-ledger amendment; its future acceptance target remains `0/0`.
 Phase two, retry, normal restore, helper/Netlify change, checkpoint, sidecar
 removal, activation, verifier, backup, reopening/review, closeout, and
 production remain unauthorized. Historical `HL-20260822-1` abort-v1 evidence
@@ -1085,12 +1097,12 @@ corrected helper publication/hosted proof, controlled-unhold deployment/runtime,
 and unheld v2 pre-smoke verification passed. Phase one reached accepted/
 published state with `fresh 2` / `replay 0`, but operator sequencing selected
 `STRICT_STOP`; phase two never began and full re-hold passes. Exact abort-v2 B2
-mint/publication, held deployment/runtime, and fresh post-B2 verification pass.
-The next mutation is the exact abort-v2 plan only; execute and replay remain
-unauthorized pending accepted-plan reconciliation and a later amendment. Normal
-recovery is forbidden; every post-abort gate awaits a separate amendment. The
-failed/recovered 2026-08-21 attempt remains historical; production remains
-untouched and unauthorized.
+mint/publication, held deployment/runtime, fresh post-B2 verification, and the
+exact abort-v2 plan pass. The next mutation is exactly one matching first
+execute; replay remains unauthorized pending accepted `0/2` evidence and a
+later amendment. Normal recovery is forbidden; every post-abort gate awaits a
+separate amendment. The failed/recovered 2026-08-21 attempt remains historical;
+production remains untouched and unauthorized.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -1134,7 +1146,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT
+Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; ONE MATCHING FIRST EXECUTE NEXT; REPLAY NOT AUTHORIZED
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -1168,8 +1180,8 @@ deactivated at safe handoff to sole newest/`LIVE` exact-B2 deploy
 `dep-da6ghj67bikc738hbbv0`. Exact abort-v2 B2
 `6359ec9997f90dddf17ba2c9b07481746ae171bb` is minted, published, deployed, and
 verified under full hold; the fresh B2-pinned verifier also passes. The exact
-abort-v2 plan only is next. Execute/replay remain pending accepted-plan evidence
-and a later amendment. Normal
+abort-v2 plan also passes. Exactly one matching first execute is next; replay
+remains pending exact accepted `0/2` evidence and another amendment. Normal
 recovery and phase two are forbidden, and downstream gates await a separate
 post-abort amendment.
 Production remains untouched and unauthorized.
@@ -1395,8 +1407,9 @@ operator sequencing strict-stopped the attempt, phase two never began, and full
 re-hold now passes. Exact abort-v2 B2
 `6359ec9997f90dddf17ba2c9b07481746ae171bb` is minted, published, held-deployed,
 and runtime-verified; the fresh B2-pinned verifier passes. Only one exact
-evidence-bound abort-v2 plan is currently authorized; execute/replay and downstream
-data gates remain pending a later amendment. The earlier
+evidence-bound abort-v2 plan ran and passed. Exactly one matching first execute
+is currently authorized; replay and downstream data gates remain pending an
+exact accepted `0/2` result and a later amendment. The earlier
 `HL-20260821-3` abort
 recovery remains immutable historical evidence.
 

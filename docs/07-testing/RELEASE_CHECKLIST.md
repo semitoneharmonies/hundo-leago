@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; ONE MATCHING FIRST EXECUTE NEXT; REPLAY NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER + ABORT-V2 PLAN PASS; FIRST EXECUTE NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -175,28 +175,40 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   two eight-process/`85`-descriptor zero-holder scans, main+WAL-only scratch,
   private SHM creation, source/scratch stability, rollback-journal/downstream
   absence, semantic state, zero changes, and cleanup pass.
-- [ ] `RC-STG-006L23` This is the sole next authorized mutation: run one exact
-  abort-v2 plan. Require contract `2`, `main-wal`, exact WAL binding,
-  `release-qa-strict-restore-abort-v2-<sha256>`, `targetState: "absent"`, and
-  mutation counts `0/0`. Its `temporaryFilesystemWork` must be exact:
+- [x] `RC-STG-006L23` One exact abort-v2 plan ran once after the fresh-shell
+  guards and passed with exit `0`, code `RELEASE_QA_STRICT_RESTORE_ABORT_PLANNED`,
+  contract `2`, and exact plan ID
+  `release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+  Raw stdout is `4777` bytes / SHA-256 `cef33b8f...`; canonical result is `4146`
+  bytes / `30441740...`; cleanup-aware metadata is `1809` bytes /
+  `ec338025...`; stderr is empty. Exact `main-wal`, WAL/family/classifier,
+  `targetState: "absent"`, and mutation counts `0/0` pass. Its
+  `temporaryFilesystemWork` is exact:
   `performed: true`, `plaintextDatabaseMaterialized: true`, deterministic path
   `/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`,
   `retained: false`, `processLocalCleanup: "verified"`, and
   `abruptTerminationRecovery: "fail-closed-at-deterministic-work-directory"`.
-  Nonzero, incomplete, ambiguous, disconnected, or unknown output forbids
-  execute. Freeze and reconcile even an exact accepted plan before any next
-  mutation.
-- [ ] `RC-STG-006M23` `PENDING AUTHORITY`: do not execute under this amendment.
-  Only a later amendment after exact accepted-plan reconciliation may authorize
-  one matching execute.
-  Require receipt version `2`, the exact main/WAL/SHM evidence, source
+  Postflight retained exact main/WAL/SHM on current device `66313`, inodes
+  `131156` / `131151` / `131152`; seven processes / `65` descriptors / zero
+  holders passed. Source journal, target family/journal, receipt, and work were
+  absent; verified remote captures were removed after local verification.
+- [ ] `RC-STG-006M23` `AUTHORIZED NEXT / PENDING EXECUTION`: run exactly one
+  matching first execute with the exact command, accepted plan ID, and exact
+  confirmation recorded in the live ledger. Require unambiguous exit/output,
+  code `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract `2`,
+  `replayed: false`, the exact main/WAL/SHM evidence, source
   persistent-family preservation, clean target, canonical receipt, absent target
-  WAL/SHM/journal and work, and mutation counts `0/2`. Ambiguous execute forbids
-  blind retry and replay. Only an unambiguous accepted execute authorizes its
-  byte-identical replay once; require identical target/receipt hashes, no work or
-  external restore access, and `0/0`. Then stop.
+  WAL/SHM/journal and work, the exact six-field temporary-work object, target
+  SHA-256 `cf3ca07d...`, and mutation counts `0/2`. Nonzero, incomplete,
+  missing, ambiguous, disconnected, or mismatched output forbids retry and
+  replay and returns to full-hold reconciliation.
+- [ ] `RC-STG-006M23-REPLAY` `PENDING AUTHORITY`: do not replay under this
+  amendment. Even an unambiguous accepted first execute must be frozen into
+  another active-ledger amendment before one byte-identical replay can receive
+  authority. Its future acceptance contract is identical target/receipt/family
+  binding, no work or external restore access, and `0/0`.
 - [ ] `RC-STG-006N23` Post-abort helper retirement remains `PENDING AUTHORITY`.
-  It requires a separate amendment after abort evidence is bound.
+  It requires a separate amendment after execute/replay evidence is bound.
 - [ ] `RC-STG-006O23` Post-abort target activation remains `PENDING AUTHORITY`.
   No `DATABASE_PATH` change is authorized by this checklist revision.
 - [ ] `RC-STG-006P23` Post-abort target verification, backup, final staging
@@ -1244,9 +1256,10 @@ construction/local verification, corrected helper publication/hosted proof,
 controlled-unhold runtime, partial phase one, and full re-hold pass. Exact
 abort-v2 B2 mint/publication, held deployment/runtime, and fresh verifier gates
 also pass. Operator sequencing strict-stopped the smoke; phase two and normal
-recovery are forbidden. The abort-v2 plan only is the next authorized mutation;
-execute/replay remain `PENDING AUTHORITY` until accepted-plan reconciliation and
-a later amendment. Post-abort helper
+recovery are forbidden. The abort-v2 plan passed; exactly one matching first
+execute is `AUTHORIZED NEXT / PENDING EXECUTION`. Replay remains
+`PENDING AUTHORITY` until accepted `0/2` evidence is frozen in another
+amendment. Post-abort helper
 retirement, activation, verification, backup, and every later downstream step
 require a separate amendment.
 The historical RC-BKP-015A-J block above cannot be checked forward.
@@ -1437,8 +1450,9 @@ unheld pre-smoke verification passed as recorded in the live ledger. Phase one
 then reached accepted/published state, but operator sequencing selected
 `STRICT_STOP`; phase two never began. Full re-hold, exact abort-v2 B2
 mint/publication and held deployment/runtime, and fresh B2-pinned verification
-pass. The only pending executable counterpart is the exact abort-v2 plan;
-execute/replay require accepted-plan evidence and a later amendment;
+pass. The exact abort-v2 plan also passes. The only pending executable
+counterpart is one matching first execute; replay requires accepted `0/2`
+evidence and a later amendment;
 normal restore and phase two are forbidden. Helper retirement, activation,
 verification/backup, and final review await a separate post-abort amendment.
 The authoritative live ledger is

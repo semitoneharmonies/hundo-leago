@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Run exactly one evidence-bound abort-v2 PLAN only against the unchanged held B2/source/backup boundary; require exact contract v2, main-wal binding, absent target, 0/0 mutation counts, and the exact temporary-work object; freeze and reconcile the plan before any later execute authority
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN ONLY NEXT / EXECUTE+REPLAY PENDING ACCEPTED PLAN + LATER AMENDMENT / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Run exactly one matching abort-v2 first execute using the accepted plan ID and confirmation; require unambiguous contract v2, replayed false, 0/2, the exact temporary-work object, exact target/receipt/persistent-family binding, and no retry or replay on any ambiguity
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / ONE MATCHING FIRST EXECUTE AUTHORIZED NEXT / REPLAY PENDING ACCEPTED 0/2 + LATER AMENDMENT / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1576,16 +1576,29 @@ scratch with private SHM creation, source and scratch main/WAL stability, exact
 schema/integrity/semantic state, zero changes, both rollback-journal and
 downstream absence, and cleanup.
 
-The current run record authorizes exactly one abort-v2 plan only. Require
-contract `2`, `main-wal`, exact WAL binding, `release-qa-strict-restore-abort-v2-`
-namespace, target absent, exact classifier, both mutation counts `0`, and the
-exact six-field `.strict-restore-work-v1` temporary-work object. Any mismatch,
-ambiguity, disconnect, or nonzero result hard-stops. Execute/replay counts remain
-future acceptance targets `0/2` and `0/0`, not current authority; an accepted
-plan must be frozen and reconciled before a later amendment can authorize
-execute. Normal restore, phase two/retry, helper or Netlify change, activation,
-verifier, backup, final review, closeout, and production remain unauthorized;
-neither predecessor may be resumed or reused.
+One exact abort-v2 plan ran once after the fresh-shell guards and passed at
+`0/0`. Exact stdout/result/capture-metadata seals are `4777` bytes /
+`cef33b8f...`, `4146` bytes / `30441740...`, and `1809` bytes /
+`ec338025...`; stderr is empty. The accepted contract-`2` plan ID is
+`release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+It binds `main-wal`, the exact WAL/family/classifier, absent target, both
+mutation counts `0`, and the exact six-field `.strict-restore-work-v1`
+temporary-work object. Postflight retained exact main/WAL/SHM on device `66313`
+and inodes `131156` / `131151` / `131152`; seven processes / `65` descriptors /
+zero holders passed, and source journal plus target family/journal, receipt, and
+work remained absent. Verified remote captures were removed after local proof.
+
+The current run record authorizes exactly one matching first execute using that
+plan ID and exact confirmation. Require unambiguous contract `2`,
+`replayed: false`, database/filesystem mutation counts `0/2`, the exact
+temporary-work object, target SHA-256 `cf3ca07d...`, and canonical receipt/
+persistent-family binding. Any mismatch, ambiguity, disconnect, missing output,
+or nonzero result forbids retry and replay and returns to full-hold
+reconciliation. Replay remains a future `0/0` acceptance target, not current
+authority, until an accepted execute is frozen into another amendment. Normal
+restore, phase two/retry, helper or Netlify change, activation, verifier,
+backup, final review, closeout, and production remain unauthorized; neither
+predecessor may be resumed or reused.
 
 ## Historical Milestone Evidence
 

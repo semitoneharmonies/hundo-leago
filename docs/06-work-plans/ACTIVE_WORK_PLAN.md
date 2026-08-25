@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN ONLY NEXT`
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; ONE MATCHING FIRST EXECUTE NEXT; REPLAY NOT AUTHORIZED`
 
 ## Work Plan ID
 
@@ -21,7 +21,7 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Held B2 and Fresh Verifier Pass; Abort-v2 Plan Only Next
+## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Held B2, Fresh Verifier, and Abort-v2 Plan Pass; First Execute Next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
@@ -194,21 +194,33 @@ integrity/FK/schema/migrations/checksum, `131` total / `2` active sessions,
 classifier `to_b_accepted` / `published` / `none`, zero changes, both journals,
 downstream absence, and cleanup passed.
 
+The abort-v2 plan ran exactly once after the fresh-shell guards and passed at
+`0/0`. Its exact plan ID is
+`release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+The detailed run ledger seals stdout `4777` bytes / `cef33b8f...`, canonical
+result `4146` bytes / `30441740...`, cleanup-aware metadata `1809` bytes /
+`ec338025...`, and empty stderr. Contract `2`, `main-wal`, exact classifier/
+WAL/family binding, absent target, exact six-field temporary-work object, and
+both mutation counts `0` pass. Postflight retained the exact source family on
+current device `66313` with seven processes / `65` descriptors / zero holders;
+all source/target journals and downstream objects remained absent.
+
 The authorized pending order is now exact and shorter:
 
-1. Run exactly one abort-v2 plan only. Require code
-   `RELEASE_QA_STRICT_RESTORE_ABORT_PLANNED`, contract version `2`, `main-wal`,
-   exact WAL binding, plan namespace `release-qa-strict-restore-abort-v2-`,
-   classifier `to_b_accepted` / `published` / `none`, target absent, both
-   mutation counts `0`, and the exact six-field temporary-work object using the
-   unchanged `.strict-restore-work-v1` literal.
-2. Freeze and reconcile the complete plan output into the active ledger. Any
-   nonzero, incomplete, disconnected, ambiguous, or mismatched result hard-
-   stops and leaves execute unauthorized.
+1. Run exactly one matching first execute using that plan ID and its exact
+   recorded confirmation. Require code
+   `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract version `2`,
+   `replayed: false`, database/filesystem mutation counts `0/2`, the exact six-
+   field temporary-work object, target SHA-256 `cf3ca07d...`, and canonical
+   receipt/persistent-family binding.
+2. Freeze and reconcile the complete first-execute output into the active
+   ledger. Any nonzero, incomplete, missing, disconnected, ambiguous, or
+   mismatched result forbids retry and replay and returns to full-hold
+   reconciliation.
 
-Execute and replay are not authorized by this plan revision. A later amendment
-may authorize one matching execute at `0/2` only after an exact accepted plan,
-and byte-identical replay at `0/0` only after an unambiguous accepted execute.
+Replay is not authorized by this plan revision. A later amendment may authorize
+one byte-identical replay at `0/0` only after an unambiguous accepted first
+execute is frozen.
 Phase two, retry, normal restore, helper/Netlify change, post-abort retirement,
 activation, verifier, backup, final review, closeout, and production remain
 unauthorized pending later evidence-bound amendments.
@@ -1356,9 +1368,9 @@ controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification
 passed. Phase one reached accepted/published state with `fresh 2` / `replay 0`,
 but phase two never began. Full re-hold, abort-v2 B2 mint/publication, the held
 B2 deployment/runtime gate, and the fresh B2-pinned verifier now pass. The exact
-abort-v2 plan is the sole next mutation; execute/replay and every post-abort gate
-await accepted-plan evidence and a separate amendment. Normal recovery remains
-forbidden.
+abort-v2 plan also passes. Exactly one matching first execute is the sole next
+mutation; replay and every post-abort gate await frozen accepted `0/2` evidence
+and a separate amendment. Normal recovery remains forbidden.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending
