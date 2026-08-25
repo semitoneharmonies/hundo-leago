@@ -1244,14 +1244,15 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; full re-hold pass; abort-only next
+#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; full re-hold pass; abort-v2 B2 held deploy next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
 `4dfe12d1366314e3d9df722c50771324647743c9` and held starting B baseline
 `8e313902feefcd683b0f5edd746a9dd2a9029a18`.
-Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
-exact local and backend `origin/staging` publication gates. Held deploy
+Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passed its
+exact local and backend `origin/staging` publication gates at the recorded
+B-prime boundary. Held deploy
 `dep-da5sh0e417fc738i254g` passed on exact B-prime after its full
 hosted/runtime gate passed.
 
@@ -1345,27 +1346,34 @@ the scratch family and never opened the authoritative paths. Integrity/foreign k
 identity/rotation, semantic state, zero database changes, downstream absence,
 and cleanup passed. This diagnostic cannot authorize B-prime abort-v1.
 
-The exact local abort-v2 implementation/test hashes are
-`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
-and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`.
-The candidate preserves normal v1, upgrades abort contract/receipt to `2`, binds
-main+WAL, excludes authoritative SHM from SQLite, rejects rollback journals,
-and retains work-area version/literal v1. It remains uncommitted, unpublished,
-and undeployed; local focused evidence is `72/72` before its final narrow
-wrapper and `5/5` on the exact final affected group.
+Exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct
+child of B-prime with tree `0a6a928d8f6308aa5aadd2031c71769164c1cfb7`, is
+committed and published to backend `origin/staging`. Its only implementation/
+test paths retain numstat `369/18` / `830/2`, Git blobs
+`4a198c71554b7e7c5fc8ee481cd79b51c1ef799f` /
+`53ce37cd04e48eb42323bab914d71ef3933c2c63`, and SHA-256 values
+`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889` /
+`3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`;
+the canonical `57541`-byte raw diff has SHA-256
+`eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
+B2 preserves normal v1, upgrades abort contract/receipt to `2`, binds main+WAL,
+excludes authoritative SHM from SQLite, rejects rollback journals, and retains
+work-area version/literal v1. Diff/syntax, focused `72/72` before the final
+narrow wrapper, and exact-final affected `5/5` pass; backend HEAD and
+`origin/staging` equal B2 and the worktree is clean. B2 remains undeployed.
 
 The only authorized pending operational sequence is:
 
-1. Commit/push only that exact two-file child of B-prime as B2. Verify exact
-   parent/tree/file hashes and local/remote identity; ambiguity stops.
-2. With normal auto-deploy still off, re-prove current held Render
+1. With normal auto-deploy still off, re-prove current held Render
    `dep-da6cu8h42hec738f2al0` and Netlify `6a8c006abe46c8fb6269c40c`, then use one
-   `replace: false` merge changing only `APP_BUILD_ID` to B2. Preserve full hold,
-   source `DATABASE_PATH`, and all other settings. Do not sync `render.yaml` and
-   do not trigger a second deploy. Require complete hosted suite/build/startup/
-   zero-error, exact B2, the bare maintenance HTTP runtime, unchanged exact
-   main/WAL/SHM, and zero database holders.
-3. Construct new derivative `post-b2-abort-v2-source-verifier.sh` and
+   `update_environment_variables` call with `replace: false` whose only entry is
+   `APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`. Preserve full hold,
+   source `DATABASE_PATH`, and all other settings. Do not sync `render.yaml`,
+   include another environment key, or call `trigger_deploy`. Require exactly
+   one API deploy plus complete hosted suite/build/startup/zero-error, exact B2,
+   the bare maintenance HTTP runtime, unchanged exact main/WAL/SHM, and zero
+   database holders.
+2. Construct new derivative `post-b2-abort-v2-source-verifier.sh` and
    `post-b2-abort-v2-source-verifier-result.json`; freeze, cold-audit, and run it
    once. Retain its new exact hashes and require pending code
    `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`, exact B2/service/deploy/hold,
@@ -1377,7 +1385,7 @@ The only authorized pending operational sequence is:
    SHA-256 values byte-identical before/after recovery. The c036 diagnostic
    cannot be retargeted with pins only. Any
    mismatch stops before plan.
-4. Only then run one abort-v2 plan, one matching execute, and the byte-identical
+3. Only then run one abort-v2 plan, one matching execute, and the byte-identical
    execute once as replay, with each later action authorized only by the complete
    accepted evidence from its predecessor.
 

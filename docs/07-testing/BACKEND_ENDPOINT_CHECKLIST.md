@@ -289,15 +289,16 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-ONLY NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY NEXT)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
 `4dfe12d1366314e3d9df722c50771324647743c9` is frozen. B
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is the verified held starting
 baseline. Executable B-prime
-`234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its exact two-file focused,
-complete, check, dependency, and `origin/staging` publication gates. Held
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54` passed its exact two-file focused,
+complete, check, dependency, and `origin/staging` publication gates at the
+recorded B-prime boundary. Held
 deploy `dep-da5sh0e417fc738i254g`, started
 `2026-08-24T04:28:49.802474Z`, passed on exact B-prime after all
 `3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
@@ -364,16 +365,29 @@ family; scratch main/WAL stayed unchanged while scratch SHM changed. SQLite
 never opened the authoritative paths. This is diagnostic only; B-prime abort-v1
 is forbidden.
 
-The exact local abort-v2 implementation/test hashes are
-`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
-and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`;
-focused evidence is `72/72` before the final narrow wrapper plus exact-final
-affected `5/5`. All next gates remain pending: commit/push only that exact child
-as B2; with normal auto-deploy off, deploy exact B2 through an
-`APP_BUILD_ID`-only merge under the unchanged full hold and without syncing
-`render.yaml`; require complete hosted/build/bare-maintenance-runtime evidence,
-unchanged exact main/WAL/SHM, and zero DB holders; then construct, freeze, cold-
-audit, and pass new derivative `post-b2-abort-v2-source-verifier.sh` /
+Exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct
+child of B-prime with tree `0a6a928d8f6308aa5aadd2031c71769164c1cfb7`, is
+committed and published to backend `origin/staging`. Its only implementation/
+test paths retain numstat `369/18` / `830/2`, Git blobs
+`4a198c71554b7e7c5fc8ee481cd79b51c1ef799f` /
+`53ce37cd04e48eb42323bab914d71ef3933c2c63`, and SHA-256 values
+`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889` /
+`3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`;
+the canonical `57541`-byte raw diff SHA-256 is
+`eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
+Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
+affected `5/5` pass; backend HEAD and `origin/staging` equal B2
+and the backend worktree is clean. B2 is not deployed.
+
+The next mutation is one `update_environment_variables` call with
+`replace: false` whose only entry is
+`APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`, after re-proving
+current held Render and unchanged Netlify. Normal auto-deploy stays off; do not
+sync `render.yaml`, include another environment key, or call `trigger_deploy`.
+Require exactly one API deploy plus complete hosted/build/bare-maintenance-
+runtime evidence, unchanged exact main/WAL/SHM, and zero DB holders; then
+construct, freeze, cold-audit, and pass new derivative
+`post-b2-abort-v2-source-verifier.sh` /
 `post-b2-abort-v2-source-verifier-result.json` with pending exact code
 `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. It must
 copy only main+WAL, prove scratch SHM absent before the private SQLite open and

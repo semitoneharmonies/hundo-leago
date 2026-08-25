@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Commit and push only the exact two-file abort-v2 candidate as B2; deploy exact B2 under the unchanged full hold without syncing render.yaml; construct, freeze, cold-audit, and require the new post-b2-abort-v2-source-verifier derivative; then, and only then, run one evidence-bound abort-v2 plan, matching execute, and byte-identical replay before stopping
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD dep-da6cu8h42hec738f2al0 NEWEST + LIVE ON B-PRIME + HOSTED 3503/3503 + MAINTENANCE PROBES PASS / NETLIFY 6a8c006 CURRENT + READY / MAIN-ONLY ABORT PREFLIGHT SAFE-FAILED ON SOURCE WAL+SHM / WAL-AWARE B-PRIME DIAGNOSTIC c036+deda VERIFIED BUT NOT EXECUTION AUTHORITY / EXACT TWO-FILE ABORT-V2 CANDIDATE d49c+3d97 LOCAL ONLY / B2 COMMIT+PUSH PENDING / B2 HELD DEPLOY PENDING / NEW DERIVATIVE POST-B2 ABORT-V2 VERIFIER PENDING / ABORT-V2 PLAN+EXECUTE+REPLAY PENDING / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Re-prove the current held Render and unchanged Netlify boundaries; use one update_environment_variables call with replace:false containing only APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb to create exactly one held B2 deploy without syncing render.yaml or calling trigger_deploy; require the complete hosted/runtime/source-family/zero-holder gates; then construct, freeze, cold-audit, and require the new post-b2-abort-v2-source-verifier derivative; only after its pass run one evidence-bound abort-v2 plan, matching execute, and byte-identical replay before stopping
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD dep-da6cu8h42hec738f2al0 NEWEST + LIVE ON B-PRIME + HOSTED 3503/3503 + MAINTENANCE PROBES PASS / NETLIFY 6a8c006 CURRENT + READY / MAIN-ONLY ABORT PREFLIGHT SAFE-FAILED ON SOURCE WAL+SHM / WAL-AWARE B-PRIME DIAGNOSTIC c036+deda VERIFIED BUT NOT EXECUTION AUTHORITY / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / B2 HELD DEPLOY NEXT / NEW DERIVATIVE POST-B2 ABORT-V2 VERIFIER PENDING / ABORT-V2 PLAN+EXECUTE+REPLAY PENDING / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1490,8 +1490,9 @@ Grae explicitly requested and approved fresh release `HL-20260823-1` at
 identities, `2026-08-23T22:56:20.203Z` creation time, metadata, encrypted hash
 `e6c6269f...`, checksum `54df36b9...`, and plaintext `cf3ca07d...` are exact.
 
-Exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` now passes its two-file
-local and backend `origin/staging` publication gates. Held deploy
+Exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passed its two-file
+local and backend `origin/staging` publication gates at the recorded B-prime
+boundary. Held deploy
 `dep-da5sh0e417fc738i254g` passed on exact B-prime after all
 `3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
 read-only runtime gates passed. Fresh fixture prepare/replay then passed with
@@ -1538,14 +1539,28 @@ unchanged while scratch SHM changed. SQLite never opened the authoritative
 paths. This diagnostic authorizes no B-prime abort-v1 action, checkpoint, or
 sidecar removal.
 
-The exact local abort-v2 implementation/test hashes are
+Exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb` is minted
+and pushed to backend `origin/staging` as the direct child of B-prime, with tree
+`0a6a928d8f6308aa5aadd2031c71769164c1cfb7`. It changes only the
+implementation and foundation test: numstat `369/18` and `830/2`, Git
+blobs `4a198c71554b7e7c5fc8ee481cd79b51c1ef799f` and
+`53ce37cd04e48eb42323bab914d71ef3933c2c63`, and SHA-256 values
 `d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
-and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`;
-focused evidence is `72/72` before the final narrow wrapper plus `5/5` on the
-exact final affected group. No commit, push, or deploy exists yet. The current
-run record now authorizes only the ordered pending chain: exact two-file B2
-commit/push; exact B2 deployment with an `APP_BUILD_ID`-only merge under the
-unchanged full hold and no `render.yaml` sync; the new derivative
+and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`.
+The `57541`-byte raw diff has SHA-256
+`eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
+Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
+affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the backend
+worktree is clean. B2 is not yet deployed.
+
+The current run record authorizes only the ordered pending chain: after
+read-only reproof, one `update_environment_variables` call with `replace: false`
+whose sole entry is
+`APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`. Normal auto-deploy
+remains off; no `render.yaml` sync, other environment key, or `trigger_deploy`
+call is allowed. Require exactly one API deploy and the complete hosted/build/
+startup/zero-error, exact-B2, bare-maintenance, unchanged-main/WAL/SHM, and
+zero-holder gates; then the new derivative
 `post-b2-abort-v2-source-verifier.sh` /
 `post-b2-abort-v2-source-verifier-result.json`, frozen and cold-audited before
 use, with pending code `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`; then one

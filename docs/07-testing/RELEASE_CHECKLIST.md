@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; WAL-AWARE ABORT-V2 B2 CHAIN PENDING; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 MINT/PUBLISH PASS; HELD B2 DEPLOY NEXT; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,15 +27,15 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-ONLY NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
 `4dfe12d1366314e3d9df722c50771324647743c9`; B
 `8e313902feefcd683b0f5edd746a9dd2a9029a18` is the held starting baseline.
-Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
+Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passed its
 focused, complete, check, dependency, and backend `origin/staging` publication
-gates. Held deploy `dep-da5sh0e417fc738i254g` passed on exact B-prime after
+gates at the recorded B-prime boundary. Held deploy `dep-da5sh0e417fc738i254g` passed on exact B-prime after
 `3,503/3,503` hosted tests and all build/startup, zero-error,
 held-health, and external read-only gates passed.
 
@@ -81,6 +81,23 @@ newest/`LIVE` B-prime after hosted `3,503/3,503`, build/startup, zero-error,
 health/readiness, and maintenance-blocked ordinary-route gates.
 Pending is not release evidence. The current gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
+Exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct
+child of B-prime with tree `0a6a928d8f6308aa5aadd2031c71769164c1cfb7`, is
+committed and published to backend `origin/staging`. It changes only the exact
+implementation and foundation-test paths: numstat `369/18` / `830/2`, Git blobs
+`4a198c71554b7e7c5fc8ee481cd79b51c1ef799f` /
+`53ce37cd04e48eb42323bab914d71ef3933c2c63`, and SHA-256 values
+`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889` /
+`3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`.
+The canonical `57541`-byte raw diff has SHA-256
+`eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
+Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
+affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the backend
+worktree is clean. Render remains
+sole newest/`LIVE` on held B-prime deploy `dep-da6cu8h42hec738f2al0`; normal
+auto-deploy is `no`/trigger off and no B2 deploy exists. Netlify remains
+unchanged current/`READY` deploy `6a8c006abe46c8fb6269c40c`.
 
 The following fresh items are the only current controlled-unhold/action
 checklist. They do not check forward any fenced `HL-20260822-1` item:
@@ -131,15 +148,21 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   three source-family members into owned scratch; SQLite opened only that copy,
   whose main/WAL stayed unchanged while SHM changed. This grants no B-prime
   abort-v1 execution authority.
-- [ ] `RC-STG-006I23` Re-prove the backend tree contains only the exact abort-v2
-  implementation/test hashes `d49c870b...` / `3d9714ca...` on parent B-prime;
-  commit them as emitted child B2 and push exact B2 to `origin/staging`. Require
-  exact parent/tree/hash/local/remote evidence. Any ambiguity stops.
+- [x] `RC-STG-006I23` Exact abort-v2 B2
+  `6359ec9997f90dddf17ba2c9b07481746ae171bb` is the direct child of B-prime,
+  with tree `0a6a928d8f6308aa5aadd2031c71769164c1cfb7`, only the two exact
+  implementation/test paths, blobs/hashes/numstat/raw-diff seal recorded above,
+  and passing syntax/diff, focused `72/72` before the final narrow wrapper, and
+  exact-final `5/5`. Backend HEAD and `origin/staging` both equal B2 and the
+  backend worktree is clean.
 - [ ] `RC-STG-006J23` Re-prove current held Render
   `dep-da6cu8h42hec738f2al0` and current/`READY` Netlify
-  `6a8c006abe46c8fb6269c40c`. Keep normal auto-deploy off. Deploy exact B2 with
-  one `replace: false` `APP_BUILD_ID`-only merge, preserving full hold and source
-  path; do not sync `render.yaml` or add another deploy trigger. Require the
+  `6a8c006abe46c8fb6269c40c`. Keep normal auto-deploy off. The sole next
+  mutation is one `update_environment_variables` call with `replace: false`
+  containing only
+  `APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`, preserving full hold,
+  source path, and every other setting; do not sync `render.yaml`, include
+  another key, or call `trigger_deploy`. Require exactly one API deploy and the
   complete hosted suite, build/startup/zero-error, exact B2, bare maintenance
   HTTP runtime, unchanged main/WAL/SHM, and zero database holders.
 - [ ] `RC-STG-006K23` Construct the new derivative
@@ -1217,11 +1240,13 @@ The fresh source and verified backup binding pass only as recorded in
 implementation, local verification, and backend publication pass. Its held
 deploy/runtime, fixture prepare/replay, held postflight proof, helper
 construction/local verification, corrected helper publication/hosted proof,
-controlled-unhold runtime, partial phase one, and full re-hold pass. Operator
-sequencing strict-stopped the smoke; phase two and normal recovery are
-forbidden. Abort preflight/plan/execute/replay remains `PENDING` under the exact
-current ledger. Post-abort helper retirement, activation, verification, backup,
-and every later downstream step require a separate amendment.
+controlled-unhold runtime, partial phase one, and full re-hold pass. Exact
+abort-v2 B2 mint/publication also passes. Operator sequencing strict-stopped the
+smoke; phase two and normal recovery are forbidden. The one-key held B2 deploy,
+fresh post-B2 verifier, then abort-v2 plan/execute/identical replay remain
+ordered `PENDING` gates under the exact current ledger. Post-abort helper
+retirement, activation, verification, backup, and every later downstream step
+require a separate amendment.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:
@@ -1408,9 +1433,10 @@ contract. They cannot satisfy, seed, or authorize any `HL-20260823-1` action.
 The fresh release-specific counterparts through controlled-unhold runtime and
 unheld pre-smoke verification passed as recorded in the live ledger. Phase one
 then reached accepted/published state, but operator sequencing selected
-`STRICT_STOP`; phase two never began. Full re-hold passes. The only pending
-executable counterparts are exact abort-v2 B2 commit/push, held deployment,
-fresh B2-pinned verification, and evidence-bound plan/execute/identical replay;
+`STRICT_STOP`; phase two never began. Full re-hold and exact abort-v2 B2
+mint/publication pass. The only pending executable counterparts are the single
+`APP_BUILD_ID`-only held B2 deployment, fresh B2-pinned verification, and
+evidence-bound plan/execute/identical replay;
 normal restore and phase two are forbidden. Helper retirement, activation,
 verification/backup, and final review await a separate post-abort amendment.
 The authoritative live ledger is

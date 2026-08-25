@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; WAL-AWARE ABORT-V2 B2 CHAIN PENDING`
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 MINT/PUBLISH PASS; HELD B2 DEPLOY NEXT`
 
 ## Work Plan ID
 
@@ -21,16 +21,16 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Re-Hold Pass; Abort-Only Next
+## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Re-Hold Pass; Abort-v2 B2 Held Deploy Next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
 frontend application build
 `4dfe12d1366314e3d9df722c50771324647743c9` and held starting backend baseline
 `8e313902feefcd683b0f5edd746a9dd2a9029a18`.
-Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passes its
+Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passed its
 exact two-file focused, complete, check, dependency, and backend
-`origin/staging` publication gates. Held deploy
+`origin/staging` publication gates at the recorded B-prime boundary. Held deploy
 `dep-da5sh0e417fc738i254g`, started `2026-08-24T04:28:49.802474Z`, passed on
 exact B-prime after `3,503/3,503` hosted tests and its build,
 startup, zero-error, held-health, and external read-only gates passed.
@@ -146,26 +146,32 @@ main/WAL/SHM into owned scratch and SQLite opened only that scratch family;
 scratch main/WAL stayed unchanged while scratch SHM changed. SQLite never
 opened the authoritative paths.
 
-The only local abort-v2 candidate changes implementation/test files with exact
-SHA-256 values `d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
+Exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb` is minted
+and published to backend `origin/staging` as the direct child of B-prime, with
+commit tree `0a6a928d8f6308aa5aadd2031c71769164c1cfb7`. It changes only the
+implementation and foundation test: numstat `369/18` and `830/2`, Git blobs
+`4a198c71554b7e7c5fc8ee481cd79b51c1ef799f` and
+`53ce37cd04e48eb42323bab914d71ef3933c2c63`, and SHA-256 values
+`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
 and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`.
-Diff/syntax checks pass; focused evidence is `72/72` before the final narrow
-normalization wrapper and exact-final affected `5/5`. It is not committed,
-pushed, or deployed.
+The canonical `57541`-byte raw diff has SHA-256
+`eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
+Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
+affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the backend
+worktree is clean. B2 is not deployed.
 
 The authorized pending order is exact and fail-closed:
 
-1. Commit only those two hashes with parent B-prime as emitted child `B2`, then
-   push exact B2 to backend `origin/staging`; any tree/parent/remote ambiguity
-   stops.
-2. Re-prove held Render `dep-da6cu8h42hec738f2al0` and current/`READY` Netlify
+1. Re-prove held Render `dep-da6cu8h42hec738f2al0` and current/`READY` Netlify
    `6a8c006abe46c8fb6269c40c`. With normal auto-deploy still off, use one
-   `replace: false` merge changing only `APP_BUILD_ID` to B2. Preserve full hold,
-   source `DATABASE_PATH`, and every other setting. Never sync `render.yaml` and
-   never add a second deploy trigger. Require exact B2 hosted/build/startup/
+   `update_environment_variables` call with `replace: false` whose only entry is
+   `APP_BUILD_ID=6359ec9997f90dddf17ba2c9b07481746ae171bb`. Preserve full hold,
+   source `DATABASE_PATH`, and every other setting. Never sync `render.yaml`,
+   include another key, or call `trigger_deploy`. Require exactly one API deploy
+   and exact B2 hosted/build/startup/
    zero-error evidence, the bare maintenance HTTP runtime, unchanged exact
    main/WAL/SHM, and zero database holders.
-3. Construct the new derivative `post-b2-abort-v2-source-verifier.sh` and
+2. Construct the new derivative `post-b2-abort-v2-source-verifier.sh` and
    `post-b2-abort-v2-source-verifier-result.json`, then freeze, cold-audit, and
    run it once. Require pending exact code
    `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`, exact B2/current service/deploy/
@@ -177,7 +183,7 @@ The authorized pending order is exact and fail-closed:
    unchanged before/after recovery. Retain the new exact script/result
    hashes. The B-prime diagnostic cannot be retargeted as a pins-only verifier;
    any mismatch or ambiguity stops before plan.
-4. Only then run one abort-v2 plan; only after its exact evidence passes run one
+3. Only then run one abort-v2 plan; only after its exact evidence passes run one
    matching execute; only after unambiguous execute `0/2` run its byte-identical
    replay once. Require contract/receipt `2`, `main-wal`, exact WAL binding,
    `release-qa-strict-restore-abort-v2-` plan namespace, classifier
@@ -1333,8 +1339,10 @@ deployment/runtime, fixture prepare/replay, held postflight, helper
 construction/local verification, corrected helper publication/hosted proof,
 controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification
 passed. Phase one reached accepted/published state with `fresh 2` / `replay 0`,
-but phase two never began. Full re-hold now passes. Abort preflight, plan,
-execute, and replay are next; normal recovery is forbidden and every post-abort
+but phase two never began. Full re-hold and abort-v2 B2 mint/publication now
+pass. The one-key held B2 deploy is next; only after its complete gate may the
+fresh post-B2 verifier run, and only after that pass may abort-v2 plan, execute,
+and identical replay proceed. Normal recovery is forbidden and every post-abort
 gate awaits a separate amendment.
 
 After the final hosted gates pass, this plan's status will change to
