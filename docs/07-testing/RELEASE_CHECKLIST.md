@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 B-PRIME + FIXTURE/POSTFLIGHT + HELPER + CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT; CONTROLLED UNHOLD ACTIVE; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT PREFLIGHT NEXT; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-ONLY NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -44,7 +44,7 @@ The clean pre-fixture source boundary was exact path
 `37105664` bytes / SHA-256
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
 Fresh prepare/replay passed at `729` then `0` writes. Held verifier v2 proved
-the current fixture-bearing source at `37744640` bytes / SHA-256
+the pre-action fixture-bearing source at `37744640` bytes / SHA-256
 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
@@ -70,16 +70,15 @@ held-runtime checks. Fresh tab `1600151197` reached
 `READY_NO_SESSION_REQUEST` with empty query/mutation caches and exactly two
 pinned assets observed; no API, session, action, or write ran.
 
-The exact merge-only controlled unhold produced sole newest/`LIVE` B-prime
-deploy `dep-da60sl0jo6nc73e0cfu0`; hosted `3,503/3,503`, build/startup, zero-
-error, exact runtime, health, unauthenticated CORS/cache, and mounted-route gates
-pass. Frozen v2 pre-smoke verifier emitted
-`HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at `2026-08-24T10:42:47.380Z`, proving
-source `37744640` / `b4163695...`, WAL `0`, SHM `32768`, target-family absence,
-authoritative source unopened, and cleanup. Exact session verification is next.
-Release-specific actions, publisher replays, privacy/cache smoke, re-hold,
-normal restore/replay, helper retirement, activation/verification/backup, final
-matrix, observation, and closeout are all `PENDING`.
+The exact controlled-unhold deploy `dep-da60sl0jo6nc73e0cfu0` and pre-action v2
+verifier passed. Phase-one proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27`
+reached accepted state; publication event
+`974342b5-94e5-42d8-af20-9e07c35bc847` and immediate replay passed at
+`fresh 2` / `replay 0`. Chrome was Admin rather than required Manager A during
+publication, selecting `STRICT_STOP`. Phase two never began and no retry is
+allowed. Full re-hold deploy `dep-da6cu8h42hec738f2al0` now passes as sole
+newest/`LIVE` B-prime after hosted `3,503/3,503`, build/startup, zero-error,
+health/readiness, and maintenance-blocked ordinary-route gates.
 Pending is not release evidence. The current gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
@@ -94,64 +93,65 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   capture, debug, backup, and provider-absence matrix. Do not call
   `trigger_deploy`.
 - [x] `RC-STG-006C23` The merge produced exactly one API-triggered deploy,
-  `dep-da60sl0jo6nc73e0cfu0`, on exact B-prime. It became sole newest `LIVE`
-  only after `443` suites /
+  `dep-da60sl0jo6nc73e0cfu0`, on exact B-prime. At that controlled-unhold
+  boundary, it became sole newest `LIVE` only after `443` suites /
   `3,503` hosted tests all pass, build/startup and zero-error checks pass, the
   exact runtime matrix re-passes, versioned live/readiness return
   `200`/`no-store`, and anonymous session/leagues returned
   `401 SESSION_REQUIRED` with the required CORS/cache boundary. Frozen v2
   pre-smoke verification also passed with exact source/sidecar/target/privacy/
-  cleanup evidence.
-- [ ] `RC-STG-006D23` Helper commit
-  `e898e72272e5a052867832dcf9f128e5b8d5730e`, current deploy
-  `6a8c006abe46c8fb6269c40c`, expiry
-  `2026-08-25T07:00:00.000Z`, and the exact lowercase extensionless URL remain
-  valid; open one fresh exact extensionless helper tab and re-prove
-  `READY_NO_SESSION_REQUEST`, empty query/mutation caches, no `STRICT_STOP`, and
-  zero initialization API/session/action/write traffic before login. Only that
-  tab plus current release FAD `f47032fd...`—never predecessor `0aee0824...`—
-  supplies the mount/session context before any write is armed. The
-  prior inert tab `1600151197` is no longer open and is historical proof only.
-- [ ] `RC-STG-006E23` Use only
-  `HL-20260823-1-team1-to-b-propose`,
-  `HL-20260823-1-team1-to-b-accept`,
-  `HL-20260823-1-outbox-team1-to-manager-b`,
-  `HL-20260823-1-team1-to-a-propose`,
-  `HL-20260823-1-team1-to-a-accept`, and
-  `HL-20260823-1-outbox-team1-return-to-manager-a`, with confirmations
-  `PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B` and
-  `PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A`. Each publisher is followed
-  immediately by its identical zero-write replay.
-- [ ] `RC-STG-006F23` Any ambiguous update, partial drift, wrong/multiple/newer
-  deploy, failed gate/session, helper expiry, or `STRICT_STOP` causes no action,
-  no retry/manual deploy, exact three-key re-hold `true` / `closed` / `false`,
-  and the current release's fail-closed recovery path.
-- [ ] `RC-STG-006G23` Only after the exact A-to-B-to-A smoke fully succeeds,
-  perform one merge-only `replace: false` re-hold containing only
-  `STAGING_MAINTENANCE_HOLD=true`, `LEAGUE_WRITE_MODE=closed`, and
-  `FREE_AGENT_DRAFT_ROUTES_ENABLED=false`; require the sole newest/`LIVE`
-  B-prime deploy and the complete hosted/full-hold runtime proof.
-- [ ] `RC-STG-006H23` Under that verified hold, run exactly one normal
-  `release:qa:strict-restore:plan`, one matching execute, and one byte-identical
-  replay using only the source, absent `HL-20260823-1` target, manifest, service,
-  release, and fresh emitted normal plan/confirmation bound in the run ledger.
-- [ ] `RC-STG-006I23` Retire only the current helper header block, verify the
-  sealed original, and publish it without rebuild to exact site
-  `95af8aa7-0b13-4954-af6d-855762acb147` with title
-  `HL-20260823-1-normal-retire-helper-baseline`; require all baseline and
-  retired-path proofs.
-- [ ] `RC-STG-006J23` Under full hold, merge only `DATABASE_PATH` to the verified
-  `HL-20260823-1` target; require exactly one newest/`LIVE` B-prime deploy and
-  complete hosted/held-runtime evidence.
-- [ ] `RC-STG-006K23` Run frozen `post-cutover-normal-verifier.sh`, `33869` bytes
-  / SHA-256 `c4dec9fe...`, verbatim in a fresh attached shell and require exact
-  pass code `HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED` plus the complete target,
-  receipt, source-smoke, zero-fixture, integrity, migration, rotation, scratch,
-  deploy, and external proof bound in the run ledger.
-- [ ] `RC-STG-006L23` Create and separately verify one fresh final backup with
-  exact requester literal `HL-20260823-1-post-normal-cutover`; bind every emitted
-  identity/hash/checksum/result, then stop before final staging reopening,
-  final UI review, closeout, or production.
+  cleanup evidence. It later deactivated when the full re-hold deploy became
+  `LIVE`.
+- [x] `RC-STG-006D23` The fresh extensionless helper/current-FAD/session gates
+  permitted phase one to begin. This is historical partial evidence only and
+  grants no current helper or action authority after the later strict stop.
+- [ ] `RC-STG-006E23` Phase one reached accepted/published state with proposal
+  `e00e0512-4a20-47fd-ad74-0986dd4abd27`, publish event
+  `974342b5-94e5-42d8-af20-9e07c35bc847`, and publisher/replay
+  `fresh 2` / `replay 0`. The overall smoke is incomplete: Chrome was Admin
+  rather than required Manager A during publication, phase two never began,
+  and no return key/confirmation or retry may run.
+- [x] `RC-STG-006F23` Operator sequencing selected `STRICT_STOP`; exactly one
+  merge-only three-key re-hold produced sole newest/`LIVE` B-prime deploy
+  `dep-da6cu8h42hec738f2al0`. Hosted `443` suites / `3,503` tests all passed;
+  build/startup, zero-error, health/readiness, and session/leagues/current-FAD
+  `503 SERVICE_MAINTENANCE` gates pass. Prior `dep-da60sl0jo6nc73e0cfu0` is
+  deactivated.
+- [ ] `RC-STG-006G23` Run frozen `pre-abort-source-verifier.sh`, exactly `18060`
+  bytes / SHA-256 `9c323005...`, verbatim and require
+  `HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED`, exact
+  `to_b_accepted` / `published` / `none`, semantic/smoke/hosted completion all
+  false, release blocked/rollback only, target-family absence, cleanup, and
+  separate external service identity proof.
+- [ ] `RC-STG-006H23` If and only if `RC-STG-006G23` passes, run the exact current
+  run-record abort plan, one matching execute, and one byte-identical replay.
+  Hard-require plan `targetState: "absent"` and mutation counts `0/0`; first
+  execute mutation counts `0/2`; and replay mutation counts `0/0`, using exact
+  fields `authoritativeDatabaseMutationCount` / `durableFilesystemMutationCount`.
+  Plan and first execute must expose the full `temporaryFilesystemWork` object
+  as `performed: true`, `plaintextDatabaseMaterialized: true`, the same exact
+  `deterministicPrivateWorkDirectory` literal
+  `/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`,
+  `retained: false`, `processLocalCleanup: "verified"`, and
+  `abruptTerminationRecovery: "fail-closed-at-deterministic-work-directory"`.
+  Replay must expose the full object as `performed: false`,
+  `plaintextDatabaseMaterialized: false`, that same exact path,
+  `retained: false`, `processLocalCleanup: "not-needed"`, and the same abrupt-
+  termination value. Bind every emitted plan/confirmation/receipt/hash/
+  mutation/cleanup field, then stop. Any mismatch is a hard stop. Nonzero,
+  incomplete, ambiguous, disconnected, or unknown plan output forbids execute.
+  The same outcome before a complete accepted first-execute `0/2` result
+  forbids blind retry and nominal replay; retain the full hold and evidence and
+  reconcile source/target/receipt/work state only under a separately authorized
+  recovery decision. Normal plan/execute/replay is not authorized.
+- [ ] `RC-STG-006I23` Post-abort helper retirement remains `PENDING AUTHORITY`.
+  It requires a separate amendment after abort evidence is bound.
+- [ ] `RC-STG-006J23` Post-abort target activation remains `PENDING AUTHORITY`.
+  No `DATABASE_PATH` change is authorized by this checklist revision.
+- [ ] `RC-STG-006K23` Post-abort target verification remains
+  `PENDING AUTHORITY`; the unused normal verifier is not abort authority.
+- [ ] `RC-STG-006L23` Post-abort backup, final staging reopening/review,
+  closeout, and production remain `PENDING AUTHORITY` after the mandatory stop.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -1190,10 +1190,12 @@ The fresh source and verified backup binding pass only as recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`. B-prime
 implementation, local verification, and backend publication pass. Its held
 deploy/runtime, fixture prepare/replay, held postflight proof, helper
-construction/local verification, and corrected helper publication/hosted proof
-also pass. Controlled unhold/session, smoke, new release-specific plan/execute
-or abort, target materialization, activation, and post-cutover backup remain
-`PENDING`.
+construction/local verification, corrected helper publication/hosted proof,
+controlled-unhold runtime, partial phase one, and full re-hold pass. Operator
+sequencing strict-stopped the smoke; phase two and normal recovery are
+forbidden. Abort preflight/plan/execute/replay remains `PENDING` under the exact
+current ledger. Post-abort helper retirement, activation, verification, backup,
+and every later downstream step require a separate amendment.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:
@@ -1378,11 +1380,13 @@ contract. They cannot satisfy, seed, or authorize any `HL-20260823-1` action.
 ### Current `HL-20260823-1` Staging Boundary
 
 The fresh release-specific counterparts through controlled-unhold runtime and
-unheld pre-smoke verification pass as recorded in the live ledger. Exact helper
-session verification and every action-bearing counterpart to RC-STG-011A-J
-remain `PENDING`, as do fresh actions and publisher replays, privacy/cache
-smoke, re-hold, normal restore/replay, helper retirement, activation/
-verification/backup, and final review. The authoritative live ledger is
+unheld pre-smoke verification passed as recorded in the live ledger. Phase one
+then reached accepted/published state, but operator sequencing selected
+`STRICT_STOP`; phase two never began. Full re-hold passes. The only pending
+executable counterparts are abort preflight/plan/execute/identical replay;
+normal restore and phase two are forbidden. Helper retirement, activation,
+verification/backup, and final review await a separate post-abort amendment.
+The authoritative live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 - [ ] `RC-STG-012` Manual QA recommendation is pass.

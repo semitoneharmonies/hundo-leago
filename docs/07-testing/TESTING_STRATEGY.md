@@ -107,7 +107,7 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Release - 2026-08-23 (CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT)
+### M7-26 Fresh Strict Release - 2026-08-23 (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-ONLY NEXT)
 
 Grae requested and approved `HL-20260823-1` at exact
 requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
@@ -125,7 +125,7 @@ The clean pre-fixture source boundary was
 `37105664` bytes / SHA-256
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
 Fresh prepare/replay passed at `729` then `0` writes. Held postflight verified
-that same path as the current fixture-bearing source at `37744640` bytes /
+that same path as the pre-action fixture-bearing source at `37744640` bytes /
 SHA-256 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
@@ -150,17 +150,14 @@ headers, marker/runtime, absence, normal-app, and held-runtime checks. Fresh tab
 empty, the browser observed only the pinned CSS and JavaScript, and no API,
 session, action, or write ran.
 
-The exact controlled-unhold merge produced sole newest/`LIVE` B-prime deploy
-`dep-da60sl0jo6nc73e0cfu0`; hosted `3,503/3,503`, build/startup, zero-error,
-exact unheld runtime, health, unauthenticated CORS/cache, and mounted-route gates
-pass. Frozen v2 pre-smoke verification also passes with exact code
-`HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED`, source `37744640` / `b4163695...`, WAL
-`0`, SHM `32768`, target-family absence, authoritative source unopened, and
-temporary cleanup. Exact session verification is next. All actions and
-publisher replays, the exact two-cookie
-`1/0/0 -> 2/1/1 -> 3/2/2` comparator, restore, activation, final
-desktop/mobile matrix, and closeout are `PENDING`. No test or action result from
-a predecessor may satisfy this release. Its live ledger is
+The exact controlled-unhold deploy `dep-da60sl0jo6nc73e0cfu0` and pre-action v2
+verification passed. Phase-one proposal
+`e00e0512-4a20-47fd-ad74-0986dd4abd27` reached accepted state; publication
+event `974342b5-94e5-42d8-af20-9e07c35bc847` and immediate replay passed at
+`fresh 2` / `replay 0`. Chrome was Admin rather than required Manager A during
+publication, so operator sequencing selected `STRICT_STOP`. The return phase
+and complete `1/0/0 -> 2/1/1 -> 3/2/2` comparator never began; no retry is
+allowed. No predecessor result may satisfy this release. Its live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
 For this release only, controlled-unhold testing used one merge-only
@@ -168,15 +165,11 @@ For this release only, controlled-unhold testing used one merge-only
 `LEAGUE_WRITE_MODE=open`, and `FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. Every
 other B-prime/F/environment/database/source/root/season binding and every
 disabled job, email/capture, debug, backup, or provider value remained exact.
-The resulting sole API-triggered B-prime deploy and the complete hosted/runtime/
-pre-smoke verification now pass; no `trigger_deploy` call ran. Before action
-testing, open a fresh exact lowercase extensionless helper tab and re-prove
-`READY_NO_SESSION_REQUEST`, empty query/mutation caches, no `STRICT_STOP`, and
-zero initialization API/session/action/write traffic; then require one correct-
-role session proof in the exact unexpired helper commit/deploy and mount current
-release FAD `f47032fd...`, never predecessor `0aee0824...`, before action.
+The resulting API-triggered B-prime deploy and complete hosted/runtime/pre-
+smoke verification passed; no `trigger_deploy` call ran. The later phase-one
+attempt is terminal evidence only after the operator-sequencing strict stop.
 
-The only action-test keys, in order, are:
+The only action-test keys permitted during that stopped attempt were:
 
 ```text
 HL-20260823-1-team1-to-b-propose
@@ -189,18 +182,23 @@ HL-20260823-1-outbox-team1-return-to-manager-a
 PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
 ```
 
-Each publisher test includes one approved request and its immediate identical
-zero-write replay. Ambiguous environment state is inspected, never retried;
-drift, wrong/multiple deploy, failed proof, expiry, or `STRICT_STOP` prohibits
-every action and requires exact three-key re-hold plus fresh fail-closed
-recovery. Only after the exact smoke succeeds, the run ledger authorizes in
-order the exact re-hold deploy, normal plan/execute/identical replay, helper
-retirement, `DATABASE_PATH`-only target activation, frozen normal post-cutover
-verifier with pass code `HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED`, and fresh
-backup/separate verify using requester literal
-`HL-20260823-1-post-normal-cutover`. It stops before final reopening/review or
-production. The similarly named `HL-20260822-1` strategy below is historical
-and cannot satisfy this sequence.
+Only the first three keys and first publisher confirmation were used. The
+return keys/confirmation are forbidden. Exact three-key re-hold produced sole
+newest/`LIVE` deploy `dep-da6cu8h42hec738f2al0` after hosted `3,503/3,503`,
+build/startup, zero-error, health/readiness, and maintenance-blocked ordinary-
+route gates passed.
+
+Testing now proceeds only through frozen abort preflight `18060` bytes /
+SHA-256 `9c323005...`, separate external service proof, and—if both pass—the
+exact run-record abort plan, matching execute, and byte-identical replay.
+Require `to_b_accepted` / `published` / `none`, semantic/smoke/hosted completion
+all false, release blocked, and rollback only. The exact plan absent/`0/0`,
+first-execute `0/2`, replay `0/0`, and full `temporaryFilesystemWork` matrices
+bound to one contract-owned deterministic path are hard acceptance gates; any
+mismatch stops. Then stop. Phase two, retry, and normal restore are forbidden.
+Retirement, activation, verifier, backup, final review, and production require
+later authority. The similarly named `HL-20260822-1` strategy below is
+historical and cannot satisfy this sequence.
 
 ### M7-26 Fresh Strict Rerun - 2026-08-22 (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 

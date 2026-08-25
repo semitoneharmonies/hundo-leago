@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 B-PRIME + FIXTURE/POSTFLIGHT + HELPER + CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT; CONTROLLED UNHOLD ACTIVE`
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT PREFLIGHT NEXT`
 
 ## Work Plan ID
 
@@ -21,7 +21,7 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Controlled-Unhold Runtime Pass; Session + Actions Next
+## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Re-Hold Pass; Abort-Only Next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
@@ -40,7 +40,7 @@ The clean pre-fixture source boundary was
 `37105664` bytes / SHA-256
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
 Fresh prepare/replay passed with `729` then `0` writes. Held postflight then
-verified that same path as the current fixture-bearing source at `37744640`
+verified that same path as the pre-action fixture-bearing source at `37744640`
 bytes / SHA-256 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
@@ -74,24 +74,22 @@ action, or write.
 
 The exact merge-only controlled unhold produced sole newest/`LIVE` B-prime
 deploy `dep-da60sl0jo6nc73e0cfu0`. Its hosted `3,503/3,503`, build/startup,
-zero-error, exact unheld runtime, health, unauthenticated CORS/cache, and mounted
-FAD route gates pass. Frozen v2 pre-smoke verification also passes with code
-`HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED`, source `37744640` / `b4163695...`, WAL
-`0`, SHM `32768`, target family absent, authoritative source unopened, and
-owned cleanup. Exact session verification is next. All release-specific actions
-and publisher replays, A-to-B-to-A smoke, re-hold, normal restore/replay, helper
-retirement, target activation/verification/backup, final matrix, and closeout
-are `PENDING`. No
-value from either blocked predecessor may be resumed or reused. Production
-remains untouched and unauthorized. The exact gate ledger is
+zero-error, exact unheld runtime, health, unauthenticated CORS/cache, mounted-FAD
+route, and pre-action v2 verifier gates passed. Phase one later reached accepted
+state as proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27`; publish event
+`974342b5-94e5-42d8-af20-9e07c35bc847` and its exact replay returned
+`fresh 2` / `replay 0`. Chrome remained Admin rather than required Manager A
+during publication, so operator sequencing selected `STRICT_STOP`. Phase two
+never began and no retry is allowed. No value from either blocked predecessor
+may be resumed or reused. Production remains untouched and unauthorized. The
+exact gate ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
-### Exact current session and action handoff
+### Terminal phase-one evidence and full re-hold
 
-The current run record is the sole action authority; the closed
-`HL-20260822-1` block later in this plan is evidence only. On Render workspace
-`tea-d4prbj7diees738tmg90` and service `srv-d9eo2turnols73ekb830`, the one
-merge-only `replace: false` update completed with exactly:
+The current run record is the sole recovery authority; the closed
+`HL-20260822-1` block later in this plan is evidence only. The controlled-unhold
+matrix below is historical pre-action evidence:
 
 ```text
 STAGING_MAINTENANCE_HOLD=false
@@ -99,28 +97,9 @@ LEAGUE_WRITE_MODE=open
 FREE_AGENT_DRAFT_ROUTES_ENABLED=true
 ```
 
-It preserved exact B-prime
-`234547e4d8453b7515fc081ea6ebe4c2d022dc54`, F
-`4dfe12d1366314e3d9df722c50771324647743c9`, environment
-`test:release-qa`, database `m7-release-qa-fixture`, source
-`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
-persistent root `/opt/render/project/data/hundo-staging`, season `2026` /
-`20262027`, and the unchanged disabled scheduler, account-email/capture,
-debug, backup-schedule, and live-provider matrix with all nine provider inputs
-absent. The merge created exactly one API-triggered deploy on exact B-prime and
-no `trigger_deploy` call ran. Its complete hosted test, build/startup, zero-
-error, runtime, versioned health, anonymous-session/CORS/cache, newest/`LIVE`,
-no-competing-deploy, and v2 pre-smoke data gates pass. Prior inert tab
-`1600151197` is no longer open and is historical evidence only. The next
-operation is to open a fresh exact extensionless helper tab, re-prove
-`READY_NO_SESSION_REQUEST`, empty caches, no `STRICT_STOP`, and zero
-initialization traffic, mount current release FAD `f47032fd...` rather than
-predecessor `0aee0824...`, then perform one exact session verification in helper commit
-`e898e72272e5a052867832dcf9f128e5b8d5730e`, current deploy
-`6a8c006abe46c8fb6269c40c`, before its
-`2026-08-25T07:00:00.000Z` expiry and only at the lowercase extensionless URL.
-
-Only after those gates pass may the helper use this fresh fixed namespace:
+It preserved exact B-prime, F, environment/database/source/root/season, and the
+unchanged disabled scheduler, account-email/capture, debug, backup-schedule,
+and provider-absence matrix. The helper's fixed namespace was:
 
 ```text
 HL-20260823-1-team1-to-b-propose
@@ -133,28 +112,31 @@ HL-20260823-1-outbox-team1-return-to-manager-a
 PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
 ```
 
-Each publisher call is followed immediately by its identical zero-write replay.
-An ambiguous update must not be retried or followed by a manual deploy. Any
-drift, wrong or multiple deploy, failed gate, wrong session, helper expiry, or
-`STRICT_STOP` means no action; reconcile state, restore only the exact full-hold
-three-key inverse `true` / `closed` / `false`, and enter the fresh release's
-fail-closed recovery path. No target, restore, activation, or production
-authority is implied by the controlled-unhold pass.
+Only the first three keys and first publisher confirmation were used. The
+return keys/confirmation were never used and are now forbidden. The exact
+full-hold inverse then ran once and produced deploy
+`dep-da6cu8h42hec738f2al0`, sole newest/`LIVE` on B-prime after hosted `443`
+suites / `3,503` tests / `3,503` pass, build/startup, zero-error, live/ready
+`200`/`no-store`, and session/leagues/current-FAD
+`503 SERVICE_MAINTENANCE`/`no-store` gates passed. Prior unhold deploy
+`dep-da60sl0jo6nc73e0cfu0` is deactivated. No restore, target, receipt, helper,
+Netlify, `DATABASE_PATH`, backup, or production change occurred.
 
-### Conditional successful-smoke handoff
+### Current abort-only handoff
 
-Only the current 2026-08-23 run record supplies operational authority after a
-fully successful exact smoke. It requires, in order, the exact merge-only
-three-key re-hold and sole B-prime deploy; one normal plan, one execute, and one
-byte-identical replay to the absent `HL-20260823-1` target; exact sealed-baseline
-helper retirement title `HL-20260823-1-normal-retire-helper-baseline` on site
-`95af8aa7-0b13-4954-af6d-855762acb147`; `DATABASE_PATH`-only target activation;
-frozen verifier `post-cutover-normal-verifier.sh` (`33869` bytes / SHA-256
-`c4dec9fe...`) with exact success code
-`HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED`; and a fresh backup plus separate
-verify requested by literal `HL-20260823-1-post-normal-cutover`. Every one of
-those gates is `PENDING`. This handoff stops before final staging reopening,
-final UI review, closeout, or production.
+Only the current 2026-08-23 run record supplies operational authority. The next
+gate is frozen `pre-abort-source-verifier.sh`, `18060` bytes / SHA-256
+`9c323005...`, requiring exact code `HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` plus
+separate current Render service/deploy/held probes. If both pass, run only the
+record's exact abort plan, matching abort execute, and one byte-identical replay.
+Require `to_b_accepted` / `published` / `none`, semantic/smoke/hosted completion
+all false, `releaseBlocked: true`, and `rollbackOnly: true`. Hard-require the
+run record's exact plan absent/`0/0`, first-execute `0/2`, replay `0/0`, and full
+`temporaryFilesystemWork` matrices with one identical contract-owned
+deterministic path; any mismatch stops. Then stop. Phase two, retry, and normal
+restore are forbidden. Post-abort helper retirement, activation, verifier,
+backup, final review, and closeout remain pending a second evidence-bound
+authority amendment. Production remains untouched.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
 
@@ -1289,14 +1271,17 @@ M7-26 is complete only when:
 
 M7-26 remains `PENDING`. Release `HL-20260822-1` is closed to further action as
 `BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`. Fresh release
-`HL-20260823-1` is authorized and minted. Its clean backup boundary and current
-fixture-bearing held source are bound, its target is absent, and B-prime
+`HL-20260823-1` is now blocked at operator-sequencing strict stop. Its clean
+backup boundary and pre-action fixture-bearing source are bound, its target is
+absent, and B-prime
 implementation, local verification, backend publication, held
 deployment/runtime, fixture prepare/replay, held postflight, helper
 construction/local verification, corrected helper publication/hosted proof,
-controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification pass.
-Exact session verification is next; every later gate through final review
-remains pending.
+controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification
+passed. Phase one reached accepted/published state with `fresh 2` / `replay 0`,
+but phase two never began. Full re-hold now passes. Abort preflight, plan,
+execute, and replay are next; normal recovery is forbidden and every post-abort
+gate awaits a separate amendment.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

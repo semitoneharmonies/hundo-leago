@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; FULL RE-HOLD PASS; ABORT-ONLY NEXT)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -308,7 +308,7 @@ The clean pre-fixture source boundary was exact path
 `37105664` bytes / SHA-256
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
 Fresh prepare/replay passed at `729` then `0` writes. Held verifier v2 then
-proved that same path is the current authoritative fixture-bearing source at
+proved that same path was the authoritative pre-action fixture-bearing source at
 `37744640` bytes / SHA-256
 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
@@ -335,44 +335,34 @@ and held probes with no functions. Fresh tab `1600151197` reached
 pinned assets observed, and no API, session, action, or write.
 
 The exact controlled-unhold merge produced sole newest/`LIVE` B-prime deploy
-`dep-da60sl0jo6nc73e0cfu0`; its hosted `3,503/3,503`, build/startup, zero-
-error, unheld runtime, health, unauthenticated CORS/cache, and mounted-route
-gates pass. Frozen v2 then emitted `HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at
-`2026-08-24T10:42:47.380Z`, re-proving source `37744640` / `b4163695...`, WAL
-`0`, SHM `32768`, target-family absence, privacy/pre-smoke state, and cleanup.
-Exact session verification is next. Release-specific actions, publisher
-replays, the T-131/T-132/T-140 comparator, re-hold, normal restore/replay,
-helper retirement, activation/verification/backup, and final review are all
-`PENDING`. No write
-endpoint or action request has run; fixture preparation is the only
-authoritative database mutation so far. Exact current evidence is
+`dep-da60sl0jo6nc73e0cfu0`; its hosted/runtime and pre-action v2 gates passed.
+Phase-one proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27` reached accepted
+state. Publication event `974342b5-94e5-42d8-af20-9e07c35bc847` and its
+immediate identical replay passed at `fresh 2` / `replay 0`. Chrome was Admin
+rather than required Manager A during publication, so operator sequencing
+selected `STRICT_STOP`. Phase two and the complete T-131/T-132/T-140 comparator
+never began; no retry is allowed. Exact current evidence is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
-That ledger now supplies the only current endpoint-opening authority. The exact
-merge-only controlled unhold and all hosted/runtime/pre-smoke verification
-already pass. A fresh exact extensionless helper tab must first re-prove inert
-readiness, empty caches, no `STRICT_STOP`, and zero initialization traffic; one
-current release FAD `f47032fd...` mount and one exact helper session proof must
-still pass before the fixed
-proposal and
-acceptance endpoints or release-only
-`POST /api/v1/operations/release-qa/strict-manager-outbox` may be called. The
-fresh keys are `HL-20260823-1-team1-to-b-propose`,
-`HL-20260823-1-team1-to-b-accept`,
-`HL-20260823-1-outbox-team1-to-manager-b`,
-`HL-20260823-1-team1-to-a-propose`,
-`HL-20260823-1-team1-to-a-accept`, and
-`HL-20260823-1-outbox-team1-return-to-manager-a`; the publisher confirmations
-are `PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B` and
-`PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A`. Each publisher call requires
-its immediate identical zero-write replay. Ambiguity, drift, wrong/multiple
-deploy, failed session/runtime proof, expiry, or `STRICT_STOP` blocks every
-endpoint action and requires exact three-key re-hold plus fresh fail-closed
-recovery. Only after the exact action smoke succeeds does the same ledger
-authorize the exact re-hold, normal restore/replay, helper retirement,
-`DATABASE_PATH`-only activation, frozen normal post-cutover verifier, and fresh
-backup/verify. It stops before final staging reopening/review and production.
-The later fenced `HL-20260822-1` values remain non-authoritative.
+That ledger now supplies only abort-recovery authority. Exact re-hold deploy
+`dep-da6cu8h42hec738f2al0` is sole newest/`LIVE` on B-prime after hosted
+`3,503/3,503`, build/startup, zero-error, health/readiness, and maintenance-
+blocked session/leagues/current-FAD gates passed; controlled-unhold deploy
+`dep-da60sl0jo6nc73e0cfu0` is deactivated. No return endpoint or publisher may
+be called, and none of the phase-one requests may be retried.
+
+The next gate is frozen abort preflight `18060` bytes / SHA-256 `9c323005...`,
+requiring `HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` and separate external service
+proof. If both pass, the current run record authorizes exactly one abort plan,
+one matching abort execute, and one byte-identical replay for
+`to_b_accepted` / `published` / `none`, semantic/smoke/hosted completion all
+false, `releaseBlocked: true`, and `rollbackOnly: true`. Require the exact
+plan absent/`0/0`, first-execute `0/2`, replay `0/0`, and full plan/execute/
+replay `temporaryFilesystemWork` objects bound to the exact contract-owned path
+literal in the run record; any mismatch hard-stops. Then stop. Normal restore,
+phase two, and retry are forbidden. Retirement, activation, verifier, backup,
+reopening/review, and production require later authority. The fenced
+`HL-20260822-1` values remain non-authoritative.
 
 ---
 

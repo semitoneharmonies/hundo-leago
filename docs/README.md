@@ -556,7 +556,9 @@ M7-26 remains the sole active plan. Grae requested and approved fresh release
 `HL-20260823-1` at `2026-08-23T23:23:29.877Z`; it is minted under the full hold
 with B-prime local verification, backend publication, held deployment/runtime,
 fresh fixture preparation/replay, held postflight, helper local verification,
-corrected helper publication, and controlled-unhold runtime complete. Executable
+corrected helper publication, and controlled-unhold runtime complete. Phase one
+later reached accepted/published state, but operator sequencing selected
+`STRICT_STOP`; phase two never began and full re-hold now passes. Executable
 B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` is published on backend
 `origin/staging`; exact held deploy `dep-da5sh0e417fc738i254g` passed after all
 `3,503/3,503` hosted tests, build/startup, zero-error, held-
@@ -604,7 +606,7 @@ backend-publication gates. Its held deployment/runtime gate also passes on
 exact deploy `dep-da5sh0e417fc738i254g`. The clean starting source boundary
 remains `37105664` bytes / `cf3ca07d...` and backup `e735e6a4...` remains its
 verified restore point. Fresh prepare/replay passed at `729` then `0` writes;
-held verifier v2 then proved the current fixture-bearing source at `37744640`
+held verifier v2 then proved the pre-action fixture-bearing source at `37744640`
 bytes / `b4163695...`, target family absent, authoritative source unopened,
 scratch mutations `0`, and cleanup complete. Frontend helper commit
 `e898e72272e5a052867832dcf9f128e5b8d5730e` passes its exact nine-file local
@@ -617,30 +619,33 @@ current/`READY`, processed all six helper header rules, deployed no functions,
 and passed exact canonical/immutable bytes and headers. Fresh tab `1600151197`
 then reached `READY_NO_SESSION_REQUEST` with empty query/mutation caches and
 exactly the pinned CSS and JavaScript observed; no API, session, action, or
-write ran. Exact controlled-unhold deploy `dep-da60sl0jo6nc73e0cfu0` is now
-sole newest/`LIVE` on B-prime after hosted `3,503/3,503`, build/startup, zero-
-error, exact unheld runtime, health, unauthenticated CORS/cache, and mounted-
-route gates passed. Frozen v2 then emitted
+write ran. Exact controlled-unhold deploy `dep-da60sl0jo6nc73e0cfu0` passed on
+B-prime after hosted `3,503/3,503`, build/startup, zero-error, exact unheld
+runtime, health, unauthenticated CORS/cache, and mounted-route gates. Frozen v2
+then emitted
 `HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at `2026-08-24T10:42:47.380Z`,
 re-proving source `37744640` / `b4163695...`, WAL `0`, SHM `32768`, target-
-family absence, authoritative source unopened, and cleanup. Exact session
-verification is next; actions, smoke, re-hold, normal restore/replay, helper
-retirement, activation/verification/backup, and final review remain pending.
+family absence, authoritative source unopened, and cleanup. Phase-one proposal
+`e00e0512-4a20-47fd-ad74-0986dd4abd27` reached accepted state; publish event
+`974342b5-94e5-42d8-af20-9e07c35bc847` and exact replay passed at
+`fresh 2` / `replay 0`. Chrome was Admin rather than required Manager A during
+publication, selecting `STRICT_STOP`; phase two never began and no retry is
+allowed. Re-hold deploy `dep-da6cu8h42hec738f2al0` is sole newest/`LIVE` after
+hosted `3,503/3,503`, build/startup, zero-error, health/readiness, and
+maintenance-blocked ordinary-route gates passed.
 
-The 2026-08-23 run record is the sole current action and post-smoke authority.
-Its exact merge-only controlled unhold and complete hosted/runtime/pre-smoke
-proof pass. Prior inert tab `1600151197` is no longer open. A fresh exact
-extensionless helper tab must re-prove inert readiness/empty caches/no
-`STRICT_STOP`; current release FAD `f47032fd...`, not predecessor `0aee0824...`,
-must be mounted; then exact session proof must pass before any fresh
-`HL-20260823-1` action key or publisher confirmation is used. Ambiguous update
-state, drift, a wrong or competing deploy, or `STRICT_STOP` means no action,
-exact three-key re-hold, and release-specific fail-closed recovery. Only after
-the exact smoke succeeds does that ledger authorize the exact re-hold deploy,
-normal plan/execute/identical replay, helper retirement, `DATABASE_PATH`-only
-activation, frozen normal post-cutover verifier, and fresh backup/verify. It
-stops before final staging reopening/review and production. The fenced
-`HL-20260822-1` values remain history only.
+The 2026-08-23 run record is the sole current recovery authority. The next gate
+is frozen abort preflight `18060` bytes / SHA-256 `9c323005...`, requiring code
+`HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` and separate external service proof. If
+both pass, only one exact abort plan, one matching abort execute, and one byte-
+identical replay may run for `to_b_accepted` / `published` / `none`, with
+semantic/smoke/hosted completion all false. Exact acceptance is plan absent/
+`0/0`, first execute `0/2`, replay `0/0`, and the full temporary-work matrices
+bound to one contract-owned deterministic path; any mismatch hard-stops. Then
+stop. Phase two, retry, and normal restore are forbidden. Helper retirement,
+activation, verifier, backup, final reopening/review, and closeout require
+emitted abort evidence and a separate authority amendment. Production remains
+untouched. The fenced `HL-20260822-1` values remain history only.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -1015,9 +1020,11 @@ hold. Fresh `HL-20260823-1` is now authorized and minted. Its B-prime local
 verification, backend publication, held deployment/runtime, fresh fixture
 prepare/replay, held postflight proof, helper construction/local verification,
 corrected helper publication/hosted proof, controlled-unhold deployment/runtime,
-and unheld v2 pre-smoke verification pass. Exact session verification is next;
-actions, smoke, re-hold, normal restore/replay, helper retirement, activation/
-verification/backup, and M7-26 closeout remain pending. The
+and unheld v2 pre-smoke verification passed. Phase one reached accepted/
+published state with `fresh 2` / `replay 0`, but operator sequencing selected
+`STRICT_STOP`; phase two never began and full re-hold passes. Abort-only
+preflight/plan/execute/replay is next. Normal recovery is forbidden; every
+post-abort gate awaits a separate amendment. The
 failed/recovered 2026-08-21 attempt remains historical; production remains
 untouched and unauthorized.
 
@@ -1063,7 +1070,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 B-PRIME + FIXTURE/POSTFLIGHT + HELPER + CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT; CONTROLLED UNHOLD ACTIVE
+Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT PREFLIGHT NEXT
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -1088,11 +1095,14 @@ boundary. Fresh `HL-20260823-1` is now selected and minted; exact B-prime
 backend publication. Held deploy `dep-da5sh0e417fc738i254g` passed on exact
 B-prime. Fresh fixture
 prepare/replay, held postflight, helper local verification, and corrected helper
-publication/hosted proof now pass. Controlled-unhold deploy
-`dep-da60sl0jo6nc73e0cfu0` is sole newest/`LIVE` and its hosted/runtime plus
-unheld v2 pre-smoke gates pass. Exact session verification is next, and every
-gate from action execution through final staging review and M7-26 closeout
-remains pending.
+publication/hosted proof passed. Controlled-unhold deploy
+`dep-da60sl0jo6nc73e0cfu0` and unheld v2 pre-smoke gates passed. Phase one then
+reached accepted/published state, but operator sequencing selected
+`STRICT_STOP`; phase two never began. Re-hold deploy
+`dep-da6cu8h42hec738f2al0` is sole newest/`LIVE` after its complete hosted and
+maintenance-runtime gate passed. Abort preflight/plan/execute/replay is next;
+normal recovery and phase two are forbidden, and downstream gates await a
+separate post-abort amendment.
 Production remains untouched and unauthorized.
 
 A work plan is used for a contained current task such as:
@@ -1311,8 +1321,10 @@ approval authorizes only fresh `HL-20260823-1`; its new restore contract,
 B-prime local/publication/held-deployment gates, fresh fixture prepare/replay,
 held postflight, helper construction/local verification, corrected helper
 publication/hosted proof, controlled-unhold deployment/runtime, and unheld v2
-pre-smoke verification now pass, while session/actions and all later operational
-data gates remain pending. The earlier
+pre-smoke verification passed. Phase one is published partial evidence;
+operator sequencing strict-stopped the attempt, phase two never began, and full
+re-hold now passes. Only abort preflight/plan/execute/replay is currently
+authorized; downstream data gates remain pending a second amendment. The earlier
 `HL-20260821-3` abort
 recovery remains immutable historical evidence.
 

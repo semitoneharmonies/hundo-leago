@@ -1244,7 +1244,7 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - controlled-unhold runtime pass; session + actions next
+#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; full re-hold pass; abort-only next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
@@ -1258,7 +1258,7 @@ hosted/runtime gate passed.
 ```text
 Authoritative source:       /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3
 Clean boundary bytes/SHA:   37105664 / cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
-Fixture source bytes/SHA:   37744640 / b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103
+Pre-action fixture bytes/SHA: 37744640 / b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103
 Fresh target:               /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3
 Target state:               absent
 ```
@@ -1288,7 +1288,7 @@ Git publication passed without a data, target, helper, or production action.
 The only later environment change was the exact `APP_BUILD_ID`-only merge that
 triggered the now-passed held deploy; the hold and `DATABASE_PATH` stayed
 unchanged. Fresh fixture prepare/replay then passed at `729` and `0` writes;
-held postflight verified source `37744640` / `b4163695...`, exact fixture and
+held postflight verified the pre-action source `37744640` / `b4163695...`, exact fixture and
 privacy evidence, target-family absence, zero scratch mutations, and cleanup.
 Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` then
 passed its exact canonical local gate. API deploy
@@ -1298,71 +1298,68 @@ header rules were absent; corrected current/`READY` CLI deploy
 normal-app, held-probe, and inert-tab checks with no functions. Fresh tab
 `1600151197` reported `READY_NO_SESSION_REQUEST` with empty QueryClient caches
 and no API, session, action, or write. The clean `cf3ca07d...` backup remains
-the restore boundary. Exact merge-only controlled-unhold deploy
-`dep-da60sl0jo6nc73e0cfu0` is now sole newest/`LIVE` on B-prime after hosted
-`3,503/3,503`, build/startup, zero-error, exact unheld runtime, health,
-unauthenticated CORS/cache, and mounted-route gates passed. Frozen v2 unheld
-pre-smoke verification emitted `HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at
-`2026-08-24T10:42:47.380Z`, re-proving source `37744640` / `b4163695...`, WAL
-`0`, SHM `32768`, target-family absence, authoritative source unopened, and
-cleanup. Exact session verification is next; action, publisher, smoke, re-hold,
-normal restore/replay, helper retirement, target materialization, activation/
-verification, and new backup action remain `PENDING`. Its restore plan and receipt must use
-only the new release namespace; no prior plan, receipt, target, work area, or
+the restore boundary. Exact controlled-unhold deploy
+`dep-da60sl0jo6nc73e0cfu0` and frozen pre-action v2 verifier passed. Phase-one
+proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27` reached accepted state;
+publication event `974342b5-94e5-42d8-af20-9e07c35bc847` and immediate replay
+passed at `fresh 2` / `replay 0`. Chrome was Admin rather than required Manager
+A during publication, so operator sequencing selected `STRICT_STOP`. Phase two
+never began and no retry is allowed. Its abort plan and receipt must use only
+the new release namespace; no prior plan, receipt, target, work area, or
 release-specific value may be reused. Exact current gates are recorded in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
-The completed controlled unhold changed no database, backup, target, receipt,
-or work path. It used one `replace: false` Render merge on workspace
-`tea-d4prbj7diees738tmg90` / service `srv-d9eo2turnols73ekb830` containing only
-`STAGING_MAINTENANCE_HOLD=false`, `LEAGUE_WRITE_MODE=open`, and
-`FREE_AGENT_DRAFT_ROUTES_ENABLED=true`. Exact B-prime, F,
-`test:release-qa` / `m7-release-qa-fixture`, the fixture-bearing source,
-persistent root, season, disabled scheduler/account-email/capture/debug/backup
-settings, and live-provider disablement plus all provider-variable absences
-remained unchanged. The environment merge created exactly one API-triggered
-B-prime deploy and no `trigger_deploy` call ran. Its complete hosted, runtime,
-health, no-error, and v2 pre-smoke gates pass. Prior inert tab `1600151197` is
-no longer open; a fresh exact extensionless helper tab must re-prove inert
-readiness/empty caches/no `STRICT_STOP` before the exact session gate, which
-must still pass alongside current release FAD `f47032fd...`—not predecessor
-`0aee0824...`—before a fresh action. Helper commit
-`e898e72272e5a052867832dcf9f128e5b8d5730e`, deploy
-`6a8c006abe46c8fb6269c40c`, expiry `2026-08-25T07:00:00.000Z`, the exact
-extensionless URL, and the fresh keys/confirmations frozen in the run record are
-mandatory.
+Exact merge-only re-hold with only `true` / `closed` / `false` produced sole
+newest/`LIVE` B-prime deploy `dep-da6cu8h42hec738f2al0`. Hosted `443` suites /
+`3,503` tests / `3,503` pass, build/startup, zero-error, live/readiness, and
+maintenance-blocked session/leagues/current-FAD gates passed. Prior unhold
+deploy `dep-da60sl0jo6nc73e0cfu0` is deactivated. The source path remains
+authoritative under full hold; its exact current post-write identity must come
+from abort preflight, not the `37744640` / `b4163695...` pre-action baseline.
+The clean backup remains the rollback boundary and the fresh target remains
+absent.
 
-An ambiguous update is not retried or followed by a manual deploy. Any drift,
-wrong/multiple deploy, failed gate/session, expiry, or `STRICT_STOP` permits no
-action and immediately selects merge-only re-hold with exactly
-`STAGING_MAINTENANCE_HOLD=true`, `LEAGUE_WRITE_MODE=closed`, and
-`FREE_AGENT_DRAFT_ROUTES_ENABLED=false`, followed by the fresh release's
-classified fail-closed recovery path. Until a later smoke and restore gate
-passes, the current fixture-bearing source remains authoritative, the clean
-backup remains the rollback boundary, and the fresh target remains absent.
+The only next operation is frozen ignored
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\pre-abort-source-verifier.sh`,
+`18060` bytes / SHA-256
+`9c32300590c422cc5d1737cf536d2fadf91e3506979ec02e500bb26ea3a72d68`,
+requiring `HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` plus separate external service
+identity. Require exact `to_b_accepted` / phase-one `published` / return `none`,
+semantic/smoke/hosted completion all false, release blocked/rollback only,
+source/runtime/hold/provider/backup identity, target-family absence, and owned
+cleanup.
 
-After—and only after—the exact smoke succeeds completely, the 2026-08-23 run
-record is the sole operational authority for the normal recovery sequence. It
-requires the exact merge-only three-key re-hold and sole B-prime deploy; one
-normal `release:qa:strict-restore:plan`, one matching execute, and one byte-
-identical replay using the bound source, absent target, backup manifest, and
-fresh emitted normal plan/confirmation; sealed-baseline helper retirement to
-site `95af8aa7-0b13-4954-af6d-855762acb147` with exact title
-`HL-20260823-1-normal-retire-helper-baseline`; `DATABASE_PATH`-only activation
-to the verified fresh target; and frozen verifier
-`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\post-cutover-normal-verifier.sh`,
-`33869` bytes / SHA-256
-`c4dec9fef24bfa30e76a4b2f9f63cc5dd35e4c99a3e9841da4a629bdb764352b`,
-with exact pass code `HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED`.
+Only after both proofs pass may the exact run-record commands execute one
+`release:qa:strict-restore:abort:plan`, one matching
+`release:qa:strict-restore:abort:execute`, and one byte-identical execute replay.
+The abort confirmation—not any normal or predecessor confirmation—must be the
+emitted `ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK` form bound to
+this release, service, environment, fixture IDs, and backup. Acceptance requires
+plan `targetState: "absent"` and exact mutation counts `0/0`, first execute exact
+mutation counts `0/2`, and replay exact mutation counts `0/0`, using fields
+`authoritativeDatabaseMutationCount` / `durableFilesystemMutationCount`. Plan
+and first execute require full `temporaryFilesystemWork` values
+`performed: true`, `plaintextDatabaseMaterialized: true`, exact
+`deterministicPrivateWorkDirectory`
+`/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`, `retained: false`,
+`processLocalCleanup: "verified"`, and
+`abruptTerminationRecovery: "fail-closed-at-deterministic-work-directory"`.
+Replay requires the full object
+with `performed: false`, `plaintextDatabaseMaterialized: false`, that same path,
+`retained: false`, `processLocalCleanup: "not-needed"`, and the same abrupt-
+termination value. Bind every emitted plan/receipt/hash/mutation/cleanup field
+and stop after replay. Any mismatch is a hard stop. A nonzero exit, incomplete
+or ambiguous output, shell disconnect, or unknown plan result forbids execute.
+If it occurs before a complete accepted first-execute `0/2` result, do not
+blindly retry or call the nominal replay: retain full hold, preserve evidence,
+and reconcile source, target, receipt, and work-area state under a separately
+authorized recovery decision. Replay authority exists only after the complete
+first result passes the exact matrix.
 
-Only after that verifier and separate external held-runtime proof pass may one
-fresh incident-preservation backup and separate verification run with exact
-requester literal `HL-20260823-1-post-normal-cutover`. The exact commands,
-restore confirmation form, mutation/replay expectations, baseline verifier and
-Netlify command, target/receipt/work evidence, final backup commands, and stop
-conditions are frozen in the run record. Every step remains `PENDING`; this
-summary grants no alternate command path and stops before final staging
-reopening, final UI review, closeout, or production.
+Phase two, retry, normal restore, helper retirement, `DATABASE_PATH` activation,
+post-activation target verification, backup, reopening, final review, closeout,
+and production are unauthorized. Post-abort retirement/activation/verifier/backup remains
+`PENDING` until a second authority amendment binds the emitted abort evidence.
 
 #### HL-20260822-1 pre-action abort-recovery record
 

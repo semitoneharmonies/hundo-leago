@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Perform the exact helper session verification for fresh HL-20260823-1; B-prime, held deployment/runtime, fixture prepare/replay, held postflight, helper local/publication/inert-load, controlled-unhold deployment/runtime, and unheld pre-smoke verifier gates pass, while every action and later gate remains pending
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 AUTHORIZED + MINTED AT 2026-08-23T23:23:29.877Z / F 4dfe12d BOUND / HELPER COMMIT e898e72 LOCAL + PUBLICATION PASS / CORRECTED NETLIFY 6a8c006 CURRENT + READY / HELD STARTING B 8e313902 BOUND / B-PRIME 234547e LOCAL + PUBLICATION PASS / HELD dep-da5sh0e417fc738i254g PASS + DEACTIVATED / CONTROLLED-UNHOLD dep-da60sl0jo6nc73e0cfu0 NEWEST + LIVE + RUNTIME PASS / CLEAN BACKUP BOUNDARY + VERIFIED BACKUP e735e6a4 PRESERVED / FIXTURE-BEARING SOURCE b4163695 + UNHELD V2 VERIFIED / FRESH TARGET ABSENT / CONTROLLED UNHOLD ACTIVE / PREPARE + REPLAY + POSTFLIGHT PASS / INERT TAB READY_NO_SESSION_REQUEST + EMPTY CACHES PASS / SESSION, ACTION, SMOKE, RE-HOLD, NORMAL RESTORE, HELPER RETIREMENT, ACTIVATION, VERIFICATION/BACKUP, AND FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Run the frozen HL-20260823-1 abort-only preflight with separate external service proof; if and only if both pass, run one abort plan, one matching execute, and one byte-identical replay, then stop for evidence reconciliation
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD dep-da6cu8h42hec738f2al0 NEWEST + LIVE + HOSTED 3503/3503 + MAINTENANCE PROBES PASS / PHASE-ONE PROPOSAL e00e0512 + PUBLISH EVENT 974342b5 + FRESH2/REPLAY0 RETAINED / PRE-ACTION SOURCE b4163695 + CLEAN BACKUP e735e6a4 PRESERVED / TARGET ABSENT / ABORT PREFLIGHT 9c323005 PENDING / ABORT PLAN + EXECUTE + REPLAY AUTHORIZED NEXT / NORMAL RESTORE + PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT + ACTIVATION + VERIFICATION/BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1495,7 +1495,7 @@ local and backend `origin/staging` publication gates. Held deploy
 `dep-da5sh0e417fc738i254g` passed on exact B-prime after all
 `3,503/3,503` hosted tests, build/startup, zero-error, held-health, and external
 read-only runtime gates passed. Fresh fixture prepare/replay then passed with
-`729` and `0` writes. Held postflight verified the current fixture-bearing
+`729` and `0` writes. Held postflight verified the pre-action fixture-bearing
 source at `37744640` bytes / `b4163695...`, with target family absent, full hold
 intact, no authoritative open, zero scratch mutations, and cleanup complete.
 
@@ -1512,29 +1512,32 @@ newest/`LIVE` B-prime deploy `dep-da60sl0jo6nc73e0cfu0`; its hosted
 `3,503/3,503`, build/startup, zero-error, exact runtime, health, unauthenticated
 CORS/cache, and mounted-route gates pass. Frozen unheld pre-smoke verifier v2
 then emitted `HL23_UNHELD_PRE_SMOKE_SOURCE_VERIFIED` at
-`2026-08-24T10:42:47.380Z`, preserving source `37744640` / `b4163695...`, WAL
+`2026-08-24T10:42:47.380Z`, preserving the pre-action source `37744640` / `b4163695...`, WAL
 `0`, SHM `32768`, target-family absence, and owned cleanup.
 
-The ordered remaining gates are exact session verification, A-to-B-to-A
-actions/smoke, full-hold restoration, release-specific normal restore/replay,
-helper retirement, target activation/verification and backup, then final
-matrix, observation, and closeout. Every remaining gate is pending. Staging is
-in the narrowly controlled unhold, and neither blocked predecessor may be
-resumed or reused.
+Phase one reached accepted/published state: proposal
+`e00e0512-4a20-47fd-ad74-0986dd4abd27`, publish event
+`974342b5-94e5-42d8-af20-9e07c35bc847`, and exact publisher/replay
+`fresh 2` / `replay 0`. Chrome remained Admin rather than required Manager A
+during publication, so operator sequencing selected `STRICT_STOP`. Phase two
+never began and no retry is allowed. Exact re-hold deploy
+`dep-da6cu8h42hec738f2al0` is sole newest/`LIVE` on B-prime after `443` hosted
+suites / `3,503` tests all passed, build/startup and zero-error gates passed,
+and live/readiness plus maintenance-blocked session/leagues/current-FAD probes
+passed.
 
-The next gate is now operationally bound only by the current 2026-08-23 run
-record: one fresh exact extensionless helper tab must first re-prove inert
-readiness, empty caches, no `STRICT_STOP`, and zero initialization traffic;
-mount current release FAD `f47032fd...` rather than predecessor `0aee0824...`;
-then one exact helper session proof precedes every fresh action key and
-publisher confirmation. Ambiguity, drift, a failed session, or `STRICT_STOP`
-blocks action and selects exact three-key re-hold plus the fresh release's
-fail-closed recovery path. Only after the full smoke succeeds does the same
-ledger authorize the exact re-hold deploy, normal plan/execute/replay, helper
-retirement, `DATABASE_PATH`-only target activation, frozen normal post-cutover
-verifier, and fresh backup/verify. It stops before final reopening/review and
-production. This authority is specific to `HL-20260823-1`; the fenced
-`HL-20260822-1` contract remains historical.
+The only next gate is the current run record's frozen `18060`-byte / SHA-256
+`9c323005...` abort preflight with exact code
+`HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` and separate external service proof. If
+both pass, one exact abort plan, one matching execute, and one byte-identical
+replay may run for exact `to_b_accepted` / `published` / `none` with semantic,
+smoke, and hosted completion all false. The run record's exact acceptance matrix
+is mandatory: plan absent/`0/0`, first execute `0/2`, replay `0/0`, and the full
+temporary-work objects with the identical contract-owned deterministic path;
+any mismatch hard-stops. Then stop. Phase two, retry, and normal restore are
+forbidden. Helper retirement, activation, verifier, backup, final review, and
+closeout require emitted abort evidence and a separate amendment. Production
+remains untouched; neither predecessor may be resumed or reused.
 
 ## Historical Milestone Evidence
 

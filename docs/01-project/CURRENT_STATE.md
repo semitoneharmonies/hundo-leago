@@ -23,8 +23,8 @@ Last reviewed: **2026-08-24**
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus the release-scoped helper from frontend commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in current corrected CLI deploy `6a8c006abe46c8fb6269c40c`. Render's newest deploy `dep-da60sl0jo6nc73e0cfu0` is `LIVE` on exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; prior held deploy `dep-da5sh0e417fc738i254g` is deactivated | B-prime, held runtime, fresh fixture/replay/postflight, helper publication/inert-tab, and controlled-unhold deployment/runtime gates pass. The fixture-bearing source remains authoritative during the controlled unhold, the clean backup boundary remains verified, and the fresh target remains absent. Exact helper session verification is next; actions and all later gates remain pending. |
-| Local/feature-branch candidate | Stable frontend release artifacts are application F `4dfe12d1366314e3d9df722c50771324647743c9` and helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`. Frontend HEAD and `origin/staging` may contain later non-deployed documentation-only evidence commits above that helper commit; they do not change the sealed F/helper bytes. Backend branch and backend `origin/staging` remain at executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`, child of starting B `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260823-1` is authorized and minted. B-prime, held runtime, fixture/replay/postflight, helper publication, and controlled-unhold runtime pass. Session, actions, smoke, re-hold, normal restore/replay, helper retirement, activation, verification/backup, and final review are pending. No production change is claimed. |
+| Isolated staging candidate | Netlify still serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in current deploy `6a8c006abe46c8fb6269c40c`. Render's newest deploy `dep-da6cu8h42hec738f2al0` is `LIVE` on exact B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; controlled-unhold deploy `dep-da60sl0jo6nc73e0cfu0` is deactivated | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold is restored and verified. Abort-only preflight/plan/execute/replay is next; normal recovery and all post-abort downstream gates remain unauthorized pending emitted evidence and a second amendment. |
+| Local/feature-branch candidate | Stable frontend release artifacts remain application F `4dfe12d1366314e3d9df722c50771324647743c9` and helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`. Frontend HEAD and `origin/staging` may contain later non-deployed documentation-only evidence commits above that helper commit; they do not change the sealed F/helper bytes. Backend branch and backend `origin/staging` remain at executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`, child of starting B `8e313902feefcd683b0f5edd746a9dd2a9029a18` | Fresh release `HL-20260823-1` is blocked after partial phase-one evidence and operator-sequencing `STRICT_STOP`. Re-hold passes. Phase two and normal restore are forbidden. Frozen abort preflight is pending; production is untouched and unauthorized. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -34,7 +34,7 @@ The fresh gate ledger is
 
 ---
 
-## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release — Controlled-Unhold Runtime Pass; Session + Actions Next
+## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Re-Hold Pass; Abort-Only Next
 
 Grae requested and approved release `HL-20260823-1` at exact recorded time
 `2026-08-23T23:23:29.877Z`. The release binds frontend application build
@@ -53,7 +53,7 @@ The clean pre-fixture source boundary was
 `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
 Fresh fixture prepare/replay passed with `729` then `0` writes. Held verifier
 v2 returned `HL_POST_FIXTURE_SOURCE_VERIFIED` at
-`2026-08-24T07:37:31.521Z`; the same path is now the authoritative
+`2026-08-24T07:37:31.521Z`; the same path was the authoritative pre-action
 fixture-bearing source at `37744640` bytes / SHA-256
 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
@@ -86,11 +86,13 @@ The exact three-key controlled-unhold merge then produced sole newest/`LIVE`
 API deploy `dep-da60sl0jo6nc73e0cfu0` on B-prime. Its hosted `3,503/3,503`,
 build/startup, zero-error, exact runtime, live/ready, unauthenticated session/
 leagues, CORS/cache, and mounted-FAD-route gates pass. Exact helper session
-verification is next. Release-specific actions, A-to-B-to-A smoke, re-hold,
-normal restore/replay, helper retirement, target activation/verification/backup,
-and final review are all `PENDING`. No prior helper, fixture, action, key,
-receipt, or restore namespace may be reused. Exact authority and the gate
-ledger are in
+verification was the next gate at that boundary. Phase one later reached
+accepted state as proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27`; publication
+event `974342b5-94e5-42d8-af20-9e07c35bc847` and its exact replay returned
+`fresh 2` / `replay 0`. Chrome was Admin instead of the required Manager A
+diagnostic identity during publication, so the choreography selected
+`STRICT_STOP`. Phase two never began and no retry is allowed. Exact authority
+and the gate ledger are in
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 Production remains untouched and unauthorized.
 
@@ -103,24 +105,28 @@ exact `37744640` / `b4163695...` source, WAL `0`, SHM `32768`, target-family
 absence, privacy/pre-smoke data, authoritative source unopened, and owned
 temporary cleanup without action or write.
 
-That current ledger records the completed merge-only controlled unhold and now
-exclusively binds the next operation: open a fresh exact extensionless helper
-tab, re-prove inert readiness/empty caches/no `STRICT_STOP`, then perform one
-exact helper session verification and mount current release FAD `f47032fd...`;
-the open predecessor `0aee0824...` FAD/error state is not smoke evidence. Prior
-inert tab `1600151197` is no longer
-open and is historical evidence only. No fresh action may run before the
-expected user/role passes. Any drift, failed
-gate, or `STRICT_STOP` blocks action and requires the exact three-key full-hold
-inverse plus fail-closed recovery.
+That current ledger records the partial phase-one evidence and terminal
+operator-sequencing stop. Exact re-hold deploy `dep-da6cu8h42hec738f2al0` is
+sole newest/`LIVE` on B-prime after hosted `3,503/3,503`, build/startup,
+zero-error, health/readiness, and session/leagues/current-FAD maintenance proofs
+passed. Phase two, every action/publisher retry, and normal restore are
+forbidden.
 The helper remains bound to commit `e898e72272e5a052867832dcf9f128e5b8d5730e`,
 deploy `6a8c006abe46c8fb6269c40c`, expiry
 `2026-08-25T07:00:00.000Z`, and only its lowercase extensionless URL.
-Only after the complete exact smoke passes, the same ledger authorizes in order
-the exact merge-only re-hold, normal plan/execute/identical replay, helper
-retirement deploy, `DATABASE_PATH`-only target activation, frozen normal
-post-cutover verification, and fresh backup/verify. It explicitly stops before
-final staging reopening, final UI review, or production.
+The only next gate is frozen abort preflight
+`pre-abort-source-verifier.sh`, `18060` bytes / SHA-256 `9c323005...`, requiring
+`HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED` and separate external service proof.
+Only after both pass may the exact abort plan/execute/identical replay run for
+`to_b_accepted` / `published` / `none` with semantic/smoke/hosted completion
+all false. Acceptance is exact: plan target/counts are absent/`0/0`, first
+execute counts are `0/2`, and replay counts are `0/0`; plan/first-execute
+temporary work is true/true/exact contract-owned path/false/`verified`/fail-
+closed, while replay is false/false/the same path/false/`not-needed`/fail-
+closed. The current run record binds the exact field names and full objects;
+any mismatch is a hard stop. Stop after replay. Helper retirement, activation,
+verification, and backup require a later evidence-bound authority amendment;
+production remains untouched.
 
 ---
 
@@ -1127,9 +1133,10 @@ only evidence commits above helper commit `e898e722...`; those commits do not
 change sealed application F or helper bytes. The backend identity is the exact
 committed B-prime release contract and backend `origin/staging` resolves exactly
 to it.
-Render deploy `dep-da60sl0jo6nc73e0cfu0` is newest and `LIVE` on that identity
-after the controlled-unhold hosted/runtime gate passed. Only this exact
-committed and deployed identity may be used for later release evidence.
+Render deploy `dep-da6cu8h42hec738f2al0` is newest and `LIVE` on that identity
+after the fail-closed re-hold hosted/runtime gate passed; controlled-unhold
+deploy `dep-da60sl0jo6nc73e0cfu0` is deactivated. Only this exact committed and
+deployed identity may be used for abort recovery evidence.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -1177,7 +1184,10 @@ live/readiness `200`/`no-store`, and held leagues
 fresh release record. Controlled-unhold deploy `dep-da60sl0jo6nc73e0cfu0`
 subsequently passed a second hosted `3,503/3,503` gate in
 `3055456.671434ms`, build/startup and zero-error checks, and exact unheld
-health/auth-safe route probes. It is the sole newest `LIVE` B-prime deploy.
+health/auth-safe route probes. After the later strict stop, re-hold deploy
+`dep-da6cu8h42hec738f2al0` passed `443` suites / `3,503` hosted tests /
+`3,503` pass in `2972015.233072ms`, build/startup, zero-error, live/readiness,
+and maintenance-blocked ordinary-route gates. It is now sole newest/`LIVE`.
 
 Earlier milestone suites established characterization, read-only, security,
 authorization, league-isolation, migration, transaction, job, recovery,
@@ -1185,8 +1195,8 @@ browser, and feature coverage. Their exact intermediate totals remain in the
 archived work plans and release records; they are not repeated here as if they
 were current candidate totals.
 
-Automated success does not replace the unfinished hosted strict A-to-B-to-A
-acceptance run, a final runtime-flag review, or explicit production authority.
+Automated success does not repair the terminally stopped A-to-B-to-A
+choreography, replace abort recovery, or grant production authority.
 Read-only endpoints must remain read-only.
 
 ---
@@ -1203,12 +1213,14 @@ The target topology and configuration are documented in
   `srv-d9eo2turnols73ekb830`, branch `staging`, with auto-deploy disabled;
 * separately attached disk `dsk-d9eo2u6rnols73ekb8t0`, mounted at
   `/opt/render/project/data`;
-* SQLite schema `54`; the predecessor fixture-bearing source remains at
+* SQLite schema `54`; the earlier predecessor fixture-bearing source remains at
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
-  while newest `LIVE` deploy `dep-da60sl0jo6nc73e0cfu0` on exact B-prime points
-  at the authoritative controlled-unhold source
+  while newest `LIVE` deploy `dep-da6cu8h42hec738f2al0` on exact B-prime points
+  at the authoritative re-held source path
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`
-  (`37744640` bytes / `b4163695...`) after fresh prepare/replay and postflight;
+  whose pre-action postflight identity was `37744640` bytes / `b4163695...`;
+  exact current post-write identity is pending frozen abort preflight rather
+  than inferred from that baseline;
   backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` preserves its clean
   pre-fixture restore boundary;
 * staging-only users, leagues, secrets, storage paths, and
@@ -1226,19 +1238,22 @@ receipt while preserving that source; target plaintext SHA-256 is
 The helper is retired and its paths fail closed. Prior held deploy
 `dep-da5mmpu417fc73807ptg` is deactivated; held deploy
 `dep-da5sh0e417fc738i254g` passed on exact B-prime. Fresh `HL-20260823-1`
-prepare/replay advanced that clean path to the current `37744640`-byte /
+prepare/replay advanced that clean path to the pre-action `37744640`-byte /
 `b4163695...` fixture-bearing source; held postflight, owned-scratch cleanup,
 helper local verification, corrected publication, and inert-tab proof pass.
 Current helper deploy `6a8c006abe46c8fb6269c40c` preserves exact F. Exact
-controlled-unhold merge/deploy `dep-da60sl0jo6nc73e0cfu0` now passes and is
-newest/`LIVE`; backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` remains the
-verified clean restore boundary.
+controlled-unhold merge/deploy `dep-da60sl0jo6nc73e0cfu0` passed and is now
+deactivated. Phase one reached accepted/published state, but operator sequencing
+selected `STRICT_STOP`; phase two never began. Re-hold deploy
+`dep-da6cu8h42hec738f2al0` is newest/`LIVE`; backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` remains the verified clean restore
+boundary.
 
-Staging is now in the narrowly controlled unhold: maintenance false, writes
-open, and FAD routes enabled, while scheduled jobs, account email, debug routes,
-backup scheduling, and the live provider remain disabled. Unauthenticated
-session/leagues/FAD probes fail safely at `401 SESSION_REQUIRED`; no helper
-session or authenticated action has run. Both predecessor strict attempts are
+Staging is now under the exact full hold: maintenance true, writes closed, and
+FAD routes disabled, while scheduled jobs, account email, debug routes, backup
+scheduling, and the live provider remain disabled. Live/readiness return
+`200`/`no-store`; unauthenticated session/leagues/current-FAD probes fail closed
+at `503 SERVICE_MAINTENANCE`/`no-store`. Both predecessor strict attempts are
 blocked: the 2026-08-21 run
 failed after phase one, while `HL-20260822-1` stopped at its pre-action origin guard before
 controlled unhold or smoke. Its `prepared_only` abort/replay and helper
@@ -1247,12 +1262,11 @@ verification/backup pass. At that evidence boundary no replacement release was
 active or authorized; the current matrix and 2026-08-23 record supersede that
 historical statement.
 
-The approved post-rerun interactive-review matrix is maintenance hold false,
-writes open, FAD routes enabled, scheduler disabled, account email disabled in
-capture mode, debug routes disabled, live provider disabled with provider
-variables absent, and backup scheduling disabled. This is the current controlled-
-unhold matrix, but its session/action validation is pending and it is not a
-production job-readiness claim.
+The interactive controlled-unhold matrix is closed historical evidence. The
+current matrix is the exact three-key full-hold inverse plus the unchanged
+disabled scheduler, account email/capture, debug, live-provider/provider-
+absence, and backup-schedule boundaries. It is an abort-recovery boundary, not
+a production job-readiness claim.
 
 ---
 
@@ -1265,9 +1279,10 @@ The following require attention before the 2026–27 launch:
    origin guard and is blocked and abort-recovered to a clean target. Fresh
    authorized release `HL-20260823-1` now passes B-prime, held deployment,
    fixture prepare/replay, held postflight, helper local verification,
-   corrected helper publication/inert-load proof, and controlled-unhold runtime,
-   but must still complete the session-through-closeout sequence without
-   weakening the acceptance contract.
+   corrected helper publication/inert-load proof, and controlled-unhold runtime.
+   Its phase-one proposal/accept/publication is partial evidence only: operator
+   sequencing selected `STRICT_STOP`, phase two never began, full re-hold
+   passes, and abort recovery plus a later post-abort amendment remain.
 2. T-005 session bootstrap omits promised memberships/selected-safe defaults,
    and T-004/T-006/T-007/T-009/T-011 session revocation or replacement does
    not proactively disconnect affected live Socket.IO clients. These are
@@ -1278,8 +1293,8 @@ The following require attention before the 2026–27 launch:
    that authority.
 4. Final staging reopen, scheduler, account-email, outbox, provider, backup-
    schedule, and first-write flags must be reconciled and verified explicitly.
-   The current controlled unhold must not be treated as the launch runtime
-   matrix.
+   The current abort-recovery full hold must not be treated as the launch
+   runtime matrix.
 5. The signed-Prospect buyout path still fails atomically when a pending
    `prospect_right` trade requires cancellation. There is no observed partial
    write, but the P1 production-promotion follow-up remains open.
@@ -1309,13 +1324,17 @@ The current priority order is:
 3. Preserve the passed B-prime implementation, local-verification,
    publication, held-deployment/runtime, fixture prepare/replay, held
    postflight, helper local-verification, corrected publication, inert-load,
-   controlled-unhold runtime, and unheld v2 evidence. Keep the current runtime
-   and fixture/source/target boundaries exact.
-4. Perform exact helper session verification next, then execute the authorized
-   strict action sequence fail-closed under the new namespace. After and only
-   after successful smoke, follow the ledger's exact re-hold, normal restore/
-   replay, helper retirement, target activation/verification, and backup path.
-5. Close M7-26 only after this separately authorized strict release and all final
+   controlled-unhold runtime, unheld v2, partial phase-one, strict-stop, and
+   terminal re-hold evidence. Treat `37744640` / `b4163695...` only as the pre-
+   action source boundary until abort preflight emits current identity.
+4. Run the exact frozen abort preflight with separate external service proof.
+   If and only if both pass, run one exact abort plan, its matching execute, and
+   one byte-identical replay; require `to_b_accepted` / `published` / `none`
+   with semantic/smoke/hosted completion false, then stop.
+5. Keep phase two, retry, normal restore, helper retirement, activation,
+   verification, and backup blocked until emitted abort evidence is reconciled
+   and a separate post-abort authority amendment is approved.
+6. Close M7-26 only after this separately authorized strict release and all final
    staging gates pass. Keep production migration, reset, deployment, and
    first-write authority blocked until Grae separately approves exact scope.
 

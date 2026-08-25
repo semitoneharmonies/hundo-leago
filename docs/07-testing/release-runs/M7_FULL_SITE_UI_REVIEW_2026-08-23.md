@@ -2,7 +2,7 @@
 
 ## Status
 
-`AUTHORIZED / MINTED; B-PRIME + HELD DEPLOY + FRESH FIXTURE/POSTFLIGHT + HELPER LOCAL/PUBLICATION + CONTROLLED-UNHOLD RUNTIME PASS; SESSION + ACTIONS NEXT; CONTROLLED UNHOLD ACTIVE`
+`AUTHORIZED / MINTED; RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT PREFLIGHT NEXT`
 
 Release `HL-20260823-1` is a new isolated-staging release. It does not reopen,
 resume, or reuse blocked release `HL-20260822-1`. Production remains untouched
@@ -43,8 +43,9 @@ starting baseline. Executable B-prime
 implementation, local verification, and backend `origin/staging` publication.
 Its held hosted deploy, fresh fixture prepare/replay, held postflight, helper
 construction/local verification, corrected helper publication, and controlled-
-unhold deployment/runtime verification now pass. Exact session verification is
-next; every action remains blocked behind it.
+unhold deployment/runtime verification passed. Phase one later reached accepted
+and published state, but the browser operator sequence failed closed before the
+return phase. Full re-hold now passes; abort-only preflight is next.
 
 ## B-Prime Implementation, Local Verification, and Publication
 
@@ -298,7 +299,7 @@ Postflight proves:
 
 * `authoritativeDatabaseOpened: false`; only an exclusive owned scratch copy
   was opened read-only, with `scratchDatabaseMutationCount: 0`;
-* the current fixture-bearing source is `37744640` bytes, SHA-256
+* the pre-action fixture-bearing source was `37744640` bytes, SHA-256
   `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`,
   `mtimeMs: 1787554966495`, `mtimeIso: 2026-08-24T07:02:46.495Z`, and
   `mtimeNs: 1787554966495529258`;
@@ -429,12 +430,13 @@ open, so this remains historical inert publication evidence, not a live action
 tab. Existing signed-out staging application tab `1600151045` and the in-app
 browser's predecessor FAD results/error state are not current smoke evidence.
 
-## Controlled-Unhold Runtime Evidence and Current Action Authority
+## Controlled-Unhold Runtime Evidence and Historical Action Authority
 
-This section is the sole current authority for the next action gate. The fenced
-`HL-20260822-1` environment and action values elsewhere in the active documents
-are historical evidence only and must not be resumed, copied, or treated as an
-alternative authority.
+This section records the authority that existed before the later operator-
+sequencing strict stop. It no longer authorizes a session, action, publisher,
+replay, phase-two request, or retry. The fenced `HL-20260822-1` environment and
+action values elsewhere in the active documents remain historical evidence only
+and must not be resumed, copied, or treated as an alternative authority.
 
 The authorized Render configuration change completed as one merge-only update on
 workspace `tea-d4prbj7diees738tmg90`, service
@@ -506,17 +508,13 @@ proved `/api/v1/health/live` and `/api/v1/health/ready` at `200` with
 allowance. The FAD navigation GET at `2026-08-24T10:21:12.5974307Z` returned
 `401 SESSION_REQUIRED`, `Cache-Control: no-store, private`, and the same exact
 CORS boundary, proving that the route is mounted without authorizing a user.
-Controlled-unhold deployment/runtime verification therefore passes. No helper
-session request, authenticated API action, publisher, smoke write, restore, or
-target action has run. Open one fresh tab at the exact lowercase extensionless
-helper URL, then re-prove `READY_NO_SESSION_REQUEST`, both QueryClient caches
-empty, no `STRICT_STOP`, exact pinned assets, and zero initialization API/
-session/action/write traffic before login. Also mount the current release FAD
-`f47032fd-57a2-443b-89a6-ce32894f2fc1` for the required role/privacy evidence;
-predecessor FAD `0aee0824-162b-4ab8-b9d9-74c085b1c1e8` and its current in-app
-browser error counters are not smoke evidence. Only the fresh helper/current-
-FAD context may perform one explicit session verification and prove the exact
-expected user/role before arming any write.
+Controlled-unhold deployment/runtime verification therefore passed. At that
+boundary no helper session request, authenticated API action, publisher, smoke
+write, restore, or target action had run. The planned next gate required one
+fresh exact lowercase extensionless helper tab, inert readiness, empty caches,
+current release FAD `f47032fd-57a2-443b-89a6-ce32894f2fc1`, and exact session/
+role evidence before each write. That action authority ended at the later
+operator-sequencing strict stop and grants no current session, action, or retry.
 
 The final pre-smoke data/runtime preflight also passes. Frozen ignored verifier
 `E:\hundo-leago\.netlify\strict-release-HL-20260823-1\pre-smoke-unheld-verifier-v2.sh`
@@ -542,7 +540,7 @@ are `121` bytes / SHA-256
 The v1 result was a safe pre-action verifier diagnostic corrected only in v2;
 it made no authoritative change and grants no separate authority.
 
-The browser authority remains frontend helper commit
+The browser authority for the now-stopped action attempt was frontend helper commit
 `e898e72272e5a052867832dcf9f128e5b8d5730e`, corrected current Netlify deploy
 `6a8c006abe46c8fb6269c40c`, expiry `2026-08-25T07:00:00.000Z`, and only this
 lowercase extensionless URL:
@@ -551,7 +549,7 @@ lowercase extensionless URL:
 https://staging.hundoleago.com/release-qa/hl-20260823-1/strict-manager-transfer
 ```
 
-After the fresh-tab and session gates pass, the only fresh action namespace is:
+The only action namespace permitted during that attempt was:
 
 ```text
 Proposal to Manager B:        HL-20260823-1-team1-to-b-propose
@@ -564,148 +562,180 @@ Publisher back to Manager A:  HL-20260823-1-outbox-team1-return-to-manager-a
 Publisher confirmation:       PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
 ```
 
-Each publisher operation permits one approved call followed immediately by
-its identical zero-write replay. The helper's fixed routes, bodies, caller
-identities, assignment handoff, fresh CSRF retrieval, marker check, and
-write-arm rules remain mandatory; the values above do not authorize a generic
-request.
+Each publisher operation permitted one approved call followed immediately by
+its identical zero-write replay. Phase one used only its first three keys and
+first publisher confirmation; the return keys and confirmation were never used
+and are now forbidden. The values above grant no current or generic request.
 
-An ambiguous environment-update result must not be retried, and it must not be
-followed by a manual deploy. Any partial key drift, wrong or multiple deploy,
-wrong commit/path/build/runtime/session identity, failed hosted gate, newer
-deploy, expired/drifted helper, or `STRICT_STOP` blocks every action. Reconcile
-the provider state first, restore the full hold with only
-`STAGING_MAINTENANCE_HOLD=true`, `LEAGUE_WRITE_MODE=closed`, and
-`FREE_AGENT_DRAFT_ROUTES_ENABLED=false`, then use the release-specific
-fail-closed recovery path. No target, restore, activation, or production
-authority is added by the completed controlled-unhold contract.
+The contract required no retry after ambiguity or `STRICT_STOP`. The later
+operator-sequencing mismatch selected that stop. The full hold was restored
+with only `STAGING_MAINTENANCE_HOLD=true`, `LEAGUE_WRITE_MODE=closed`, and
+`FREE_AGENT_DRAFT_ROUTES_ENABLED=false`; the release-specific fail-closed
+recovery path now applies. No target, restore, activation, or
+production authority was added by the completed controlled-unhold contract.
 
-## Conditional Post-Smoke Re-Hold, Normal Restore, Retirement, Activation, and Backup Authority
+## Phase-One Evidence, Operator-Sequencing Strict Stop, and Full Re-Hold
 
-This section is the sole current `HL-20260823-1` authority after—and only after—
-the exact A-to-B-to-A action, publisher/replay, privacy, and cache smoke passes
-completely. It grants no authority to skip the pending session or action gates,
-to begin recovery after a failed or ambiguous smoke, or to touch production.
-Every step below is currently `PENDING` and must run in order.
+Fresh helper/session checks permitted phase one to begin. The exact proposal
+`e00e0512-4a20-47fd-ad74-0986dd4abd27` reached accepted state. Phase-one
+publication produced exact event `974342b5-94e5-42d8-af20-9e07c35bc847` and
+the approved publisher plus its immediate identical replay returned exact
+`fresh 2` then `replay 0` database writes. Those facts are durable partial-
+release evidence only; they do not make the A-to-B-to-A smoke successful.
 
-1. Restore the full hold through exactly one `replace: false` Render merge on
-   workspace `tea-d4prbj7diees738tmg90` / service
-   `srv-d9eo2turnols73ekb830` with only:
+During publication, Chrome was on the Admin identity rather than the required
+Manager A diagnostic identity. That operator-sequencing mismatch invalidated
+the mounted-browser choreography and selected `STRICT_STOP`. The return
+proposal, return acceptance, return publisher, return replay, and final
+privacy/cache comparator never began. No phase-two idempotency key or publisher
+confirmation was used. The failed choreography was not retried and must never
+be retried or resumed.
 
-   ```text
-   STAGING_MAINTENANCE_HOLD=true
-   LEAGUE_WRITE_MODE=closed
-   FREE_AGENT_DRAFT_ROUTES_ENABLED=false
-   ```
+The exact fail-closed merge then ran once with `replace: false` and only:
 
-   The merge must trigger exactly one API deploy on exact B-prime
-   `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; do not call `trigger_deploy`.
-   Before any restore command, require that deploy newest and `LIVE`, prior
-   unhold deploy `dep-da60sl0jo6nc73e0cfu0` deactivated, no newer or competing
-   deploy, hosted `443` suites / `3,503` tests / `3,503` pass, successful build
-   and startup, zero startup/post-live errors, the exact full-hold/runtime/
-   provider-absence matrix, versioned live/readiness `200` and `no-store`, and
-   session/leagues blocked at `503 SERVICE_MAINTENANCE` and `no-store`.
-   `DATABASE_PATH` must still name the old source.
+```text
+STAGING_MAINTENANCE_HOLD=true
+LEAGUE_WRITE_MODE=closed
+FREE_AGENT_DRAFT_ROUTES_ENABLED=false
+```
 
-2. Under that verified hold, re-prove the exact service/shell/B-prime/F/
-   environment/database/root identity, source stability and its actual WAL/SHM
-   state, plus complete target/target-sidecar/receipt/work absence. Any
-   unexpected target, receipt, WAL, SHM, work area, identity, or source drift
-   stops. Do not checkpoint, delete, or repair an authoritative path ad hoc;
-   only the normal plan's accepted post-smoke source evidence may proceed.
+It produced API deploy `dep-da6cu8h42hec738f2al0`, created at
+`2026-08-24T23:09:22.294714Z`, started at
+`2026-08-24T23:09:22.256871Z`, and finished at
+`2026-08-24T23:59:34.018917Z` as sole newest/`LIVE` on exact B-prime
+`234547e4d8453b7515fc081ea6ebe4c2d022dc54`. Prior unhold deploy
+`dep-da60sl0jo6nc73e0cfu0` deactivated at
+`2026-08-24T23:59:34.017421Z`; no newer deploy existed through the final
+read-only check.
 
-3. Run one normal plan with exactly:
+The hosted terminal summary at `2026-08-24T23:59:02.085412392Z` reported `443`
+suites / `3,503` tests / `3,503` pass / zero fail, cancel, skip, or todo in
+`2972015.233072ms`. Build success followed at
+`2026-08-24T23:59:05.391406262Z`. Instance
+`srv-d9eo2turnols73ekb830-gzvbw` ran `npm start` at
+`2026-08-24T23:59:27.984461830Z` and `node server.js` at
+`2026-08-24T23:59:28.392487225Z`; Render recorded the service live at
+`2026-08-24T23:59:34.239326594Z`. Error-level application logs were empty from
+`2026-08-24T23:59:20Z` through `2026-08-25T00:01:50.702453442Z`.
 
-   ```bash
-   npm run release:qa:strict-restore:plan -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json'
-   ```
+Fresh no-cookie read-only probes returned `200`, `Cache-Control: no-store`, and
+`{"status":"ok"}` from both `/api/v1/health/live` and
+`/api/v1/health/ready`. `/api/v1/session`, `/api/v1/leagues`, and current
+league FAD navigation each returned `503`, `Cache-Control: no-store`, and
+`SERVICE_MAINTENANCE`. The full hold is therefore restored. This re-hold made no
+restore, target, receipt, helper, Netlify, `DATABASE_PATH`, backup, or
+production change.
 
-   Require `RELEASE_QA_STRICT_RESTORE_PLANNED`, a fresh plan ID beginning
-   `release-qa-strict-restore-v1-`, zero authoritative database and durable-
-   filesystem mutations, verified temporary cleanup, completed exact smoke
-   evidence, and exactly two accepted manager-transfer publications. The plan's
-   emitted source size/hash/inode/mtime after smoke are authoritative; the
-   pre-smoke `37744640` / `b4163695...` identity remains historical evidence,
-   not a value to force. Target must still be absent. Restored target plaintext
-   must be `37105664` bytes with SHA-256
-   `cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+## Current Abort-Only Recovery Authority
 
-4. Run one execute, then one byte-for-byte identical replay, with exactly:
+The only next gate is the frozen ignored verifier
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\pre-abort-source-verifier.sh`,
+exactly `18060` bytes with SHA-256
+`9c32300590c422cc5d1737cf536d2fadf91e3506979ec02e500bb26ea3a72d68`.
+Its cold audit is `GO`. Run it verbatim only in a fresh attached shell on the
+exact held B-prime service and require code
+`HL23_ABORT_PREFLIGHT_SOURCE_VERIFIED`. It must report authoritative database
+unopened, owned-copy-only read verification and cleanup; exact source/runtime/
+hold/provider/backup identity; absent target, receipt, work, and target
+sidecars; and source state exactly `to_b_accepted` / phase-one `published` /
+return `none`, with `sourceSemanticChainCompleted`, `smokeCompleted`, and
+`hostedSmokeCompleted` all `false`, plus `releaseBlocked: true` and
+`rollbackOnly: true`. Its emitted
+`serviceIdentityIndependentlyVerified: false` is deliberate: current Render
+deploy/service identity and held external probes must be re-proved separately
+and must not be inferred from the script.
 
-   ```bash
-   npm run release:qa:strict-restore:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json' --plan-id '<exact emitted normal planId>' --confirmation '<exact emitted normal confirmation>'
-   ```
+Only after both preflight and separate external identity evidence pass may one
+abort plan run:
 
-   The exact emitted confirmation must have the form
-   `MATERIALIZE-RELEASE-QA-STRICT-RESTORE:<planId>:srv-d9eo2turnols73ekb830:HL-20260823-1:staging:test:release-qa:m7-release-qa-fixture:e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`.
-   First execution must emit `RELEASE_QA_STRICT_RESTORE_MATERIALIZED`,
-   `replayed: false`, authoritative database mutations `0`, durable filesystem
-   mutations `2`, `sourcePreserved: true`, and `targetVerified: true`. The exact
-   replay must emit `replayed: true`, mutations `0` / `0`, and no temporary,
-   object, or key work. The receipt is the target plus
-   `.activation-receipt.json`; the work path is
-   `.<target basename>.strict-restore-work-v1`.
+```text
+npm run release:qa:strict-restore:abort:plan -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json'
+```
 
-5. Retire the helper only after smoke and restore evidence is complete. Remove
-   only the current ten-line `HL-20260823-1` helper header block from
-   `netlify.toml`; preserve the nine tracked helper source files. Verify the
-   sealed baseline with:
+Require exact code `RELEASE_QA_STRICT_RESTORE_ABORT_PLANNED`, the same
+`to_b_accepted` / `published` / `none` classifier, all three completion booleans
+`false`, `releaseBlocked: true`, `rollbackOnly: true`, the bound source/backup
+identities, `targetState: "absent"`, `authoritativeDatabaseMutationCount: 0`,
+and `durableFilesystemMutationCount: 0`. The plan's
+`temporaryFilesystemWork` object must be field-for-field exact:
 
-   ```powershell
-   E:\hundo-leago\.tools\node-v24.14.1-win-x64\node.exe docs/07-testing/release-tools/HL-20260823-1/verify-strict-manager-transfer.mjs --retired-baseline-root .netlify/strict-release-HL-20260823-1/original-dist
-   ```
+```json
+{
+  "performed": true,
+  "plaintextDatabaseMaterialized": true,
+  "deterministicPrivateWorkDirectory": "/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1",
+  "retained": false,
+  "processLocalCleanup": "verified",
+  "abruptTerminationRecovery": "fail-closed-at-deterministic-work-directory"
+}
+```
 
-   After confirming the CLI site route, publish only the sealed baseline with:
+Bind the exact emitted abort `planId` and confirmation. The work path above is
+the sole accepted literal, not an arbitrary emitted path. Any mismatch is a
+hard stop before execute. A nonzero exit, incomplete or ambiguous plan output,
+or shell disconnect leaves execute unauthorized: retain the full hold, preserve
+the evidence, and stop for reconciliation. Then run exactly one matching abort
+execute:
 
-   ```powershell
-   netlify deploy --prod --no-build --site 95af8aa7-0b13-4954-af6d-855762acb147 --dir .netlify/strict-release-HL-20260823-1/original-dist --message HL-20260823-1-normal-retire-helper-baseline --json
-   ```
+```text
+npm run release:qa:strict-restore:abort:execute -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3' --target '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --service-id 'srv-d9eo2turnols73ekb830' --release-id 'HL-20260823-1' --manifest-object-key 'staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json' --plan-id '<exact emitted abort planId>' --confirmation '<exact emitted abort confirmation>'
+```
 
-   Require exact title `HL-20260823-1-normal-retire-helper-baseline`, site
-   `95af8aa7-0b13-4954-af6d-855762acb147`, five headers, two redirects, no
-   functions, all `64/64` baseline remote-byte checks, and all `10/10` retired
-   helper paths resolving only to the `472`-byte `text/html` SPA fallback with
-   SHA-256
-   `90620768a37b57b905a35cd576077cd4c4f1a760da28fc8c1c8a9347458383ca`.
+The exact confirmation must have form
+`ABORT-RELEASE-QA-STRICT-SMOKE-AND-MATERIALIZE-ROLLBACK:<planId>:srv-d9eo2turnols73ekb830:HL-20260823-1:staging:test:release-qa:m7-release-qa-fixture:e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`.
+Require `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, `replayed: false`,
+`authoritativeDatabaseMutationCount: 0`, `durableFilesystemMutationCount: 2`,
+source preserved, target verified, `releaseBlocked: true`, and
+`rollbackOnly: true`. Its full `temporaryFilesystemWork` object must exactly
+match the plan's six-field object above, including the same contract-owned
+`deterministicPrivateWorkDirectory`. Bind every emitted identity, hash,
+receipt, mutation, and cleanup field. Any mismatch is a hard stop before
+replay. A nonzero exit, incomplete or ambiguous output, shell disconnect, or
+unknown commit/completion state before this full `0/2` result is accepted does
+not authorize a blind retry or the nominal replay. Retain the full hold,
+preserve all evidence, and reconcile source, target, receipt, and work-area
+state under a separately authorized recovery decision. Only a complete accepted
+first-execute result authorizes running the exact byte-identical execute command
+once more. Require
+`replayed: true`, `authoritativeDatabaseMutationCount: 0`,
+`durableFilesystemMutationCount: 0`, and this exact full object:
 
-6. While full hold remains verified, merge only
-   `DATABASE_PATH=/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
-   with `replace: false`. That merge must produce exactly one API deploy; do not
-   call `trigger_deploy`. Require newest/`LIVE` exact B-prime, full hosted and
-   startup gates, zero errors, unchanged full-hold/provider matrix, and held
-   external probes before verification.
+```json
+{
+  "performed": false,
+  "plaintextDatabaseMaterialized": false,
+  "deterministicPrivateWorkDirectory": "/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1",
+  "retained": false,
+  "processLocalCleanup": "not-needed",
+  "abruptTerminationRecovery": "fail-closed-at-deterministic-work-directory"
+}
+```
 
-7. Run frozen ignored verifier
-   `E:\hundo-leago\.netlify\strict-release-HL-20260823-1\post-cutover-normal-verifier.sh`
-   verbatim in a fresh attached Render shell. It is `33869` bytes / `1032`
-   LF-only lines with SHA-256
-   `c4dec9fef24bfa30e76a4b2f9f63cc5dd35e4c99a3e9841da4a629bdb764352b`.
-   Require exact pass code `HL23_POST_CUTOVER_NORMAL_TARGET_VERIFIED` and all
-   bound B/F/release/service/environment/database/root identities; target
-   `37105664` / full `cf3ca07d...`; exact source/target/receipt/work/sidecar and
-   normal-receipt evidence; completed smoke and two accepted publications on
-   the preserved old source; target integrity `ok`, foreign keys `0`, schema and
-   data migrations `54/54`, migration checksum
-   `6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89`,
-   sessions `0`, exact rotation receipt, all fixture/transfer counts `0`, no
-   target publisher binding, authoritative database unopened, query-only owned
-   scratch copies, and complete scratch cleanup. External deploy, instance, and
-   HTTP proof remains separately required.
+Any mismatch is a hard stop and cannot be recorded as accepted evidence.
 
-8. Create and separately verify one fresh final backup with the exact requester
-   literal:
+Stop after that replay. Phase two, any action/publisher retry, normal restore,
+normal confirmation, helper retirement, `DATABASE_PATH` activation, post-
+activation target verification, backup, reopening, closeout, and production
+are unauthorized.
+Post-abort helper retirement, activation, verifier, and backup remain `PENDING`
+until a second active-document authority amendment binds the emitted abort
+plan/execute/replay evidence. No predecessor or normal-mode literal, plan,
+receipt, target, key, or confirmation may be reused.
 
-   ```bash
-   npm run db:backup -- --reason incident-preservation --requested-by-type platform_operation --requested-by-id 'HL-20260823-1-post-normal-cutover' --retention-class incident-preservation
-   npm run db:backup:verify -- --manifest-object-key '<exact emitted manifestObjectKey>'
-   ```
+## Historical Conditional Successful-Smoke Authority - Never Activated
 
-   Bind every emitted backup/object/manifest identity, hash, checksum, metadata,
-   plaintext, integrity, and foreign-key result. Then stop. Final staging
-   reopening/runtime activation, the final desktop/mobile UI matrix,
-   observation, M7-26 closeout, and every production action remain pending and
-   unauthorized.
+This section recorded the path that would have applied only after a complete
+exact A-to-B-to-A smoke. That condition did not occur. The operator-sequencing
+strict stop permanently prevented this authority from activating; every normal
+plan/execute/replay, normal retirement title, normal verifier, normal backup
+requester, and downstream step below is historical conditional text only and
+must not be executed, resumed, or repurposed for abort recovery.
+
+The unused normal-mode commands, confirmation form, retirement title,
+post-cutover verifier, and backup requester have been removed from current
+authority to prevent accidental reuse. Their design remains recoverable from
+the preceding documentation commit, but none applies to this stopped release
+state. Only the current abort-only section above is executable authority.
 
 ## Release-Specific Isolation
 
@@ -714,12 +744,12 @@ confirmation, idempotency key, restore plan, receipt, target, and deploy title
 must be newly bound to `HL-20260823-1`. Nothing from `HL-20260821-3` or
 `HL-20260822-1` may be resumed or reused.
 
-The helper authorizes only the canonical extensionless staging URL. Its source,
-tests, verifier, immutable deploy identity, headers, and expiration now pass as
-recorded above. Controlled-unhold runtime passes, but session verification and
-every action remain pending; retirement proof is required after browser
-evidence. No helper or `netlify.toml` value
-from either predecessor grants current authority.
+The helper authorized only the canonical extensionless staging URL. Its source,
+tests, verifier, immutable deploy identity, headers, and expiration passed as
+recorded above. The action attempt is now terminal: phase one is partial
+evidence, phase two and retry are forbidden, the full hold is restored, and
+only abort preflight/plan/execute/replay is current authority. No helper or
+`netlify.toml` value from either predecessor grants current authority.
 
 ## Gate Ledger
 
@@ -727,20 +757,23 @@ from either predecessor grants current authority.
 | --- | --- | --- |
 | Release authorization and UTC identity | `PASS` | Explicit authority and exact timestamps above; `HL-20260823-1` was unused in both clean repositories before mint. |
 | Frozen F and held starting B | `PASS` | Exact F and B above. B is baseline only. |
-| Bound starting/current source and fresh target absence | `PASS` | Clean starting and current fixture-bearing source path/size/hash evidence and absent release-specific target are bound above. |
+| Bound starting/pre-action source and fresh target absence | `PASS` | Clean starting and pre-action fixture-bearing source path/size/hash evidence and absent release-specific target are bound above. Post-write source identity must be emitted by the abort verifier/plan rather than assumed from the pre-action hash. |
 | Verified source backup binding | `PASS` | Exact object identity, metadata, hashes, plaintext, integrity, and foreign-key verification are bound above. |
 | B-prime implementation, local gates, and publication | `PASS` | Exact commit/parent/two-file diff and hashes; syntax/diff checks; final `57/57` focused gate; `443` suites / `3,503` full tests; check/dependency evidence; backend HEAD and `origin/staging` identity are bound above. |
 | B-prime held deployment and runtime verification | `PASS` | Exact deploy `dep-da5sh0e417fc738i254g` passed its held boundary on B-prime after `443` suites / `3,503` hosted tests all passed, build/startup and zero-error gates passed, external live/ready returned `200`/`no-store`, and anonymous leagues remained held at `503 SERVICE_MAINTENANCE`/`no-store`; it later deactivated for the controlled-unhold deploy. |
-| Fresh fixture preparation, exact replay, and held postflight | `PASS` | Exact command and retained results above bind first `729`, replay `0`, the full 35-table map, release IDs/fingerprint/deadline, authoritative fixture-bearing source evidence, full hold, target-family absence, privacy/pre-smoke matrices, zero scratch mutations, and owned cleanup. |
+| Fresh fixture preparation, exact replay, and held postflight | `PASS` | Exact command and retained results above bind first `729`, replay `0`, the full 35-table map, release IDs/fingerprint/deadline, pre-action fixture-bearing source evidence, full hold, target-family absence, privacy/pre-smoke matrices, zero scratch mutations, and owned cleanup. |
 | Release-specific helper construction and local verification | `PASS` | Exact frontend commit, release/build/expiry binding, eight-key marker, canonical inventories and SHA-256 values, mechanical retarget, syntax `5/5`, both verifiers, Vitest `14/14`, ESLint `0`, byte-identical isolated build, and hygiene scans are bound above. |
 | Helper publication and canonical/immutable proof | `PASS` | Rejected API deploy `6a8bfef3ac0ff74a373404d8` preserved its pre-browser header failure; corrected current CLI deploy `6a8c006abe46c8fb6269c40c` passed exact bytes, headers, identities, absence checks, held probes, and the inert fresh-tab proof without unhold, session, action, or write. |
-| Controlled-unhold deployment and runtime verification | `PASS` | Exact merge-only three-key delta produced sole newest/LIVE B-prime deploy `dep-da60sl0jo6nc73e0cfu0`; hosted `3,503/3,503`, build/startup, zero-error, exact runtime, health, unauthenticated CORS/cache, and mounted-route gates pass. |
-| Unheld pre-smoke data/runtime verification | `PASS` | Frozen v2 script/result hashes and exact pass code above bind the stable fixture-bearing source, WAL `0`, SHM `32768`, target-family absence, full privacy/pre-smoke matrices, authoritative source unopened, zero scratch mutations, and cleanup. |
-| Exact helper session verification | `PENDING` | No helper session request has run; no write may be armed until the exact user/role passes. |
-| A-to-B-to-A action, publisher, replay, and privacy/cache smoke | `PENDING` | No release-specific session, action, or publisher request has run. |
-| Successful-smoke re-hold and normal strict restore/replay | `PENDING` | Conditional authority above activates only after the exact smoke succeeds; no re-hold or restore command has run. |
-| Helper retirement | `PENDING` | Current release-scoped helper remains published and unexpired. |
-| Target activation, post-cutover verification, and fresh backup | `PENDING` | Target remains absent; no activation, verifier, or new backup command has run. |
+| Controlled-unhold deployment and runtime verification | `PASS` | At that boundary, the exact merge-only three-key delta produced sole newest/LIVE B-prime deploy `dep-da60sl0jo6nc73e0cfu0`; hosted `3,503/3,503`, build/startup, zero-error, exact runtime, health, unauthenticated CORS/cache, and mounted-route gates passed. It later deactivated for full re-hold. |
+| Unheld pre-smoke data/runtime verification | `PASS` | Frozen v2 script/result hashes and exact pass code above bind the pre-action fixture-bearing source, WAL `0`, SHM `32768`, target-family absence, full privacy/pre-smoke matrices, authoritative source unopened, zero scratch mutations, and cleanup. |
+| Exact helper session and phase-one action/publication | `PARTIAL / TERMINAL` | Proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27` reached accepted state; publish event `974342b5-94e5-42d8-af20-9e07c35bc847` and exact publisher/replay `fresh 2` / `replay 0` are bound above. The later operator-sequencing mismatch makes these partial-release evidence only. |
+| Operator sequencing, phase two, and full privacy/cache smoke | `STRICT_STOP` | Chrome was Admin rather than Manager A during publication. Phase two never began, no return key/confirmation was used, no retry is allowed, and full smoke did not complete. |
+| Fail-closed full re-hold deployment and runtime | `PASS` | Exact merge-only inverse produced sole newest/LIVE B-prime deploy `dep-da6cu8h42hec738f2al0`; hosted `3,503/3,503`, build/startup, zero-error, health/readiness, and session/leagues/current-FAD maintenance proofs pass. |
+| Abort-only preflight | `PENDING` | Frozen `18060`-byte / `9c323005...` verifier has cold-audit GO but has not run; exact pass code and separate external service identity are mandatory. |
+| Abort plan, execute, and identical replay | `PENDING` | Only the exact abort-only commands, classifier, and acceptance matrix above are authorized: plan absent/`0/0` with its exact full temporary-work object; first execute `0/2` with the same object/path; replay `0/0` with its exact no-work object. Any mismatch or ambiguous command outcome hard-stops; plan ambiguity forbids execute, and first-execute ambiguity forbids blind retry/replay pending separately authorized state reconciliation. Stop after an accepted replay and bind emitted evidence before any further amendment. |
+| Normal strict restore/replay | `NOT AUTHORIZED` | The successful-smoke condition never occurred. No normal plan, confirmation, execute, or replay may run. |
+| Post-abort helper retirement | `PENDING AUTHORITY` | Current helper remains published; retirement requires a second amendment after abort evidence is bound. |
+| Post-abort target activation, verification, and fresh backup | `PENDING AUTHORITY` | Target remains absent; activation, verifier, and backup require a second amendment after abort evidence is bound. |
 | Final desktop/mobile matrix, observation, and M7-26 closeout | `PENDING` | Requires every prior gate. |
 
 Any strict stop or failed gate stops the release immediately and invokes only
@@ -764,10 +797,12 @@ After mint, B-prime implementation, final local verification, commit, backend
 `origin/staging` publication, held deployment/runtime, fresh fixture
 prepare/replay, held postflight, helper construction/local verification,
 corrected helper publication/hosted proof, and controlled-unhold deployment/
-runtime verification passed exactly as recorded above. The fixture-bearing
-source remains authoritative during the controlled unhold, its clean backup
-boundary remains verified, and the fresh target remains absent. No helper
-session request, authenticated action, publisher, smoke write, re-hold, restore,
-activation, or production action has occurred. Exact session verification is
-the next `PENDING` gate; the conditional post-smoke sequence grants no earlier
-authority.
+runtime verification passed exactly as recorded above. Phase one then reached
+accepted/published state with exact publisher/replay evidence, but the operator-
+sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry
+ran. Exact full re-hold deploy `dep-da6cu8h42hec738f2al0` now passes. The
+fixture-bearing source remains authoritative, its clean backup boundary remains
+verified, and the fresh target remains absent. Frozen abort-only preflight is
+the next `PENDING` gate. Normal recovery and every post-abort downstream step
+remain unauthorized pending the exact evidence and amendment boundaries above;
+production remains untouched.
