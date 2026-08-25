@@ -23,8 +23,8 @@ Last reviewed: **2026-08-24**
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify still serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in unchanged current deploy `6a8c006abe46c8fb6269c40c`. Render's sole newest/`LIVE` deploy is API-triggered `dep-da6ghj67bikc738hbbv0` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; held B-prime deploy `dep-da6cu8h42hec738f2al0` deactivated at safe handoff | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold remains exact. B2 hosted `3,519/3,519`, startup, zero-error, bare-maintenance, post-live family/zero-holder, fresh B2-pinned verifier, and exact abort-v2 plan gates pass. The sole next authorized mutation is exactly one matching first execute. Replay and all downstream recovery remain unauthorized pending exact accepted `0/2` evidence and another amendment. |
-| Local/feature-branch candidate | Stable frontend release artifacts remain application F `4dfe12d1366314e3d9df722c50771324647743c9` and helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`. At plan capture, frontend HEAD and `origin/staging` were exact documentation authority `8e94431132e5edb33bce163a9d98d22adaf8e614` with a clean worktree; that did not change sealed F/helper bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | Exact B2 changes only the implementation and foundation-test files with SHA-256 `d49c870b...` / `3d9714ca...`, Git blobs `4a198c7...` / `53ce37c...`, numstat `369/18` / `830/2`, and `57541`-byte raw-diff SHA-256 `eb963d6b...`. Fresh release `HL-20260823-1` remains blocked. B2 deployment/runtime, fresh verifier, and accepted `0/0` plan gates pass; exactly one matching first execute is next. No retry, replay, normal restore, helper/Netlify change, activation, backup, or production action is authorized by this snapshot. |
+| Isolated staging candidate | Netlify still serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in unchanged current deploy `6a8c006abe46c8fb6269c40c`. Render's sole newest/`LIVE` deploy is API-triggered `dep-da6ghj67bikc738hbbv0` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; held B-prime deploy `dep-da6cu8h42hec738f2al0` deactivated at safe handoff | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold remains exact. B2 hosted/runtime, fresh verifier, exact abort-v2 plan, and the one published-authority first execute pass. The target and receipt are materialized and verified but inactive; `DATABASE_PATH` still names the preserved source. First-execute authority is consumed. The sole next authorized operation is one byte-identical `0/0` replay; all downstream recovery remains unauthorized pending accepted replay evidence and another amendment. |
+| Local/feature-branch candidate | Stable frontend release artifacts remain application F `4dfe12d1366314e3d9df722c50771324647743c9` and helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`. At execute capture, published frontend authority was exact `fd31b1f41b7c16521cf0eceb2c4af4a33a242636`; that did not change sealed F/helper bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | Exact B2 changes only the implementation and foundation-test files with SHA-256 `d49c870b...` / `3d9714ca...`, Git blobs `4a198c7...` / `53ce37c...`, numstat `369/18` / `830/2`, and `57541`-byte raw-diff SHA-256 `eb963d6b...`. Fresh release `HL-20260823-1` remains blocked. Plan `0/0` and first execute `replayed: false` / `0/2` pass; first execute cannot be rerun. Exactly one byte-identical `0/0` replay is next. No normal restore, helper/Netlify change, activation, backup, or production action is authorized by this snapshot. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -34,7 +34,7 @@ The fresh gate ledger is
 
 ---
 
-## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Held B2, Fresh Verifier, and Abort-v2 Plan Pass; First Execute Next
+## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Abort-v2 First Execute Pass; Replay Next
 
 Grae requested and approved release `HL-20260823-1` at exact recorded time
 `2026-08-23T23:23:29.877Z`. The release binds frontend application build
@@ -56,9 +56,12 @@ v2 returned `HL_POST_FIXTURE_SOURCE_VERIFIED` at
 `2026-08-24T07:37:31.521Z`; the same path was the authoritative pre-action
 fixture-bearing source at `37744640` bytes / SHA-256
 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
-Fresh target
+Fresh target, absent through the accepted plan and then materialized by the
+accepted first execute,
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
-is absent. Bound backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` uses manifest
+is now `37105664` bytes / SHA-256 `cf3ca07d...`; its canonical receipt is
+`4991` bytes / SHA-256 `24adf2d...`. Both remain inactive. Bound backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` uses manifest
 `staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json`,
 storage object with the same prefix and `.sqlite3.gz.enc` suffix, encrypted
 SHA-256 `e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
@@ -181,15 +184,28 @@ exact main/WAL/SHM hashes on current namespace-local device `66313`, inodes
 holders; source/target journals, target family, receipt, and work remained
 absent. Verified remote captures were removed after local verification.
 
-The sole next authorized mutation is exactly one matching first execute using
-that plan ID and the exact recorded confirmation. Require unambiguous contract-
-`2`, `replayed: false`, `0/2`, the exact temporary-work object, target SHA-256
-`cf3ca07d...`, and canonical receipt/persistent-family binding. Any nonzero,
-mismatched, incomplete, disconnected, missing, or ambiguous result forbids
-retry and replay and returns to full-hold reconciliation. Replay remains
-unauthorized until exact accepted execute evidence is frozen into another
-active-ledger amendment. Checkpointing, source-sidecar removal, raw main-only
-copy, normal restore, helper/Netlify change, activation, later verification/
+Published frontend authority
+`fd31b1f41b7c16521cf0eceb2c4af4a33a242636` then authorized one first execute.
+The `969`-byte / SHA-256 `bad1c78f...` command ran once. Native status was `0`;
+stdout/stderr/result were `4902` / `0` / `3896` bytes with SHA-256 values
+`74610bcc...` / `e3b0c442...` / `3d67f676...`. Result
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED` passed at contract `2`,
+`replayed: false`, `0/2`, source preserved, target verified, exact temporary-
+work object, target `cf3ca07d...`, and receipt `24adf2d...`. The auxiliary
+status artifact's literal three-byte `0\n` / `101770a4...` serialization defect
+was not repaired; independent native status plus complete result and postflight
+make execution unambiguous.
+
+Envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`, probes
+`1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and metadata `5566` /
+`59cb7e89...` bind unchanged source family, byte-exact target/receipt, absent
+sidecars/journals/work, zero holders, full hold, and verified capture cleanup.
+First-execute authority is consumed and no rerun is authorized. Exactly one
+byte-identical replay is now authorized. Require `replayed: true`, `0/0`, the
+exact no-work object, no object/key/restore/write activity, unchanged source
+family, and byte-identical target/receipt. Capture native status and all output
+once; any ambiguity forbids retry. Checkpointing, source-sidecar removal, raw
+main-only copy, normal restore, helper/Netlify change, activation, later verification/
 backup, and production remain unauthorized.
 
 ---
@@ -1201,9 +1217,10 @@ the complete held hosted/runtime and fresh-verifier gates passed; B-prime re-hol
 deploy `dep-da6cu8h42hec738f2al0` and controlled-unhold deploy
 `dep-da60sl0jo6nc73e0cfu0` are deactivated. B-prime remains historical
 diagnostic evidence only and grants no abort-v1 authority. The exact B2-pinned
-plan passed at `0/0`; exactly one matching first execute is the sole next
-mutation. Replay remains gated and unauthorized pending frozen accepted `0/2`
-evidence and another amendment.
+plan passed at `0/0`; the one published-authority first execute passed at
+`replayed: false` / `0/2` and cannot be rerun. Exactly one byte-identical `0/0`
+replay is the sole next operation. Every downstream action remains gated pending
+frozen replay evidence and another amendment.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -1408,13 +1425,17 @@ The current priority order is:
    `release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`,
    `to_b_accepted` / `published` / `none`, `main-wal`, exact WAL/family binding,
    absent target, exact temporary-work object, and `0/0`.
-6. Run exactly one matching first execute with the recorded plan ID and
-   confirmation. Require unambiguous contract `2`, `replayed: false`, `0/2`,
-   exact target/receipt/family binding, and the exact temporary-work object. Any
-   mismatch or ambiguity forbids retry/replay and returns to full-hold
-   reconciliation. Keep replay and every later recovery gate blocked until the
-   accepted execute is frozen and a separate authority amendment is approved.
-7. Close M7-26 only after this separately authorized strict release and all final
+6. Preserve the exact first-execute evidence: published authority `fd31b1f...`,
+   one command `bad1c78f...`, native status `0`, `replayed: false`, `0/2`, exact
+   target/receipt/family/work binding, postflight, held probes, cleanup, and the
+   sealed unrepaired auxiliary `0\n` status defect. Never rerun first execute.
+7. Run exactly one byte-identical replay. Require unambiguous contract `2`,
+   `replayed: true`, `0/0`, no temporary/object/key/restore/write work, unchanged
+   source family, and byte-identical target/receipt. Capture native process
+   status and all evidence once. Any mismatch or ambiguity forbids retry and
+   returns to full-hold reconciliation. Keep every later recovery gate blocked
+   until accepted replay evidence is frozen in another amendment.
+8. Close M7-26 only after this separately authorized strict release and all final
    staging gates pass. Keep production migration, reset, deployment, and
    first-write authority blocked until Grae separately approves exact scope.
 

@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Run exactly one matching abort-v2 first execute using the accepted plan ID and confirmation; require unambiguous contract v2, replayed false, 0/2, the exact temporary-work object, exact target/receipt/persistent-family binding, and no retry or replay on any ambiguity
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / ONE MATCHING FIRST EXECUTE AUTHORIZED NEXT / REPLAY PENDING ACCEPTED 0/2 + LATER AMENDMENT / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Run exactly one byte-identical abort-v2 replay using the accepted command, plan ID, and confirmation; require unambiguous contract v2, replayed true, 0/0, the exact no-work object, no object/key/restore/write activity, unchanged source family, and byte-identical target/receipt; stop after replay
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / PUBLISHED AUTHORITY fd31b1f FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED + NATIVE STATUS 0 UNAMBIGUOUS / ONE BYTE-IDENTICAL REPLAY AUTHORIZED NEXT / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1588,14 +1588,26 @@ and inodes `131156` / `131151` / `131152`; seven processes / `65` descriptors /
 zero holders passed, and source journal plus target family/journal, receipt, and
 work remained absent. Verified remote captures were removed after local proof.
 
-The current run record authorizes exactly one matching first execute using that
-plan ID and exact confirmation. Require unambiguous contract `2`,
-`replayed: false`, database/filesystem mutation counts `0/2`, the exact
-temporary-work object, target SHA-256 `cf3ca07d...`, and canonical receipt/
-persistent-family binding. Any mismatch, ambiguity, disconnect, missing output,
-or nonzero result forbids retry and replay and returns to full-hold
-reconciliation. Replay remains a future `0/0` acceptance target, not current
-authority, until an accepted execute is frozen into another amendment. Normal
+Published execute-only authority
+`fd31b1f41b7c16521cf0eceb2c4af4a33a242636` was consumed by exactly one
+`969`-byte / SHA-256 `bad1c78f...` command. Native status was numeric `0`;
+stdout/stderr/result seals are `4902` / `74610bcc...`, `0` / `e3b0c442...`, and
+`3896` / `3d67f676...`. The result passed as
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract `2`,
+`replayed: false`, `0/2`, source preserved, target verified at `cf3ca07d...`,
+and receipt `24adf2d...`. The sealed auxiliary status artifact is the literal
+three-byte `0\n` / `101770a4...`, not a newline; it was not repaired. Native
+wrapper status, complete output, and postflight make the execution unambiguous.
+
+Envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`, probes
+`1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and final metadata
+`5566` / `59cb7e89...` bind unchanged source family, exact target/receipt,
+sidecar/journal/work absence, zero holders, full hold, and capture cleanup.
+First execute cannot be rerun. The current run record authorizes exactly one
+byte-identical replay. Require unambiguous contract `2`, `replayed: true`,
+`0/0`, the exact no-work object, no temporary/object/key/restore/write activity,
+unchanged source family, and byte-identical target/receipt. Capture native status
+and complete evidence once; any mismatch or ambiguity forbids retry. Normal
 restore, phase two/retry, helper or Netlify change, activation, verifier,
 backup, final review, closeout, and production remain unauthorized; neither
 predecessor may be resumed or reused.

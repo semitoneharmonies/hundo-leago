@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; ONE MATCHING FIRST EXECUTE NEXT; REPLAY NOT AUTHORIZED`
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; ONE BYTE-IDENTICAL REPLAY NEXT; DOWNSTREAM NOT AUTHORIZED`
 
 ## Work Plan ID
 
@@ -21,7 +21,7 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Held B2, Fresh Verifier, and Abort-v2 Plan Pass; First Execute Next
+## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Abort-v2 First Execute Pass; Replay Next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
@@ -42,9 +42,11 @@ The clean pre-fixture source boundary was
 Fresh prepare/replay passed with `729` then `0` writes. Held postflight then
 verified that same path as the pre-action fixture-bearing source at `37744640`
 bytes / SHA-256 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
-Fresh target
+Fresh target, absent through the accepted plan and materialized by the accepted
+first execute,
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
-is absent. Verified incident-preservation backup
+is now `37105664` bytes / SHA-256 `cf3ca07d...`; its inactive canonical receipt
+is `4991` bytes / SHA-256 `24adf2d...`. Verified incident-preservation backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds manifest
 `staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json`,
 storage object with the identical prefix and `.sqlite3.gz.enc` suffix,
@@ -205,22 +207,41 @@ both mutation counts `0` pass. Postflight retained the exact source family on
 current device `66313` with seven processes / `65` descriptors / zero holders;
 all source/target journals and downstream objects remained absent.
 
+Published execute-only authority
+`fd31b1f41b7c16521cf0eceb2c4af4a33a242636` then passed exactly one
+first execute. The exact command is `969` bytes / SHA-256
+`bad1c78f0867977c65d457684ee3440c3707a48977694364470038a9cad4f275`;
+native status was numeric `0`. Stdout is `4902` bytes / `74610bcc...`, stderr
+is empty / `e3b0c442...`, and canonical result is `3896` bytes /
+`3d67f676...`. It returned `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`,
+contract `2`, `replayed: false`, `0/2`, source preserved, target verified at
+`cf3ca07d...`, receipt `24adf2d...`, and the exact performed/materialized
+temporary-work object. The auxiliary status artifact is the sealed literal
+three-byte `0\n` / `101770a4...` serialization defect. It was not repaired;
+native wrapper status, complete output, and postflight make execution
+unambiguous.
+
+Capture envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`,
+held probes `1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and final
+metadata `5566` / `59cb7e89...` bind unchanged source family, exact regular
+mode-`0600` target/receipt, absent sidecars/journals/work, zero holders, full
+hold, and verified remote-capture removal. First-execute authority is consumed
+and cannot be rerun or repaired.
+
 The authorized pending order is now exact and shorter:
 
-1. Run exactly one matching first execute using that plan ID and its exact
-   recorded confirmation. Require code
+1. Run exactly one byte-identical replay of the same command. Require
    `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract version `2`,
-   `replayed: false`, database/filesystem mutation counts `0/2`, the exact six-
-   field temporary-work object, target SHA-256 `cf3ca07d...`, and canonical
-   receipt/persistent-family binding.
-2. Freeze and reconcile the complete first-execute output into the active
-   ledger. Any nonzero, incomplete, missing, disconnected, ambiguous, or
-   mismatched result forbids retry and replay and returns to full-hold
-   reconciliation.
+   `replayed: true`, database/filesystem mutation counts `0/0`, the exact six-
+   field no-work object, no object download/head, key resolution, restore,
+   receipt/target/source write, unchanged source family, and byte-identical
+   target/receipt.
+2. Capture native numeric process status, complete stdout/stderr/result, and a
+   fresh read-only postflight once. Any nonzero, incomplete, missing,
+   disconnected, ambiguous, or mismatched result forbids retry and returns to
+   full-hold reconciliation. Stop after replay and freeze its evidence into a
+   later active-ledger amendment before any downstream action.
 
-Replay is not authorized by this plan revision. A later amendment may authorize
-one byte-identical replay at `0/0` only after an unambiguous accepted first
-execute is frozen.
 Phase two, retry, normal restore, helper/Netlify change, post-abort retirement,
 activation, verifier, backup, final review, closeout, and production remain
 unauthorized pending later evidence-bound amendments.
@@ -1368,9 +1389,11 @@ controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification
 passed. Phase one reached accepted/published state with `fresh 2` / `replay 0`,
 but phase two never began. Full re-hold, abort-v2 B2 mint/publication, the held
 B2 deployment/runtime gate, and the fresh B2-pinned verifier now pass. The exact
-abort-v2 plan also passes. Exactly one matching first execute is the sole next
-mutation; replay and every post-abort gate await frozen accepted `0/2` evidence
-and a separate amendment. Normal recovery remains forbidden.
+abort-v2 plan and its one published-authority first execute also pass. The
+first-execute result is accepted at `replayed: false` / `0/2`, and its authority
+is consumed. Exactly one byte-identical `0/0` replay is the sole next operation;
+every post-abort gate awaits frozen accepted replay evidence and a separate
+amendment. Normal recovery remains forbidden.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

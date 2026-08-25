@@ -706,14 +706,33 @@ Ignored stdout is `4777` bytes / SHA-256 `cef33b8f...`; the canonical result is
 and both mutation counts `0` pass. Verified remote mode-`0600` captures were
 removed only after local verification.
 
-The sole next authorized mutation is exactly one matching first execute using
-that plan ID and its exact recorded confirmation. Require unambiguous contract-
-`2` materialization with `replayed: false`, `0/2`, the exact temporary-work
-object, target SHA-256 `cf3ca07d...`, and canonical receipt/persistent-family
-binding. Ambiguity, disconnect, missing output, nonzero exit, or any mismatch
-forbids retry and replay and returns to full-hold reconciliation. Replay remains
-`PENDING AUTHORITY` until an exact accepted execute is frozen into another
-active-ledger amendment; its future acceptance target remains `0/0`.
+Published execute-only authority
+`fd31b1f41b7c16521cf0eceb2c4af4a33a242636` was followed exactly once. Fresh
+action-time preflight passed, and the sole `969`-byte command has SHA-256
+`bad1c78f0867977c65d457684ee3440c3707a48977694364470038a9cad4f275`.
+Its complete capture envelope is `7318` bytes / `14733405...`; stdout is `4902`
+bytes / `74610bcc...`; stderr is empty / `e3b0c442...`; canonical result is
+`3896` bytes / `3d67f676...`. The result returned
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract `2`,
+`replayed: false`, `0/2`, source preserved, and target verified at
+`cf3ca07d...` with canonical receipt `24adf2d...`. The auxiliary status file's
+sealed three-byte literal `0\n` / `101770a4...` is a serialization defect, not
+execution ambiguity: native wrapper status was numeric `0`, no signal/error,
+and exact postflight passed. The status artifact was not repaired.
+
+Postflight `2059` bytes / `fdd169d5...`, held probes `1136` bytes /
+`2d634d0d...`, remote-capture cleanup `928` bytes / `299496df...`, and final
+metadata `5566` bytes / `59cb7e89...` bind unchanged source family, regular
+mode-`0600` target/receipt, absent source journal and target sidecars/journal/
+work, zero holders, full hold, unchanged Render/Netlify, and verified remote
+capture removal. First-execute authority is consumed and cannot be rerun.
+
+The sole next authorized operation is exactly one byte-identical replay of the
+same command. Require unambiguous contract `2`, `replayed: true`, `0/0`, the
+exact no-work object, no temporary/object/key/restore/write activity, unchanged
+source family, and byte-identical target/receipt. Capture native status and all
+output robustly; ambiguity forbids retry. Stop after replay and freeze its
+evidence before any downstream amendment.
 Phase two, retry, normal restore, helper/Netlify change, checkpoint, sidecar
 removal, activation, verifier, backup, reopening/review, closeout, and
 production remain unauthorized. Historical `HL-20260822-1` abort-v1 evidence
@@ -1098,11 +1117,11 @@ and unheld v2 pre-smoke verification passed. Phase one reached accepted/
 published state with `fresh 2` / `replay 0`, but operator sequencing selected
 `STRICT_STOP`; phase two never began and full re-hold passes. Exact abort-v2 B2
 mint/publication, held deployment/runtime, fresh post-B2 verification, and the
-exact abort-v2 plan pass. The next mutation is exactly one matching first
-execute; replay remains unauthorized pending accepted `0/2` evidence and a
-later amendment. Normal recovery is forbidden; every post-abort gate awaits a
-separate amendment. The failed/recovered 2026-08-21 attempt remains historical;
-production remains untouched and unauthorized.
+exact abort-v2 plan pass. The matching first execute passed, and its authority
+is consumed. The sole next authorized operation is exactly one byte-identical
+replay, pending publication of this amendment. Normal recovery and every
+downstream action remain forbidden. The failed/recovered 2026-08-21 attempt
+remains historical; production remains untouched and unauthorized.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -1146,7 +1165,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; ONE MATCHING FIRST EXECUTE NEXT; REPLAY NOT AUTHORIZED
+Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; ONE BYTE-IDENTICAL REPLAY NEXT; DOWNSTREAM NOT AUTHORIZED
 ```
 
 The completed M7-24 and M7-25 plans are preserved at
@@ -1180,10 +1199,10 @@ deactivated at safe handoff to sole newest/`LIVE` exact-B2 deploy
 `dep-da6ghj67bikc738hbbv0`. Exact abort-v2 B2
 `6359ec9997f90dddf17ba2c9b07481746ae171bb` is minted, published, deployed, and
 verified under full hold; the fresh B2-pinned verifier also passes. The exact
-abort-v2 plan also passes. Exactly one matching first execute is next; replay
-remains pending exact accepted `0/2` evidence and another amendment. Normal
-recovery and phase two are forbidden, and downstream gates await a separate
-post-abort amendment.
+abort-v2 plan and its one authorized first execute pass. First-execute authority
+is consumed; exactly one byte-identical `0/0` replay is next. Normal recovery
+and phase two are forbidden, and downstream gates await accepted replay evidence
+and a separate post-abort amendment.
 Production remains untouched and unauthorized.
 
 A work plan is used for a contained current task such as:
@@ -1407,9 +1426,11 @@ operator sequencing strict-stopped the attempt, phase two never began, and full
 re-hold now passes. Exact abort-v2 B2
 `6359ec9997f90dddf17ba2c9b07481746ae171bb` is minted, published, held-deployed,
 and runtime-verified; the fresh B2-pinned verifier passes. Only one exact
-evidence-bound abort-v2 plan ran and passed. Exactly one matching first execute
-is currently authorized; replay and downstream data gates remain pending an
-exact accepted `0/2` result and a later amendment. The earlier
+evidence-bound abort-v2 plan ran and passed. Its published-authority first
+execute also ran once and passed at `replayed: false` / `0/2`; that authority is
+consumed. Exactly one byte-identical `0/0` replay is currently authorized;
+downstream data gates remain pending its accepted evidence and a later
+amendment. The earlier
 `HL-20260821-3` abort
 recovery remains immutable historical evidence.
 

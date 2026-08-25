@@ -1244,7 +1244,7 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; held B2, fresh verifier, and abort-v2 plan pass; first execute next
+#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; abort-v2 first execute pass; replay next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
@@ -1261,7 +1261,9 @@ Authoritative source:       /opt/render/project/data/hundo-staging/sqlite/hundo-
 Clean boundary bytes/SHA:   37105664 / cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
 Pre-action fixture bytes/SHA: 37744640 / b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103
 Fresh target:               /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3
-Target state:               absent
+Target state at plan:       absent
+Target state after execute: 37105664 / cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc; inactive
+Receipt after execute:      4991 / 24adf2d36c1adae8674552d44fc99fb43fd875dd58be85008f0c00b35450e8c8; inactive handoff
 ```
 
 The release binds verified incident-preservation backup
@@ -1320,8 +1322,9 @@ authoritative under full hold; its exact current post-write family is bound by
 the B-prime WAL-aware diagnostic and must be freshly re-proved unchanged by the
 B2-pinned verifier before plan, not inferred from the pre-action main-only
 baseline.
-The clean backup remains the rollback boundary and the fresh target remains
-absent.
+The clean backup remains the rollback boundary. The fresh target remained
+absent through planning and was later materialized only by the exact accepted
+first execute described below.
 
 The former main-only verifier
 `pre-abort-source-verifier.sh` (`18060` bytes / SHA-256 `9c323005...`) ran and
@@ -1403,29 +1406,65 @@ work object below pass. Postflight retained exact main/WAL/SHM on current device
 `66313`, inodes `131156` / `131151` / `131152`, with seven processes / `65`
 descriptors / zero holders; journals and all downstream objects remained absent.
 
-The only authorized pending operational action is exactly one matching first
-execute using that plan ID and its exact recorded abort confirmation—not any
-normal or predecessor confirmation. Require unambiguous contract version `2`,
-`replayed: false`, database/filesystem mutation counts `0/2`, the exact
-temporary-work object, target SHA-256 `cf3ca07d...`, and canonical receipt/
-persistent-family binding. Any mismatch, ambiguity, disconnect, missing output,
-or nonzero result forbids retry and replay and returns to full-hold
-reconciliation. Replay `0/0` is a future acceptance target, not current
-authority; exact accepted first-execute evidence must be frozen into another
-active-ledger amendment before replay.
+Published execute-only authority
+`fd31b1f41b7c16521cf0eceb2c4af4a33a242636` was in frontend
+`origin/staging` before action. Fresh action-time preflight passed on exact B2,
+full hold, unchanged source main/WAL/SHM, absent target/receipt/work, and two
+zero-holder scans. The exact `969`-byte / SHA-256
+`bad1c78f0867977c65d457684ee3440c3707a48977694364470038a9cad4f275`
+command ran once only. Its `7318`-byte capture envelope has SHA-256
+`147334054423894703aae5cdb67453a186281d716f422b5e3ccccd04b2bbffe3`;
+stdout is `4902` bytes / `74610bcc...`; stderr is empty / `e3b0c442...`;
+canonical result is `3896` bytes / `3d67f676...`.
+
+The wrapper's authoritative native spawn status was numeric `0`, with null
+signal and error. The auxiliary status file contains literal three ASCII bytes
+`0\n`—digit zero, backslash, lowercase `n`, not an LF—with SHA-256
+`101770a4004c3406015d7e013e2729f1d23b7e8ceb486069d48f2693088cf7c4`.
+That serialization defect was sealed and not repaired. It creates no execution
+ambiguity because native status, complete stdout/result, empty stderr, and exact
+postflight independently agree.
+
+Result `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED` passed at contract `2`,
+`replayed: false`, authoritative-database/durable-filesystem mutations `0/2`,
+`sourcePreserved: true`, and `targetVerified: true`. It preserved exact
+`main-wal` source identity, materialized target `37105664` / `cf3ca07d...`, and
+wrote canonical format-v2 receipt `4991` / `24adf2d...`. The result retained
+the exact performed/materialized `true`, retained `false`, cleanup `verified`,
+deterministic-path, fail-closed temporary-work contract.
+
+Postflight is `2059` bytes / `fdd169d5...`; held probes are `1136` bytes /
+`2d634d0d...`; capture cleanup is `928` bytes / `299496df...`; final metadata
+is `5566` bytes / `59cb7e89...`. They bind unchanged source family, regular
+non-symlink UID-`1000` mode-`0600` target/receipt, target and receipt inodes
+`131160` / `131161`, source-journal plus target-WAL/SHM/journal and work absence,
+two nine-process/`88`-descriptor zero-holder scans, full hold, unchanged Render/
+Netlify, and verified removal of all three remote captures. `DATABASE_PATH`
+remains on the preserved source; the target is inactive. First-execute authority
+is consumed and cannot be rerun.
 
 The deterministic work path remains exactly
 `/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`.
-The accepted plan and currently authorized first execute require performed/
-materialized `true`, retained `false`, cleanup `verified`, and fail-closed
-abrupt recovery. A future replay would require performed/
+The accepted plan and consumed first execute required performed/materialized
+`true`, retained `false`, cleanup `verified`, and fail-closed abrupt recovery.
+The currently authorized replay's exact no-work object requires performed/
 materialized `false`, retained `false`, cleanup `not-needed`, and the same
-fail-closed value. Any nonzero, incomplete, disconnected, ambiguous, or
-mismatched result stops. Execute ambiguity forbids retry/replay and requires
-separately authorized full-hold reconciliation.
+fail-closed value. It must use the exact same `969`-byte command, return
+contract `2`, `replayed: true`, and `0/0`, retain byte-identical target/receipt
+and unchanged source family, and perform no temporary work, object download/
+head, key resolution, restore, receipt write, target write, or source write.
+Capture native numeric status and complete output once. Any nonzero, incomplete,
+disconnected, ambiguous, or mismatched result stops and forbids retry. Historical
+first-execute status remains immutable. For replay only, construct the auxiliary
+status with an actual LF: hex `30 0a`, `2` bytes / `1` LF / `0` CR, base64
+`MAo=`, and SHA-256
+`9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`.
+Any mismatch forbids retry, another replay, and cleanup and preserves all
+evidence under the full hold.
 
-Exactly one matching first execute is authorized by this amendment; retry and
-replay are forbidden. Phase two, normal restore, helper or Netlify change,
+Exactly one byte-identical replay is authorized by this amendment; first execute
+cannot be rerun. Stop after replay and freeze its evidence before any later
+authority. Phase two, normal restore, helper or Netlify change,
 checkpoint, source-sidecar removal,
 `DATABASE_PATH` activation, later
 target verification/backup, reopening, final review, closeout, and production

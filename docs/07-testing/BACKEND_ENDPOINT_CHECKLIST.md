@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER + ABORT-V2 PLAN PASS; FIRST EXECUTE NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; ABORT-V2 FIRST EXECUTE PASS; REPLAY NEXT)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -412,14 +412,28 @@ stderr, and exact plan ID
 Contract `2`, `main-wal`, exact WAL/family/classifier binding, absent target,
 the exact `.strict-restore-work-v1` temporary-work object, and `0/0` pass.
 
-Only one matching first execute using that plan ID and exact recorded
-confirmation is now authorized. Require unambiguous contract `2`,
-`replayed: false`, `0/2`, exact temporary-work object, target SHA-256
-`cf3ca07d...`, and canonical receipt/persistent-family binding. Any mismatch,
-ambiguity, disconnect, missing output, or nonzero outcome forbids retry/replay
-and returns to full-hold reconciliation. Replay `0/0` remains a future
-acceptance target, not current authority; an accepted first execute must be
-frozen through a later amendment before replay.
+Published execute-only authority
+`fd31b1f41b7c16521cf0eceb2c4af4a33a242636` was consumed by exactly one
+`969`-byte / SHA-256 `bad1c78f...` command. Native status was numeric `0`;
+stdout/stderr/result seals are `4902` / `74610bcc...`, `0` / `e3b0c442...`, and
+`3896` / `3d67f676...`. Exact result
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED` passed at contract `2`,
+`replayed: false`, `0/2`, source preserved, target verified at `cf3ca07d...`,
+receipt `24adf2d...`, and exact temporary-work/family binding. The auxiliary
+status artifact's literal three-byte `0\n` / `101770a4...` serialization defect
+is sealed and unrepaired; native wrapper status plus complete result and
+postflight remove ambiguity.
+
+Envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`, probes
+`1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and metadata `5566` /
+`59cb7e89...` bind the unchanged source family, byte-exact target/receipt,
+absent sidecars/journals/work, zero holders, full hold, and capture removal.
+First execute cannot be rerun. Exactly one byte-identical replay is now
+authorized. Require unambiguous contract `2`, `replayed: true`, `0/0`, the
+exact no-work object, no temporary/object/key/restore/write activity, unchanged
+source family, and byte-identical target/receipt. Capture native status and all
+evidence once; any mismatch or ambiguity forbids retry and returns to full-hold
+reconciliation. Stop after replay.
 Normal restore, phase two/retry, helper or Netlify change, checkpoint/sidecar
 removal, retirement, activation, later verifier/backup, reopening/review, and
 production require later authority. Historical `HL-20260822-1` values remain

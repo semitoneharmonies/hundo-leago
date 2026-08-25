@@ -107,7 +107,7 @@ M7-26 release evidence must also include two explicit hosted privacy gates:
   complete values and an actionable tie only for the newly managed team, and
   prove a second selected team remains independently redacted or authorized.
 
-### M7-26 Fresh Strict Release - 2026-08-23 (PHASE ONE PUBLISHED; STRICT STOP; HELD B2 + FRESH VERIFIER + ABORT-V2 PLAN PASS; FIRST EXECUTE NEXT)
+### M7-26 Fresh Strict Release - 2026-08-23 (PHASE ONE PUBLISHED; STRICT STOP; ABORT-V2 FIRST EXECUTE PASS; REPLAY NEXT)
 
 Grae requested and approved `HL-20260823-1` at exact
 requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It freezes F
@@ -251,15 +251,32 @@ Contract `2`, `main-wal`, exact WAL/family/classifier binding, absent target,
 both mutation counts `0`, and the exact `.strict-restore-work-v1` six-field
 temporary-work object pass.
 
-Testing now authorizes exactly one matching first execute using that plan ID
-and exact recorded confirmation. Require unambiguous contract `2`,
-`replayed: false`, `0/2`, the exact temporary-work object, target SHA-256
-`cf3ca07d...`, and canonical receipt/persistent-family binding. Any nonzero,
-incomplete, missing, disconnected, ambiguous, or mismatched result forbids
-retry/replay and returns to full-hold reconciliation. Replay remains
-unauthorized until exact accepted execute evidence is frozen into a later
-amendment; its future acceptance target remains `0/0`. Phase two/retry, normal
-restore, helper/Netlify change,
+Published execute-only authority
+`fd31b1f41b7c16521cf0eceb2c4af4a33a242636` dispatched the exact
+`969`-byte / SHA-256 `bad1c78f...` command once. Native status was numeric `0`;
+stdout/stderr/result seals are `4902` / `74610bcc...`, `0` / `e3b0c442...`, and
+`3896` / `3d67f676...`. Result
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED` passed at contract `2`,
+`replayed: false`, `0/2`, source preserved, target verified at `cf3ca07d...`,
+receipt `24adf2d...`, and the exact performed/materialized temporary-work object.
+The auxiliary status artifact's sealed literal three-byte `0\n` /
+`101770a4...` serialization defect was not repaired; native wrapper status,
+complete result, and postflight make execution unambiguous.
+
+Envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`, held probes
+`1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and final metadata
+`5566` / `59cb7e89...` bind unchanged source family, exact target/receipt,
+absent sidecars/journals/work, zero holders, full hold, and capture cleanup.
+First-execute authority is consumed and cannot be rerun.
+
+Testing now authorizes exactly one byte-identical replay of the same command.
+Require unambiguous contract `2`, `replayed: true`, `0/0`, the exact no-work
+object, no temporary/object/key/restore/write activity, unchanged source family,
+and byte-identical target/receipt. Capture native numeric status and complete
+output once; any nonzero, incomplete, missing, disconnected, ambiguous, or
+mismatched result forbids retry and returns to full-hold reconciliation. Stop
+after replay and freeze its evidence before any downstream amendment. Phase
+two/retry, normal restore, helper/Netlify change,
 retirement, activation, later verifier/backup, final review, and production
 require later authority. The similarly named `HL-20260822-1` strategy below is
 historical and cannot satisfy this sequence.
