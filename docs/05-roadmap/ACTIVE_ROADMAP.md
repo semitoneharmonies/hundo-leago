@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Publish the exact-nine RC-STG-006O23 V3 correction as one literal non-merge child of rejected/unconsumed 3f0bc V2, instantiate and audit the distinct immutable V3 binding, then execute only the fresh PRE boundary, permanent one-shot V3 sentinel, exact one-key Render update, unique held-B2 deploy handoff, fresh POST boundary, and mandatory stop defined below
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8e6c8fae36273a816a7539 CURRENT + READY / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 LAST RECONCILED SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / ABORT-V2 PLAN+FIRST EXECUTE+REPLAY PASS AND AUTHORITIES CONSUMED / HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY / EVIDENCE BASE A0DA13A PUBLISHED / E855 V1 O23 REJECTED BEFORE PRE + UNCONSUMED + ZERO PROVIDER CALL / 3F0BC V2 O23 ARM REJECTED + UNCONSUMED + NO RETRY + ZERO PROVIDER MUTATION / RC-STG-006O23 V3 CORRECTION AUTHORIZED NEXT + PENDING EXECUTION AFTER PUBLICATION+BINDING / RC-STG-006P23 SEMANTIC VERIFICATION+BACKUP PENDING AUTHORITY / REOPENING+FINAL REVIEW+CLOSEOUT+PRODUCTION UNAUTHORIZED
+Action: Publish the exact-nine RC-STG-006O23A V4 read-only continuation as one literal non-merge child of consumed V3 authority 43e99e686214a2f36f52ee7c426db2015d709bee, instantiate and audit the separate immutable V4 binding, then execute only the zero-mutation provider/npm/activation/probe/final/postflight/cleanup sequence defined below
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8e6c8fae36273a816a7539 CURRENT + READY / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT ACTIVATED B2 DEPLOY dep-da7d857avr4c73bnna90 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / ABORT-V2 PLAN+FIRST EXECUTE+REPLAY PASS AND AUTHORITIES CONSUMED / HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY / E855 V1 O23 REJECTED BEFORE PRE + UNCONSUMED + ZERO PROVIDER CALL / 3F0BC V2 O23 ARM REJECTED + UNCONSUMED + NO RETRY + ZERO PROVIDER MUTATION / 43E99 V3 O23 ACTION SUCCEEDED + AUTHORITY CONSUMED + EXACTLY ONE PROVIDER MUTATION / OLD V3 POST PERMANENTLY BLOCKED SOLELY BY ABSENT HOSTED NPM 11.11.0 OBSERVATION / O23 ACCEPTANCE PENDING UNCHECKED O23A / RC-STG-006O23A V4 READ-ONLY CONTINUATION AUTHORIZED NEXT AFTER DIRECT-CHILD PUBLICATION+BINDING + ZERO V4 PROVIDER MUTATIONS / RC-STG-006P23 SEMANTIC VERIFICATION+BACKUP PENDING AUTHORITY / REOPENING+FINAL REVIEW+ROLLBACK+CLOSEOUT+PRODUCTION UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1836,9 +1836,9 @@ The false-negative/reconstructed chronology and corrected kit pins remain
 preserved. Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. At the
 N23 completion boundary, mandatory stop forbade activation, backup, reopening/
 review, browser, closeout, and production. V1 and V2 were later rejected at
-their recorded boundaries; only the V3 correction below may supersede that
-activation-authority status after publication and binding audit. Chrome disk/FD
-reproof remains pending.
+their recorded boundaries. V3 later completed its one provider mutation and
+consumed its authority; O23 acceptance now awaits the separately authorized V4/
+O23A read-only continuation below. Chrome disk/FD reproof remains pending.
 
 ### RC-STG-006O23 V1 Held Target-Handoff Authority - Rejected / Unconsumed Historical Evidence
 
@@ -1999,7 +1999,12 @@ mandatory stop. P23 semantic verification/backup, reopening/review, normal
 restore, rollback, browser workflow, closeout, production, and all later gates
 remain forbidden.
 
-### RC-STG-006O23 V3 Correction Authority - Authorized Next / Pending Execution
+### RC-STG-006O23 V3 Correction Authority - Action Succeeded / Consumed; Acceptance Pending O23A; Old POST Path Blocked
+
+> Historical boundary: this section preserves the V3 authorization design and
+> its exact pin block. V3 later consumed its authority and completed exactly one
+> successful provider mutation. Its imperative PRE/POST wording grants no present
+> authority, and its old POST path must never be resumed or populated.
 
 Published V2 commit `3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323`
 collected its immutable binding and seven PRE evidence files, including fresh
@@ -2129,6 +2134,58 @@ nothing; then stop. `RC-STG-006P23` alone may later authorize private-copy
 semantic verification and backup. P23, reopening/review, normal restore,
 rollback, browser workflow, closeout, production, and every second provider
 update remain forbidden.
+
+### RC-STG-006O23A V4 Read-Only Evidence Continuation - Authorized Next / Pending Publication and Binding
+
+Consumed V3 authority `43e99e686214a2f36f52ee7c426db2015d709bee`
+completed exactly one successful provider `DATABASE_PATH` mutation and returned
+sole newest/`LIVE` exact-B2 deploy `dep-da7d857avr4c73bnna90`. Its old POST path
+is permanently blocked solely because exhaustive hosted logs lacked an explicit
+npm `11.11.0` observation; all eight named V3 POST artifacts must remain absent
+forever. V3 must not be retried or backfilled. O23 remains unchecked with its
+acceptance pending O23A.
+
+V4/O23A must be one literal non-merge exact-nine documentation child of
+`43e99e686214a2f36f52ee7c426db2015d709bee`, published as frontend `HEAD` and
+`origin/staging`, while backend `HEAD`/`origin/staging` remain clean at exact B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`. Only then may the separate ignored
+immutable V4 binding be exclusively generated and audited. These are the exact
+`21` runner-emitted authority rows; final-row success fields define the future
+accepted state and do not claim the two currently unchecked gates passed.
+
+HL23-V4-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-support-manifest.json|bytes=11358|lf=286|cr=0|finalLf=true|sha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428
+HL23-V4-FROZEN-ARTIFACT-SET|sha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-contract.cjs|bytes=75803|lf=1499|cr=0|finalLf=true|sha256=9868b381d735b109519be63cddd62869e72cb3037489046a5ff8b7b037a31f57
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-npm-verifier.sh|bytes=17958|lf=414|cr=0|finalLf=true|sha256=af911c11d71dba90ab1a068475622bcab67d3dbe1897b25e0bd95f943ef1686b
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-shell-envelope.cjs|bytes=35536|lf=770|cr=0|finalLf=true|sha256=5359876b097d8cb05f07a9befd5d7d4e5e3612f363cb66700d09b18ae22679b1
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=adbf73addb943d9c7f7d6d4c3b75d4e9b42cac06358100cf03a0673e70d4792f
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-action-control.cjs|bytes=42066|lf=910|cr=0|finalLf=true|sha256=7b67d758468aabd11a6594d25aab0cdc6c77cd80c32144036265ae28408bdfa7
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-provider-projection.cjs|bytes=67106|lf=1525|cr=0|finalLf=true|sha256=c825826c3651369f94aff0bfb75de63a115b301077db8feb84aa88ad1364b358
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-authority-ops.cjs|bytes=11363|lf=262|cr=0|finalLf=true|sha256=89d2d34604f5a3df03f5161d6d024eba793fbf5b7145d26a3b9fe4e3f3d6102e
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-local-runner.ps1|bytes=51440|lf=1087|cr=0|finalLf=true|sha256=89c6887fa3e31b6885c3ec62e7d8c0796541f5292c387f12999473e963d90f02
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-postflight.cjs|bytes=17194|lf=398|cr=0|finalLf=true|sha256=b907741e922295012bc66cd54ed6c0d01cdc9e39982cec50acba352285295f08
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-cleanup.cjs|bytes=5313|lf=141|cr=0|finalLf=true|sha256=91e9d7ecbf5df1da46d2122a341a10c726974b7e7a25faed4a2a917e8b1f8294
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-support-self-test.cjs|bytes=40052|lf=843|cr=0|finalLf=true|sha256=3eb5499c80fd92b0f199f6d83083b7577ee257f36a0157fc1f3c20e39bd41862
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-verify-freeze.cjs|bytes=31193|lf=591|cr=0|finalLf=true|sha256=54e6711c8fa38cd95182d290bbf1f01a8d10ba0f1d23a6b8453548e3a8c34399
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-authority-binding.template.json|bytes=7134|lf=176|cr=0|finalLf=true|sha256=b0c64c20901ed5d67498d392e023475e480c6a1817b5755262a6339a027f6962
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-RUNBOOK.md|bytes=18634|lf=320|cr=0|finalLf=true|sha256=e26ba353e79a1fe07244211f17226ab6fde8d0dc22c48fa66475ba396b5a8886
+HL23-V4-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV4ProviderMutation=false
+HL23-V4-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V4-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V4-CONTINUATION-AUTHORITY|parent=43e99e686214a2f36f52ee7c426db2015d709bee|checklistId=RC-STG-006O23A|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V4-STATUS|authorityO23=UNCHECKED_PENDING_O23A|authorityO23A=UNCHECKED|v3PostPathPermanentlyBlocked=true|o23AcceptancePendingO23A=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|mandatoryStopBefore=RC-STG-006P23
+
+After publication/binding, execute only this order: provider PRE; five held PRE
+probes; preflight and durable one-shot O23A arm; one sealed live-runtime npm
+`11.11.0` observation; provider POST; one sealed byte-exact inherited V3
+`activation-post` observation; five held POST probes; provider FINAL topology
+bracket; aggregate postflight; zero-delete cleanup; mandatory stop before P23.
+The npm sample uses actual exported runtime values with no expected-value
+injection and is not build-time proof. Provider request evidence accounts for
+expected held `503` tuples rather than claiming generic zero 5xx. V4 authorizes
+zero provider mutations; the combined total remains one. O23 and O23A stay
+unchecked until completion and must then be checked together. P23, backup,
+reopen, rollback, production, and later gates remain forbidden.
 
 ## Historical Milestone Evidence
 

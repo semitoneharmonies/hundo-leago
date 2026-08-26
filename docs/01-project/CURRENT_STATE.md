@@ -23,8 +23,8 @@ Last reviewed: **2026-08-26**
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify's current/newest `ready` deploy is one-shot helper-retirement deploy `6a8e6c8fae36273a816a7539`, title `HL-20260823-1-abort-v2-retire-helper-baseline`, serving sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9`; refreshed allowlisted provider projection proves five headers, two redirects, zero functions, and zero edge functions. Render's last reconciled sole newest/`LIVE` deploy is API-triggered `dep-da6ghj67bikc738hbbv0` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; fresh V3 PRE must reconfirm that provider topology | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold remains exact. B2 hosted/runtime, fresh verifier, abort-v2 plan, first execute, replay, and helper retirement pass. The target and receipt are materialized and verified but inactive; `DATABASE_PATH` still names the preserved source. First-execute, replay, and helper-retirement authorities are consumed. V1 O23 `e855be9e1a4d92cd6428175965ecf934653ae965` was rejected before PRE. V2 O23 `3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323` collected PRE evidence but failed its local arm before provider dispatch; it is unconsumed, permanently non-authorizing, and may not be retried. The V3 correction below is `AUTHORIZED NEXT / PENDING EXECUTION` only after its exact commit is published and its distinct ignored binding is created and audited. `RC-STG-006P23`, backup, reopening/review, closeout, and production remain unauthorized. |
-| Local/feature-branch candidate | Stable frontend release artifact remains application F `4dfe12d1366314e3d9df722c50771324647743c9`. Accepted replay evidence is published in exact commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`; helper-retirement dispatch authority is published in exact commit `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb`, incident continuation authority in `0498fd4fd400e8aad16c4cf9c405165d420bd489`, helper-retirement evidence base in `a0da13a5a6a1c1edb352aa1b606d0d3b97aec020`, rejected V1 O23 authority in `e855be9e1a4d92cd6428175965ecf934653ae965`, and rejected V2 O23 authority in `3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323`. None changes sealed F bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | This exact-nine V3 correction must be one literal non-merge child of `3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323` and authorizes only unchecked `RC-STG-006O23` after publication, HEAD/`origin/staging` equality, and separate V3 binding audit. No V2 retry, normal restore, semantic target verification, backup, reopening/review, production action, or rollback is authorized. |
+| Isolated staging candidate | Netlify's current/newest `ready` deploy is one-shot helper-retirement deploy `6a8e6c8fae36273a816a7539`, title `HL-20260823-1-abort-v2-retire-helper-baseline`, serving sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9`; refreshed allowlisted provider projection proves five headers, two redirects, zero functions, and zero edge functions. Render's sole newest/`LIVE` deploy is API-triggered `dep-da7d857avr4c73bnna90` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb` | V3 authority `43e99e686214a2f36f52ee7c426db2015d709bee` is consumed after exactly one successful `DATABASE_PATH` provider mutation selected the materialized target and returned the live deploy. V3 acceptance did not complete because hosted logs lacked an explicit npm `11.11.0` observation; its old POST path is permanently blocked and its eight POST artifacts must remain absent. O23 stays unchecked with acceptance pending unchecked O23A. The V4/O23A read-only continuation below is authorized next only after its exact direct-child publication and separate binding. Full hold remains exact. `RC-STG-006P23`, backup, reopening/review, rollback, closeout, production, and later gates remain unauthorized. |
+| Local/feature-branch candidate | Stable frontend release artifact remains application F `4dfe12d1366314e3d9df722c50771324647743c9`. V3 authority is published at exact frontend HEAD/`origin/staging` `43e99e686214a2f36f52ee7c426db2015d709bee`; backend HEAD and backend `origin/staging` both remain clean at abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` | The only eligible V4/O23A authority is one literal non-merge exact-nine documentation child of `43e99e686214a2f36f52ee7c426db2015d709bee`. After publication and separate immutable binding audit it authorizes zero provider mutations and only the ordered read-only evidence continuation below. O23 and O23A remain unchecked until completion and must then be checked together. P23 and all later gates remain forbidden. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -34,7 +34,7 @@ The fresh gate ledger is
 
 ---
 
-## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; V1/V2 O23 Rejected/Unconsumed; V3 Correction Authorized Next
+## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - V3 Action Succeeded; O23 Acceptance Pending O23A; V4 Continuation Authorized Next
 
 Grae requested and approved release `HL-20260823-1` at exact recorded time
 `2026-08-23T23:23:29.877Z`. The release binds frontend application build
@@ -60,7 +60,9 @@ Fresh target, absent through the accepted plan and then materialized by the
 accepted first execute,
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
 is now `37105664` bytes / SHA-256 `cf3ca07d...`; its canonical receipt is
-`4991` bytes / SHA-256 `24adf2d...`. Both remain inactive. Bound backup
+`4991` bytes / SHA-256 `24adf2d...`. Both were inactive at that first-execute
+boundary. V3 later selected the target; receipt bytes remain unchanged, while
+semantic target verification remains deferred. Bound backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` uses manifest
 `staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json`,
 storage object with the same prefix and `.sqlite3.gz.enc` suffix, encrypted
@@ -435,9 +437,9 @@ diagnostic, reconstructed chronology, and current kit pins remain preserved.
 Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. At the N23
 completion boundary, mandatory stop forbade activation, backup, reopening/
 review, browser, closeout, and production. V1 and V2 were later rejected at
-their recorded boundaries; only the V3 correction below may supersede that
-activation-authority status after publication and binding audit. Chrome disk/FD
-reproof remains pending.
+their recorded boundaries. V3 later completed its one provider mutation and
+consumed its authority; O23 acceptance now awaits the separately authorized V4/
+O23A read-only continuation below. Chrome disk/FD reproof remains pending.
 
 ### 2026-08-26 RC-STG-006O23 V1 Held Target-Handoff Authority - Rejected / Unconsumed Historical Evidence
 
@@ -651,7 +653,12 @@ verification and backup. P23, reopening/review, normal restore, rollback,
 closeout, browser workflow, production, and any second provider update remain
 forbidden.
 
-### 2026-08-26 RC-STG-006O23 V3 Correction Authority - Authorized Next / Pending Execution
+### 2026-08-26 RC-STG-006O23 V3 Correction Authority - Action Succeeded / Consumed; Acceptance Pending O23A; Old POST Path Blocked
+
+> Historical boundary: this section preserves the V3 authorization design and
+> its exact pin block. V3 later consumed its authority and completed exactly one
+> successful provider mutation. Its imperative PRE/POST wording grants no present
+> authority, and its old POST path must never be resumed or populated.
 
 Published V2 commit `3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323`
 collected its immutable binding and seven PRE evidence files, including fresh
@@ -781,6 +788,87 @@ nothing; then stop. `RC-STG-006P23` alone may later authorize private-copy
 semantic verification and backup. P23, reopening/review, normal restore,
 rollback, browser workflow, closeout, production, and every second provider
 update remain forbidden.
+
+### 2026-08-26 RC-STG-006O23A V4 Read-Only Evidence Continuation Authority - Authorized Next / Pending Publication and Binding
+
+V3 authority `43e99e686214a2f36f52ee7c426db2015d709bee` passed PRE,
+durably consumed its one-shot arm, and made exactly one successful provider
+mutation: the canonical `247`-byte `DATABASE_PATH` merge update with SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`.
+It returned API-triggered exact-B2 deploy `dep-da7d857avr4c73bnna90`, now the
+sole newest/`LIVE` deploy; prior deploy `dep-da6ghj67bikc738hbbv0` is
+deactivated. V3 authority is consumed and no retry, inverse, rollback, trigger,
+or second provider mutation is authorized.
+
+The old V3 POST path is permanently blocked solely because exhaustive hosted
+logs did not explicitly observe npm `11.11.0`. Recording V3 POST success would
+fabricate evidence. The eight V3 POST artifacts named in the canonical row
+below must remain absent forever and must never be created, backfilled, or used.
+O23 therefore remains unchecked with acceptance pending O23A; the successful
+V3 action is preserved rather than retried.
+
+The only eligible continuation authority is one literal non-merge exact-nine
+documentation child of
+`43e99e686214a2f36f52ee7c426db2015d709bee`. It must change only these nine
+canonical documents, be published as frontend `HEAD` and `origin/staging`, and
+leave backend `HEAD`/`origin/staging` clean at exact B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`. Only after publication may the
+separate ignored immutable `target-activation-v4-authority-binding.json` be
+exclusively generated from the frozen template and independently audited.
+Until both publication and binding pass, O23A is merely authorized next and no
+V4 evidence action may begin.
+
+The frozen self-pinned Windows runner and authority generator emitted the exact
+`21` standalone rows below. Every row is current authority exactly as written.
+The `successfulO23` and `successfulO23A` fields in the final row define the
+required future accepted-completion state; they do not claim either currently
+unchecked gate has passed.
+
+HL23-V4-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-support-manifest.json|bytes=11358|lf=286|cr=0|finalLf=true|sha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428
+HL23-V4-FROZEN-ARTIFACT-SET|sha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-contract.cjs|bytes=75803|lf=1499|cr=0|finalLf=true|sha256=9868b381d735b109519be63cddd62869e72cb3037489046a5ff8b7b037a31f57
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-npm-verifier.sh|bytes=17958|lf=414|cr=0|finalLf=true|sha256=af911c11d71dba90ab1a068475622bcab67d3dbe1897b25e0bd95f943ef1686b
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-shell-envelope.cjs|bytes=35536|lf=770|cr=0|finalLf=true|sha256=5359876b097d8cb05f07a9befd5d7d4e5e3612f363cb66700d09b18ae22679b1
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=adbf73addb943d9c7f7d6d4c3b75d4e9b42cac06358100cf03a0673e70d4792f
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-action-control.cjs|bytes=42066|lf=910|cr=0|finalLf=true|sha256=7b67d758468aabd11a6594d25aab0cdc6c77cd80c32144036265ae28408bdfa7
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-provider-projection.cjs|bytes=67106|lf=1525|cr=0|finalLf=true|sha256=c825826c3651369f94aff0bfb75de63a115b301077db8feb84aa88ad1364b358
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-authority-ops.cjs|bytes=11363|lf=262|cr=0|finalLf=true|sha256=89d2d34604f5a3df03f5161d6d024eba793fbf5b7145d26a3b9fe4e3f3d6102e
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-local-runner.ps1|bytes=51440|lf=1087|cr=0|finalLf=true|sha256=89c6887fa3e31b6885c3ec62e7d8c0796541f5292c387f12999473e963d90f02
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-postflight.cjs|bytes=17194|lf=398|cr=0|finalLf=true|sha256=b907741e922295012bc66cd54ed6c0d01cdc9e39982cec50acba352285295f08
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-cleanup.cjs|bytes=5313|lf=141|cr=0|finalLf=true|sha256=91e9d7ecbf5df1da46d2122a341a10c726974b7e7a25faed4a2a917e8b1f8294
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-support-self-test.cjs|bytes=40052|lf=843|cr=0|finalLf=true|sha256=3eb5499c80fd92b0f199f6d83083b7577ee257f36a0157fc1f3c20e39bd41862
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-verify-freeze.cjs|bytes=31193|lf=591|cr=0|finalLf=true|sha256=54e6711c8fa38cd95182d290bbf1f01a8d10ba0f1d23a6b8453548e3a8c34399
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-authority-binding.template.json|bytes=7134|lf=176|cr=0|finalLf=true|sha256=b0c64c20901ed5d67498d392e023475e480c6a1817b5755262a6339a027f6962
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-RUNBOOK.md|bytes=18634|lf=320|cr=0|finalLf=true|sha256=e26ba353e79a1fe07244211f17226ab6fde8d0dc22c48fa66475ba396b5a8886
+HL23-V4-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV4ProviderMutation=false
+HL23-V4-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V4-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V4-CONTINUATION-AUTHORITY|parent=43e99e686214a2f36f52ee7c426db2015d709bee|checklistId=RC-STG-006O23A|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V4-STATUS|authorityO23=UNCHECKED_PENDING_O23A|authorityO23A=UNCHECKED|v3PostPathPermanentlyBlocked=true|o23AcceptancePendingO23A=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|mandatoryStopBefore=RC-STG-006P23
+
+After publication and binding, the exact one-shot order is:
+
+1. Capture and validate purpose-built provider PRE reconciliation.
+2. Capture exactly five held PRE probes.
+3. Pass V4 preflight and durably arm/consume O23A once.
+4. Capture and seal one live-runtime npm `11.11.0` observation.
+5. Capture and validate provider POST reconciliation.
+6. Capture and seal one byte-exact inherited V3 `activation-post` observation.
+7. Capture exactly five held POST probes.
+8. Capture and validate provider FINAL topology bracket.
+9. Capture aggregate V4 postflight acceptance.
+10. Run zero-delete cleanup and stop before `RC-STG-006P23`.
+
+The npm observation must sample the actual exported live-runtime environment;
+injecting expected runtime values is forbidden. It is substitute evidence for
+the missing npm observation only and is explicitly not build-time npm proof.
+Provider request-log evidence accounts for the exact expected held `503` forms
+and never claims a generic zero-5xx result. V4 authorizes zero provider
+mutations, deploys, retries, rollbacks, database opens, semantic verification,
+backups, reopens, or production actions; the combined O23/O23A provider mutation
+total remains exactly one. O23 and O23A remain unchecked until aggregate
+postflight and zero-delete cleanup both pass, then a separate completion-evidence
+amendment must check them together. P23 and every later gate remain forbidden.
 
 ---
 
@@ -1780,15 +1868,16 @@ The canonical workspaces and stable release identities are:
 | Repository | Workspace | Branch | Release identity |
 | --- | --- | --- | --- |
 | Frontend | `E:\hundo-leago` | `codex/m7-26-completion` | Application F `4dfe12d1366314e3d9df722c50771324647743c9`; helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` |
-| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | Repository HEAD/`origin/staging` and current sole newest/`LIVE` Render deploy: abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb` / `dep-da6ghj67bikc738hbbv0` |
+| Backend | `E:\hundo-leago-backend` | `codex/m7-26-completion` | Repository HEAD/`origin/staging` and current sole newest/`LIVE` Render deploy: abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb` / activated deploy `dep-da7d857avr4c73bnna90` |
 
 Frontend HEAD and `origin/staging` may advance through later non-deployed docs-
 only evidence commits above helper commit `e898e722...`; those commits do not
 change sealed application F or helper bytes. Backend HEAD and `origin/staging`
 resolve exactly to committed abort-v2 B2; the backend worktree is clean.
-Render deploy `dep-da6ghj67bikc738hbbv0` is newest and `LIVE` on exact B2 after
-the complete held hosted/runtime and fresh-verifier gates passed; B-prime re-hold
-deploy `dep-da6cu8h42hec738f2al0` and controlled-unhold deploy
+Render deploy `dep-da7d857avr4c73bnna90` is newest and `LIVE` on exact B2 after
+the V3 one-key target handoff and complete hosted build/runtime gates passed;
+prior B2 deploy `dep-da6ghj67bikc738hbbv0`, B-prime re-hold deploy
+`dep-da6cu8h42hec738f2al0`, and controlled-unhold deploy
 `dep-da60sl0jo6nc73e0cfu0` are deactivated. B-prime remains historical
 diagnostic evidence only and grants no abort-v1 authority. The exact B2-pinned
 plan passed at `0/0`; the one published-authority first execute passed at
@@ -1797,8 +1886,9 @@ plan passed at `0/0`; the one published-authority first execute passed at
 rerun. The one-shot staging Netlify helper-retirement dispatch also ran and is
 consumed. Published incident amendment `0498fd4...`, refreshed provider
 postflight, corrected official HTTP proof, local postflight, and exact cleanup
-pass. Helper retirement is complete with no retry. Activation and every later
-action remain gated; Chrome disk/FD reproof remains pending.
+pass. Helper retirement is complete with no retry. V3 target activation action
+succeeded and consumed exactly one provider mutation; O23 acceptance and every
+later action remain gated behind O23A. Chrome disk/FD reproof remains pending.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -1853,7 +1943,10 @@ and maintenance-blocked ordinary-route gates. It later deactivated at safe
 handoff to exact-B2 deploy `dep-da6ghj67bikc738hbbv0`, whose hosted gate passed
 `443` suites / `3,519` tests / `3,519` pass with zero fail/cancel/skip/todo in
 `2962634.893743ms`; the B2 build/startup/zero-error/held-runtime and post-live
-source-family gates also passed. B2 is now sole newest/`LIVE`.
+source-family gates also passed. V3 later selected the verified target and
+returned exact-B2 deploy `dep-da7d857avr4c73bnna90`; all `443` suites / `3,519`
+tests passed again, its build/startup/log gates passed, and it is now sole
+newest/`LIVE`.
 
 Earlier milestone suites established characterization, read-only, security,
 authorization, league-isolation, migration, transaction, job, recovery,
@@ -1879,14 +1972,14 @@ The target topology and configuration are documented in
   `srv-d9eo2turnols73ekb830`, branch `staging`, with auto-deploy disabled;
 * separately attached disk `dsk-d9eo2u6rnols73ekb8t0`, mounted at
   `/opt/render/project/data`;
-* SQLite schema `54`; the earlier predecessor fixture-bearing source remains at
-  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
-  while newest `LIVE` deploy `dep-da6ghj67bikc738hbbv0` on exact B2 points
-  at the authoritative re-held source path
+* SQLite schema `54`; the predecessor source remains at
   `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`
-  whose pre-action postflight identity was `37744640` bytes / `b4163695...`;
-  exact current post-write identity is now bound by the passed B2 post-live and
-  fresh-verifier family evidence recorded above;
+  with main identity `37744640` bytes / `b4163695...`, while newest `LIVE` exact-
+  B2 deploy `dep-da7d857avr4c73bnna90` now points at the activated target
+  `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
+  with main identity `37105664` bytes / `cf3ca07d...` and canonical activation
+  receipt `4991` bytes / `24adf2d3...`; semantic target verification remains
+  deferred;
   backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` preserves its clean
   pre-fixture restore boundary;
 * staging-only users, leagues, secrets, storage paths, and
@@ -1912,9 +2005,11 @@ was later replaced by helper-retirement deploy `6a8e6c8fae36273a816a7539`. Exact
 controlled-unhold merge/deploy `dep-da60sl0jo6nc73e0cfu0` passed and is now
 deactivated. Phase one reached accepted/published state, but operator sequencing
 selected `STRICT_STOP`; phase two never began. Re-hold deploy
-`dep-da6cu8h42hec738f2al0` later handed off safely to current newest/`LIVE`
-exact-B2 deploy `dep-da6ghj67bikc738hbbv0`; held runtime and fresh verifier
-gates pass. Backup
+`dep-da6cu8h42hec738f2al0` handed off safely to B2 deploy
+`dep-da6ghj67bikc738hbbv0`, which V3 later replaced after the one successful
+target-path mutation. Current newest/`LIVE` exact-B2 deploy is
+`dep-da7d857avr4c73bnna90`. Hosted runtime gates pass; O23 acceptance awaits
+O23A. Backup
 `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` remains the verified clean restore
 boundary.
 
