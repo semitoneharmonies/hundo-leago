@@ -14,17 +14,17 @@ Use this document to understand:
 * what is planned but not yet implemented;
 * which areas require verification before the 2026–27 season.
 
-Last reviewed: **2026-08-24**
+Last reviewed: **2026-08-26**
 
 ---
 
-## Current Environment Matrix — 2026-08-24
+## Current Environment Matrix — 2026-08-26
 
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify still serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in unchanged current deploy `6a8c006abe46c8fb6269c40c`. Render's sole newest/`LIVE` deploy is API-triggered `dep-da6ghj67bikc738hbbv0` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; held B-prime deploy `dep-da6cu8h42hec738f2al0` deactivated at safe handoff | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold remains exact. B2 hosted/runtime, fresh verifier, exact abort-v2 plan, and the one published-authority first execute pass. The target and receipt are materialized and verified but inactive; `DATABASE_PATH` still names the preserved source. First-execute authority is consumed. The sole next authorized operation is one byte-identical `0/0` replay; all downstream recovery remains unauthorized pending accepted replay evidence and another amendment. |
-| Local/feature-branch candidate | Stable frontend release artifacts remain application F `4dfe12d1366314e3d9df722c50771324647743c9` and helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`. At execute capture, published frontend authority was exact `fd31b1f41b7c16521cf0eceb2c4af4a33a242636`; that did not change sealed F/helper bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | Exact B2 changes only the implementation and foundation-test files with SHA-256 `d49c870b...` / `3d9714ca...`, Git blobs `4a198c7...` / `53ce37c...`, numstat `369/18` / `830/2`, and `57541`-byte raw-diff SHA-256 `eb963d6b...`. Fresh release `HL-20260823-1` remains blocked. Plan `0/0` and first execute `replayed: false` / `0/2` pass; first execute cannot be rerun. Exactly one byte-identical `0/0` replay is next. No normal restore, helper/Netlify change, activation, backup, or production action is authorized by this snapshot. |
+| Isolated staging candidate | Netlify still serves sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9` plus helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` in unchanged current deploy `6a8c006abe46c8fb6269c40c`. Render's sole newest/`LIVE` deploy is API-triggered `dep-da6ghj67bikc738hbbv0` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; held B-prime deploy `dep-da6cu8h42hec738f2al0` deactivated at safe handoff | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold remains exact. B2 hosted/runtime, fresh verifier, abort-v2 plan, first execute, and the one byte-identical replay pass. The target and receipt are materialized and verified but inactive; `DATABASE_PATH` still names the preserved source. First-execute and replay authorities are consumed. Mandatory stop is active; all downstream recovery remains unauthorized pending another evidence-bound amendment. |
+| Local/feature-branch candidate | Stable frontend release artifacts remain application F `4dfe12d1366314e3d9df722c50771324647743c9` and helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e`. At replay capture, published frontend authority was exact `d29d3f113742401e72f71bbd0d055adc3d470154`; that did not change sealed F/helper bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | Exact B2 changes only the implementation and foundation-test files with SHA-256 `d49c870b...` / `3d9714ca...`, Git blobs `4a198c7...` / `53ce37c...`, numstat `369/18` / `830/2`, and `57541`-byte raw-diff SHA-256 `eb963d6b...`. Fresh release `HL-20260823-1` remains blocked. Plan `0/0`, first execute `replayed: false` / `0/2`, and replay `replayed: true` / `0/0` pass; neither execute authority may be rerun. No normal restore, helper/Netlify change, activation, backup, reopening/review, or production action is authorized by this snapshot. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -34,7 +34,7 @@ The fresh gate ledger is
 
 ---
 
-## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Abort-v2 First Execute Pass; Replay Next
+## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Abort-v2 Replay Pass; Mandatory Stop
 
 Grae requested and approved release `HL-20260823-1` at exact recorded time
 `2026-08-23T23:23:29.877Z`. The release binds frontend application build
@@ -198,15 +198,36 @@ make execution unambiguous.
 
 Envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`, probes
 `1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and metadata `5566` /
-`59cb7e89...` bind unchanged source family, byte-exact target/receipt, absent
-sidecars/journals/work, zero holders, full hold, and verified capture cleanup.
-First-execute authority is consumed and no rerun is authorized. Exactly one
-byte-identical replay is now authorized. Require `replayed: true`, `0/0`, the
-exact no-work object, no object/key/restore/write activity, unchanged source
-family, and byte-identical target/receipt. Capture native status and all output
-once; any ambiguity forbids retry. Checkpointing, source-sidecar removal, raw
-main-only copy, normal restore, helper/Netlify change, activation, later verification/
-backup, and production remain unauthorized.
+`59cb7e89...` preserve the first-execute evidence, including its unrepaired
+three-byte literal `0\n` wart.
+
+The one authorized replay is now `PASS / AUTHORITY CONSUMED / NO RERUN`.
+Action-preflight script/result `9561` / `2837` bytes (`7f9f378a...` /
+`b454c5a6...`) bound exact B2, `20` runtime keys, nine absent providers, three
+snapshots, and two ten-process/`92`-descriptor zero-denied/zero-holder scans.
+The same `969`-byte / `bad1c78f...` command dispatched once with native status
+`0`; wrapper/envelope are `4098` / `7349` (`95cf1aa5...` / `63e4e662...`),
+stdout `4905` / `65431c4c...`, stderr `0` / `e3b0c442...`, replay status `2`
+/ one LF / hex `30 0a` / `9a271f2a...`, and canonical result `3899` /
+`8b21edc8...`. Contract `2`, `replayed: true`, `0/0`, exact no-work object,
+unchanged source family, and byte-identical target/receipt pass.
+
+Postflight script/result `12559` / `3047` (`c2e034de...` / `07ad847d...`)
+passed three snapshots, five absences, and two ten-process/`92`-descriptor zero-
+denied/zero-holder scans. Probe result `995` / `a31a8877...` passed held
+`200/503`, `no-store`, and no-`Set-Cookie` boundaries. Render stayed sole-
+newest/`LIVE` exact-B2 `dep-da6ghj67bikc738hbbv0` with no newer/pending deploy,
+auto-deploy off, and zero error/`5xx` logs; Netlify stayed unchanged ready
+`6a8c006abe46c8fb6269c40c`, six headers/two redirects/zero functions. Cleanup
+script/result `11629` / `4023` (`9a908635...` / `67b1adbe...`) removed only the
+three captures and preserved protected files. Final metadata `6012` /
+`b2f706da...` records `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`.
+
+First-execute and replay authorities are consumed. Mandatory stop is active.
+Checkpointing, source-sidecar removal, raw main-only copy, normal restore,
+helper/Netlify change or retirement, activation, post-activation verifier/
+backup, reopening/final review, closeout, and production remain unauthorized
+pending another evidence-bound amendment.
 
 ---
 
@@ -1218,9 +1239,10 @@ deploy `dep-da6cu8h42hec738f2al0` and controlled-unhold deploy
 `dep-da60sl0jo6nc73e0cfu0` are deactivated. B-prime remains historical
 diagnostic evidence only and grants no abort-v1 authority. The exact B2-pinned
 plan passed at `0/0`; the one published-authority first execute passed at
-`replayed: false` / `0/2` and cannot be rerun. Exactly one byte-identical `0/0`
-replay is the sole next operation. Every downstream action remains gated pending
-frozen replay evidence and another amendment.
+`replayed: false` / `0/2`, and the one authorized replay passed at
+`replayed: true` / `0/0`. Both authorities are consumed and neither may be
+rerun. Mandatory stop is active. Every downstream action remains gated pending
+another evidence-bound amendment.
 
 On `2026-07-24`, the legacy `C:\Users\graem\Desktop\...` copies were compared
 with the canonical E-drive workspaces across 726 relevant non-generated files.
@@ -1429,12 +1451,12 @@ The current priority order is:
    one command `bad1c78f...`, native status `0`, `replayed: false`, `0/2`, exact
    target/receipt/family/work binding, postflight, held probes, cleanup, and the
    sealed unrepaired auxiliary `0\n` status defect. Never rerun first execute.
-7. Run exactly one byte-identical replay. Require unambiguous contract `2`,
-   `replayed: true`, `0/0`, no temporary/object/key/restore/write work, unchanged
-   source family, and byte-identical target/receipt. Capture native process
-   status and all evidence once. Any mismatch or ambiguity forbids retry and
-   returns to full-hold reconciliation. Keep every later recovery gate blocked
-   until accepted replay evidence is frozen in another amendment.
+7. Preserve the exact accepted replay evidence: one command `bad1c78f...`,
+   native status `0`, `replayed: true`, `0/0`, exact no-work object, unchanged
+   source/target/receipt, preflight/postflight/probe/provider/cleanup seals, and
+   final metadata `b2f706da...`. Replay authority is consumed; never rerun it.
+   Enforce mandatory stop and keep every later recovery gate blocked until a
+   separate evidence-bound amendment supplies exact authority.
 8. Close M7-26 only after this separately authorized strict release and all final
    staging gates pass. Keep production migration, reset, deployment, and
    first-write authority blocked until Grae separately approves exact scope.

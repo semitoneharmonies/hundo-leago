@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Run exactly one byte-identical abort-v2 replay using the accepted command, plan ID, and confirmation; require unambiguous contract v2, replayed true, 0/0, the exact no-work object, no object/key/restore/write activity, unchanged source family, and byte-identical target/receipt; stop after replay
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / PUBLISHED AUTHORITY fd31b1f FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED + NATIVE STATUS 0 UNAMBIGUOUS / ONE BYTE-IDENTICAL REPLAY AUTHORIZED NEXT / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Mandatory stop after accepted abort-v2 replay; preserve evidence and mint a separate evidence-bound amendment before any helper retirement, activation, post-activation verifier/backup, staging reopening/final review, or closeout
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED / REPLAY 8b21edc8 PASS + REPLAYED TRUE + 0/0 + AUTHORITY CONSUMED + NO RERUN / PREFLIGHT+POSTFLIGHT+PROBES+PROVIDER+CLEANUP+METADATA BOUND / MANDATORY STOP / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP+REOPENING+FINAL REVIEW PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1603,14 +1603,34 @@ Envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`, probes
 `1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and final metadata
 `5566` / `59cb7e89...` bind unchanged source family, exact target/receipt,
 sidecar/journal/work absence, zero holders, full hold, and capture cleanup.
-First execute cannot be rerun. The current run record authorizes exactly one
-byte-identical replay. Require unambiguous contract `2`, `replayed: true`,
-`0/0`, the exact no-work object, no temporary/object/key/restore/write activity,
-unchanged source family, and byte-identical target/receipt. Capture native status
-and complete evidence once; any mismatch or ambiguity forbids retry. Normal
-restore, phase two/retry, helper or Netlify change, activation, verifier,
-backup, final review, closeout, and production remain unauthorized; neither
-predecessor may be resumed or reused.
+First execute cannot be rerun. The one authorized replay is now `PASS /
+AUTHORITY CONSUMED / NO RERUN`. Action-preflight script/result are `9561` /
+`2837` bytes (`7f9f378a...` / `b454c5a6...`) and bound exact B2, `20` runtime
+keys, nine absent providers, three snapshots, and two ten-process/`92`-
+descriptor zero-denied/zero-holder scans. The same `969`-byte / `bad1c78f...`
+command dispatched once with native status `0`; wrapper/envelope are `4098` /
+`7349` (`95cf1aa5...` / `63e4e662...`), stdout `4905` / `65431c4c...`,
+stderr `0` / `e3b0c442...`, replay status `2` / one LF / hex `30 0a` /
+`9a271f2a...`, and canonical result `3899` / `8b21edc8...`. Contract `2`,
+`replayed: true`, `0/0`, exact no-work object, unchanged source family, and
+byte-identical target/receipt pass. The first-execute literal three-byte `0\n`
+wart stays sealed and unrepaired.
+
+Postflight script/result `12559` / `3047` (`c2e034de...` / `07ad847d...`)
+passed three snapshots, five absences, and two ten-process/`92`-descriptor zero-
+denied/zero-holder scans. Probes `995` / `a31a8877...` passed held `200/503`,
+`no-store`, and no-`Set-Cookie` boundaries. Render stayed sole-newest/`LIVE`
+exact-B2 `dep-da6ghj67bikc738hbbv0`, no newer/pending deploy, auto-deploy off,
+and zero error/`5xx` logs; Netlify stayed unchanged ready
+`6a8c006abe46c8fb6269c40c`, six headers/two redirects/zero functions. Cleanup
+script/result `11629` / `4023` (`9a908635...` / `67b1adbe...`) removed only the
+three captures and preserved protected files. Final metadata `6012` /
+`b2f706da...` records `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`.
+
+Mandatory stop is active. Normal restore, phase two/retry, helper or Netlify
+change/retirement, activation, post-activation verifier/backup, staging
+reopening/final review, closeout, and production remain unauthorized pending a
+later evidence-bound amendment; neither predecessor may be resumed or reused.
 
 ## Historical Milestone Evidence
 

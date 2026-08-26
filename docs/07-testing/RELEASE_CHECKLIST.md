@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; ONE BYTE-IDENTICAL REPLAY NEXT; DOWNSTREAM NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; MANDATORY STOP; DOWNSTREAM NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; ABORT-V2 FIRST EXECUTE PASS; REPLAY NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; ABORT-V2 REPLAY PASS; MANDATORY STOP)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -48,7 +48,9 @@ the pre-action fixture-bearing source at `37744640` bytes / SHA-256
 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
-is absent. Bound backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` has exact
+is materialized and verified at `37105664` bytes / SHA-256 `cf3ca07d...`; its
+inactive receipt is `4991` bytes / SHA-256 `24adf2d...`. Bound backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` has exact
 manifest and `.sqlite3.gz.enc` storage object under prefix
 `staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`,
 `createdAt` `2026-08-23T22:56:20.203Z`, encrypted SHA-256
@@ -208,22 +210,40 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   `5566` / `59cb7e89...` bind exact target/receipt, unchanged source family,
   sidecar/journal/work absence, zero holders, full hold, and capture removal.
   First-execute authority is consumed and cannot be rerun.
-- [ ] `RC-STG-006M23-REPLAY` `AUTHORIZED NEXT / PENDING EXECUTION`: run exactly
-  one byte-identical replay of the same command. Require unambiguous native
-  status and output, contract `2`, `replayed: true`, `0/0`, the exact six-field
-  no-work object, no object download/head, key resolution, restore, receipt/
-  target/source write, unchanged source family, and byte-identical target/
-  receipt. Capture the single replay robustly. Any nonzero, incomplete,
-  missing, ambiguous, disconnected, or mismatched result forbids retry and
-  returns to full-hold reconciliation. Stop after replay and freeze its evidence
-  before any downstream amendment. Historical first-execute status remains
-  immutable. For replay only, construct the auxiliary status with an actual LF:
-  hex `30 0a`, `2` bytes / `1` LF / `0` CR, base64 `MAo=`, and SHA-256
-  `9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`.
-  Any mismatch forbids retry, another replay, and cleanup and preserves all
-  evidence under the full hold.
+- [x] `RC-STG-006M23-REPLAY` `PASS / AUTHORITY CONSUMED / NO RERUN`: exact
+  action-preflight script/result are `9561` / `2837` bytes with SHA-256
+  `7f9f378a7bcce15deea7ab26d24f19fe2702ef78080bae45b8203186dd0227cf` /
+  `b454c5a6b8279d9d389a846f725e978638145524a7732a14ccf6236ac3660bec`.
+  They bound exact B2, `20` runtime keys, nine provider absences, three stable
+  snapshots, and two ten-process/`92`-descriptor zero-denied/zero-holder scans.
+  The same `969`-byte / `bad1c78f...` command dispatched exactly once; native
+  status was numeric `0`. Wrapper/envelope are `4098` / `7349` bytes with
+  SHA-256 `95cf1aa5...` / `63e4e662...`. Stdout is `4905` bytes / five LF /
+  `65431c4c...`; stderr is empty / `e3b0c442...`; replay status is exact
+  `2` bytes / one LF / hex `30 0a` / base64 `MAo=` / `9a271f2a...`.
+  Canonical result is `3899` bytes / `8b21edc8...` and passed
+  `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract `2`,
+  `replayed: true`, `0/0`, exact six-field no-work object, unchanged source
+  family, and byte-identical target/receipt. No object/key/restore/write work
+  occurred. The first-execute three-byte literal `0\n` wart remains sealed and
+  unrepaired.
+  Postflight script/result are `12559` / `3047` bytes with SHA-256
+  `c2e034de...` / `07ad847d...`; three snapshots, five absences, exact captures,
+  and two ten-process/`92`-descriptor zero-denied/zero-holder scans passed.
+  Anonymous probe result `995` bytes / `a31a8877...` returned live/ready `200`,
+  session/leagues/current-FAD `503 SERVICE_MAINTENANCE`, `no-store`, and no
+  `Set-Cookie`. Render remained sole-newest/`LIVE` exact-B2 deploy
+  `dep-da6ghj67bikc738hbbv0`, with no newer/pending deploy, auto-deploy off,
+  and zero error/`5xx` logs; Netlify remained unchanged ready deploy
+  `6a8c006abe46c8fb6269c40c`, six headers/two redirects/zero functions.
+  Cleanup script/result are `11629` / `4023` bytes with SHA-256
+  `9a908635...` / `67b1adbe...`; exact-path unlink removed only the three
+  captures and protected files stayed stable. Final metadata is `6012` bytes /
+  `b2f706da...`, code `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`. Replay
+  authority is consumed. Mandatory stop; no rerun.
 - [ ] `RC-STG-006N23` Post-abort helper retirement remains `PENDING AUTHORITY`.
-  It requires a separate amendment after replay evidence is bound.
+  Replay success grants no retirement authority; a separate amendment is
+  required after the mandatory stop.
 - [ ] `RC-STG-006O23` Post-abort target activation remains `PENDING AUTHORITY`.
   No `DATABASE_PATH` change is authorized by this checklist revision.
 - [ ] `RC-STG-006P23` Post-abort target verification, backup, final staging
@@ -1271,12 +1291,12 @@ construction/local verification, corrected helper publication/hosted proof,
 controlled-unhold runtime, partial phase one, and full re-hold pass. Exact
 abort-v2 B2 mint/publication, held deployment/runtime, and fresh verifier gates
 also pass. Operator sequencing strict-stopped the smoke; phase two and normal
-recovery are forbidden. The abort-v2 plan and one published-authority first
-execute passed. First-execute authority is consumed; the exact target/receipt
-remain inactive. Exactly one byte-identical `0/0` replay is
-`AUTHORIZED NEXT / PENDING EXECUTION`. Post-abort helper
-retirement, activation, verification, backup, and every later downstream step
-require a separate amendment.
+recovery are forbidden. The abort-v2 plan, one published-authority first
+execute, and the one authorized byte-identical replay passed. First-execute and
+replay authorities are consumed; the exact target/receipt remain inactive.
+Replay is `PASS / AUTHORITY CONSUMED / NO RERUN`, and mandatory stop is active.
+Post-abort helper retirement, activation, verification, backup, and every later
+downstream step require a separate evidence-bound amendment.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:

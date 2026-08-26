@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; ABORT-V2 FIRST EXECUTE PASS; REPLAY NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; ABORT-V2 REPLAY PASS; MANDATORY STOP)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -314,7 +314,9 @@ proved that same path was the authoritative pre-action fixture-bearing source at
 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
 Fresh target
 `/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
-is absent. Verified backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds exact
+is materialized and verified at `37105664` bytes / SHA-256 `cf3ca07d...`; its
+inactive receipt is `4991` bytes / SHA-256 `24adf2d...`. Verified backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds exact
 manifest and `.sqlite3.gz.enc` storage-object prefix
 `staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6`,
 `createdAt` `2026-08-23T22:56:20.203Z`, encrypted SHA-256
@@ -345,7 +347,8 @@ selected `STRICT_STOP`. Phase two and the complete T-131/T-132/T-140 comparator
 never began; no retry is allowed. Exact current evidence is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
-That ledger now supplies only abort-recovery authority. Exact re-hold deploy
+That ledger supplied the now-consumed abort-recovery authority and currently
+imposes mandatory stop with no downstream action authority. Exact re-hold deploy
 `dep-da6cu8h42hec738f2al0` became sole newest/`LIVE` on B-prime at that boundary
 after hosted `3,503/3,503`, build/startup, zero-error, health/readiness, and maintenance-
 blocked session/leagues/current-FAD gates passed; controlled-unhold deploy
@@ -428,16 +431,36 @@ Envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`, probes
 `1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and metadata `5566` /
 `59cb7e89...` bind the unchanged source family, byte-exact target/receipt,
 absent sidecars/journals/work, zero holders, full hold, and capture removal.
-First execute cannot be rerun. Exactly one byte-identical replay is now
-authorized. Require unambiguous contract `2`, `replayed: true`, `0/0`, the
-exact no-work object, no temporary/object/key/restore/write activity, unchanged
-source family, and byte-identical target/receipt. Capture native status and all
-evidence once; any mismatch or ambiguity forbids retry and returns to full-hold
-reconciliation. Stop after replay.
-Normal restore, phase two/retry, helper or Netlify change, checkpoint/sidecar
-removal, retirement, activation, later verifier/backup, reopening/review, and
-production require later authority. Historical `HL-20260822-1` values remain
-non-authoritative for this release.
+First execute cannot be rerun. The one authorized replay is now `PASS /
+AUTHORITY CONSUMED / NO RERUN`. Action-preflight script/result `9561` / `2837`
+bytes (`7f9f378a...` / `b454c5a6...`) bound exact B2, `20` runtime keys, nine
+absent providers, three snapshots, and two ten-process/`92`-descriptor zero-
+denied/zero-holder scans. The same `969`-byte / `bad1c78f...` command dispatched
+once with native status `0`; wrapper/envelope are `4098` / `7349`
+(`95cf1aa5...` / `63e4e662...`), stdout `4905` / `65431c4c...`, stderr `0` /
+`e3b0c442...`, replay status `2` / one LF / hex `30 0a` / `9a271f2a...`, and
+canonical result `3899` / `8b21edc8...`. Contract `2`, `replayed: true`,
+`0/0`, exact no-work object, unchanged source family, and byte-identical target/
+receipt pass. The historical first-execute three-byte literal `0\n` wart remains
+sealed and unrepaired.
+
+Postflight script/result `12559` / `3047` (`c2e034de...` / `07ad847d...`)
+passed three snapshots, five absences, and two ten-process/`92`-descriptor zero-
+denied/zero-holder scans. Probes `995` / `a31a8877...` passed live/ready `200`,
+session/leagues/current-FAD `503 SERVICE_MAINTENANCE`, `no-store`, and no
+`Set-Cookie`. Render stayed sole-newest/`LIVE` exact-B2
+`dep-da6ghj67bikc738hbbv0`, no newer/pending deploy, auto-deploy off, and zero
+error/`5xx` logs; Netlify stayed unchanged ready
+`6a8c006abe46c8fb6269c40c`, six headers/two redirects/zero functions. Cleanup
+script/result `11629` / `4023` (`9a908635...` / `67b1adbe...`) removed only the
+three captures and preserved protected files. Final metadata `6012` /
+`b2f706da...` records `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`.
+
+Mandatory stop is active. Normal restore, phase two/retry, helper or Netlify
+change/retirement, checkpoint/sidecar removal, activation, post-activation
+verifier/backup, staging reopening/final review, closeout, and production
+require later evidence-bound authority. Historical `HL-20260822-1` values
+remain non-authoritative for this release.
 
 ---
 

@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; ONE BYTE-IDENTICAL REPLAY NEXT; DOWNSTREAM NOT AUTHORIZED`
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; MANDATORY STOP; DOWNSTREAM NOT AUTHORIZED`
 
 ## Work Plan ID
 
@@ -21,7 +21,7 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Abort-v2 First Execute Pass; Replay Next
+## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; Abort-v2 Replay Pass; Mandatory Stop
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
@@ -127,7 +127,9 @@ Netlify, `DATABASE_PATH`, backup, or production change occurred.
 
 ### Current abort-only handoff
 
-Only the current 2026-08-23 run record supplies operational authority. The old
+Only the current 2026-08-23 run record can supply operational authority; after
+the accepted replay it currently imposes mandatory stop and authorizes no
+downstream action. The old
 `pre-abort-source-verifier.sh` (`18060` bytes / `9c323005...`) ran and safely
 failed `TARGET_FAMILY_OR_SIDECAR_PRESENT`: the target family, receipt, and work
 were absent, while the authoritative source WAL/SHM were nonempty. That bundled
@@ -228,23 +230,36 @@ mode-`0600` target/receipt, absent sidecars/journals/work, zero holders, full
 hold, and verified remote-capture removal. First-execute authority is consumed
 and cannot be rerun or repaired.
 
-The authorized pending order is now exact and shorter:
+The one authorized replay is now `PASS / AUTHORITY CONSUMED / NO RERUN`.
+Action-preflight script/result `9561` / `2837` bytes (`7f9f378a...` /
+`b454c5a6...`) bound exact B2, `20` runtime keys, nine absent providers, three
+snapshots, and two ten-process/`92`-descriptor zero-denied/zero-holder scans.
+The same `969`-byte / `bad1c78f...` command dispatched once with native status
+`0`; wrapper/envelope are `4098` / `7349` (`95cf1aa5...` / `63e4e662...`),
+stdout `4905` / `65431c4c...`, stderr `0` / `e3b0c442...`, replay status `2`
+/ one LF / hex `30 0a` / base64 `MAo=` / `9a271f2a...`, and canonical result
+`3899` / `8b21edc8...`. Result code
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract `2`,
+`replayed: true`, `0/0`, exact six-field no-work object, unchanged source
+family, and byte-identical target/receipt pass. The historical first-execute
+three-byte literal `0\n` wart remains sealed and unrepaired.
 
-1. Run exactly one byte-identical replay of the same command. Require
-   `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract version `2`,
-   `replayed: true`, database/filesystem mutation counts `0/0`, the exact six-
-   field no-work object, no object download/head, key resolution, restore,
-   receipt/target/source write, unchanged source family, and byte-identical
-   target/receipt.
-2. Capture native numeric process status, complete stdout/stderr/result, and a
-   fresh read-only postflight once. Any nonzero, incomplete, missing,
-   disconnected, ambiguous, or mismatched result forbids retry and returns to
-   full-hold reconciliation. Stop after replay and freeze its evidence into a
-   later active-ledger amendment before any downstream action.
+Postflight script/result `12559` / `3047` (`c2e034de...` / `07ad847d...`)
+passed three snapshots, five absences, and two ten-process/`92`-descriptor zero-
+denied/zero-holder scans. Probe result `995` / `a31a8877...` passed held
+live/ready `200`, session/leagues/current-FAD `503 SERVICE_MAINTENANCE`,
+`no-store`, and no `Set-Cookie`. Render stayed sole-newest/`LIVE` exact-B2
+`dep-da6ghj67bikc738hbbv0`, no newer/pending deploy, auto-deploy off, and zero
+error/`5xx` logs; Netlify stayed unchanged ready
+`6a8c006abe46c8fb6269c40c`, six headers/two redirects/zero functions. Cleanup
+script/result `11629` / `4023` (`9a908635...` / `67b1adbe...`) removed exactly
+the three byte-pinned captures and protected files stayed stable. Final metadata
+`6012` / `b2f706da...` records `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`.
 
-Phase two, retry, normal restore, helper/Netlify change, post-abort retirement,
-activation, verifier, backup, final review, closeout, and production remain
-unauthorized pending later evidence-bound amendments.
+Mandatory stop is active. Phase two, retry, normal restore, helper/Netlify
+change or post-abort retirement, activation, post-activation verifier/backup,
+staging reopening/final review, closeout, and production remain unauthorized
+pending later evidence-bound amendments.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
 
@@ -1389,11 +1404,12 @@ controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification
 passed. Phase one reached accepted/published state with `fresh 2` / `replay 0`,
 but phase two never began. Full re-hold, abort-v2 B2 mint/publication, the held
 B2 deployment/runtime gate, and the fresh B2-pinned verifier now pass. The exact
-abort-v2 plan and its one published-authority first execute also pass. The
-first-execute result is accepted at `replayed: false` / `0/2`, and its authority
-is consumed. Exactly one byte-identical `0/0` replay is the sole next operation;
-every post-abort gate awaits frozen accepted replay evidence and a separate
-amendment. Normal recovery remains forbidden.
+abort-v2 plan, its one published-authority first execute, and its one authorized
+byte-identical replay pass. The first-execute result is accepted at
+`replayed: false` / `0/2`; replay is accepted at `replayed: true` / `0/0`.
+Both authorities are consumed and neither may be rerun. Mandatory stop is
+active; every post-abort gate awaits a separate evidence-bound amendment.
+Normal recovery remains forbidden.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

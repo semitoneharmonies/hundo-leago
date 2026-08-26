@@ -1244,7 +1244,7 @@ mismatch or unexpected path also failed closed. That rule does not authorize a
 new invocation or resumption of `HL-20260822-1` now that abort materialization
 and exact replay are complete.
 
-#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; abort-v2 first execute pass; replay next
+#### HL-20260823-1 fresh strict release binding - phase one published; strict stop; abort-v2 replay pass; mandatory stop
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds F
@@ -1447,28 +1447,42 @@ The deterministic work path remains exactly
 `/opt/render/project/data/hundo-staging/sqlite/.hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3.strict-restore-work-v1`.
 The accepted plan and consumed first execute required performed/materialized
 `true`, retained `false`, cleanup `verified`, and fail-closed abrupt recovery.
-The currently authorized replay's exact no-work object requires performed/
-materialized `false`, retained `false`, cleanup `not-needed`, and the same
-fail-closed value. It must use the exact same `969`-byte command, return
-contract `2`, `replayed: true`, and `0/0`, retain byte-identical target/receipt
-and unchanged source family, and perform no temporary work, object download/
-head, key resolution, restore, receipt write, target write, or source write.
-Capture native numeric status and complete output once. Any nonzero, incomplete,
-disconnected, ambiguous, or mismatched result stops and forbids retry. Historical
-first-execute status remains immutable. For replay only, construct the auxiliary
-status with an actual LF: hex `30 0a`, `2` bytes / `1` LF / `0` CR, base64
-`MAo=`, and SHA-256
-`9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`.
-Any mismatch forbids retry, another replay, and cleanup and preserves all
-evidence under the full hold.
+The one authorized replay is now `PASS / AUTHORITY CONSUMED / NO RERUN` and
+returned performed/materialized `false`, retained `false`, cleanup
+`not-needed`, and the same fail-closed abrupt-recovery value.
 
-Exactly one byte-identical replay is authorized by this amendment; first execute
-cannot be rerun. Stop after replay and freeze its evidence before any later
-authority. Phase two, normal restore, helper or Netlify change,
-checkpoint, source-sidecar removal,
-`DATABASE_PATH` activation, later
-target verification/backup, reopening, final review, closeout, and production
-remain unauthorized pending a later evidence-bound amendment.
+Action-preflight script/result `9561` / `2837` bytes (`7f9f378a...` /
+`b454c5a6...`) bound exact B2, `20` runtime keys, nine absent providers, three
+snapshots, and two ten-process/`92`-descriptor zero-denied/zero-holder scans.
+The same `969`-byte / `bad1c78f...` command dispatched once with native status
+`0`; wrapper/envelope are `4098` / `7349` (`95cf1aa5...` / `63e4e662...`),
+stdout `4905` / `65431c4c...`, stderr `0` / `e3b0c442...`, replay status `2`
+/ one LF / hex `30 0a` / base64 `MAo=` / `9a271f2a...`, and canonical result
+`3899` / `8b21edc8...`. Contract `2`, `replayed: true`, `0/0`, the exact no-work
+object, unchanged source family, and byte-identical target/receipt pass; no
+temporary/object/key/restore/write activity occurred. Historical first-execute
+status remains the sealed, unrepaired literal three-byte `0\n` wart.
+
+Postflight script/result `12559` / `3047` (`c2e034de...` / `07ad847d...`)
+passed three snapshots, five absences, and two ten-process/`92`-descriptor zero-
+denied/zero-holder scans. Probes `995` / `a31a8877...` passed live/ready `200`,
+session/leagues/current-FAD `503 SERVICE_MAINTENANCE`, `no-store`, and no
+`Set-Cookie`. Render stayed sole-newest/`LIVE` exact-B2
+`dep-da6ghj67bikc738hbbv0`, no newer/pending deploy, auto-deploy off, and zero
+error/`5xx` logs; Netlify stayed unchanged ready
+`6a8c006abe46c8fb6269c40c`, six headers/two redirects/zero functions. Cleanup
+script/result `11629` / `4023` (`9a908635...` / `67b1adbe...`) removed only the
+three byte-pinned remote captures via exact-path unlink and protected files
+stayed stable. Final metadata `6012` / `b2f706da...` records
+`HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE` at
+`2026-08-26T01:57:14.3214070Z`.
+
+First-execute and replay authorities are consumed and neither may be rerun.
+Mandatory stop is active. Phase two, normal restore, helper or Netlify change/
+retirement, checkpoint, source-sidecar removal, `DATABASE_PATH` activation,
+post-activation target verification/backup, staging reopening/final review,
+closeout, and production remain unauthorized pending a later evidence-bound
+amendment.
 
 #### HL-20260822-1 pre-action abort-recovery record
 
