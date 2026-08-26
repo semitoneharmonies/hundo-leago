@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Mandatory stop after accepted abort-v2 replay; preserve evidence and mint a separate evidence-bound amendment before any helper retirement, activation, post-activation verifier/backup, staging reopening/final review, or closeout
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED / REPLAY 8b21edc8 PASS + REPLAYED TRUE + 0/0 + AUTHORITY CONSUMED + NO RERUN / PREFLIGHT+POSTFLIGHT+PROBES+PROVIDER+CLEANUP+METADATA BOUND / MANDATORY STOP / CHECKPOINT+SIDECAR REMOVAL+NORMAL RESTORE+PHASE TWO FORBIDDEN / POST-ABORT RETIREMENT+ACTIVATION+VERIFICATION+BACKUP+REOPENING+FINAL REVIEW PENDING SEPARATE AMENDMENT / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Run exactly one evidence-bound staging Netlify CLI helper-retirement publication from the sealed original-dist and five-header baseline config; require current-helper/no-Git-linkage/full-hold/target-inactive preflight, no blind retry, 64/64 byte + 8/8 header + 10/10 retired-path postflight, then mandatory stop
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED / REPLAY 8b21edc8 PASS + REPLAYED TRUE + 0/0 + AUTHORITY CONSUMED + NO RERUN / REPLAY EVIDENCE COMMIT 296CD690 PUBLISHED / HELPER RETIREMENT RC-STG-006N23 AUTHORIZED NEXT + PENDING EXECUTION / ONE-SHOT CLI + NO BLIND RETRY / ACTIVATION+VERIFICATION+BACKUP+REOPENING+FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1627,10 +1627,140 @@ script/result `11629` / `4023` (`9a908635...` / `67b1adbe...`) removed only the
 three captures and preserved protected files. Final metadata `6012` /
 `b2f706da...` records `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`.
 
-Mandatory stop is active. Normal restore, phase two/retry, helper or Netlify
-change/retirement, activation, post-activation verifier/backup, staging
-reopening/final review, closeout, and production remain unauthorized pending a
-later evidence-bound amendment; neither predecessor may be resumed or reused.
+Separate helper-retirement-only authority is based on published replay-evidence
+commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`. Exactly one future staging
+Netlify CLI publication is `AUTHORIZED NEXT / PENDING EXECUTION`: site
+`95af8aa7-0b13-4954-af6d-855762acb147`, current helper deploy
+`6a8c006abe46c8fb6269c40c`, title
+`HL-20260823-1-abort-v2-retire-helper-baseline`, immutable `33` files /
+`1932120` bytes / `2d8069ca1aa61e02b5be14b09b97ded73b8363ae5e699c0e712f32026903ae6c`,
+and baseline config `1664` bytes /
+`7720d21350b54735e11c86fd6fd4282887c7ce6e92b7d33ce9fdf788f66db422`
+with five headers.
+
+A new ignored, local-only preflight must be authored, frozen, and cold-audited
+before dispatch. It must verify original-dist and frozen source config
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-control\netlify.toml`,
+prove plain non-reparse `E:\Codex` exists, and prove `E:\Codex\temp` absent. The
+tracked helper-era verifier is not authority for this no-tracked-edit path.
+
+The wrapper exclusively creates owned `E:\Codex\temp`, runtime control
+`E:\Codex\temp\HL-20260823-1-helper-retirement-control-v1`, and separate profile
+`E:\Codex\temp\HL-20260823-1-helper-retirement-profile-v1`; each owner SID must
+equal the wrapper process user SID. The external control contains only the exact
+copied `1664`-byte / `37`-LF / zero-CR / five-header /
+`7720d21350b54735e11c86fd6fd4282887c7ce6e92b7d33ce9fdf788f66db422`
+regular `netlify.toml`, with all six CLI function/edge scan paths absent.
+
+The shell-free action uses only portable Node `24.14.1`
+`E:\hundo-leago\.tools\node-v24.14.1-win-x64\node.exe` (`91426304` bytes /
+`58e74bf02fc5bbacc41dcb8bef089961cd5bddd37830b87784e4fc624d145d1f`) to run
+Netlify CLI `27.0.0`
+`C:\Users\graem\AppData\Roaming\npm\node_modules\netlify-cli\bin\run.js`
+directly. Exact package/run seals are
+`b5f0e60f06b774e0d087c735557e19f47ec25c56e9d5695b045f28a188e56156`
+(`7358`) and
+`e39432e46703049b6769e17c0a7a8f1748c345100a1f934d8a6c7076001d426c`
+(`2800`); npm/npx/PATH resolution, `--cwd`, and an empty `.git` sentinel are
+forbidden. CLI deploy exposes no `--config`; physical/logical cwd and both config
+and repository-root discovery must resolve to the exact external control.
+
+Bind `HOME`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `TEMP`, `TMP`,
+`XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, and
+`XDG_RUNTIME_DIR` to exact fresh E-scoped runtime profile
+`E:\Codex\temp\HL-20260823-1-helper-retirement-profile-v1`,
+set `CI=1`, and keep
+`NETLIFY_AUTH_TOKEN` child-environment/in-memory only. Exact argv is
+`deploy --site 95af8aa7-0b13-4954-af6d-855762acb147 --dir E:\hundo-leago\.netlify\strict-release-HL-20260823-1\original-dist --no-build --skip-functions-cache --prod --message HL-20260823-1-abort-v2-retire-helper-baseline --json`.
+Exact repo-ignored capture root
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-captures`
+must be exclusively acquired as the one-shot dispatch lock; residue consumes
+authority and forbids retry.
+
+The helper-retirement action preflight process environment has exactly the eight
+keys `SystemRoot,WINDIR,ComSpec,PATHEXT,PATH,CI,NO_COLOR,NO_UPDATE_NOTIFIER`.
+`SystemRoot`, `WINDIR`, `ComSpec`, and `PATHEXT` are copied exactly from the
+wrapper process, with respective fallbacks `C:\Windows`, `C:\Windows`,
+`C:\Windows\System32\cmd.exe`, and `.COM;.EXE;.BAT;.CMD`; `PATH` is exactly
+`C:\Program Files\Git\cmd;C:\Windows\System32;C:\Windows`, and the constants are
+`CI=1`, `NO_COLOR=1`, and `NO_UPDATE_NOTIFIER=1`. The deploy child environment
+has exactly the 22 keys
+`SystemRoot,WINDIR,ComSpec,PATHEXT,PATH,CI,NO_COLOR,TERM,NETLIFY_TELEMETRY_DISABLED,NO_UPDATE_NOTIFIER,NETLIFY_AUTH_TOKEN,HOME,USERPROFILE,APPDATA,LOCALAPPDATA,TEMP,TMP,XDG_CONFIG_HOME,XDG_CACHE_HOME,XDG_DATA_HOME,XDG_STATE_HOME,XDG_RUNTIME_DIR`.
+Its five system/path values are byte-identical to preflight; its constants are
+`CI=1`, `NO_COLOR=1`, `TERM=dumb`, `NETLIFY_TELEMETRY_DISABLED=1`, and
+`NO_UPDATE_NOTIFIER=1`. All eleven of `HOME`, `USERPROFILE`, `APPDATA`,
+`LOCALAPPDATA`, `TEMP`, `TMP`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`,
+`XDG_DATA_HOME`, `XDG_STATE_HOME`, and `XDG_RUNTIME_DIR` equal exact external
+profile `E:\Codex\temp\HL-20260823-1-helper-retirement-profile-v1`.
+`NETLIFY_AUTH_TOKEN` is memory-only in that exact child environment; every
+unlisted variable is absent.
+
+Persisted provider evidence is an allowlisted projection only; persisting raw
+`getSite` or any other raw provider payload is forbidden. Both phases have
+the exact top-level key set
+`code,observedAt,releaseId,frontendAuthorityCommit,netlify,render,safety`.
+PRE `netlify` keys are exactly
+`siteId,siteName,canonicalOrigin,netlifyOrigin,currentDeployId,currentDeployTitle,currentDeployState,currentDeployPublishedAt,currentDeployOrigin,currentIsNewest,noPendingDeploy,headers,redirects,functions,edgeFunctions,buildSettings,automaticPublishFence,retirementTitleAbsent,activeDeployCount,inspectedDeployCount,newestFirst`;
+POST `netlify` keys are exactly
+`siteId,siteName,canonicalOrigin,netlifyOrigin,currentDeployId,currentDeployTitle,currentDeployState,currentDeployPublishedAt,currentDeployOrigin,currentIsNewest,noPendingDeploy,previousHelperDeployId,previousHelperNoLongerCurrent,retirementTitleMatchCount,activeDeployCount,headers,redirects,functions,edgeFunctions,buildSettings,automaticPublishFence,deployMethod,inspectedDeployCount,newestFirst`.
+Both `render` projections have exactly
+`workspaceId,serviceId,deployId,commit,state,soleNewestLive,noNewerOrPendingDeploy,autoDeploy,autoDeployTrigger,maintenanceHold,databasePath,targetInactive,applicationErrorLogs,request5xxLogs`.
+PRE `safety` keys are exactly
+`fullHold,replayAuthorityConsumed,replayRerunAuthorized,normalRestoreAuthorized,activationAuthorized,backupAuthorized,stagingReopenAuthorized,productionAuthorized`;
+POST `safety` keys are exactly
+`fullHold,helperRetirementComplete,replayAuthorityConsumed,replayRerunAuthorized,normalRestoreAuthorized,activationAuthorized,backupAuthorized,stagingReopenAuthorized,productionAuthorized`.
+PRE must prove `currentIsNewest=true`, `noPendingDeploy=true`,
+`retirementTitleAbsent=true`, `activeDeployCount=0`, `inspectedDeployCount=50`,
+and `newestFirst=true`. POST must prove `currentIsNewest=true`,
+`noPendingDeploy=true`, `previousHelperDeployId=6a8c006abe46c8fb6269c40c`,
+`previousHelperNoLongerCurrent=true`, `retirementTitleMatchCount=1`,
+`activeDeployCount=0`, `inspectedDeployCount=50`, `newestFirst=true`, and
+`deployMethod=manual-cli`. PRE safety has `fullHold=true` and
+`replayAuthorityConsumed=true`; every authorization field is false. POST adds
+`helperRetirementComplete=true` and leaves those safety values unchanged.
+
+The exact ordered HTTP `8/8` matrix is the canonical origin
+`https://staging.hundoleago.com` followed by the new immutable origin
+`https://<deployId>--hundoleago-staging.netlify.app`, each in path order `/`,
+`/index.html`, `/assets/index-BFtuYVmF.js`, and
+`/leagues/60c82aa0-54f9-4c93-83f5-73b0d6d6f63e`. Every response is `200` and
+has no `Set-Cookie`; `/`, `/index.html`, and the league path have exact
+`Cache-Control: no-store`, while the asset has exact
+`Cache-Control: public, max-age=31536000, immutable`. Every response must carry
+the exact seven-header map whose canonical SHA-256 is
+`a1ade439bda16fafea1afdd1360bb9ec906e598fc48ca989b7b5ffc6c3af0245`:
+`content-security-policy=default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://api-staging.hundoleago.com https://hundo-leago-backend-staging.onrender.com https://api.hundoleago.com https://hundo-leago-backend.onrender.com; media-src 'self' data: blob:; connect-src 'self' https://api-staging.hundoleago.com wss://api-staging.hundoleago.com https://hundo-leago-backend-staging.onrender.com wss://hundo-leago-backend-staging.onrender.com https://api.hundoleago.com wss://api.hundoleago.com https://hundo-leago-backend.onrender.com wss://hundo-leago-backend.onrender.com; worker-src 'self' blob:; upgrade-insecure-requests`,
+`cross-origin-opener-policy=same-origin`,
+`cross-origin-resource-policy=same-origin`,
+`permissions-policy=camera=(), display-capture=(), geolocation=(), microphone=(), payment=(), usb=()`,
+`referrer-policy=strict-origin-when-cross-origin`,
+`x-content-type-options=nosniff`, and `x-frame-options=DENY`.
+
+The action gate also binds a fresh held-probe matrix under
+`https://api-staging.hundoleago.com`: `/api/v1/health/live` and
+`/api/v1/health/ready` each return `200` with exact body `{"status":"ok"}`;
+`/api/v1/session`, `/api/v1/leagues`, and
+`/api/v1/leagues/60c82aa0-54f9-4c93-83f5-73b0d6d6f63e/free-agent-draft/f47032fd-57a2-443b-89a6-ce32894f2fc1`
+each return `503` with exact body
+`{"error":{"code":"SERVICE_MAINTENANCE","message":"Service is temporarily unavailable."}}`.
+All five have a `Content-Type` whose media type begins `application/json`, exact
+`Cache-Control: no-store`, and no `Set-Cookie`.
+
+Before and after, require exact empty Netlify `build_settings: {}`; repo URL/
+branch, build command, publish directory, and `stop_builds` absent or null;
+unchanged full hold; source `DATABASE_PATH`; and inactive target/receipt. One
+dispatch consumes authority; no blind retry. Require one new current/ready CLI
+deploy with five headers/two redirects/zero functions/zero edge functions plus
+`64/64` bytes, `8/8` headers, and `10/10` retired paths across both origins,
+then mandatory stop.
+Only after provider/HTTP/capture/postflight evidence is accepted may exact-path
+cleanup remove the external control/profile and then owned `E:\Codex\temp` only
+if empty; source config, original-dist, captures, and evidence stay preserved.
+Render/environment/database, tracked `netlify.toml`, helper source,
+original-dist, activation, post-activation
+verifier/backup, staging
+reopening/final review, browser, closeout, and production remain unauthorized;
+neither predecessor may be resumed or reused.
 
 ## Historical Milestone Evidence
 
