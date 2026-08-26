@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER RETIREMENT PASS + AUTHORITY CONSUMED; LATER GATES NOT AUTHORIZED)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER RETIREMENT PASS; O23 HELD TARGET HANDOFF AUTHORIZED NEXT; P23 AND LATER GATES NOT AUTHORIZED)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -644,8 +644,9 @@ removal, or change is accepted.
 Only after this nine-document amendment is published may the release obtain a
 fresh provider projection, exactly one corrected network-read-only HTTP-verifier result capture,
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
-grants no retry. Activation, backup, reopening/review, browser, closeout, and
-production remain forbidden; Chrome disk/FD reproof remains pending.
+grants no retry. Under that N23 continuation authority, activation, backup,
+reopening/review, browser, closeout, and production were forbidden; Chrome
+disk/FD reproof remained pending.
 
 ### 2026-08-26 Helper-Retirement Completion
 
@@ -667,6 +668,91 @@ empty temp parent and preserved baseline/captures/evidence. The false-negative
 and reconstructed chronology plus current kit pins remain preserved. Helper
 retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. Mandatory stop; Chrome
 disk/FD reproof is pending and later data/browser/production gates are forbidden.
+
+### RC-STG-006O23 Held Target-Handoff Endpoint Boundary
+
+This exact nine-document amendment, based on frontend commit
+`a0da13a5a6a1c1edb352aa1b606d0d3b97aec020`, authorizes only unchecked O23
+after its direct-child docs-only commit is published as frontend HEAD/
+`origin/staging`; backend HEAD/`origin/staging` must remain clean at exact B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`.
+
+Frozen ignored pins are manifest
+`7290/203/0d3c5f2e1500b239efcf086818f6446ed31ab25f830ea951bacb4a5f8fc582af`
+(bytes/LF/SHA-256; zero CR/final LF), artifact-set SHA-256
+`0ef3f7d87792727d321f938efd41ef5bf637f61fe155e64770a9b4e7bf556ee0`,
+and all exact manifest rows: contract
+`39951/818/c9a4d008777eff6e0a270347f8eaa0508b97b6001f71c979dbbbc5aba2895fd1`;
+held verifier `26170/636/4b72a3eb494a52b1de8628571f6b1fc65355dbeb5f554f2f313bc847fa44ecad`;
+shell envelope `14882/330/f12d6952e79f0251e1de5858d207353c451ec0ab6db2ea9fd83bf1826d6baeaa`;
+held probes `4878/145/bd9e57a973987ccd4a660730fd61927cbab58beb9e6fa9cccac41113fabf7a58`;
+action control `27138/611/5e36b6eb699ac4e2beb711808a1c144cd904e1fa6c0ec1ab9e3b21a4ec3c1e50`;
+postflight `12157/279/61c277ba79e2f58601f437862066fee39c96ae1167bde6b1739a79a113915c23`;
+cleanup `9035/192/8819988c5254699280327cb9658c0a89b5adeb249d3794758a401a705c63c4fb`;
+self-test `22738/594/af04ef693784b9a9fc9164455ba6c240b4678080c88fc3305aa60524d3ba6fe8`;
+freeze verifier `15243/315/c808cb33199957df8cef5bb966da4dd7789694930ca66f1d13e78fcf8f388a78`;
+binding template `1718/46/bb505cb585e7cce1728fa6c90f10be26673d45febee018f318ae65f20f01b5bf`;
+runbook `9000/148/e398b0299cf20fc8058dfdabbb13e5c978ff170aba7d6946c097e6229fbb8355`.
+All rows are bytes/LF/SHA-256, zero CR/final LF. Cold audit independently
+passed all 11 pins, 8 JS syntax files, `bash -n`, `10+` positive/15 negative
+fixtures, 19 guards, and 18 forbidden-operation absences.
+Manifest false activity fields are scoped to support-kit authoring/local tests;
+its pre-publication runtime, critical-delta, semantic, and backup fields say
+required/currently false or deferred, not already passed.
+The pinned `26170`-byte held verifier is the required new abort-v2/main-WAL-
+aware boundary verifier; no predecessor verifier may be reused.
+
+PRE/POST shell phases are raw endpoint/runtime boundary proof, not semantic DB
+verification. After the published commit is bound separately, fresh shells must
+set `HISTFILE=/dev/null`, disable and clear history, and stream the exact payload
+only through stdin:
+`bash -s -- pre-boundary dep-da6ghj67bikc738hbbv0`, then
+`bash -s -- activation-post dep-<new>`. No remote verifier file, SQLite module or
+open, project database module, copy, checkpoint, sidecar removal, scratch, or
+write is allowed. Each raw phase proves exact B2/Git, critical `20+9`, full
+source main/WAL/SHM + target + canonical receipt, five absences, four stable
+boundaries, two complete zero-holder scans, and full hold. PRE requires source
+runtime path; POST requires target runtime path and only the critical
+`DATABASE_PATH` delta while the selected target remains unopened and all five
+absences plus both zero-denied/zero-holder scans remain exact. Device is namespace-local and checked only for internal
+consistency; durable identity/hash fields must stay exact. Raw output must state
+`externalAuthorityBindingRequired=true`,
+`externalAuthorityBindingVerifiedByVerifier=false`,
+`standaloneAcceptanceAuthorized=false`, and
+`verifierGrantsMutationAuthority=false`. Local envelopes bind authority,
+payload/invocation/result hashes before marking phase authorization.
+
+Five fresh anonymous probes in each phase require live/ready `200` and session/
+leagues/current-FAD `503 SERVICE_MAINTENANCE`, all JSON/no-store/no-cookie, with
+no writes. A readiness `200` proves only the held listener, not SQLite readiness.
+Provider evidence proves deploy/build/service/log facts, not source/target
+environment values, target inactivity, or hold; it must say
+`providerEnvironmentReadAvailable:false`.
+
+The exact requested mutation is one
+`mcp__render__update_environment_variables` call, canonical `247` bytes /
+SHA-256 `464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`,
+`replace:false`, workspace `tea-d4prbj7diees738tmg90`, service
+`srv-d9eo2turnols73ekb830`, and target `DATABASE_PATH` value SHA-256
+`4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`.
+The source value SHA-256 is
+`50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3`.
+Durable tombstone
+`target-activation-captures/hl-20260823-1-<authority16>-464f2e4805c79aef/`
+consumes authority before dispatch. No `trigger_deploy`, retry, raw provider
+payload, or unapproved inverse rollback. Complete cursor-closed PRE/POST deploy
+ID sets must differ by exactly one new sole-newest/`LIVE` API B2 deploy, prior
+deploy deactivated and no competitor; hosted Node/npm `24.14.1/11.11.0`,
+`443/3519`, and complete clean build/runtime log windows must pass.
+
+Combined acceptance requires `runtimeDatabasePathVerified=true`,
+`criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`; cleanup deletes nothing. Then
+stop. `RC-STG-006P23` later and separately owns private-copy target integrity/
+FK/schema/migration/rotation, zero-session and zero fixture/manager/outbox
+semantic proof, plus backup. Reopening/review, normal restore, rollback, closeout, browser
+workflow, production, and a second provider update remain forbidden.
 
 ---
 

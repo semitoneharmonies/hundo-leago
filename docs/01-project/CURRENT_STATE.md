@@ -23,8 +23,8 @@ Last reviewed: **2026-08-26**
 | Environment | Deployed or checked-in authority | Persistence, identity, and release state |
 | --- | --- | --- |
 | Legacy production | The existing frontend and backend `main` deployments; neither M7-26 candidate is deployed there | File-backed JSON, the legacy single-league model, and no Season 2 target authentication. Production is untouched by M7-26 and remains unauthorized for migration or candidate deployment. |
-| Isolated staging candidate | Netlify's current/newest `ready` deploy is one-shot helper-retirement deploy `6a8e6c8fae36273a816a7539`, title `HL-20260823-1-abort-v2-retire-helper-baseline`, serving sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9`; refreshed allowlisted provider projection proves five headers, two redirects, zero functions, and zero edge functions. Render's sole newest/`LIVE` deploy is API-triggered `dep-da6ghj67bikc738hbbv0` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; held B-prime deploy `dep-da6cu8h42hec738f2al0` deactivated at safe handoff | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold remains exact. B2 hosted/runtime, fresh verifier, abort-v2 plan, first execute, replay, and helper retirement pass. The target and receipt are materialized and verified but inactive; `DATABASE_PATH` still names the preserved source. First-execute, replay, and helper-retirement authorities are consumed. Corrected official HTTP `64/64 + 8/8 + 10/10 + 5/5`, local postflight, and exact cleanup pass. Activation and every later gate remain unauthorized; Chrome disk/FD reproof remains pending. |
-| Local/feature-branch candidate | Stable frontend release artifact remains application F `4dfe12d1366314e3d9df722c50771324647743c9`. Accepted replay evidence is published in exact commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`; helper-retirement dispatch authority is published in exact commit `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb`, and incident continuation authority in `0498fd4fd400e8aad16c4cf9c405165d420bd489`. None changes sealed F bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | Exact B2 changes only the implementation and foundation-test files with SHA-256 `d49c870b...` / `3d9714ca...`, Git blobs `4a198c7...` / `53ce37c...`, numstat `369/18` / `830/2`, and `57541`-byte raw-diff SHA-256 `eb963d6b...`. Fresh release `HL-20260823-1` remains blocked. Plan `0/0`, first execute `replayed: false` / `0/2`, replay `replayed: true` / `0/0`, and helper retirement pass; no consumed authority may be rerun. No normal restore, activation, backup, reopening/review, browser, or production action is authorized by this snapshot. |
+| Isolated staging candidate | Netlify's current/newest `ready` deploy is one-shot helper-retirement deploy `6a8e6c8fae36273a816a7539`, title `HL-20260823-1-abort-v2-retire-helper-baseline`, serving sealed frontend application build `4dfe12d1366314e3d9df722c50771324647743c9`; refreshed allowlisted provider projection proves five headers, two redirects, zero functions, and zero edge functions. Render's sole newest/`LIVE` deploy is API-triggered `dep-da6ghj67bikc738hbbv0` on exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`; held B-prime deploy `dep-da6cu8h42hec738f2al0` deactivated at safe handoff | Phase one reached accepted/published state with exact `fresh 2` / `replay 0`, but an operator-sequencing mismatch selected `STRICT_STOP`; phase two never began and no retry is allowed. Full hold remains exact. B2 hosted/runtime, fresh verifier, abort-v2 plan, first execute, replay, and helper retirement pass. The target and receipt are materialized and verified but inactive; `DATABASE_PATH` still names the preserved source. First-execute, replay, and helper-retirement authorities are consumed. `RC-STG-006O23` is authorized next only as the one-shot held source-to-target `DATABASE_PATH` handoff defined below; it has not run. `RC-STG-006P23`, backup, reopening/review, closeout, and production remain unauthorized. |
+| Local/feature-branch candidate | Stable frontend release artifact remains application F `4dfe12d1366314e3d9df722c50771324647743c9`. Accepted replay evidence is published in exact commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`; helper-retirement dispatch authority is published in exact commit `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb`, incident continuation authority in `0498fd4fd400e8aad16c4cf9c405165d420bd489`, and helper-retirement evidence base in `a0da13a5a6a1c1edb352aa1b606d0d3b97aec020`. None changes sealed F bytes. Backend HEAD and backend `origin/staging` both equal abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, direct child of executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54`; the backend worktree is clean | This exact nine-document direct-child amendment authorizes only `RC-STG-006O23` after its commit is published and equals frontend HEAD/`origin/staging`. No normal restore, semantic target verification, backup, reopening/review, production action, retry, or rollback is authorized. |
 
 This matrix is the current environment authority. Dated sections below preserve
 historical release evidence and must not be read as overriding it.
@@ -34,7 +34,7 @@ The fresh gate ledger is
 
 ---
 
-## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Helper-Retirement Dispatch Consumed; Corrected Read-Only Verification Authorized Next
+## Dated Release Record: 2026-08-23 M7-26 Fresh Strict Release - Phase One Published; Strict Stop; Helper Retirement Pass; Held Target Handoff Authorized Next
 
 Grae requested and approved release `HL-20260823-1` at exact recorded time
 `2026-08-23T23:23:29.877Z`. The release binds frontend application build
@@ -411,8 +411,9 @@ removal, or change is accepted.
 Only after this nine-document amendment is published may the release obtain a
 fresh provider projection, exactly one corrected network-read-only HTTP-verifier result capture,
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
-grants no retry. Activation, backup, reopening/review, browser, closeout, and
-production remain forbidden; Chrome disk/FD reproof remains pending.
+grants no retry. Under that N23 continuation authority, activation, backup,
+reopening/review, browser, closeout, and production were forbidden; Chrome
+disk/FD reproof remained pending.
 
 ### 2026-08-26 Helper-Retirement Completion
 
@@ -431,9 +432,121 @@ SHA-256 `b49aca2fa65c2039c5b6e4661e9cf981dd9f29b9a1fdfaddac779609bca00c78`;
 it deleted only exact external profile/control/empty temp parent and preserved
 the baseline, captures, and evidence. The two comma-OWS false negatives,
 diagnostic, reconstructed chronology, and current kit pins remain preserved.
-Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. Mandatory stop;
-activation, backup, reopening/review, browser, closeout, and production remain
-forbidden. Chrome disk/FD reproof remains pending.
+Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. At the N23
+completion boundary, mandatory stop forbade activation, backup, reopening/
+review, browser, closeout, and production. The later O23 amendment below
+supersedes only that activation-authority status; Chrome disk/FD reproof remains
+pending.
+
+### 2026-08-26 RC-STG-006O23 Held Target-Handoff Authority
+
+This exact nine-document amendment is based on frontend evidence commit
+`a0da13a5a6a1c1edb352aa1b606d0d3b97aec020` and exact held backend B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`. It becomes action authority only
+after one direct-child, docs-only commit changing the standard nine files is
+published and equals frontend HEAD/`origin/staging`, while backend HEAD/
+`origin/staging` remain clean at B2. `RC-STG-006N23` stays consumed. This grants
+only unchecked `RC-STG-006O23` one-shot execution; it does not check the gate.
+
+The frozen ignored pre-publication kit is pinned by manifest `7290` bytes /
+`203` LF / zero CR / final LF / SHA-256
+`0d3c5f2e1500b239efcf086818f6446ed31ab25f830ea951bacb4a5f8fc582af`
+and canonical artifact-set SHA-256
+`0ef3f7d87792727d321f938efd41ef5bf637f61fe155e64770a9b4e7bf556ee0`.
+Every manifest row is exact (bytes/LF/SHA-256; all zero CR/final LF): contract
+`39951/818/c9a4d008777eff6e0a270347f8eaa0508b97b6001f71c979dbbbc5aba2895fd1`;
+held verifier
+`26170/636/4b72a3eb494a52b1de8628571f6b1fc65355dbeb5f554f2f313bc847fa44ecad`;
+shell envelope
+`14882/330/f12d6952e79f0251e1de5858d207353c451ec0ab6db2ea9fd83bf1826d6baeaa`;
+held probes
+`4878/145/bd9e57a973987ccd4a660730fd61927cbab58beb9e6fa9cccac41113fabf7a58`;
+action control
+`27138/611/5e36b6eb699ac4e2beb711808a1c144cd904e1fa6c0ec1ab9e3b21a4ec3c1e50`;
+postflight
+`12157/279/61c277ba79e2f58601f437862066fee39c96ae1167bde6b1739a79a113915c23`;
+cleanup
+`9035/192/8819988c5254699280327cb9658c0a89b5adeb249d3794758a401a705c63c4fb`;
+self-test
+`22738/594/af04ef693784b9a9fc9164455ba6c240b4678080c88fc3305aa60524d3ba6fe8`;
+freeze verifier
+`15243/315/c808cb33199957df8cef5bb966da4dd7789694930ca66f1d13e78fcf8f388a78`;
+binding template
+`1718/46/bb505cb585e7cce1728fa6c90f10be26673d45febee018f318ae65f20f01b5bf`;
+and runbook
+`9000/148/e398b0299cf20fc8058dfdabbb13e5c978ff170aba7d6946c097e6229fbb8355`.
+Independent cold audit passed all `11` pins, `8` JavaScript syntax files,
+`bash -n`, at least `10` positive and `15` negative fixtures, `19` required
+guards, and `18` forbidden-operation absences.
+Manifest false activity fields describe support-kit authoring/local tests only,
+not release-wide activity. Its pre-publication runtime, critical-delta,
+semantic, and backup fields say verification is required/currently false or
+deferred; they do not claim O23 has passed.
+The pinned `26170`-byte held verifier is the required new abort-v2/main-WAL-
+aware boundary verifier; no predecessor verifier may be reused.
+
+After publication, an exclusively created immutable ignored authority binding
+must bind the full new commit, unchanged manifest/artifact set/verifier, exact
+raw phases, provider call, and permanent tombstone
+`target-activation-captures/hl-20260823-1-<authority16>-464f2e4805c79aef/`.
+No frozen kit byte may change. PRE requires a fresh allowlisted provider
+projection, then a fresh Chrome-attached Render shell with history disabled and
+cleared after setting `HISTFILE=/dev/null`. The exact verifier payload runs only
+through stdin as
+`bash -s -- pre-boundary dep-da6ghj67bikc738hbbv0`; no remote verifier file,
+SQLite open, project database module, copy, or scratch is allowed. Its raw result
+must prove exact B2/Git, the critical `20`-key plus nine-absent runtime with the
+source path, source main/WAL/SHM, target, canonical receipt v2, five absences,
+four stable boundaries, two complete zero-denied/zero-holder scans, and full hold. Current
+device IDs are only internally consistent inside that container; PRE/POST
+device numbers are never compared. The separate five no-cookie/no-write probes
+prove two health `200` and three exact held `503` responses.
+
+Immediately before arm, a complete cursor-closed provider deploy-ID edge set is
+captured. Durable tombstone creation consumes authority. Exactly one call to
+`mcp__render__update_environment_variables` is allowed with canonical `247`-byte
+arguments SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`:
+`replace:false`, workspace `tea-d4prbj7diees738tmg90`, service
+`srv-d9eo2turnols73ekb830`, and only requested key `DATABASE_PATH` set to target
+path SHA-256 `4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`.
+The source value is exact SHA-256
+`50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3`.
+Do not call `trigger_deploy`. Never persist raw connector output. Error,
+timeout, disconnect, ambiguity, or contradiction grants no retry; reconcile
+read-only and stop. An inverse source-path update is a separately authorized
+rollback mutation.
+
+POST requires a complete paginated deploy set whose difference is exactly one
+new ID, sole newest/`LIVE` and API-triggered on B2, with the prior deploy
+deactivated, no competitor, exact Node `24.14.1` / npm `11.11.0`, `443` suites /
+`3519` tests, and clean complete build/runtime log windows. Provider evidence
+does not expose or prove source/target environment values, target inactivity,
+or maintenance hold and must say
+`providerEnvironmentReadAvailable:false`; the new fresh shell and probes prove
+those facts. The stdin-only raw result invoked as
+`bash -s -- activation-post dep-<new>` must prove target runtime path, unchanged
+other critical bindings and every durable protected
+identity/hash except namespace-local device, the same absences/zero holders/full
+hold, target selected but unopened, and zero SQLite/scratch/write behavior. Raw shell output requires external
+authority and states `externalAuthorityBindingRequired=true`,
+`externalAuthorityBindingVerifiedByVerifier=false`,
+`standaloneAcceptanceAuthorized=false`, and
+`verifierGrantsMutationAuthority=false`; only the local binding-aware envelope
+may mark a phase authorized.
+
+Combined local acceptance must record `runtimeDatabasePathVerified=true`,
+`criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`. Cleanup deletes nothing and
+preserves the binding, tombstone, captures, and evidence. Then stop.
+`RC-STG-006P23` remains pending and must separately authorize private-copy
+semantic target verification and backup, including integrity, foreign keys,
+schema/migration/rotation checks, zero active sessions, and zero current,
+predecessor, and older fixture receipts, receipt events/league, manager
+assignments/activity/idempotency/notifications, and outbox events/audiences.
+Reopening/final review, normal restore, rollback, closeout, browser workflow,
+production, and any second provider update remain forbidden.
 
 ---
 

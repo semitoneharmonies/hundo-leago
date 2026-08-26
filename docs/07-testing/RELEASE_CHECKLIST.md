@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; CHROME DISK/FD REPROOF PENDING; ACTIVATION AND LATER GATES NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; ABORT-V2 PLAN/FIRST EXECUTE/REPLAY PASS + AUTHORITIES CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; RC-STG-006O23 HELD DATABASE_PATH HANDOFF AUTHORIZED NEXT / PENDING EXECUTION; RC-STG-006P23 SEMANTIC VERIFICATION/BACKUP AND LATER GATES NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER RETIREMENT PASS + AUTHORITY CONSUMED; LATER GATES NOT AUTHORIZED)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER RETIREMENT PASS; O23 HELD TARGET HANDOFF AUTHORIZED NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -405,12 +405,157 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   reconstructed-manifest chronology, and current corrected kit pins remain
   evidence. Exactly one dispatch ran, no retry ran or is authorized, and deploy
   `6a8e6c8fae36273a816a7539` remains current/newest/`ready`. Mandatory stop.
-- [ ] `RC-STG-006O23` Post-abort target activation remains `PENDING AUTHORITY`.
-  No `DATABASE_PATH` change is authorized by this checklist revision.
-- [ ] `RC-STG-006P23` Post-abort target verification, backup, final staging
-  reopening/review, closeout, and production remain `PENDING AUTHORITY` after
-  helper retirement. Normal restore, Render/environment/database mutation,
-  browser action, and every activation step remain forbidden.
+- [ ] `RC-STG-006O23` `AUTHORIZED NEXT / PENDING EXECUTION`: this exact
+  nine-document amendment is the only held target-handoff authority. It is
+  based on frontend helper-retirement evidence commit
+  `a0da13a5a6a1c1edb352aa1b606d0d3b97aec020` and exact held backend B2
+  `6359ec9997f90dddf17ba2c9b07481746ae171bb`. It activates only after one
+  docs-only direct-child commit changing the standard nine files is published
+  and equals frontend HEAD/`origin/staging`, while backend HEAD/
+  `origin/staging` remain clean at B2. N23 remains consumed. O23 remains
+  unchecked until the entire bounded sequence passes.
+
+  Frozen ignored pins are manifest `7290` bytes / `203` LF / zero CR / final
+  LF / SHA-256
+  `0d3c5f2e1500b239efcf086818f6446ed31ab25f830ea951bacb4a5f8fc582af`
+  and canonical artifact-set SHA-256
+  `0ef3f7d87792727d321f938efd41ef5bf637f61fe155e64770a9b4e7bf556ee0`.
+  Every manifest row is exact (bytes/LF/SHA-256; all zero CR/final LF):
+  contract
+  `39951/818/c9a4d008777eff6e0a270347f8eaa0508b97b6001f71c979dbbbc5aba2895fd1`;
+  held verifier
+  `26170/636/4b72a3eb494a52b1de8628571f6b1fc65355dbeb5f554f2f313bc847fa44ecad`;
+  shell envelope
+  `14882/330/f12d6952e79f0251e1de5858d207353c451ec0ab6db2ea9fd83bf1826d6baeaa`;
+  held probes
+  `4878/145/bd9e57a973987ccd4a660730fd61927cbab58beb9e6fa9cccac41113fabf7a58`;
+  action control
+  `27138/611/5e36b6eb699ac4e2beb711808a1c144cd904e1fa6c0ec1ab9e3b21a4ec3c1e50`;
+  postflight
+  `12157/279/61c277ba79e2f58601f437862066fee39c96ae1167bde6b1739a79a113915c23`;
+  cleanup
+  `9035/192/8819988c5254699280327cb9658c0a89b5adeb249d3794758a401a705c63c4fb`;
+  self-test
+  `22738/594/af04ef693784b9a9fc9164455ba6c240b4678080c88fc3305aa60524d3ba6fe8`;
+  freeze verifier
+  `15243/315/c808cb33199957df8cef5bb966da4dd7789694930ca66f1d13e78fcf8f388a78`;
+  binding template
+  `1718/46/bb505cb585e7cce1728fa6c90f10be26673d45febee018f318ae65f20f01b5bf`;
+  and runbook
+  `9000/148/e398b0299cf20fc8058dfdabbb13e5c978ff170aba7d6946c097e6229fbb8355`.
+  Independent cold audit passed all 11 pins, 8 JavaScript syntax files,
+  `bash -n`, at least 10 positive and 15 negative fixtures, 19 required guards,
+  and 18 forbidden-operation absences. The manifest's false activity fields
+  describe support-kit construction only; they are not release-wide claims.
+  Its PRE fields describe verification required/currently false or deferred,
+  not already completed.
+  The pinned `26170`-byte held verifier is the required new abort-v2/main-WAL-
+  aware boundary verifier; no predecessor verifier may be reused.
+
+  After publication, create and independently audit the separate exclusively
+  created immutable ignored `target-activation-authority-binding.json`. It binds
+  the full authority commit, unchanged manifest/artifact set/verifier, exact raw
+  phases, exact provider tool/arguments, and permanent authority-specific
+  tombstone without mutating any frozen byte. The tombstone path is exactly
+  `target-activation-captures/hl-20260823-1-<authority16>-464f2e4805c79aef/`.
+  Any pre-existing/mismatched binding or tombstone is a stop.
+
+  PRE chronology is exact. First create a fresh allowlisted provider projection
+  from complete deploy/build/service/log and Netlify facts. Provider-only
+  evidence cannot read or prove `DATABASE_PATH`, target inactivity, or
+  `STAGING_MAINTENANCE_HOLD`; it must record
+  `providerEnvironmentReadAvailable:false` and defer those facts. Next use the
+  frozen local shell envelope to prepare the pinned payload. In a fresh
+  Chrome-attached Render shell, the first command sets `HISTFILE=/dev/null`,
+  disables history, and clears memory; the second streams the exact payload only
+  through stdin as
+  `bash -s -- pre-boundary dep-da6ghj67bikc738hbbv0`. No remote verifier file,
+  payload, SQLite/project database module, database open, file copy, checkpoint,
+  sidecar removal, scratch path, or write may occur. Capture the single raw JSON
+  result locally and seal it with the local envelope.
+
+  Raw PRE must prove exact B2 and hardened clean Git state; the exact critical
+  20-key runtime plus nine absent provider fields with source `DATABASE_PATH`;
+  source main/WAL/SHM, target main, and canonical receipt v2 at every exact
+  durable identity/stat/hash pin; source journal, target WAL/SHM/journal, and
+  deterministic work directory absent; four stable boundaries; two complete
+  zero-denied/zero-holder `/proc/*/fd` scans; and full hold. Current `st_dev`
+  must be internally equal across all five protected files within that shell,
+  but namespace-local device numbers are never compared between containers.
+  The receipt's historical device fields remain byte-bound. Raw output must say
+  `externalAuthorityBindingRequired=true`,
+  `externalAuthorityBindingVerifiedByVerifier=false`,
+  `standaloneAcceptanceAuthorized=false`, and
+  `verifierGrantsMutationAuthority=false`; only the local binding-aware envelope
+  may mark the phase authorized after verifying payload, stdin argv/transport,
+  and raw-result SHA.
+
+  Capture the separate exact five anonymous no-cookie/no-write probes:
+  live/ready `200`, session/leagues/current-FAD `503 SERVICE_MAINTENANCE`, all
+  JSON and `Cache-Control: no-store`. Readiness `200` proves only the held bare
+  listener, not database readiness. Immediately before arm, obtain every page
+  of Render deploys and durably capture the complete cursor-closed, sorted
+  pre-dispatch deploy-ID edge with `dep-da6ghj67bikc738hbbv0` sole newest/`LIVE`
+  B2 and no pending/active deploy. It must be no more than two minutes old.
+
+  Arm validates ownership/mode, exclusively creates/fsyncs/re-reads the
+  authority-specific capture root and attempt, and fsyncs a separate tombstone
+  seal. Durable seal creation consumes authority before provider dispatch. The
+  only call is tool `mcp__render__update_environment_variables` with canonical
+  exact arguments
+  `{"envVars":[{"key":"DATABASE_PATH","value":"/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3"}],"replace":false,"serviceId":"srv-d9eo2turnols73ekb830","workspaceId":"tea-d4prbj7diees738tmg90"}`,
+  exactly `247` bytes / SHA-256
+  `464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`.
+  Target value is `103` bytes / SHA-256
+  `4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`;
+  source value is `103` bytes / SHA-256
+  `50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3`.
+  It requests `replace:false` and only `DATABASE_PATH`; it does not prove the
+  global environment delta. Do not call `trigger_deploy`. Record local dispatch
+  start/finish/capture chronology and persist only an allowlisted returned/
+  failed/ambiguous observation, never raw connector output. Error, timeout,
+  disconnect, ambiguity, or contradiction grants no retry. Reconcile read-only
+  and stop when exact continuation proof is unavailable. An inverse source-path
+  change is a separate rollback mutation requiring new written authority.
+
+  POST provider reconciliation requires a complete paginated cursor-closed
+  deploy-ID inventory whose set difference from the final PRE edge is exactly
+  one ID. That ID must be sole newest/`LIVE`, API-triggered on exact B2, with the
+  prior deploy deactivated, no newer/pending/canceled competitor, and any
+  returned deploy ID matching. A `failed` outcome never becomes success merely
+  because a deploy appeared; `ambiguous` may continue only through the exact
+  set-difference proof plus later shell target proof. Hosted evidence must record
+  observed Node `24.14.1`, npm `11.11.0`, exact `443` suites / `3519` tests all
+  passing, and complete clean build/runtime log-source windows. Provider POST
+  records the requested target call only and keeps runtime path, hold, and
+  critical delta deferred.
+
+  In a new attached shell on the new instance, use the same no-history stdin-only
+  transport as `bash -s -- activation-post dep-<new>`, capture/seal the raw
+  result, then capture the five POST held probes. Raw POST must prove actual
+  target `DATABASE_PATH`, exact full hold, all other critical bindings unchanged,
+  all durable protected identity/stat/hash fields unchanged from PRE excluding
+  namespace-local device, the same five absences/four stable boundaries/two
+  zero-holder scans, target unopened, and zero SQLite/module/copy/scratch/write
+  behavior. Raw output remains non-authorizing.
+
+  Combined local postflight, not provider evidence or raw shell output alone,
+  must bind the published authority, immutable kit, invocation/result envelopes,
+  strict chronology, exact one-ID deploy edge, provider facts, shell facts, and
+  probes. It must record `runtimeDatabasePathVerified=true`,
+  `criticalRuntimeBindingDeltaExact=true`,
+  `semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+  `globalProviderEnvironmentDeltaProven=false`. Cleanup revalidates everything
+  and deletes nothing. Then mandatory stop.
+- [ ] `RC-STG-006P23` remains `PENDING AUTHORITY`. It must separately authorize
+  a distinct private-copy semantic target verifier and fresh backup. Its required
+  target proof includes integrity `ok`, zero foreign keys, schema/data/migrations
+  `54/54/54`, exact migration checksum and credential-rotation receipt, zero
+  active sessions, and zero current/predecessor/older fixture receipts, receipt
+  events/fixture league, manager assignments/activity/idempotency/notifications,
+  and outbox events/audiences. O23 raw boundary proof cannot satisfy P23.
+  Reopening/final review, normal restore, rollback, closeout, browser workflow,
+  production, and any second provider update remain forbidden.
 
 ### RC-STG-006N23 Post-Dispatch HTTP-Verifier Amendment
 
@@ -457,8 +602,9 @@ removal, or change is accepted.
 Only after this nine-document amendment is published may the release obtain a
 fresh provider projection, exactly one corrected network-read-only HTTP-verifier result capture,
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
-grants no retry. Activation, backup, reopening/review, browser, closeout, and
-production remain forbidden; Chrome disk/FD reproof remains pending.
+grants no retry. Under that N23 continuation authority, activation, backup,
+reopening/review, browser, closeout, and production were forbidden; Chrome
+disk/FD reproof remained pending.
 
 ### RC-STG-006N23 Completion Evidence
 
@@ -469,9 +615,10 @@ postflight `4837`/`6941c238...`, and exact cleanup `1211`/`b49aca2f...` evidence
 bound above. The action authority remains consumed by one dispatch and no retry.
 `RC-STG-006N23` is checked `PASS / AUTHORITY CONSUMED / NO RETRY`. The prior
 comma-OWS false negatives and reconstructed chronology remain preserved.
-`RC-STG-006O23` and `RC-STG-006P23` remain unchecked/pending. Mandatory stop:
-no activation, backup, reopening/review, browser, closeout, or production
-action; Chrome disk/FD reproof remains pending.
+At this N23 completion boundary O23/P23 were still pending; the O23 amendment
+above supersedes only that O23 authority status. O23 remains unchecked pending
+execution. P23, backup, reopening/review, browser, closeout, and production
+remain unauthorized; Chrome disk/FD reproof remains pending.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -1520,9 +1667,10 @@ replay authorities are consumed; the exact target/receipt remain inactive.
 Replay is `PASS / AUTHORITY CONSUMED / NO RERUN`. `RC-STG-006N23` is checked
 `PASS / AUTHORITY CONSUMED / NO RETRY`; refreshed provider, corrected official
 HTTP, local postflight, and exact cleanup all pass. `RC-STG-006O23` and
-`RC-STG-006P23` remain unchecked/pending. Activation, verification, backup, and
-every later downstream step remain unauthorized; Chrome disk/FD reproof remains
-pending.
+`RC-STG-006P23` remain unchecked. O23 is authorized next only for the held
+source-to-target handoff above after publication and has not run. P23 semantic
+verification/backup and every later downstream step remain unauthorized;
+Chrome disk/FD reproof remains pending.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:
@@ -1711,11 +1859,13 @@ unheld pre-smoke verification passed as recorded in the live ledger. Phase one
 then reached accepted/published state, but operator sequencing selected
 `STRICT_STOP`; phase two never began. Full re-hold, exact abort-v2 B2
 mint/publication and held deployment/runtime, and fresh B2-pinned verification
-pass. The exact abort-v2 plan and its one published-authority first execute also
-pass. First-execute authority is consumed. The only pending executable
-counterpart is one byte-identical `0/0` replay. Normal restore and phase two are
-forbidden. Helper retirement, activation,
-verification/backup, and final review await a separate post-abort amendment.
+pass. The exact abort-v2 plan, published-authority first execute, and one byte-
+identical `0/0` replay pass; both execution authorities are consumed. Helper
+retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. `RC-STG-006O23` is
+authorized next only for the held target handoff defined above after publication
+and remains unchecked/pending execution. Normal restore and phase two remain
+forbidden; `RC-STG-006P23` semantic verification/backup and final review remain
+pending separate authority.
 The authoritative live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 

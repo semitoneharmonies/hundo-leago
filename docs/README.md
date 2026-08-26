@@ -943,8 +943,9 @@ removal, or change is accepted.
 Only after this nine-document amendment is published may the release obtain a
 fresh provider projection, exactly one corrected network-read-only HTTP-verifier result capture,
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
-grants no retry. Activation, backup, reopening/review, browser, closeout, and
-production remain forbidden; Chrome disk/FD reproof remains pending.
+grants no retry. Under that N23 continuation authority, activation, backup,
+reopening/review, browser, closeout, and production were forbidden; Chrome
+disk/FD reproof remained pending.
 
 ### 2026-08-26 Helper-Retirement Completion
 
@@ -967,9 +968,134 @@ runtime control, and empty owned temp parent while preserving original-dist,
 repo-ignored baseline control, captures, and evidence. The earlier two
 comma-OWS false negatives, non-official diagnostic, reconstructed-manifest
 label, and current corrected kit pins remain part of the canonical chronology.
-Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. Mandatory stop:
-activation, backup, reopening/review, browser action, closeout, and production
-remain forbidden; Chrome disk/FD reproof remains pending.
+Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. At the N23
+completion boundary, mandatory stop forbade activation, backup, reopening/
+review, browser action, closeout, and production. The O23 amendment below
+supersedes only that activation-authority status; Chrome disk/FD reproof remains
+pending.
+
+### 2026-08-26 RC-STG-006O23 Held Target-Handoff Authority
+
+This exact nine-document amendment is the sole O23 action authority. It becomes
+active only after one docs-only direct-child commit of frontend evidence base
+`a0da13a5a6a1c1edb352aa1b606d0d3b97aec020` is published and equals frontend
+HEAD/`origin/staging`, while backend HEAD/`origin/staging` remain clean at held
+B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`. Helper retirement remains
+`PASS / AUTHORITY CONSUMED / NO RETRY`; O23 remains unchecked until its entire
+PRE/action/POST sequence passes.
+
+The frozen ignored pre-publication kit is pinned by manifest `7290` bytes /
+`203` LF / zero CR / final LF / SHA-256
+`0d3c5f2e1500b239efcf086818f6446ed31ab25f830ea951bacb4a5f8fc582af`
+and canonical artifact-set SHA-256
+`0ef3f7d87792727d321f938efd41ef5bf637f61fe155e64770a9b4e7bf556ee0`.
+Every manifest row is exact (bytes/LF/SHA-256; all zero CR/final LF): contract
+`39951/818/c9a4d008777eff6e0a270347f8eaa0508b97b6001f71c979dbbbc5aba2895fd1`;
+held verifier
+`26170/636/4b72a3eb494a52b1de8628571f6b1fc65355dbeb5f554f2f313bc847fa44ecad`;
+shell envelope
+`14882/330/f12d6952e79f0251e1de5858d207353c451ec0ab6db2ea9fd83bf1826d6baeaa`;
+held probes
+`4878/145/bd9e57a973987ccd4a660730fd61927cbab58beb9e6fa9cccac41113fabf7a58`;
+action control
+`27138/611/5e36b6eb699ac4e2beb711808a1c144cd904e1fa6c0ec1ab9e3b21a4ec3c1e50`;
+postflight
+`12157/279/61c277ba79e2f58601f437862066fee39c96ae1167bde6b1739a79a113915c23`;
+cleanup
+`9035/192/8819988c5254699280327cb9658c0a89b5adeb249d3794758a401a705c63c4fb`;
+self-test
+`22738/594/af04ef693784b9a9fc9164455ba6c240b4678080c88fc3305aa60524d3ba6fe8`;
+freeze verifier
+`15243/315/c808cb33199957df8cef5bb966da4dd7789694930ca66f1d13e78fcf8f388a78`;
+binding template
+`1718/46/bb505cb585e7cce1728fa6c90f10be26673d45febee018f318ae65f20f01b5bf`;
+and runbook
+`9000/148/e398b0299cf20fc8058dfdabbb13e5c978ff170aba7d6946c097e6229fbb8355`.
+Independent cold audit passed all 11 pins, eight JavaScript syntax files,
+`bash -n`, `10+` positive and `15` negative fixtures, 19 required guards, and
+18 forbidden-operation absences. Manifest false activity fields are scoped to
+support-kit authoring/local tests and do not rewrite release-wide history.
+Its pre-publication runtime, critical-delta, semantic, and backup fields say
+required/currently false or deferred, not already verified.
+The pinned `26170`-byte held verifier is the required new abort-v2/main-WAL-
+aware boundary verifier; no predecessor verifier may be reused.
+
+After publication, create and audit the separate ignored immutable authority
+binding without changing any frozen byte. It binds the full authority commit,
+kit and invocation/result hashes, exact phases/tool/arguments, and permanent
+tombstone
+`target-activation-captures/hl-20260823-1-<authority16>-464f2e4805c79aef/`.
+Both raw phases are shell-boundary proof only. In each new Chrome-attached
+Render shell, first set `HISTFILE=/dev/null`, disable history, and clear in-
+memory history; then stream the pinned payload through stdin only as
+`bash -s -- pre-boundary dep-da6ghj67bikc738hbbv0` or
+`bash -s -- activation-post dep-<new>`. No remote verifier/payload file,
+SQLite/project database module, database open, copy, checkpoint, sidecar
+removal, scratch path, or write is allowed. Every raw result must state
+`externalAuthorityBindingRequired=true`,
+`externalAuthorityBindingVerifiedByVerifier=false`,
+`standaloneAcceptanceAuthorized=false`, and
+`verifierGrantsMutationAuthority=false`; only the external binding-aware local
+envelope may authorize the phase.
+
+Fresh PRE must prove exact B2 and hardened clean Git state; source
+`DATABASE_PATH`; the critical 20-key/nine-absent runtime matrix; source
+main/WAL/SHM, target main, and canonical receipt v2 at their durable identity/
+stat/hash pins; source journal, target WAL/SHM/journal, and deterministic work
+path absent; four stable boundaries; two complete zero-denied/zero-holder
+scans; and full hold. Device identity is namespace-local: the five protected
+files share the current container device, but PRE and POST device numbers are
+never compared. Receipt historical device fields remain byte-bound. Five fresh
+anonymous no-cookie/no-write probes separately prove two health `200` and three
+exact held `503 SERVICE_MAINTENANCE` responses.
+
+Immediately before arm, capture a complete paginated cursor-closed deploy-ID
+edge set no more than two minutes old. Exclusive creation/fsync/re-read of the
+authority root, attempt, and separate tombstone seal permanently consumes the
+one-shot authority before dispatch. The only mutation is exactly one call to
+`mcp__render__update_environment_variables` with canonical arguments
+`{"envVars":[{"key":"DATABASE_PATH","value":"/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3"}],"replace":false,"serviceId":"srv-d9eo2turnols73ekb830","workspaceId":"tea-d4prbj7diees738tmg90"}`,
+exactly `247` bytes / SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`.
+The target/source values are each `103` bytes with SHA-256
+`4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`
+and `50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3`.
+Do not call `trigger_deploy`, persist raw connector output, retry after error/
+timeout/disconnect/ambiguity, or perform an automatic inverse rollback.
+
+Provider evidence cannot prove source/target `DATABASE_PATH`, target inactivity,
+or maintenance hold. It records only the exact requested target call plus unique
+deploy/build/service/log facts and says
+`providerEnvironmentReadAvailable:false`. POST requires a complete cursor-
+closed deploy-set difference of exactly one new ID; any second ID, incomplete
+pagination, returned-ID mismatch, or contradiction is ambiguity and stops with
+no retry. The new deploy must be sole newest/`LIVE`, API-triggered on B2, with
+the old deploy deactivated, no competitor, observed Node `24.14.1`, npm
+`11.11.0`, all `443` suites / `3519` tests passing, and complete clean build and
+runtime log-source windows.
+
+The fresh POST shell and probes prove actual target `DATABASE_PATH`, full hold,
+only that one critical runtime-binding change, and unchanged source family/
+target/receipt durable identities and hashes except namespace-local device. The
+target remains selected but unopened; target WAL, SHM, journal, deterministic
+work, and source journal remain absent; four stable boundaries and both zero-
+holder scans pass; and no SQLite/scratch/write work occurs. Combined local
+acceptance—not raw shell or provider evidence alone—must record
+`runtimeDatabasePathVerified=true`,
+`criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`. Cleanup revalidates everything
+and deletes nothing. Then mandatory stop.
+
+`RC-STG-006P23` remains unauthorized. It must later separately authorize a
+private-copy semantic target verifier plus fresh backup, including integrity
+`ok`, zero foreign keys, schema/data/migrations `54/54/54`, exact migration
+checksum and credential-rotation receipt, zero active sessions, and zeros for
+current/predecessor/older fixture receipts, receipt events/fixture league,
+manager assignments/activity/idempotency/notifications, and outbox events/
+audiences. O23 cannot satisfy those checks. Reopening/final review, normal
+restore, rollback, closeout, browser workflow, production, and any second
+provider update remain forbidden.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -1355,10 +1481,12 @@ replay passed; both authorities are consumed and neither may be rerun.
 The exact one-shot staging Netlify helper-retirement dispatch also ran and is
 consumed. Published incident amendment `0498fd4...`, refreshed provider
 postflight, corrected official HTTP verification, local postflight, and exact
-cleanup pass; helper retirement is complete with no retry. Normal recovery,
-activation, and every later action remain forbidden. The failed/recovered
-2026-08-21 attempt remains historical; production remains untouched and
-unauthorized.
+cleanup pass; helper retirement is complete with no retry. The exact O23
+docs-only direct-child amendment now authorizes the held target handoff after
+publication, but O23 has not run and remains unchecked. Normal recovery, P23
+semantic verification/backup, reopening/review, browser workflow, closeout, and
+production remain forbidden. The failed/recovered 2026-08-21 attempt remains
+historical; production remains untouched and unauthorized.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -1402,7 +1530,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; CHROME DISK/FD REPROOF PENDING; ACTIVATION AND LATER GATES NOT AUTHORIZED
+Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; RC-STG-006O23 HELD DATABASE_PATH HANDOFF AUTHORIZED NEXT + PENDING EXECUTION; RC-STG-006P23 AND LATER GATES NOT AUTHORIZED; CHROME DISK/FD REPROOF PENDING
 ```
 
 The completed M7-24 and M7-25 plans are preserved at

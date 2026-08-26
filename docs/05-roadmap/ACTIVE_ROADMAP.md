@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Publish the exact nine-document helper-retirement completion evidence, preserve the consumed one-dispatch/no-retry boundary, then mandatory stop; Chrome disk/FD reproof remains pending and no activation or later gate is authorized
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8e6c8fae36273a816a7539 CURRENT + READY / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED / REPLAY 8b21edc8 PASS + REPLAYED TRUE + 0/0 + AUTHORITY CONSUMED + NO RERUN / REPLAY EVIDENCE COMMIT 296CD690 PUBLISHED / HELPER-RETIREMENT AUTHORITY COMMIT 7DD9075 PUBLISHED / INCIDENT AMENDMENT 0498FD4 PUBLISHED / ONE CLI DISPATCH CONSUMED + NO RETRY / HELPER RETIREMENT PROVIDER+HTTP+POSTFLIGHT+CLEANUP PASS / INITIAL HTTP VERIFIER TWICE REJECTED ONLY COMMA-OWS REPRESENTATION / CHROME DISK+FD REPROOF PENDING / ACTIVATION+VERIFICATION+BACKUP+REOPENING+FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Publish the exact nine-document RC-STG-006O23 authority on helper-retirement evidence base a0da13a, instantiate the separate immutable binding, then execute only the fresh PRE boundary, permanent one-shot tombstone, exact one-key Render update, unique held-B2 deploy handoff, fresh POST boundary, and mandatory stop defined below
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8e6c8fae36273a816a7539 CURRENT + READY / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / ABORT-V2 PLAN+FIRST EXECUTE+REPLAY PASS AND AUTHORITIES CONSUMED / HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY / EVIDENCE BASE A0DA13A PUBLISHED / RC-STG-006O23 HELD DATABASE_PATH HANDOFF AUTHORIZED NEXT + PENDING EXECUTION / RC-STG-006P23 SEMANTIC VERIFICATION+BACKUP PENDING AUTHORITY / REOPENING+FINAL REVIEW+CLOSEOUT+PRODUCTION UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1812,8 +1812,9 @@ removal, or change is accepted.
 Only after this nine-document amendment is published may the release obtain a
 fresh provider projection, exactly one corrected network-read-only HTTP-verifier result capture,
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
-grants no retry. Activation, backup, reopening/review, browser, closeout, and
-production remain forbidden; Chrome disk/FD reproof remains pending.
+grants no retry. Under that N23 continuation authority, activation, backup,
+reopening/review, browser, closeout, and production were forbidden; Chrome
+disk/FD reproof remained pending.
 
 ### 2026-08-26 Helper-Retirement Completion
 
@@ -1832,9 +1833,98 @@ cleanup is `1211` bytes / `1` LF / zero CR / final LF / SHA-256
 at `2026-08-26T05:33:33.808Z`. Cleanup deleted only exact external profile,
 runtime control, and empty temp parent; baseline, captures, and evidence remain.
 The false-negative/reconstructed chronology and corrected kit pins remain
-preserved. Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`.
-Mandatory stop; Chrome disk/FD reproof remains pending, and activation, backup,
-reopening/review, browser, closeout, and production remain forbidden.
+preserved. Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. At the
+N23 completion boundary, mandatory stop forbade activation, backup, reopening/
+review, browser, closeout, and production. The O23 amendment below supersedes
+only that activation-authority status; Chrome disk/FD reproof remains pending.
+
+### RC-STG-006O23 Held Target-Handoff Authority
+
+This exact nine-document direct-child amendment is based on frontend evidence
+commit `a0da13a5a6a1c1edb352aa1b606d0d3b97aec020` and exact held backend B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`. It authorizes only the unchecked
+O23 step after the new commit is published and equals frontend HEAD/
+`origin/staging`; backend HEAD/`origin/staging` must remain clean at B2.
+N23 remains consumed.
+
+Frozen ignored pins are manifest
+`7290/203/0d3c5f2e1500b239efcf086818f6446ed31ab25f830ea951bacb4a5f8fc582af`
+(bytes/LF/SHA-256; zero CR/final LF), canonical artifact set
+`0ef3f7d87792727d321f938efd41ef5bf637f61fe155e64770a9b4e7bf556ee0`,
+and these exact manifest rows (bytes/LF/SHA-256; all zero CR/final LF):
+contract `39951/818/c9a4d008777eff6e0a270347f8eaa0508b97b6001f71c979dbbbc5aba2895fd1`;
+held verifier `26170/636/4b72a3eb494a52b1de8628571f6b1fc65355dbeb5f554f2f313bc847fa44ecad`;
+shell envelope `14882/330/f12d6952e79f0251e1de5858d207353c451ec0ab6db2ea9fd83bf1826d6baeaa`;
+held probes `4878/145/bd9e57a973987ccd4a660730fd61927cbab58beb9e6fa9cccac41113fabf7a58`;
+action control `27138/611/5e36b6eb699ac4e2beb711808a1c144cd904e1fa6c0ec1ab9e3b21a4ec3c1e50`;
+postflight `12157/279/61c277ba79e2f58601f437862066fee39c96ae1167bde6b1739a79a113915c23`;
+cleanup `9035/192/8819988c5254699280327cb9658c0a89b5adeb249d3794758a401a705c63c4fb`;
+self-test `22738/594/af04ef693784b9a9fc9164455ba6c240b4678080c88fc3305aa60524d3ba6fe8`;
+freeze verifier `15243/315/c808cb33199957df8cef5bb966da4dd7789694930ca66f1d13e78fcf8f388a78`;
+binding template `1718/46/bb505cb585e7cce1728fa6c90f10be26673d45febee018f318ae65f20f01b5bf`;
+runbook `9000/148/e398b0299cf20fc8058dfdabbb13e5c978ff170aba7d6946c097e6229fbb8355`.
+Independent cold audit passed all 11 pins, 8 JavaScript syntax files,
+`bash -n`, `10+` positive/`15` negative fixtures, 19 required guards, and 18
+forbidden-operation absences.
+Manifest false activity fields are support-kit-local only. Its pre-publication
+runtime, critical-delta, semantic, and backup fields say required/currently
+false or deferred, not already verified.
+The pinned `26170`-byte held verifier is the required new abort-v2/main-WAL-
+aware boundary verifier; no predecessor verifier may be reused.
+
+After publication, create and audit the separate immutable ignored binding;
+no frozen byte may change. A fresh provider PRE may establish unique B2 deploy/
+build/service/log and unchanged Netlify facts only. It cannot read or prove
+source/target environment values, target inactivity, or maintenance hold. A fresh Chrome-attached shell sets
+`HISTFILE=/dev/null`, disables and clears history, then runs the exact verifier
+only through stdin as
+`bash -s -- pre-boundary dep-da6ghj67bikc738hbbv0`; no remote file, SQLite,
+project DB module, copy, or scratch. Raw PRE must prove B2/Git, source
+`DATABASE_PATH`, exact critical `20+9`, source main/WAL/SHM, target, canonical
+receipt, five absences, four stable boundaries, two zero-holder scans, and full
+hold with zero denied processes/descriptors. Device is internally consistent per container and never compared across
+containers. Separate probes prove exact held `2x200 + 3x503`, no cookies/writes.
+
+The final complete cursor-closed pre-dispatch deploy-ID edge precedes durable
+creation of permanent tombstone
+`target-activation-captures/hl-20260823-1-<authority16>-464f2e4805c79aef/`,
+which consumes authority. Exactly one
+`mcp__render__update_environment_variables` call is authorized: canonical
+`247` bytes / SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`,
+`replace:false`, workspace `tea-d4prbj7diees738tmg90`, service
+`srv-d9eo2turnols73ekb830`, and only requested key `DATABASE_PATH` set to target
+value SHA-256 `4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`;
+source value SHA-256 is
+`50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3`.
+No `trigger_deploy`, retry, raw provider payload, or automatic inverse rollback.
+
+POST requires a complete paginated ID-set difference of exactly one new sole-
+newest/`LIVE`, API-triggered B2 deploy; prior deploy deactivated, no competitor,
+Node `24.14.1`, npm `11.11.0`, `443/3519`, and clean complete build/runtime log
+windows. Provider projection must record
+`providerEnvironmentReadAvailable:false`; only new stdin-only `activation-post`
+shell invoked as `bash -s -- activation-post dep-<new>` plus probe evidence
+proves target runtime path and hold. It must prove only the
+critical `DATABASE_PATH` changed, every durable protected identity/hash stayed
+exact except namespace-local device, target remained selected but unopened, absences/holders
+remain exact, and zero SQLite/scratch/write behavior. Raw shell results remain
+non-authorizing and state `externalAuthorityBindingRequired=true`,
+`externalAuthorityBindingVerifiedByVerifier=false`,
+`standaloneAcceptanceAuthorized=false`, and
+`verifierGrantsMutationAuthority=false`; the local binding-aware envelopes
+provide phase authority.
+Combined acceptance records `runtimeDatabasePathVerified=true`,
+`criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`; cleanup deletes nothing.
+
+Then mandatory stop. P23 remains pending and separately requires private-copy
+semantic target verification and backup, including integrity/FK/schema/
+migration/rotation, zero active sessions, and zero fixture receipt/event/league,
+manager assignment/activity/idempotency/notification, and outbox event/audience
+residue. Reopening/final review, normal restore, rollback, closeout, browser
+workflow, production, and a second provider update remain forbidden.
 
 ## Historical Milestone Evidence
 
