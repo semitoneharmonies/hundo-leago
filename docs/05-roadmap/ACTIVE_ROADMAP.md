@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Preserve the consumed one-shot Netlify helper-retirement dispatch; publish this exact nine-document amendment, then run only a fresh allowlisted provider projection, the corrected network-read-only HTTP verifier capture, local postflight, and conditional exact cleanup; do not redeploy or retry
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8e6c8fae36273a816a7539 CURRENT + READY / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED / REPLAY 8b21edc8 PASS + REPLAYED TRUE + 0/0 + AUTHORITY CONSUMED + NO RERUN / REPLAY EVIDENCE COMMIT 296CD690 PUBLISHED / HELPER-RETIREMENT AUTHORITY COMMIT 7DD9075 PUBLISHED / ONE CLI DISPATCH CONSUMED + NO RETRY / PROVIDER POSTFLIGHT PASS / INITIAL HTTP VERIFIER TWICE REJECTED ONLY COMMA-OWS REPRESENTATION / CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT / ACTIVATION+VERIFICATION+BACKUP+REOPENING+FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Publish the exact nine-document helper-retirement completion evidence, preserve the consumed one-dispatch/no-retry boundary, then mandatory stop; Chrome disk/FD reproof remains pending and no activation or later gate is authorized
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8e6c8fae36273a816a7539 CURRENT + READY / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED / REPLAY 8b21edc8 PASS + REPLAYED TRUE + 0/0 + AUTHORITY CONSUMED + NO RERUN / REPLAY EVIDENCE COMMIT 296CD690 PUBLISHED / HELPER-RETIREMENT AUTHORITY COMMIT 7DD9075 PUBLISHED / INCIDENT AMENDMENT 0498FD4 PUBLISHED / ONE CLI DISPATCH CONSUMED + NO RETRY / HELPER RETIREMENT PROVIDER+HTTP+POSTFLIGHT+CLEANUP PASS / INITIAL HTTP VERIFIER TWICE REJECTED ONLY COMMA-OWS REPRESENTATION / CHROME DISK+FD REPROOF PENDING / ACTIVATION+VERIFICATION+BACKUP+REOPENING+FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1814,6 +1814,27 @@ fresh provider projection, exactly one corrected network-read-only HTTP-verifier
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
 grants no retry. Activation, backup, reopening/review, browser, closeout, and
 production remain forbidden; Chrome disk/FD reproof remains pending.
+
+### 2026-08-26 Helper-Retirement Completion
+
+Published incident amendment `0498fd4fd400e8aad16c4cf9c405165d420bd489`
+permitted the evidence-only continuation. Exact action authority
+`7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` remains consumed after one
+dispatch; no retry ran or is authorized. Refreshed provider postflight is
+`1862` bytes / SHA-256 `68cd773b3e2f104d71f8c96ce299eea7d89f542d8e5f449f33da4327100f9acd`.
+Corrected official HTTP evidence at `2026-08-26T05:25:45.785Z` is `23014` bytes /
+SHA-256 `d0ef4d2ed2cf848fbec5959012c929c36a2ea3d74f684d836a6d809fe6d76d46`
+and passes `64/64 + 8/8 + 10/10 + 5/5` with no cookies or writes. Local
+postflight is `4837` bytes / SHA-256
+`6941c238289713ee3012a2abe868380dd240c46a8a44ff06e5a7a36c7c7ed4a8`;
+cleanup is `1211` bytes / `1` LF / zero CR / final LF / SHA-256
+`b49aca2fa65c2039c5b6e4661e9cf981dd9f29b9a1fdfaddac779609bca00c78`
+at `2026-08-26T05:33:33.808Z`. Cleanup deleted only exact external profile,
+runtime control, and empty temp parent; baseline, captures, and evidence remain.
+The false-negative/reconstructed chronology and corrected kit pins remain
+preserved. Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`.
+Mandatory stop; Chrome disk/FD reproof remains pending, and activation, backup,
+reopening/review, browser, closeout, and production remain forbidden.
 
 ## Historical Milestone Evidence
 

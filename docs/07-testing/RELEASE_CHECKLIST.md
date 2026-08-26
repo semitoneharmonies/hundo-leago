@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT DISPATCH CONSUMED + PROVIDER POSTFLIGHT PASS; HTTP VERIFIER OWS INCIDENT; CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT; ACTIVATION AND LATER GATES NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; CHROME DISK/FD REPROOF PENDING; ACTIVATION AND LATER GATES NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER-RETIREMENT DISPATCH CONSUMED; CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER RETIREMENT PASS + AUTHORITY CONSUMED; LATER GATES NOT AUTHORIZED)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -242,8 +242,8 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   captures and protected files stayed stable. Final metadata is `6012` bytes /
   `b2f706da...`, code `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`. Replay
   authority is consumed; no rerun.
-- [ ] `RC-STG-006N23` `DISPATCH CONSUMED / PROVIDER PASS / CORRECTED READ-ONLY
-  VERIFICATION AUTHORIZED NEXT`: helper-retirement-only dispatch authority was
+- [x] `RC-STG-006N23` `PASS / AUTHORITY CONSUMED / NO RETRY`:
+  helper-retirement-only dispatch authority was
   published in exact commit `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb`, based
   on replay-evidence commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`.
   Exactly one staging Netlify CLI publication was authorized and dispatched;
@@ -382,6 +382,29 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   remove the exact external control and profile, then owned `E:\Codex\temp` only
   if empty. It must preserve source config, original-dist, captures, and provider/
   HTTP evidence; no broad cleanup or empty `.git` sentinel is authorized.
+  Published incident amendment
+  `0498fd4fd400e8aad16c4cf9c405165d420bd489` permitted only the evidence-only
+  continuation. Refreshed provider postflight is `1862` bytes / `1` LF / zero
+  CR / final LF / SHA-256
+  `68cd773b3e2f104d71f8c96ce299eea7d89f542d8e5f449f33da4327100f9acd`.
+  Exactly one corrected official HTTP result completed at
+  `2026-08-26T05:25:45.785Z`: `23014` bytes / `1` LF / zero CR / final LF /
+  SHA-256
+  `d0ef4d2ed2cf848fbec5959012c929c36a2ea3d74f684d836a6d809fe6d76d46`,
+  passing `64/64` baseline bytes, `8/8` normal headers, `10/10` retired helper
+  paths, and `5/5` held backend probes with no cookies sent and no writes
+  attempted. Local postflight completed at `2026-08-26T05:26:25.700Z`:
+  `4837` bytes / `1` LF / zero CR / final LF / SHA-256
+  `6941c238289713ee3012a2abe868380dd240c46a8a44ff06e5a7a36c7c7ed4a8`.
+  Exact cleanup completed at `2026-08-26T05:33:33.808Z`: `1211` bytes / `1`
+  LF / zero CR / final LF / SHA-256
+  `b49aca2fa65c2039c5b6e4661e9cf981dd9f29b9a1fdfaddac779609bca00c78`.
+  It removed only the exact external profile, runtime control, and empty owned
+  temp parent; repo-ignored baseline control, original-dist, captures, and
+  evidence remain preserved. The two false negatives, diagnostic,
+  reconstructed-manifest chronology, and current corrected kit pins remain
+  evidence. Exactly one dispatch ran, no retry ran or is authorized, and deploy
+  `6a8e6c8fae36273a816a7539` remains current/newest/`ready`. Mandatory stop.
 - [ ] `RC-STG-006O23` Post-abort target activation remains `PENDING AUTHORITY`.
   No `DATABASE_PATH` change is authorized by this checklist revision.
 - [ ] `RC-STG-006P23` Post-abort target verification, backup, final staging
@@ -436,6 +459,19 @@ fresh provider projection, exactly one corrected network-read-only HTTP-verifier
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
 grants no retry. Activation, backup, reopening/review, browser, closeout, and
 production remain forbidden; Chrome disk/FD reproof remains pending.
+
+### RC-STG-006N23 Completion Evidence
+
+Published incident amendment `0498fd4fd400e8aad16c4cf9c405165d420bd489`
+was followed by the accepted refreshed provider `1862`/`68cd773b...`, corrected
+official HTTP `23014`/`d0ef4d2e...` at `64/64 + 8/8 + 10/10 + 5/5`, local
+postflight `4837`/`6941c238...`, and exact cleanup `1211`/`b49aca2f...` evidence
+bound above. The action authority remains consumed by one dispatch and no retry.
+`RC-STG-006N23` is checked `PASS / AUTHORITY CONSUMED / NO RETRY`. The prior
+comma-OWS false negatives and reconstructed chronology remain preserved.
+`RC-STG-006O23` and `RC-STG-006P23` remain unchecked/pending. Mandatory stop:
+no activation, backup, reopening/review, browser, closeout, or production
+action; Chrome disk/FD reproof remains pending.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -1481,11 +1517,12 @@ also pass. Operator sequencing strict-stopped the smoke; phase two and normal
 recovery are forbidden. The abort-v2 plan, one published-authority first
 execute, and the one authorized byte-identical replay passed. First-execute and
 replay authorities are consumed; the exact target/receipt remain inactive.
-Replay is `PASS / AUTHORITY CONSUMED / NO RERUN`. `RC-STG-006N23` is
-`DISPATCH CONSUMED / PROVIDER PASS / CORRECTED READ-ONLY VERIFICATION
-AUTHORIZED NEXT`; it remains unchecked pending the amended HTTP result, local
-postflight, and conditional exact cleanup. Activation, verification, backup,
-and every later downstream step remain unauthorized.
+Replay is `PASS / AUTHORITY CONSUMED / NO RERUN`. `RC-STG-006N23` is checked
+`PASS / AUTHORITY CONSUMED / NO RETRY`; refreshed provider, corrected official
+HTTP, local postflight, and exact cleanup all pass. `RC-STG-006O23` and
+`RC-STG-006P23` remain unchecked/pending. Activation, verification, backup, and
+every later downstream step remain unauthorized; Chrome disk/FD reproof remains
+pending.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:

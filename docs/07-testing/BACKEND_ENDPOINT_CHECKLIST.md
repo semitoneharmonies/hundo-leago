@@ -289,7 +289,7 @@ release was authorized. Exact historical evidence lives in
 
 ---
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER-RETIREMENT DISPATCH CONSUMED; CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER RETIREMENT PASS + AUTHORITY CONSUMED; LATER GATES NOT AUTHORIZED)
 
 Grae requested and approved `HL-20260823-1` at
 `2026-08-23T23:23:29.877Z`. F
@@ -646,6 +646,27 @@ fresh provider projection, exactly one corrected network-read-only HTTP-verifier
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
 grants no retry. Activation, backup, reopening/review, browser, closeout, and
 production remain forbidden; Chrome disk/FD reproof remains pending.
+
+### 2026-08-26 Helper-Retirement Completion
+
+Published incident amendment `0498fd4fd400e8aad16c4cf9c405165d420bd489`
+permitted only evidence collection. One-dispatch action authority
+`7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` remains consumed; no retry ran or
+is authorized. Refreshed provider postflight is `1862` bytes / SHA-256
+`68cd773b3e2f104d71f8c96ce299eea7d89f542d8e5f449f33da4327100f9acd`.
+Corrected official HTTP evidence at `2026-08-26T05:25:45.785Z` is `23014` bytes /
+SHA-256 `d0ef4d2ed2cf848fbec5959012c929c36a2ea3d74f684d836a6d809fe6d76d46`
+and passes `64/64` baseline bytes, `8/8` headers, `10/10` retired paths, and all
+five held probes—two `200`, three `503 SERVICE_MAINTENANCE`—with `no-store`, no
+cookies sent, and no writes attempted. Local postflight is `4837` bytes /
+SHA-256 `6941c238289713ee3012a2abe868380dd240c46a8a44ff06e5a7a36c7c7ed4a8`.
+Cleanup is `1211` bytes / `1` LF / zero CR / final LF / SHA-256
+`b49aca2fa65c2039c5b6e4661e9cf981dd9f29b9a1fdfaddac779609bca00c78`
+at `2026-08-26T05:33:33.808Z`; it removed only exact external profile/control/
+empty temp parent and preserved baseline/captures/evidence. The false-negative
+and reconstructed chronology plus current kit pins remain preserved. Helper
+retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. Mandatory stop; Chrome
+disk/FD reproof is pending and later data/browser/production gates are forbidden.
 
 ---
 

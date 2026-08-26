@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT DISPATCH CONSUMED + PROVIDER POSTFLIGHT PASS; HTTP VERIFIER OWS INCIDENT; CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT; ACTIVATION AND LATER GATES NOT AUTHORIZED`
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; CHROME DISK/FD REPROOF PENDING; ACTIVATION AND LATER GATES NOT AUTHORIZED`
 
 ## Work Plan ID
 
@@ -439,6 +439,27 @@ fresh provider projection, exactly one corrected network-read-only HTTP-verifier
 local postflight, and conditional exact cleanup, in order. Failure/ambiguity
 grants no retry. Activation, backup, reopening/review, browser, closeout, and
 production remain forbidden; Chrome disk/FD reproof remains pending.
+
+### 2026-08-26 Helper-Retirement Completion
+
+Published incident amendment `0498fd4fd400e8aad16c4cf9c405165d420bd489`
+permitted only evidence collection. Exact action authority
+`7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` stays consumed by one dispatch;
+no retry ran or is authorized. Refreshed provider postflight is `1862` bytes /
+SHA-256 `68cd773b3e2f104d71f8c96ce299eea7d89f542d8e5f449f33da4327100f9acd`.
+Corrected official HTTP result at `2026-08-26T05:25:45.785Z` is `23014` bytes /
+SHA-256 `d0ef4d2ed2cf848fbec5959012c929c36a2ea3d74f684d836a6d809fe6d76d46`
+and passes exact `64/64`, `8/8`, `10/10`, and `5/5`, with no cookies sent and
+no writes attempted. Local postflight is `4837` bytes / SHA-256
+`6941c238289713ee3012a2abe868380dd240c46a8a44ff06e5a7a36c7c7ed4a8`
+at `05:26:25.700Z`. Cleanup is `1211` bytes / `1` LF / zero CR / final LF /
+SHA-256 `b49aca2fa65c2039c5b6e4661e9cf981dd9f29b9a1fdfaddac779609bca00c78`
+at `05:33:33.808Z`; only exact external profile/control/empty temp parent were
+removed, and baseline/captures/evidence remain. Preserve the two false
+negatives, diagnostic, reconstructed chronology, and current kit pins. Helper
+retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. Mandatory stop; no
+activation, backup, reopening/review, browser, closeout, or production action.
+Chrome disk/FD reproof remains pending.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
 
@@ -1587,11 +1608,12 @@ abort-v2 plan, its one published-authority first execute, and its one authorized
 byte-identical replay pass. The first-execute result is accepted at
 `replayed: false` / `0/2`; replay is accepted at `replayed: true` / `0/0`.
 Both authorities are consumed and neither may be rerun. The exact one-shot
-staging Netlify helper-retirement dispatch also ran and is consumed. Provider
-postflight passes; only the amended corrected read-only provider/HTTP proof,
-local postflight, and conditional exact cleanup remain authorized. Every later
-post-abort gate awaits another evidence-bound amendment. Normal recovery remains
-forbidden.
+staging Netlify helper-retirement dispatch also ran and is consumed. Published
+incident amendment `0498fd4...`, refreshed provider postflight, corrected
+official HTTP proof, local postflight, and exact cleanup all pass. Helper
+retirement is complete with no retry. Every later post-abort gate awaits another
+evidence-bound amendment; Chrome disk/FD reproof remains pending and normal
+recovery remains forbidden.
 
 After the final hosted gates pass, this plan's status will change to
 `COMPLETE - STAGING ONLY`, the final evidence will replace every pending

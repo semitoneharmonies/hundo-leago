@@ -2,7 +2,7 @@
 
 ## Status
 
-`RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH ABORT-V2 VERIFIER PASS; ABORT-V2 PLAN PASS; ABORT-V2 FIRST EXECUTE PASS AND CONSUMED; ABORT-V2 REPLAY PASS AND CONSUMED; HELPER RETIREMENT DISPATCH CONSUMED + PROVIDER POSTFLIGHT PASS; HTTP VERIFIER OWS INCIDENT; CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT; ACTIVATION AND LATER GATES NOT AUTHORIZED`
+`RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH ABORT-V2 VERIFIER PASS; ABORT-V2 PLAN PASS; ABORT-V2 FIRST EXECUTE PASS AND CONSUMED; ABORT-V2 REPLAY PASS AND CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; CHROME DISK/FD REPROOF PENDING; ACTIVATION AND LATER GATES NOT AUTHORIZED`
 
 Release `HL-20260823-1` is a new isolated-staging release. It does not reopen,
 resume, or reuse blocked release `HL-20260822-1`. Production remains untouched
@@ -1406,6 +1406,100 @@ original-dist, or tracked-configuration change; and no target activation,
 post-activation verification, backup, staging reopening/final review, browser,
 closeout, or production action. Chrome disk/FD reproof remains pending.
 
+## Helper-Retirement Completion Evidence
+
+Published incident-continuation amendment
+`0498fd4fd400e8aad16c4cf9c405165d420bd489` was the prerequisite for this
+evidence-only continuation. It did not renew dispatch authority. Exact action
+authority `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` remains consumed by the one
+Netlify CLI spawn already sealed in the `1902`-byte envelope SHA-256
+`b5cd9f492e41b392ec854e05a9fa91480b2e4ebc592ac80ab52b99d0e8295204`.
+No second dispatch, retry, replacement deploy, provider write, or browser action
+ran.
+
+The required fresh allowlisted provider projection completed at
+`2026-08-26T05:24:13.156Z`. Exact artifact
+`helper-retirement-provider-postflight.json` is `1862` bytes / `1` LF / zero CR
+/ final LF / SHA-256
+`68cd773b3e2f104d71f8c96ce299eea7d89f542d8e5f449f33da4327100f9acd`,
+code `HL23_HELPER_RETIREMENT_PROVIDER_POSTFLIGHT_OK`. It proves deploy
+`6a8e6c8fae36273a816a7539` current/newest/`ready`, exact title
+`HL-20260823-1-abort-v2-retire-helper-baseline`, manual-CLI method, one matching
+retirement deploy, no pending/active deploy, five headers, two redirects, zero
+functions, zero edge functions, exact empty `build_settings: {}`, and no Git
+build linkage. Previous helper deploy `6a8c006abe46c8fb6269c40c` is no longer
+current. Render remains sole-newest/`LIVE` exact-B2 deploy
+`dep-da6ghj67bikc738hbbv0`; full hold, source `DATABASE_PATH`, inactive target
+and receipt, zero application errors, and zero request `5xx` remain exact. This
+fresh projection supersedes the earlier `642b5fac...` provider observation for
+final acceptance without rewriting its incident chronology.
+
+Exactly one corrected network-read-only HTTP-verifier capture then completed
+at `2026-08-26T05:25:45.785Z`. Exact artifact
+`helper-retirement-http-postflight-result.json` is `23014` bytes / `1` LF / zero
+CR / final LF / SHA-256
+`d0ef4d2ed2cf848fbec5959012c929c36a2ea3d74f684d836a6d809fe6d76d46`,
+code `HL23_HELPER_RETIREMENT_HTTP_POSTFLIGHT_OK`. It proves:
+
+* `64/64` remote byte checks passed for all `32` public baseline files across
+  canonical and immutable origins, with no `Set-Cookie`;
+* `8/8` ordered normal-header checks passed at status `200`, with exact global
+  header-map SHA-256
+  `a1ade439bda16fafea1afdd1360bb9ec906e598fc48ca989b7b5ffc6c3af0245`,
+  exact `no-store` app responses, the exact ordered immutable directives after
+  only SP/HTAB edge normalization, and no `Set-Cookie`;
+* `10/10` retired helper paths passed across both origins as exact `472`-byte
+  `text/html` SPA fallback SHA-256
+  `90620768a37b57b905a35cd576077cd4c4f1a760da28fc8c1c8a9347458383ca`;
+  `enabled.json` is not JSON and no helper JavaScript or CSS remains;
+* all five fresh held backend probes passed: live/readiness are the exact two
+  `200` responses and session/leagues/current-FAD are the exact three
+  `503 SERVICE_MAINTENANCE` responses, all `no-store` and without
+  `Set-Cookie`; and
+* exact result fields are `cookiesSent: false` and `writesAttempted: false`.
+
+This official pass follows, and does not erase, the two official
+`CACHE_CONTROL_HEADER_MISMATCH` false negatives and the explanatory non-official
+diagnostic above. The reconstructed pre-dispatch manifest also remains labeled
+`reconstructedAfterDispatch=true` / `continuouslyRetained=false`; it is not the
+retained original. The corrected ignored kit pins remain the exact current
+manifest `3358/99/7aab6845...`, HTTP verifier `20991/522/26ca6f49...`, contract
+`30211/854/b3ae7da8...`, and wrapper `21343/628/8bb2a131...` values recorded
+above, all zero CR/final LF.
+
+Local postflight completed at `2026-08-26T05:26:25.700Z`. Exact artifact
+`helper-retirement-postflight-result.json` is `4837` bytes / `1` LF / zero CR /
+final LF / SHA-256
+`6941c238289713ee3012a2abe868380dd240c46a8a44ff06e5a7a36c7c7ed4a8`,
+code `HL23_HELPER_RETIREMENT_POSTFLIGHT_OK`. It re-seals one command/no retry,
+the six-file `8436`-byte capture envelope, both accepted provider and HTTP
+artifacts, zero scanned function/edge payload files, exact external control and
+profile residue, no persisted token, current/ready five-header/two-redirect/
+zero-function/zero-edge deploy state, the no-Git automatic-publish fence, full
+hold, and false activation/reopen/production authority.
+
+Conditional exact cleanup completed at `2026-08-26T05:33:33.808Z`. Exact
+artifact `helper-retirement-cleanup-result.json` is `1211` bytes / `1` LF /
+zero CR / final LF / SHA-256
+`b49aca2fa65c2039c5b6e4661e9cf981dd9f29b9a1fdfaddac779609bca00c78`,
+code `HL23_HELPER_RETIREMENT_CLEANUP_OK`. Its one no-force/no-retry operation
+used exact-child `rmSync` recursive/no-force/no-retry, followed by empty-parent
+`rmdirSync`, and deleted only exact external profile
+`E:\Codex\temp\HL-20260823-1-helper-retirement-profile-v1`, exact external
+runtime control `E:\Codex\temp\HL-20260823-1-helper-retirement-control-v1`, and
+the owned exact `E:\Codex\temp` parent after it was empty. All three are proven
+absent. Repo-ignored baseline control, the `33`-file / `1932120`-byte /
+`2d8069ca...` original-dist baseline, the exact capture directory, and all
+evidence remain preserved; `evidenceArtifactsPreserved=11`, no auth token was
+persisted or read by cleanup, and no raw `getSite` payload was persisted.
+
+Helper retirement is therefore `PASS / AUTHORITY CONSUMED / NO RETRY`.
+`RC-STG-006N23` is complete and consumed. Mandatory stop remains in force:
+`RC-STG-006O23` and `RC-STG-006P23` remain pending/unchecked, and there is no
+authority for target activation, post-activation verification, backup, staging
+reopening/final review, browser action, closeout, or production action. Chrome
+disk/FD reproof remains pending.
+
 ## Historical Conditional Successful-Smoke Authority - Never Activated
 
 This section recorded the path that would have applied only after a complete
@@ -1420,8 +1514,8 @@ post-cutover verifier, and backup requester have been removed from current
 authority to prevent accidental reuse. Their design remains recoverable from
 the preceding documentation commit, but none applies to this stopped release
 state. The accepted abort-only section above is frozen evidence and supplies no
-rerun authority. Only the bounded helper-retirement amendment above is current
-executable authority.
+rerun authority. The bounded helper-retirement amendment is now consumed and
+there is no current executable downstream authority.
 
 ## Release-Specific Isolation
 
@@ -1437,8 +1531,8 @@ evidence, phase two and retry are forbidden, the full hold is restored, and
 exact abort-v2 B2 deployment/runtime and the fresh B2-pinned WAL verifier now
 pass. The exact abort-v2 plan and first execute above also passed and are frozen.
 First-execute and replay authorities are consumed; neither may be rerun. The
-separate amendment above authorizes only the exact sealed-baseline Netlify CLI
-retirement; no helper or `netlify.toml` value from either predecessor grants
+separate amendment's exact sealed-baseline Netlify CLI retirement is complete
+and consumed; no helper or `netlify.toml` value from either predecessor grants
 current authority.
 
 ## Gate Ledger
@@ -1468,7 +1562,7 @@ current authority.
 | Abort-v2 first execute | `PASS / AUTHORITY CONSUMED / NO RERUN` | Published authority `fd31b1f...`; exactly one `969`-byte / `bad1c78f...` command. Native status `0`; stdout `4902` / `74610bcc...`; stderr `0` / `e3b0c442...`; canonical result `3896` / `3d67f676...`; contract v2, `replayed: false`, `0/2`, source preserved, target verified at `cf3ca07d...`, receipt `24adf2d...`, exact temporary-work/family binding. The three-byte literal `0\n` auxiliary-status defect is sealed and unrepaired; envelope-native status plus result/postflight remove ambiguity. Postflight, probes, cleanup, envelope, and final metadata seals are bound above. |
 | Abort-v2 identical replay | `PASS / AUTHORITY CONSUMED / NO RERUN` | Exact one-shot `969`-byte / `bad1c78f...` command; native status `0`; stdout `4905` / `65431c4c...`; stderr `0` / `e3b0c442...`; replay status `2` / `9a271f2a...`; canonical result `3899` / `8b21edc8...`; contract v2, `replayed: true`, `0/0`, exact no-work object, unchanged source family, and byte-identical target/receipt. Preflight, postflight, probes, provider state, cleanup, and metadata are sealed above. Mandatory stop; no rerun. |
 | Normal strict restore/replay | `NOT AUTHORIZED` | The successful-smoke condition never occurred. No normal plan, confirmation, execute, or replay may run. |
-| Post-abort helper retirement | `DISPATCH CONSUMED / PROVIDER PASS / CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT` | Authority commit `7dd9075...`; one CLI dispatch produced current/ready deploy `6a8e6c8...` with capture status `0`, and no retry is allowed. Provider projection passes. The initial official HTTP verifier twice rejected only comma-OWS representation; run only the corrected read-only provider/HTTP proof, local postflight, and conditional exact cleanup, then mandatory stop. |
+| Post-abort helper retirement | `PASS / AUTHORITY CONSUMED / NO RETRY` | Published incident amendment `0498fd4...` permitted only read-only continuation after the two comma-OWS false negatives. Refreshed provider `1862`/`68cd773b...`, corrected official HTTP `23014`/`d0ef4d2e...` at `64/64 + 8/8 + 10/10 + 5/5`, local postflight `4837`/`6941c238...`, and exact cleanup `1211`/`b49aca2f...` pass. Deploy `6a8e6c8...` remains current/ready; one dispatch only, no retry. Mandatory stop. |
 | Post-abort target activation, verification, and fresh backup | `PENDING AUTHORITY / MANDATORY STOP` | Target and receipt are materialized and verified but inactive; replay success grants no activation, verifier, or backup authority. A later amendment is required. |
 | Final desktop/mobile matrix, observation, and M7-26 closeout | `PENDING` | Requires every prior gate. |
 
@@ -1506,8 +1600,9 @@ The target and receipt are materialized and verified while `DATABASE_PATH`
 remains on the preserved source; target sidecars/journal and work remain
 absent. First-execute and replay authorities are consumed and neither may be
 rerun. The exact one-shot staging Netlify helper-retirement dispatch also ran
-and is consumed. Provider postflight passes; only the amended corrected read-
-only provider/HTTP proof, local postflight, and conditional exact cleanup remain
-authorized. Retry, normal recovery, activation, post-activation verifier/backup,
-reopening/final review, closeout, and production remain unauthorized;
-production remains untouched.
+and is consumed. Published incident amendment `0498fd4...`, refreshed provider
+projection, corrected official HTTP proof, local postflight, and conditional
+exact cleanup all pass. Helper retirement is complete with no retry authority.
+Retry, normal recovery, activation, post-activation verifier/backup, reopening/
+final review, browser action, closeout, and production remain unauthorized;
+Chrome disk/FD reproof remains pending and production remains untouched.
