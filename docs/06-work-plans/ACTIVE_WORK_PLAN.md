@@ -6,7 +6,7 @@
 
 ## Plan Status
 
-`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; ABORT-V2 PLAN/FIRST EXECUTE/REPLAY PASS + AUTHORITIES CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; E855 V1 O23 REJECTED BEFORE PRE + UNCONSUMED + ZERO PROVIDER CALL; RC-STG-006O23 V2 CORRECTION AUTHORIZED NEXT + PENDING EXECUTION AFTER PUBLICATION+BINDING; RC-STG-006P23 SEMANTIC VERIFICATION/BACKUP AND ALL LATER GATES NOT AUTHORIZED`
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; ABORT-V2 PLAN/FIRST EXECUTE/REPLAY PASS + AUTHORITIES CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; E855 V1 O23 REJECTED BEFORE PRE + UNCONSUMED + ZERO PROVIDER CALL; 3F0BC V2 O23 ARM REJECTED + UNCONSUMED + NO RETRY + ZERO PROVIDER MUTATION; RC-STG-006O23 V3 CORRECTION AUTHORIZED NEXT + PENDING EXECUTION AFTER PUBLICATION+BINDING; RC-STG-006P23 SEMANTIC VERIFICATION/BACKUP AND ALL LATER GATES NOT AUTHORIZED`
 
 ## Work Plan ID
 
@@ -21,7 +21,7 @@ Full-site UI review, plain-language workflow correction, permission hardening,
 and isolated staging release
 ```
 
-## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; V1 O23 Rejected/Unconsumed; V2 Correction Authorized Next
+## 2026-08-23 Fresh Strict Release - Phase One Published; Strict Stop; V1/V2 O23 Rejected/Unconsumed; V3 Correction Authorized Next
 
 Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
 exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
@@ -460,9 +460,10 @@ removed, and baseline/captures/evidence remain. Preserve the two false
 negatives, diagnostic, reconstructed chronology, and current kit pins. Helper
 retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. At the N23 completion
 boundary, mandatory stop forbade activation, backup, reopening/review, browser,
-closeout, and production. Only the V2 correction below—not the rejected V1
-record—supersedes that activation-authority status after publication and binding
-audit; Chrome disk/FD reproof remains pending.
+closeout, and production. V1 and V2 were later rejected at their recorded
+boundaries; only the V3 correction below may supersede that activation-authority
+status after publication and binding audit. Chrome disk/FD reproof remains
+pending.
 
 ### RC-STG-006O23 V1 Held DATABASE_PATH Handoff - Rejected / Unconsumed Historical Evidence
 
@@ -573,18 +574,23 @@ activity/idempotency/notifications, and outbox events/audiences. Reopening/
 review, normal restore, rollback, closeout, browser workflow, production, and a
 second provider update remain forbidden.
 
-### RC-STG-006O23 V2 Correction Authority - Authorized Next / Pending Execution
+### RC-STG-006O23 V2 Correction Authority - Rejected During Local Arm / Unconsumed / No Retry
 
-This V2 correction is not a retry because V1 never armed. Preserve the V1 kit
+> Historical boundary: every conditional execution statement in this V2 section
+> describes the now-rejected frozen design only. It grants no present authority,
+> must not be resumed, and is superseded only by the separately pinned V3
+> correction below.
+
+The published V2 correction was not a V1 retry because V1 never armed. Preserve the V1 kit
 and immutable rejected binding unchanged at
 `.netlify/strict-release-HL-20260823-1/target-activation-authority-binding.json`,
 exactly `1747` bytes / `46` LF / zero CR / final LF / SHA-256
 `a939aaac0770e53cb16c2fd69eea61ef5818d361fbc9a3fa57b64f556d939954`.
 They remain historical evidence and permanently non-authorizing.
 
-The only eligible V2 authority is one literal non-merge docs-only child of
+The rejected V2 authority was published as one literal non-merge docs-only child of
 `e855be9e1a4d92cd6428175965ecf934653ae965` changing exactly the standard nine
-documents. It activates only after publication as frontend HEAD/
+documents. Its former contract would have activated only after publication as frontend HEAD/
 `origin/staging`, confirmation that backend HEAD/`origin/staging` remain clean
 at B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, and exclusive creation/audit
 of the distinct ignored post-publication
@@ -609,7 +615,7 @@ HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activa
 HL23-V2-REJECTED-AUTHORITY|commit=e855be9e1a4d92cd6428175965ecf934653ae965|bindingPath=.netlify/strict-release-HL-20260823-1/target-activation-authority-binding.json|bindingBytes=1747|bindingSha256=a939aaac0770e53cb16c2fd69eea61ef5818d361fbc9a3fa57b64f556d939954|failureCode=AUTHORITY_DOCS_DO_NOT_PIN_FROZEN_KIT|authorizing=false|rejectedBeforeAction=true
 HL23-V2-REJECTED-SESSION-ACTIVITY|source=root-coordinator-record|providerDispatchOccurred=false|browserShellInputOccurred=false|shellVerifierInvocationOccurred=false|captureArmOccurred=false|rootActivationMutationOccurred=false
 
-The V2 runbook reauthorizes only the bounded O23 shell-boundary sequence recorded
+The frozen V2 runbook described only the bounded O23 shell-boundary sequence recorded
 above under the new filenames, binding, and distinct permanent tombstone
 `target-activation-v2-captures/hl-20260823-1-v2-<authority16>-df755011d0e4d4b1/`.
 PRE and POST use the pinned new abort-v2/main-WAL-aware verifier through stdin in
@@ -636,6 +642,137 @@ Combined acceptance alone records `runtimeDatabasePathVerified=true`,
 mandatory stop. P23 semantic verification/backup, reopening/review, normal
 restore, rollback, browser workflow, closeout, production, and all later gates
 remain forbidden.
+
+### RC-STG-006O23 V3 Correction Authority - Authorized Next / Pending Execution
+
+Published V2 commit `3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323`
+collected its immutable binding and seven PRE evidence files, including fresh
+provider, shell, and held-probe evidence, and then invoked local `--arm`. Arm
+failed closed with `CAPTURE_DIRECTORY_OWNER_OR_MODE_INVALID` before provider
+dispatch. The verified V2 binding plus all `21` frozen/PRE/failure files remain
+immutable. The binding is
+`.netlify/strict-release-HL-20260823-1/target-activation-v2-authority-binding.json`
+at `2915` bytes / SHA-256
+`d30f9e25c080060e74797b8aed2e831f06507555194058cdecde5ebc12bb1e3a`,
+failure JSON at `165` bytes / SHA-256
+`1c0faa5e7cf8d1cf12410bd5ca424e59f3e6bd83e3adac1b14ce0d6b28950ea7`,
+and residue JSON at `1026` bytes / SHA-256
+`b9fe005c8dd35d943fdf534a3406917a95194abe2bd50e935d88131baed598ee`.
+Only the empty, ACL-identical Windows parent
+`.netlify/strict-release-HL-20260823-1/target-activation-v2-captures` exists and
+reports mode `0666`; no authority-specific root, attempt, seal, dispatch, provider
+response, or POST evidence exists. V2 made zero provider mutations and zero
+`DATABASE_PATH` updates. It is unconsumed but permanently rejected and cannot be
+retried or used to authorize V3. Preserve all V1/V2 kit, bindings, PRE, failure,
+residue, and empty-parent evidence unchanged.
+
+The root-coordinator reconciliation at `2026-08-26T10:11:44.827Z` recorded sole
+live B2, zero new deploys, and auto deploy disabled after the V2 failure. That is
+an external attestation, not global provider state proved by local absence. Fresh
+V3 provider, shell, probe, and complete cursor-closed deploy-edge PRE evidence
+must reconfirm B2 and topology before V3 arm. V3 is a new authority and namespace,
+not a retry of V2.
+
+The only eligible V3 correction is one literal non-merge docs-only child of
+`3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323`, changing exactly the same standard
+nine authority documents. That commit must be published as frontend HEAD and
+`origin/staging`; backend HEAD and `origin/staging` must remain clean at B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`. Only then may the distinct ignored
+immutable `target-activation-v3-authority-binding.json` be exclusively created
+from its frozen template and audited. The binding is post-publication evidence,
+is excluded from the frozen kit, and cannot alter these pins. O23 remains
+unchecked and conditional until every V3 step passes.
+
+Each line below is an exact, unique, standalone V3 pin using its full
+repo-relative path. Joined in this order with LF after every line, including the
+last, the `15`-line block is `3261` bytes and has SHA-256
+`12da4b1f0d5ad78e0b4c6ae8d922397b3a4e26780949e800d1e9b009f81bde95`.
+
+HL23-V3-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-support-manifest.json|bytes=12378|lf=312|cr=0|finalLf=true|sha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f
+HL23-V3-FROZEN-ARTIFACT-SET|sha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-contract.cjs|bytes=88806|lf=1812|cr=0|finalLf=true|sha256=f5500a62f243b0a5743ffc4b31e279da6f493a93358b415535bc63d9bbfd9aba
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-held-verifier.sh|bytes=26190|lf=638|cr=0|finalLf=true|sha256=9d0c02916e8eff54f98d3b3121774f7740b0af3bd30d9d5d588c768f674812ac
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-shell-envelope.cjs|bytes=14926|lf=332|cr=0|finalLf=true|sha256=61a5f62e07e41787ff7b70d7e487ed5481346bb5c12a5b7b43e4ec60cbf85529
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-held-probes.cjs|bytes=4892|lf=147|cr=0|finalLf=true|sha256=6012eee2b69c744e3779354e8a2d82edba71597b502bca3e08ae299469ed13ba
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-action-control.cjs|bytes=48066|lf=1078|cr=0|finalLf=true|sha256=b67b14e3f8b5a6e325b9c595255df72450c25cccb0e4181c1f864b80105640af
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-postflight.cjs|bytes=18441|lf=420|cr=0|finalLf=true|sha256=167cb32e107815dc3ebec1e89abc148529922df15b2d0d3d66597cc09fa37f42
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-cleanup.cjs|bytes=9786|lf=205|cr=0|finalLf=true|sha256=b91ac81fc981e620740933c25571eefc94a55deee6e656b0603aa905356bdfc3
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-support-self-test.cjs|bytes=29733|lf=727|cr=0|finalLf=true|sha256=0a16e984f34f7752721f482700798f7f71d22af86a86da03c2cb6df259336575
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-verify-freeze.cjs|bytes=25017|lf=492|cr=0|finalLf=true|sha256=9a167a73f12e38e301679a4d6f155942c6a04aa42b4d716a0e34d228032a8046
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-authority-binding.template.json|bytes=4818|lf=124|cr=0|finalLf=true|sha256=411b7ccd099a2c26481a69c7c7d149252b8572361d771f8c57bfb21d4be107e6
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-RUNBOOK.md|bytes=13751|lf=218|cr=0|finalLf=true|sha256=a7d46231cce61a7b309c77d23d25a6482f97fb99c7c2c907db39d4bcac8c2473
+HL23-V3-REJECTED-AUTHORITY|commit=3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323|bindingPath=.netlify/strict-release-HL-20260823-1/target-activation-v2-authority-binding.json|bindingBytes=2915|bindingSha256=d30f9e25c080060e74797b8aed2e831f06507555194058cdecde5ebc12bb1e3a|failureCode=CAPTURE_DIRECTORY_OWNER_OR_MODE_INVALID|authorizing=false|rejectedBeforeProviderDispatch=true
+HL23-V3-REJECTED-SESSION-ACTIVITY|source=root-coordinator-record|providerDispatchOccurred=false|databasePathUpdateOccurred=false|captureArmSucceeded=false|v2PreEvidenceAuthorizing=false|freshV3PreRequired=true
+
+The frozen V3 manifest is exactly `12378` bytes / `312` LF / zero CR / final LF
+with SHA-256 `07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f`;
+its `11` artifacts total `284426` bytes and have canonical artifact-set SHA-256
+`1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03`.
+Only the pinned V3 abort-v2/main-WAL-aware held verifier may run, and only for
+raw phases `pre-boundary` and `activation-post`. In a fresh attached shell,
+disable and clear history with `HISTFILE=/dev/null`, then stream it through stdin
+as `bash -s -- pre-boundary dep-da6ghj67bikc738hbbv0` and later
+`bash -s -- activation-post dep-<new>`; persist no remote verifier or scratch
+file. Both phases are shell-boundary proof only: no
+SQLite/project database module, database open, copy, checkpoint, sidecar removal,
+scratch creation, or write is reachable.
+
+Fresh PRE must prove the exact source path and full source main/WAL/SHM family,
+target main and canonical receipt, five required absences, the critical `20`-key
+runtime matrix plus nine absent provider fields, four stable boundaries, two
+complete zero-denied/zero-holder `/proc/*/fd` scans, and the full hold. Device IDs
+are namespace-local: internal identity consistency is required, historical
+receipt device values remain bound, and PRE/POST container devices are never
+compared. Raw results remain non-authorizing and state
+`externalAuthorityBindingRequired=true`,
+`externalAuthorityBindingVerifiedByVerifier=false`,
+`standaloneAcceptanceAuthorized=false`, and
+`verifierGrantsMutationAuthority=false`.
+
+Provider evidence may record only the exact requested target call and unique
+deploy/build/service/log facts; it cannot prove configured/runtime path or the
+hold and must record `providerEnvironmentReadAvailable:false`; never persist raw
+provider payload or secrets. Provider PRE, shell envelope, and probes must precede
+a fresh, complete, paginated, cursor-closed deploy-ID edge set captured within two
+minutes of arm, with held B2 still sole newest/`LIVE` and no active/pending
+competitor. V3 arm creates
+the single authority-specific permanent sentinel directly under the trusted
+release root:
+`target-activation-v3-capture-hl-20260823-1-v3-<authority16>-9ea94bc779a0ce54/`.
+It creates no shared parent. On Windows, exact inherited owner/SID/SDDL/ACE,
+non-reparse realpath, atomic exclusivity, stable rereads, and expected mode `0666`
+apply; no POSIX `0700` equivalent, confidentiality, or hostile-authorized-principal
+tamper resistance is claimed. POSIX uses directory/file modes `0700`/`0600`.
+Durable root, attempt, separate tombstone seal, fsyncs, and stable exact entry-set
+proof must finish before dispatch; root presence permanently consumes V3.
+
+The sole mutation is exactly one
+`mcp__render__update_environment_variables` call with canonical `247`-byte
+arguments SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`:
+`{"envVars":[{"key":"DATABASE_PATH","value":"/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3"}],"replace":false,"serviceId":"srv-d9eo2turnols73ekb830","workspaceId":"tea-d4prbj7diees738tmg90"}`.
+Source/target value hashes remain
+`50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3` /
+`4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`.
+No trigger, retry, automatic inverse, or second provider update is authorized;
+error, timeout, disconnect, or ambiguity requires read-only reconciliation.
+
+POST must prove a complete deploy-ID set difference of exactly one new
+API-triggered B2 deploy, sole newest/`LIVE`, with the prior deploy deactivated,
+no competitor, exact Node `24.14.1` / npm `11.11.0`, all `443` suites / `3519`
+tests passing, and complete clean build/runtime log windows. Fresh activation-POST
+shell evidence and five held probes must prove only `DATABASE_PATH` changed,
+target selected but unopened, source/target/receipt durable identities and hashes
+unchanged except namespace-local device, target WAL/SHM/journal/work and source
+journal absent, two zero-holder scans, and full hold. Combined local acceptance
+alone may record `runtimeDatabasePathVerified=true`,
+`criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`. Cleanup revalidates and deletes
+nothing; then stop. `RC-STG-006P23` alone may later authorize private-copy
+semantic verification and backup. P23, reopening/review, normal restore,
+rollback, browser workflow, closeout, production, and every second provider
+update remain forbidden.
 
 ## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
 
