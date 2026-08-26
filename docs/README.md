@@ -970,19 +970,21 @@ comma-OWS false negatives, non-official diagnostic, reconstructed-manifest
 label, and current corrected kit pins remain part of the canonical chronology.
 Helper retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. At the N23
 completion boundary, mandatory stop forbade activation, backup, reopening/
-review, browser action, closeout, and production. The O23 amendment below
-supersedes only that activation-authority status; Chrome disk/FD reproof remains
-pending.
+review, browser action, closeout, and production. Only the V2 correction below—
+not the rejected V1 record—supersedes that activation-authority status after
+publication and binding audit; Chrome disk/FD reproof remains pending.
 
-### 2026-08-26 RC-STG-006O23 Held Target-Handoff Authority
+### 2026-08-26 RC-STG-006O23 V1 Held Target-Handoff Authority - Rejected / Unconsumed Historical Evidence
 
-This exact nine-document amendment is the sole O23 action authority. It becomes
-active only after one docs-only direct-child commit of frontend evidence base
-`a0da13a5a6a1c1edb352aa1b606d0d3b97aec020` is published and equals frontend
-HEAD/`origin/staging`, while backend HEAD/`origin/staging` remain clean at held
-B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`. Helper retirement remains
-`PASS / AUTHORITY CONSUMED / NO RETRY`; O23 remains unchecked until its entire
-PRE/action/POST sequence passes.
+Published commit `e855be9e1a4d92cd6428175965ecf934653ae965` recorded this V1
+design on frontend evidence base
+`a0da13a5a6a1c1edb352aa1b606d0d3b97aec020` and exact held backend B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`, but action control rejected it
+before PRE with `AUTHORITY_DOCS_DO_NOT_PIN_FROZEN_KIT`. It omitted exact frozen
+artifact paths, never armed, made no provider call, and left O23 unchecked and
+unconsumed. Every V1 pin/procedure below is immutable historical evidence only
+and cannot authorize action. Helper retirement remains
+`PASS / AUTHORITY CONSUMED / NO RETRY`.
 
 The frozen ignored pre-publication kit is pinned by manifest `7290` bytes /
 `203` LF / zero CR / final LF / SHA-256
@@ -1096,6 +1098,70 @@ manager assignments/activity/idempotency/notifications, and outbox events/
 audiences. O23 cannot satisfy those checks. Reopening/final review, normal
 restore, rollback, closeout, browser workflow, production, and any second
 provider update remain forbidden.
+
+### 2026-08-26 RC-STG-006O23 V2 Correction Authority - Authorized Next / Pending Execution
+
+This V2 correction is not a retry because V1 never armed. Preserve the V1 kit
+and immutable rejected binding unchanged at
+`.netlify/strict-release-HL-20260823-1/target-activation-authority-binding.json`,
+exactly `1747` bytes / `46` LF / zero CR / final LF / SHA-256
+`a939aaac0770e53cb16c2fd69eea61ef5818d361fbc9a3fa57b64f556d939954`.
+They remain historical evidence and permanently non-authorizing.
+
+The only eligible V2 authority is one literal non-merge docs-only child of
+`e855be9e1a4d92cd6428175965ecf934653ae965` changing exactly the standard nine
+documents. It activates only after publication as frontend HEAD/
+`origin/staging`, confirmation that backend HEAD/`origin/staging` remain clean
+at B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, and exclusive creation/audit
+of the distinct ignored post-publication
+`target-activation-v2-authority-binding.json`. O23 remains unchecked. Each line
+below is exact, standalone, and unique; the `15` lines joined in this order with
+LF and no trailing LF have SHA-256
+`4e8cfdd4ffb8f2d80fc7676e3d71358790952ad74dfb7e2848d4b4a563b1fbe5`.
+
+HL23-V2-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-support-manifest.json|bytes=9510|lf=246|cr=0|finalLf=true|sha256=991cb21b885cccb5aebf32af2f0665abe7a5566ce39c3c68f12615a318c81e33
+HL23-V2-FROZEN-ARTIFACT-SET|sha256=8d55d858e55c5b3d2edb246df2ffa4cf54175f5c4740292e830680b473010089
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-contract.cjs|bytes=51401|lf=1064|cr=0|finalLf=true|sha256=cfeebad02ed06f93212c7e20e6c4ed2287e15a1f84f86650b2cfea18613cbfad
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-held-verifier.sh|bytes=26189|lf=637|cr=0|finalLf=true|sha256=dccac0c4603a595fd9297900a8d77ddbf25b123632506deeb0d4021b816e32b6
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-shell-envelope.cjs|bytes=14925|lf=331|cr=0|finalLf=true|sha256=c897c0840bcbba97e4ea2cdc2b976a2fac5767cfa88c416fa706d551342d023a
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-held-probes.cjs|bytes=4891|lf=146|cr=0|finalLf=true|sha256=1a056371074d2abce8af289432f6cbf1755be05c03e04ea33a97aecd1592de90
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-action-control.cjs|bytes=34487|lf=773|cr=0|finalLf=true|sha256=10135f961270955c3d488fef0b80eeb86a81722f191eee5f96d61e30e92e4544
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-postflight.cjs|bytes=12226|lf=280|cr=0|finalLf=true|sha256=599499f1371281248ef8911dc5487476e0e91cef4a365e7b832aa629f5ad3fed
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-cleanup.cjs|bytes=9057|lf=193|cr=0|finalLf=true|sha256=018ea28d97d4501e7db890f7409f9afc813ab3b053f6c59e4fba03276c6badb9
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-support-self-test.cjs|bytes=26333|lf=657|cr=0|finalLf=true|sha256=2abc6bd7b01eb51a3ce6b4749700dee776b24bf7e35b837dc3a87cd2930b3cb8
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-verify-freeze.cjs|bytes=20961|lf=418|cr=0|finalLf=true|sha256=5cea7a8fe8b6aa473952714dcb61cd5d8feb382ed4c02851823ff17a01884ca2
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-authority-binding.template.json|bytes=2886|lf=72|cr=0|finalLf=true|sha256=49cb9ca31efe68fccf8981fca527726f04447dcc8a87dfae90ff39010c3bad01
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-RUNBOOK.md|bytes=10982|lf=182|cr=0|finalLf=true|sha256=8619674e891574f7093be684c8c8faceb2170081ca1456a57fd296b3e5f8eb39
+HL23-V2-REJECTED-AUTHORITY|commit=e855be9e1a4d92cd6428175965ecf934653ae965|bindingPath=.netlify/strict-release-HL-20260823-1/target-activation-authority-binding.json|bindingBytes=1747|bindingSha256=a939aaac0770e53cb16c2fd69eea61ef5818d361fbc9a3fa57b64f556d939954|failureCode=AUTHORITY_DOCS_DO_NOT_PIN_FROZEN_KIT|authorizing=false|rejectedBeforeAction=true
+HL23-V2-REJECTED-SESSION-ACTIVITY|source=root-coordinator-record|providerDispatchOccurred=false|browserShellInputOccurred=false|shellVerifierInvocationOccurred=false|captureArmOccurred=false|rootActivationMutationOccurred=false
+
+The V2 runbook reauthorizes only the bounded O23 shell-boundary sequence recorded
+above under the new filenames, binding, and distinct permanent tombstone
+`target-activation-v2-captures/hl-20260823-1-v2-<authority16>-df755011d0e4d4b1/`.
+PRE and POST use the pinned new abort-v2/main-WAL-aware verifier through stdin in
+fresh no-history shells. They perform no SQLite/scratch/copy/write work, prove
+the exact source-to-target runtime-path-only delta, full protected family and
+receipt, absences, full hold, and two complete zero-holder scans, and treat
+device IDs as namespace-local. Provider evidence must say
+`providerEnvironmentReadAvailable:false`; shell/probes prove runtime path/hold.
+
+After a fresh complete deploy-ID edge set and durable tombstone, exactly one
+`mcp__render__update_environment_variables` call is allowed with only
+`DATABASE_PATH`, `replace:false`, canonical `247`-byte arguments SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`,
+source/target value hashes `50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3` /
+`4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`.
+No trigger, retry, automatic inverse, or second provider update is authorized.
+POST requires a complete one-ID B2 deploy-set difference, target selected but
+unopened, unchanged source/target/receipt identities and hashes except namespace-
+local device, absent target WAL/SHM/journal/work, zero holders, and full hold.
+Combined acceptance alone records `runtimeDatabasePathVerified=true`,
+`criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`; cleanup deletes nothing, then
+mandatory stop. P23 semantic verification/backup, reopening/review, normal
+restore, rollback, browser workflow, closeout, production, and all later gates
+remain forbidden.
 
 The rejected `HL-20260821-3` phase-one run, helper removal, abort recovery,
 held target cutover, and verified backup
@@ -1481,12 +1547,14 @@ replay passed; both authorities are consumed and neither may be rerun.
 The exact one-shot staging Netlify helper-retirement dispatch also ran and is
 consumed. Published incident amendment `0498fd4...`, refreshed provider
 postflight, corrected official HTTP verification, local postflight, and exact
-cleanup pass; helper retirement is complete with no retry. The exact O23
-docs-only direct-child amendment now authorizes the held target handoff after
-publication, but O23 has not run and remains unchecked. Normal recovery, P23
-semantic verification/backup, reopening/review, browser workflow, closeout, and
-production remain forbidden. The failed/recovered 2026-08-21 attempt remains
-historical; production remains untouched and unauthorized.
+cleanup pass; helper retirement is complete with no retry. Published e855/V1
+O23 was rejected before PRE, remained unconsumed, and made zero provider calls.
+Only the literal non-merge V2 docs-only child may authorize the held target
+handoff after its publication and distinct binding audit; O23 has not run and
+remains unchecked. Normal recovery, P23 semantic verification/backup,
+reopening/review, browser workflow, closeout, and production remain forbidden.
+The failed/recovered 2026-08-21 attempt remains historical; production remains
+untouched and unauthorized.
 
 The roadmap does not define every feature rule or implementation detail and does not authorize production migration or deployment.
 
@@ -1530,7 +1598,7 @@ The plan recorded in the active-plan file is:
 ```text
 M7-26 - Full-site UI review, plain-language workflow correction,
 permission hardening, and isolated staging release
-Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; RC-STG-006O23 HELD DATABASE_PATH HANDOFF AUTHORIZED NEXT + PENDING EXECUTION; RC-STG-006P23 AND LATER GATES NOT AUTHORIZED; CHROME DISK/FD REPROOF PENDING
+Status: ACTIVE - HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; E855 V1 O23 REJECTED BEFORE PRE + UNCONSUMED + ZERO PROVIDER CALL; RC-STG-006O23 V2 CORRECTION AUTHORIZED NEXT + PENDING EXECUTION AFTER PUBLICATION+BINDING; RC-STG-006P23 AND LATER GATES NOT AUTHORIZED; CHROME DISK/FD REPROOF PENDING
 ```
 
 The completed M7-24 and M7-25 plans are preserved at

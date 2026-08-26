@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; ABORT-V2 PLAN/FIRST EXECUTE/REPLAY PASS + AUTHORITIES CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; RC-STG-006O23 HELD DATABASE_PATH HANDOFF AUTHORIZED NEXT / PENDING EXECUTION; RC-STG-006P23 SEMANTIC VERIFICATION/BACKUP AND LATER GATES NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; ABORT-V2 PLAN/FIRST EXECUTE/REPLAY PASS + AUTHORITIES CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; E855 V1 O23 REJECTED BEFORE PRE + UNCONSUMED + ZERO PROVIDER CALL; RC-STG-006O23 V2 CORRECTION AUTHORIZED NEXT / PENDING EXECUTION AFTER PUBLICATION+BINDING; RC-STG-006P23 SEMANTIC VERIFICATION/BACKUP AND LATER GATES NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER RETIREMENT PASS; O23 HELD TARGET HANDOFF AUTHORIZED NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER RETIREMENT PASS; V1 O23 REJECTED/UNCONSUMED; V2 CORRECTION AUTHORIZED NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -405,15 +405,13 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   reconstructed-manifest chronology, and current corrected kit pins remain
   evidence. Exactly one dispatch ran, no retry ran or is authorized, and deploy
   `6a8e6c8fae36273a816a7539` remains current/newest/`ready`. Mandatory stop.
-- [ ] `RC-STG-006O23` `AUTHORIZED NEXT / PENDING EXECUTION`: this exact
-  nine-document amendment is the only held target-handoff authority. It is
-  based on frontend helper-retirement evidence commit
-  `a0da13a5a6a1c1edb352aa1b606d0d3b97aec020` and exact held backend B2
-  `6359ec9997f90dddf17ba2c9b07481746ae171bb`. It activates only after one
-  docs-only direct-child commit changing the standard nine files is published
-  and equals frontend HEAD/`origin/staging`, while backend HEAD/
-  `origin/staging` remain clean at B2. N23 remains consumed. O23 remains
-  unchecked until the entire bounded sequence passes.
+- [ ] `RC-STG-006O23` V1 `REJECTED BEFORE PRE / UNCONSUMED / ZERO PROVIDER
+  CALL`: published commit `e855be9e1a4d92cd6428175965ecf934653ae965`
+  omitted exact frozen artifact paths and action control rejected it with
+  `AUTHORITY_DOCS_DO_NOT_PIN_FROZEN_KIT`. It never armed; no provider dispatch,
+  browser shell input, shell verifier invocation, capture arm, or root activation
+  mutation occurred. Every V1 pin/procedure below is immutable historical
+  evidence only and permanently non-authorizing. N23 remains consumed.
 
   Frozen ignored pins are manifest `7290` bytes / `203` LF / zero CR / final
   LF / SHA-256
@@ -557,6 +555,69 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   Reopening/final review, normal restore, rollback, closeout, browser workflow,
   production, and any second provider update remain forbidden.
 
+### RC-STG-006O23 V2 Correction Authority - Authorized Next / Pending Execution
+
+- [ ] O23 V2 remains unchecked. This correction is not a retry because V1 never
+  armed. Preserve the V1 kit and immutable rejected binding unchanged at
+  `.netlify/strict-release-HL-20260823-1/target-activation-authority-binding.json`,
+  exactly `1747` bytes / `46` LF / zero CR / final LF / SHA-256
+  `a939aaac0770e53cb16c2fd69eea61ef5818d361fbc9a3fa57b64f556d939954`.
+  They remain historical evidence and permanently non-authorizing.
+
+The only eligible V2 authority is one literal non-merge docs-only child of
+`e855be9e1a4d92cd6428175965ecf934653ae965` changing exactly the standard nine
+documents. It activates only after publication as frontend HEAD/
+`origin/staging`, confirmation that backend HEAD/`origin/staging` remain clean
+at B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, and exclusive creation/audit
+of the distinct ignored post-publication
+`target-activation-v2-authority-binding.json`. Each line below is exact,
+standalone, and unique; the `15` lines joined in this order with LF and no
+trailing LF have SHA-256
+`4e8cfdd4ffb8f2d80fc7676e3d71358790952ad74dfb7e2848d4b4a563b1fbe5`.
+
+HL23-V2-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-support-manifest.json|bytes=9510|lf=246|cr=0|finalLf=true|sha256=991cb21b885cccb5aebf32af2f0665abe7a5566ce39c3c68f12615a318c81e33
+HL23-V2-FROZEN-ARTIFACT-SET|sha256=8d55d858e55c5b3d2edb246df2ffa4cf54175f5c4740292e830680b473010089
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-contract.cjs|bytes=51401|lf=1064|cr=0|finalLf=true|sha256=cfeebad02ed06f93212c7e20e6c4ed2287e15a1f84f86650b2cfea18613cbfad
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-held-verifier.sh|bytes=26189|lf=637|cr=0|finalLf=true|sha256=dccac0c4603a595fd9297900a8d77ddbf25b123632506deeb0d4021b816e32b6
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-shell-envelope.cjs|bytes=14925|lf=331|cr=0|finalLf=true|sha256=c897c0840bcbba97e4ea2cdc2b976a2fac5767cfa88c416fa706d551342d023a
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-held-probes.cjs|bytes=4891|lf=146|cr=0|finalLf=true|sha256=1a056371074d2abce8af289432f6cbf1755be05c03e04ea33a97aecd1592de90
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-action-control.cjs|bytes=34487|lf=773|cr=0|finalLf=true|sha256=10135f961270955c3d488fef0b80eeb86a81722f191eee5f96d61e30e92e4544
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-postflight.cjs|bytes=12226|lf=280|cr=0|finalLf=true|sha256=599499f1371281248ef8911dc5487476e0e91cef4a365e7b832aa629f5ad3fed
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-cleanup.cjs|bytes=9057|lf=193|cr=0|finalLf=true|sha256=018ea28d97d4501e7db890f7409f9afc813ab3b053f6c59e4fba03276c6badb9
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-support-self-test.cjs|bytes=26333|lf=657|cr=0|finalLf=true|sha256=2abc6bd7b01eb51a3ce6b4749700dee776b24bf7e35b837dc3a87cd2930b3cb8
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-verify-freeze.cjs|bytes=20961|lf=418|cr=0|finalLf=true|sha256=5cea7a8fe8b6aa473952714dcb61cd5d8feb382ed4c02851823ff17a01884ca2
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-authority-binding.template.json|bytes=2886|lf=72|cr=0|finalLf=true|sha256=49cb9ca31efe68fccf8981fca527726f04447dcc8a87dfae90ff39010c3bad01
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-RUNBOOK.md|bytes=10982|lf=182|cr=0|finalLf=true|sha256=8619674e891574f7093be684c8c8faceb2170081ca1456a57fd296b3e5f8eb39
+HL23-V2-REJECTED-AUTHORITY|commit=e855be9e1a4d92cd6428175965ecf934653ae965|bindingPath=.netlify/strict-release-HL-20260823-1/target-activation-authority-binding.json|bindingBytes=1747|bindingSha256=a939aaac0770e53cb16c2fd69eea61ef5818d361fbc9a3fa57b64f556d939954|failureCode=AUTHORITY_DOCS_DO_NOT_PIN_FROZEN_KIT|authorizing=false|rejectedBeforeAction=true
+HL23-V2-REJECTED-SESSION-ACTIVITY|source=root-coordinator-record|providerDispatchOccurred=false|browserShellInputOccurred=false|shellVerifierInvocationOccurred=false|captureArmOccurred=false|rootActivationMutationOccurred=false
+
+The V2 runbook reauthorizes only the bounded O23 shell-boundary sequence above
+under the new filenames, binding, and distinct permanent tombstone
+`target-activation-v2-captures/hl-20260823-1-v2-<authority16>-df755011d0e4d4b1/`.
+PRE and POST use the pinned new abort-v2/main-WAL-aware verifier through stdin in
+fresh no-history shells; perform no SQLite/scratch/copy/write work; prove the
+exact source-to-target runtime-path-only delta, protected family and receipt,
+absences, full hold, and two complete zero-holder scans; and treat device IDs as
+namespace-local. Provider evidence must say
+`providerEnvironmentReadAvailable:false`; shell/probes prove path/hold.
+
+After a fresh complete deploy-ID edge set and durable tombstone, exactly one
+`mcp__render__update_environment_variables` call is allowed with only
+`DATABASE_PATH`, `replace:false`, canonical `247`-byte arguments SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`,
+source/target value hashes `50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3` /
+`4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`.
+No trigger, retry, automatic inverse, or second update is authorized. POST must
+prove a complete one-ID B2 deploy-set difference, target selected but unopened,
+unchanged protected identities/hashes except namespace-local device, required
+absences, zero holders, and full hold. Combined acceptance alone records
+`runtimeDatabasePathVerified=true`, `criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`; cleanup deletes nothing, then
+mandatory stop. P23 semantic verification/backup, reopening/review, normal
+restore, rollback, browser workflow, closeout, production, and all later gates
+remain forbidden.
+
 ### RC-STG-006N23 Post-Dispatch HTTP-Verifier Amendment
 
 Published dispatch authority `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` is
@@ -615,10 +676,12 @@ postflight `4837`/`6941c238...`, and exact cleanup `1211`/`b49aca2f...` evidence
 bound above. The action authority remains consumed by one dispatch and no retry.
 `RC-STG-006N23` is checked `PASS / AUTHORITY CONSUMED / NO RETRY`. The prior
 comma-OWS false negatives and reconstructed chronology remain preserved.
-At this N23 completion boundary O23/P23 were still pending; the O23 amendment
-above supersedes only that O23 authority status. O23 remains unchecked pending
-execution. P23, backup, reopening/review, browser, closeout, and production
-remain unauthorized; Chrome disk/FD reproof remains pending.
+At this N23 completion boundary O23/P23 were still pending. Published e855/V1
+O23 was later rejected before PRE, remained unconsumed, and made zero provider
+calls. Only the literal non-merge V2 correction above may supersede that O23
+status after its publication and distinct binding audit; O23 remains unchecked
+pending execution. P23, backup, reopening/review, browser, closeout, and
+production remain unauthorized; Chrome disk/FD reproof remains pending.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -1667,10 +1730,11 @@ replay authorities are consumed; the exact target/receipt remain inactive.
 Replay is `PASS / AUTHORITY CONSUMED / NO RERUN`. `RC-STG-006N23` is checked
 `PASS / AUTHORITY CONSUMED / NO RETRY`; refreshed provider, corrected official
 HTTP, local postflight, and exact cleanup all pass. `RC-STG-006O23` and
-`RC-STG-006P23` remain unchecked. O23 is authorized next only for the held
-source-to-target handoff above after publication and has not run. P23 semantic
-verification/backup and every later downstream step remain unauthorized;
-Chrome disk/FD reproof remains pending.
+`RC-STG-006P23` remain unchecked. Published e855/V1 O23 was rejected before PRE,
+unconsumed, with zero provider calls. Only the V2 correction is authorized next
+for the held source-to-target handoff after its publication and separate binding
+audit; it has not run. P23 semantic verification/backup and every later
+downstream step remain unauthorized; Chrome disk/FD reproof remains pending.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:
@@ -1861,11 +1925,13 @@ then reached accepted/published state, but operator sequencing selected
 mint/publication and held deployment/runtime, and fresh B2-pinned verification
 pass. The exact abort-v2 plan, published-authority first execute, and one byte-
 identical `0/0` replay pass; both execution authorities are consumed. Helper
-retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. `RC-STG-006O23` is
-authorized next only for the held target handoff defined above after publication
-and remains unchecked/pending execution. Normal restore and phase two remain
-forbidden; `RC-STG-006P23` semantic verification/backup and final review remain
-pending separate authority.
+retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. Published e855/V1 O23 was
+rejected before PRE, remained unconsumed, and made zero provider calls. Only the
+literal non-merge V2 correction is authorized next for the held target handoff
+defined above after its publication and distinct binding audit; O23 remains
+unchecked/pending execution. Normal restore and phase two remain forbidden;
+`RC-STG-006P23` semantic verification/backup and final review remain pending
+separate authority.
 The authoritative live ledger is
 `docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
 
