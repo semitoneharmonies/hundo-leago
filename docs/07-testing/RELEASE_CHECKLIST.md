@@ -10,7 +10,7 @@
 
 ## Release Readiness
 
-`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT AUTHORIZED NEXT / PENDING EXECUTION; ACTIVATION AND LATER GATES NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
+`HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH VERIFIER PASS; ABORT-V2 PLAN PASS; FIRST EXECUTE PASS + AUTHORITY CONSUMED; REPLAY PASS + AUTHORITY CONSUMED; HELPER RETIREMENT DISPATCH CONSUMED + PROVIDER POSTFLIGHT PASS; HTTP VERIFIER OWS INCIDENT; CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT; ACTIVATION AND LATER GATES NOT AUTHORIZED; PRODUCTION NOT EVALUATED`
 
 This testing and operations checklist defines:
 
@@ -27,7 +27,7 @@ the approved 2026-07-29 decision package.
 
 Approval of this template does not mark any release ready.
 
-## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; ABORT-V2 REPLAY PASS; HELPER RETIREMENT AUTHORIZED NEXT)
+## 2026-08-23 M7-26 Fresh Strict Release (PHASE ONE PUBLISHED; STRICT STOP; HELPER-RETIREMENT DISPATCH CONSUMED; CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT)
 
 Grae's exact requested/approved/recorded time is
 `2026-08-23T23:23:29.877Z` for new release `HL-20260823-1`. Frozen F is
@@ -100,8 +100,9 @@ affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the backend
 worktree is clean. Exact-B2 API deploy `dep-da6ghj67bikc738hbbv0` is sole
 newest/`LIVE`; normal auto-deploy remains `no`/trigger off. Hosted `3,519/3,519`,
 build/startup, zero-error, held external probes, post-live source-family/zero-
-holder proof, and the fresh B2-pinned verifier pass. Netlify remains unchanged
-current/`READY` deploy `6a8c006abe46c8fb6269c40c`.
+holder proof, and the fresh B2-pinned verifier pass. At that exact-B2 gate,
+Netlify remained unchanged on then-current/`READY` deploy
+`6a8c006abe46c8fb6269c40c`.
 
 The following fresh items are the only current controlled-unhold/action
 checklist. They do not check forward any fenced `HL-20260822-1` item:
@@ -241,13 +242,16 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   captures and protected files stayed stable. Final metadata is `6012` bytes /
   `b2f706da...`, code `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`. Replay
   authority is consumed; no rerun.
-- [ ] `RC-STG-006N23` `AUTHORIZED NEXT / PENDING EXECUTION`: separate helper-
-  retirement-only authority is based on exact published replay-evidence commit
-  `296cd690382b87a1cd4647ca98a24f14e98ee8ff`. Exactly one staging Netlify CLI
-  publication may target site `95af8aa7-0b13-4954-af6d-855762acb147` after
-  proving current/ready helper deploy `6a8c006abe46c8fb6269c40c`, title
-  `HL-20260823-1-strict-helper-e898e72`, six headers/two redirects/zero
-  functions/edge functions, remains exact. The new title must be exactly
+- [ ] `RC-STG-006N23` `DISPATCH CONSUMED / PROVIDER PASS / CORRECTED READ-ONLY
+  VERIFICATION AUTHORIZED NEXT`: helper-retirement-only dispatch authority was
+  published in exact commit `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb`, based
+  on replay-evidence commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`.
+  Exactly one staging Netlify CLI publication was authorized and dispatched;
+  it must not be retried. The consumed contract required site
+  `95af8aa7-0b13-4954-af6d-855762acb147` and first required proof that
+  then-current/ready helper deploy `6a8c006abe46c8fb6269c40c` remained exact,
+  with title `HL-20260823-1-strict-helper-e898e72`, six headers/two redirects,
+  and zero functions/edge functions. The new title had to be exactly
   `HL-20260823-1-abort-v2-retire-helper-baseline`.
   The deploy input is immutable original-dist `33` files / `1932120` bytes /
   canonical inventory SHA-256
@@ -257,6 +261,8 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   `7720d21350b54735e11c86fd6fd4282887c7ce6e92b7d33ce9fdf788f66db422`,
   with five header rules. Do not edit tracked `netlify.toml`, helper source, or
   original-dist; do not rebuild.
+  The pre-dispatch requirements below are retained solely as the consumed
+  dispatch contract; their imperative wording grants no new action authority.
   A new ignored, local-only preflight must be authored, frozen, and cold-audited
   before dispatch. It must independently verify original-dist and frozen source
   config
@@ -382,6 +388,54 @@ checklist. They do not check forward any fenced `HL-20260822-1` item:
   reopening/review, closeout, and production remain `PENDING AUTHORITY` after
   helper retirement. Normal restore, Render/environment/database mutation,
   browser action, and every activation step remain forbidden.
+
+### RC-STG-006N23 Post-Dispatch HTTP-Verifier Amendment
+
+Published dispatch authority `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` is
+consumed: exactly one Netlify CLI spawn ran, and no retry/redeploy is authorized.
+Its `1902`-byte envelope SHA-256
+`b5cd9f492e41b392ec854e05a9fa91480b2e4ebc592ac80ab52b99d0e8295204`
+records the expected completion code, one command, no retry, and status `0`.
+The `1862`-byte provider-postflight SHA-256
+`642b5fac4989c9440ed6fe2015e84de943824ca5e4b95673b15a45cb94f1350d`
+proves `6a8e6c8fae36273a816a7539` current/newest/`ready`, exact title,
+five headers/two redirects/zero functions/zero edge functions, empty
+`build_settings: {}`, no Git link, and unchanged B2 full hold/source path/
+inactive target.
+
+The initial official read-only HTTP verifier ran twice and rejected solely with
+`CACHE_CONTROL_HEADER_MISMATCH`: Node `24.14.1` exposed the immutable list
+without optional comma whitespace. An independent eight-path diagnostic proved
+all `200`, exact global headers and `Cache-Control: no-store`, the exact
+ordered immutable directives, and no `Set-Cookie`; it made no hosted mutation,
+provider write, deploy, or redeploy, but is not official acceptance. The original
+pre-dispatch manifest (`3358` bytes / `99` LF / zero CR / final LF /
+`6234451ab4ad6af0910fa7c13b38b21cc613509b23e7cae63e5f426b7d63a305`)
+was overwritten after dispatch and not continuously retained; its later labeled
+reconstruction must never be called the retained original.
+The exact reconstructed-manifest path is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-support-manifest-pre-dispatch-reconstructed.json`;
+the exact provenance-note path/name is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-support-manifest-pre-dispatch-reconstruction-note.json`
+(`657` bytes / `18` LF / zero CR / final LF / SHA-256
+`3754bcd54f7bde37081d69e5c95e667355021bd9693356430f6911da1fd8a6ef`),
+and the note binds exact `reconstructedAfterDispatch=true` /
+`continuouslyRetained=false`.
+
+Corrected ignored pins (bytes/LF/SHA-256) are manifest `3358/99/7aab6845725ae90a0d245222529c91a9177b002f516ca6708d37470fdb4d7a4e`;
+HTTP verifier `20991/522/26ca6f493f82999eae029c907f3bc666b460362b464b6dd97302b7e390196830`;
+contract `30211/854/b3ae7da8019870dead3caa863316f6d7e05d530386ccfcf67afee7b54297a77c`;
+and wrapper `21343/628/8bb2a13142fb913b6f13b836ca47b28caed28e1fd064563808451d74e713c605`;
+all have zero CR/final LF. `no-store` and global headers remain exact. The
+immutable comparator only splits on commas, trims edge SP/HTAB, rejects empty
+directives, rejoins, and compares exactly—no reorder, case fold, addition,
+removal, or change is accepted.
+
+Only after this nine-document amendment is published may the release obtain a
+fresh provider projection, exactly one corrected network-read-only HTTP-verifier result capture,
+local postflight, and conditional exact cleanup, in order. Failure/ambiguity
+grants no retry. Activation, backup, reopening/review, browser, closeout, and
+production remain forbidden; Chrome disk/FD reproof remains pending.
 
 ## 2026-08-22 M7-26 Fresh Staging Evaluation (BLOCKED; ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE)
 
@@ -1427,10 +1481,11 @@ also pass. Operator sequencing strict-stopped the smoke; phase two and normal
 recovery are forbidden. The abort-v2 plan, one published-authority first
 execute, and the one authorized byte-identical replay passed. First-execute and
 replay authorities are consumed; the exact target/receipt remain inactive.
-Replay is `PASS / AUTHORITY CONSUMED / NO RERUN`. Only
-`RC-STG-006N23` helper retirement is `AUTHORIZED NEXT / PENDING EXECUTION`;
-activation, verification, backup, and every later downstream step remain
-unauthorized pending another evidence-bound amendment.
+Replay is `PASS / AUTHORITY CONSUMED / NO RERUN`. `RC-STG-006N23` is
+`DISPATCH CONSUMED / PROVIDER PASS / CORRECTED READ-ONLY VERIFICATION
+AUTHORIZED NEXT`; it remains unchecked pending the amended HTTP result, local
+postflight, and conditional exact cleanup. Activation, verification, backup,
+and every later downstream step remain unauthorized.
 The historical RC-BKP-015A-J block above cannot be checked forward.
 
 Backup evidence:

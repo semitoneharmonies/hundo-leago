@@ -2,7 +2,7 @@
 
 ## Status
 
-`RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH ABORT-V2 VERIFIER PASS; ABORT-V2 PLAN PASS; ABORT-V2 FIRST EXECUTE PASS AND CONSUMED; ABORT-V2 REPLAY PASS AND CONSUMED; HELPER RETIREMENT AUTHORIZED NEXT / PENDING EXECUTION; ACTIVATION AND LATER GATES NOT AUTHORIZED`
+`RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH ABORT-V2 VERIFIER PASS; ABORT-V2 PLAN PASS; ABORT-V2 FIRST EXECUTE PASS AND CONSUMED; ABORT-V2 REPLAY PASS AND CONSUMED; HELPER RETIREMENT DISPATCH CONSUMED + PROVIDER POSTFLIGHT PASS; HTTP VERIFIER OWS INCIDENT; CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT; ACTIVATION AND LATER GATES NOT AUTHORIZED`
 
 Release `HL-20260823-1` is a new isolated-staging release. It does not reopen,
 resume, or reuse blocked release `HL-20260822-1`. Production remains untouched
@@ -1105,13 +1105,15 @@ staging reopening/final review, closeout, and production remain unauthorized.
 No predecessor or normal-mode literal, plan, receipt, target, key, or
 confirmation may be reused.
 
-## Post-Abort Helper-Retirement-Only Authority Amendment - Authorized Next / Pending Execution
+## Consumed Post-Abort Helper-Retirement Dispatch Contract
 
-This separate amendment is based on exact published replay-evidence commit
+This consumed dispatch contract was published in exact authority commit
+`7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb`, based on replay-evidence commit
 `296cd690382b87a1cd4647ca98a24f14e98ee8ff`. It changes no replay evidence and
-does not revive any consumed execute or replay authority. It authorizes exactly
-one future staging-only Netlify CLI publication whose sole purpose is removing
-the temporary helper overlay and restoring the sealed application baseline.
+does not revive any consumed execute or replay authority. It authorized exactly
+one staging-only Netlify CLI publication whose sole purpose was removing the
+temporary helper overlay and restoring the sealed application baseline. That
+dispatch ran once and must not be retried.
 
 The action input is exact ignored directory
 `E:\hundo-leago\.netlify\strict-release-HL-20260823-1\original-dist`: `33`
@@ -1126,6 +1128,8 @@ LF / zero CR / SHA-256
 with exactly five header rules. The tracked helper-bearing `netlify.toml` is not
 an action input and must not be edited.
 
+The pre-dispatch requirements below are retained solely as the consumed
+dispatch contract; their imperative wording grants no new action authority.
 A new ignored, local-only preflight must be authored, frozen, and cold-audited
 before dispatch. It must independently verify original-dist and the frozen
 source-config identity above. The read-only amendment audit proved `E:\Codex`
@@ -1323,6 +1327,85 @@ post-activation verification, backup, staging reopening/final review, browser
 action, closeout, and production action. `RC-STG-006O23` and `RC-STG-006P23`
 remain pending separate later authority.
 
+## Post-Dispatch HTTP-Verifier Incident and Narrow Continuation Amendment
+
+Exact published dispatch-authority commit
+`7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` was consumed by one and only one
+Netlify CLI spawn. Capture envelope `envelope.json` is `1902` bytes / SHA-256
+`b5cd9f492e41b392ec854e05a9fa91480b2e4ebc592ac80ab52b99d0e8295204`, code
+`HL23_HELPER_RETIREMENT_CAPTURE_COMPLETE`, with `commandCount=1`,
+`retryAuthorized=false`, and native `spawn.status=0`. The two-byte ASCII status
+file is exact `0` plus LF / SHA-256
+`9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa`.
+The dispatch authority is consumed regardless of later verification outcome;
+no retry, replacement dispatch, or redeploy is authorized.
+
+Fresh allowlisted provider postflight evidence
+`helper-retirement-provider-postflight.json` is `1862` bytes / SHA-256
+`642b5fac4989c9440ed6fe2015e84de943824ca5e4b95673b15a45cb94f1350d`, code
+`HL23_HELPER_RETIREMENT_PROVIDER_POSTFLIGHT_OK`. It proves deploy
+`6a8e6c8fae36273a816a7539` is current/newest/`ready`, has exact title
+`HL-20260823-1-abort-v2-retire-helper-baseline`, is the only matching retirement
+deploy, is manual CLI with no pending/active deploy, and has five headers, two
+redirects, zero functions, zero edge functions, exact `build_settings: {}`, and
+no Git build linkage. Previous helper deploy `6a8c006abe46c8fb6269c40c` is no
+longer current. Render remains exact B2 `dep-da6ghj67bikc738hbbv0` under full
+hold with source `DATABASE_PATH` and inactive target/receipt.
+
+The official network-read-only HTTP verifier was then run twice. Both runs
+rejected solely with `CACHE_CONTROL_HEADER_MISMATCH` because Node `24.14.1`
+returned the immutable asset's comma-separated `Cache-Control` value without
+optional whitespace after commas. An independent network-read-only diagnostic
+over the same ordered eight canonical/immutable-origin paths proved `200` on
+all eight, the exact seven global security headers, exact `Cache-Control: no-store`,
+the exact ordered immutable directive set with no extra/missing directive, and
+no `Set-Cookie`. That diagnostic explains the representation defect but is not
+the official acceptance result. Neither failed verifier run nor the diagnostic
+performed a hosted mutation, provider write, deploy, or redeploy.
+
+The original pre-dispatch support manifest was `3358` bytes / `99` LF / zero
+CR / final LF / SHA-256
+`6234451ab4ad6af0910fa7c13b38b21cc613509b23e7cae63e5f426b7d63a305`.
+It was overwritten after dispatch while the ignored verifier kit was corrected
+and was not continuously retained. The exact reconstructed-manifest path is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-support-manifest-pre-dispatch-reconstructed.json`;
+it was reconstructed only after dispatch from independent terminal
+observations. Its exact provenance-note path/name is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-support-manifest-pre-dispatch-reconstruction-note.json`
+(`657` bytes / `18` LF / zero CR / final LF / SHA-256
+`3754bcd54f7bde37081d69e5c95e667355021bd9693356430f6911da1fd8a6ef`),
+and the note binds exact `reconstructedAfterDispatch=true` /
+`continuouslyRetained=false`. The reconstruction must never be described as the
+retained original capture.
+
+The corrected repo-ignored kit is frozen at these exact identities:
+
+* support manifest: `3358` bytes / `99` LF / SHA-256
+  `7aab6845725ae90a0d245222529c91a9177b002f516ca6708d37470fdb4d7a4e`;
+* HTTP verifier: `20991` bytes / `522` LF / SHA-256
+  `26ca6f493f82999eae029c907f3bc666b460362b464b6dd97302b7e390196830`;
+* contract: `30211` bytes / `854` LF / SHA-256
+  `b3ae7da8019870dead3caa863316f6d7e05d530386ccfcf67afee7b54297a77c`;
+* capture wrapper: `21343` bytes / `628` LF / SHA-256
+  `8bb2a13142fb913b6f13b836ca47b28caed28e1fd064563808451d74e713c605`.
+
+All four have zero CR and final LF. The corrected comparator keeps `no-store`
+and every global security-header value exact. Only the immutable asset value is
+canonicalized: split on commas, trim optional SP/HTAB from each directive edge,
+reject empty directives, rejoin with commas, then compare exactly. It does not
+reorder directives, fold case, or accept added, removed, or changed directives.
+Status `200` and absent `Set-Cookie` also remain exact.
+
+Only after this exact nine-document amendment is committed and published may
+the release run, in order, a fresh allowlisted provider projection, exactly one
+corrected network-read-only HTTP-verifier result capture, local postflight, and
+exact cleanup after every preceding result is accepted. Failure or ambiguity
+grants no retry. This authority grants no Netlify mutation, dispatch, or
+redeploy; no normal restore; no Render, environment, database, helper-source,
+original-dist, or tracked-configuration change; and no target activation,
+post-activation verification, backup, staging reopening/final review, browser,
+closeout, or production action. Chrome disk/FD reproof remains pending.
+
 ## Historical Conditional Successful-Smoke Authority - Never Activated
 
 This section recorded the path that would have applied only after a complete
@@ -1370,7 +1453,7 @@ current authority.
 | B-prime held deployment and runtime verification | `PASS` | Exact deploy `dep-da5sh0e417fc738i254g` passed its held boundary on B-prime after `443` suites / `3,503` hosted tests all passed, build/startup and zero-error gates passed, external live/ready returned `200`/`no-store`, and anonymous leagues remained held at `503 SERVICE_MAINTENANCE`/`no-store`; it later deactivated for the controlled-unhold deploy. |
 | Fresh fixture preparation, exact replay, and held postflight | `PASS` | Exact command and retained results above bind first `729`, replay `0`, the full 35-table map, release IDs/fingerprint/deadline, pre-action fixture-bearing source evidence, full hold, target-family absence, privacy/pre-smoke matrices, zero scratch mutations, and owned cleanup. |
 | Release-specific helper construction and local verification | `PASS` | Exact frontend commit, release/build/expiry binding, eight-key marker, canonical inventories and SHA-256 values, mechanical retarget, syntax `5/5`, both verifiers, Vitest `14/14`, ESLint `0`, byte-identical isolated build, and hygiene scans are bound above. |
-| Helper publication and canonical/immutable proof | `PASS` | Rejected API deploy `6a8bfef3ac0ff74a373404d8` preserved its pre-browser header failure; corrected current CLI deploy `6a8c006abe46c8fb6269c40c` passed exact bytes, headers, identities, absence checks, held probes, and the inert fresh-tab proof without unhold, session, action, or write. |
+| Helper publication and canonical/immutable proof | `PASS` | Rejected API deploy `6a8bfef3ac0ff74a373404d8` preserved its pre-browser header failure; corrected then-current CLI deploy `6a8c006abe46c8fb6269c40c` passed exact bytes, headers, identities, absence checks, held probes, and the inert fresh-tab proof without unhold, session, action, or write. |
 | Controlled-unhold deployment and runtime verification | `PASS` | At that boundary, the exact merge-only three-key delta produced sole newest/LIVE B-prime deploy `dep-da60sl0jo6nc73e0cfu0`; hosted `3,503/3,503`, build/startup, zero-error, exact runtime, health, unauthenticated CORS/cache, and mounted-route gates passed. It later deactivated for full re-hold. |
 | Unheld pre-smoke data/runtime verification | `PASS` | Frozen v2 script/result hashes and exact pass code above bind the pre-action fixture-bearing source, WAL `0`, SHM `32768`, target-family absence, full privacy/pre-smoke matrices, authoritative source unopened, zero scratch mutations, and cleanup. |
 | Exact helper session and phase-one action/publication | `PARTIAL / TERMINAL` | Proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27` reached accepted state; publish event `974342b5-94e5-42d8-af20-9e07c35bc847` and exact publisher/replay `fresh 2` / `replay 0` are bound above. The later operator-sequencing mismatch makes these partial-release evidence only. |
@@ -1385,7 +1468,7 @@ current authority.
 | Abort-v2 first execute | `PASS / AUTHORITY CONSUMED / NO RERUN` | Published authority `fd31b1f...`; exactly one `969`-byte / `bad1c78f...` command. Native status `0`; stdout `4902` / `74610bcc...`; stderr `0` / `e3b0c442...`; canonical result `3896` / `3d67f676...`; contract v2, `replayed: false`, `0/2`, source preserved, target verified at `cf3ca07d...`, receipt `24adf2d...`, exact temporary-work/family binding. The three-byte literal `0\n` auxiliary-status defect is sealed and unrepaired; envelope-native status plus result/postflight remove ambiguity. Postflight, probes, cleanup, envelope, and final metadata seals are bound above. |
 | Abort-v2 identical replay | `PASS / AUTHORITY CONSUMED / NO RERUN` | Exact one-shot `969`-byte / `bad1c78f...` command; native status `0`; stdout `4905` / `65431c4c...`; stderr `0` / `e3b0c442...`; replay status `2` / `9a271f2a...`; canonical result `3899` / `8b21edc8...`; contract v2, `replayed: true`, `0/0`, exact no-work object, unchanged source family, and byte-identical target/receipt. Preflight, postflight, probes, provider state, cleanup, and metadata are sealed above. Mandatory stop; no rerun. |
 | Normal strict restore/replay | `NOT AUTHORIZED` | The successful-smoke condition never occurred. No normal plan, confirmation, execute, or replay may run. |
-| Post-abort helper retirement | `AUTHORIZED NEXT / PENDING EXECUTION` | Base commit `296cd690...`; exactly one staging-site CLI publication may replace current helper deploy `6a8c006...` with the `33`-file / `1932120`-byte / `2d8069ca...` sealed original using the `1664`-byte / `7720d213...` five-header baseline config and exact retirement title. Require current-helper/full-hold/target-inactive/no-Git-linkage preflight, one-shot/no-blind-retry, then `64/64` bytes, `8/8` headers, `10/10` retired paths, unchanged protected boundaries, and mandatory stop. |
+| Post-abort helper retirement | `DISPATCH CONSUMED / PROVIDER PASS / CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT` | Authority commit `7dd9075...`; one CLI dispatch produced current/ready deploy `6a8e6c8...` with capture status `0`, and no retry is allowed. Provider projection passes. The initial official HTTP verifier twice rejected only comma-OWS representation; run only the corrected read-only provider/HTTP proof, local postflight, and conditional exact cleanup, then mandatory stop. |
 | Post-abort target activation, verification, and fresh backup | `PENDING AUTHORITY / MANDATORY STOP` | Target and receipt are materialized and verified but inactive; replay success grants no activation, verifier, or backup authority. A later amendment is required. |
 | Final desktop/mobile matrix, observation, and M7-26 closeout | `PENDING` | Requires every prior gate. |
 
@@ -1422,7 +1505,9 @@ abort-v2 plan, accepted first execute, and accepted `0/0` replay are frozen.
 The target and receipt are materialized and verified while `DATABASE_PATH`
 remains on the preserved source; target sidecars/journal and work remain
 absent. First-execute and replay authorities are consumed and neither may be
-rerun. Only the exact one-shot staging Netlify helper-retirement publication is
-authorized next. Retry, normal recovery, activation, post-activation verifier/
-backup, reopening/final review, closeout, and production remain unauthorized
-pending another evidence-bound amendment; production remains untouched.
+rerun. The exact one-shot staging Netlify helper-retirement dispatch also ran
+and is consumed. Provider postflight passes; only the amended corrected read-
+only provider/HTTP proof, local postflight, and conditional exact cleanup remain
+authorized. Retry, normal recovery, activation, post-activation verifier/backup,
+reopening/final review, closeout, and production remain unauthorized;
+production remains untouched.

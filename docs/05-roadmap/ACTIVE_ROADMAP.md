@@ -1458,8 +1458,8 @@ The current next action is:
 
 ```text
 Milestone: M7 - Release Candidate and Launch
-Action: Run exactly one evidence-bound staging Netlify CLI helper-retirement publication from the sealed original-dist and five-header baseline config; require current-helper/no-Git-linkage/full-hold/target-inactive preflight, no blind retry, 64/64 byte + 8/8 header + 10/10 retired-path postflight, then mandatory stop
-Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8c006 CURRENT + READY + UNCHANGED / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED / REPLAY 8b21edc8 PASS + REPLAYED TRUE + 0/0 + AUTHORITY CONSUMED + NO RERUN / REPLAY EVIDENCE COMMIT 296CD690 PUBLISHED / HELPER RETIREMENT RC-STG-006N23 AUTHORIZED NEXT + PENDING EXECUTION / ONE-SHOT CLI + NO BLIND RETRY / ACTIVATION+VERIFICATION+BACKUP+REOPENING+FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
+Action: Preserve the consumed one-shot Netlify helper-retirement dispatch; publish this exact nine-document amendment, then run only a fresh allowlisted provider projection, the corrected network-read-only HTTP verifier capture, local postflight, and conditional exact cleanup; do not redeploy or retry
+Implementation status: M7-26 ACTIVE / HL-20260822-1 BLOCKED + ABORT-RECOVERED HISTORY PRESERVED / HL-20260823-1 BLOCKED AFTER PHASE ONE PUBLISHED / OPERATOR-SEQUENCING STRICT_STOP / PHASE TWO NOT STARTED + NO RETRY / FULL RE-HOLD PASS / NETLIFY 6a8e6c8fae36273a816a7539 CURRENT + READY / EXACT TWO-FILE ABORT-V2 B2 6359ec9997f90dddf17ba2c9b07481746ae171bb MINTED + PUSHED / EXACT HELD B2 DEPLOY dep-da6ghj67bikc738hbbv0 SOLE NEWEST + LIVE / HOSTED 3519/3519 + STARTUP + ZERO-ERROR + MAINTENANCE PROBES PASS / POST-LIVE HELD FAMILY PROOF PASS / FRESH POST-B2 ABORT-V2 VERIFIER 6d5c+80c7 PASS / ABORT-V2 PLAN 30441740+EC338025 PASS / FIRST EXECUTE 3d67f676 PASS + AUTHORITY CONSUMED + NO RERUN / AUXILIARY THREE-BYTE STATUS DEFECT 101770a4 SEALED + UNREPAIRED / REPLAY 8b21edc8 PASS + REPLAYED TRUE + 0/0 + AUTHORITY CONSUMED + NO RERUN / REPLAY EVIDENCE COMMIT 296CD690 PUBLISHED / HELPER-RETIREMENT AUTHORITY COMMIT 7DD9075 PUBLISHED / ONE CLI DISPATCH CONSUMED + NO RETRY / PROVIDER POSTFLIGHT PASS / INITIAL HTTP VERIFIER TWICE REJECTED ONLY COMMA-OWS REPRESENTATION / CORRECTED READ-ONLY VERIFICATION AUTHORIZED NEXT / ACTIVATION+VERIFICATION+BACKUP+REOPENING+FINAL REVIEW PENDING / PRODUCTION UNTOUCHED AND UNAUTHORIZED
 Repositories: E:\hundo-leago and E:\hundo-leago-backend
 Local branches: codex/m7-26-completion and codex/m7-26-completion
 Deployment branches: staging and staging
@@ -1556,8 +1556,9 @@ B2 deploy `dep-da6ghj67bikc738hbbv0`; held B-prime deploy
 `dep-da6cu8h42hec738f2al0` deactivated only at safe handoff. Hosted `443` suites /
 `3,519` tests all passed, followed by build/startup on instance `thxsc`, zero
 error logs, health/readiness `200`/`no-store`, and maintenance-blocked session/
-leagues/current-FAD `503 SERVICE_MAINTENANCE`/`no-store`. Netlify remains
-unchanged current/`READY` `6a8c006abe46c8fb6269c40c`.
+leagues/current-FAD `503 SERVICE_MAINTENANCE`/`no-store`. At that exact-B2 gate,
+Netlify remained unchanged on then-current/`READY`
+`6a8c006abe46c8fb6269c40c`.
 
 Post-live shell proof `HL23_B2_POST_LIVE_HELD_FAMILY_VERIFIED` passed at
 `2026-08-25T04:11:28.902Z`: `20` exact runtime keys, nine absent providers,
@@ -1627,10 +1628,12 @@ script/result `11629` / `4023` (`9a908635...` / `67b1adbe...`) removed only the
 three captures and preserved protected files. Final metadata `6012` /
 `b2f706da...` records `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`.
 
-Separate helper-retirement-only authority is based on published replay-evidence
-commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`. Exactly one future staging
-Netlify CLI publication is `AUTHORIZED NEXT / PENDING EXECUTION`: site
-`95af8aa7-0b13-4954-af6d-855762acb147`, current helper deploy
+The now-consumed helper-retirement-only dispatch authority was published in
+exact commit `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb`, based on replay-evidence
+commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`. It authorized exactly one staging
+Netlify CLI publication. That dispatch ran once and must not be retried. The
+consumed contract bound site
+`95af8aa7-0b13-4954-af6d-855762acb147`, then-current helper deploy
 `6a8c006abe46c8fb6269c40c`, title
 `HL-20260823-1-abort-v2-retire-helper-baseline`, immutable `33` files /
 `1932120` bytes / `2d8069ca1aa61e02b5be14b09b97ded73b8363ae5e699c0e712f32026903ae6c`,
@@ -1638,6 +1641,8 @@ and baseline config `1664` bytes /
 `7720d21350b54735e11c86fd6fd4282887c7ce6e92b7d33ce9fdf788f66db422`
 with five headers.
 
+The pre-dispatch requirements below are retained solely as the consumed
+dispatch contract; their imperative wording grants no new action authority.
 A new ignored, local-only preflight must be authored, frozen, and cold-audited
 before dispatch. It must verify original-dist and frozen source config
 `E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-control\netlify.toml`,
@@ -1761,6 +1766,54 @@ original-dist, activation, post-activation
 verifier/backup, staging
 reopening/final review, browser, closeout, and production remain unauthorized;
 neither predecessor may be resumed or reused.
+
+### 2026-08-25 Helper-Retirement Post-Dispatch HTTP-Verifier Amendment
+
+Published dispatch authority `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` is
+consumed: exactly one Netlify CLI spawn ran, and no retry/redeploy is authorized.
+Its `1902`-byte envelope SHA-256
+`b5cd9f492e41b392ec854e05a9fa91480b2e4ebc592ac80ab52b99d0e8295204`
+records the expected completion code, one command, no retry, and status `0`.
+The `1862`-byte provider-postflight SHA-256
+`642b5fac4989c9440ed6fe2015e84de943824ca5e4b95673b15a45cb94f1350d`
+proves `6a8e6c8fae36273a816a7539` current/newest/`ready`, exact title,
+five headers/two redirects/zero functions/zero edge functions, empty
+`build_settings: {}`, no Git link, and unchanged B2 full hold/source path/
+inactive target.
+
+The initial official read-only HTTP verifier ran twice and rejected solely with
+`CACHE_CONTROL_HEADER_MISMATCH`: Node `24.14.1` exposed the immutable list
+without optional comma whitespace. An independent eight-path diagnostic proved
+all `200`, exact global headers and `Cache-Control: no-store`, the exact
+ordered immutable directives, and no `Set-Cookie`; it made no hosted mutation,
+provider write, deploy, or redeploy, but is not official acceptance. The original
+pre-dispatch manifest (`3358` bytes / `99` LF / zero CR / final LF /
+`6234451ab4ad6af0910fa7c13b38b21cc613509b23e7cae63e5f426b7d63a305`)
+was overwritten after dispatch and not continuously retained; its later labeled
+reconstruction must never be called the retained original.
+The exact reconstructed-manifest path is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-support-manifest-pre-dispatch-reconstructed.json`;
+the exact provenance-note path/name is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-support-manifest-pre-dispatch-reconstruction-note.json`
+(`657` bytes / `18` LF / zero CR / final LF / SHA-256
+`3754bcd54f7bde37081d69e5c95e667355021bd9693356430f6911da1fd8a6ef`),
+and the note binds exact `reconstructedAfterDispatch=true` /
+`continuouslyRetained=false`.
+
+Corrected ignored pins (bytes/LF/SHA-256) are manifest `3358/99/7aab6845725ae90a0d245222529c91a9177b002f516ca6708d37470fdb4d7a4e`;
+HTTP verifier `20991/522/26ca6f493f82999eae029c907f3bc666b460362b464b6dd97302b7e390196830`;
+contract `30211/854/b3ae7da8019870dead3caa863316f6d7e05d530386ccfcf67afee7b54297a77c`;
+and wrapper `21343/628/8bb2a13142fb913b6f13b836ca47b28caed28e1fd064563808451d74e713c605`;
+all have zero CR/final LF. `no-store` and global headers remain exact. The
+immutable comparator only splits on commas, trims edge SP/HTAB, rejects empty
+directives, rejoins, and compares exactly—no reorder, case fold, addition,
+removal, or change is accepted.
+
+Only after this nine-document amendment is published may the release obtain a
+fresh provider projection, exactly one corrected network-read-only HTTP-verifier result capture,
+local postflight, and conditional exact cleanup, in order. Failure/ambiguity
+grants no retry. Activation, backup, reopening/review, browser, closeout, and
+production remain forbidden; Chrome disk/FD reproof remains pending.
 
 ## Historical Milestone Evidence
 
