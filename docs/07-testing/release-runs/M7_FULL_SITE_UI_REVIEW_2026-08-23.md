@@ -2,7 +2,7 @@
 
 ## Status
 
-`RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH ABORT-V2 VERIFIER PASS; ABORT-V2 PLAN PASS; ABORT-V2 FIRST EXECUTE PASS AND CONSUMED; ABORT-V2 REPLAY PASS AND CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; E855 V1 O23 REJECTED BEFORE PRE + UNCONSUMED + ZERO PROVIDER CALL; 3F0BC V2 O23 ARM REJECTED + UNCONSUMED + NO RETRY + ZERO PROVIDER MUTATION; 43E99 V3 O23 ACTION SUCCEEDED + AUTHORITY CONSUMED + EXACTLY ONE PROVIDER MUTATION; OLD V3 POST PERMANENTLY BLOCKED SOLELY BY ABSENT HOSTED NPM 11.11.0 OBSERVATION; F17B V4 BOUND + UNCONSUMED + RETIRED AFTER DIAGNOSTIC-ONLY OPAQUE-CURSOR FAILURE + ZERO V4 PROVIDER MUTATIONS; O23 + O23A ACCEPTANCE PENDING UNCHECKED O23B; RC-STG-006O23B V5 OPAQUE-CURSOR READ-ONLY CONTINUATION AUTHORIZED NEXT AFTER DIRECT-CHILD PUBLICATION+BINDING + ZERO V5 PROVIDER MUTATIONS; RC-STG-006P23 AND LATER GATES NOT AUTHORIZED; CHROME DISK/FD REPROOF PENDING`
+`RELEASE BLOCKED AFTER PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; PHASE TWO NOT STARTED; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; FRESH ABORT-V2 VERIFIER PASS; ABORT-V2 PLAN PASS; ABORT-V2 FIRST EXECUTE PASS AND CONSUMED; ABORT-V2 REPLAY PASS AND CONSUMED; HELPER RETIREMENT PASS + AUTHORITY CONSUMED + NO RETRY; E855 V1 O23 REJECTED BEFORE PRE + UNCONSUMED + ZERO PROVIDER CALL; 3F0BC V2 O23 ARM REJECTED + UNCONSUMED + NO RETRY + ZERO PROVIDER MUTATION; 43E99 V3 O23 ACTION SUCCEEDED + AUTHORITY CONSUMED + EXACTLY ONE PROVIDER MUTATION; OLD V3 POST PERMANENTLY BLOCKED SOLELY BY ABSENT HOSTED NPM 11.11.0 OBSERVATION; F17B V4 BOUND + UNCONSUMED + RETIRED AFTER DIAGNOSTIC-ONLY OPAQUE-CURSOR FAILURE + ZERO V4 PROVIDER MUTATIONS; DCEB V5 PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED + ZERO V5 PROVIDER MUTATIONS; O23 + O23A + O23B UNCHECKED PENDING O23C; O23C UNCHECKED; RC-STG-006O23C V6 SCALAR-TRANSPORT READ-ONLY CONTINUATION AUTHORIZED NEXT AFTER EXACT-NINE DIRECT-CHILD PUBLICATION+BINDING + ZERO V6 PROVIDER MUTATIONS; RC-STG-006P23 AND LATER GATES NOT AUTHORIZED; CHROME DISK/FD REPROOF PENDING`
 
 Release `HL-20260823-1` is a new isolated-staging release. It does not reopen,
 resume, or reuse blocked release `HL-20260822-1`. Production remains untouched
@@ -1331,8 +1331,14 @@ action, closeout, and production action. At that boundary `RC-STG-006O23` and
 rejected at their recorded boundaries. V3 later completed its one provider
 mutation and consumed its authority. Published f17b/V4 was separately bound but
 never consumed and is retired after its wrong-token diagnostic produced no
-provider evidence, action artifact, or capture sentinel. Current O23 and O23A
-acceptance awaits O23B; only V5/O23B is authorized next.
+provider evidence, action artifact, or capture sentinel. Published V5 authority
+`dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10` is
+`PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED`: its
+binding remains absent, and it may not be retried, rebound, resumed, or
+repurposed. O23, O23A, and O23B are `UNCHECKED_PENDING_O23C`; O23C is
+`UNCHECKED`. Only the exact-nine V6/O23C child of dceb plus one successful,
+separately audited immutable V6 binding may authorize the frozen zero-provider-
+mutation continuation.
 
 ## Post-Dispatch HTTP-Verifier Incident and Narrow Continuation Amendment
 
@@ -1506,8 +1512,12 @@ Helper retirement is therefore `PASS / AUTHORITY CONSUMED / NO RETRY`.
 were still pending. V1 and V2 were later rejected at their recorded boundaries.
 V3 later completed its one provider mutation and consumed its authority. Bound
 V4 later failed its diagnostic-only opaque-cursor read, remained unconsumed,
-and was retired. O23 and O23A acceptance now await the separately authorized
-V5/O23B continuation below. P23, staging reopening/final review, browser
+and was retired. Published V5 authority dceb is
+`PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED`; its
+binding remains absent and it cannot be retried, rebound, resumed, or
+repurposed. O23, O23A, and O23B are pending O23C; O23C is unchecked. Only
+V6/O23C may become eligible after exact-nine direct-child publication and a
+separate immutable binding. P23, staging reopening/final review, browser
 action, closeout, and production remain unauthorized. Chrome disk/FD reproof
 remains pending.
 
@@ -1899,37 +1909,71 @@ zero provider mutations; the combined total remains one. O23 and O23A stay
 unchecked until completion and must then be checked together. P23, backup,
 reopen, rollback, production, and later gates remain forbidden.
 
-## 2026-08-26 RC-STG-006O23B V5 Opaque-Cursor Read-Only Evidence Continuation Authority - Authorized Next / Pending Publication and Binding
+## 2026-08-26 RC-STG-006O23B V5 Opaque-Cursor Authority - Published / Binding Launch Failed Prewrite / Unconsumed Retired
 
-Published and separately bound V4 authority
-`f17b2278542ef6836550a556abd97d82c9bf79db` was never consumed. Its first
-provider PRE diagnostic incorrectly derived continuation from the last deploy
-ID; the connector rejected that request, and no V4 provider evidence, action
-artifact, or capture sentinel was created. All 16 named V4 action artifacts
-remain absent, V4 provider mutations remain zero, and the release-wide provider
-mutation total remains exactly one. V4 is `BOUND_UNCONSUMED_RETIRED` and must
-never be resumed or repurposed.
+Published V5 authority
+`dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10`, literal non-merge child of
+`f17b2278542ef6836550a556abd97d82c9bf79db`, never produced its required
+authority binding. The exact RUNBOOK launch carried authority
+`dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10` and committed-at
+`2026-08-26T22:09:21.000Z`; its created-at value was generated immediately
+before the call but was not printed or captured, so the exact value is
+unavailable and must not be reconstructed.
 
-V5 corrects only the opaque-cursor read path. It authorizes zero provider
-mutations, deploys, retries, rollbacks, database opens, backups, reopens,
-production actions, or semantic verification. O23 and O23A remain unchecked
-pending O23B; O23B itself is unchecked.
+Windows PowerShell 5.1 rejected the array-over-`-File` transport during outer
+parameter binding, before the runner body, runner self-pin, Node, binding-
+candidate generation, or any write began, and returned native exit code `1`.
+The sanitized operator-observed safe text was exactly
+`target-activation-v5-local-runner.ps1 : A positional parameter cannot be found that accepts argument '2026-08-26T22:09:21.000Z'.`
+(128 UTF-8 bytes; SHA-256
+`bb1498b816e09c94654563f7b251068e8529f2d3d952eda097ddbb1fade5df22`).
+The category was `InvalidArgument` / `ParentContainsErrorRecordException`; the
+fully qualified ID was
+`PositionalParameterNotFound,target-activation-v5-local-runner.ps1`. The
+just-before wall sample was `2026-08-26T22:10:25.643Z`. No canonical stdout
+existed, and the transport did not preserve raw stdout/stderr separately, so
+the raw transport digest is unavailable. These are operator-attested
+diagnostic facts, not an invented failure receipt or continuation-attempt
+evidence.
 
-V5/O23B must be one literal non-merge exact-nine documentation child of
-`f17b2278542ef6836550a556abd97d82c9bf79db`, published as frontend `HEAD` and
+The V5 binding was absent before and after the failed launch, with zero bytes;
+all 20 binding/action paths and every V5 capture sentinel remain absent.
+Provider reads, provider mutations, browser actions, and network requests were
+all zero. V5 is exactly
+`PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED`; it must
+never be resumed, rebound, retried, repaired in place, or repurposed.
+
+V6/O23C is the only eligible continuation. It corrects the local PowerShell-
+to-Node transport to explicit named scalar arguments with mandatory
+`ArgCount`, and adds the frozen pre-Node support closure and hardened Git read
+boundary while preserving V5's response-driven, zero-provider-mutation
+evidence semantics. V6 authorizes no provider mutation, deployment, retry,
+rollback, database open, backup, reopen, semantic verification, or production
+action. The release-wide provider-mutation count remains exactly one, inherited
+from V3. Any partial or ambiguous one-shot result consumes and retires V6 with
+no retry.
+
+O23, O23A, and O23B are `UNCHECKED_PENDING_O23C`; O23C is `UNCHECKED`.
+Only a successful V6 aggregate plus zero-delete cleanup may make all four
+eligible for a separate completion-evidence documentation commit marking them
+`PASS_CONSUMED` together. This authority publication checks none of them.
+
+V6/O23C must be one literal non-merge exact-nine documentation child of
+`dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10`, published as frontend `HEAD` and
 `origin/staging`, while backend `HEAD` and `origin/staging` remain clean at exact
 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`. Only after publication may the
-separate ignored immutable `target-activation-v5-authority-binding.json` be
+separate ignored immutable `target-activation-v6-authority-binding.json` be
 exclusively created from the frozen template and independently audited. Until
-both publication and binding pass, no V5 evidence action may begin.
+both publication and binding pass, no V6 evidence action may begin.
 
-The frozen self-pinned runner and authority generator emitted the exact 26
-standalone rows below. Joined in this order with LF after every row, the block
-is 8,244 UTF-8 bytes / 26 LF / zero CR / final LF with SHA-256
-`b25adfbe2930f31c4f18ca9d590733a501e51055dc1862c437e44851b41218e7`.
-Prospective success fields in the final row define only the future accepted
-completion state; they do not claim any currently unchecked gate has passed.
-
+The 26 published standalone V5 rows below remain byte-for-byte and in total
+order. Immediately after the final V5 row, the frozen scalar runner and
+authority generator append the exact 30 standalone V6 rows. Joined in generated
+order with LF after every V6 row, that block is 11,502 UTF-8 bytes / 30 LF /
+zero CR / final LF with SHA-256
+`412912ed380883fcb5739f7a77ea4cf1cdf8537f97f6abed4a748b8ae48f8ea9`.
+Prospective success fields define only the future accepted completion state;
+they do not claim that any currently unchecked gate has passed.
 HL23-V5-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-support-manifest.json|bytes=20229|lf=474|cr=0|finalLf=true|sha256=47f98ab16da1d858508a0b0abf2686e51e7af3132b3abacb7efa5b2b640574ff
 HL23-V5-FROZEN-ARTIFACT-SET|sha256=894fc3cdcd88ea21ca7a373a7349dd326f03fae07537a650670ac49abd8b67da
 HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-contract.cjs|bytes=141708|lf=2828|cr=0|finalLf=true|sha256=cf83a4d73cd3e3b9367872491cddeff1f05ea7ccc8ab79eb1e51d41cb9874836
@@ -1956,17 +2000,54 @@ HL23-V5-FORBIDDEN-V4-ACTION|count=16|paths=target-activation-v4-provider-preflig
 HL23-V5-INHERITED-V4-DIAGNOSTIC|canonicalSha256=a86a897e5652e6c8c40bf6a5aae7a6349e6afe9c827429ff2de25c285a15743f|evidenceStatus=diagnostic-only-no-provider-evidence-file|firstPageEntryCount=100|rejectionStatus=400|outputPersisted=false|captureSentinelCreated=false|providerMutationCount=0|diagnosticOnly=true|requiredExecutionShape=false|authorizing=false
 HL23-V5-CONTINUATION-AUTHORITY|parent=f17b2278542ef6836550a556abd97d82c9bf79db|checklistId=RC-STG-006O23B|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
 HL23-V5-STATUS|authorityO23=UNCHECKED_PENDING_O23B|authorityO23A=UNCHECKED_PENDING_O23B|authorityO23B=UNCHECKED|v3PostPathPermanentlyBlocked=true|v4ActionPathRetiredUnconsumed=true|o23AcceptancePendingO23B=true|o23AAcceptancePendingO23B=true|o23BAcceptancePending=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|successfulO23B=PASS_CONSUMED|prospectiveSuccessOnlyTogether=true|mandatoryStopBefore=RC-STG-006P23
+HL23-V6-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-support-manifest.json|bytes=30664|lf=698|cr=0|finalLf=true|sha256=d2d27f03eea8904d4d20124a7a76772ef5d97c9249bbb942d9cb882fb5cb4fa0
+HL23-V6-FROZEN-ARTIFACT-SET|sha256=91bd4b8e69d55903342b4391c4383fed5a19d3afe2d2a8f64a289950466cc63b
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-contract.cjs|bytes=157028|lf=3174|cr=0|finalLf=true|sha256=2b5f2d059c7c6ffd83b0cb782f5cf45b9920548e84d46d287114b3c45194b9b7
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-npm-verifier.sh|bytes=17958|lf=414|cr=0|finalLf=true|sha256=c17d661f4033e54df10961e60759126126579eb881829f46379aaf287462fd26
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-shell-envelope.cjs|bytes=36179|lf=782|cr=0|finalLf=true|sha256=6075cf98cc9bbeb23af0a14dcda60b7eade19f7235e836e2cff614aa8694dbcf
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=987f22caf039d3dee7943abadaa865a7f9215e16b3e76a052c3da6deee6988d8
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-action-control.cjs|bytes=74515|lf=1591|cr=0|finalLf=true|sha256=38c734370ad91436cc9d39e29ecb48ee09affb225234d8b399ac968fe538186f
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-provider-projection.cjs|bytes=232623|lf=4918|cr=0|finalLf=true|sha256=2f2b6ae371b9f719c2dc3a772719bc19078eedd3c38323901e67321abaa1394e
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-authority-ops.cjs|bytes=12595|lf=287|cr=0|finalLf=true|sha256=2d6a56a59dacafb44018a40b5e61ba2228e72c775229e131a166d0ab9253a14f
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-local-runner.ps1|bytes=142487|lf=2901|cr=0|finalLf=true|sha256=521acba6595dcb90c2cee62fdf6ea4bd46e9b01cf90a2cb04da4ab075dcd63fc
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-pre-node-dependency-lock.json|bytes=7308|lf=227|cr=0|finalLf=true|sha256=4a2dfecf604e8da2a9204a5ee7f30e38dabe9145a453c4f6845924b285265612
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-postflight.cjs|bytes=19509|lf=450|cr=0|finalLf=true|sha256=ec9883231346b0caad63dd85e2b03df51068e2c6b711b74108e709fb01af2894
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-cleanup.cjs|bytes=6929|lf=180|cr=0|finalLf=true|sha256=97735125f8f02bc52232c2b057f95dd3cfeb2eacf9005fb8f5f35121ffb739ad
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-support-self-test.cjs|bytes=63034|lf=1266|cr=0|finalLf=true|sha256=bda4670291421fd4c4c5b3f5cb4cdad39d1ba21656b378e4b6852bc276b41c3d
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-verify-freeze.cjs|bytes=65136|lf=1232|cr=0|finalLf=true|sha256=92c820cf1b5b72671ab7db73a7d3d3ee382862c200c285daec9142e760d07881
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-authority-binding.template.json|bytes=23107|lf=532|cr=0|finalLf=true|sha256=cf3cf5d84154e1cf35093cacd2c38dde17ec0102c2aa99eba84f4661f04e0228
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-RUNBOOK.md|bytes=36233|lf=623|cr=0|finalLf=true|sha256=034ed0b0ac0f6c2d50414bdb756d7fded4992c5ef263c66b193e37fd35556f15
+HL23-V6-PROVIDER-EXECUTABLE-SOURCE|kind=full-phase-orchestrator|artifact=target-activation-v6-provider-projection.cjs|command=--orchestrator-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V6_FULL_PHASE_PROVIDER_ORCHESTRATOR_SOURCE|bytes=38331|lf=821|cr=0|finalLf=true|sha256=b081ec740cf7444569ce2b857fff6f512b34a0e74eaf5bb2af418646d500b52b|loadedOnlyByExactBootstrap=true
+HL23-V6-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-bootstrap|artifact=target-activation-v6-provider-projection.cjs|command=--bootstrap-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V6_FUNCTIONS_EXEC_BOOTSTRAP_SOURCE|bytes=32416|lf=664|cr=0|finalLf=true|sha256=fdc88fcf0c46d5dab434dc133d26b8c08ee63945429507737b9d41864eb388e8|functionsExecEntireInput=true|prefixSuffixAllowed=false|platformSubmittedSourceAttested=false|operatorAuditedExactWholeCellRequired=true
+HL23-V6-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV6ProviderMutation=false
+HL23-V6-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V6-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V6-INHERITED-V4-AUTHORITY|commit=f17b2278542ef6836550a556abd97d82c9bf79db|parent=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=11358|manifestSha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428|artifactSetSha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422|artifactCount=14|bindingBytes=6067|bindingSha256=2c6c4876a50bc5b40476d50e70e27f4eba5214de6d3dd9f2d8acbbdb4b3905df|state=BOUND_UNCONSUMED_RETIRED|authorizingV6ProviderMutation=false
+HL23-V6-FORBIDDEN-V4-ACTION|count=16|paths=target-activation-v4-provider-preflight.json,target-activation-v4-held-probes-preflight.json,target-activation-v4-npm-observation-plan.json,target-activation-v4-npm-observation-stdin.txt,target-activation-v4-npm-observation.json,target-activation-v4-npm-observation-envelope.json,target-activation-v4-provider-postflight.json,target-activation-v4-shell-postflight-plan.json,target-activation-v4-shell-postflight-stdin.txt,target-activation-v4-shell-postflight.json,target-activation-v4-shell-postflight-envelope.json,target-activation-v4-held-probes-postflight.json,target-activation-v4-provider-final.json,target-activation-v4-postflight-result.json,target-activation-v4-cleanup-result.json,target-activation-v4-arm-failure.json|mustRemainAbsent=true|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V6-INHERITED-V4-DIAGNOSTIC|canonicalSha256=a86a897e5652e6c8c40bf6a5aae7a6349e6afe9c827429ff2de25c285a15743f|evidenceStatus=diagnostic-only-no-provider-evidence-file|firstPageEntryCount=100|rejectionStatus=400|outputPersisted=false|captureSentinelCreated=false|providerMutationCount=0|diagnosticOnly=true|requiredExecutionShape=false|authorizing=false
+HL23-V6-INHERITED-V5-AUTHORITY|commit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|parent=f17b2278542ef6836550a556abd97d82c9bf79db|committedAt=2026-08-26T22:09:21.000Z|manifestBytes=20229|manifestLf=474|manifestCr=0|manifestFinalLf=true|manifestSha256=47f98ab16da1d858508a0b0abf2686e51e7af3132b3abacb7efa5b2b640574ff|artifactSetSha256=894fc3cdcd88ea21ca7a373a7349dd326f03fae07537a650670ac49abd8b67da|artifactCount=14|artifactBytes=747682|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED|authorizingV6ProviderMutation=false
+HL23-V6-FORBIDDEN-V5-BINDING-AND-ACTION|count=20|paths=target-activation-v5-authority-binding.json,target-activation-v5-provider-preflight.json,target-activation-v5-provider-preflight.commit.json,target-activation-v5-held-probes-preflight.json,target-activation-v5-npm-observation-plan.json,target-activation-v5-npm-observation-stdin.txt,target-activation-v5-npm-observation.json,target-activation-v5-npm-observation-envelope.json,target-activation-v5-provider-postflight.json,target-activation-v5-provider-postflight.commit.json,target-activation-v5-shell-postflight-plan.json,target-activation-v5-shell-postflight-stdin.txt,target-activation-v5-shell-postflight.json,target-activation-v5-shell-postflight-envelope.json,target-activation-v5-held-probes-postflight.json,target-activation-v5-provider-final.json,target-activation-v5-provider-final.commit.json,target-activation-v5-postflight-result.json,target-activation-v5-cleanup-result.json,target-activation-v5-arm-failure.json|mustRemainAbsent=true|prefixInventoryCount=15|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V6-INHERITED-V5-BINDING-LAUNCH-FAILURE|authorityCommit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-26T22:09:21.000Z|justBeforeWallSample=2026-08-26T22:10:25.643Z|nativeExitCode=1|failureStage=outer-powershell-parameter-binding-pre-runner-body|safeTextUtf8Bytes=128|safeTextSha256=bb1498b816e09c94654563f7b251068e8529f2d3d952eda097ddbb1fade5df22|category=InvalidArgument|exceptionType=ParentContainsErrorRecordException|fullyQualifiedErrorId=PositionalParameterNotFound,target-activation-v5-local-runner.ps1|invocationMatchedRunbookBindingBlock=true|createdAtGeneratedImmediatelyPreCall=true|exactCreatedAtUnavailable=true|runnerBodyEntered=false|runnerSelfPinRan=false|pinnedNodeStarted=false|bindingCandidateGenerationStarted=false|captureWriteAttempted=false|canonicalStdoutPresent=false|rawTransportDigestUnavailable=true|bindingAbsentBeforeAndAfter=true|failureReceiptCreated=false|operatorAttestedDiagnostic=true|authoritativeActionEvidence=false|continuationAttemptEvidence=false|providerReadCount=0|providerMutationCount=0|browserActionCount=0|networkRequestCount=0
+HL23-V6-CONTINUATION-AUTHORITY|parent=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|checklistId=RC-STG-006O23C|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|v5BindingRetryAuthorized=false|v5ResumptionAuthorized=false|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V6-STATUS|authorityO23=UNCHECKED_PENDING_O23C|authorityO23A=UNCHECKED_PENDING_O23C|authorityO23B=UNCHECKED_PENDING_O23C|authorityO23C=UNCHECKED|v3PostPathPermanentlyBlocked=true|v4ActionPathRetiredUnconsumed=true|v5ActionPathRetiredUnconsumed=true|v5BindingRetryAuthorized=false|o23AcceptancePendingO23C=true|o23AAcceptancePendingO23C=true|o23BAcceptancePendingO23C=true|o23CAcceptancePending=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|successfulO23B=PASS_CONSUMED|successfulO23C=PASS_CONSUMED|prospectiveSuccessOnlyTogether=true|mandatoryStopBefore=RC-STG-006P23
 
-After publication and binding, execute only the exact frozen V5 runbook order:
-ProviderCaptureHost PRE; five held PRE probes; one-shot O23B preflight/arm; one
-sealed live-runtime npm observation; ProviderCaptureHost POST; one byte-exact
-activation observation; five held POST probes; ProviderCaptureHost FINAL;
-aggregate postflight; zero-delete cleanup; mandatory stop before
-`RC-STG-006P23`. Provider reads remain response-driven and read-only; raw
-connector responses and opaque cursors remain inside the narrowed connector
-isolate, and a provider phase succeeds only with its canonical output/final-
-receipt pair. O23, O23A, and O23B remain unchecked until the complete sequence
-passes and must then be checked together. P23, backup, reopen, rollback,
+## 2026-08-26 RC-STG-006O23C V6 Scalar-Transport Read-Only Evidence Continuation Authority - Authorized Next / Pending Publication and Binding
+After exact-nine publication and one successful, separately audited V6 binding,
+execute only this frozen order: ProviderCaptureHost PRE once, followed by one
+read-only committed-pair reconciliation; five held PRE probes; V6 preflight and
+one-shot O23C arm; one sealed live-runtime npm observation; after the required
+61-second boundary, ProviderCaptureHost POST once and one reconciliation; one
+sealed byte-exact inherited V3 `activation-post` observation; five held POST
+probes; after the next required 61-second boundary, ProviderCaptureHost FINAL
+once and one reconciliation; aggregate postflight; zero-delete cleanup; mandatory
+stop before `RC-STG-006P23`.
+
+Provider reads remain response-driven and read-only; raw connector responses and
+opaque cursors remain inside the narrowed connector isolate, and a provider phase
+succeeds only with its canonical output/final-receipt pair. O23, O23A, O23B, and
+O23C remain unchecked until the complete V6 aggregate and zero-delete cleanup
+pass, and may then be marked `PASS_CONSUMED` only together in a separate
+completion-evidence documentation commit. P23, backup, reopen, rollback,
 production, and every later gate remain forbidden.
 
 ## Historical Conditional Successful-Smoke Authority - Never Activated
@@ -1987,8 +2068,12 @@ rerun authority. The bounded helper-retirement amendment is consumed and
 supplies no normal-mode downstream authority. V2 is rejected after its local arm
 failure. V3 later completed its one provider mutation and consumed its authority.
 V4 is bound, unconsumed, and retired after its diagnostic-only opaque-cursor
-failure. Only the separately pinned V5/O23B continuation above may become
-eligible after direct-child publication and binding audit.
+failure. Published V5 authority dceb is
+`PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED`; its
+binding remains absent and no retry, rebind, resumption, or repurposing is
+authorized. O23, O23A, and O23B are pending O23C; O23C is unchecked. Only the
+separately pinned V6/O23C continuation above may become eligible after exact-
+nine direct-child publication and a separate immutable V6 binding audit.
 
 ## Release-Specific Isolation
 
@@ -2036,10 +2121,11 @@ current authority.
 | Abort-v2 identical replay | `PASS / AUTHORITY CONSUMED / NO RERUN` | Exact one-shot `969`-byte / `bad1c78f...` command; native status `0`; stdout `4905` / `65431c4c...`; stderr `0` / `e3b0c442...`; replay status `2` / `9a271f2a...`; canonical result `3899` / `8b21edc8...`; contract v2, `replayed: true`, `0/0`, exact no-work object, unchanged source family, and byte-identical target/receipt. Preflight, postflight, probes, provider state, cleanup, and metadata are sealed above. Mandatory stop; no rerun. |
 | Normal strict restore/replay | `NOT AUTHORIZED` | The successful-smoke condition never occurred. No normal plan, confirmation, execute, or replay may run. |
 | Post-abort helper retirement | `PASS / AUTHORITY CONSUMED / NO RETRY` | Published incident amendment `0498fd4...` permitted only read-only continuation after the two comma-OWS false negatives. Refreshed provider `1862`/`68cd773b...`, corrected official HTTP `23014`/`d0ef4d2e...` at `64/64 + 8/8 + 10/10 + 5/5`, local postflight `4837`/`6941c238...`, and exact cleanup `1211`/`b49aca2f...` pass. Deploy `6a8e6c8...` remains current/ready; one dispatch only, no retry. Mandatory stop. |
-| `RC-STG-006O23` post-abort held target activation | `V1/V2 REJECTED + UNCONSUMED; V3 ACTION SUCCEEDED + AUTHORITY CONSUMED; ACCEPTANCE PENDING O23B` | Published e855/V1 was rejected before PRE. Published 3f0bc/V2 gathered PRE but failed local arm before provider dispatch and cannot be retried. Published 43e99/V3 durably consumed its arm, completed exactly one successful `DATABASE_PATH` provider mutation, and returned sole newest/`LIVE` exact-B2 deploy `dep-da7d857avr4c73bnna90`. The old V3 POST path is permanently blocked solely by the absent explicit hosted npm `11.11.0` observation, and its eight POST artifacts must remain absent. Published f17b/V4 was separately bound but never consumed; its wrong-token diagnostic produced no provider evidence, action artifact, or capture sentinel, and V4 is retired. O23 and O23A stay unchecked until O23B completes, then all three are checked together. |
-| `RC-STG-006O23A` V4 read-only evidence continuation | `PUBLISHED + BOUND / DIAGNOSTIC FAILED / UNCONSUMED / RETIRED` | Published f17b/V4 preserved the exact prior authority boundary and authorized zero provider mutations, but its diagnostic supplied the wrong continuation token. No provider evidence, action artifact, or capture sentinel was created; all 16 V4 action artifacts remain absent, provider mutation count remains zero, total provider mutation count remains one, and V4 can never be retried or accepted. |
-| `RC-STG-006O23B` V5 opaque-cursor read-only evidence continuation | `AUTHORIZED NEXT / PENDING DIRECT-CHILD PUBLICATION + BINDING / UNCHECKED` | Publish one literal non-merge exact-nine child of f17b, audit the separate V5 binding, then run only the frozen ProviderCaptureHost/full-phase bootstrap sequence for provider PRE, held PRE probes, O23B arm, one sealed live-runtime npm observation, provider POST, byte-exact activation observation, held POST probes, provider FINAL, aggregate postflight, and zero-delete cleanup. V5 authorizes zero provider mutations; P23 and later gates remain forbidden. |
-| `RC-STG-006P23` semantic verification and fresh backup | `PENDING AUTHORITY / MANDATORY STOP` | O23 deliberately performs no SQLite/semantic work and authorizes no backup. A separate later amendment is required. |
+| `RC-STG-006O23` post-abort held target activation | `V1/V2 REJECTED + UNCONSUMED; V3 ACTION SUCCEEDED + AUTHORITY CONSUMED; UNCHECKED_PENDING_O23C` | Published e855/V1 and 3f0bc/V2 remain rejected and unconsumed. Published 43e99/V3 consumed exactly one successful provider mutation; its old POST path remains permanently blocked. V4 is retired. Published dceb/V5 is `PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED`; no V5 action began. O23 remains unchecked pending O23C and may pass only with O23A, O23B, and O23C after V6 aggregate, zero-delete cleanup, and separate completion documentation. |
+| `RC-STG-006O23A` V4 read-only evidence continuation | `PUBLISHED + BOUND / DIAGNOSTIC FAILED / UNCONSUMED / RETIRED / UNCHECKED_PENDING_O23C` | Published f17b/V4 remains permanently retired with zero V4 provider mutations. O23A remains unchecked pending O23C and may pass only with O23, O23B, and O23C after successful V6 completion and separate completion documentation. |
+| `RC-STG-006O23B` V5 opaque-cursor read-only evidence continuation | `PUBLISHED / UNBOUND / BINDING LAUNCH FAILED PREWRITE / UNCONSUMED / RETIRED / UNCHECKED_PENDING_O23C` | Published dceb/V5's first binding launch failed before runner-body entry and before any write or provider action. Its binding remains absent; no retry, rebind, resumption, or V5 action is authorized. O23B remains unchecked pending O23C. |
+| `RC-STG-006O23C` V6 scalar-transport read-only evidence continuation | `AUTHORIZED NEXT / PENDING EXACT-NINE DIRECT-CHILD PUBLICATION + BINDING / UNCHECKED` | Publish one literal non-merge exact-nine child of dceb and audit one separate immutable V6 binding. Then run only Provider PRE plus reconciliation; held PRE; preflight plus one-shot O23C arm; sealed npm; Provider POST plus reconciliation after 61 seconds; sealed activation-post; held POST; Provider FINAL plus reconciliation after 61 seconds; aggregate; zero-delete cleanup; mandatory stop before P23. V6 authorizes zero provider mutations. |
+| `RC-STG-006P23` semantic verification and fresh backup | `PENDING AUTHORITY / MANDATORY STOP` | The O23/O23A/O23B/O23C chain performs no SQLite or semantic work and authorizes no backup. A separate later amendment is required. |
 | Final desktop/mobile matrix, observation, and M7-26 closeout | `PENDING` | Requires every prior gate. |
 
 Any strict stop or failed gate stops the release immediately and invokes only
@@ -2086,9 +2172,14 @@ cannot be retried. Published 43e99/V3 completed the target handoff and consumed
 its authority, but its old POST path is permanently blocked solely by the absent
 explicit hosted npm `11.11.0` observation. Published f17b/V4 was separately
 bound but never consumed; its wrong-token diagnostic produced no provider
-evidence, action artifact, or capture sentinel, and V4 is retired. O23 and O23A
-remain unchecked pending O23B. Only the exact V5 docs-only direct child of f17b
-plus separate V5 binding may authorize the zero-mutation evidence continuation.
+evidence, action artifact, or capture sentinel, and V4 is retired. Published
+V5 authority dceb is
+`PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED`; its
+binding remains absent and it cannot be retried, rebound, resumed, or
+repurposed. O23, O23A, and O23B remain unchecked pending O23C; O23C is
+unchecked. Only the exact V6 docs-only direct child of dceb plus a separate
+successful immutable V6 binding may authorize the frozen zero-provider-
+mutation evidence continuation.
 Normal recovery, P23 semantic verification/backup, reopening/final review,
 browser action, closeout, and production remain unauthorized.
 Chrome disk/FD reproof remains pending and production remains untouched.
