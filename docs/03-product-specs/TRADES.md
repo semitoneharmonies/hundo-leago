@@ -1,0 +1,1219 @@
+# Hundo Leago — Trades
+
+## Document Status
+
+`APPROVED`
+
+This product specification consolidates:
+
+* approved Season 2 tradeable assets, contract transfer, retention, deadline, permission, roster, and history rules;
+* current trade behaviour that may inform, but does not control, the target design;
+* approved user-visible trade decisions.
+
+Grae approved the Season 2 Trades product specification recorded in this document on 2026-07-18.
+
+Grae approved the FAD carryover-synchronization amendments on 2026-07-27.
+
+Grae approved the Entry Draft pick-trading and rollover-gate amendments on 2026-07-29.
+
+Grae approved the full-site trade-workflow amendment on 2026-08-20. New trade
+composition presents exactly `Player`, `Draft pick`, `Buyout obligation`, and
+`Future considerations`. Active, Bench, Injured Reserve, and Prospect holdings
+are selected through `Player`; an active contract follows its player, and any
+new retained salary is entered on that outgoing contracted player. A retained-
+salary obligation is not a standalone selectable asset in a new proposal.
+Persisted historical proposals, retention schedules, and typed assets remain
+durable and readable and remain executable or reversible when their recorded
+state permits. An exact idempotent retry of historical proposal creation
+replays the original result rather than applying the new grammar as a fresh
+request.
+
+When a receiving manager accepts a proposal containing Future Considerations,
+the service atomically persists the acceptance snapshot and projects `Awaiting
+Commissioner Approval` while storage status remains `proposed`; no asset,
+contract, obligation, roster, cap, or ownership state changes. Only the current
+commissioner or an inherited platform administrator may approve and complete
+it after the normal acceptance checks are rerun inside the completion
+transaction. Rejection, cancellation, expiry, stale-asset cancellation, audit,
+and notification behavior remain applicable while approval is pending. This
+supersedes older language that completed such a proposal immediately on
+receiving-manager acceptance or permitted a new standalone retention-
+obligation selection.
+
+---
+
+## Product Purpose
+
+Hundo Leago needs a league-scoped trade workflow in which two teams can exchange approved assets without losing player identity, contract terms, prospect status, draft-pick history, retained-salary obligations, or transaction history.
+
+This specification defines:
+
+* who may create, respond to, cancel, administer, and view proposals;
+* which assets may be traded;
+* proposal lifetime and trade-deadline behaviour;
+* acceptance-time asset revalidation without proposal reservations;
+* contract, retention, roster, and cap effects;
+* automatic cancellation, commissioner reversal, and correction;
+* user-interface, history, validation, and testing requirements.
+
+Acceptance must be one backend-authoritative atomic transaction.
+
+---
+
+## Out of Scope
+
+This document does not define:
+
+* auction bidding or resolution;
+* Entry Draft order or draft-pick creation;
+* Candidate Card allocation and Free Agent Draft rapid auctions;
+* exact roster-lock and matchup snapshot implementation;
+* exact database tables;
+* exact API routes or payloads;
+* email, push, or alternate notification channels planned for future updates;
+* multi-team trades unless later approved;
+* the detailed fulfillment workflow for future-considerations obligations.
+
+---
+
+# Part 1 — Product Authority
+
+## Source Documents
+
+This specification depends on:
+
+```text
+docs/01-project/NORTH_STAR.md
+docs/01-project/CURRENT_STATE.md
+docs/01-project/PROJECT_SCOPE.md
+docs/01-project/OPERATING_MODE.md
+docs/01-project/GLOSSARY.md
+docs/02-rules/LEAGUE_RULES.md
+docs/02-rules/PERMISSIONS.md
+docs/03-product-specs/LEAGUES_AND_TEAMS.md
+docs/03-product-specs/ROSTERS.md
+docs/03-product-specs/CONTRACTS.md
+```
+
+Approved shared rules and this reconciled product specification are authoritative. Related shared documents were updated for tradeable retention, buyout penalties, future considerations, simultaneous proposals, and closed-proposal visibility.
+
+---
+
+## Existing Behaviour Is Not the Target Model
+
+The current application includes trade proposals, player movement, retained salary, expiry, acceptance, cancellation, buyout interaction, trade block features, and history.
+
+Current implementation also includes assumptions that are not established as Season 2 rules, including:
+
+* frontend-driven state mutation;
+* file-backed state;
+* name-oriented or incomplete identifiers;
+* buyout-penalty transfer fields;
+* incomplete draft-pick and prospect-right support;
+* incomplete league isolation and trade-deadline enforcement;
+* current roster and salary calculations that predate the approved specifications.
+
+Existing code is evidence only. Approved buyout-penalty transfers must be rebuilt against stable obligation records; cash, cap space, and unsupported assets remain non-tradeable.
+
+---
+
+## Backend Authority
+
+The backend is authoritative for:
+
+* proposal identity, league, teams, actors, status, and timestamps;
+* asset identity, ownership, and eligibility;
+* contract and retention terms;
+* trade deadline and proposal expiry;
+* acceptance, cancellation, automatic cancellation, reversal, and correction;
+* roster and cap results;
+* activity and proposal history;
+* idempotency and concurrency control.
+
+The frontend may preview a trade but may not independently transfer an asset or create retention.
+
+---
+
+## League Isolation
+
+Every proposal belongs to one league and exactly two teams in that league.
+
+Every asset, contract, retention record, draft pick, and prospect right must belong to the same league.
+
+Cross-league reads and writes are rejected.
+
+---
+
+# Part 2 — Actors and Permissions
+
+## Proposing Manager
+
+A manager may:
+
+* create a proposal from an assigned team to another team in the same league;
+* select approved assets currently owned by the proposing team;
+* request approved assets currently owned by the receiving team;
+* propose retained salary within approved limits;
+* cancel a pending proposal created by the assigned team;
+* view proposals allowed to authenticated league members.
+
+A manager may not accept on behalf of the opposing team or directly transfer assets.
+
+---
+
+## Receiving Manager
+
+The receiving team’s manager may:
+
+* accept a pending proposal;
+* reject a pending proposal;
+* view the proposal and acceptance-time preview.
+
+A one-command counterproposal workflow is planned but not implemented. A
+receiver may currently reject and then create a separate proposal only when
+they are the manager of the newly proposing team.
+
+Acceptance requires current authority for the receiving team.
+
+---
+
+## Commissioner
+
+A commissioner may:
+
+* safely inspect proposals without receiving manager execution authority;
+* approve a Future-Considerations proposal already accepted into `Awaiting
+  Commissioner Approval`;
+* reverse or correct a completed trade through the approved recovery workflow.
+
+Commissioner authority alone does not permit creating, accepting, rejecting, or
+cancelling a proposal for either team.
+
+No written reason is required.
+
+Commissioner actions must identify the commissioner and the teams for which the action was taken.
+
+---
+
+## Authenticated League Member
+
+Every authenticated active member of a league may view that league’s pending, rejected, cancelled, expired, automatically cancelled, and completed trade information under the approved permissions.
+
+Membership in one league grants no visibility into another league.
+
+---
+
+## Public Viewer
+
+Unauthenticated viewers may not view trade proposals or trade history through public roster access.
+
+Public roster pages may show only the approved current roster and contract result after completion.
+
+---
+
+# Part 3 — Proposal Model
+
+## Trade Proposal Record
+
+A proposal must preserve:
+
+* stable proposal ID;
+* league ID;
+* proposing and receiving team IDs;
+* creating actor ID;
+* asset IDs offered by each team;
+* proposed retention amount and retaining team for each retained contract;
+* creation, update, expiry, deadline, and status timestamps;
+* current status;
+* acceptance, rejection, cancellation, automatic-cancellation, reversal, and correction references;
+* related completed transaction ID when applicable.
+
+Display names are not ownership authority.
+
+---
+
+## Proposal Statuses
+
+Proposal statuses are:
+
+```text
+Pending
+Awaiting Commissioner Approval
+Accepted
+Rejected
+Cancelled
+Expired
+Automatically Cancelled
+Reversed
+Correction Required
+```
+
+Only the receiving manager may accept or reject `Pending`; only the proposing
+manager may cancel it. A Future-Considerations acceptance projects `Awaiting
+Commissioner Approval` while the persisted proposal remains open. That state
+may be cancelled by the proposer, rejected by the receiver, automatically
+expired or cancelled, or approved by the current commissioner or inherited
+platform administrator.
+
+Terminal proposals never become pending again.
+
+---
+
+## Two-Team Limit
+
+The initial Season 2 workflow supports exactly two teams per proposal.
+
+Multi-team trades are out of scope until deliberately specified.
+
+---
+
+# Part 4 — Tradeable Assets
+
+## Approved Asset Types
+
+Approved tradeable assets are:
+
+* Active roster players and their contracts;
+* Bench players and their contracts;
+* Injured Reserve players and their contracts;
+* prospects and player rights;
+* draft picks;
+* existing buyout-penalty obligations;
+* future considerations.
+
+Trades transfer contracts as-is except for approved retention requested within
+an outgoing contracted-player asset. Existing standalone retention obligations
+are not selectable in a new proposal; persisted historical records remain
+readable for accounting, correction, and safe reversal.
+
+---
+
+## Non-Tradeable Items
+
+The initial release does not permit trading:
+
+* cash or cap space;
+* an expired or bought-out contract;
+* a free agent;
+* an existing retained-salary obligation as a standalone asset;
+* a matchup snapshot position or points;
+* league membership, team ownership, or commissioner authority;
+* any other unnamed or unsupported asset.
+
+The current buyout-penalty transfer capability remains part of the target workflow but must be rebuilt around stable league-scoped obligation records and backend validation.
+
+---
+
+## Minimum Asset Rule
+
+Each team must offer at least one approved asset.
+
+A one-sided transfer with no asset from one team is not a normal trade and requires a separate commissioner correction or future workflow.
+
+---
+
+## Stable Identity
+
+Every selected asset uses a stable type-specific ID.
+
+The system must reject a proposal or acceptance that relies only on a player name, pick label, team name, or other mutable display text.
+
+---
+
+## Retention and Buyout-Penalty Assets
+
+An existing buyout-penalty obligation may be included as a standalone
+tradeable asset. The entire identified buyout obligation transfers to the
+receiving team with:
+
+* the same underlying buyout reference;
+* the same annual AAV charge;
+* the same remaining years and expiration;
+* the same history and originating transaction.
+
+The transfer changes the team responsible for the buyout cap charge. It does
+not reduce, split, restart, or extend the obligation.
+
+Acceptance must validate that the sending team still owns the buyout obligation
+and that the receiving team can legally assume it.
+
+An existing retained-salary obligation remains with its responsible team and
+cannot be selected as a standalone asset in a new proposal. Requested retention
+appears only within the matching outgoing contracted-player asset.
+
+---
+
+## Future Considerations
+
+Future Considerations is an explicit tradeable obligation asset.
+
+It must be represented by a stable league-scoped record identifying:
+
+* the completed trade;
+* the team owing the consideration;
+* the team entitled to receive it;
+* its status;
+* creation and status timestamps.
+
+Future Considerations has no immediate cap, roster, contract, draft-pick, or matchup effect. It cannot silently transfer an unnamed player or pick.
+
+Its later fulfillment or commissioner resolution requires an explicit logged workflow defined by the Commissioner Tools and technical specifications.
+
+A receiver's acceptance of a proposal containing Future Considerations moves
+no asset and creates no Future-Considerations obligation. It durably records
+the receiver acceptance and projects `Awaiting Commissioner Approval`. Only the
+current commissioner or inherited platform administrator may approve that
+state; approval revalidates the entire proposal and then completes it
+atomically.
+
+---
+
+# Part 5 — Player and Roster Effects
+
+## Contracted Players
+
+An Active, Bench, or Injured Reserve player transfers with:
+
+* the same stable player and contract IDs;
+* the same original total value and term;
+* the same AAV;
+* the same remaining years;
+* the same expiration;
+* the same active free-agent acquisition buyout-lock end time;
+* existing retention records;
+* any new approved retention created by this trade.
+
+The trade does not restart, extend, or replace the contract.
+
+---
+
+## Ownership Tenure Across Transfers
+
+The stable player and contract IDs survive a transfer, but the ownership ID
+does not cross teams. Acceptance atomically closes the source ownership tenure
+at its last committed version and creates a distinct destination ownership at
+version `1`. Prospect-right transfers follow the same rule.
+
+The completed trade preserves an immutable source-to-destination ownership-ID
+mapping for every transferred player or prospect right. Exact idempotent replay
+returns that same mapping without repeating any ownership, contract, history,
+activity, notification, or outbox effect.
+
+A direct reversal closes the destination ownership tenure and creates another
+new source-team ownership at version `1`; it never resurrects either historical
+ownership ID. Commissioner-directed team transfers use the same tenure and
+history rule.
+
+---
+
+## Receiving Category
+
+The receiving team preserves the player’s roster category:
+
+```text
+Active → Active
+Bench → Bench
+Injured Reserve → Injured Reserve
+Prospect → Prospect
+```
+
+The receiving team may make a separate normal roster move after the trade.
+
+Preserving category may create an illegal normal roster; the trade may still complete through the approved general warning and confirmation.
+
+---
+
+## Prospects
+
+A prospect acquired from another team’s Prospect roster remains a prospect.
+
+An unsigned prospect remains unsigned and has no salary.
+
+A signed fantasy-ELC prospect remains signed and cap-exempt while in Prospects.
+
+Once a signed prospect previously moved to Active, Bench, or Injured Reserve, that player cannot return to Prospects through a trade.
+
+---
+
+## Injured Reserve
+
+An Injured Reserve player transfers while preserving Injured Reserve status only if the player remains eligible at acceptance.
+
+If eligibility no longer exists, the trade does not silently move the player; acceptance fails until the proposal is replaced or corrected.
+
+---
+
+# Part 6 — Draft Picks and Player Rights
+
+## Draft Pick Identity
+
+A draft pick must preserve:
+
+* stable pick ID;
+* league and draft identity;
+* permanent draft year or season;
+* round;
+* permanent original team;
+* current owning team;
+* selection status.
+
+Trading changes current ownership only. Draft year, round, and original team
+never change. The current owner makes the selection at the original team's
+position in the draft order.
+
+---
+
+## Pick Eligibility
+
+An unspent pick may be traded:
+
+* before the current year’s Entry Draft;
+* while that Entry Draft is in progress, until the pick is used;
+* for any already-created future draft.
+
+A pick may be traded any number of times while it remains unspent, subject to
+the one-completed-on-clock-trade rule below. Every transfer changes current
+ownership and preserves original-team and complete ownership history.
+
+A used, cancelled, expired, or not-yet-created placeholder pick cannot be traded.
+
+The Entry Draft and Data Model specifications must define when future picks are created and how many future seasons exist.
+
+---
+
+## On-Clock Pick Trading
+
+A pending proposal that contains a pick remains pending when that pick goes on
+the clock. Going on the clock neither reserves the pick nor cancels the
+proposal.
+
+At most one trade containing that pick may complete while the pick is on the
+clock. When that trade completes:
+
+1. current ownership transfers atomically;
+2. the pick records that its one on-clock trade has been used;
+3. every competing proposal made stale by the ownership change is
+   automatically cancelled and recorded;
+4. the new current owner receives a fresh full selection clock.
+
+After that completed on-clock trade, no second proposal containing the pick may
+complete while it remains on the clock.
+
+A committed selection cancels every pending proposal containing that pick. A
+trade acceptance, a manual selection, and a clock-expiry selection receive no
+grace period against one another: the first transaction to commit wins, and
+every losing transaction must revalidate, fail without partial effects, and
+observe the committed result.
+
+---
+
+## Player Rights
+
+Player rights move as the same prospect asset represented on the Prospect roster.
+
+The player remains in Prospects for the receiving team, and the receiving team receives the same signing option and restrictions.
+
+A right that has already been released, expired, or converted to normal owned-player status cannot be traded.
+
+---
+
+# Part 7 — Proposal Creation
+
+## Proposal Workflow
+
+The manager workflow is:
+
+1. choose another team in the same league;
+2. select at least one owned asset from each side;
+3. add any proposed retained AAV to an included contracted player;
+4. review contract, retention-slot, roster, cap, and ownership previews;
+5. confirm proposal creation;
+6. save one pending proposal and its creation history atomically.
+
+Creating a proposal does not transfer assets or change cap usage.
+
+---
+
+## Simultaneous Proposals
+
+Trade proposals do not reserve assets.
+
+A team may receive multiple proposals involving the same asset and may send multiple proposals involving one of its assets.
+
+Proposal creation changes no ownership, cap amount, roster state, or asset availability.
+
+Acceptance revalidates every asset. When one completed transaction changes ownership or eligibility, every other pending proposal affected by that change is automatically cancelled and recorded.
+
+---
+
+## Editing and Planned Countering
+
+A pending proposal cannot be edited in place.
+
+The proposing team may cancel it and create a new proposal.
+
+No counter endpoint or atomic counter service is implemented. Until that
+planned workflow exists, the receiver may explicitly reject the original and
+then, only with manager authority for the new proposing team, create a separate
+proposal with reversed roles. Those are independent actions; documentation and
+UI must not imply atomic counter behavior.
+
+---
+
+# Part 8 — Timing and Deadline
+
+## Approved Trading Window
+
+At the scheduled Entry Draft start, the automatic contract-year rollover runs.
+Trading opens only after that rollover succeeds. Entry Draft preparation may
+occur beforehand, but proposal creation, response, future countering, cancellation,
+and completion remain locked while rollover is pending or failed.
+
+Trading closes at the commissioner-configured league trade deadline.
+
+Trading reopens after the successful automatic rollover at the scheduled start
+of the next Entry Draft.
+
+When Candidate Cards are open, a completed trade involving a contracted player
+must update the locked carryover projection on both affected cards. The player
+must not remain on the former team's card, disappear from the receiving team's
+obligations, or receive a rewritten contract.
+
+Any resulting Candidate Card slot conflict is surfaced under the Free Agent
+Draft and Roster specifications and does not silently cancel the completed
+trade.
+
+The deadline belongs to the league, uses the stored league timezone, is calculated by the backend, handles daylight-saving time, and is displayed unambiguously.
+
+---
+
+## Approved Proposal Lifetime
+
+A trade proposal expires seven days after creation.
+
+Seven days means exactly:
+
+```text
+7 × 24 hours = 168 hours
+```
+
+At the exact expiry instant, acceptance is closed.
+
+---
+
+## Deadline Precedence
+
+The proposal’s effective acceptance deadline is the earlier of:
+
+* its 168-hour expiry instant; or
+* the league trade deadline.
+
+At the exact effective deadline, the proposal immediately becomes `Expired` and cannot be accepted.
+
+Expired proposals leave the normal proposal interface, remain preserved and visible to authenticated league members in League Activity, and do not revive when trading reopens.
+
+---
+
+## Controlled Clock
+
+Tests must control time before, exactly at, and after proposal expiry and trade deadline.
+
+Read-only requests must never expire proposals as a hidden side effect. A scheduler or explicit write operation performs overdue status transitions idempotently.
+
+---
+
+# Part 9 — Retained Salary
+
+## Approved Retention Limits
+
+Retention:
+
+* is an AAV amount greater than `$0`;
+* may use up to two decimal places;
+* may not make cumulative retention exceed 50% of original AAV;
+* uses one active retention slot for each retaining team and contract;
+* is limited to three active slots per team;
+* lasts through every remaining year of the contract;
+* remains unchanged if the player is later traded or bought out;
+* ends when the underlying contract term ends.
+
+One team may hold only one active retention obligation on the same contract.
+
+---
+
+## New Retention Entry
+
+Retention may be added only by the team currently trading away an included contracted player.
+
+The proposal specifies one exact retained AAV amount within the matching
+outgoing contracted-player asset. The amount is not a percentage and cannot be
+changed after acceptance. Its responsible team remains fixed unless a safe
+reversal or explicit commissioner correction changes the persisted record.
+
+A team receiving a player cannot create retention for itself in the same trade.
+
+---
+
+## Retention Validation
+
+Proposal creation previews retention but does not consume a slot.
+
+Acceptance revalidates:
+
+* current full underlying AAV;
+* current cumulative retention;
+* 50% ceiling rounded down to cents when necessary;
+* retaining team’s available slot;
+* absence of another retention by that team on the same contract;
+* contract status and remaining years.
+
+The current owner’s player amount becomes original AAV minus all retained AAV, rounded to the nearest hundredth.
+
+---
+
+## Chained Retention
+
+On a later trade, the current owner may retain an additional amount when all limits are satisfied.
+
+Every retaining team’s obligation remains a separate record linked to the same underlying contract.
+
+Existing obligations remain with their responsible teams. They cannot be
+selected as standalone assets in a new proposal, and trading the player alone
+does not move an existing retention obligation.
+
+---
+
+# Part 10 — Acceptance
+
+## Acceptance Preview
+
+Immediately before confirmation, the receiving manager sees:
+
+* every asset moving in each direction;
+* player categories;
+* original AAV and remaining years;
+* existing retention affecting the involved contracts and any new retention
+  requested within an outgoing player asset;
+* retention slots before and after;
+* Active cap before and after;
+* roster-category counts before and after;
+* a general illegality flag for either resulting roster;
+* proposal expiry and league deadline.
+
+---
+
+## Acceptance-Time Revalidation
+
+The backend must verify:
+
+* proposal is pending;
+* actor may accept for the receiving team;
+* current time is before the effective deadline;
+* both teams remain active in the league;
+* every asset is still owned by the expected team;
+* every asset remains tradeable;
+* each contract and prospect state is unchanged or still compatible;
+* every draft pick remains unspent;
+* all retention rules remain satisfied;
+* every traded buyout-penalty obligation remains owned by the expected team;
+* the receiving team can assume every traded buyout obligation;
+* every Future Considerations asset has valid owing and entitled teams;
+* the request has not already completed.
+
+---
+
+## General Illegality Confirmation
+
+A trade may complete even when it leaves either normal roster illegal.
+
+The accepting manager must receive the approved general illegality flag and explicitly confirm completion. The warning does not need to enumerate every issue.
+
+A commissioner approving a Future-Considerations trade already accepted by the
+receiver receives the same flag and confirmation.
+
+---
+
+## Receiver Acceptance and Atomic Completion
+
+When a proposal contains no Future Considerations, receiver acceptance must
+atomically:
+
+1. transfer every player, prospect right, and draft pick;
+2. preserve or update roster categories as approved;
+3. transfer player contracts unchanged;
+4. create new retention obligations;
+5. preserve existing retention and transfer buyout-penalty obligations exactly as listed;
+6. create Future Considerations obligation records;
+7. recalculate authoritative cap and retention-slot results;
+8. set the proposal to `Accepted`;
+9. automatically cancel every other pending proposal made stale by the transfer;
+10. create one completed trade and activity record.
+
+When an accepted trade contains the pick currently on the Entry Draft clock,
+the same transaction must also validate that the pick has not already used its
+one on-clock trade, persist that use, preserve its original-team draft
+position, and grant the new owner a fresh full clock.
+
+Failure rolls back the entire acceptance.
+
+When a proposal contains Future Considerations, receiver acceptance instead
+must atomically record the durable receiver-acceptance snapshot and project
+`Awaiting Commissioner Approval`. It moves no asset, creates no obligation, and
+does not mark the trade completed. The proposal remains open for proposer
+cancellation, receiver rejection, expiry, and automatic stale-asset
+cancellation.
+
+Commissioner or inherited-administrator approval must revalidate the same
+authority-independent asset, deadline, ownership, contract, retention, cap, and
+roster conditions and then execute the completion steps above atomically.
+Approval replay is idempotent; any failure leaves the awaiting proposal and all
+league assets unchanged.
+
+---
+
+# Part 11 — Rejection, Cancellation, and Automatic Cancellation
+
+## Manager Actions
+
+The receiving team may reject a pending proposal.
+
+The proposing team may cancel a pending proposal.
+
+Rejection or cancellation is immediate, preserves proposal details in authenticated history, and cannot be undone by a manager.
+
+---
+
+## Approved Buyout Cancellation
+
+Buying out a player automatically cancels every pending trade involving that player.
+
+The cancellation and reason are recorded.
+
+Existing retained salary is not changed by the buyout.
+
+---
+
+## Approved Contract-Expiration Cancellation
+
+Contract expiration automatically cancels every pending trade involving the expired player.
+
+The cancellation is part of the atomic league rollover and is recorded.
+
+---
+
+## Other Asset Changes
+
+A pending proposal is automatically cancelled when:
+
+* a selected player or prospect is traded through another authorized correction;
+* selected prospect rights are released or converted incompatibly;
+* a selected draft pick is used, removed, or corrected to another owner,
+  including immediate cancellation of every pending proposal containing a
+  pick whose selection commits;
+* a team is removed or made inactive;
+* an included contract is corrected so the proposed retention is no longer valid.
+* a selected buyout-penalty obligation changes responsible teams;
+* a persisted legacy proposal contains a selected retention obligation whose
+  responsible team changes;
+* a selected Future Considerations obligation is fulfilled, cancelled, or corrected.
+
+A normal roster-category move alone does not cancel the proposal. Acceptance revalidates the new category.
+
+---
+
+# Part 12 — Commissioner Approval, Reversal, and Correction
+
+## Commissioner Approval
+
+A commissioner or inherited platform administrator may approve only a
+Future-Considerations proposal whose receiving manager already accepted it and
+whose projected status is `Awaiting Commissioner Approval`. Commissioner
+authority may not accept a normal `Pending` proposal for the receiver.
+
+The interface identifies approval as a separate commissioner action, requires
+confirmation, revalidates current state, and uses the same atomic completion
+operation. It must never be presented as ordinary receiver acceptance.
+
+No written reason is required.
+
+---
+
+## Reversal Eligibility
+
+A commissioner may reverse a completed trade only when every transferred asset and created obligation is still in the exact recoverable state produced by that trade.
+
+Reversal is rejected if a player, prospect, pick, contract, retention, buyout penalty, or Future Considerations obligation has since been consumed, moved, bought out, fulfilled, expired, or changed by another completed transaction.
+
+When direct reversal is unsafe, the commissioner must use a separately planned atomic correction workflow rather than partially undoing the trade.
+
+---
+
+## Atomic Reversal
+
+An eligible reversal must atomically:
+
+* return every asset to its pre-trade owner and category;
+* remove only retention and Future Considerations obligations created by the trade;
+* return any compatibility-era traded retention plus buyout-penalty obligations
+  to their pre-trade responsible teams;
+* restore authoritative cap and retention-slot results;
+* set the completed trade to `Reversed`;
+* append reversal history without deleting the original completion.
+
+A reversal may occur after the trade deadline because it is correction of a completed transaction, not a new manager trade.
+
+---
+
+## Correction Required
+
+If a recovery operation cannot safely complete, no partial reversal is saved.
+
+The transaction may be marked `Correction Required` and routed to the commissioner recovery process defined by Commissioner Tools and technical specifications.
+
+---
+
+# Part 13 — Freeze and Matchups
+
+## League Freeze
+
+An active league freeze blocks manager proposal creation, acceptance, rejection,
+cancellation, and any future counter workflow.
+
+Commissioner safe inspection, awaiting-Future-Considerations approval, and
+separate recovery actions remain available through explicit controls.
+
+Scheduled expiry and automatic cancellation continue because those actions close existing proposals without transferring assets.
+
+---
+
+## Matchup Separation
+
+A completed trade after Monday at 4:00 PM does not alter the current matchup snapshot.
+
+Players and normal-roster legality affect a future snapshot when eligible under the Matchups specification.
+
+Trade activity history must not record matchup points or standings changes.
+
+---
+
+# Part 14 — User Interface
+
+## Proposal Builder
+
+The proposal builder shows:
+
+* both teams;
+* owned and eligible assets grouped by type;
+* player position, roster category, AAV, and remaining years;
+* prospect signing state;
+* draft-pick year, round, original team, and current owner;
+* retention entry and remaining ceiling;
+* retention slots;
+* proposal expiry and trade deadline;
+* roster, cap, and general-illegality preview.
+
+Unavailable assets are disabled with a clear explanation.
+
+Player and draft-pick actions on a team roster may open the proposal builder
+with one stable asset ID preloaded. An action on the manager's own team
+preloads the proposing side. A request action while viewing another team
+preloads that team as the receiver and the selected asset on the receiving
+side. The user must still review and explicitly submit the proposal.
+
+---
+
+## Proposal Views
+
+Authenticated league proposal views show:
+
+* both teams and all assets;
+* contract and retention terms;
+* proposal status;
+* creating and responding actors;
+* timestamps;
+* automatic-cancellation reason;
+* completion, reversal, or correction references.
+
+When a proposal requests new salary retention on an included player contract,
+the proposal view presents that requested retention within the matching
+contract card. The combined card shows the player, contract AAV and term,
+roster category, and requested retained AAV. Draft picks, existing retention
+history, and every other independent tradeable asset remain distinct display
+information. Existing retention is never rendered as selectable proposal
+inventory. Pairing uses the stable contract ID and does not change the
+underlying proposal assets.
+
+The initial release uses one normal proposal list with status filters for pending and other non-expired proposal states. Expired proposals leave that interface and remain available in League Activity. Alternate view methods may be added in future updates.
+
+---
+
+## Trade Block
+
+The initial release keeps a simple league-visible trade block where a manager may flag an owned player as available. The flag:
+
+* is informational only;
+* does not create, approve, or alter a trade;
+* does not change roster legality or trigger matchup late-lock evaluation;
+* does not expose private bid or negotiation notes;
+* clears automatically when the player leaves the team;
+* may be removed by the manager or commissioner.
+
+## Notifications
+
+Creating a proposal atomically creates an in-app notification for every active
+manager of the receiving team other than the actor. The notification links the
+recipient directly to the identified proposal and opens its authoritative
+acceptance preview when that recipient has response authority. It does not
+reveal the proposal to a user outside the league.
+
+The league dashboard and normal Trades list visually distinguish a pending
+proposal when the signed-in receiving manager is expected to respond. This
+presentation is not an authorization boundary.
+
+The initial release does not require separate email or push notifications for
+new, accepted, rejected, cancelled, or expired proposals. Notification behavior
+for the planned counter workflow remains unspecified until that workflow is
+implemented.
+
+---
+
+# Part 15 — Activity and History
+
+## Completed Trade Activity
+
+Completed trade activity must record:
+
+* actor;
+* league, proposal, transaction, team, and asset IDs;
+* every transferred player, prospect right, and draft pick;
+* transferred contract AAV and remaining years;
+* every new retention amount and retaining team;
+* every transferred buyout-penalty obligation;
+* every created Future Considerations obligation;
+* timestamp;
+* receiver-acceptance and commissioner-approval references when applicable;
+* resulting general illegality flag.
+
+It must not record matchup or standings effects.
+
+---
+
+## Proposal Status History
+
+Creation, rejection, cancellation, expiration, automatic cancellation, completion, reversal, and correction are preserved with actor or system identity and timestamp.
+
+Failed validation that makes no state change is not a completed league transaction.
+
+The normal interface need not show raw operational failures, secrets, or internal stack details.
+
+---
+
+# Part 16 — Validation and Failure Behaviour
+
+The backend must reject:
+
+* unauthenticated or unauthorized actions;
+* cross-league teams or assets;
+* a proposal to the same team;
+* an unsupported asset type;
+* an asset not owned by the expected team;
+* duplicate or conflicting assets within the same proposal;
+* an invalid, spent, or placeholder pick;
+* invalid retention;
+* a proposal or acceptance outside the trading window;
+* acceptance at or after effective expiry;
+* a non-pending proposal action;
+* stale ownership, contract, or prospect state;
+* repeated acceptance that would transfer twice;
+* unsafe partial reversal.
+
+Errors must be clear and leave all related state unchanged.
+
+---
+
+# Part 17 — Required Testing
+
+Tests must cover:
+
+* manager, receiver, commissioner, league-member, public, and cross-league permissions;
+* each asset type and mixed-asset trades;
+* stable identities and duplicate assets;
+* category-preserving player and prospect transfers;
+* signed and unsigned prospects;
+* draft-pick original-team history;
+* repeated draft-pick transfers before and during an Entry Draft;
+* current-owner selection at the permanent original team's draft position;
+* pending proposals surviving the transition onto the clock;
+* one successful on-clock trade, the persisted one-trade limit, and the new
+  owner's fresh full clock;
+* rejection of a second on-clock trade without partial effects;
+* selection cancelling every pending proposal containing the pick;
+* an accepted trade cancelling competing proposals made stale by ownership;
+* trade acceptance versus manual selection and clock-expiry selection with no
+  grace period and first-commit-wins behavior;
+* contract AAV, remaining years, and free-agent acquisition buyout lock
+  transfer;
+* one and chained retention records created only through requested retention on
+  outgoing contracted players;
+* rejection of standalone retention in new proposals while persisted legacy
+  rows remain readable and safely reversible;
+* whole-obligation buyout-penalty transfers;
+* responsible-team cap and retention-slot changes from new requested retention;
+* Future Considerations acceptance snapshots, awaiting-approval projection,
+  commissioner approval, visibility, and later explicit resolution boundary;
+* retention ceiling, cent rounding, and slot limits;
+* multiple incoming and outgoing proposals involving the same asset;
+* acceptance-time stale-asset revalidation and automatic cancellation;
+* cancellation, rejection, expiry, deadline, and reopening;
+* proof that no counter endpoint or atomic counter behavior is advertised while
+  countering remains planned;
+* before, exactly at, and after all deadlines;
+* buyout and expiration automatic cancellation;
+* stale assets and concurrent acceptances;
+* legal and illegal resulting rosters;
+* current matchup snapshot separation;
+* receiver-only acceptance, commissioner-only approval of accepted
+  Future-Considerations trades, safe reversal, unsafe reversal, and correction;
+* atomic rollback and idempotent retry;
+* activity fields and absence of matchup or standings entries;
+* proof that reads never expire, cancel, accept, or repair a proposal.
+
+---
+
+# Part 18 — Approval Checklist
+
+## Inherited Approved Rules
+
+- [x] Trading is league-scoped and both teams belong to the same league.
+- [x] Trading opens only after the automatic rollover succeeds at Entry Draft start and closes at the commissioner-configured deadline.
+- [x] Trading reopens only after the successful automatic rollover at the next Entry Draft start.
+- [x] Proposals expire seven days after creation and cannot be accepted after the trade deadline.
+- [x] Active, Bench, and Injured Reserve players with contracts are tradeable.
+- [x] Prospects and player rights are tradeable and remain prospects after transfer.
+- [x] Draft picks permanently retain draft year, round, and original team; the current owner selects at the original team's draft position.
+- [x] Contracts transfer without changing AAV, remaining years, expiration, or free-agent acquisition buyout lock.
+- [x] Approved retained salary may be added and persists for the remaining contract term.
+- [x] Cumulative retention is limited to 50% of original AAV and three active slots per team.
+- [x] Existing retention is unchanged by a later trade or buyout.
+- [x] Assets and requested retention are revalidated at receiver acceptance and, when Future Considerations are present, again at commissioner approval.
+- [x] Receiver acceptance and commissioner approval are atomic, idempotent, and protected against duplicate processing.
+- [x] Transactions may complete with a general illegality warning and confirmation.
+- [x] Buyout and contract expiration cancel pending trades involving the player.
+- [x] Managers may propose or cancel for a proposing assigned team and may accept or reject only for a receiving assigned team.
+- [x] Commissioners may safely inspect proposals, approve an accepted Future-Considerations trade awaiting approval, and use separate reversal or correction actions; commissioner authority alone does not permit proposal, receiver-response, or cancellation writes.
+- [x] No written reason is required for a commissioner trade action.
+- [x] Authenticated league members may view pending, rejected, cancelled, and expired proposals.
+- [x] Public viewers may not view trade information.
+- [x] Trade status changes and completion are recorded without matchup or standings activity.
+- [x] Read-only requests never mutate trade state.
+
+## Approved Trade Decisions
+
+- [x] The initial trade workflow supports exactly two teams.
+- [x] Proposal presentation states are `Pending`, projected `Awaiting Commissioner Approval`, `Accepted`, `Rejected`, `Cancelled`, `Expired`, `Automatically Cancelled`, `Reversed`, and `Correction Required`.
+- [x] A terminal proposal never becomes pending again.
+- [x] Cash, cap space, free agents, matchup results, and unsupported unnamed assets are not tradeable.
+- [x] Existing buyout-penalty obligations and Future Considerations are standalone tradeable assets; requested retention is nested under an outgoing contracted player, while existing retention is not selectable in a new proposal.
+- [x] Current buyout-penalty transfer capability remains in the target model and is rebuilt with stable obligation identities.
+- [x] Each team must contribute at least one approved asset to a normal trade.
+- [x] A player’s receiving roster category is preserved as Active, Bench, Injured Reserve, or Prospect.
+- [x] The receiving team makes any later category change through a separate normal roster move.
+- [x] Injured Reserve status transfers only when the player remains eligible at acceptance; otherwise acceptance fails.
+- [x] Signed fantasy-ELC prospects remain signed and cap-exempt while transferred within Prospects.
+- [x] A signed prospect that already left Prospects cannot return through a trade.
+- [x] Unspent current-year picks may be traded before or during the Entry Draft.
+- [x] Already-created future picks may be traded.
+- [x] A draft pick may be traded multiple times while unspent, but at most one trade containing it may complete while it is on the clock.
+- [x] Pending proposals containing a pick remain pending when it goes on the clock.
+- [x] A completed on-clock trade gives the new owner a fresh full clock and records that the pick's one on-clock trade has been used.
+- [x] Selection cancels every pending proposal containing the pick, while a completed trade cancels competing proposals made stale by ownership.
+- [x] Trade acceptance, manual selection, and clock-expiry selection have no grace period; the first transaction to commit wins.
+- [x] Used, cancelled, expired, and not-yet-created placeholder picks cannot be traded.
+- [x] Prospect rights use the Prospect-roster asset and cannot be traded after release, expiry, or conversion.
+- [x] Creating a proposal changes no ownership or cap amount.
+- [x] Each team selects at least one asset, reviews the preview, and confirms proposal creation.
+- [x] An asset may appear in multiple pending proposals.
+- [x] Proposals do not reserve assets.
+- [x] Teams may receive or send multiple offers involving the same player or other asset.
+- [x] Acceptance revalidates ownership, eligibility, contract, obligation, and category state.
+- [x] A pending proposal cannot be edited in place.
+- [x] The proposer changes terms by cancelling and creating a new proposal.
+- [ ] **PLANNED — not implemented:** a future counterproposal command may define an atomic reversed-role workflow; no counter endpoint or service exists in M7-26.
+- [x] Seven days means exactly 168 hours after creation.
+- [x] The effective deadline is the earlier of 168-hour expiry and the league trade deadline.
+- [x] At the exact effective deadline, the proposal becomes `Expired` and cannot be accepted.
+- [x] Expired proposals leave the normal proposal interface, remain in League Activity, and never revive.
+- [x] Overdue expiry is performed by an idempotent scheduler or explicit write, never by a read.
+- [x] Only the team trading away an included contracted player may create new retention in that trade.
+- [x] Retention is entered as one exact AAV amount rather than a percentage.
+- [x] The receiving team cannot retain salary for itself in the same trade.
+- [x] Proposal creation previews retention but consumes a slot only at acceptance.
+- [x] Every chained retention obligation remains a separate record linked to the underlying contract.
+- [x] An existing retention obligation remains with its responsible team and is not selectable as a standalone asset in a new proposal.
+- [x] Persisted historical retention remains readable for accounting, correction, and safe reversal without changing its amount or schedule.
+- [x] A persisted historical proposal containing standalone retention remains executable or reversible when its recorded state permits, and an exact completed creation retry replays the original result; only a fresh proposal is subject to the new unsupported-asset rejection.
+- [x] An existing buyout-penalty obligation may be traded as a whole without changing its amount or schedule.
+- [x] Receiver acceptance of Future Considerations durably records acceptance and projects `Awaiting Commissioner Approval` without moving assets; commissioner approval revalidates and creates the explicit stable obligation during atomic completion.
+- [x] The acceptance preview shows assets, categories, contracts, obligations, slots, cap, roster counts, general illegality, and deadlines.
+- [x] The accepting manager explicitly confirms after any general illegality flag.
+- [x] Acceptance without Future Considerations transfers assets, contracts, buyout obligations, and new requested retention atomically; acceptance with Future Considerations moves nothing until separate commissioner approval atomically completes the same effects.
+- [x] Receiver rejection and proposer cancellation are immediate and cannot be undone by a manager.
+- [x] Rejection and cancellation preserve proposal history.
+- [x] Asset transfer, rights release or conversion, pick use or correction, team deactivation, and incompatible contract correction automatically cancel affected pending proposals.
+- [x] Ordinary moves among Active, Bench, and Injured Reserve do not automatically cancel a proposal; activation of a signed Prospect converts its rights asset and cancels pending prospect-right proposals.
+- [x] Only the receiving manager may accept a pending proposal; commissioner authority alone cannot complete it for the receiver.
+- [x] Only the current commissioner or inherited platform administrator may approve a Future-Considerations proposal already projected as `Awaiting Commissioner Approval`, using the same revalidation and atomic completion operation.
+- [x] Direct reversal is allowed only while every asset and created obligation remains in the exact recoverable post-trade state.
+- [x] A consumed, moved, bought-out, expired, or later-modified asset makes direct reversal unsafe.
+- [x] An eligible reversal returns every asset and category, removes only trade-created obligations, restores cap results, and appends history atomically.
+- [x] Commissioner reversal may occur after the trade deadline because it corrects a completed transaction.
+- [x] Unsafe reversal makes no partial change and must use the separate correction workflow.
+- [x] A league freeze blocks manager trade writes but allows scheduled expiry and automatic cancellation.
+- [x] The initial proposal interface uses one league-visible list with status filters; alternate views may be future updates.
+- [x] The initial release keeps a simple informational trade block.
+- [x] A trade-block flag creates no approval or transaction effect.
+- [x] A trade-block flag clears when the player leaves the team and may be removed by the manager or commissioner.
+- [x] The initial release uses in-app status and activity without separate email or push trade notifications.
+- [x] Failed validation that changes no state is not a completed league transaction.
+- [x] Grae approves this document as the Season 2 Trades product specification.
+- [x] Document status is `APPROVED`.
+
+---
+
+# Definition of Done
+
+The rule-approval phase for this specification is complete because:
+
+* every material trade decision was approved or revised;
+* tradeable and non-tradeable asset boundaries are explicit;
+* simultaneous proposals, expiry, and deadline behaviour are approved, while
+  counter behavior remains explicitly planned and unimplemented;
+* player-category, draft-pick, retention, buyout-penalty, Future Considerations, and reversal behaviour are explicit;
+* no unchecked workflow is presented as final behaviour.
+
+Implementation is complete only when backend authority, league isolation, stable identities, atomic acceptance, deadline safety, retention, recovery, permissions, history, and required tests are proven.
+
+---
+
+# Related Documents
+
+```text
+docs/README.md
+docs/01-project/CURRENT_STATE.md
+docs/01-project/PROJECT_SCOPE.md
+docs/01-project/OPERATING_MODE.md
+docs/01-project/GLOSSARY.md
+docs/02-rules/LEAGUE_RULES.md
+docs/02-rules/PERMISSIONS.md
+docs/03-product-specs/LEAGUES_AND_TEAMS.md
+docs/03-product-specs/ROSTERS.md
+docs/03-product-specs/CONTRACTS.md
+docs/03-product-specs/AUCTIONS.md
+docs/03-product-specs/ENTRY_DRAFT.md
+docs/03-product-specs/FREE_AGENT_DRAFT.md
+docs/03-product-specs/COMMISSIONER_TOOLS.md
+docs/04-technical-specs/DATA_MODEL.md
+docs/04-technical-specs/API_CONTRACTS.md
+docs/04-technical-specs/SECURITY.md
+docs/07-testing/TESTING_STRATEGY.md
+```

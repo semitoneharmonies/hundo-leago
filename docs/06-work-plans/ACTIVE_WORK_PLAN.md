@@ -1,0 +1,2326 @@
+# Hundo Leago - Active Work Plan
+
+## Document Status
+
+`APPROVED`
+
+## Plan Status
+
+`ACTIVE - M7-26; HL-20260823-1 PHASE ONE PUBLISHED; OPERATOR-SEQUENCING STRICT STOP; FULL RE-HOLD PASS; ABORT-V2 B2 HELD DEPLOY/RUNTIME PASS; V3 ACTION SUCCEEDED + AUTHORITY CONSUMED + EXACTLY ONE PROVIDER MUTATION; OLD V3 POST PATH PERMANENTLY BLOCKED; V4 RETIRED AFTER DIAGNOSTIC FAILURE; V5 PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED; 3C87 V6 PUBLISHED + BOUND + PREHOST BOOTSTRAP ABORTED + NO PHASE RESERVATION + ONE-SHOT ATTEMPT CONSUMED + RETIRED + NO RETRY/REBIND; D0D80E98 V7 PUBLISHED + UNBOUND + PREBINDING DIAGNOSTIC LOADER ABORTED + NO PHASE RESERVATION + RETIRED + NO RETRY/BIND/RESUME; 4B4EBF90 V8 PUBLISHED + UNBOUND + PREBINDING DIAGNOSTIC LOADER ABORTED + LOCAL CHILD TERMINAL UNKNOWN + NO PHASE RESERVATION + RETIRED + NO RETRY/BIND/RESUME; B1576D8E V9 PUBLISHED + UNBOUND + APPARENT DIAGNOSTIC OK THEN ENTRY-BUNDLE ABORTED + DUAL TERMINAL NOT ACCEPTED + FIRST HASH UNUSABLE + ONE-SHOT CONSUMED + NO PHASE RESERVATION + RETIRED + NO RETRY/BIND/RESUME/PROVIDER ACTION AUTHORIZED + NO POST-ATTEMPT FILESYSTEM VALIDATION; O23 + O23A + O23B + O23C + O23D + O23E + O23F UNCHECKED_PENDING_O23G; O23G UNCHECKED; RC-STG-006O23G V10 CONSOLIDATED ENTRY-BUNDLE READ-ONLY CONTINUATION AUTHORIZED NEXT THROUGH EXACT-NINE CHILD PUBLICATION + ONE PREBINDING DIAGNOSTIC ENTRY BUNDLE + EXACT OBSERVATION BINDING + THREE PHASE-SCOPED ONE-SHOT PRODUCTION-LOADER SUBMISSIONS (PRE/POST/FINAL); RC-STG-006P23 SEMANTIC VERIFICATION/BACKUP AND ALL LATER GATES NOT AUTHORIZED`
+
+## Work Plan ID
+
+```text
+M7-26
+```
+
+## Work Item
+
+```text
+Full-site UI review, plain-language workflow correction, permission hardening,
+and isolated staging release
+```
+
+## 2026-08-23 Fresh Strict Release - V3 Action Succeeded; V4 and V5 Retired; V6 Retired at Prehost Bootstrap Abort; V7 Published / Unbound / Diagnostic Attempt Consumed / No Phase Reservation / Retired; V8 Published / Unbound / Diagnostic Loader Aborted / Local Child Terminal Unknown / No Phase Reservation / Retired; V9 Published / Unbound / Apparent Diagnostic OK Then Entry-Bundle Aborted / Dual Terminal Not Accepted / First Hash Unusable / One-Shot Consumed / No Phase Reservation / Retired / No Retry, Binding, Resumption, or Provider Action Authorized / No Post-Attempt Filesystem Validation; O23-O23F Pending O23G; O23G Unchecked; V10/O23G Authorized Next
+
+Grae requested and approved fresh isolated-staging release `HL-20260823-1` at
+exact requested/approved/recorded time `2026-08-23T23:23:29.877Z`. It binds
+frontend application build
+`4dfe12d1366314e3d9df722c50771324647743c9` and held starting backend baseline
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`.
+Executable B-prime `234547e4d8453b7515fc081ea6ebe4c2d022dc54` passed its
+exact two-file focused, complete, check, dependency, and backend
+`origin/staging` publication gates at the recorded B-prime boundary. Held deploy
+`dep-da5sh0e417fc738i254g`, started `2026-08-24T04:28:49.802474Z`, passed on
+exact B-prime after `3,503/3,503` hosted tests and its build,
+startup, zero-error, held-health, and external read-only gates passed.
+
+The clean pre-fixture source boundary was
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`,
+`37105664` bytes / SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`.
+Fresh prepare/replay passed with `729` then `0` writes. Held postflight then
+verified that same path as the pre-action fixture-bearing source at `37744640`
+bytes / SHA-256 `b4163695d6f9db9e1f2db2b3aee536126e42b83f540fb0ee919b962fbd92b103`.
+Fresh target, absent through the accepted plan and materialized by the accepted
+first execute,
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3`
+is now `37105664` bytes / SHA-256 `cf3ca07d...`; at that first-execute boundary
+the target was inactive. V3 later selected it; the canonical receipt remains
+byte-unchanged at `4991` bytes / SHA-256 `24adf2d...`, while semantic target verification
+remains deferred. Verified incident-preservation backup
+`e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` binds manifest
+`staging/backups/hundo-leago_staging_20260823T225620203Z_e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6.manifest.json`,
+storage object with the identical prefix and `.sqlite3.gz.enc` suffix,
+`createdAt` `2026-08-23T22:56:20.203Z`, encrypted SHA-256
+`e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
+manifest checksum
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`,
+and verified plaintext `cf3ca07d...`. Reason/retention are
+`incident-preservation`, requested-by is
+`platform_operation` / `HL-20260822-1-post-abort-cutover`, `expiresAt` is
+`null`, and backend build is exact starting B.
+
+Frontend helper commit `e898e72272e5a052867832dcf9f128e5b8d5730e` passes
+its exact local gate. Canonical helper, sealed-original, and additive-overlay
+inventories are `9` / `190262` / `43cd106d...`, `33` / `1932120` /
+`2d8069ca...`, and `37` / `2038441` / `c6b553c5...`; syntax `5/5`, both
+verifiers, Vitest `14/14`, lint exit `0`, and a byte-identical isolated build
+pass. API deploy `6a8bfef3ac0ff74a373404d8` was rejected before browser,
+unhold, or action because its helper headers were absent. Corrected CLI deploy
+`6a8c006abe46c8fb6269c40c`, title
+`HL-20260823-1-strict-helper-e898e72`, is current/`READY`, processed the exact
+six header and two redirect rules, deployed no functions, and passed all `36`
+public-file byte checks on both canonical and immutable origins. Fresh tab
+`1600151197` reached `READY_NO_SESSION_REQUEST` with empty query/mutation
+caches, exactly the pinned CSS and JavaScript observed, and no API, session,
+action, or write.
+
+The exact merge-only controlled unhold produced sole newest/`LIVE` B-prime
+deploy `dep-da60sl0jo6nc73e0cfu0`. Its hosted `3,503/3,503`, build/startup,
+zero-error, exact unheld runtime, health, unauthenticated CORS/cache, mounted-FAD
+route, and pre-action v2 verifier gates passed. Phase one later reached accepted
+state as proposal `e00e0512-4a20-47fd-ad74-0986dd4abd27`; publish event
+`974342b5-94e5-42d8-af20-9e07c35bc847` and its exact replay returned
+`fresh 2` / `replay 0`. Chrome remained Admin rather than required Manager A
+during publication, so operator sequencing selected `STRICT_STOP`. Phase two
+never began and no retry is allowed. No value from either blocked predecessor
+may be resumed or reused. Production remains untouched and unauthorized. The
+exact gate ledger is
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-23.md`.
+
+### Terminal phase-one evidence and full re-hold
+
+The current run record is the sole recovery authority; the closed
+`HL-20260822-1` block later in this plan is evidence only. The controlled-unhold
+matrix below is historical pre-action evidence:
+
+```text
+STAGING_MAINTENANCE_HOLD=false
+LEAGUE_WRITE_MODE=open
+FREE_AGENT_DRAFT_ROUTES_ENABLED=true
+```
+
+It preserved exact B-prime, F, environment/database/source/root/season, and the
+unchanged disabled scheduler, account-email/capture, debug, backup-schedule,
+and provider-absence matrix. The helper's fixed namespace was:
+
+```text
+HL-20260823-1-team1-to-b-propose
+HL-20260823-1-team1-to-b-accept
+HL-20260823-1-outbox-team1-to-manager-b
+PUBLISH-HL-20260823-1-TEAM1-TO-MANAGER-B
+HL-20260823-1-team1-to-a-propose
+HL-20260823-1-team1-to-a-accept
+HL-20260823-1-outbox-team1-return-to-manager-a
+PUBLISH-HL-20260823-1-TEAM1-RETURN-TO-MANAGER-A
+```
+
+Only the first three keys and first publisher confirmation were used. The
+return keys/confirmation were never used and are now forbidden. The exact
+full-hold inverse then ran once and produced deploy
+`dep-da6cu8h42hec738f2al0`, sole newest/`LIVE` on B-prime at that boundary after
+hosted `443` suites / `3,503` tests / `3,503` pass, build/startup, zero-error, live/ready
+`200`/`no-store`, and session/leagues/current-FAD
+`503 SERVICE_MAINTENANCE`/`no-store` gates passed. Prior unhold deploy
+`dep-da60sl0jo6nc73e0cfu0` deactivated; the B-prime re-hold deploy later
+deactivated at the verified held-B2 handoff. No restore, target, receipt, helper,
+Netlify, `DATABASE_PATH`, backup, or production change occurred.
+
+### Current post-abort handoff
+
+Only the current 2026-08-23 run record and its helper-retirement-only amendment
+can supply operational authority. They authorize exactly one staging Netlify
+CLI baseline publication and no later downstream action. The old
+`pre-abort-source-verifier.sh` (`18060` bytes / `9c323005...`) ran and safely
+failed `TARGET_FAMILY_OR_SIDECAR_PRESENT`: the target family, receipt, and work
+were absent, while the authoritative source WAL/SHM were nonempty. That bundled
+main-only fence grants no checkpoint, sidecar removal, raw main-only copy, or
+B-prime abort-v1 authority.
+
+Frozen replacement diagnostic `wal-aware-abort-source-verifier.sh` is `24132`
+bytes / `685` LF lines / SHA-256
+`c036a2b847fe97c8ff8eade5a633d2d6815404344e2f683e241edce4f596e51e`.
+Its `2747`-byte result SHA-256 is
+`deda5da68dabed9225b25165727e9c36d6cf46875947596e2b0f1b61afec1a9a`
+with code `HL23_ABORT_WAL_PREFLIGHT_SOURCE_VERIFIED`. It binds exact main
+`37744640` / `b4163695...` / inode `131156`, WAL `568592` / `0dde02d1...` /
+inode `131151`, and SHM `32768` / `e03d9ff8...` / inode `131152`, each device
+`66332` in the historical B-prime container mount namespace, UID `1000`, mode
+`0600`, link count `1`; six stable snapshots; two
+complete zero-holder process scans; exact `to_b_accepted` / `published` /
+`none`; target/receipt/work absence; and cleanup. That diagnostic copied source
+main/WAL/SHM into owned scratch and SQLite opened only that scratch family;
+scratch main/WAL stayed unchanged while scratch SHM changed. SQLite never
+opened the authoritative paths.
+
+Exact abort-v2 B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb` is minted
+and published to backend `origin/staging` as the direct child of B-prime, with
+commit tree `0a6a928d8f6308aa5aadd2031c71769164c1cfb7`. It changes only the
+implementation and foundation test: numstat `369/18` and `830/2`, Git blobs
+`4a198c71554b7e7c5fc8ee481cd79b51c1ef799f` and
+`53ce37cd04e48eb42323bab914d71ef3933c2c63`, and SHA-256 values
+`d49c870bdf300983a0b57577ce68e0647ba6ff318ccf55fe11a5596016671889`
+and `3d9714ca93efa573593d983c992032fc4c473f2df23fd85395c9ed6d2873155c`.
+The canonical `57541`-byte raw diff has SHA-256
+`eb963d6b95311eeacc282ce9f8f743a83d4eae32f28922e2668ddcbfcbe84dc0`.
+Diff/syntax, focused `72/72` before the final narrow wrapper, and exact-final
+affected `5/5` pass; backend HEAD and `origin/staging` equal B2 and the backend
+worktree is clean.
+
+The single authorized `APP_BUILD_ID`-only merge produced API deploy
+`dep-da6ghj67bikc738hbbv0`, sole newest/`LIVE` on exact B2 after hosted `443`
+suites / `3,519` tests / `3,519` pass and zero fail/cancel/skip/todo. Build,
+startup on instance `srv-d9eo2turnols73ekb830-thxsc`, zero-error, health/readiness
+`200`/`no-store`, and session/leagues/current-FAD
+`503 SERVICE_MAINTENANCE`/`no-store` gates passed. B-prime re-hold deploy
+`dep-da6cu8h42hec738f2al0` deactivated at safe handoff. Netlify remained exact
+current/`READY` `6a8c006abe46c8fb6269c40c` at that exact-B2 gate; normal auto-deploy remained off and
+no other environment, helper, database-path, backup, or production change ran.
+
+Post-live proof at `2026-08-25T04:11:28.902Z` returned
+`HL23_B2_POST_LIVE_HELD_FAMILY_VERIFIED`: all `20` runtime keys including B2
+`APP_BUILD_ID`/`RENDER_GIT_COMMIT`, nine absent provider fields, three stable
+source snapshots, two seven-process scans with zero denied/holders, and complete
+downstream absence passed. Device `66313` is the current `thxsc` namespace-local
+mount identity; the historical `66332` value belongs only to B-prime `gzvbw`.
+Every inode/UID/mode/link/size/time/hash field remained exact.
+
+Fresh verifier `post-b2-abort-v2-source-verifier.sh` is `35494` bytes / `1045`
+LF / SHA-256
+`6d5cfe50ecee26199c3f0a2c922c99a84d3f97e2fe98b6256b36583e6e98b70c`;
+syntax/static checks and independent cold audit returned `GO`. Its one-shot
+`6032`-byte result SHA-256
+`80c7cadec0664625b0c4fc6eb86fd49f5e58842534fdebbc1aead63f5fe65976`
+returned `HL23_ABORT_B2_V2_SOURCE_PREFLIGHT_VERIFIED`. Six boundaries retained
+family fingerprint `21efc183...`; both complete scans covered eight processes /
+`85` descriptors with zero denied/holders; main+WAL-only scratch privately
+created a `32768`-byte SHM; source and scratch main/WAL remained unchanged;
+integrity/FK/schema/migrations/checksum, `131` total / `2` active sessions,
+classifier `to_b_accepted` / `published` / `none`, zero changes, both journals,
+downstream absence, and cleanup passed.
+
+The abort-v2 plan ran exactly once after the fresh-shell guards and passed at
+`0/0`. Its exact plan ID is
+`release-qa-strict-restore-abort-v2-03f37c3c16ee7cc632c49a6b87f23819b398146fd8a0fe1c6aff5cbdcca47456`.
+The detailed run ledger seals stdout `4777` bytes / `cef33b8f...`, canonical
+result `4146` bytes / `30441740...`, cleanup-aware metadata `1809` bytes /
+`ec338025...`, and empty stderr. Contract `2`, `main-wal`, exact classifier/
+WAL/family binding, absent target, exact six-field temporary-work object, and
+both mutation counts `0` pass. Postflight retained the exact source family on
+current device `66313` with seven processes / `65` descriptors / zero holders;
+all source/target journals and downstream objects remained absent.
+
+Published execute-only authority
+`fd31b1f41b7c16521cf0eceb2c4af4a33a242636` then passed exactly one
+first execute. The exact command is `969` bytes / SHA-256
+`bad1c78f0867977c65d457684ee3440c3707a48977694364470038a9cad4f275`;
+native status was numeric `0`. Stdout is `4902` bytes / `74610bcc...`, stderr
+is empty / `e3b0c442...`, and canonical result is `3896` bytes /
+`3d67f676...`. It returned `RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`,
+contract `2`, `replayed: false`, `0/2`, source preserved, target verified at
+`cf3ca07d...`, receipt `24adf2d...`, and the exact performed/materialized
+temporary-work object. The auxiliary status artifact is the sealed literal
+three-byte `0\n` / `101770a4...` serialization defect. It was not repaired;
+native wrapper status, complete output, and postflight make execution
+unambiguous.
+
+Capture envelope `7318` / `14733405...`, postflight `2059` / `fdd169d5...`,
+held probes `1136` / `2d634d0d...`, cleanup `928` / `299496df...`, and final
+metadata `5566` / `59cb7e89...` bind unchanged source family, exact regular
+mode-`0600` target/receipt, absent sidecars/journals/work, zero holders, full
+hold, and verified remote-capture removal. First-execute authority is consumed
+and cannot be rerun or repaired.
+
+The one authorized replay is now `PASS / AUTHORITY CONSUMED / NO RERUN`.
+Action-preflight script/result `9561` / `2837` bytes (`7f9f378a...` /
+`b454c5a6...`) bound exact B2, `20` runtime keys, nine absent providers, three
+snapshots, and two ten-process/`92`-descriptor zero-denied/zero-holder scans.
+The same `969`-byte / `bad1c78f...` command dispatched once with native status
+`0`; wrapper/envelope are `4098` / `7349` (`95cf1aa5...` / `63e4e662...`),
+stdout `4905` / `65431c4c...`, stderr `0` / `e3b0c442...`, replay status `2`
+/ one LF / hex `30 0a` / base64 `MAo=` / `9a271f2a...`, and canonical result
+`3899` / `8b21edc8...`. Result code
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, contract `2`,
+`replayed: true`, `0/0`, exact six-field no-work object, unchanged source
+family, and byte-identical target/receipt pass. The historical first-execute
+three-byte literal `0\n` wart remains sealed and unrepaired.
+
+Postflight script/result `12559` / `3047` (`c2e034de...` / `07ad847d...`)
+passed three snapshots, five absences, and two ten-process/`92`-descriptor zero-
+denied/zero-holder scans. Probe result `995` / `a31a8877...` passed held
+live/ready `200`, session/leagues/current-FAD `503 SERVICE_MAINTENANCE`,
+`no-store`, and no `Set-Cookie`. Render stayed sole-newest/`LIVE` exact-B2
+`dep-da6ghj67bikc738hbbv0`, no newer/pending deploy, auto-deploy off, and zero
+error/`5xx` logs; Netlify stayed unchanged ready
+`6a8c006abe46c8fb6269c40c`, six headers/two redirects/zero functions. Cleanup
+script/result `11629` / `4023` (`9a908635...` / `67b1adbe...`) removed exactly
+the three byte-pinned captures and protected files stayed stable. Final metadata
+`6012` / `b2f706da...` records `HL23_ABORT_V2_REPLAY_EVIDENCE_COMPLETE`.
+
+The now-consumed helper-retirement-only dispatch authority was published in
+exact commit `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb`, based on replay-evidence
+commit `296cd690382b87a1cd4647ca98a24f14e98ee8ff`. It authorized exactly one
+staging Netlify CLI publication. That dispatch ran once and must not be retried.
+The consumed contract bound site
+`95af8aa7-0b13-4954-af6d-855762acb147`, then-current helper deploy
+`6a8c006abe46c8fb6269c40c`, title
+`HL-20260823-1-abort-v2-retire-helper-baseline`, immutable `33` files /
+`1932120` bytes / `2d8069ca1aa61e02b5be14b09b97ded73b8363ae5e699c0e712f32026903ae6c`,
+and exact `1664`-byte /
+`7720d21350b54735e11c86fd6fd4282887c7ce6e92b7d33ce9fdf788f66db422`
+five-header baseline config. Tracked `netlify.toml` is not modified.
+
+The pre-dispatch requirements below are retained solely as the consumed
+dispatch contract; their imperative wording grants no new action authority.
+A new ignored, local-only preflight must be authored, frozen, and cold-audited
+before dispatch. It verifies original-dist and frozen source config
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-control\netlify.toml`,
+plain non-reparse `E:\Codex`, and absent `E:\Codex\temp`. The tracked helper-era
+verifier is not authority for this no-tracked-edit path.
+
+The wrapper exclusively creates owned `E:\Codex\temp`, external runtime control
+`E:\Codex\temp\HL-20260823-1-helper-retirement-control-v1`, and separate profile
+`E:\Codex\temp\HL-20260823-1-helper-retirement-profile-v1`; created owner SIDs
+must equal the wrapper process user SID. Control inventory at CLI start is only
+the copied regular `1664`-byte / `37`-LF / zero-CR / five-header /
+`7720d21350b54735e11c86fd6fd4282887c7ce6e92b7d33ce9fdf788f66db422`
+`netlify.toml`; all six CLI-scanned function/edge paths are absent.
+
+The shell-free action pins portable Node `24.14.1`
+`E:\hundo-leago\.tools\node-v24.14.1-win-x64\node.exe` (`91426304` bytes /
+`58e74bf02fc5bbacc41dcb8bef089961cd5bddd37830b87784e4fc624d145d1f`) and
+direct Netlify CLI `27.0.0`
+`C:\Users\graem\AppData\Roaming\npm\node_modules\netlify-cli\bin\run.js`.
+Exact package/run seals are
+`b5f0e60f06b774e0d087c735557e19f47ec25c56e9d5695b045f28a188e56156`
+(`7358`) and
+`e39432e46703049b6769e17c0a7a8f1748c345100a1f934d8a6c7076001d426c`
+(`2800`); npm/npx/PATH resolution, `--cwd`, and an empty `.git` sentinel are
+forbidden. CLI deploy has no `--config`; physical/logical cwd and config/
+repository-root discovery must resolve to the external control.
+
+Use exact fresh external profile
+`E:\Codex\temp\HL-20260823-1-helper-retirement-profile-v1`
+for `HOME`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`, `TEMP`, `TMP`,
+`XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, and
+`XDG_RUNTIME_DIR`, with `CI=1`; and keep
+`NETLIFY_AUTH_TOKEN` child-environment/in-memory only. Exact argv is
+`deploy --site 95af8aa7-0b13-4954-af6d-855762acb147 --dir E:\hundo-leago\.netlify\strict-release-HL-20260823-1\original-dist --no-build --skip-functions-cache --prod --message HL-20260823-1-abort-v2-retire-helper-baseline --json`.
+Exact repo-ignored capture root
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-captures`
+must be exclusively acquired as the one-shot dispatch lock; residue consumes authority.
+
+The helper-retirement action preflight process environment has exactly the eight
+keys `SystemRoot,WINDIR,ComSpec,PATHEXT,PATH,CI,NO_COLOR,NO_UPDATE_NOTIFIER`.
+`SystemRoot`, `WINDIR`, `ComSpec`, and `PATHEXT` are copied exactly from the
+wrapper process, with respective fallbacks `C:\Windows`, `C:\Windows`,
+`C:\Windows\System32\cmd.exe`, and `.COM;.EXE;.BAT;.CMD`; `PATH` is exactly
+`C:\Program Files\Git\cmd;C:\Windows\System32;C:\Windows`, and the constants are
+`CI=1`, `NO_COLOR=1`, and `NO_UPDATE_NOTIFIER=1`. The deploy child environment
+has exactly the 22 keys
+`SystemRoot,WINDIR,ComSpec,PATHEXT,PATH,CI,NO_COLOR,TERM,NETLIFY_TELEMETRY_DISABLED,NO_UPDATE_NOTIFIER,NETLIFY_AUTH_TOKEN,HOME,USERPROFILE,APPDATA,LOCALAPPDATA,TEMP,TMP,XDG_CONFIG_HOME,XDG_CACHE_HOME,XDG_DATA_HOME,XDG_STATE_HOME,XDG_RUNTIME_DIR`.
+Its five system/path values are byte-identical to preflight; its constants are
+`CI=1`, `NO_COLOR=1`, `TERM=dumb`, `NETLIFY_TELEMETRY_DISABLED=1`, and
+`NO_UPDATE_NOTIFIER=1`. All eleven of `HOME`, `USERPROFILE`, `APPDATA`,
+`LOCALAPPDATA`, `TEMP`, `TMP`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`,
+`XDG_DATA_HOME`, `XDG_STATE_HOME`, and `XDG_RUNTIME_DIR` equal exact external
+profile `E:\Codex\temp\HL-20260823-1-helper-retirement-profile-v1`.
+`NETLIFY_AUTH_TOKEN` is memory-only in that exact child environment; every
+unlisted variable is absent.
+
+Persisted provider evidence is an allowlisted projection only; persisting raw
+`getSite` or any other raw provider payload is forbidden. Both phases have
+the exact top-level key set
+`code,observedAt,releaseId,frontendAuthorityCommit,netlify,render,safety`.
+PRE `netlify` keys are exactly
+`siteId,siteName,canonicalOrigin,netlifyOrigin,currentDeployId,currentDeployTitle,currentDeployState,currentDeployPublishedAt,currentDeployOrigin,currentIsNewest,noPendingDeploy,headers,redirects,functions,edgeFunctions,buildSettings,automaticPublishFence,retirementTitleAbsent,activeDeployCount,inspectedDeployCount,newestFirst`;
+POST `netlify` keys are exactly
+`siteId,siteName,canonicalOrigin,netlifyOrigin,currentDeployId,currentDeployTitle,currentDeployState,currentDeployPublishedAt,currentDeployOrigin,currentIsNewest,noPendingDeploy,previousHelperDeployId,previousHelperNoLongerCurrent,retirementTitleMatchCount,activeDeployCount,headers,redirects,functions,edgeFunctions,buildSettings,automaticPublishFence,deployMethod,inspectedDeployCount,newestFirst`.
+Both `render` projections have exactly
+`workspaceId,serviceId,deployId,commit,state,soleNewestLive,noNewerOrPendingDeploy,autoDeploy,autoDeployTrigger,maintenanceHold,databasePath,targetInactive,applicationErrorLogs,request5xxLogs`.
+PRE `safety` keys are exactly
+`fullHold,replayAuthorityConsumed,replayRerunAuthorized,normalRestoreAuthorized,activationAuthorized,backupAuthorized,stagingReopenAuthorized,productionAuthorized`;
+POST `safety` keys are exactly
+`fullHold,helperRetirementComplete,replayAuthorityConsumed,replayRerunAuthorized,normalRestoreAuthorized,activationAuthorized,backupAuthorized,stagingReopenAuthorized,productionAuthorized`.
+PRE must prove `currentIsNewest=true`, `noPendingDeploy=true`,
+`retirementTitleAbsent=true`, `activeDeployCount=0`, `inspectedDeployCount=50`,
+and `newestFirst=true`. POST must prove `currentIsNewest=true`,
+`noPendingDeploy=true`, `previousHelperDeployId=6a8c006abe46c8fb6269c40c`,
+`previousHelperNoLongerCurrent=true`, `retirementTitleMatchCount=1`,
+`activeDeployCount=0`, `inspectedDeployCount=50`, `newestFirst=true`, and
+`deployMethod=manual-cli`. PRE safety has `fullHold=true` and
+`replayAuthorityConsumed=true`; every authorization field is false. POST adds
+`helperRetirementComplete=true` and leaves those safety values unchanged.
+
+The exact ordered HTTP `8/8` matrix is the canonical origin
+`https://staging.hundoleago.com` followed by the new immutable origin
+`https://<deployId>--hundoleago-staging.netlify.app`, each in path order `/`,
+`/index.html`, `/assets/index-BFtuYVmF.js`, and
+`/leagues/60c82aa0-54f9-4c93-83f5-73b0d6d6f63e`. Every response is `200` and
+has no `Set-Cookie`; `/`, `/index.html`, and the league path have exact
+`Cache-Control: no-store`, while the asset has exact
+`Cache-Control: public, max-age=31536000, immutable`. Every response must carry
+the exact seven-header map whose canonical SHA-256 is
+`a1ade439bda16fafea1afdd1360bb9ec906e598fc48ca989b7b5ffc6c3af0245`:
+`content-security-policy=default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://api-staging.hundoleago.com https://hundo-leago-backend-staging.onrender.com https://api.hundoleago.com https://hundo-leago-backend.onrender.com; media-src 'self' data: blob:; connect-src 'self' https://api-staging.hundoleago.com wss://api-staging.hundoleago.com https://hundo-leago-backend-staging.onrender.com wss://hundo-leago-backend-staging.onrender.com https://api.hundoleago.com wss://api.hundoleago.com https://hundo-leago-backend.onrender.com wss://hundo-leago-backend.onrender.com; worker-src 'self' blob:; upgrade-insecure-requests`,
+`cross-origin-opener-policy=same-origin`,
+`cross-origin-resource-policy=same-origin`,
+`permissions-policy=camera=(), display-capture=(), geolocation=(), microphone=(), payment=(), usb=()`,
+`referrer-policy=strict-origin-when-cross-origin`,
+`x-content-type-options=nosniff`, and `x-frame-options=DENY`.
+
+The action gate also binds a fresh held-probe matrix under
+`https://api-staging.hundoleago.com`: `/api/v1/health/live` and
+`/api/v1/health/ready` each return `200` with exact body `{"status":"ok"}`;
+`/api/v1/session`, `/api/v1/leagues`, and
+`/api/v1/leagues/60c82aa0-54f9-4c93-83f5-73b0d6d6f63e/free-agent-draft/f47032fd-57a2-443b-89a6-ce32894f2fc1`
+each return `503` with exact body
+`{"error":{"code":"SERVICE_MAINTENANCE","message":"Service is temporarily unavailable."}}`.
+All five have a `Content-Type` whose media type begins `application/json`, exact
+`Cache-Control: no-store`, and no `Set-Cookie`.
+
+Pre/post gates require empty Netlify `build_settings: {}`; repo URL/branch,
+build command, publish directory, and `stop_builds` absent or null; full hold;
+source `DATABASE_PATH`; and inactive target/receipt. The dispatch is one-shot
+and consumes authority; no blind retry. Success requires one new current/ready
+CLI deploy with five headers/two redirects/zero functions/zero edge functions,
+`64/64` baseline bytes, `8/8` baseline headers, and `10/10` retired paths across
+canonical and immutable origins, then mandatory stop.
+Only after provider/HTTP/capture/postflight evidence is accepted may cleanup
+remove the exact external control/profile, then owned `E:\Codex\temp` only if empty;
+source config, original-dist, captures, and evidence must remain preserved.
+Phase two, normal restore, Render/environment/database mutation, helper-source/original-dist
+change, rebuild, activation, verifier/backup, staging reopening/final review,
+browser, closeout, and production remain unauthorized.
+
+### 2026-08-25 Helper-Retirement Post-Dispatch HTTP-Verifier Amendment
+
+Published dispatch authority `7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` is
+consumed: exactly one Netlify CLI spawn ran, and no retry/redeploy is authorized.
+Its `1902`-byte envelope SHA-256
+`b5cd9f492e41b392ec854e05a9fa91480b2e4ebc592ac80ab52b99d0e8295204`
+records the expected completion code, one command, no retry, and status `0`.
+The `1862`-byte provider-postflight SHA-256
+`642b5fac4989c9440ed6fe2015e84de943824ca5e4b95673b15a45cb94f1350d`
+proves `6a8e6c8fae36273a816a7539` current/newest/`ready`, exact title,
+five headers/two redirects/zero functions/zero edge functions, empty
+`build_settings: {}`, no Git link, and unchanged B2 full hold/source path/
+inactive target.
+
+The initial official read-only HTTP verifier ran twice and rejected solely with
+`CACHE_CONTROL_HEADER_MISMATCH`: Node `24.14.1` exposed the immutable list
+without optional comma whitespace. An independent eight-path diagnostic proved
+all `200`, exact global headers and `Cache-Control: no-store`, the exact
+ordered immutable directives, and no `Set-Cookie`; it made no hosted mutation,
+provider write, deploy, or redeploy, but is not official acceptance. The original
+pre-dispatch manifest (`3358` bytes / `99` LF / zero CR / final LF /
+`6234451ab4ad6af0910fa7c13b38b21cc613509b23e7cae63e5f426b7d63a305`)
+was overwritten after dispatch and not continuously retained; its later labeled
+reconstruction must never be called the retained original.
+The exact reconstructed-manifest path is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-support-manifest-pre-dispatch-reconstructed.json`;
+the exact provenance-note path/name is
+`E:\hundo-leago\.netlify\strict-release-HL-20260823-1\helper-retirement-support-manifest-pre-dispatch-reconstruction-note.json`
+(`657` bytes / `18` LF / zero CR / final LF / SHA-256
+`3754bcd54f7bde37081d69e5c95e667355021bd9693356430f6911da1fd8a6ef`),
+and the note binds exact `reconstructedAfterDispatch=true` /
+`continuouslyRetained=false`.
+
+Corrected ignored pins (bytes/LF/SHA-256) are manifest `3358/99/7aab6845725ae90a0d245222529c91a9177b002f516ca6708d37470fdb4d7a4e`;
+HTTP verifier `20991/522/26ca6f493f82999eae029c907f3bc666b460362b464b6dd97302b7e390196830`;
+contract `30211/854/b3ae7da8019870dead3caa863316f6d7e05d530386ccfcf67afee7b54297a77c`;
+and wrapper `21343/628/8bb2a13142fb913b6f13b836ca47b28caed28e1fd064563808451d74e713c605`;
+all have zero CR/final LF. `no-store` and global headers remain exact. The
+immutable comparator only splits on commas, trims edge SP/HTAB, rejects empty
+directives, rejoins, and compares exactly—no reorder, case fold, addition,
+removal, or change is accepted.
+
+Only after this nine-document amendment is published may the release obtain a
+fresh provider projection, exactly one corrected network-read-only HTTP-verifier result capture,
+local postflight, and conditional exact cleanup, in order. Failure/ambiguity
+grants no retry. Under that N23 continuation authority, activation, backup,
+reopening/review, browser, closeout, and production were forbidden; Chrome
+disk/FD reproof remained pending.
+
+### 2026-08-26 Helper-Retirement Completion
+
+Published incident amendment `0498fd4fd400e8aad16c4cf9c405165d420bd489`
+permitted only evidence collection. Exact action authority
+`7dd9075f18a001d85fb5783b5b4dfae4a3fb19fb` stays consumed by one dispatch;
+no retry ran or is authorized. Refreshed provider postflight is `1862` bytes /
+SHA-256 `68cd773b3e2f104d71f8c96ce299eea7d89f542d8e5f449f33da4327100f9acd`.
+Corrected official HTTP result at `2026-08-26T05:25:45.785Z` is `23014` bytes /
+SHA-256 `d0ef4d2ed2cf848fbec5959012c929c36a2ea3d74f684d836a6d809fe6d76d46`
+and passes exact `64/64`, `8/8`, `10/10`, and `5/5`, with no cookies sent and
+no writes attempted. Local postflight is `4837` bytes / SHA-256
+`6941c238289713ee3012a2abe868380dd240c46a8a44ff06e5a7a36c7c7ed4a8`
+at `05:26:25.700Z`. Cleanup is `1211` bytes / `1` LF / zero CR / final LF /
+SHA-256 `b49aca2fa65c2039c5b6e4661e9cf981dd9f29b9a1fdfaddac779609bca00c78`
+at `05:33:33.808Z`; only exact external profile/control/empty temp parent were
+removed, and baseline/captures/evidence remain. Preserve the two false
+negatives, diagnostic, reconstructed chronology, and current kit pins. Helper
+retirement is `PASS / AUTHORITY CONSUMED / NO RETRY`. At the N23 completion
+boundary, mandatory stop forbade activation, backup, reopening/review, browser,
+closeout, and production. V1 and V2 were later rejected at their recorded
+boundaries. V3 later completed its one provider mutation and consumed its
+authority. Bound V4 later failed its diagnostic-only opaque-cursor read,
+remained unconsumed, and was retired. Published V5 later failed its binding
+launch prewrite, remained unconsumed, and was retired with no retry or rebind.
+Published and bound V6 later aborted its sole manually transcribed bootstrap
+cell at the crypto self-test before `ProviderCaptureHost` or phase reservation;
+its one-shot attempt is consumed, V6 is retired, and no retry or rebind is
+authorized. Published d0d80e98/V7 then consumed its sole prebinding
+diagnostic-loader attempt, remained unbound with no phase reservation, and
+retired with no retry or binding. Published 4b4ebf90/V8 returned the operator-observed `HL23_TARGET_ACTIVATION_V8_PREBINDING_DIAGNOSTIC_LOADER_ABORTED` / `V8_BOOTSTRAP_AUTHORITY_PLAN_COMMAND_TERMINAL_UNKNOWN`, remains unbound with local child terminal state unknown and no phase reservation, and is retired with no retry, binding, or resumption. Published b1576d8e/V9 emitted two consecutive top-level objects: apparent `HL23_TARGET_ACTIVATION_V9_PREBINDING_DIAGNOSTIC_OK` with `diagnosticOneShotConsumed:true`, then terminal `HL23_TARGET_ACTIVATION_V9_PREBINDING_DIAGNOSTIC_ENTRY_BUNDLE_ABORTED` / `V9_DIAGNOSTIC_ENTRY_UNEXPECTED_FAILURE` at `bootstrap-terminal`. The multi-object result is not accepted, its first `bindingObservationProjectionSha256` is unusable, and V9 is consumed and retired with no retry, binding, reservation, provider action, or resumption authorized. No post-attempt filesystem validation was performed or authorized. O23 through O23F are `UNCHECKED_PENDING_O23G`; O23G is `UNCHECKED` and V10/O23G is the only eligible continuation below. Chrome
+disk/FD reproof remains pending.
+
+### RC-STG-006O23 V1 Held DATABASE_PATH Handoff - Rejected / Unconsumed Historical Evidence
+
+Published commit `e855be9e1a4d92cd6428175965ecf934653ae965` recorded this V1
+design on frontend evidence base
+`a0da13a5a6a1c1edb352aa1b606d0d3b97aec020` and exact held backend B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`, but it was rejected before PRE
+with `AUTHORITY_DOCS_DO_NOT_PIN_FROZEN_KIT`. Exact frozen artifact paths were
+missing. V1 never armed, made no provider call, and left O23 unchecked and
+unconsumed. Every V1 pin/procedure below is immutable historical evidence only
+and must not be executed. N23 remains consumed.
+
+Frozen ignored pins are manifest
+`7290/203/0d3c5f2e1500b239efcf086818f6446ed31ab25f830ea951bacb4a5f8fc582af`
+(bytes/LF/SHA-256; zero CR/final LF), canonical artifact set
+`0ef3f7d87792727d321f938efd41ef5bf637f61fe155e64770a9b4e7bf556ee0`,
+and manifest rows: contract
+`39951/818/c9a4d008777eff6e0a270347f8eaa0508b97b6001f71c979dbbbc5aba2895fd1`;
+held verifier
+`26170/636/4b72a3eb494a52b1de8628571f6b1fc65355dbeb5f554f2f313bc847fa44ecad`;
+shell envelope
+`14882/330/f12d6952e79f0251e1de5858d207353c451ec0ab6db2ea9fd83bf1826d6baeaa`;
+held probes
+`4878/145/bd9e57a973987ccd4a660730fd61927cbab58beb9e6fa9cccac41113fabf7a58`;
+action control
+`27138/611/5e36b6eb699ac4e2beb711808a1c144cd904e1fa6c0ec1ab9e3b21a4ec3c1e50`;
+postflight
+`12157/279/61c277ba79e2f58601f437862066fee39c96ae1167bde6b1739a79a113915c23`;
+cleanup
+`9035/192/8819988c5254699280327cb9658c0a89b5adeb249d3794758a401a705c63c4fb`;
+self-test
+`22738/594/af04ef693784b9a9fc9164455ba6c240b4678080c88fc3305aa60524d3ba6fe8`;
+freeze verifier
+`15243/315/c808cb33199957df8cef5bb966da4dd7789694930ca66f1d13e78fcf8f388a78`;
+binding template
+`1718/46/bb505cb585e7cce1728fa6c90f10be26673d45febee018f318ae65f20f01b5bf`;
+runbook
+`9000/148/e398b0299cf20fc8058dfdabbb13e5c978ff170aba7d6946c097e6229fbb8355`.
+All rows are bytes/LF/SHA-256 with zero CR/final LF. Independent cold audit
+passed all 11 pins, 8 JS syntax files, `bash -n`, `10+` positive/15 negative
+fixtures, 19 guards, and 18 forbidden-operation absences.
+Manifest false activity fields are scoped to support-kit authoring/local tests.
+Its pre-publication runtime, critical-delta, semantic, and backup fields say
+required/currently false or deferred, not already verified.
+The pinned `26170`-byte held verifier is the required new abort-v2/main-WAL-
+aware boundary verifier; no predecessor verifier may be reused.
+
+Execution order is strict:
+
+1. After publication, create/audit the separate immutable ignored authority
+   binding. It binds the full commit, unchanged kit, exact phases/tool/args, and
+   permanent tombstone
+   `target-activation-captures/hl-20260823-1-<authority16>-464f2e4805c79aef/`.
+2. Capture fresh provider PRE limited to deploy/build/service/log/Netlify facts.
+   The provider cannot read or prove source/target environment values, target
+   inactivity, or maintenance hold. In a
+   fresh Chrome-attached shell set `HISTFILE=/dev/null`, disable/clear history,
+   and stream the pinned verifier only through stdin as
+   `bash -s -- pre-boundary dep-da6ghj67bikc738hbbv0`; persist no remote file or
+   scratch. Seal the raw result locally, then capture five held probes.
+3. PRE raw facts must prove exact B2/Git, source runtime path, critical `20+9`,
+   source main/WAL/SHM, target main/canonical receipt v2, five absences, four
+   stable boundaries, two zero-denied/zero-holder scans, and full hold with no
+   SQLite/module/copy/scratch/write.
+   Device is only internally consistent within the container. Raw output cannot
+   verify external authority or grant acceptance/mutation authority; the local
+   envelope does that after binding exact payload/invocation/result SHA.
+4. Capture the complete cursor-closed pre-dispatch deploy-ID edge within two
+   minutes of arm. Durable exclusive tombstone/attempt/seal creation consumes
+   authority. Then call only `mcp__render__update_environment_variables` once
+   using `replace:false`, workspace `tea-d4prbj7diees738tmg90`, service
+   `srv-d9eo2turnols73ekb830`, and target `DATABASE_PATH`. Canonical arguments are
+   `247` bytes / SHA-256
+   `464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`;
+   target/source value hashes are
+   `4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645` /
+   `50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3`.
+   Never call `trigger_deploy`, persist raw connector output, retry, or perform
+   an automatic inverse rollback.
+5. Read-only reconciliation must prove a complete POST deploy-ID set whose
+   difference is exactly one. The new ID is sole newest/`LIVE`, API-triggered
+   B2; the prior deploy is deactivated, no competitor exists, Node is `24.14.1`,
+   npm is `11.11.0`, `443/3519` pass, and complete build/runtime log windows are
+   clean. Error/timeout/disconnect/ambiguity never grants retry.
+6. Provider POST records the requested call but must say
+   `providerEnvironmentReadAvailable:false`; a new history-free stdin-only
+   `bash -s -- activation-post dep-<new>` shell and held probes prove actual
+   target path/full hold. Raw results state
+   `externalAuthorityBindingRequired=true`,
+   `externalAuthorityBindingVerifiedByVerifier=false`,
+   `standaloneAcceptanceAuthorized=false`, and
+   `verifierGrantsMutationAuthority=false`.
+   POST must preserve every protected durable identity/hash except namespace-
+   local device, permit only critical `DATABASE_PATH` delta, retain five
+   absences/two zero-denied/zero-holder scans, leave the selected target
+   unopened, and perform zero SQLite/scratch/write work.
+7. Combined local acceptance must record
+   `runtimeDatabasePathVerified=true`,
+   `criticalRuntimeBindingDeltaExact=true`,
+   `semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+   `globalProviderEnvironmentDeltaProven=false`. Cleanup deletes nothing.
+
+Then mandatory stop. P23 remains unauthorized and must separately authorize a
+private-copy semantic verifier plus backup. Its later requirements include
+integrity/FK/schema/migration/rotation, zero active sessions, and zero current/
+predecessor/older fixture receipts, fixture events/league, manager assignments/
+activity/idempotency/notifications, and outbox events/audiences. Reopening/
+review, normal restore, rollback, closeout, browser workflow, production, and a
+second provider update remain forbidden.
+
+### RC-STG-006O23 V2 Correction Authority - Rejected During Local Arm / Unconsumed / No Retry
+
+> Historical boundary: every conditional execution statement in this V2 section
+> describes the now-rejected frozen design only. It grants no present authority,
+> must not be resumed, and is superseded only by the separately pinned V3
+> correction below.
+
+The published V2 correction was not a V1 retry because V1 never armed. Preserve the V1 kit
+and immutable rejected binding unchanged at
+`.netlify/strict-release-HL-20260823-1/target-activation-authority-binding.json`,
+exactly `1747` bytes / `46` LF / zero CR / final LF / SHA-256
+`a939aaac0770e53cb16c2fd69eea61ef5818d361fbc9a3fa57b64f556d939954`.
+They remain historical evidence and permanently non-authorizing.
+
+The rejected V2 authority was published as one literal non-merge docs-only child of
+`e855be9e1a4d92cd6428175965ecf934653ae965` changing exactly the standard nine
+documents. Its former contract would have activated only after publication as frontend HEAD/
+`origin/staging`, confirmation that backend HEAD/`origin/staging` remain clean
+at B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`, and exclusive creation/audit
+of the distinct ignored post-publication
+`target-activation-v2-authority-binding.json`. O23 remains unchecked. Each line
+below is exact, standalone, and unique; the `15` lines joined in this order with
+LF and no trailing LF have SHA-256
+`4e8cfdd4ffb8f2d80fc7676e3d71358790952ad74dfb7e2848d4b4a563b1fbe5`.
+
+HL23-V2-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-support-manifest.json|bytes=9510|lf=246|cr=0|finalLf=true|sha256=991cb21b885cccb5aebf32af2f0665abe7a5566ce39c3c68f12615a318c81e33
+HL23-V2-FROZEN-ARTIFACT-SET|sha256=8d55d858e55c5b3d2edb246df2ffa4cf54175f5c4740292e830680b473010089
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-contract.cjs|bytes=51401|lf=1064|cr=0|finalLf=true|sha256=cfeebad02ed06f93212c7e20e6c4ed2287e15a1f84f86650b2cfea18613cbfad
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-held-verifier.sh|bytes=26189|lf=637|cr=0|finalLf=true|sha256=dccac0c4603a595fd9297900a8d77ddbf25b123632506deeb0d4021b816e32b6
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-shell-envelope.cjs|bytes=14925|lf=331|cr=0|finalLf=true|sha256=c897c0840bcbba97e4ea2cdc2b976a2fac5767cfa88c416fa706d551342d023a
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-held-probes.cjs|bytes=4891|lf=146|cr=0|finalLf=true|sha256=1a056371074d2abce8af289432f6cbf1755be05c03e04ea33a97aecd1592de90
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-action-control.cjs|bytes=34487|lf=773|cr=0|finalLf=true|sha256=10135f961270955c3d488fef0b80eeb86a81722f191eee5f96d61e30e92e4544
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-postflight.cjs|bytes=12226|lf=280|cr=0|finalLf=true|sha256=599499f1371281248ef8911dc5487476e0e91cef4a365e7b832aa629f5ad3fed
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-cleanup.cjs|bytes=9057|lf=193|cr=0|finalLf=true|sha256=018ea28d97d4501e7db890f7409f9afc813ab3b053f6c59e4fba03276c6badb9
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-support-self-test.cjs|bytes=26333|lf=657|cr=0|finalLf=true|sha256=2abc6bd7b01eb51a3ce6b4749700dee776b24bf7e35b837dc3a87cd2930b3cb8
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-verify-freeze.cjs|bytes=20961|lf=418|cr=0|finalLf=true|sha256=5cea7a8fe8b6aa473952714dcb61cd5d8feb382ed4c02851823ff17a01884ca2
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-authority-binding.template.json|bytes=2886|lf=72|cr=0|finalLf=true|sha256=49cb9ca31efe68fccf8981fca527726f04447dcc8a87dfae90ff39010c3bad01
+HL23-V2-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v2-RUNBOOK.md|bytes=10982|lf=182|cr=0|finalLf=true|sha256=8619674e891574f7093be684c8c8faceb2170081ca1456a57fd296b3e5f8eb39
+HL23-V2-REJECTED-AUTHORITY|commit=e855be9e1a4d92cd6428175965ecf934653ae965|bindingPath=.netlify/strict-release-HL-20260823-1/target-activation-authority-binding.json|bindingBytes=1747|bindingSha256=a939aaac0770e53cb16c2fd69eea61ef5818d361fbc9a3fa57b64f556d939954|failureCode=AUTHORITY_DOCS_DO_NOT_PIN_FROZEN_KIT|authorizing=false|rejectedBeforeAction=true
+HL23-V2-REJECTED-SESSION-ACTIVITY|source=root-coordinator-record|providerDispatchOccurred=false|browserShellInputOccurred=false|shellVerifierInvocationOccurred=false|captureArmOccurred=false|rootActivationMutationOccurred=false
+
+The frozen V2 runbook described only the bounded O23 shell-boundary sequence recorded
+above under the new filenames, binding, and distinct permanent tombstone
+`target-activation-v2-captures/hl-20260823-1-v2-<authority16>-df755011d0e4d4b1/`.
+PRE and POST use the pinned new abort-v2/main-WAL-aware verifier through stdin in
+fresh no-history shells. They perform no SQLite/scratch/copy/write work, prove
+the exact source-to-target runtime-path-only delta, full protected family and
+receipt, absences, full hold, and two complete zero-holder scans, and treat
+device IDs as namespace-local. Provider evidence must say
+`providerEnvironmentReadAvailable:false`; shell/probes prove runtime path/hold.
+
+After a fresh complete deploy-ID edge set and durable tombstone, exactly one
+`mcp__render__update_environment_variables` call is allowed with only
+`DATABASE_PATH`, `replace:false`, canonical `247`-byte arguments SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`,
+source/target value hashes `50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3` /
+`4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`.
+No trigger, retry, automatic inverse, or second provider update is authorized.
+POST requires a complete one-ID B2 deploy-set difference, target selected but
+unopened, unchanged source/target/receipt identities and hashes except namespace-
+local device, absent target WAL/SHM/journal/work, zero holders, and full hold.
+Combined acceptance alone records `runtimeDatabasePathVerified=true`,
+`criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`; cleanup deletes nothing, then
+mandatory stop. P23 semantic verification/backup, reopening/review, normal
+restore, rollback, browser workflow, closeout, production, and all later gates
+remain forbidden.
+
+### RC-STG-006O23 V3 Correction Authority - Action Succeeded / Consumed; Acceptance Pending O23A; Old POST Path Blocked
+
+> Historical boundary: this section preserves the V3 authorization design and
+> its exact pin block. V3 later consumed its authority and completed exactly one
+> successful provider mutation. Its imperative PRE/POST wording grants no present
+> authority, and its old POST path must never be resumed or populated.
+
+Published V2 commit `3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323`
+collected its immutable binding and seven PRE evidence files, including fresh
+provider, shell, and held-probe evidence, and then invoked local `--arm`. Arm
+failed closed with `CAPTURE_DIRECTORY_OWNER_OR_MODE_INVALID` before provider
+dispatch. The verified V2 binding plus all `21` frozen/PRE/failure files remain
+immutable. The binding is
+`.netlify/strict-release-HL-20260823-1/target-activation-v2-authority-binding.json`
+at `2915` bytes / SHA-256
+`d30f9e25c080060e74797b8aed2e831f06507555194058cdecde5ebc12bb1e3a`,
+failure JSON at `165` bytes / SHA-256
+`1c0faa5e7cf8d1cf12410bd5ca424e59f3e6bd83e3adac1b14ce0d6b28950ea7`,
+and residue JSON at `1026` bytes / SHA-256
+`b9fe005c8dd35d943fdf534a3406917a95194abe2bd50e935d88131baed598ee`.
+Only the empty, ACL-identical Windows parent
+`.netlify/strict-release-HL-20260823-1/target-activation-v2-captures` exists and
+reports mode `0666`; no authority-specific root, attempt, seal, dispatch, provider
+response, or POST evidence exists. V2 made zero provider mutations and zero
+`DATABASE_PATH` updates. It is unconsumed but permanently rejected and cannot be
+retried or used to authorize V3. Preserve all V1/V2 kit, bindings, PRE, failure,
+residue, and empty-parent evidence unchanged.
+
+The root-coordinator reconciliation at `2026-08-26T10:11:44.827Z` recorded sole
+live B2, zero new deploys, and auto deploy disabled after the V2 failure. That is
+an external attestation, not global provider state proved by local absence. Fresh
+V3 provider, shell, probe, and complete cursor-closed deploy-edge PRE evidence
+must reconfirm B2 and topology before V3 arm. V3 is a new authority and namespace,
+not a retry of V2.
+
+The only eligible V3 correction is one literal non-merge docs-only child of
+`3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323`, changing exactly the same standard
+nine authority documents. That commit must be published as frontend HEAD and
+`origin/staging`; backend HEAD and `origin/staging` must remain clean at B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`. Only then may the distinct ignored
+immutable `target-activation-v3-authority-binding.json` be exclusively created
+from its frozen template and audited. The binding is post-publication evidence,
+is excluded from the frozen kit, and cannot alter these pins. O23 remains
+unchecked and conditional until every V3 step passes.
+
+Each line below is an exact, unique, standalone V3 pin using its full
+repo-relative path. Joined in this order with LF after every line, including the
+last, the `15`-line block is `3261` bytes and has SHA-256
+`12da4b1f0d5ad78e0b4c6ae8d922397b3a4e26780949e800d1e9b009f81bde95`.
+
+HL23-V3-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-support-manifest.json|bytes=12378|lf=312|cr=0|finalLf=true|sha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f
+HL23-V3-FROZEN-ARTIFACT-SET|sha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-contract.cjs|bytes=88806|lf=1812|cr=0|finalLf=true|sha256=f5500a62f243b0a5743ffc4b31e279da6f493a93358b415535bc63d9bbfd9aba
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-held-verifier.sh|bytes=26190|lf=638|cr=0|finalLf=true|sha256=9d0c02916e8eff54f98d3b3121774f7740b0af3bd30d9d5d588c768f674812ac
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-shell-envelope.cjs|bytes=14926|lf=332|cr=0|finalLf=true|sha256=61a5f62e07e41787ff7b70d7e487ed5481346bb5c12a5b7b43e4ec60cbf85529
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-held-probes.cjs|bytes=4892|lf=147|cr=0|finalLf=true|sha256=6012eee2b69c744e3779354e8a2d82edba71597b502bca3e08ae299469ed13ba
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-action-control.cjs|bytes=48066|lf=1078|cr=0|finalLf=true|sha256=b67b14e3f8b5a6e325b9c595255df72450c25cccb0e4181c1f864b80105640af
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-postflight.cjs|bytes=18441|lf=420|cr=0|finalLf=true|sha256=167cb32e107815dc3ebec1e89abc148529922df15b2d0d3d66597cc09fa37f42
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-cleanup.cjs|bytes=9786|lf=205|cr=0|finalLf=true|sha256=b91ac81fc981e620740933c25571eefc94a55deee6e656b0603aa905356bdfc3
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-support-self-test.cjs|bytes=29733|lf=727|cr=0|finalLf=true|sha256=0a16e984f34f7752721f482700798f7f71d22af86a86da03c2cb6df259336575
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-verify-freeze.cjs|bytes=25017|lf=492|cr=0|finalLf=true|sha256=9a167a73f12e38e301679a4d6f155942c6a04aa42b4d716a0e34d228032a8046
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-authority-binding.template.json|bytes=4818|lf=124|cr=0|finalLf=true|sha256=411b7ccd099a2c26481a69c7c7d149252b8572361d771f8c57bfb21d4be107e6
+HL23-V3-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v3-RUNBOOK.md|bytes=13751|lf=218|cr=0|finalLf=true|sha256=a7d46231cce61a7b309c77d23d25a6482f97fb99c7c2c907db39d4bcac8c2473
+HL23-V3-REJECTED-AUTHORITY|commit=3f0bc2a9c8bf5aaae86a4e0cbb875dbccd211323|bindingPath=.netlify/strict-release-HL-20260823-1/target-activation-v2-authority-binding.json|bindingBytes=2915|bindingSha256=d30f9e25c080060e74797b8aed2e831f06507555194058cdecde5ebc12bb1e3a|failureCode=CAPTURE_DIRECTORY_OWNER_OR_MODE_INVALID|authorizing=false|rejectedBeforeProviderDispatch=true
+HL23-V3-REJECTED-SESSION-ACTIVITY|source=root-coordinator-record|providerDispatchOccurred=false|databasePathUpdateOccurred=false|captureArmSucceeded=false|v2PreEvidenceAuthorizing=false|freshV3PreRequired=true
+
+The frozen V3 manifest is exactly `12378` bytes / `312` LF / zero CR / final LF
+with SHA-256 `07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f`;
+its `11` artifacts total `284426` bytes and have canonical artifact-set SHA-256
+`1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03`.
+Only the pinned V3 abort-v2/main-WAL-aware held verifier may run, and only for
+raw phases `pre-boundary` and `activation-post`. In a fresh attached shell,
+disable and clear history with `HISTFILE=/dev/null`, then stream it through stdin
+as `bash -s -- pre-boundary dep-da6ghj67bikc738hbbv0` and later
+`bash -s -- activation-post dep-<new>`; persist no remote verifier or scratch
+file. Both phases are shell-boundary proof only: no
+SQLite/project database module, database open, copy, checkpoint, sidecar removal,
+scratch creation, or write is reachable.
+
+Fresh PRE must prove the exact source path and full source main/WAL/SHM family,
+target main and canonical receipt, five required absences, the critical `20`-key
+runtime matrix plus nine absent provider fields, four stable boundaries, two
+complete zero-denied/zero-holder `/proc/*/fd` scans, and the full hold. Device IDs
+are namespace-local: internal identity consistency is required, historical
+receipt device values remain bound, and PRE/POST container devices are never
+compared. Raw results remain non-authorizing and state
+`externalAuthorityBindingRequired=true`,
+`externalAuthorityBindingVerifiedByVerifier=false`,
+`standaloneAcceptanceAuthorized=false`, and
+`verifierGrantsMutationAuthority=false`.
+
+Provider evidence may record only the exact requested target call and unique
+deploy/build/service/log facts; it cannot prove configured/runtime path or the
+hold and must record `providerEnvironmentReadAvailable:false`; never persist raw
+provider payload or secrets. Provider PRE, shell envelope, and probes must precede
+a fresh, complete, paginated, cursor-closed deploy-ID edge set captured within two
+minutes of arm, with held B2 still sole newest/`LIVE` and no active/pending
+competitor. V3 arm creates
+the single authority-specific permanent sentinel directly under the trusted
+release root:
+`target-activation-v3-capture-hl-20260823-1-v3-<authority16>-9ea94bc779a0ce54/`.
+It creates no shared parent. On Windows, exact inherited owner/SID/SDDL/ACE,
+non-reparse realpath, atomic exclusivity, stable rereads, and expected mode `0666`
+apply; no POSIX `0700` equivalent, confidentiality, or hostile-authorized-principal
+tamper resistance is claimed. POSIX uses directory/file modes `0700`/`0600`.
+Durable root, attempt, separate tombstone seal, fsyncs, and stable exact entry-set
+proof must finish before dispatch; root presence permanently consumes V3.
+
+The sole mutation is exactly one
+`mcp__render__update_environment_variables` call with canonical `247`-byte
+arguments SHA-256
+`464f2e4805c79aef21a2e66dad0a4c46afc364c11b0bebb7d3e889d5575b373f`:
+`{"envVars":[{"key":"DATABASE_PATH","value":"/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3"}],"replace":false,"serviceId":"srv-d9eo2turnols73ekb830","workspaceId":"tea-d4prbj7diees738tmg90"}`.
+Source/target value hashes remain
+`50eb4aaf0c007b3722c81d78ad1527ab32f9bbd116b19e3044c9397079db03a3` /
+`4f07a7d35f7bb2787a57e718bbadfc6917087f67144977a5ed6f7244d859f645`.
+No trigger, retry, automatic inverse, or second provider update is authorized;
+error, timeout, disconnect, or ambiguity requires read-only reconciliation.
+
+POST must prove a complete deploy-ID set difference of exactly one new
+API-triggered B2 deploy, sole newest/`LIVE`, with the prior deploy deactivated,
+no competitor, exact Node `24.14.1` / npm `11.11.0`, all `443` suites / `3519`
+tests passing, and complete clean build/runtime log windows. Fresh activation-POST
+shell evidence and five held probes must prove only `DATABASE_PATH` changed,
+target selected but unopened, source/target/receipt durable identities and hashes
+unchanged except namespace-local device, target WAL/SHM/journal/work and source
+journal absent, two zero-holder scans, and full hold. Combined local acceptance
+alone may record `runtimeDatabasePathVerified=true`,
+`criticalRuntimeBindingDeltaExact=true`,
+`semanticTargetVerificationDeferred=true`, `backupAuthorized=false`, and
+`globalProviderEnvironmentDeltaProven=false`. Cleanup revalidates and deletes
+nothing; then stop. `RC-STG-006P23` alone may later authorize private-copy
+semantic verification and backup. P23, reopening/review, normal restore,
+rollback, browser workflow, closeout, production, and every second provider
+update remain forbidden.
+
+### RC-STG-006O23A V4 Read-Only Evidence Continuation - Published / Bound / Diagnostic Failed / Unconsumed / Retired
+
+> Historical boundary: V4 was published and separately bound, but its action
+> path was never consumed. Its diagnostic used the wrong continuation token,
+> produced no provider evidence/action artifact/capture sentinel, and is now
+> `BOUND_UNCONSUMED_RETIRED`. Every imperative V4 statement below is retired;
+> only its exact inherited pin rows remain authoritative historical evidence.
+
+Consumed V3 authority `43e99e686214a2f36f52ee7c426db2015d709bee`
+completed exactly one successful provider `DATABASE_PATH` mutation and returned
+sole newest/`LIVE` exact-B2 deploy `dep-da7d857avr4c73bnna90`. Its old POST path
+is permanently blocked solely because exhaustive hosted logs lacked an explicit
+npm `11.11.0` observation; all eight named V3 POST artifacts must remain absent
+forever. V3 must not be retried or backfilled. O23 remains unchecked with its
+acceptance pending O23A.
+
+V4/O23A must be one literal non-merge exact-nine documentation child of
+`43e99e686214a2f36f52ee7c426db2015d709bee`, published as frontend `HEAD` and
+`origin/staging`, while backend `HEAD`/`origin/staging` remain clean at exact B2
+`6359ec9997f90dddf17ba2c9b07481746ae171bb`. Only then may the separate ignored
+immutable V4 binding be exclusively generated and audited. These are the exact
+`21` runner-emitted authority rows; final-row success fields define the future
+accepted state and do not claim the two currently unchecked gates passed.
+
+HL23-V4-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-support-manifest.json|bytes=11358|lf=286|cr=0|finalLf=true|sha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428
+HL23-V4-FROZEN-ARTIFACT-SET|sha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-contract.cjs|bytes=75803|lf=1499|cr=0|finalLf=true|sha256=9868b381d735b109519be63cddd62869e72cb3037489046a5ff8b7b037a31f57
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-npm-verifier.sh|bytes=17958|lf=414|cr=0|finalLf=true|sha256=af911c11d71dba90ab1a068475622bcab67d3dbe1897b25e0bd95f943ef1686b
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-shell-envelope.cjs|bytes=35536|lf=770|cr=0|finalLf=true|sha256=5359876b097d8cb05f07a9befd5d7d4e5e3612f363cb66700d09b18ae22679b1
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=adbf73addb943d9c7f7d6d4c3b75d4e9b42cac06358100cf03a0673e70d4792f
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-action-control.cjs|bytes=42066|lf=910|cr=0|finalLf=true|sha256=7b67d758468aabd11a6594d25aab0cdc6c77cd80c32144036265ae28408bdfa7
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-provider-projection.cjs|bytes=67106|lf=1525|cr=0|finalLf=true|sha256=c825826c3651369f94aff0bfb75de63a115b301077db8feb84aa88ad1364b358
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-authority-ops.cjs|bytes=11363|lf=262|cr=0|finalLf=true|sha256=89d2d34604f5a3df03f5161d6d024eba793fbf5b7145d26a3b9fe4e3f3d6102e
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-local-runner.ps1|bytes=51440|lf=1087|cr=0|finalLf=true|sha256=89c6887fa3e31b6885c3ec62e7d8c0796541f5292c387f12999473e963d90f02
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-postflight.cjs|bytes=17194|lf=398|cr=0|finalLf=true|sha256=b907741e922295012bc66cd54ed6c0d01cdc9e39982cec50acba352285295f08
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-cleanup.cjs|bytes=5313|lf=141|cr=0|finalLf=true|sha256=91e9d7ecbf5df1da46d2122a341a10c726974b7e7a25faed4a2a917e8b1f8294
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-support-self-test.cjs|bytes=40052|lf=843|cr=0|finalLf=true|sha256=3eb5499c80fd92b0f199f6d83083b7577ee257f36a0157fc1f3c20e39bd41862
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-verify-freeze.cjs|bytes=31193|lf=591|cr=0|finalLf=true|sha256=54e6711c8fa38cd95182d290bbf1f01a8d10ba0f1d23a6b8453548e3a8c34399
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-authority-binding.template.json|bytes=7134|lf=176|cr=0|finalLf=true|sha256=b0c64c20901ed5d67498d392e023475e480c6a1817b5755262a6339a027f6962
+HL23-V4-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v4-RUNBOOK.md|bytes=18634|lf=320|cr=0|finalLf=true|sha256=e26ba353e79a1fe07244211f17226ab6fde8d0dc22c48fa66475ba396b5a8886
+HL23-V4-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV4ProviderMutation=false
+HL23-V4-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V4-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V4-CONTINUATION-AUTHORITY|parent=43e99e686214a2f36f52ee7c426db2015d709bee|checklistId=RC-STG-006O23A|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V4-STATUS|authorityO23=UNCHECKED_PENDING_O23A|authorityO23A=UNCHECKED|v3PostPathPermanentlyBlocked=true|o23AcceptancePendingO23A=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|mandatoryStopBefore=RC-STG-006P23
+
+After publication/binding, execute only this order: provider PRE; five held PRE
+probes; preflight and durable one-shot O23A arm; one sealed live-runtime npm
+`11.11.0` observation; provider POST; one sealed byte-exact inherited V3
+`activation-post` observation; five held POST probes; provider FINAL topology
+bracket; aggregate postflight; zero-delete cleanup; mandatory stop before P23.
+The npm sample uses actual exported runtime values with no expected-value
+injection and is not build-time proof. Provider request evidence accounts for
+expected held `503` tuples rather than claiming generic zero 5xx. V4 authorizes
+zero provider mutations; the combined total remains one. O23 and O23A stay
+unchecked until completion and must then be checked together. P23, backup,
+reopen, rollback, production, and later gates remain forbidden.
+
+### 2026-08-26 RC-STG-006O23B V5 Opaque-Cursor Authority - Published / Binding Launch Failed Prewrite / Unconsumed Retired
+
+Published V5 authority
+`dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10`, literal non-merge child of
+`f17b2278542ef6836550a556abd97d82c9bf79db`, never produced its required
+authority binding. The exact RUNBOOK launch carried authority
+`dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10` and committed-at
+`2026-08-26T22:09:21.000Z`; its created-at value was generated immediately
+before the call but was not printed or captured, so the exact value is
+unavailable and must not be reconstructed.
+
+Windows PowerShell 5.1 rejected the array-over-`-File` transport during outer
+parameter binding, before the runner body, runner self-pin, Node, binding-
+candidate generation, or any write began, and returned native exit code `1`.
+The sanitized operator-observed safe text was exactly
+`target-activation-v5-local-runner.ps1 : A positional parameter cannot be found that accepts argument '2026-08-26T22:09:21.000Z'.`
+(128 UTF-8 bytes; SHA-256
+`bb1498b816e09c94654563f7b251068e8529f2d3d952eda097ddbb1fade5df22`).
+The category was `InvalidArgument` / `ParentContainsErrorRecordException`; the
+fully qualified ID was
+`PositionalParameterNotFound,target-activation-v5-local-runner.ps1`. The
+just-before wall sample was `2026-08-26T22:10:25.643Z`. No canonical stdout
+existed, and the transport did not preserve raw stdout/stderr separately, so
+the raw transport digest is unavailable. These are operator-attested
+diagnostic facts, not an invented failure receipt or continuation-attempt
+evidence.
+
+The V5 binding was absent before and after the failed launch, with zero bytes;
+all 20 binding/action paths and every V5 capture sentinel remain absent.
+Provider reads, provider mutations, browser actions, and network requests were
+all zero. V5 is exactly
+`PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED`; it must
+never be resumed, rebound, retried, repaired in place, or repurposed.
+
+V10/O23G is the only eligible continuation. Published V9 authority `b1576d8efb0916f17755288585e51ca4d08e980a`, literal child of `4b4ebf90297d1cdf5e54d74ceca11f4236cc76d8`, emitted two consecutive top-level JSON objects: an apparent `HL23_TARGET_ACTIVATION_V9_PREBINDING_DIAGNOSTIC_OK`, followed by `HL23_TARGET_ACTIVATION_V9_PREBINDING_DIAGNOSTIC_ENTRY_BUNDLE_ABORTED` / `V9_DIAGNOSTIC_ENTRY_UNEXPECTED_FAILURE` at `bootstrap-terminal`.
+
+The two-object output violates the frozen single-top-level-terminal acceptance contract. The apparent OK object is not accepted, its `bindingObservationProjectionSha256` is unusable, and it may not be selected, isolated, merged, or reused as binding evidence. The trailing abort reported a known terminal state, no surviving process, no acquired session, and no reconciliation authority.
+
+The apparent OK object reported zero audited loader-flow provider reads and mutations, zero V9 action artifacts, and no reservation or claim. Those are fields of the rejected first object, not accepted aggregate evidence. No post-attempt filesystem validation was performed or authorized, so no post-attempt absence or residue claim is made.
+
+V9 is exactly `PUBLISHED_UNBOUND_PREBINDING_DIAGNOSTIC_ENTRY_BUNDLE_DUAL_TERMINAL_ABORTED_NO_PHASE_RESERVATION_RETIRED`; its diagnostic one-shot is consumed. V9 may not be retried, bound, reserved, claimed, resumed, repaired, repurposed, or used for a provider or production phase. A fresh reply cannot revive V9.
+
+V10 is a disjoint successor with newly frozen support bytes and the same fail-closed consolidated read-only diagnostic-entry boundary. V10 authorizes no diagnostic, binding, reservation, claim, provider call, browser action, deployment, rollback, database open, backup, semantic verification, or production action before exact-nine publication and the separate fresh-approval gate.
+
+O23, O23A, O23B, O23C, O23D, O23E, and O23F are `UNCHECKED_PENDING_O23G`; O23G is `UNCHECKED`. Only a successful V10 aggregate plus zero-delete cleanup may make all eight eligible for a separate completion-evidence documentation commit marking them `PASS_CONSUMED` together. This authority publication checks none of them.
+
+V10/O23G must be one literal non-merge exact-nine documentation child of `b1576d8efb0916f17755288585e51ca4d08e980a`, published as frontend `HEAD` and `origin/staging`, while backend `HEAD` and `origin/staging` remain clean at exact B2 `6359ec9997f90dddf17ba2c9b07481746ae171bb`. Only after publication and the fresh human-approval gate described below may the distinct frozen diagnostic entry bundle run once. Only one exact accepted wrapper terminal may feed one separate ignored immutable `target-activation-v10-authority-binding.json`; only after that binding is independently audited may a V10 production evidence phase begin.
+
+All 229 published standalone V1-V9 rows below remain byte-for-byte and in exact total document order. Immediately after the final V9 status row, the authority generator appends the exact 51 standalone V10 rows. Joined in generated order with LF after every V10 row, that block is 32391 UTF-8 bytes / 51 LF / zero CR / final LF with SHA-256 `a84d097ff99d68323ba3a91ba0d86d029602ffb23e890841d08011d19310b816`.
+
+Prospective success fields define only the future accepted completion state;
+they do not claim that any currently unchecked gate has passed.
+HL23-V5-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-support-manifest.json|bytes=20229|lf=474|cr=0|finalLf=true|sha256=47f98ab16da1d858508a0b0abf2686e51e7af3132b3abacb7efa5b2b640574ff
+HL23-V5-FROZEN-ARTIFACT-SET|sha256=894fc3cdcd88ea21ca7a373a7349dd326f03fae07537a650670ac49abd8b67da
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-contract.cjs|bytes=141708|lf=2828|cr=0|finalLf=true|sha256=cf83a4d73cd3e3b9367872491cddeff1f05ea7ccc8ab79eb1e51d41cb9874836
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-npm-verifier.sh|bytes=17958|lf=414|cr=0|finalLf=true|sha256=42b723446feb04089b452571ad25dfb292c3bb05f5f3787cbc19120e95bf9c5e
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-shell-envelope.cjs|bytes=36179|lf=782|cr=0|finalLf=true|sha256=f319720cf01ed3eb4b3a1ea7a76f0d3ff96ce79c27700aa70bb1dfb22b6a86f2
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=8e550c9ca59c19495919c22dd261cb33889bca43855017d27378bbaeb90387c3
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-action-control.cjs|bytes=58108|lf=1232|cr=0|finalLf=true|sha256=c7070f220b48f6e9d0275bdec38dbdf2fcbda640985cba76c62a50a4f441bc5e
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-provider-projection.cjs|bytes=230685|lf=4892|cr=0|finalLf=true|sha256=2f7a1f7b123b99e43dcd59d6481739b23e8aaa9e77507470799c16aafa0704a1
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-authority-ops.cjs|bytes=12451|lf=284|cr=0|finalLf=true|sha256=fcacde2ba10da408cf5ab18abdb796787d6bf1a637b90476344caf91a9467b8b
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-local-runner.ps1|bytes=102644|lf=2033|cr=0|finalLf=true|sha256=5eec1777e3d815686ea9d94b7fce55d8e397093bfb17be7a226a3df06b820c45
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-postflight.cjs|bytes=18583|lf=423|cr=0|finalLf=true|sha256=8a8ca65197132b166837ce117949e17e696cd094bf4cacad3a0ff48eb9e2a6e7
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-cleanup.cjs|bytes=5313|lf=141|cr=0|finalLf=true|sha256=a4abad2902ed2899e195b44d52bdc4ede54a40e266995ff45ea95f2d092b38f2
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-support-self-test.cjs|bytes=36803|lf=771|cr=0|finalLf=true|sha256=eed8801d5e504799008be0021749439c8b3cd989f63d66e1d62768123be7e9e3
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-verify-freeze.cjs|bytes=44938|lf=874|cr=0|finalLf=true|sha256=81cac116b97f9bd3f0e28b2f565a4c7998bfb25005278e5355e2a2fa9caebb2b
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-authority-binding.template.json|bytes=14951|lf=349|cr=0|finalLf=true|sha256=b23339b72fc15cdfd55276a37ff1049f6b663694988c95f7c4c164e14f8ffebe
+HL23-V5-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v5-RUNBOOK.md|bytes=22764|lf=431|cr=0|finalLf=true|sha256=b02a5640e2080f04672e5543619b0d9a4fe6906997d34da98ca390ffce5ade91
+HL23-V5-PROVIDER-EXECUTABLE-SOURCE|kind=full-phase-orchestrator|artifact=target-activation-v5-provider-projection.cjs|command=--orchestrator-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V5_FULL_PHASE_PROVIDER_ORCHESTRATOR_SOURCE|bytes=38331|lf=821|cr=0|finalLf=true|sha256=df769cf53c405dbb4c9bd1f591c981ef31b777247b2e9d90d5f25f3dc777ac09|loadedOnlyByExactBootstrap=true
+HL23-V5-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-bootstrap|artifact=target-activation-v5-provider-projection.cjs|command=--bootstrap-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V5_FUNCTIONS_EXEC_BOOTSTRAP_SOURCE|bytes=32412|lf=664|cr=0|finalLf=true|sha256=574c24062ee5c0dbbb91b21bea09d18e3daa1c66fe05699c08daab9e4246c3d2|functionsExecEntireInput=true|prefixSuffixAllowed=false|platformSubmittedSourceAttested=false|operatorAuditedExactWholeCellRequired=true
+HL23-V5-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV5ProviderMutation=false
+HL23-V5-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V5-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V5-INHERITED-V4-AUTHORITY|commit=f17b2278542ef6836550a556abd97d82c9bf79db|parent=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=11358|manifestSha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428|artifactSetSha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422|artifactCount=14|bindingBytes=6067|bindingSha256=2c6c4876a50bc5b40476d50e70e27f4eba5214de6d3dd9f2d8acbbdb4b3905df|state=BOUND_UNCONSUMED_RETIRED|authorizingV5ProviderMutation=false
+HL23-V5-FORBIDDEN-V4-ACTION|count=16|paths=target-activation-v4-provider-preflight.json,target-activation-v4-held-probes-preflight.json,target-activation-v4-npm-observation-plan.json,target-activation-v4-npm-observation-stdin.txt,target-activation-v4-npm-observation.json,target-activation-v4-npm-observation-envelope.json,target-activation-v4-provider-postflight.json,target-activation-v4-shell-postflight-plan.json,target-activation-v4-shell-postflight-stdin.txt,target-activation-v4-shell-postflight.json,target-activation-v4-shell-postflight-envelope.json,target-activation-v4-held-probes-postflight.json,target-activation-v4-provider-final.json,target-activation-v4-postflight-result.json,target-activation-v4-cleanup-result.json,target-activation-v4-arm-failure.json|mustRemainAbsent=true|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V5-INHERITED-V4-DIAGNOSTIC|canonicalSha256=a86a897e5652e6c8c40bf6a5aae7a6349e6afe9c827429ff2de25c285a15743f|evidenceStatus=diagnostic-only-no-provider-evidence-file|firstPageEntryCount=100|rejectionStatus=400|outputPersisted=false|captureSentinelCreated=false|providerMutationCount=0|diagnosticOnly=true|requiredExecutionShape=false|authorizing=false
+HL23-V5-CONTINUATION-AUTHORITY|parent=f17b2278542ef6836550a556abd97d82c9bf79db|checklistId=RC-STG-006O23B|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V5-STATUS|authorityO23=UNCHECKED_PENDING_O23B|authorityO23A=UNCHECKED_PENDING_O23B|authorityO23B=UNCHECKED|v3PostPathPermanentlyBlocked=true|v4ActionPathRetiredUnconsumed=true|o23AcceptancePendingO23B=true|o23AAcceptancePendingO23B=true|o23BAcceptancePending=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|successfulO23B=PASS_CONSUMED|prospectiveSuccessOnlyTogether=true|mandatoryStopBefore=RC-STG-006P23
+HL23-V6-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-support-manifest.json|bytes=30664|lf=698|cr=0|finalLf=true|sha256=d2d27f03eea8904d4d20124a7a76772ef5d97c9249bbb942d9cb882fb5cb4fa0
+HL23-V6-FROZEN-ARTIFACT-SET|sha256=91bd4b8e69d55903342b4391c4383fed5a19d3afe2d2a8f64a289950466cc63b
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-contract.cjs|bytes=157028|lf=3174|cr=0|finalLf=true|sha256=2b5f2d059c7c6ffd83b0cb782f5cf45b9920548e84d46d287114b3c45194b9b7
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-npm-verifier.sh|bytes=17958|lf=414|cr=0|finalLf=true|sha256=c17d661f4033e54df10961e60759126126579eb881829f46379aaf287462fd26
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-shell-envelope.cjs|bytes=36179|lf=782|cr=0|finalLf=true|sha256=6075cf98cc9bbeb23af0a14dcda60b7eade19f7235e836e2cff614aa8694dbcf
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=987f22caf039d3dee7943abadaa865a7f9215e16b3e76a052c3da6deee6988d8
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-action-control.cjs|bytes=74515|lf=1591|cr=0|finalLf=true|sha256=38c734370ad91436cc9d39e29ecb48ee09affb225234d8b399ac968fe538186f
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-provider-projection.cjs|bytes=232623|lf=4918|cr=0|finalLf=true|sha256=2f2b6ae371b9f719c2dc3a772719bc19078eedd3c38323901e67321abaa1394e
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-authority-ops.cjs|bytes=12595|lf=287|cr=0|finalLf=true|sha256=2d6a56a59dacafb44018a40b5e61ba2228e72c775229e131a166d0ab9253a14f
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-local-runner.ps1|bytes=142487|lf=2901|cr=0|finalLf=true|sha256=521acba6595dcb90c2cee62fdf6ea4bd46e9b01cf90a2cb04da4ab075dcd63fc
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-pre-node-dependency-lock.json|bytes=7308|lf=227|cr=0|finalLf=true|sha256=4a2dfecf604e8da2a9204a5ee7f30e38dabe9145a453c4f6845924b285265612
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-postflight.cjs|bytes=19509|lf=450|cr=0|finalLf=true|sha256=ec9883231346b0caad63dd85e2b03df51068e2c6b711b74108e709fb01af2894
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-cleanup.cjs|bytes=6929|lf=180|cr=0|finalLf=true|sha256=97735125f8f02bc52232c2b057f95dd3cfeb2eacf9005fb8f5f35121ffb739ad
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-support-self-test.cjs|bytes=63034|lf=1266|cr=0|finalLf=true|sha256=bda4670291421fd4c4c5b3f5cb4cdad39d1ba21656b378e4b6852bc276b41c3d
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-verify-freeze.cjs|bytes=65136|lf=1232|cr=0|finalLf=true|sha256=92c820cf1b5b72671ab7db73a7d3d3ee382862c200c285daec9142e760d07881
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-authority-binding.template.json|bytes=23107|lf=532|cr=0|finalLf=true|sha256=cf3cf5d84154e1cf35093cacd2c38dde17ec0102c2aa99eba84f4661f04e0228
+HL23-V6-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v6-RUNBOOK.md|bytes=36233|lf=623|cr=0|finalLf=true|sha256=034ed0b0ac0f6c2d50414bdb756d7fded4992c5ef263c66b193e37fd35556f15
+HL23-V6-PROVIDER-EXECUTABLE-SOURCE|kind=full-phase-orchestrator|artifact=target-activation-v6-provider-projection.cjs|command=--orchestrator-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V6_FULL_PHASE_PROVIDER_ORCHESTRATOR_SOURCE|bytes=38331|lf=821|cr=0|finalLf=true|sha256=b081ec740cf7444569ce2b857fff6f512b34a0e74eaf5bb2af418646d500b52b|loadedOnlyByExactBootstrap=true
+HL23-V6-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-bootstrap|artifact=target-activation-v6-provider-projection.cjs|command=--bootstrap-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V6_FUNCTIONS_EXEC_BOOTSTRAP_SOURCE|bytes=32416|lf=664|cr=0|finalLf=true|sha256=fdc88fcf0c46d5dab434dc133d26b8c08ee63945429507737b9d41864eb388e8|functionsExecEntireInput=true|prefixSuffixAllowed=false|platformSubmittedSourceAttested=false|operatorAuditedExactWholeCellRequired=true
+HL23-V6-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV6ProviderMutation=false
+HL23-V6-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V6-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V6-INHERITED-V4-AUTHORITY|commit=f17b2278542ef6836550a556abd97d82c9bf79db|parent=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=11358|manifestSha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428|artifactSetSha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422|artifactCount=14|bindingBytes=6067|bindingSha256=2c6c4876a50bc5b40476d50e70e27f4eba5214de6d3dd9f2d8acbbdb4b3905df|state=BOUND_UNCONSUMED_RETIRED|authorizingV6ProviderMutation=false
+HL23-V6-FORBIDDEN-V4-ACTION|count=16|paths=target-activation-v4-provider-preflight.json,target-activation-v4-held-probes-preflight.json,target-activation-v4-npm-observation-plan.json,target-activation-v4-npm-observation-stdin.txt,target-activation-v4-npm-observation.json,target-activation-v4-npm-observation-envelope.json,target-activation-v4-provider-postflight.json,target-activation-v4-shell-postflight-plan.json,target-activation-v4-shell-postflight-stdin.txt,target-activation-v4-shell-postflight.json,target-activation-v4-shell-postflight-envelope.json,target-activation-v4-held-probes-postflight.json,target-activation-v4-provider-final.json,target-activation-v4-postflight-result.json,target-activation-v4-cleanup-result.json,target-activation-v4-arm-failure.json|mustRemainAbsent=true|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V6-INHERITED-V4-DIAGNOSTIC|canonicalSha256=a86a897e5652e6c8c40bf6a5aae7a6349e6afe9c827429ff2de25c285a15743f|evidenceStatus=diagnostic-only-no-provider-evidence-file|firstPageEntryCount=100|rejectionStatus=400|outputPersisted=false|captureSentinelCreated=false|providerMutationCount=0|diagnosticOnly=true|requiredExecutionShape=false|authorizing=false
+HL23-V6-INHERITED-V5-AUTHORITY|commit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|parent=f17b2278542ef6836550a556abd97d82c9bf79db|committedAt=2026-08-26T22:09:21.000Z|manifestBytes=20229|manifestLf=474|manifestCr=0|manifestFinalLf=true|manifestSha256=47f98ab16da1d858508a0b0abf2686e51e7af3132b3abacb7efa5b2b640574ff|artifactSetSha256=894fc3cdcd88ea21ca7a373a7349dd326f03fae07537a650670ac49abd8b67da|artifactCount=14|artifactBytes=747682|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED|authorizingV6ProviderMutation=false
+HL23-V6-FORBIDDEN-V5-BINDING-AND-ACTION|count=20|paths=target-activation-v5-authority-binding.json,target-activation-v5-provider-preflight.json,target-activation-v5-provider-preflight.commit.json,target-activation-v5-held-probes-preflight.json,target-activation-v5-npm-observation-plan.json,target-activation-v5-npm-observation-stdin.txt,target-activation-v5-npm-observation.json,target-activation-v5-npm-observation-envelope.json,target-activation-v5-provider-postflight.json,target-activation-v5-provider-postflight.commit.json,target-activation-v5-shell-postflight-plan.json,target-activation-v5-shell-postflight-stdin.txt,target-activation-v5-shell-postflight.json,target-activation-v5-shell-postflight-envelope.json,target-activation-v5-held-probes-postflight.json,target-activation-v5-provider-final.json,target-activation-v5-provider-final.commit.json,target-activation-v5-postflight-result.json,target-activation-v5-cleanup-result.json,target-activation-v5-arm-failure.json|mustRemainAbsent=true|prefixInventoryCount=15|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V6-INHERITED-V5-BINDING-LAUNCH-FAILURE|authorityCommit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-26T22:09:21.000Z|justBeforeWallSample=2026-08-26T22:10:25.643Z|nativeExitCode=1|failureStage=outer-powershell-parameter-binding-pre-runner-body|safeTextUtf8Bytes=128|safeTextSha256=bb1498b816e09c94654563f7b251068e8529f2d3d952eda097ddbb1fade5df22|category=InvalidArgument|exceptionType=ParentContainsErrorRecordException|fullyQualifiedErrorId=PositionalParameterNotFound,target-activation-v5-local-runner.ps1|invocationMatchedRunbookBindingBlock=true|createdAtGeneratedImmediatelyPreCall=true|exactCreatedAtUnavailable=true|runnerBodyEntered=false|runnerSelfPinRan=false|pinnedNodeStarted=false|bindingCandidateGenerationStarted=false|captureWriteAttempted=false|canonicalStdoutPresent=false|rawTransportDigestUnavailable=true|bindingAbsentBeforeAndAfter=true|failureReceiptCreated=false|operatorAttestedDiagnostic=true|authoritativeActionEvidence=false|continuationAttemptEvidence=false|providerReadCount=0|providerMutationCount=0|browserActionCount=0|networkRequestCount=0
+HL23-V6-CONTINUATION-AUTHORITY|parent=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|checklistId=RC-STG-006O23C|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|v5BindingRetryAuthorized=false|v5ResumptionAuthorized=false|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V6-STATUS|authorityO23=UNCHECKED_PENDING_O23C|authorityO23A=UNCHECKED_PENDING_O23C|authorityO23B=UNCHECKED_PENDING_O23C|authorityO23C=UNCHECKED|v3PostPathPermanentlyBlocked=true|v4ActionPathRetiredUnconsumed=true|v5ActionPathRetiredUnconsumed=true|v5BindingRetryAuthorized=false|o23AcceptancePendingO23C=true|o23AAcceptancePendingO23C=true|o23BAcceptancePendingO23C=true|o23CAcceptancePending=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|successfulO23B=PASS_CONSUMED|successfulO23C=PASS_CONSUMED|prospectiveSuccessOnlyTogether=true|mandatoryStopBefore=RC-STG-006P23
+HL23-V7-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-support-manifest.json|bytes=41076|lf=909|cr=0|finalLf=true|sha256=77fa1f99a27a9aa885e05e7b7ee23efc7d5ef1452f6befbc3d065665163b457a
+HL23-V7-FROZEN-ARTIFACT-SET|sha256=40170902e06ba4cadc84ae9fc7103a62acfa201655c932eb18d3627c71a29e18
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-contract.cjs|bytes=186909|lf=3786|cr=0|finalLf=true|sha256=a098a1b2e2d5240f077b3e6668ec65a64dfa82167f7891712e0e8eebc2eb82c7
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-npm-verifier.sh|bytes=17958|lf=414|cr=0|finalLf=true|sha256=db57bd20eb49271c4a35e17de33c0cc763d195e8902a6ea7afd2a2901c57bcb9
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-shell-envelope.cjs|bytes=36179|lf=782|cr=0|finalLf=true|sha256=9304cae98ebddc66773f314a9c47f7b718d721daec9f22f26388c784431c2c24
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=409db1ad0cf9177237bd93badd3fb18be5ed90245143931806623d723ea5fced
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-action-control.cjs|bytes=84207|lf=1779|cr=0|finalLf=true|sha256=762b2999a6f67f2836945dcc3a563156ee35d24154e34d74a745e4c1e2046cb0
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-provider-projection.cjs|bytes=301523|lf=6236|cr=0|finalLf=true|sha256=a5ef681821d1aa72b95fe6d3cce666d37252bb0c8c0d2e4f8de598c8986340ec
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-authority-ops.cjs|bytes=19481|lf=446|cr=0|finalLf=true|sha256=c6d6973e2644102551e7a5fe973e1b8cdf6e8bfe44dd1040267f0975066ee55a
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-local-runner.ps1|bytes=162240|lf=3264|cr=0|finalLf=true|sha256=c52f3fbc07eee427a432ecabc2906067e7a83a4da1514fbe3d141a5e06538d1e
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-pre-node-dependency-lock.json|bytes=8521|lf=262|cr=0|finalLf=true|sha256=14da996585fa9c1335af27f877957cc2a2e747d9b76465b3f7a87794792056bf
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-postflight.cjs|bytes=19547|lf=451|cr=0|finalLf=true|sha256=926f8c70258f35cbd94db2633cf55b83a6333c855048b456e126829a82de3a95
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-cleanup.cjs|bytes=6929|lf=180|cr=0|finalLf=true|sha256=415b9ba6aa211a02ba945ed5059535c2dbc6f28dc41d499a5b76e0f8c9175673
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-support-self-test.cjs|bytes=78947|lf=1558|cr=0|finalLf=true|sha256=024a16401580e30a26d944ecfce1b99bca7a2340dfa7c5db46413f394616396c
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-verify-freeze.cjs|bytes=78349|lf=1480|cr=0|finalLf=true|sha256=db5d4c078a95832dd50b0761004b3a28c43a9a2f16aeb027873c687ed702a103
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-authority-binding.template.json|bytes=35512|lf=798|cr=0|finalLf=true|sha256=b1b84522efc176e959263db0f2f24509a10dd68c4fcb20a74008bd1ec9e05a12
+HL23-V7-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v7-RUNBOOK.md|bytes=45283|lf=742|cr=0|finalLf=true|sha256=c07d7f6dc63529f8bffaf7b77356d0ac4d7904a92865d27a294243c555d3a9a7
+HL23-V7-PROVIDER-EXECUTABLE-SOURCE|kind=full-phase-orchestrator|artifact=target-activation-v7-provider-projection.cjs|command=--orchestrator-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V7_FULL_PHASE_PROVIDER_ORCHESTRATOR_SOURCE|bytes=38331|lf=821|cr=0|finalLf=true|sha256=663399083c4b030fe5dedc39496a7a41b164b8443e70aa90341e17526f6a24bf|loadedOnlyByExactBootstrap=true
+HL23-V7-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-bootstrap|artifact=target-activation-v7-provider-projection.cjs|command=--bootstrap-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V7_FUNCTIONS_EXEC_BOOTSTRAP_SOURCE|bytes=45833|lf=917|cr=0|finalLf=true|sha256=c848bba5e6cdf5143dfdf7e1e82382658a0b4789a2821ed427a15e89f05749d6|retrievedByExactAuditedLoader=true|generatedPayloadIsSubmittedCell=false|verifiedByPinnedLoaderSourceVerifierHostBeforeEvaluation=true|sameInMemorySourceExecutedRequired=true|platformSubmittedSourceAttested=false
+HL23-V7-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-dynamic-loader|artifact=target-activation-v7-provider-projection.cjs|command=--loader-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V7_FUNCTIONS_EXEC_DYNAMIC_LOADER_SOURCE|bytes=21002|lf=412|cr=0|finalLf=true|sha256=4e4e9c7c5cd7813a73d1acee9fd86921e23151a5da5c7c85da825b7bfa40a469|minimalAuditedDynamicLoader=true|generatedPayloadIsSubmittedCell=true|exactGeneratedLoaderSourceIsEntireFunctionsExecCell=true|productionLoaderSubmissionCount=3|productionLoaderSubmissionPhases=pre,post,final|eachProductionPhaseSubmissionIsSoleOneShot=true|platformSubmittedLoaderSourceAttested=false|asciiOnly=true|manualTranscriptionRiskReducedNotEliminated=true|ownSourceRereadRequiredBeforeVerifierHost=true
+HL23-V7-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-prebinding-diagnostic-loader|artifact=target-activation-v7-provider-projection.cjs|command=--diagnostic-loader-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V7_FUNCTIONS_EXEC_DIAGNOSTIC_LOADER_SOURCE|bytes=21001|lf=412|cr=0|finalLf=true|sha256=ff7f684f5802a6189eee989a2ccc3c40c4a0212474a9b910458a9de031d4b6f0|minimalAuditedDiagnosticLoader=true|diagnosticOnly=true|generatedPayloadIsSubmittedCell=true|exactGeneratedLoaderSourceIsEntireFunctionsExecCell=true|diagnosticLoaderSubmissionCount=1|diagnosticLoaderSubmissionTiming=prebinding-only|productionLoaderMayBeSubmittedByThisRole=false|productionLoaderMustRemainUnsubmittedUntilBinding=true|providerCaptureHostAllowed=false|providerReadAllowed=false|platformSubmittedLoaderSourceAttested=false|asciiOnly=true|ownSourceRereadRequiredBeforeVerifierHost=true
+HL23-V7-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV7ProviderMutation=false
+HL23-V7-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V7-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V7-INHERITED-V4-AUTHORITY|commit=f17b2278542ef6836550a556abd97d82c9bf79db|parent=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=11358|manifestSha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428|artifactSetSha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422|artifactCount=14|bindingBytes=6067|bindingSha256=2c6c4876a50bc5b40476d50e70e27f4eba5214de6d3dd9f2d8acbbdb4b3905df|state=BOUND_UNCONSUMED_RETIRED|authorizingV7ProviderMutation=false
+HL23-V7-FORBIDDEN-V4-ACTION|count=16|paths=target-activation-v4-provider-preflight.json,target-activation-v4-held-probes-preflight.json,target-activation-v4-npm-observation-plan.json,target-activation-v4-npm-observation-stdin.txt,target-activation-v4-npm-observation.json,target-activation-v4-npm-observation-envelope.json,target-activation-v4-provider-postflight.json,target-activation-v4-shell-postflight-plan.json,target-activation-v4-shell-postflight-stdin.txt,target-activation-v4-shell-postflight.json,target-activation-v4-shell-postflight-envelope.json,target-activation-v4-held-probes-postflight.json,target-activation-v4-provider-final.json,target-activation-v4-postflight-result.json,target-activation-v4-cleanup-result.json,target-activation-v4-arm-failure.json|mustRemainAbsent=true|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V7-INHERITED-V4-DIAGNOSTIC|canonicalSha256=a86a897e5652e6c8c40bf6a5aae7a6349e6afe9c827429ff2de25c285a15743f|evidenceStatus=diagnostic-only-no-provider-evidence-file|firstPageEntryCount=100|rejectionStatus=400|outputPersisted=false|captureSentinelCreated=false|providerMutationCount=0|diagnosticOnly=true|requiredExecutionShape=false|authorizing=false
+HL23-V7-INHERITED-V5-AUTHORITY|commit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|parent=f17b2278542ef6836550a556abd97d82c9bf79db|committedAt=2026-08-26T22:09:21.000Z|manifestBytes=20229|manifestLf=474|manifestCr=0|manifestFinalLf=true|manifestSha256=47f98ab16da1d858508a0b0abf2686e51e7af3132b3abacb7efa5b2b640574ff|artifactSetSha256=894fc3cdcd88ea21ca7a373a7349dd326f03fae07537a650670ac49abd8b67da|artifactCount=14|artifactBytes=747682|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED|authorizingV7ProviderMutation=false
+HL23-V7-FORBIDDEN-V5-BINDING-AND-ACTION|count=20|paths=target-activation-v5-authority-binding.json,target-activation-v5-provider-preflight.json,target-activation-v5-provider-preflight.commit.json,target-activation-v5-held-probes-preflight.json,target-activation-v5-npm-observation-plan.json,target-activation-v5-npm-observation-stdin.txt,target-activation-v5-npm-observation.json,target-activation-v5-npm-observation-envelope.json,target-activation-v5-provider-postflight.json,target-activation-v5-provider-postflight.commit.json,target-activation-v5-shell-postflight-plan.json,target-activation-v5-shell-postflight-stdin.txt,target-activation-v5-shell-postflight.json,target-activation-v5-shell-postflight-envelope.json,target-activation-v5-held-probes-postflight.json,target-activation-v5-provider-final.json,target-activation-v5-provider-final.commit.json,target-activation-v5-postflight-result.json,target-activation-v5-cleanup-result.json,target-activation-v5-arm-failure.json|mustRemainAbsent=true|prefixInventoryCount=15|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V7-INHERITED-V5-BINDING-LAUNCH-FAILURE|authorityCommit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-26T22:09:21.000Z|justBeforeWallSample=2026-08-26T22:10:25.643Z|nativeExitCode=1|failureStage=outer-powershell-parameter-binding-pre-runner-body|safeTextUtf8Bytes=128|safeTextSha256=bb1498b816e09c94654563f7b251068e8529f2d3d952eda097ddbb1fade5df22|category=InvalidArgument|exceptionType=ParentContainsErrorRecordException|fullyQualifiedErrorId=PositionalParameterNotFound,target-activation-v5-local-runner.ps1|invocationMatchedRunbookBindingBlock=true|createdAtGeneratedImmediatelyPreCall=true|exactCreatedAtUnavailable=true|runnerBodyEntered=false|runnerSelfPinRan=false|pinnedNodeStarted=false|bindingCandidateGenerationStarted=false|captureWriteAttempted=false|canonicalStdoutPresent=false|rawTransportDigestUnavailable=true|bindingAbsentBeforeAndAfter=true|failureReceiptCreated=false|operatorAttestedDiagnostic=true|authoritativeActionEvidence=false|continuationAttemptEvidence=false|providerReadCount=0|providerMutationCount=0|browserActionCount=0|networkRequestCount=0
+HL23-V7-INHERITED-V6-AUTHORITY|commit=3c87d50e613e9f3292ac5808a5dcbabd7aa29108|parent=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-27T05:03:18.000Z|manifestBytes=30664|manifestLf=698|manifestSha256=d2d27f03eea8904d4d20124a7a76772ef5d97c9249bbb942d9cb882fb5cb4fa0|artifactSetSha256=91bd4b8e69d55903342b4391c4383fed5a19d3afe2d2a8f64a289950466cc63b|artifactCount=15|artifactBytes=899238|bindingBytes=19309|bindingLf=1|bindingSha256=36edfafae3369c5ec404963cf16e254bfa9bce47dbe74af7d2fb87c9f7a359cf|state=PUBLISHED_BOUND_PREHOST_BOOTSTRAP_ABORTED_NO_PHASE_RESERVATION_RETIRED|oneShotExecutionAttemptConsumed=true|providerPhaseReservationCreated=false|authorizingV7ProviderMutation=false
+HL23-V7-FORBIDDEN-V6-ACTION|count=19|paths=target-activation-v6-provider-preflight.json,target-activation-v6-provider-preflight.commit.json,target-activation-v6-held-probes-preflight.json,target-activation-v6-npm-observation-plan.json,target-activation-v6-npm-observation-stdin.txt,target-activation-v6-npm-observation.json,target-activation-v6-npm-observation-envelope.json,target-activation-v6-provider-postflight.json,target-activation-v6-provider-postflight.commit.json,target-activation-v6-shell-postflight-plan.json,target-activation-v6-shell-postflight-stdin.txt,target-activation-v6-shell-postflight.json,target-activation-v6-shell-postflight-envelope.json,target-activation-v6-held-probes-postflight.json,target-activation-v6-provider-final.json,target-activation-v6-provider-final.commit.json,target-activation-v6-postflight-result.json,target-activation-v6-cleanup-result.json,target-activation-v6-arm-failure.json|prefixInventoryCount=17|mustRemainAbsent=true|captureSentinelCount=0|auditedBootstrapHostStartAttempted=false|auditedBootstrapProviderReadCount=0|auditedBootstrapProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false
+HL23-V7-INHERITED-V6-BOOTSTRAP-ABORT|failureStage=functions-exec-bootstrap-pre-host-crypto-self-test|terminalCode=HL23_TARGET_ACTIVATION_V6_FUNCTIONS_EXEC_BOOTSTRAP_ABORTED|terminalReason=V6_BOOTSTRAP_CRYPTO_SELF_TEST_INVALID|terminalProviderMutationAuthorizedCount=0|retryAuthorized=false|submittedCellKnownNonidentical=true|manualTranscriptionUsed=true|expectedLiteral=0x4ed8aa4a|submittedLiteral=0x4ed8aa4f|submittedCellDigestUnavailable=true|submittedCellBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|operatorAttestedDiagnostic=true|platformSubmittedSourceAttested=false
+HL23-V7-CONTINUATION-AUTHORITY|parent=3c87d50e613e9f3292ac5808a5dcbabd7aa29108|checklistId=RC-STG-006O23D|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|v6RetryAuthorized=false|v6RebindAuthorized=false|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V7-STATUS|authorityO23=UNCHECKED_PENDING_O23D|authorityO23A=UNCHECKED_PENDING_O23D|authorityO23B=UNCHECKED_PENDING_O23D|authorityO23C=UNCHECKED_PENDING_O23D|authorityO23D=UNCHECKED|v3PostPathPermanentlyBlocked=true|v4ActionPathRetiredUnconsumed=true|v5ActionPathRetiredUnconsumed=true|v5BindingRetryAuthorized=false|v6ActionPathRetiredNoPhaseReservation=true|v6RetryAuthorized=false|o23AcceptancePendingO23D=true|o23AAcceptancePendingO23D=true|o23BAcceptancePendingO23D=true|o23CAcceptancePendingO23D=true|o23DAcceptancePending=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|successfulO23B=PASS_CONSUMED|successfulO23C=PASS_CONSUMED|successfulO23D=PASS_CONSUMED|prospectiveSuccessOnlyTogether=true|mandatoryStopBefore=RC-STG-006P23
+HL23-V8-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-support-manifest.json|bytes=47301|lf=1054|cr=0|finalLf=true|sha256=d58c4543398da9c7e0b38ea818f90abd48820ce55f97823d09caa8443a7b4fa5
+HL23-V8-FROZEN-ARTIFACT-SET|sha256=7d092d169ee1fea9ca091d4fbe9ae40e95d9e75ff8062b18ea85cc25327ffe53
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-contract.cjs|bytes=151827|lf=3216|cr=0|finalLf=true|sha256=70fc452cd30942d07662404509957ae55c91ef8e1c7b4f91f84f702556b56396
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-npm-verifier.sh|bytes=17958|lf=414|cr=0|finalLf=true|sha256=51a4127a0e58d957694762a3372c78eefbca855702aac3d63756be7162f4e670
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-shell-envelope.cjs|bytes=36179|lf=782|cr=0|finalLf=true|sha256=5e2758ea85aefc99b3143e38e521d1382992dea84e66388da835cab3e755bf47
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=035eba664cc53ee3a65e45ecbdb38744de88260ba180ed7212da249bd36a394e
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-action-control.cjs|bytes=102132|lf=2148|cr=0|finalLf=true|sha256=274c2079857100bb7b82da007d70a24f46adfa407d8bf80309e792ddb45614f0
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-provider-projection.cjs|bytes=239169|lf=4852|cr=0|finalLf=true|sha256=0982007588c8e0dcdb042816ae4dd749265a8675ce5d7ecdea1d9bce7eaed2a6
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-authority-ops.cjs|bytes=19483|lf=446|cr=0|finalLf=true|sha256=4e3f9168fbe889de67b384c6f01763f7bc60752ffb8d16db3c14741eef7d8796
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-local-runner.ps1|bytes=152954|lf=3195|cr=0|finalLf=true|sha256=197aee46b73c642e727edae971fab7aa2fb3aa36f68aa5435d3b5ce90e2e128a
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-pre-node-dependency-lock.json|bytes=12950|lf=364|cr=0|finalLf=true|sha256=632093289a154a13d1bf8d19ea793d014ed2814043da6093839b7f6f543e9d63
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-postflight.cjs|bytes=27751|lf=619|cr=0|finalLf=true|sha256=2bb683d9f96e4439c0e167e6c3ce7425e6d82aba4a217e5e6388e4bc317a9144
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-cleanup.cjs|bytes=11767|lf=274|cr=0|finalLf=true|sha256=7d546c3a090be420f998a9889b0e0f11129ceaf6d1d8d8e44fa0be90d87e8b02
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-support-self-test.cjs|bytes=57348|lf=1136|cr=0|finalLf=true|sha256=b3fdd55912685de9370eb4334f530b68280cabddb131fa8401d8150754d45038
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-verify-freeze.cjs|bytes=92067|lf=1732|cr=0|finalLf=true|sha256=1e635ebf800ee4834cbb15e0b58066009ee1e3f4cb4ba333749d2e087148736e
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-authority-binding.template.json|bytes=40242|lf=919|cr=0|finalLf=true|sha256=06897531489d33ca46279dcc57ff2eed274828c887c7c95c587bd99f50bf6d8a
+HL23-V8-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v8-RUNBOOK.md|bytes=34294|lf=572|cr=0|finalLf=true|sha256=5a30ab0e2487591c6a71e1ab01102611abbb3aae0cb48fffb836f0a11e06e124
+HL23-V8-PROVIDER-EXECUTABLE-SOURCE|kind=full-phase-orchestrator|artifact=target-activation-v8-provider-projection.cjs|command=--orchestrator-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V8_FULL_PHASE_PROVIDER_ORCHESTRATOR_SOURCE|bytes=38346|lf=821|cr=0|finalLf=true|sha256=d793ae46280504ebffa22fbac5049cd1c745e1dd9fe607f9fc7078c0d272bce4|loadedOnlyByExactBootstrap=true
+HL23-V8-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-bootstrap|artifact=target-activation-v8-provider-projection.cjs|command=--bootstrap-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V8_FUNCTIONS_EXEC_BOOTSTRAP_SOURCE|bytes=34087|lf=654|cr=0|finalLf=true|sha256=49755e7460dd5f0fadcaf30793599e3d327d279ef378c461a57dcdc8101b2ba7|retrievedByExactAuditedLoader=true|generatedPayloadIsSubmittedCell=false|verifiedByPureJsUtf8Sha256BeforeEvaluation=true|pureJsSha256SelfTestVectorCount=11|sameInMemorySourceExecutedRequired=true|platformSubmittedSourceAttested=false
+HL23-V8-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-dynamic-loader|artifact=target-activation-v8-provider-projection.cjs|command=--loader-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V8_FUNCTIONS_EXEC_DYNAMIC_LOADER_SOURCE|bytes=19358|lf=381|cr=0|finalLf=true|sha256=8acfc9d7bec23768ad283c14f553b7071e3a235806dedb8b7b062c14a62e93fb|minimalAuditedDynamicLoader=true|generatedPayloadIsSubmittedCell=true|exactGeneratedLoaderSourceIsEntireFunctionsExecCell=true|productionLoaderSubmissionCount=3|productionLoaderSubmissionPhases=pre,post,final|eachProductionPhaseSubmissionIsSoleOneShot=true|platformSubmittedLoaderSourceAttested=false|asciiOnly=true|manualTranscriptionRiskReducedNotEliminated=true|ownSourceRereadRequiredBeforeBootstrapEvaluation=true|streamingHostAuthorized=false
+HL23-V8-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-prebinding-diagnostic-loader|artifact=target-activation-v8-provider-projection.cjs|command=--diagnostic-loader-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V8_FUNCTIONS_EXEC_DIAGNOSTIC_LOADER_SOURCE|bytes=19357|lf=381|cr=0|finalLf=true|sha256=854c894065b9a31bca44d080761ec2d062ec7e099d8281c625d3af3f72389597|minimalAuditedDiagnosticLoader=true|diagnosticOnly=true|generatedPayloadIsSubmittedCell=true|exactGeneratedLoaderSourceIsEntireFunctionsExecCell=true|diagnosticLoaderSubmissionCount=1|diagnosticLoaderSubmissionTiming=prebinding-only|productionLoaderMayBeSubmittedByThisRole=false|productionLoaderMustRemainUnsubmittedUntilBinding=true|streamingHostAllowed=false|providerReadAllowed=false|platformSubmittedLoaderSourceAttested=false|asciiOnly=true|ownSourceRereadRequiredBeforeBootstrapEvaluation=true
+HL23-V8-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV8ProviderMutation=false
+HL23-V8-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V8-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V8-INHERITED-V4-AUTHORITY|commit=f17b2278542ef6836550a556abd97d82c9bf79db|parent=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=11358|manifestSha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428|artifactSetSha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422|artifactCount=14|bindingBytes=6067|bindingSha256=2c6c4876a50bc5b40476d50e70e27f4eba5214de6d3dd9f2d8acbbdb4b3905df|state=BOUND_UNCONSUMED_RETIRED|authorizingV8ProviderMutation=false
+HL23-V8-FORBIDDEN-V4-ACTION|count=16|paths=target-activation-v4-provider-preflight.json,target-activation-v4-held-probes-preflight.json,target-activation-v4-npm-observation-plan.json,target-activation-v4-npm-observation-stdin.txt,target-activation-v4-npm-observation.json,target-activation-v4-npm-observation-envelope.json,target-activation-v4-provider-postflight.json,target-activation-v4-shell-postflight-plan.json,target-activation-v4-shell-postflight-stdin.txt,target-activation-v4-shell-postflight.json,target-activation-v4-shell-postflight-envelope.json,target-activation-v4-held-probes-postflight.json,target-activation-v4-provider-final.json,target-activation-v4-postflight-result.json,target-activation-v4-cleanup-result.json,target-activation-v4-arm-failure.json|mustRemainAbsent=true|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V8-INHERITED-V4-DIAGNOSTIC|canonicalSha256=a86a897e5652e6c8c40bf6a5aae7a6349e6afe9c827429ff2de25c285a15743f|evidenceStatus=diagnostic-only-no-provider-evidence-file|firstPageEntryCount=100|rejectionStatus=400|outputPersisted=false|captureSentinelCreated=false|providerMutationCount=0|diagnosticOnly=true|requiredExecutionShape=false|authorizing=false
+HL23-V8-INHERITED-V5-AUTHORITY|commit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|parent=f17b2278542ef6836550a556abd97d82c9bf79db|committedAt=2026-08-26T22:09:21.000Z|manifestBytes=20229|manifestLf=474|manifestCr=0|manifestFinalLf=true|manifestSha256=47f98ab16da1d858508a0b0abf2686e51e7af3132b3abacb7efa5b2b640574ff|artifactSetSha256=894fc3cdcd88ea21ca7a373a7349dd326f03fae07537a650670ac49abd8b67da|artifactCount=14|artifactBytes=747682|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED|authorizingV8ProviderMutation=false
+HL23-V8-FORBIDDEN-V5-BINDING-AND-ACTION|count=20|paths=target-activation-v5-authority-binding.json,target-activation-v5-provider-preflight.json,target-activation-v5-provider-preflight.commit.json,target-activation-v5-held-probes-preflight.json,target-activation-v5-npm-observation-plan.json,target-activation-v5-npm-observation-stdin.txt,target-activation-v5-npm-observation.json,target-activation-v5-npm-observation-envelope.json,target-activation-v5-provider-postflight.json,target-activation-v5-provider-postflight.commit.json,target-activation-v5-shell-postflight-plan.json,target-activation-v5-shell-postflight-stdin.txt,target-activation-v5-shell-postflight.json,target-activation-v5-shell-postflight-envelope.json,target-activation-v5-held-probes-postflight.json,target-activation-v5-provider-final.json,target-activation-v5-provider-final.commit.json,target-activation-v5-postflight-result.json,target-activation-v5-cleanup-result.json,target-activation-v5-arm-failure.json|mustRemainAbsent=true|prefixInventoryCount=15|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V8-INHERITED-V5-BINDING-LAUNCH-FAILURE|authorityCommit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-26T22:09:21.000Z|justBeforeWallSample=2026-08-26T22:10:25.643Z|nativeExitCode=1|failureStage=outer-powershell-parameter-binding-pre-runner-body|safeTextUtf8Bytes=128|safeTextSha256=bb1498b816e09c94654563f7b251068e8529f2d3d952eda097ddbb1fade5df22|category=InvalidArgument|exceptionType=ParentContainsErrorRecordException|fullyQualifiedErrorId=PositionalParameterNotFound,target-activation-v5-local-runner.ps1|invocationMatchedRunbookBindingBlock=true|createdAtGeneratedImmediatelyPreCall=true|exactCreatedAtUnavailable=true|runnerBodyEntered=false|runnerSelfPinRan=false|pinnedNodeStarted=false|bindingCandidateGenerationStarted=false|captureWriteAttempted=false|canonicalStdoutPresent=false|rawTransportDigestUnavailable=true|bindingAbsentBeforeAndAfter=true|failureReceiptCreated=false|operatorAttestedDiagnostic=true|authoritativeActionEvidence=false|continuationAttemptEvidence=false|providerReadCount=0|providerMutationCount=0|browserActionCount=0|networkRequestCount=0
+HL23-V8-INHERITED-V6-AUTHORITY|commit=3c87d50e613e9f3292ac5808a5dcbabd7aa29108|parent=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-27T05:03:18.000Z|manifestBytes=30664|manifestLf=698|manifestSha256=d2d27f03eea8904d4d20124a7a76772ef5d97c9249bbb942d9cb882fb5cb4fa0|artifactSetSha256=91bd4b8e69d55903342b4391c4383fed5a19d3afe2d2a8f64a289950466cc63b|artifactCount=15|artifactBytes=899238|bindingBytes=19309|bindingLf=1|bindingSha256=36edfafae3369c5ec404963cf16e254bfa9bce47dbe74af7d2fb87c9f7a359cf|state=PUBLISHED_BOUND_PREHOST_BOOTSTRAP_ABORTED_NO_PHASE_RESERVATION_RETIRED|oneShotExecutionAttemptConsumed=true|providerPhaseReservationCreated=false|authorizingV8ProviderMutation=false
+HL23-V8-FORBIDDEN-V6-ACTION|count=19|paths=target-activation-v6-provider-preflight.json,target-activation-v6-provider-preflight.commit.json,target-activation-v6-held-probes-preflight.json,target-activation-v6-npm-observation-plan.json,target-activation-v6-npm-observation-stdin.txt,target-activation-v6-npm-observation.json,target-activation-v6-npm-observation-envelope.json,target-activation-v6-provider-postflight.json,target-activation-v6-provider-postflight.commit.json,target-activation-v6-shell-postflight-plan.json,target-activation-v6-shell-postflight-stdin.txt,target-activation-v6-shell-postflight.json,target-activation-v6-shell-postflight-envelope.json,target-activation-v6-held-probes-postflight.json,target-activation-v6-provider-final.json,target-activation-v6-provider-final.commit.json,target-activation-v6-postflight-result.json,target-activation-v6-cleanup-result.json,target-activation-v6-arm-failure.json|prefixInventoryCount=17|mustRemainAbsent=true|captureSentinelCount=0|auditedBootstrapHostStartAttempted=false|auditedBootstrapProviderReadCount=0|auditedBootstrapProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false
+HL23-V8-INHERITED-V6-BOOTSTRAP-ABORT|failureStage=functions-exec-bootstrap-pre-host-crypto-self-test|terminalCode=HL23_TARGET_ACTIVATION_V6_FUNCTIONS_EXEC_BOOTSTRAP_ABORTED|terminalReason=V6_BOOTSTRAP_CRYPTO_SELF_TEST_INVALID|terminalProviderMutationAuthorizedCount=0|retryAuthorized=false|submittedCellKnownNonidentical=true|manualTranscriptionUsed=true|expectedLiteral=0x4ed8aa4a|submittedLiteral=0x4ed8aa4f|submittedCellDigestUnavailable=true|submittedCellBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|operatorAttestedDiagnostic=true|platformSubmittedSourceAttested=false
+HL23-V8-INHERITED-V7-AUTHORITY|commit=d0d80e98f27e9a5b0079eeb88134523f443a7cad|parent=3c87d50e613e9f3292ac5808a5dcbabd7aa29108|committedAt=2026-08-27T16:23:38.000Z|manifestBytes=41076|manifestLf=909|manifestCr=0|manifestFinalLf=true|manifestSha256=77fa1f99a27a9aa885e05e7b7ee23efc7d5ef1452f6befbc3d065665163b457a|artifactSetSha256=40170902e06ba4cadc84ae9fc7103a62acfa201655c932eb18d3627c71a29e18|artifactCount=15|artifactBytes=1086182|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_PREBINDING_DIAGNOSTIC_LOADER_ABORTED_NO_PHASE_RESERVATION_RETIRED|diagnosticLoaderAttemptConsumed=true|diagnosticRetryAuthorized=false|bindingAuthorized=false|productionLoaderSubmitted=false|productionPhaseAttempted=false|productionOneShotConsumed=false|providerPhaseReservationCreated=false|authorizingV8ProviderMutation=false
+HL23-V8-FORBIDDEN-V7-BINDING-AND-ACTION|count=20|paths=target-activation-v7-authority-binding.json,target-activation-v7-provider-preflight.json,target-activation-v7-provider-preflight.commit.json,target-activation-v7-held-probes-preflight.json,target-activation-v7-npm-observation-plan.json,target-activation-v7-npm-observation-stdin.txt,target-activation-v7-npm-observation.json,target-activation-v7-npm-observation-envelope.json,target-activation-v7-provider-postflight.json,target-activation-v7-provider-postflight.commit.json,target-activation-v7-shell-postflight-plan.json,target-activation-v7-shell-postflight-stdin.txt,target-activation-v7-shell-postflight.json,target-activation-v7-shell-postflight-envelope.json,target-activation-v7-held-probes-postflight.json,target-activation-v7-provider-final.json,target-activation-v7-provider-final.commit.json,target-activation-v7-postflight-result.json,target-activation-v7-cleanup-result.json,target-activation-v7-arm-failure.json|prefixInventoryCount=16|prefixProjectionBytes=3399|prefixProjectionSha256=86744cac1f03afeade5e3ee64a5abe09457598d447a3e9aa3767d22ac9c7baa0|mustRemainAbsent=true|captureSentinelCount=0|auditedLoaderFlowProviderReadCount=0|auditedLoaderFlowProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false|totalProviderMutationCountRemains=1
+HL23-V8-INHERITED-V7-DIAGNOSTIC-LOADER-ABORT|failureStage=functions-exec-prebinding-diagnostic-loader-verifier-start-no-session|terminalCode=HL23_TARGET_ACTIVATION_V7_PREBINDING_DIAGNOSTIC_LOADER_ABORTED|terminalReason=V7_LOADER_VERIFIER_TERMINAL_STATE_UNKNOWN|terminalDiagnosticOnly=true|terminalProductionPhaseAttempted=false|terminalProductionOneShotConsumed=false|terminalProviderCaptureHostStarted=false|terminalProviderMutationAuthorizedCount=0|diagnosticRetryAuthorized=false|operatorAttestedDiagnostic=true|rawTerminalBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|submittedCellBytesUnavailable=true|submittedCellDigestUnavailable=true|platformSubmittedSourceAttested=false
+HL23-V8-INHERITED-V7-FORENSIC-NARROWING|outerCellWallTimeSeconds=22.5|verifierCleanupLoopBoundMilliseconds=125000|diagnosticLoaderRoleEstablished=true|diagnosticLoaderOwnSourceRereadMatched=true|productionLoaderSourceLocallyReread=true|productionLoaderSubmitted=false|bootstrapSourceLocallyReread=true|bootstrapEvaluated=false|verifierHostStartAttempted=true|verifierSessionIdSafeIntegerAcquired=false|verifierReadyAccepted=false|verifierInputFrameSubmitted=false|verifierReceiptObserved=false|verifierReceiptAccepted=false|originalSafeCodeUnavailable=true|possibleOriginalSafeCodes=V7_LOADER_VERIFIER_START_FAILED,V7_LOADER_VERIFIER_START_INVALID|verifierProcessStartedState=unknown|verifierTerminalState=unknown|bindingAbsentBeforeAndAfter=true|providerCaptureHostStarted=false|providerPhaseReservationCreated=false|auditedLoaderFlowProviderReadCount=0|auditedLoaderFlowProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false
+HL23-V8-SESSIONLESS-PHASE-PROTOCOL|phaseCount=3|phaseEvidenceFileCount=4|phaseEvidenceRoles=reservation,claim,output,commit|reservationCreateNewBeforeCell=true|reservationConsumesPhase=true|claimInvocationExpectedInsideAuditedFunctionsExecWorkflow=true|claimInvocationOriginMechanicallyAttested=false|claimCreatedBeforeProviderReadRequired=true|providerCommitInsideCell=true|providerPostReturnCaptureInput=false|streamingHostAuthorized=false|writeStdinEmptyPhaseCommitTerminalPollingOnly=true|nonemptyWriteStdinCharsAuthorized=false|phaseCommitWriter=pinned-node-child|powershellPhaseCommitWrites=false|phaseCommitChildDeadlineMilliseconds=22000|phaseCommitChildTerminationBeforeRunnerReturnRequired=true|phaseCommitTerminalPollMaximumCount=3|pollUnknownReconcileNotBeforeOffsetMilliseconds=60000|terminalMaxUtf8Bytes=4096|terminalMaxBase64urlChars=5462|wholeCommitCommandCharsLessThan=8191|selfHashSecurityClaim=accidental-integrity-only-not-platform-attestation|partialOrCollisionConsumesAndRetires=true|retryAuthorized=false
+HL23-V8-CONTINUATION-AUTHORITY|parent=d0d80e98f27e9a5b0079eeb88134523f443a7cad|checklistId=RC-STG-006O23E|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|v7RetryAuthorized=false|v7BindingAuthorized=false|v7ResumptionAuthorized=false|streamingHostAuthorized=false|phaseReservationCreateNewRequired=true|phaseExecutionClaimCreateNewRequired=true|missingOrMalformedTerminalRetires=true|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V8-STATUS|authorityO23=UNCHECKED_PENDING_O23E|authorityO23A=UNCHECKED_PENDING_O23E|authorityO23B=UNCHECKED_PENDING_O23E|authorityO23C=UNCHECKED_PENDING_O23E|authorityO23D=UNCHECKED_PENDING_O23E|authorityO23E=UNCHECKED|v3PostPathPermanentlyBlocked=true|v4ActionPathRetiredUnconsumed=true|v5ActionPathRetiredUnconsumed=true|v5BindingRetryAuthorized=false|v6ActionPathRetiredNoPhaseReservation=true|v6RetryAuthorized=false|v7DiagnosticPathRetiredNoPhaseReservation=true|v7DiagnosticRetryAuthorized=false|v7BindingAuthorized=false|o23AcceptancePendingO23E=true|o23AAcceptancePendingO23E=true|o23BAcceptancePendingO23E=true|o23CAcceptancePendingO23E=true|o23DAcceptancePendingO23E=true|o23EAcceptancePending=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|successfulO23B=PASS_CONSUMED|successfulO23C=PASS_CONSUMED|successfulO23D=PASS_CONSUMED|successfulO23E=PASS_CONSUMED|prospectiveSuccessOnlyTogether=true|mandatoryStopBefore=RC-STG-006P23
+HL23-V9-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-support-manifest.json|bytes=16628|lf=425|cr=0|finalLf=true|sha256=754526b671f7ea6eca7a05346081d56a6965bf75b6084c799b668b6784eef929
+HL23-V9-FROZEN-ARTIFACT-SET|sha256=156013abb3d198e0522e97eda69e5295793ce4053234829b44706eaab43e92ec
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-contract.cjs|bytes=168695|lf=3609|cr=0|finalLf=true|sha256=62dfa653074a67d169fe503b67ce600b887e58825830d809918b24bad2e1ab50
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-runtime-boundary.cjs|bytes=14674|lf=337|cr=0|finalLf=true|sha256=17960b81f16067edf3821806f2381e823cf344692740939376d3e3c6a05d324c
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-action-control.cjs|bytes=118424|lf=2449|cr=0|finalLf=true|sha256=8b4c08ce50f411ae0ec712d1feb071d290535bb7c8264778ebb441a089c604b1
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-entry-bundle.cjs|bytes=11657|lf=265|cr=0|finalLf=true|sha256=6112b0ff118a69a47004a3f02b6cec4930b97fca5977e5d9263c96889d813614
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-provider-projection.cjs|bytes=257498|lf=5307|cr=0|finalLf=true|sha256=9280f8aabebabb0b864b378456350685f88848e74c6429959b61f0fe47d422ea
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-core-self-test.cjs|bytes=11242|lf=239|cr=0|finalLf=true|sha256=0c8bd8cea38b4ebdb80f0576929bcf8562ceed8960699a5f3acc2e22741e4d01
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-npm-verifier.sh|bytes=18031|lf=416|cr=0|finalLf=true|sha256=c0284565cffbe05ea8d743d686d010adb6d47cd8d4587b7258dec7e8dbd822a8
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-shell-envelope.cjs|bytes=36179|lf=782|cr=0|finalLf=true|sha256=5743cf846f08aa5d169860a2005b4a5b0e3cc1e9e45455292ac897632dce080e
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-held-probes.cjs|bytes=4597|lf=131|cr=0|finalLf=true|sha256=b29faa5a4e7c67dd3ab8b95e3fd82b2ba3bfd4ef1da9b9b1bb1380842ee1851c
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-authority-ops.cjs|bytes=111498|lf=2278|cr=0|finalLf=true|sha256=50125c4305ae3838afc3e4106e6110341abf6c6d5bc750bfb0ead683e7db9920
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-local-runner.ps1|bytes=182716|lf=3797|cr=0|finalLf=true|sha256=52c382b1d80cdac9281f23b0d65bfd6dbd4e3c2e45b4a13209db60e6fa3f1b07
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-pre-node-dependency-lock.json|bytes=14407|lf=409|cr=0|finalLf=true|sha256=5f13857609019a51a20be7ce5ace3c83d8ec893da07186506ff25234b34e660f
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-postflight.cjs|bytes=27751|lf=619|cr=0|finalLf=true|sha256=04088f835aa218cba25d1f01593ca80b23b5a0e5e283996f0107e00837acf3c6
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-cleanup.cjs|bytes=11767|lf=274|cr=0|finalLf=true|sha256=7f33393077b15d8b9eb18a34fa0eea17bd8ff5f1fb01d7da5d0152bf17ed8ff9
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-support-self-test.cjs|bytes=4452|lf=106|cr=0|finalLf=true|sha256=ffec16bce297d74c3f90671f765891ebb1e0d4d55bcfe1e4800efe07193ae2ae
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-verify-freeze.cjs|bytes=57944|lf=1106|cr=0|finalLf=true|sha256=9307b3c69904d6378ffd95833cbaa69ad86f0cc5f443af733a94622f1755f8f7
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-authority-binding.template.json|bytes=43434|lf=971|cr=0|finalLf=true|sha256=f065a34c22d7cfdf67e5c73d719c6861bbbaa68a9735119da66017c59c031bd2
+HL23-V9-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v9-RUNBOOK.md|bytes=38773|lf=772|cr=0|finalLf=true|sha256=f52e5afe5405b670dedb080ee185a7339efdd4824abb01b462c1d4de5cb38066
+HL23-V9-PROVIDER-EXECUTABLE-SOURCE|kind=full-phase-orchestrator|artifact=target-activation-v9-provider-projection.cjs|command=--orchestrator-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V9_FULL_PHASE_PROVIDER_ORCHESTRATOR_SOURCE|bytes=38346|lf=821|cr=0|finalLf=true|sha256=2df4d3dc33008f360d0a35813731740e61579e8dde61033e263561458afd3b0b|loadedOnlyByExactBootstrap=true
+HL23-V9-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-bootstrap|artifact=target-activation-v9-provider-projection.cjs|command=--bootstrap-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V9_FUNCTIONS_EXEC_BOOTSTRAP_SOURCE|bytes=37291|lf=717|cr=0|finalLf=true|sha256=90efb27abc38e388e97886d380d2147d9895048232886c4b55b52bfbf4e184f3|retrievedByExactAuditedLoader=true|generatedPayloadIsSubmittedCell=false|verifiedByPureJsUtf8Sha256BeforeEvaluation=true|pureJsSha256SelfTestVectorCount=11|sameInMemorySourceExecutedRequired=true|platformSubmittedSourceAttested=false
+HL23-V9-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-dynamic-loader|artifact=target-activation-v9-provider-projection.cjs|command=--loader-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V9_FUNCTIONS_EXEC_DYNAMIC_LOADER_SOURCE|bytes=21630|lf=430|cr=0|finalLf=true|sha256=61649fd69394ab2152a9d63f33d4f9cc42f3ef2b17a32341ccdc9ba88ec1907a|minimalAuditedDynamicLoader=true|generatedPayloadIsSubmittedCell=true|exactGeneratedLoaderSourceIsEntireFunctionsExecCell=true|productionLoaderSubmissionCount=3|productionLoaderSubmissionPhases=pre,post,final|eachProductionPhaseSubmissionIsSoleOneShot=true|platformSubmittedLoaderSourceAttested=false|asciiOnly=true|manualTranscriptionRiskReducedNotEliminated=true|ownSourceRereadRequiredBeforeBootstrapEvaluation=true|streamingHostAuthorized=false
+HL23-V9-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-prebinding-diagnostic-entry-bundle|artifact=target-activation-v9-provider-projection.cjs|command=--diagnostic-entry-bundle-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V9_FUNCTIONS_EXEC_DIAGNOSTIC_ENTRY_BUNDLE_SOURCE|bytes=33449|lf=668|cr=0|finalLf=true|sha256=9f96375a26ef827b35bbad4651c68a5ae9257eb7f064bf2a8066356a9e060d0b|minimalAuditedDiagnosticEntryBundle=true|diagnosticOnly=true|generatedPayloadIsSubmittedCell=true|exactGeneratedEntryBundleSourceIsEntireFunctionsExecCell=true|consolidatedReadOnlyEntryBundle=true|globalToolsRemovedBeforeBootstrap=true|diagnosticEntryBundleSubmissionCount=1|diagnosticEntryBundleSubmissionTiming=prebinding-only|productionLoaderMayBeSubmittedByThisRole=false|productionLoaderMustRemainUnsubmittedUntilBinding=true|streamingHostAllowed=false|providerReadAllowed=false|platformSubmittedSourceAttested=false|asciiOnly=true|ownSourceRereadRequiredBeforeBootstrapEvaluation=true
+HL23-V9-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV9ProviderMutation=false
+HL23-V9-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V9-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V9-INHERITED-V4-AUTHORITY|commit=f17b2278542ef6836550a556abd97d82c9bf79db|parent=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=11358|manifestSha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428|artifactSetSha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422|artifactCount=14|bindingBytes=6067|bindingSha256=2c6c4876a50bc5b40476d50e70e27f4eba5214de6d3dd9f2d8acbbdb4b3905df|state=BOUND_UNCONSUMED_RETIRED|authorizingV9ProviderMutation=false
+HL23-V9-FORBIDDEN-V4-ACTION|count=16|paths=target-activation-v4-provider-preflight.json,target-activation-v4-held-probes-preflight.json,target-activation-v4-npm-observation-plan.json,target-activation-v4-npm-observation-stdin.txt,target-activation-v4-npm-observation.json,target-activation-v4-npm-observation-envelope.json,target-activation-v4-provider-postflight.json,target-activation-v4-shell-postflight-plan.json,target-activation-v4-shell-postflight-stdin.txt,target-activation-v4-shell-postflight.json,target-activation-v4-shell-postflight-envelope.json,target-activation-v4-held-probes-postflight.json,target-activation-v4-provider-final.json,target-activation-v4-postflight-result.json,target-activation-v4-cleanup-result.json,target-activation-v4-arm-failure.json|mustRemainAbsent=true|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V9-INHERITED-V4-DIAGNOSTIC|canonicalSha256=a86a897e5652e6c8c40bf6a5aae7a6349e6afe9c827429ff2de25c285a15743f|evidenceStatus=diagnostic-only-no-provider-evidence-file|firstPageEntryCount=100|rejectionStatus=400|outputPersisted=false|captureSentinelCreated=false|providerMutationCount=0|diagnosticOnly=true|requiredExecutionShape=false|authorizing=false
+HL23-V9-INHERITED-V5-AUTHORITY|commit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|parent=f17b2278542ef6836550a556abd97d82c9bf79db|committedAt=2026-08-26T22:09:21.000Z|manifestBytes=20229|manifestLf=474|manifestCr=0|manifestFinalLf=true|manifestSha256=47f98ab16da1d858508a0b0abf2686e51e7af3132b3abacb7efa5b2b640574ff|artifactSetSha256=894fc3cdcd88ea21ca7a373a7349dd326f03fae07537a650670ac49abd8b67da|artifactCount=14|artifactBytes=747682|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED|authorizingV9ProviderMutation=false
+HL23-V9-FORBIDDEN-V5-BINDING-AND-ACTION|count=20|paths=target-activation-v5-authority-binding.json,target-activation-v5-provider-preflight.json,target-activation-v5-provider-preflight.commit.json,target-activation-v5-held-probes-preflight.json,target-activation-v5-npm-observation-plan.json,target-activation-v5-npm-observation-stdin.txt,target-activation-v5-npm-observation.json,target-activation-v5-npm-observation-envelope.json,target-activation-v5-provider-postflight.json,target-activation-v5-provider-postflight.commit.json,target-activation-v5-shell-postflight-plan.json,target-activation-v5-shell-postflight-stdin.txt,target-activation-v5-shell-postflight.json,target-activation-v5-shell-postflight-envelope.json,target-activation-v5-held-probes-postflight.json,target-activation-v5-provider-final.json,target-activation-v5-provider-final.commit.json,target-activation-v5-postflight-result.json,target-activation-v5-cleanup-result.json,target-activation-v5-arm-failure.json|mustRemainAbsent=true|prefixInventoryCount=15|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V9-INHERITED-V5-BINDING-LAUNCH-FAILURE|authorityCommit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-26T22:09:21.000Z|justBeforeWallSample=2026-08-26T22:10:25.643Z|nativeExitCode=1|failureStage=outer-powershell-parameter-binding-pre-runner-body|safeTextUtf8Bytes=128|safeTextSha256=bb1498b816e09c94654563f7b251068e8529f2d3d952eda097ddbb1fade5df22|category=InvalidArgument|exceptionType=ParentContainsErrorRecordException|fullyQualifiedErrorId=PositionalParameterNotFound,target-activation-v5-local-runner.ps1|invocationMatchedRunbookBindingBlock=true|createdAtGeneratedImmediatelyPreCall=true|exactCreatedAtUnavailable=true|runnerBodyEntered=false|runnerSelfPinRan=false|pinnedNodeStarted=false|bindingCandidateGenerationStarted=false|captureWriteAttempted=false|canonicalStdoutPresent=false|rawTransportDigestUnavailable=true|bindingAbsentBeforeAndAfter=true|failureReceiptCreated=false|operatorAttestedDiagnostic=true|authoritativeActionEvidence=false|continuationAttemptEvidence=false|providerReadCount=0|providerMutationCount=0|browserActionCount=0|networkRequestCount=0
+HL23-V9-INHERITED-V6-AUTHORITY|commit=3c87d50e613e9f3292ac5808a5dcbabd7aa29108|parent=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-27T05:03:18.000Z|manifestBytes=30664|manifestLf=698|manifestSha256=d2d27f03eea8904d4d20124a7a76772ef5d97c9249bbb942d9cb882fb5cb4fa0|artifactSetSha256=91bd4b8e69d55903342b4391c4383fed5a19d3afe2d2a8f64a289950466cc63b|artifactCount=15|artifactBytes=899238|bindingBytes=19309|bindingLf=1|bindingSha256=36edfafae3369c5ec404963cf16e254bfa9bce47dbe74af7d2fb87c9f7a359cf|state=PUBLISHED_BOUND_PREHOST_BOOTSTRAP_ABORTED_NO_PHASE_RESERVATION_RETIRED|oneShotExecutionAttemptConsumed=true|providerPhaseReservationCreated=false|authorizingV9ProviderMutation=false
+HL23-V9-FORBIDDEN-V6-ACTION|count=19|paths=target-activation-v6-provider-preflight.json,target-activation-v6-provider-preflight.commit.json,target-activation-v6-held-probes-preflight.json,target-activation-v6-npm-observation-plan.json,target-activation-v6-npm-observation-stdin.txt,target-activation-v6-npm-observation.json,target-activation-v6-npm-observation-envelope.json,target-activation-v6-provider-postflight.json,target-activation-v6-provider-postflight.commit.json,target-activation-v6-shell-postflight-plan.json,target-activation-v6-shell-postflight-stdin.txt,target-activation-v6-shell-postflight.json,target-activation-v6-shell-postflight-envelope.json,target-activation-v6-held-probes-postflight.json,target-activation-v6-provider-final.json,target-activation-v6-provider-final.commit.json,target-activation-v6-postflight-result.json,target-activation-v6-cleanup-result.json,target-activation-v6-arm-failure.json|prefixInventoryCount=17|mustRemainAbsent=true|captureSentinelCount=0|auditedBootstrapHostStartAttempted=false|auditedBootstrapProviderReadCount=0|auditedBootstrapProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false
+HL23-V9-INHERITED-V6-BOOTSTRAP-ABORT|failureStage=functions-exec-bootstrap-pre-host-crypto-self-test|terminalCode=HL23_TARGET_ACTIVATION_V6_FUNCTIONS_EXEC_BOOTSTRAP_ABORTED|terminalReason=V6_BOOTSTRAP_CRYPTO_SELF_TEST_INVALID|terminalProviderMutationAuthorizedCount=0|retryAuthorized=false|submittedCellKnownNonidentical=true|manualTranscriptionUsed=true|expectedLiteral=0x4ed8aa4a|submittedLiteral=0x4ed8aa4f|submittedCellDigestUnavailable=true|submittedCellBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|operatorAttestedDiagnostic=true|platformSubmittedSourceAttested=false
+HL23-V9-INHERITED-V7-AUTHORITY|commit=d0d80e98f27e9a5b0079eeb88134523f443a7cad|parent=3c87d50e613e9f3292ac5808a5dcbabd7aa29108|committedAt=2026-08-27T16:23:38.000Z|manifestBytes=41076|manifestLf=909|manifestCr=0|manifestFinalLf=true|manifestSha256=77fa1f99a27a9aa885e05e7b7ee23efc7d5ef1452f6befbc3d065665163b457a|artifactSetSha256=40170902e06ba4cadc84ae9fc7103a62acfa201655c932eb18d3627c71a29e18|artifactCount=15|artifactBytes=1086182|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_PREBINDING_DIAGNOSTIC_LOADER_ABORTED_NO_PHASE_RESERVATION_RETIRED|diagnosticLoaderAttemptConsumed=true|diagnosticRetryAuthorized=false|bindingAuthorized=false|productionLoaderSubmitted=false|productionPhaseAttempted=false|productionOneShotConsumed=false|providerPhaseReservationCreated=false|authorizingV9ProviderMutation=false
+HL23-V9-FORBIDDEN-V7-BINDING-AND-ACTION|count=20|paths=target-activation-v7-authority-binding.json,target-activation-v7-provider-preflight.json,target-activation-v7-provider-preflight.commit.json,target-activation-v7-held-probes-preflight.json,target-activation-v7-npm-observation-plan.json,target-activation-v7-npm-observation-stdin.txt,target-activation-v7-npm-observation.json,target-activation-v7-npm-observation-envelope.json,target-activation-v7-provider-postflight.json,target-activation-v7-provider-postflight.commit.json,target-activation-v7-shell-postflight-plan.json,target-activation-v7-shell-postflight-stdin.txt,target-activation-v7-shell-postflight.json,target-activation-v7-shell-postflight-envelope.json,target-activation-v7-held-probes-postflight.json,target-activation-v7-provider-final.json,target-activation-v7-provider-final.commit.json,target-activation-v7-postflight-result.json,target-activation-v7-cleanup-result.json,target-activation-v7-arm-failure.json|prefixInventoryCount=16|prefixProjectionBytes=3399|prefixProjectionSha256=86744cac1f03afeade5e3ee64a5abe09457598d447a3e9aa3767d22ac9c7baa0|mustRemainAbsent=true|captureSentinelCount=0|auditedLoaderFlowProviderReadCount=0|auditedLoaderFlowProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false|totalProviderMutationCountRemains=1
+HL23-V9-INHERITED-V7-DIAGNOSTIC-LOADER-ABORT|failureStage=functions-exec-prebinding-diagnostic-loader-verifier-start-no-session|terminalCode=HL23_TARGET_ACTIVATION_V7_PREBINDING_DIAGNOSTIC_LOADER_ABORTED|terminalReason=V7_LOADER_VERIFIER_TERMINAL_STATE_UNKNOWN|terminalDiagnosticOnly=true|terminalProductionPhaseAttempted=false|terminalProductionOneShotConsumed=false|terminalProviderCaptureHostStarted=false|terminalProviderMutationAuthorizedCount=0|diagnosticRetryAuthorized=false|operatorAttestedDiagnostic=true|rawTerminalBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|submittedCellBytesUnavailable=true|submittedCellDigestUnavailable=true|platformSubmittedSourceAttested=false
+HL23-V9-INHERITED-V7-FORENSIC-NARROWING|outerCellWallTimeSeconds=22.5|verifierCleanupLoopBoundMilliseconds=125000|diagnosticLoaderRoleEstablished=true|diagnosticLoaderOwnSourceRereadMatched=true|productionLoaderSourceLocallyReread=true|productionLoaderSubmitted=false|bootstrapSourceLocallyReread=true|bootstrapEvaluated=false|verifierHostStartAttempted=true|verifierSessionIdSafeIntegerAcquired=false|verifierReadyAccepted=false|verifierInputFrameSubmitted=false|verifierReceiptObserved=false|verifierReceiptAccepted=false|originalSafeCodeUnavailable=true|possibleOriginalSafeCodes=V7_LOADER_VERIFIER_START_FAILED,V7_LOADER_VERIFIER_START_INVALID|verifierProcessStartedState=unknown|verifierTerminalState=unknown|bindingAbsentBeforeAndAfter=true|providerCaptureHostStarted=false|providerPhaseReservationCreated=false|auditedLoaderFlowProviderReadCount=0|auditedLoaderFlowProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false
+HL23-V9-INHERITED-V8-AUTHORITY|commit=4b4ebf90297d1cdf5e54d74ceca11f4236cc76d8|parent=d0d80e98f27e9a5b0079eeb88134523f443a7cad|committedAt=2026-08-28T05:17:43.000Z|manifestBytes=47301|manifestLf=1054|manifestCr=0|manifestFinalLf=true|manifestSha256=d58c4543398da9c7e0b38ea818f90abd48820ce55f97823d09caa8443a7b4fa5|artifactSetSha256=7d092d169ee1fea9ca091d4fbe9ae40e95d9e75ff8062b18ea85cc25327ffe53|artifactCount=15|artifactBytes=1000718|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_PREBINDING_DIAGNOSTIC_LOADER_ABORTED_NO_PHASE_RESERVATION_RETIRED|diagnosticAttemptConsumed=true|diagnosticRetryAuthorized=false|bindingAuthorized=false|productionLoaderSubmitted=false|productionPhaseAttempted=false|productionOneShotConsumed=false|authorizingV9ProviderMutation=false
+HL23-V9-INHERITED-V8-LAST-PREATTEMPT-ABSENCE-ATTESTATION|count=26|paths=target-activation-v8-authority-binding.json,target-activation-v8-provider-preflight.reservation.json,target-activation-v8-provider-preflight.claim.json,target-activation-v8-provider-preflight.json,target-activation-v8-provider-preflight.commit.json,target-activation-v8-held-probes-preflight.json,target-activation-v8-npm-observation-plan.json,target-activation-v8-npm-observation-stdin.txt,target-activation-v8-npm-observation.json,target-activation-v8-npm-observation-envelope.json,target-activation-v8-provider-postflight.json,target-activation-v8-provider-postflight.commit.json,target-activation-v8-provider-postflight.reservation.json,target-activation-v8-provider-postflight.claim.json,target-activation-v8-shell-postflight-plan.json,target-activation-v8-shell-postflight-stdin.txt,target-activation-v8-shell-postflight.json,target-activation-v8-shell-postflight-envelope.json,target-activation-v8-held-probes-postflight.json,target-activation-v8-provider-final.json,target-activation-v8-provider-final.commit.json,target-activation-v8-provider-final.reservation.json,target-activation-v8-provider-final.claim.json,target-activation-v8-postflight-result.json,target-activation-v8-cleanup-result.json,target-activation-v8-arm-failure.json|prefixInventoryCount=16|captureResidueCount=0|temporaryResidueCount=0|attestationTiming=pre-diagnostic-only|postAttemptFilesystemValidationPerformed=false|postAttemptAbsenceAttestationAvailable=false
+HL23-V9-INHERITED-V8-DIAGNOSTIC-LOADER-ABORT|terminalCode=HL23_TARGET_ACTIVATION_V8_PREBINDING_DIAGNOSTIC_LOADER_ABORTED|failureStage=provider-authority-plan|primarySafeCode=V8_BOOTSTRAP_AUTHORITY_PLAN_COMMAND_TERMINAL_UNKNOWN|canonicalObservedTerminalBytes=737|canonicalObservedTerminalLf=1|canonicalObservedTerminalSha256=bc29fc8ea1eacf51072557698cb7a6308ad8518829117666d1f4c8f56c510da3|localCommandTerminalStateKnown=false|processMayStillRun=true|phase=null|phaseArtifactsMayExist=false|pairMayExist=false|phaseReservationExpectedByAuditedWorkflow=false|phaseReservationMechanicallyVerified=false|reconciliationRequired=false|reconciliationAllowedReadOnlyOnce=false|diagnosticRetryAuthorized=false|providerMutationAuthorizedCount=0
+HL23-V9-INHERITED-V8-EVIDENCE-LIMITS|rawTerminalTransportBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|submittedCellBytesUnavailable=true|submittedCellDigestUnavailable=true|platformSubmittedSourceAttested=false|untrustedPrefixAbsenceProven=false|childProcessExitObserved=false|childProcessMayStillRun=true|providerReadCountUnavailable=true|postAttemptFilesystemValidationPerformed=false|noPostAttemptAbsenceOrResidueInference=true
+HL23-V9-SESSIONLESS-PHASE-PROTOCOL|phaseCount=3|phaseEvidenceFileCount=4|phaseEvidenceRoles=reservation,claim,output,commit|reservationCreateNewBeforeCell=true|reservationConsumesPhase=true|claimInvocationExpectedInsideAuditedFunctionsExecWorkflow=true|claimInvocationOriginMechanicallyAttested=false|claimCreatedBeforeProviderReadRequired=true|providerCommitInsideCell=true|providerPostReturnCaptureInput=false|streamingHostAuthorized=false|writeStdinEmptyTypedTerminalPollingOnly=true|nonemptyWriteStdinCharsAuthorized=false|diagnosticEntryReadOnlyChildDeadlineMilliseconds=180000|diagnosticEntryOverallRunnerDeadlineMilliseconds=200000|diagnosticEntryObserverDeadlineMilliseconds=210000|diagnosticEntryTerminalPollMaximumCount=8|diagnosticEntryTerminalPollYieldMilliseconds=30000|diagnosticEntryMaximumCanonicalBundleTerminalUtf8Bytes=200000|diagnosticEntrySameSessionRequired=true|productionReadOnlyNestedRoutes=--orchestrator-source,--bootstrap-source,--loader-source,--diagnostic-entry-bundle-source,--provider-authority-plan,--provider-claimed-plan|productionReadOnlyChildDeadlineMilliseconds=300000|productionReadOnlyOverallRunnerDeadlineMilliseconds=315000|productionReadOnlyObserverDeadlineMilliseconds=330000|productionReadOnlyTerminalPollMaximumCount=11|productionReadOnlyTerminalPollYieldMilliseconds=30000|productionReadOnlySameSessionRequired=true|claimWriteNestedRoutes=--claim-phase|claimWriteChildDeadlineMilliseconds=300000|claimWriteOverallRunnerDeadlineMilliseconds=315000|claimWriteObserverDeadlineMilliseconds=330000|claimWriteTerminalPollMaximumCount=11|claimWriteTerminalPollYieldMilliseconds=30000|claimWriteObservationLossRequiresReconciliation=true|runnerOverallDeadlineIncludesPreNodeClosureAndTeardown=true|preNodeV9DependencyCount=16|preNodeHistoricalManifestCount=6|preNodeHistoricalArtifactCounts=11,14,14,15,15,15|preNodeExpandedDependencyFileCount=106|preNodeHeldFileHandleCountIncludingLockAndNode=108|preNodeLiteralRequireRootEntryPointCount=32|preNodeLiteralRequireExecutableFileCount=56|preNodeLiteralRequireExecutableSetProjectionBytes=2271|preNodeLiteralRequireExecutableSetSha256=9a2e0d3effbf585fdbb93e398a547fd95f7bbdde72a220687d795a30ae09a53c|preNodeNodeEntryPointCount=12|preNodeGeneratedExecutableSourceCount=4|phaseCommitWriter=pinned-node-child|powershellPhaseCommitWrites=false|phaseCommitChildDeadlineMilliseconds=22000|phaseCommitChildTerminationBeforeRunnerReturnRequired=true|phaseCommitTerminalPollMaximumCount=3|pollUnknownReconcileNotBeforeOffsetMilliseconds=60000|terminalMaxUtf8Bytes=4096|terminalMaxBase64urlChars=5462|wholeCommitCommandCharsLessThan=8191|selfHashSecurityClaim=accidental-integrity-only-not-platform-attestation|partialOrCollisionConsumesAndRetires=true|retryAuthorized=false
+HL23-V9-CONTINUATION-AUTHORITY|parent=4b4ebf90297d1cdf5e54d74ceca11f4236cc76d8|checklistId=RC-STG-006O23F|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|v7RetryAuthorized=false|v7BindingAuthorized=false|v7ResumptionAuthorized=false|streamingHostAuthorized=false|v8DiagnosticRetryAuthorized=false|v8BindingAuthorized=false|v8ResumptionAuthorized=false|phaseReservationCreateNewRequired=true|phaseExecutionClaimCreateNewRequired=true|missingOrMalformedTerminalRetires=true|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V9-STATUS|authorityO23=UNCHECKED_PENDING_O23F|authorityO23A=UNCHECKED_PENDING_O23F|authorityO23B=UNCHECKED_PENDING_O23F|authorityO23C=UNCHECKED_PENDING_O23F|authorityO23D=UNCHECKED_PENDING_O23F|authorityO23E=UNCHECKED_PENDING_O23F|authorityO23F=UNCHECKED|v3PostPathPermanentlyBlocked=true|v4ActionPathRetiredUnconsumed=true|v5ActionPathRetiredUnconsumed=true|v5BindingRetryAuthorized=false|v6ActionPathRetiredNoPhaseReservation=true|v6RetryAuthorized=false|v7DiagnosticPathRetiredNoPhaseReservation=true|v7DiagnosticRetryAuthorized=false|v7BindingAuthorized=false|v8DiagnosticPathRetiredNoPhaseReservation=true|v8DiagnosticRetryAuthorized=false|v8BindingAuthorized=false|v8ResumptionAuthorized=false|o23AcceptancePendingO23F=true|o23AAcceptancePendingO23F=true|o23BAcceptancePendingO23F=true|o23CAcceptancePendingO23F=true|o23DAcceptancePendingO23F=true|o23EAcceptancePendingO23F=true|o23FAcceptancePending=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|successfulO23B=PASS_CONSUMED|successfulO23C=PASS_CONSUMED|successfulO23D=PASS_CONSUMED|successfulO23E=PASS_CONSUMED|successfulO23F=PASS_CONSUMED|prospectiveSuccessOnlyTogether=true|mandatoryStopBefore=RC-STG-006P23
+HL23-V10-FROZEN-MANIFEST|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-support-manifest.json|bytes=23006|lf=571|cr=0|finalLf=true|sha256=8feb7fd30e81f3d268185200e7879e253a13706272ef7fc751ccab757b6c606e
+HL23-V10-FROZEN-ARTIFACT-SET|sha256=849d0a81ab9ad2171b543907bd984133d4f88962a4ec717047446814df1e5e2f
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-contract.cjs|bytes=188258|lf=4062|cr=0|finalLf=true|sha256=ca14267085a0a40002336cce145f5162e712f88c49dafc762317d2051f3f037d
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-runtime-boundary.cjs|bytes=15616|lf=355|cr=0|finalLf=true|sha256=58c11bb0d26f0e4e86d59163868bd8e128d5d12006feca5be970f71b19e8fcd2
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-action-control.cjs|bytes=125241|lf=2567|cr=0|finalLf=true|sha256=8b6d31a3e84862bd71f44034ca9f5e9eaedd010f2c557a63e2bfa5f8693987e9
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-entry-bundle.cjs|bytes=11773|lf=267|cr=0|finalLf=true|sha256=79261c7b5125350780798f95be83ac9edc9087f51714901e1f623f209979c4a1
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-provider-projection.cjs|bytes=265470|lf=5459|cr=0|finalLf=true|sha256=61c43bc36353925c5cab350f7f680d5209428f2dad900693557dc7d4167a074a
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-core-self-test.cjs|bytes=14930|lf=305|cr=0|finalLf=true|sha256=a9aff7dcaf28e0b38be0fcc81060fa30bb7b49fd69ac8fffc2c3e56eadf6ef7b
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-npm-verifier.sh|bytes=18039|lf=416|cr=0|finalLf=true|sha256=b3327d1573250ed250084f74e39073c660aff9281d2fd12f7250cc5ed2249771
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-shell-envelope.cjs|bytes=36198|lf=782|cr=0|finalLf=true|sha256=e090e937a0a1afbef29bf05de86c82862217f6842be7b6bf7c9fa373ca580b71
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-held-probes.cjs|bytes=4601|lf=131|cr=0|finalLf=true|sha256=af191b9f4ac8a8d71a74bc31d5ec547e47d369a1f07098ef6da188ca3afad4df
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-authority-ops.cjs|bytes=120565|lf=2487|cr=0|finalLf=true|sha256=8e6b4a7f4f0df682dc40a89197a367c0f8c4a9e8e7d7ed42f5f42f432be36407
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-local-runner.ps1|bytes=186253|lf=3873|cr=0|finalLf=true|sha256=1f05df156c13428cab0f4d9db1bce0cfbf138afbf10b30959d850d256c45b88a
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-pre-node-dependency-lock.json|bytes=15127|lf=428|cr=0|finalLf=true|sha256=97e3f1d5b646a7aa03de19b82c71eb8bc62a1aadafb26d580f7d0119f9223504
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-postflight.cjs|bytes=27757|lf=619|cr=0|finalLf=true|sha256=3a368a8b008c3e24c01ff0dd9cb2305e11ca476b95f7b4c2575e342be444128a
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-cleanup.cjs|bytes=11774|lf=274|cr=0|finalLf=true|sha256=6be8c3c2275f2111bc0f88b9059bf3e708d8955d93bb868ee0a8fa6d530144e5
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-support-self-test.cjs|bytes=4438|lf=106|cr=0|finalLf=true|sha256=eeb8fd7c2fef9926be0ddc31aa5dc04d1d0ba999bc9dcfed9fa1a0a7655758cf
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-verify-freeze.cjs|bytes=67906|lf=1314|cr=0|finalLf=true|sha256=e8c4a5896ac6b8dfa48ce445d2a9dd5adafe31f4b1ab74e5b1cec8957c574493
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-authority-binding.template.json|bytes=53573|lf=1194|cr=0|finalLf=true|sha256=dcdffe66e7107984770e5e858a0f24d390e20b834dc50546912037ff224f9289
+HL23-V10-FROZEN-ARTIFACT|path=.netlify/strict-release-HL-20260823-1/target-activation-v10-RUNBOOK.md|bytes=44082|lf=801|cr=0|finalLf=true|sha256=fdfdf12815524c8656a892ced9ec8dba09428511c0dffaf012f7ca4f9e768b0f
+HL23-V10-PROVIDER-EXECUTABLE-SOURCE|kind=full-phase-orchestrator|artifact=target-activation-v10-provider-projection.cjs|command=--orchestrator-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V10_FULL_PHASE_PROVIDER_ORCHESTRATOR_SOURCE|bytes=38436|lf=821|cr=0|finalLf=true|sha256=4aac6e6d3ab70c78f31bc6ed058acdc8b801036f50aae205e136646d260d277b|loadedOnlyByExactBootstrap=true
+HL23-V10-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-bootstrap|artifact=target-activation-v10-provider-projection.cjs|command=--bootstrap-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V10_FUNCTIONS_EXEC_BOOTSTRAP_SOURCE|bytes=37364|lf=717|cr=0|finalLf=true|sha256=4f29c6058462604e89641f98db66d42cf8609b98c6c4b1ccb41d8557b6f2ff3d|retrievedByExactAuditedLoader=true|generatedPayloadIsSubmittedCell=false|verifiedByPureJsUtf8Sha256BeforeEvaluation=true|pureJsSha256SelfTestVectorCount=11|sameInMemorySourceExecutedRequired=true|platformSubmittedSourceAttested=false
+HL23-V10-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-dynamic-loader|artifact=target-activation-v10-provider-projection.cjs|command=--loader-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V10_FUNCTIONS_EXEC_DYNAMIC_LOADER_SOURCE|bytes=21941|lf=435|cr=0|finalLf=true|sha256=dd0bb76e5fd158bd04f4dd2993d3bf250d27fef54458ee3f5314a320b9c0a6e0|minimalAuditedDynamicLoader=true|generatedPayloadIsSubmittedCell=true|exactGeneratedLoaderSourceIsEntireFunctionsExecCell=true|productionLoaderSubmissionCount=3|productionLoaderSubmissionPhases=pre,post,final|eachProductionPhaseSubmissionIsSoleOneShot=true|platformSubmittedLoaderSourceAttested=false|asciiOnly=true|manualTranscriptionRiskReducedNotEliminated=true|ownSourceRereadRequiredBeforeBootstrapEvaluation=true|streamingHostAuthorized=false
+HL23-V10-PROVIDER-EXECUTABLE-SOURCE|kind=functions-exec-prebinding-diagnostic-entry-bundle|artifact=target-activation-v10-provider-projection.cjs|command=--diagnostic-entry-bundle-source|identityScope=raw-source-field-utf8-bytes-not-json-envelope|code=HL23_TARGET_ACTIVATION_V10_FUNCTIONS_EXEC_DIAGNOSTIC_ENTRY_BUNDLE_SOURCE|bytes=34885|lf=696|cr=0|finalLf=true|sha256=dc2d38ef0c2356c6f689b42f33f6b51fe699db7d35a6af3e66cf634625a90e3a|minimalAuditedDiagnosticEntryBundle=true|diagnosticOnly=true|generatedPayloadIsSubmittedCell=true|exactGeneratedEntryBundleSourceIsEntireFunctionsExecCell=true|consolidatedReadOnlyEntryBundle=true|globalToolsRemovedBeforeBootstrap=true|diagnosticEntryBundleSubmissionCount=1|diagnosticEntryBundleSubmissionTiming=prebinding-only|productionLoaderMayBeSubmittedByThisRole=false|productionLoaderMustRemainUnsubmittedUntilBinding=true|streamingHostAllowed=false|providerReadAllowed=false|platformSubmittedSourceAttested=false|asciiOnly=true|ownSourceRereadRequiredBeforeBootstrapEvaluation=true
+HL23-V10-INHERITED-V3-AUTHORITY|commit=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=12378|manifestSha256=07bff3e023a128ab295faf8dccce6eedfce023bee31a31719ab6c3c8f7cdf89f|artifactSetSha256=1aa4934ec90360d672d03e6309862e860f8d4c67e9363182a9a8096599af6d03|bindingBytes=4848|bindingSha256=5755f87382ea07de2b04ebdba1b11cc25e5efb19c143d74a0c91f02d2ce71ddb|consumed=true|authorizingV10ProviderMutation=false
+HL23-V10-INHERITED-V3-DISPATCH|candidateSha256=f8a8520f03ca769b6d884acba26ec130817a5ac3ac06f4ff1d5184ed9808bc4a|attemptSha256=203d85cf3378498f57fd7111793ad8b523a77cd9ba1aa7df655a55aef4517387|sealSha256=13ec2b61aae067260993eb38417d0b88a68317aab8a0fe2bf2cd316ff2f8eeb0|dispatchSha256=5daf9939eef4ff402bc7e8560cf4d5bf1db4651f3987aba2bb8639e772e925b5|outcome=returned|deployId=dep-da7d857avr4c73bnna90|totalProviderMutationCount=1|retryAuthorized=false|rollbackAuthorized=false
+HL23-V10-FORBIDDEN-V3-POST|count=8|paths=target-activation-v3-provider-postflight.json,target-activation-v3-shell-postflight-plan.json,target-activation-v3-shell-postflight-stdin.txt,target-activation-v3-shell-postflight.json,target-activation-v3-shell-postflight-envelope.json,target-activation-v3-held-probes-postflight.json,target-activation-v3-postflight-result.json,target-activation-v3-cleanup-result.json|mustRemainAbsent=true
+HL23-V10-INHERITED-V4-AUTHORITY|commit=f17b2278542ef6836550a556abd97d82c9bf79db|parent=43e99e686214a2f36f52ee7c426db2015d709bee|manifestBytes=11358|manifestSha256=63f49736b8f172704dee441a89e7ab66a5051b2463bb534f419c18e79b9cc428|artifactSetSha256=8da9a6219f2a311cff5385cda178b37422795e85526b6467dec4d312eb375422|artifactCount=14|bindingBytes=6067|bindingSha256=2c6c4876a50bc5b40476d50e70e27f4eba5214de6d3dd9f2d8acbbdb4b3905df|state=BOUND_UNCONSUMED_RETIRED|authorizingV10ProviderMutation=false
+HL23-V10-FORBIDDEN-V4-ACTION|count=16|paths=target-activation-v4-provider-preflight.json,target-activation-v4-held-probes-preflight.json,target-activation-v4-npm-observation-plan.json,target-activation-v4-npm-observation-stdin.txt,target-activation-v4-npm-observation.json,target-activation-v4-npm-observation-envelope.json,target-activation-v4-provider-postflight.json,target-activation-v4-shell-postflight-plan.json,target-activation-v4-shell-postflight-stdin.txt,target-activation-v4-shell-postflight.json,target-activation-v4-shell-postflight-envelope.json,target-activation-v4-held-probes-postflight.json,target-activation-v4-provider-final.json,target-activation-v4-postflight-result.json,target-activation-v4-cleanup-result.json,target-activation-v4-arm-failure.json|mustRemainAbsent=true|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V10-INHERITED-V4-DIAGNOSTIC|canonicalSha256=a86a897e5652e6c8c40bf6a5aae7a6349e6afe9c827429ff2de25c285a15743f|evidenceStatus=diagnostic-only-no-provider-evidence-file|firstPageEntryCount=100|rejectionStatus=400|outputPersisted=false|captureSentinelCreated=false|providerMutationCount=0|diagnosticOnly=true|requiredExecutionShape=false|authorizing=false
+HL23-V10-INHERITED-V5-AUTHORITY|commit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|parent=f17b2278542ef6836550a556abd97d82c9bf79db|committedAt=2026-08-26T22:09:21.000Z|manifestBytes=20229|manifestLf=474|manifestCr=0|manifestFinalLf=true|manifestSha256=47f98ab16da1d858508a0b0abf2686e51e7af3132b3abacb7efa5b2b640574ff|artifactSetSha256=894fc3cdcd88ea21ca7a373a7349dd326f03fae07537a650670ac49abd8b67da|artifactCount=14|artifactBytes=747682|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_BINDING_LAUNCH_FAILED_PREWRITE_UNCONSUMED_RETIRED|authorizingV10ProviderMutation=false
+HL23-V10-FORBIDDEN-V5-BINDING-AND-ACTION|count=20|paths=target-activation-v5-authority-binding.json,target-activation-v5-provider-preflight.json,target-activation-v5-provider-preflight.commit.json,target-activation-v5-held-probes-preflight.json,target-activation-v5-npm-observation-plan.json,target-activation-v5-npm-observation-stdin.txt,target-activation-v5-npm-observation.json,target-activation-v5-npm-observation-envelope.json,target-activation-v5-provider-postflight.json,target-activation-v5-provider-postflight.commit.json,target-activation-v5-shell-postflight-plan.json,target-activation-v5-shell-postflight-stdin.txt,target-activation-v5-shell-postflight.json,target-activation-v5-shell-postflight-envelope.json,target-activation-v5-held-probes-postflight.json,target-activation-v5-provider-final.json,target-activation-v5-provider-final.commit.json,target-activation-v5-postflight-result.json,target-activation-v5-cleanup-result.json,target-activation-v5-arm-failure.json|mustRemainAbsent=true|prefixInventoryCount=15|captureSentinelCount=0|providerMutationCount=0|totalProviderMutationCountRemains=1
+HL23-V10-INHERITED-V5-BINDING-LAUNCH-FAILURE|authorityCommit=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-26T22:09:21.000Z|justBeforeWallSample=2026-08-26T22:10:25.643Z|nativeExitCode=1|failureStage=outer-powershell-parameter-binding-pre-runner-body|safeTextUtf8Bytes=128|safeTextSha256=bb1498b816e09c94654563f7b251068e8529f2d3d952eda097ddbb1fade5df22|category=InvalidArgument|exceptionType=ParentContainsErrorRecordException|fullyQualifiedErrorId=PositionalParameterNotFound,target-activation-v5-local-runner.ps1|invocationMatchedRunbookBindingBlock=true|createdAtGeneratedImmediatelyPreCall=true|exactCreatedAtUnavailable=true|runnerBodyEntered=false|runnerSelfPinRan=false|pinnedNodeStarted=false|bindingCandidateGenerationStarted=false|captureWriteAttempted=false|canonicalStdoutPresent=false|rawTransportDigestUnavailable=true|bindingAbsentBeforeAndAfter=true|failureReceiptCreated=false|operatorAttestedDiagnostic=true|authoritativeActionEvidence=false|continuationAttemptEvidence=false|providerReadCount=0|providerMutationCount=0|browserActionCount=0|networkRequestCount=0
+HL23-V10-INHERITED-V6-AUTHORITY|commit=3c87d50e613e9f3292ac5808a5dcbabd7aa29108|parent=dceb3c79d4df647e1929ffe807ad5f0ed6bb2d10|committedAt=2026-08-27T05:03:18.000Z|manifestBytes=30664|manifestLf=698|manifestSha256=d2d27f03eea8904d4d20124a7a76772ef5d97c9249bbb942d9cb882fb5cb4fa0|artifactSetSha256=91bd4b8e69d55903342b4391c4383fed5a19d3afe2d2a8f64a289950466cc63b|artifactCount=15|artifactBytes=899238|bindingBytes=19309|bindingLf=1|bindingSha256=36edfafae3369c5ec404963cf16e254bfa9bce47dbe74af7d2fb87c9f7a359cf|state=PUBLISHED_BOUND_PREHOST_BOOTSTRAP_ABORTED_NO_PHASE_RESERVATION_RETIRED|oneShotExecutionAttemptConsumed=true|providerPhaseReservationCreated=false|authorizingV10ProviderMutation=false
+HL23-V10-FORBIDDEN-V6-ACTION|count=19|paths=target-activation-v6-provider-preflight.json,target-activation-v6-provider-preflight.commit.json,target-activation-v6-held-probes-preflight.json,target-activation-v6-npm-observation-plan.json,target-activation-v6-npm-observation-stdin.txt,target-activation-v6-npm-observation.json,target-activation-v6-npm-observation-envelope.json,target-activation-v6-provider-postflight.json,target-activation-v6-provider-postflight.commit.json,target-activation-v6-shell-postflight-plan.json,target-activation-v6-shell-postflight-stdin.txt,target-activation-v6-shell-postflight.json,target-activation-v6-shell-postflight-envelope.json,target-activation-v6-held-probes-postflight.json,target-activation-v6-provider-final.json,target-activation-v6-provider-final.commit.json,target-activation-v6-postflight-result.json,target-activation-v6-cleanup-result.json,target-activation-v6-arm-failure.json|prefixInventoryCount=17|mustRemainAbsent=true|captureSentinelCount=0|auditedBootstrapHostStartAttempted=false|auditedBootstrapProviderReadCount=0|auditedBootstrapProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false
+HL23-V10-INHERITED-V6-BOOTSTRAP-ABORT|failureStage=functions-exec-bootstrap-pre-host-crypto-self-test|terminalCode=HL23_TARGET_ACTIVATION_V6_FUNCTIONS_EXEC_BOOTSTRAP_ABORTED|terminalReason=V6_BOOTSTRAP_CRYPTO_SELF_TEST_INVALID|terminalProviderMutationAuthorizedCount=0|retryAuthorized=false|submittedCellKnownNonidentical=true|manualTranscriptionUsed=true|expectedLiteral=0x4ed8aa4a|submittedLiteral=0x4ed8aa4f|submittedCellDigestUnavailable=true|submittedCellBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|operatorAttestedDiagnostic=true|platformSubmittedSourceAttested=false
+HL23-V10-INHERITED-V7-AUTHORITY|commit=d0d80e98f27e9a5b0079eeb88134523f443a7cad|parent=3c87d50e613e9f3292ac5808a5dcbabd7aa29108|committedAt=2026-08-27T16:23:38.000Z|manifestBytes=41076|manifestLf=909|manifestCr=0|manifestFinalLf=true|manifestSha256=77fa1f99a27a9aa885e05e7b7ee23efc7d5ef1452f6befbc3d065665163b457a|artifactSetSha256=40170902e06ba4cadc84ae9fc7103a62acfa201655c932eb18d3627c71a29e18|artifactCount=15|artifactBytes=1086182|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_PREBINDING_DIAGNOSTIC_LOADER_ABORTED_NO_PHASE_RESERVATION_RETIRED|diagnosticLoaderAttemptConsumed=true|diagnosticRetryAuthorized=false|bindingAuthorized=false|productionLoaderSubmitted=false|productionPhaseAttempted=false|productionOneShotConsumed=false|providerPhaseReservationCreated=false|authorizingV10ProviderMutation=false
+HL23-V10-FORBIDDEN-V7-BINDING-AND-ACTION|count=20|paths=target-activation-v7-authority-binding.json,target-activation-v7-provider-preflight.json,target-activation-v7-provider-preflight.commit.json,target-activation-v7-held-probes-preflight.json,target-activation-v7-npm-observation-plan.json,target-activation-v7-npm-observation-stdin.txt,target-activation-v7-npm-observation.json,target-activation-v7-npm-observation-envelope.json,target-activation-v7-provider-postflight.json,target-activation-v7-provider-postflight.commit.json,target-activation-v7-shell-postflight-plan.json,target-activation-v7-shell-postflight-stdin.txt,target-activation-v7-shell-postflight.json,target-activation-v7-shell-postflight-envelope.json,target-activation-v7-held-probes-postflight.json,target-activation-v7-provider-final.json,target-activation-v7-provider-final.commit.json,target-activation-v7-postflight-result.json,target-activation-v7-cleanup-result.json,target-activation-v7-arm-failure.json|prefixInventoryCount=16|prefixProjectionBytes=3399|prefixProjectionSha256=86744cac1f03afeade5e3ee64a5abe09457598d447a3e9aa3767d22ac9c7baa0|mustRemainAbsent=true|captureSentinelCount=0|auditedLoaderFlowProviderReadCount=0|auditedLoaderFlowProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false|totalProviderMutationCountRemains=1
+HL23-V10-INHERITED-V7-DIAGNOSTIC-LOADER-ABORT|failureStage=functions-exec-prebinding-diagnostic-loader-verifier-start-no-session|terminalCode=HL23_TARGET_ACTIVATION_V7_PREBINDING_DIAGNOSTIC_LOADER_ABORTED|terminalReason=V7_LOADER_VERIFIER_TERMINAL_STATE_UNKNOWN|terminalDiagnosticOnly=true|terminalProductionPhaseAttempted=false|terminalProductionOneShotConsumed=false|terminalProviderCaptureHostStarted=false|terminalProviderMutationAuthorizedCount=0|diagnosticRetryAuthorized=false|operatorAttestedDiagnostic=true|rawTerminalBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|submittedCellBytesUnavailable=true|submittedCellDigestUnavailable=true|platformSubmittedSourceAttested=false
+HL23-V10-INHERITED-V7-FORENSIC-NARROWING|outerCellWallTimeSeconds=22.5|verifierCleanupLoopBoundMilliseconds=125000|diagnosticLoaderRoleEstablished=true|diagnosticLoaderOwnSourceRereadMatched=true|productionLoaderSourceLocallyReread=true|productionLoaderSubmitted=false|bootstrapSourceLocallyReread=true|bootstrapEvaluated=false|verifierHostStartAttempted=true|verifierSessionIdSafeIntegerAcquired=false|verifierReadyAccepted=false|verifierInputFrameSubmitted=false|verifierReceiptObserved=false|verifierReceiptAccepted=false|originalSafeCodeUnavailable=true|possibleOriginalSafeCodes=V7_LOADER_VERIFIER_START_FAILED,V7_LOADER_VERIFIER_START_INVALID|verifierProcessStartedState=unknown|verifierTerminalState=unknown|bindingAbsentBeforeAndAfter=true|providerCaptureHostStarted=false|providerPhaseReservationCreated=false|auditedLoaderFlowProviderReadCount=0|auditedLoaderFlowProviderMutationCount=0|externalConnectorTelemetryAvailable=false|untrustedPrefixAbsenceProven=false
+HL23-V10-INHERITED-V8-AUTHORITY|commit=4b4ebf90297d1cdf5e54d74ceca11f4236cc76d8|parent=d0d80e98f27e9a5b0079eeb88134523f443a7cad|committedAt=2026-08-28T05:17:43.000Z|manifestBytes=47301|manifestLf=1054|manifestCr=0|manifestFinalLf=true|manifestSha256=d58c4543398da9c7e0b38ea818f90abd48820ce55f97823d09caa8443a7b4fa5|artifactSetSha256=7d092d169ee1fea9ca091d4fbe9ae40e95d9e75ff8062b18ea85cc25327ffe53|artifactCount=15|artifactBytes=1000718|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_PREBINDING_DIAGNOSTIC_LOADER_ABORTED_NO_PHASE_RESERVATION_RETIRED|diagnosticAttemptConsumed=true|diagnosticRetryAuthorized=false|bindingAuthorized=false|productionLoaderSubmitted=false|productionPhaseAttempted=false|productionOneShotConsumed=false|authorizingV10ProviderMutation=false
+HL23-V10-INHERITED-V8-LAST-PREATTEMPT-ABSENCE-ATTESTATION|count=26|paths=target-activation-v8-authority-binding.json,target-activation-v8-provider-preflight.reservation.json,target-activation-v8-provider-preflight.claim.json,target-activation-v8-provider-preflight.json,target-activation-v8-provider-preflight.commit.json,target-activation-v8-held-probes-preflight.json,target-activation-v8-npm-observation-plan.json,target-activation-v8-npm-observation-stdin.txt,target-activation-v8-npm-observation.json,target-activation-v8-npm-observation-envelope.json,target-activation-v8-provider-postflight.json,target-activation-v8-provider-postflight.commit.json,target-activation-v8-provider-postflight.reservation.json,target-activation-v8-provider-postflight.claim.json,target-activation-v8-shell-postflight-plan.json,target-activation-v8-shell-postflight-stdin.txt,target-activation-v8-shell-postflight.json,target-activation-v8-shell-postflight-envelope.json,target-activation-v8-held-probes-postflight.json,target-activation-v8-provider-final.json,target-activation-v8-provider-final.commit.json,target-activation-v8-provider-final.reservation.json,target-activation-v8-provider-final.claim.json,target-activation-v8-postflight-result.json,target-activation-v8-cleanup-result.json,target-activation-v8-arm-failure.json|prefixInventoryCount=16|captureResidueCount=0|temporaryResidueCount=0|attestationTiming=pre-diagnostic-only|postAttemptFilesystemValidationPerformed=false|postAttemptAbsenceAttestationAvailable=false
+HL23-V10-INHERITED-V8-DIAGNOSTIC-LOADER-ABORT|terminalCode=HL23_TARGET_ACTIVATION_V8_PREBINDING_DIAGNOSTIC_LOADER_ABORTED|failureStage=provider-authority-plan|primarySafeCode=V8_BOOTSTRAP_AUTHORITY_PLAN_COMMAND_TERMINAL_UNKNOWN|canonicalObservedTerminalBytes=737|canonicalObservedTerminalLf=1|canonicalObservedTerminalSha256=bc29fc8ea1eacf51072557698cb7a6308ad8518829117666d1f4c8f56c510da3|localCommandTerminalStateKnown=false|processMayStillRun=true|phase=null|phaseArtifactsMayExist=false|pairMayExist=false|phaseReservationExpectedByAuditedWorkflow=false|phaseReservationMechanicallyVerified=false|reconciliationRequired=false|reconciliationAllowedReadOnlyOnce=false|diagnosticRetryAuthorized=false|providerMutationAuthorizedCount=0
+HL23-V10-INHERITED-V8-EVIDENCE-LIMITS|rawTerminalTransportBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|submittedCellBytesUnavailable=true|submittedCellDigestUnavailable=true|platformSubmittedSourceAttested=false|untrustedPrefixAbsenceProven=false|childProcessExitObserved=false|childProcessMayStillRun=true|providerReadCountUnavailable=true|postAttemptFilesystemValidationPerformed=false|noPostAttemptAbsenceOrResidueInference=true
+HL23-V10-INHERITED-V9-AUTHORITY|commit=b1576d8efb0916f17755288585e51ca4d08e980a|parent=4b4ebf90297d1cdf5e54d74ceca11f4236cc76d8|committedAt=2026-08-28T09:31:01.000Z|manifestBytes=16628|manifestLf=425|manifestCr=0|manifestFinalLf=true|manifestSha256=754526b671f7ea6eca7a05346081d56a6965bf75b6084c799b668b6784eef929|artifactSetSha256=156013abb3d198e0522e97eda69e5295793ce4053234829b44706eaab43e92ec|artifactCount=18|artifactBytes=1133739|bindingRequired=true|bindingPresent=false|bindingBytes=0|state=PUBLISHED_UNBOUND_PREBINDING_DIAGNOSTIC_ENTRY_BUNDLE_DUAL_TERMINAL_ABORTED_NO_PHASE_RESERVATION_RETIRED|diagnosticAttemptConsumed=true|diagnosticRetryAuthorized=false|bindingAuthorized=false|productionLoaderSubmitted=false|productionPhaseAttempted=false|productionOneShotConsumed=false|providerPhaseReservationCreated=false|retired=true|authorizingV10ProviderMutation=false
+HL23-V10-INHERITED-V9-LAST-PREATTEMPT-ATTESTATION|count=26|paths=target-activation-v9-authority-binding.json,target-activation-v9-provider-preflight.reservation.json,target-activation-v9-provider-preflight.claim.json,target-activation-v9-provider-preflight.json,target-activation-v9-provider-preflight.commit.json,target-activation-v9-held-probes-preflight.json,target-activation-v9-npm-observation-plan.json,target-activation-v9-npm-observation-stdin.txt,target-activation-v9-npm-observation.json,target-activation-v9-npm-observation-envelope.json,target-activation-v9-provider-postflight.json,target-activation-v9-provider-postflight.commit.json,target-activation-v9-provider-postflight.reservation.json,target-activation-v9-provider-postflight.claim.json,target-activation-v9-shell-postflight-plan.json,target-activation-v9-shell-postflight-stdin.txt,target-activation-v9-shell-postflight.json,target-activation-v9-shell-postflight-envelope.json,target-activation-v9-held-probes-postflight.json,target-activation-v9-provider-final.json,target-activation-v9-provider-final.commit.json,target-activation-v9-provider-final.reservation.json,target-activation-v9-provider-final.claim.json,target-activation-v9-postflight-result.json,target-activation-v9-cleanup-result.json,target-activation-v9-arm-failure.json|prefixInventoryCount=19|v9ActionArtifactCount=0|captureSentinelCount=0|attestationTiming=pre-diagnostic-only|postAttemptFilesystemValidationPerformed=false|postAttemptAbsenceAttestationAvailable=false
+HL23-V10-INHERITED-V9-DUAL-TERMINAL-ABORT|exactObservedTopLevelObjectCount=2|firstCode=HL23_TARGET_ACTIVATION_V9_PREBINDING_DIAGNOSTIC_OK|firstAt=2026-08-28T17:21:03.307Z|firstBindingObservationProjectionSha256=66df5c37a6c94ca12c69ad78153503d2b47b5bf2f916e652bef3a146a4cfa488|secondCode=HL23_TARGET_ACTIVATION_V9_PREBINDING_DIAGNOSTIC_ENTRY_BUNDLE_ABORTED|secondFailureStage=bootstrap-terminal|secondPrimarySafeCode=V9_DIAGNOSTIC_ENTRY_UNEXPECTED_FAILURE|canonicalSequenceBytes=3529|canonicalSequenceLf=2|canonicalSequenceSha256=e14721a65eb583665c195d348a2ee351552b14671c1eaffbaadc135d6c889672|canonicalProjectionNotRawTransport=true|singleTopLevelTerminalContractSatisfied=false|apparentOkBindingObservationUsable=false|diagnosticOneShotConsumed=true|diagnosticRetryAuthorized=false
+HL23-V10-INHERITED-V9-EVIDENCE-LIMITS|rawTerminalTransportBytesUnavailable=true|rawTerminalTransportDigestUnavailable=true|localCommandTerminalStateKnown=true|processMayStillRun=false|providerPhaseReservationCreated=false|productionLoaderSubmitted=false|productionPhaseAttempted=false|productionOneShotConsumed=false|providerMutationAuthorizedCount=0|reconciliationRequired=false|reconciliationAllowedReadOnlyOnce=false|postAttemptFilesystemValidationPerformed=false|postAttemptAbsenceAttestationAvailable=false|noPostAttemptAbsenceOrResidueInference=true
+HL23-V10-SESSIONLESS-PHASE-PROTOCOL|phaseCount=3|phaseEvidenceFileCount=4|phaseEvidenceRoles=reservation,claim,output,commit|reservationCreateNewBeforeCell=true|reservationConsumesPhase=true|claimInvocationExpectedInsideAuditedFunctionsExecWorkflow=true|claimInvocationOriginMechanicallyAttested=false|claimCreatedBeforeProviderReadRequired=true|providerCommitInsideCell=true|providerPostReturnCaptureInput=false|streamingHostAuthorized=false|writeStdinEmptyTypedTerminalPollingOnly=true|nonemptyWriteStdinCharsAuthorized=false|diagnosticEntryReadOnlyChildDeadlineMilliseconds=180000|diagnosticEntryOverallRunnerDeadlineMilliseconds=200000|diagnosticEntryObserverDeadlineMilliseconds=210000|diagnosticEntryTerminalPollMaximumCount=8|diagnosticEntryTerminalPollYieldMilliseconds=30000|diagnosticEntryMaximumCanonicalBundleTerminalUtf8Bytes=200000|diagnosticEntrySameSessionRequired=true|productionReadOnlyNestedRoutes=--orchestrator-source,--bootstrap-source,--loader-source,--diagnostic-entry-bundle-source,--provider-authority-plan,--provider-claimed-plan|productionReadOnlyChildDeadlineMilliseconds=300000|productionReadOnlyOverallRunnerDeadlineMilliseconds=315000|productionReadOnlyObserverDeadlineMilliseconds=330000|productionReadOnlyTerminalPollMaximumCount=11|productionReadOnlyTerminalPollYieldMilliseconds=30000|productionReadOnlySameSessionRequired=true|claimWriteNestedRoutes=--claim-phase|claimWriteChildDeadlineMilliseconds=300000|claimWriteOverallRunnerDeadlineMilliseconds=315000|claimWriteObserverDeadlineMilliseconds=330000|claimWriteTerminalPollMaximumCount=11|claimWriteTerminalPollYieldMilliseconds=30000|claimWriteObservationLossRequiresReconciliation=true|runnerOverallDeadlineIncludesPreNodeClosureAndTeardown=true|preNodeV10DependencyCount=16|preNodeHistoricalManifestCount=7|preNodeHistoricalArtifactCounts=11,14,14,15,15,15,18|preNodeExpandedDependencyFileCount=125|preNodeHeldFileHandleCountIncludingLockAndNode=127|preNodeLiteralRequireRootEntryPointCount=34|preNodeLiteralRequireExecutableFileCount=60|preNodeLiteralRequireExecutableSetProjectionBytes=2446|preNodeLiteralRequireExecutableSetSha256=b3c007c50ce8529396646453e18a30b97f8125ee089944b68bcc00f5e91a098c|preNodeNodeEntryPointCount=12|preNodeGeneratedExecutableSourceCount=4|submittedWrapperAppliesToDiagnosticEntryBundle=true|submittedWrapperAppliesToProductionDynamicLoader=true|submittedWrapperTerminalComputedInsideCaughtRegion=true|submittedWrapperTerminalEmissionOutsideAllTryCatchFinally=true|submittedWrapperTextCallExpressionCount=1|submittedWrapperExitCapabilityReadCount=0|submittedWrapperExitCallExpressionCount=0|submittedWrapperNaturalSuccessfulCompletionRequired=true|submittedWrapperExactTopLevelTerminalObjectCount=1|terminalConsumerRejectsMultipleCanonicalObjects=true|terminalConsumerRejectsMixedSuccessAbortObjects=true|phaseCommitWriter=pinned-node-child|powershellPhaseCommitWrites=false|phaseCommitChildDeadlineMilliseconds=22000|phaseCommitChildTerminationBeforeRunnerReturnRequired=true|phaseCommitTerminalPollMaximumCount=3|pollUnknownReconcileNotBeforeOffsetMilliseconds=60000|terminalMaxUtf8Bytes=4096|terminalMaxBase64urlChars=5462|wholeCommitCommandCharsLessThan=8191|selfHashSecurityClaim=accidental-integrity-only-not-platform-attestation|partialOrCollisionConsumesAndRetires=true|retryAuthorized=false
+HL23-V10-CONTINUATION-AUTHORITY|parent=b1576d8efb0916f17755288585e51ca4d08e980a|checklistId=RC-STG-006O23G|providerMutationAuthorizedCount=0|totalProviderMutationCountRemains=1|npmObservationAuthorizedCount=1|activationPostAuthorizedCount=1|providerFinalReadRequired=true|actualExportedRuntimeSamplingRequired=true|expectedRuntimeValueInjection=false|genericRequest5xxZeroClaimed=false|v7RetryAuthorized=false|v7BindingAuthorized=false|v7ResumptionAuthorized=false|streamingHostAuthorized=false|v8DiagnosticRetryAuthorized=false|v8BindingAuthorized=false|v8ResumptionAuthorized=false|v9DiagnosticRetryAuthorized=false|v9BindingAuthorized=false|v9ResumptionAuthorized=false|v9ApparentOkBindingObservationUsable=false|phaseReservationCreateNewRequired=true|phaseExecutionClaimCreateNewRequired=true|missingOrMalformedTerminalRetires=true|shellRetryAuthorized=false|backupAuthorized=false|reopenAuthorized=false|rollbackAuthorized=false|productionAuthorized=false
+HL23-V10-STATUS|authorityO23=UNCHECKED_PENDING_O23G|authorityO23A=UNCHECKED_PENDING_O23G|authorityO23B=UNCHECKED_PENDING_O23G|authorityO23C=UNCHECKED_PENDING_O23G|authorityO23D=UNCHECKED_PENDING_O23G|authorityO23E=UNCHECKED_PENDING_O23G|authorityO23F=UNCHECKED_PENDING_O23G|authorityO23G=UNCHECKED|v3PostPathPermanentlyBlocked=true|v4ActionPathRetiredUnconsumed=true|v5ActionPathRetiredUnconsumed=true|v5BindingRetryAuthorized=false|v6ActionPathRetiredNoPhaseReservation=true|v6RetryAuthorized=false|v7DiagnosticPathRetiredNoPhaseReservation=true|v7DiagnosticRetryAuthorized=false|v7BindingAuthorized=false|v8DiagnosticPathRetiredNoPhaseReservation=true|v8DiagnosticRetryAuthorized=false|v8BindingAuthorized=false|v8ResumptionAuthorized=false|v9DiagnosticPathRetiredNoPhaseReservation=true|v9DiagnosticOneShotConsumed=true|v9DiagnosticRetryAuthorized=false|v9BindingAuthorized=false|v9ResumptionAuthorized=false|v9ApparentOkBindingObservationUsable=false|o23AcceptancePendingO23G=true|o23AAcceptancePendingO23G=true|o23BAcceptancePendingO23G=true|o23CAcceptancePendingO23G=true|o23DAcceptancePendingO23G=true|o23EAcceptancePendingO23G=true|o23FAcceptancePendingO23G=true|o23GAcceptancePending=true|successfulO23=PASS_CONSUMED|successfulO23A=PASS_CONSUMED|successfulO23B=PASS_CONSUMED|successfulO23C=PASS_CONSUMED|successfulO23D=PASS_CONSUMED|successfulO23E=PASS_CONSUMED|successfulO23F=PASS_CONSUMED|successfulO23G=PASS_CONSUMED|prospectiveSuccessOnlyTogether=true|mandatoryStopBefore=RC-STG-006P23
+
+### 2026-08-28 RC-STG-006O23G V10 Consolidated Read-Only Entry-Bundle Evidence Continuation Authority - Authorized Next / Execution Gated on Exact-Nine Publication, Prebinding Diagnostic, and Binding
+
+The exact operator-observed V9 top-level output contained these two consecutive JSON objects in order: apparent OK `{"allFourGeneratedSourcesVerified":true,"at":"2026-08-28T17:21:03.307Z","auditedLoaderFlowProviderMutationCount":0,"auditedLoaderFlowProviderReadCount":0,"authorityParentCommit":"4b4ebf90297d1cdf5e54d74ceca11f4236cc76d8","bindingObservationProjectionSha256":"66df5c37a6c94ca12c69ad78153503d2b47b5bf2f916e652bef3a146a4cfa488","bootstrapSource":{"bytes":37291,"code":"HL23_TARGET_ACTIVATION_V9_FUNCTIONS_EXEC_BOOTSTRAP_SOURCE","cr":0,"finalLf":true,"lf":717,"sha256":"90efb27abc38e388e97886d380d2147d9895048232886c4b55b52bfbf4e184f3"},"boundaryProjectionSha256":"9fb3495a50a37a65f15e0d6ac1de9b33fd0350d3d6ce954ec302c879f23a1409","captureSentinelCount":0,"code":"HL23_TARGET_ACTIVATION_V9_PREBINDING_DIAGNOSTIC_OK","diagnosticEntryBundleExecuted":true,"diagnosticEntryBundleSource":{"bytes":33449,"code":"HL23_TARGET_ACTIVATION_V9_FUNCTIONS_EXEC_DIAGNOSTIC_ENTRY_BUNDLE_SOURCE","cr":0,"finalLf":true,"lf":668,"sha256":"9f96375a26ef827b35bbad4651c68a5ae9257eb7f064bf2a8066356a9e060d0b"},"diagnosticOneShotConsumed":true,"diagnosticOnly":true,"diagnosticRetryAuthorized":false,"emptySameSessionPollCount":0,"entryBundleTerminalObservation":"direct","frontendAuthorityCommit":"b1576d8efb0916f17755288585e51ca4d08e980a","frozenArtifactSetSha256":"156013abb3d198e0522e97eda69e5295793ce4053234829b44706eaab43e92ec","fullAuthoringVerifierInvoked":false,"loaderSource":{"bytes":21630,"code":"HL23_TARGET_ACTIVATION_V9_FUNCTIONS_EXEC_DYNAMIC_LOADER_SOURCE","cr":0,"finalLf":true,"lf":430,"sha256":"61649fd69394ab2152a9d63f33d4f9cc42f3ef2b17a32341ccdc9ba88ec1907a"},"nestedChildTimeoutMilliseconds":180000,"observerDeadlineMilliseconds":210000,"orchestratorSource":{"bytes":38346,"code":"HL23_TARGET_ACTIVATION_V9_FULL_PHASE_PROVIDER_ORCHESTRATOR_SOURCE","cr":0,"finalLf":true,"lf":821,"sha256":"2df4d3dc33008f360d0a35813731740e61579e8dde61033e263561458afd3b0b"},"overallRunnerDeadlineMilliseconds":200000,"productionAuthorized":false,"productionBootstrapExecuted":false,"productionLoaderSubmitted":false,"productionOneShotConsumed":false,"productionPhaseAttempted":false,"providerMutationAuthorizedCount":0,"providerPhaseClaimCreated":false,"providerPhaseReservationCreated":false,"pureJsUtf8Sha256SelfTestVectorCount":11,"renderToolFacadeInstalled":false,"runtimeBoundaryProjectionSha256":"adb70078ccb868fd4897215e6b2eb2f62b1c972e1565686b18eaf820f2f2f5e8","runtimeBoundaryVerified":true,"streamingHostStarted":false,"supportManifestSha256":"754526b671f7ea6eca7a05346081d56a6965bf75b6084c799b668b6784eef929","terminalPollMaximumCount":8,"terminalPollYieldMilliseconds":30000,"v9ActionArtifactCount":0,"verifiedSameInMemoryBootstrapSourceExecuted":true}`, then trailing abort `{"code":"HL23_TARGET_ACTIVATION_V9_PREBINDING_DIAGNOSTIC_ENTRY_BUNDLE_ABORTED","diagnosticOnly":true,"diagnosticRetryAuthorized":false,"emptySameSessionPollCount":0,"failureStage":"bootstrap-terminal","localCommandTerminalStateKnown":true,"nestedChildTimeoutMilliseconds":180000,"observerDeadlineMilliseconds":210000,"overallRunnerDeadlineMilliseconds":200000,"primarySafeCode":"V9_DIAGNOSTIC_ENTRY_UNEXPECTED_FAILURE","processMayStillRun":false,"productionLoaderSubmitted":false,"productionOneShotConsumed":false,"productionPhaseAttempted":false,"providerMutationAuthorizedCount":0,"providerPhaseReservationExpectedByAuditedWorkflow":false,"providerPhaseReservationMechanicallyVerified":false,"reconciliationAllowedReadOnlyOnce":false,"reconciliationRequired":false,"sessionAcquired":false,"streamingHostStarted":false,"terminalPollMaximumCount":8,"terminalPollYieldMilliseconds":30000}`. This is the sorted-key canonical observed two-object projection, not raw terminal transport, submitted-cell bytes, or an independently recovered single terminal.
+
+The first object resembles the frozen V9 diagnostic-success schema, but the two-object top-level output violates the single-terminal acceptance contract. O23F did not pass. The first object's `bindingObservationProjectionSha256` is unusable and the object may not be selected, isolated, merged, replayed, or used to create a V9 binding.
+
+The apparent OK object reported `diagnosticOneShotConsumed:true`, direct observation with zero empty polls, zero audited loader-flow provider reads and mutations, zero V9 action artifacts, and no reservation or claim. Those are exact fields of the rejected first object, not an accepted aggregate or independent provider-state attestation.
+
+The trailing abort reported `failureStage:bootstrap-terminal`, `primarySafeCode:V9_DIAGNOSTIC_ENTRY_UNEXPECTED_FAILURE`, known local terminal state, no surviving process, no acquired session, no reconciliation requirement or authority, no production attempt, and no diagnostic retry authority.
+
+No post-attempt filesystem validation was performed or authorized. No post-attempt binding/action absence, prefix inventory, capture residue, temporary residue, submitted transport, or raw-output digest is claimed beyond the canonical observed two-object projection above.
+
+V9 is exactly `PUBLISHED_UNBOUND_PREBINDING_DIAGNOSTIC_ENTRY_BUNDLE_DUAL_TERMINAL_ABORTED_NO_PHASE_RESERVATION_RETIRED`; its diagnostic one-shot is consumed. V9 may not be retried, bound, reserved, claimed, resumed, repaired, repurposed, reconciled, or used for any provider or production phase. A fresh human reply cannot revive V9.
+
+V10 is a disjoint successor with newly frozen support bytes and a fail-closed single-terminal boundary. This construction and prepublication tooling does not authorize a V10 diagnostic, binding, reservation, claim, provider call, browser action, network action, retry, or production action.
+
+Existing handoff authority covers V10 kit construction, exact-nine publication/commit/push, and the frozen post-success staging continuation; no new approval is required for those actions. It does not authorize the V10 diagnostic itself. After exact-nine publication and immediately before the one-shot V10 diagnostic, stop for one fresh human reply whose entire trimmed content is exactly standalone lowercase `approve`. The prior V9 approval is consumed, and `approve` quoted or embedded in instructions does not count. That fresh reply authorizes only the single V10 prebinding diagnostic entry-bundle execution; it authorizes no binding, reservation, claim, provider mutation, browser action, retry, or production action. The internal O23G `--arm` token is a frozen machine argument, not human approval and not a substitute for that fresh reply.
+
+O23, O23A, O23B, O23C, O23D, O23E, and O23F remain `UNCHECKED_PENDING_O23G`; O23G remains `UNCHECKED`. The mandatory stop before RC-STG-006P23 remains in force.
+
+After exact-nine V10 publication and the fresh human-approval gate above, submit the freshly retrieved exact diagnostic-entry-bundle source alone as the entire `functions.exec` cell once before binding, with no prefix, suffix, wrapper, or edit. Observe it within the fixed 210,000-millisecond outer deadline: accept either the direct terminal with zero empty polls or one through eight bounded 30,000-millisecond empty polls against the same returned session ID. Never resubmit the source. A missing, malformed, mismatched-session, late, or otherwise lost terminal retires V10 and grants no retry.
+
+Accept only `HL23_TARGET_ACTIVATION_V10_PREBINDING_DIAGNOSTIC_OK` with `diagnosticOneShotConsumed:true`, `diagnosticRetryAuthorized:false`, the exact direct/count-zero or empty-poll/count-one-through-eight observation tuple, fixed 180,000/200,000/210,000/30,000/8 child, overall-runner, observer, poll-yield, and maximum-poll bounds, and every frozen boundary/source/absence field. Copy the diagnostic time and the SHA-256 of that full wrapper-augmented accepted terminal. The authority binding tool reconstructs all nine allowed variants and must find exactly one hash match; it never defaults to the direct form.
+
+Revalidate the binding-absent plan and frozen kit, then create and independently audit one separate immutable V10 binding within the frozen chronology. Never run the diagnostic entry bundle again. Only after the exact binding is present may PRE, POST, and FINAL proceed in order through separate phase-scoped CreateNew reservations, claims before provider reads, and sole one-shot production-loader cells. Each phase must commit output before commit and validate exactly once; no path grants a retry.
+
+The frozen continuation order remains Provider PRE; five held PRE probes; V10 preflight and one-shot O23G arm; one sealed live-runtime npm observation; the required PRE-to-POST boundary; Provider POST; the byte-exact inherited activation observation; five held POST probes; the required POST-to-FINAL boundary; Provider FINAL; aggregate postflight; zero-delete cleanup; and mandatory stop before `RC-STG-006P23`. This publication performs none of those actions.
+
+O23, O23A, O23B, O23C, O23D, O23E, and O23F remain `UNCHECKED_PENDING_O23G`; O23G remains `UNCHECKED`. P23, backup, reopen, rollback, production, and every later gate remain forbidden.
+
+## 2026-08-22 Fresh Staging Rerun Status - Blocked, Abort-Recovered, Verified Held Recovery Complete
+
+Release `HL-20260822-1` is no longer an active execution. Its exact frontend
+build `4dfe12d1366314e3d9df722c50771324647743c9`, sealed Netlify baseline
+`6a8a3880f946cc39a2bf2bb6`, backend build
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`, complete local gates, held Render
+deploy `dep-da5l8drtqb8s73ar74sg`, backup verification, and fixture
+prepare/replay remain valid evidence. The fixture-bearing source is preserved
+at SHA-256
+`c26fdebc9432c09371bc5c2bc6eed74f626e9589d891478a9f9b4e300d80d238`.
+
+Additive helper deploy `6a8b678ddbcf0b4ea8ba623c`, title
+`HL-20260822-1-strict-helper-fe6d2dd`, published at
+`2026-08-23T21:35:11.134Z`. Canonical and immutable checks passed all four
+helper runtime-file byte/header gates and preserved the sealed critical
+application files. The browser nevertheless opened the physical `.html` path
+instead of the sole authorized extensionless URL. Initialization immediately
+reported `STRICT_STOP / ORIGIN_GUARD / EXACT_STAGING_ORIGIN_REQUIRED`; session,
+arm, and action controls remained disabled. The tab was closed and no
+replacement was opened. Render logs from `21:35Z` through `21:42Z` recorded
+zero requests. The full hold never lifted, and no session check, proposal,
+acceptance, publisher, replay, API request, or backend write ran. Hosted
+A-to-B-to-A smoke never began. The release-specific README/runtime required
+abort recovery after the reported strict stop.
+
+Abort plan
+`release-qa-strict-restore-abort-v1-59641427f2021cbb3285f6ef59635301fbcdb93177288827afd787fed1a28a99`
+classified exact `prepared_only` / `none/none`, source SHA-256 `c26fdebc...`,
+absent target, zero authoritative-database and durable-filesystem mutations,
+and verified temporary cleanup. Abort execute returned
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, `replayed: false`, zero
+authoritative-database mutations, two durable-filesystem mutations,
+`sourcePreserved: true`, `targetVerified: true`, `releaseBlocked: true`, and
+`rollbackOnly: true`. The clean target plaintext SHA-256 is
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`; receipt
+SHA-256 is
+`b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`.
+The identical replay reported `replayed: true`, zero mutations in both
+categories, and no temporary work.
+
+Helper-retirement deploy `6a8b6b25126dabed39fa404d`, title
+`HL-20260822-1-abort-retire-helper-baseline`, published at
+`2026-08-23T21:50:30.415Z` with five header rules and no functions. Baseline
+byte checks and all `10/10` retired helper-path checks passed across canonical
+and immutable origins; retired paths returned the exact `472`-byte `text/html`
+SPA fallback with SHA-256 `90620768...`. Only `DATABASE_PATH` was then
+merge-updated from the preserved source to the clean target. Held cutover
+deploy `dep-da5mmpu417fc73807ptg` started at
+`2026-08-23T21:51:35.442888Z` and reached `LIVE` at
+`2026-08-23T22:41:18.393652Z` as the newest deploy on exact backend
+`8e313902...`. Its hosted gate passed `443` suites / `3,503` tests with all
+`3,503` passing and zero fail/cancel/skip/todo in `2941574.017632ms`; instance
+`mq8dr`, zero startup errors, `200`/`no-store` live/readiness, and held
+`503 SERVICE_MAINTENANCE`/`no-store` leagues all passed.
+
+Corrected exact-Node-`24` verifier v2
+(`61610cb991fb049075f4b997688da31bacf20b772ede4f994c197298b40f76a0`, `19298`
+bytes) returned
+`HL_POST_CUTOVER_TARGET_VERIFIED`. It preserved source `37761024` bytes /
+`c26fdebc...`, verified authoritative target `37105664` bytes / `cf3ca07d...`
+and receipt `4430` bytes / `b846edcf...`, re-proved the full hold/provider
+absence, integrity/checksum/schema/migrations/rotation receipt, zero sessions,
+and all ten fixture/transfer artifact counts `0`, and removed its owned scratch
+WAL/SHM and temporary copy without opening the authoritative database. Retained
+v1 (`6157adfd598cbf9d7d306dd849822e494ffefe7aee29f3eb14ce2ea4d9ec38c7`) is
+diagnostic evidence of a pre-backup
+`SCRATCH_SIDECAR_PRESENT` false negative caused only by its transient owned
+scratch sidecars.
+
+Fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` passed with encrypted
+SHA-256 `e6c6269ffb6d3726822dd8e9c036e87841335a6f138cfbf7cf929a65684c5448`,
+manifest checksum
+`54df36b9999204822819989d5d6890bbe544001958825b4025c6ff591e24d155`, and
+separate verification at plaintext `cf3ca07d...`, integrity `ok`, foreign keys
+`0`. The clean target became the authoritative held source. At that recovery
+boundary no replacement release ID or authorization existed; the later
+`HL-20260823-1` record is current. Production remains untouched and
+unauthorized. Exact historical evidence is recorded in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-22.md`.
+
+## Historical 2026-08-21 Attempt - Blocked and Recovered
+
+Checkpoints 1 through 5 and the local implementation portion of Checkpoint 6
+were complete. The final release gate was not earned because unheld
+hosted acceptance failed its exact phase-one Manager B counter gate. The
+release is blocked. Strict abort materialization and exact zero-mutation replay
+have passed. The restored-target `DATABASE_PATH`-only cutover, held target
+verification, and post-cutover backup also pass. At that historical boundary,
+the full hold remained active and privacy acceptance, controlled reopening,
+final runtime flags/job restoration, observation, and documentation closeout
+remained pending; the current 2026-08-23 ledger supersedes that runtime state.
+
+The historical frontend candidate was
+`0e8eee92e2e323dd7f25ec3112988feaf23f96f0`, following privacy/documentation
+commit `c119f119ffd4aa96635fe382792e704d535a7cbd` and broad UI commit
+`d82583dea2132d94e53a60853da6dddc549a0126`. The historical strict backend
+candidate was
+`23971a4d66ee6383c6ad54339e769dbc9a76561e`, following held credential-
+rotation candidate `fe6047552857376b490756ff63ac593d431ee561`, migration
+candidate `a747430500fbf6887dd748e5e3dfc0ecee77dc07`, and broad implementation
+commit `ac1e12baadce4fcc08b6fb680b34db6992a4f891`. The final frontend gate passed
+`386/386` tests across `58` files, ESLint, dependency inspection, an exact
+staging build, `20/20` browser-authority compatibility cases across `164`
+shipped sources, and `45/45` Playwright cases. The pre-rotation backend local
+gate passed `3,426` of `3,428` tests with only two intentional Windows
+link-capability skips. Held migration deploy `dep-da4e092fngtc739dipm0` passed
+`3,428/3,428`; held final deploy `dep-da4gkpoed13c739gm0dg` passed the expanded
+`3,440/3,440` hosted gate across `443` suites at exact commit `fe604755...`.
+The strict candidate's complete exact-Node `24.14.1` gate then passed `3,500`
+of `3,502` local tests across `443` suites with only two intentional Windows
+link-capability skips and zero failures. Its durable TAP SHA-256 is
+`ED2BCC54D252925548658DA95E32E6C5152C8A52AE1681ED5D0388DE6516CCF6`.
+Exact commit `23971a4d...` is published on `origin/staging`; held deploy
+`dep-da4p5hu7bikc73aaeiq0` passed `3,502/3,502` hosted tests with zero skips or
+failures and clean startup, finishing `LIVE` at
+`2026-08-22T13:05:02.585588Z`.
+
+The held staging database advanced from schema `52` to `54` after encrypted
+backup and distinct clean-restore verification. Repeated authority previews
+required zero mutations, so the reconciliation command did not run. Pre- and
+post-migration exhaustive FAD receipt scans were read-only and safe with zero
+persisted T-082/T-144 receipts. Both the pre-migration and post-migration
+encrypted backups verified. Netlify deploy
+`6a89709ffc9c88762ae8e74e` serves the exact final frontend artifact.
+
+Still under the exact full safety hold, a verified pre-rotation backup preceded
+the narrow staging-only replacement of all nine synthetic release-QA account
+credentials and revocation of one active synthetic session. Receipt
+`d5e9c784-db5f-42f6-8fcb-1918e93f26c0` replayed with zero writes, and the
+post-rotation encrypted backup verified. No credential secret is retained in
+the documentation.
+
+Quiescent deploy `dep-da4hm30jo6nc73d26l80` became live on exact `fe604755...`,
+passed `3,440/3,440` with zero startup errors, passed public live/ready plus
+anonymous session/CORS/cache checks, and allowed sequential clean sign-in,
+dashboard loading, and sign-out for `Admin`, `Man A Leag A`, and
+`Man B Leag A`. Notifications was not opened and FAD routes remained disabled,
+so the strict notification, selected-team tie, and manager-transfer gates were
+not exercised.
+
+The shared staging QA password was then disclosed in chat and must be treated
+as compromised. Its value is not recorded. Re-hold deploy
+`dep-da4j4r49v7es738bkih0` hosted second rotation `HL-20260821-2`: nine
+synthetic accounts rotated, zero sessions revoked, exact receipt
+`9152f844-d8cd-42f7-b0d5-b12f530ad618`, and immediate zero-write replay.
+Verified backup `adcbbbab-e857-4cae-af71-dbce95553ce5` is the exact
+post-rotation/pre-fixture restore point. Its password is not recorded.
+
+The strict held deploy passed its exact environment/full-hold/provider-absence
+and source/root/target/work/WAL/SHM boundaries; live/ready returned `200` and
+session remained `503 SERVICE_MAINTENANCE`. Backup `adcbbbab...` reverified with
+plaintext SHA `cf3ca07d...`, integrity `ok`, and zero foreign-key violations.
+The first strict prepare reported `writeCount: 744`, `replayed: false`, receipt
+`0ed590d8-832a-469a-848e-f91b0b37fe56`, fixture fingerprint prefix `b2ffbc`,
+FAD ID prefix `0aee0824`, restricted-auction ID prefix `8efe9f6a`, and
+`actionableUntil: 2026-08-23T07:00:00Z` (approximately `17.8` hours at
+preparation). Its immediate exact replay reported `replayed: true` and
+`writeCount: 0`.
+
+Controlled-unhold deploy `dep-da4pvcrl550s738l8rmg` reached `LIVE` on the exact
+strict commit, passed its `3,502/3,502` hosted gate, liveness/readiness,
+anonymous-session/CORS/cache boundary, exact controlled-unhold runtime flags,
+clean startup, and two-minute log observation. The corrected helper overlay
+passed its hosted artifact/header and inert-initialization gates, but the live
+strict smoke stopped after phase one: Manager A reached exact required
+`null 2/1/1`, while Manager B reached `complete 3/1/1` instead of required
+`complete 2/1/1`. No waiver was given and no return proposal or phase-two
+action ran. Partial-hold deploy `dep-da50g0v40ujc73aa5i4g` was manually
+canceled at `2026-08-22T20:39:55Z` and never reached `LIVE`. The exact full-
+hold matrix was then merge-set without a `DATABASE_PATH` cutover, triggering
+replacement deploy `dep-da50hssaud7c73d3mqeg` on exact commit
+`23971a4d66ee6383c6ad54339e769dbc9a76561e` at the same timestamp. It reached
+`LIVE`, passed its exact `3,502/3,502` held gate and full runtime-hold checks,
+and supplied the guarded recovery shell. Strict abort materialization and its
+exact replay now pass. Only `DATABASE_PATH` was changed for target cutover;
+deploy `dep-da51hjvqj5pc73bh8g3g` is `LIVE` on the same exact backend and
+passed its hosted, runtime-identity, held-target, post-cutover backup, and
+maintenance-response gates. The release remains blocked because the strict
+privacy smoke failed its frozen Manager B counter.
+Exact immutable evidence is maintained in
+`docs/07-testing/release-runs/M7_FULL_SITE_UI_REVIEW_2026-08-21.md`.
+Production remains untouched and unauthorized.
+
+Grae explicitly selected the strict hosted-evidence path. Its isolated sidecar
+fixture and narrow fresh-path recovery components now pass their frozen
+focused reviews: the four-command strict restore family is `56/56` and the
+selective manager-outbox publisher is separately `56/56` under exact Node
+`24.14.1`. Their combined backend gate, exact commit/publication, and held
+hosted gate now pass, and the pinned fixture has been prepared with a zero-
+write replay. The workflow must not rewrite Gamma League history. The exact
+pre-fixture backup is `adcbbbab-e857-4cae-af71-dbce95553ce5`. The attempted
+live `A -> B -> A` smoke is incomplete and rejected after phase one; abort
+restoration of that exact backup, held target cutover/re-verification, and
+post-cutover backup now pass. At that historical boundary, the strict privacy
+gate remained failed and the full hold remained active; the current 2026-08-23
+ledger supersedes that runtime state.
+
+## Authority and Boundary
+
+Grae supplied a complete site-review report on `2026-08-20`, asked Codex to
+weight the whole update before coding, and authorized implementation through
+the normal documented workflow until the verified deployment is complete.
+
+This plan permits coordinated frontend and backend changes, focused additive
+SQLite migrations when required, canonical documentation updates, disposable
+local testing, separate repository commits, publication to the existing
+dedicated staging services, and hosted role-based acceptance after every local
+gate passes.
+
+The approved deployment target for this plan is isolated staging. In addition
+to its already recorded additive staging migration and recovered historical
+attempt, this plan authorized only the exact `HL-20260822-1` staging fresh-path
+materialization and external `DATABASE_PATH` handoff defined below. That
+release authority is now spent by its strict stop and completed held recovery.
+Its target handoff, corrected post-cutover verification, and fresh backup have
+finished under the full hold. It does not itself authorize a replacement
+release. Grae's separate explicit `2026-08-23T23:23:29.877Z` approval now
+authorizes only `HL-20260823-1` and its ordered isolated-staging contract. It
+does not authorize any unrelated staging
+environment-variable change, reset, or restore, or any production branch
+merge, deployment, data correction, configuration change, reset, restore, or
+migration. Production remains a later explicit release decision.
+
+The review is authoritative for the requested user experience. Where it
+changes an older approved product or technical rule, the affected canonical
+specification must be reconciled before dependent code is implemented.
+
+## Release Progress Reporting
+
+This plan is reported by named gates, not a completion percentage. UI scope,
+local automated verification, hosted deployment, data recovery, authenticated
+smoke, runtime activation, and documentation closeout are separate gates. A
+completed implementation section must not be used to imply that a later
+release or recovery gate is nearly complete.
+
+Every status update must state:
+
+1. which named gates passed;
+2. which named gate is running;
+3. which named gates remain;
+4. whether staging is held or open; and
+5. whether production remains untouched and unauthorized.
+
+Elapsed time from an earlier implementation checkpoint is not an ETA. Any ETA
+must be based on the actual remaining deploy, recovery, and hosted-observation
+steps and must be revised when a new hard gate is discovered.
+
+## Approved Scope and Checkpoints
+
+### Checkpoint 1
+
+Implement the shared plain-language/error and team-identity presentation,
+dashboard, Teams, shared matchup-card treatment, Matchups copy, and account
+menu cleanup. Preserve approved recent activity, team-directory behavior,
+matchup data, notification bell, and main navigation.
+
+### Checkpoint 2
+
+Implement roster and Hockey Lines presentation, verify IR and Prospect moves,
+complete server-side Players filters before pagination, fix autocomplete
+overflow/results, simplify the Drafts results presentation and privacy, and
+correct Auctions total-value and phase labels. Preserve Favorites, active-line
+cards, Trade and Request trade actions, and working player-detail navigation.
+
+### Checkpoint 3
+
+Implement the simplified trade asset model, manager acceptance followed by
+commissioner approval for Future Considerations, the shared detailed Trade
+block, plain-language League Activity, and the unread-first Notifications
+workflow with a separate Previous notifications view.
+
+### Checkpoint 4
+
+Implement compact branded Standings, contextual commissioner result
+correction with preview and automatic recalculation, and the audited
+commissioner competition and roster surfaces. Remove the normal standalone
+Result correction and Standings rebuild panels only after the contextual
+replacement works. Retain the backend rebuild endpoint as an explicit recovery
+capability. Retain Correct roster because implementation review confirms it
+uniquely supports team-transfer, category, position, and slot/re-slot
+corrections not covered by Add player, Remove player, or Correct contract;
+present that purpose plainly.
+
+### Checkpoint 5
+
+Audit the displayed League Rules against canonical behavior, protect platform
+administrators from commissioner membership or team-access changes, guarantee
+administrator access to every league through protected persisted membership,
+enforce one current commissioner and an atomic transfer workflow, and verify
+administrator league creation and membership/team-access surfaces.
+
+The existing Beta League duplicate-commissioner presentation must be repaired
+only through the canonical commissioner pointer and an explicit reversible
+staging data operation. No production data repair is authorized by this plan.
+
+### Checkpoint 6
+
+Finish canonical documentation, complete focused and full backend/frontend
+tests, lint, production build, desktop/mobile/keyboard/accessibility browser
+checks, dependency and whitespace gates, exact staging builds, verified backup
+and restore when a migration is required, isolated Render and Netlify staging
+deployment, health checks, and authenticated hosted smoke tests.
+
+## Reconciled Product Decisions
+
+1. The dynamic season label comes from the league's authoritative persisted
+   current-season display value; it is never advanced from the browser clock.
+2. Uploaded team logos are preferred. The fallback is the shared team-pattern
+   colour mark with no initials. Missing colours use the existing safe default
+   pattern and accessible contrast treatment.
+3. The collectible hockey-card interaction and removal of the standalone
+   player-detail experience remain post-launch. Existing detail links remain
+   until the replacement is implemented.
+4. Published Free Agent Draft results expose player identity and Signed, Not
+   won, or Tied status to league members. Offer amount and term are returned
+   only to a current manager of the selected team. Commissioner or platform-
+   administrator authority alone does not reveal those private offer details.
+   Historical Candidate Card deep links redirect to the selected-team results
+   view and do not bypass that projection.
+5. New trades present Player, Draft pick, Buyout obligation, and Future
+   considerations. Requested retained salary is nested on its outgoing Player.
+   A standalone existing retention obligation cannot be added to a new trade;
+   persisted historical proposals/assets remain readable and remain executable
+   or reversible where their recorded state permits. An exact idempotent
+   proposal-creation retry replays its original result without applying the new
+   standalone-retention grammar as a fresh request.
+6. Only the current proposing-team manager may create or cancel a proposal, and
+   only the current receiving-team manager may accept or reject it. A receiving
+   manager's acceptance of a trade containing Future considerations persists
+   the acceptance snapshot and projects `Awaiting Commissioner Approval`
+   without transferring assets. Commissioner or inherited platform-
+   administrator authority permits safe inspection, that approval after
+   current-state revalidation, and separate recovery only; it grants no manager
+   write.
+   No counter endpoint or service is implemented in M7-26.
+7. Notification `GET` requests remain read-only. After the unread batch is
+   successfully rendered, the page sends one explicit authenticated,
+   idempotent batch acknowledgement for exactly the displayed notification
+   IDs, retains that snapshot for the mounted visit, and surfaces any failure.
+   A separate query displays previously read notifications. This is the sole
+   approved automatic-on-view write in the normal interface.
+8. Routine Active/Bench moves and lineup/position warnings are filtered from
+   the normal League Activity projection; their underlying audit or operational
+   evidence is not deleted.
+9. Result-correction preview identifies the matchup by week and team names and
+   includes projected standings impact. Confirmation stores the correction and
+   rebuilt standings atomically or fails without partial state.
+10. Platform administrators receive and retain a protected active membership
+    in every league. League creation provisions it, existing leagues are
+    reconciled additively, and commissioners cannot alter or remove it. All
+    non-administrator league isolation remains unchanged.
+11. Raw request IDs, internal codes, operation versions, database identifiers,
+    and JSON remain available to server logs and protected technical evidence
+    but are not shown in the normal user or commissioner interface.
+
+## Data and Migration Safety
+
+UI-only work must not write league state. Read-only previews remain read-only.
+Every new state-changing workflow uses an explicit unsafe HTTP method,
+authenticated server authority, optimistic or aggregate version checks,
+idempotency, transaction boundaries, audit evidence, and focused
+cross-league/role tests.
+
+Any schema change is additive and forward-only. Before applying it to shared
+staging, the operator must positively identify the staging Render service,
+disk, database identity, source and target schema, create and verify an
+encrypted backup, prove a clean restore to a distinct inactive path, and keep
+production untouched. After a shared post-migration write, correction is
+forward-only unless a separately authorized restore is selected.
+
+The M7-26 staging authority repair must use the reviewed package command; ad
+hoc SQL is not an approved substitute:
+
+```text
+npm run db:reconcile:m7-26:staging -- --database '<absolute database path>' --environment staging --persistent-root '<absolute persistent root>' --release-id '<HL release ID>' --confirmation 'M7-26:<release ID>:staging:<environment ID>:<database ID>'
+```
+
+Run the read-only authority preview before the backup and again immediately
+before this command. The command is permitted only while the exact staging
+service is under the full maintenance hold with writes, scheduled jobs, FAD
+routes, delivery email, debug routes, and scheduled backups disabled. It must
+preserve the pointer-backed commissioner, fail closed on an ambiguous or
+unsafe authority record, reconcile only the reported administrator membership
+and surplus-commissioner rows in one transaction, write its deterministic
+audit receipt, and return an exact zero-write replay for the same release.
+Afterward, the preview must report no mutation required before migrations
+`0053` and `0054` are applied.
+
+The same held, exact physical staging database must pass the exhaustive
+read-only public-receipt privacy gate before reconciliation/migration and again
+after migration:
+
+```text
+npm run db:scan:fad-public-receipts:staging -- --database '<absolute database path>' --environment staging --persistent-root '<absolute persistent root>'
+```
+
+That command scans every persisted T-082 auction-cancellation result and every
+T-144 allocation-correction result, validates canonical response/hash/identity
+evidence, executes the current all-null projector plus strict public validator
+for each legacy full-money FAD allocation, reports null/no-FAD T-082 results,
+fails the process for malformed unsafe receipts, and proves identical SQLite
+`total_changes()` before and after. It never rewrites immutable evidence and
+its findings contain only stable IDs and reason codes.
+
+### M7-26 strict hosted manager-transfer publication exception - closed unused
+
+The `HL-20260822-1` controlled-unhold boundary below was never entered. The
+full hold remained active, the release-only endpoint was never requested, and
+this exception is no longer action authority. It remains here only to preserve
+the exact contract the blocked release would have had to satisfy.
+
+The strict smoke must not enable the global scheduler. Accepted manager
+assignments enqueue `team.changed`, but `SCHEDULED_JOBS_ENABLED=true` would
+also start unrelated workers and could mutate Gamma League. Throughout the
+controlled unhold, `SCHEDULED_JOBS_ENABLED=false`. The only authorized
+publication path is the in-process release-only endpoint:
+
+```text
+POST /api/v1/operations/release-qa/strict-manager-outbox
+```
+
+It mounts only on the pinned source `DATABASE_PATH` with release
+`HL-20260822-1`, environment `test:release-qa`, database
+`m7-release-qa-fixture`, schema `54`, the pinned migration checksums and
+frontend build, an exact SHA-shaped deployed `APP_BUILD_ID`, season `2026` /
+NHL `20262027`, and this exact smoke boundary:
+
+```text
+APP_ENV=staging
+NODE_ENV=production
+APP_ENVIRONMENT_ID=test:release-qa
+DATABASE_ID=m7-release-qa-fixture
+DATABASE_PATH=/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3
+PERSISTENT_DATA_ROOT=/opt/render/project/data/hundo-staging
+FRONTEND_BUILD_ID=4dfe12d1366314e3d9df722c50771324647743c9
+APP_BUILD_ID=8e313902feefcd683b0f5edd746a9dd2a9029a18
+CURRENT_SEASON_LABEL=2026
+CURRENT_NHL_SEASON_KEY=20262027
+STAGING_MAINTENANCE_HOLD=false
+LEAGUE_WRITE_MODE=open
+FREE_AGENT_DRAFT_ROUTES_ENABLED=true
+SCHEDULED_JOBS_ENABLED=false
+ACCOUNT_EMAIL_DELIVERY_ENABLED=false
+EMAIL_DELIVERY_MODE=capture
+DEBUG_ROUTES_ENABLED=false
+BACKUP_SCHEDULE_ENABLED=false
+SPORTSDATAIO_NHL_API_KEY: absent
+SPORTSDATAIO_NHL_API_ORIGIN: absent
+SPORTSDATAIO_NHL_LAST_SEASON_START_YEAR: absent
+SPORTSDATAIO_NHL_LIVE_MODE=disabled
+SPORTSDATAIO_NHL_LIVE_API_KEY: absent
+SPORTSDATAIO_NHL_LIVE_API_ORIGIN: absent
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_SECRET: absent
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_KEY_VERSION: absent
+SPORTSDATAIO_NHL_LIVE_CAPABILITY_ARTIFACT: absent
+SPORTSDATAIO_NHL_LIVE_PROBE_MANIFEST: absent
+```
+
+This release did not earn final interactive review. Its intended final posture
+would have used the verified `HL-20260822-1` target with the strict publisher
+route absent and would have kept scheduler, account email, debug routes, live
+provider, and scheduled backups disabled. That historical intended matrix is
+not current activation authority or evidence that production job operation is
+ready.
+
+Under the full hold the target runtime and route are not composed, and the
+maintenance server returns `503 SERVICE_MAINTENANCE`. With the hold false, the
+restored target path or any binding drift leaves the route unmounted and an
+external request returns `404`. It is not a general outbox or scheduler
+control.
+
+#### Historical `HL-20260821-3` helper contract and rejected phase one
+
+This subsection through the fresh-rerun heading below is immutable historical
+evidence, not current action authority. Its release ID, helper path, marker,
+expiry, build IDs, idempotency keys, confirmations, hashes, and deploys must not
+be reused. The full record is the 2026-08-21 release record.
+
+Grae authorized a temporary release-QA browser helper solely to issue the
+already-approved direct calls above from each actor's real staging cookie jar.
+The first overlay publication was stopped before any helper action because its
+public URL redirected and its CSP/referrer headers did not match this frozen
+contract. Corrected deploy `6a89e2c867e39d41cc630a26` then passed the exact
+hosted overlay and initialization gates. Its phase-one write path ran, but the
+strict cache-counter result failed; the release is blocked. Exact baseline
+rollback deploy `6a8a09c13d5e25282f64d2c7` passed remote helper-removal
+verification. Abort materialization and replay pass; restored-target cutover
+deploy `dep-da51hjvqj5pc73bh8g3g`, target verification, and the post-cutover
+backup also pass under the unchanged full hold.
+
+The helper may exist only as an additive static overlay on the canonical
+`https://staging.hundoleago.com` origin at release-specific path
+`/release-qa/hl-20260821-3/`. Its only authorized browser entry point is exact
+extensionless URL
+`https://staging.hundoleago.com/release-qa/hl-20260821-3/strict-manager-transfer`;
+an uppercase-path or `.html` redirect is a pre-action failure. It must preserve
+every file in the audited
+Netlify baseline deploy `6a89709ffc9c88762ae8e74e` byte-for-byte, including
+frontend build `0e8eee92e2e323dd7f25ec3112988feaf23f96f0`,
+`dist/index.html` SHA-256
+`1982ECF04CC456D989F7B42F15F3CED49A5D825DF0DEDD948DEAFFE8D8C1ADC8`, and
+`dist/assets/index-CI54gRot.js` at `527839` bytes with SHA-256
+`5B2336E5B1E099EF32747B48124C331495CEFAD1511E26D244E09D5567460394`.
+Adding the helper changes the temporary Netlify content digest only; it does
+not authorize a Vite rebuild, application-source change, replacement bundle,
+or new frontend build identity. Every helper and marker response must be
+served with release-specific `Cache-Control: no-store`,
+`Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY`, `X-Robots-Tag: noindex, nofollow, noarchive`, and
+`Content-Security-Policy: default-src 'none'; base-uri 'none'; connect-src
+'self' https://api-staging.hundoleago.com; form-action 'none'; frame-ancestors
+'none'; img-src 'none'; object-src 'none'; script-src 'self'; style-src
+'self'`. The HTML meta CSP repeats that policy with `object-src 'none'` but
+omits only `frame-ancestors 'none'`, which browsers do not apply from a meta
+policy. A separate `netlify.app` origin and any Render `FRONTEND_BUILD_ID`
+change are forbidden; the real cookie and exact Origin contract require the
+canonical staging origin and pinned frontend build.
+
+The single response-header authority for this temporary harness is this exact
+helper-scoped block in the local deployment `netlify.toml`:
+
+```toml
+[[headers]]
+  for = "/release-qa/hl-20260821-3/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    Content-Security-Policy = "default-src 'none'; base-uri 'none'; connect-src 'self' https://api-staging.hundoleago.com; form-action 'none'; frame-ancestors 'none'; img-src 'none'; object-src 'none'; script-src 'self'; style-src 'self'"
+    Referrer-Policy = "no-referrer"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+```
+
+No helper `_headers` artifact is permitted. The existing global and
+non-helper route header rules must remain unchanged, so this temporary block
+can affect only the lowercase release-QA path above. It is staging deployment
+configuration, not application source or a new frontend build.
+
+The helper action tab constructs its own actual TanStack Query
+`QueryClient`. That isolated client must contain exactly zero FAD queries
+before, during, and after every action; the helper must not mount
+`RealtimeProvider`, create a Socket.IO listener, or share the mounted FAD
+page's application QueryClient. The normal FAD result page remains mounted in
+the same cookie jar, while the helper is a separate same-cookie action tab.
+
+After the required static document, script, and style requests, helper
+initialization issues zero script-initiated API, fetch, XHR, or WebSocket
+requests and performs no write. An explicit session-check control may make the
+credentialed session read. Only inside a separately clicked proposal action,
+the helper may also make the exact read-only Team 1 precheck
+`GET /api/v1/leagues/60c82aa0-54f9-4c93-83f5-73b0d6d6f63e/teams/ebc815c7-8a41-4326-8faf-04548aa91c76`.
+Only inside a separately clicked acceptance action, it may make the exact
+read-only pending-assignment precheck
+`GET /api/v1/team-manager-assignments/<exact assignmentId emitted by the proposal>`.
+Those state/predecessor checks must fail closed and cannot run during
+initialization or in the background. A persistent write is possible only after
+exact identity verification, explicit write arming, and a separate click for
+one of these four fixed modes:
+
+| Helper mode | Exact actor | Authorized write keys |
+| --- | --- | --- |
+| `propose-to-b` | Admin `dbc0118a-21f9-408c-abf5-b01d9ca05e64` | proposal `HL-20260821-3-team1-to-b-propose` |
+| `accept-and-publish-to-b` | Manager B `c2684bf0-d30d-4b37-ae14-66620259798e` | acceptance `HL-20260821-3-team1-to-b-accept`; publisher and its immediate identical replay `HL-20260821-3-outbox-team1-to-manager-b` |
+| `propose-to-a` | Admin `dbc0118a-21f9-408c-abf5-b01d9ca05e64` | proposal `HL-20260821-3-team1-to-a-propose` |
+| `accept-and-publish-to-a` | Manager A `e9f723c4-32d2-4823-a1d4-233fe0ce2f45` | acceptance `HL-20260821-3-team1-to-a-accept`; publisher and its immediate identical replay `HL-20260821-3-outbox-team1-return-to-manager-a` |
+
+Immediately before every `POST`, including each publisher replay, the helper
+must fetch
+`https://staging.hundoleago.com/release-qa/hl-20260821-3/enabled.json` with
+`cache: no-store`, `credentials: same-origin`, and `redirect: error`. It must
+fail closed unless status is `200`, `response.url` is that exact URL,
+`response.type` is `basic`, media type is `application/json`, and the response
+has exactly this key set and values:
+
+```json
+{
+  "contractVersion": 1,
+  "enabled": true,
+  "releaseId": "HL-20260821-3",
+  "expiresAt": "2026-08-23T07:00:00.000Z",
+  "frontendBuildId": "0e8eee92e2e323dd7f25ec3112988feaf23f96f0",
+  "backendBuildId": "23971a4d66ee6383c6ad54339e769dbc9a76561e",
+  "frontendOrigin": "https://staging.hundoleago.com",
+  "apiOrigin": "https://api-staging.hundoleago.com"
+}
+```
+
+The helper must compare the current time with exact `expiresAt` and fail
+before any POST at or after `2026-08-23T07:00:00.000Z`. This marker check is
+separate from the empty QueryClient invariant. No background action, retry,
+arbitrary endpoint/body/key input, password field, cookie/token display,
+Notifications read, or write on load is authorized.
+
+After the strict browser evidence is captured, the helper and enablement
+marker must be removed by first deleting the temporary helper-scoped
+`netlify.toml` block and restoring the exact original configuration, then
+redeploying the exact audited baseline `dist/` artifact without rebuilding it.
+Remote verification must prove every baseline path and hash unchanged, prove
+non-helper headers still match the original global rules, and prove that the
+release-QA paths now resolve only through the ordinary SPA fallback. That
+fallback has the wrong media type and payload for `enabled.json`, so any stale
+helper tab fails closed before its next write. This temporary staging
+authorization changes no production site, branch, service, data,
+configuration, credential, DNS record, or traffic.
+
+Corrected helper deploy `6a89e2c867e39d41cc630a26`, titled
+`HL-20260821-3-strict-action-helper-v2`, reached ready/published state at
+`2026-08-22T17:56:25.803Z`. Hosted verification passed `64` exact baseline
+byte/header gates and `8` exact helper byte/header gates while preserving the
+pinned main application. During double-browser inert reload window
+`2026-08-22T18:04:01.882Z` through `2026-08-22T18:04:06.741Z`, Render recorded
+zero request logs. Both helper tabs reported `READY` with actual isolated
+`QueryClient` query and mutation caches empty; explicit session verification
+matched Admin `dbc0118a-21f9-408c-abf5-b01d9ca05e64` and Manager B
+`c2684bf0-d30d-4b37-ae14-66620259798e`.
+
+Every executed phase-one POST passed its fresh-session/current-CSRF,
+per-POST `enabled.json`, expiry, and empty-QueryClient assertions. The Admin
+proposal additionally passed the exact Team 1 state/predecessor GET; Manager B
+acceptance additionally passed the exact pending-assignment GET. These were
+the only action-time state prechecks.
+
+Phase one then produced exact proposal status `201` and assignment
+`17746270-0706-4420-8efd-2f476dc00c68`. Before acceptance, persistent Manager
+A was `complete 1/0/0` and Manager B was `null 1/0/0`, both loaded/idle.
+Manager B acceptance returned `200`. Publisher event
+`acd9b9e8-9947-4988-8057-579737724869` returned `200`, `replayed: false`,
+`databaseWriteCount: 2`, and `schedulerRemainedDisabled: true`; its immediate
+exact replay returned `200`, `replayed: true`, and `databaseWriteCount: 0`.
+After settlement, Manager A passed at `null 2/1/1`; Manager B remained
+`complete` but reached `3/1/1`, not required `2/1/1`. A focus-triggered extra
+fetch is plausible but unproven and receives no waiver. Strict execution
+stopped, Notifications was never opened, and no return proposal, phase-two
+acceptance, or phase-two publisher call occurred. No password value is
+retained in evidence.
+
+The expected abort classifier is `to_b_accepted` with phase one `published`
+and return phase `none`. Initial partial-hold deploy
+`dep-da50g0v40ujc73aa5i4g` was manually canceled at
+`2026-08-22T20:39:55Z` and never reached `LIVE`. The exact full-hold matrix—
+maintenance true, writes closed, scheduled jobs/FAD routes/account email/debug/
+scheduled backups false, email capture, and SportsDataIO live mode disabled—
+was merge-set without changing `DATABASE_PATH`. Replacement deploy
+`dep-da50hssaud7c73d3mqeg` started at `2026-08-22T20:39:55Z` on exact backend
+`23971a4d66ee6383c6ad54339e769dbc9a76561e`, reached `LIVE`, passed
+`3,502/3,502`, and re-proved the exact full-hold runtime. Normal restore is not
+authorized for this incomplete smoke.
+
+The first abort-plan attempt failed closed with
+`RELEASE_QA_STRICT_RESTORE_PATH_UNSAFE` because the current source had exact
+`-wal` and `-shm` sidecars. A read-only process check found zero open file
+descriptors on the source or either sidecar. Before checkpointing, incident-
+preservation backup `44791a01-f62a-4729-b328-d3303bf79a12` at
+`staging/backups/hundo-leago_staging_20260822T213849188Z_44791a01-f62a-4729-b328-d3303bf79a12.manifest.json`
+verified plaintext SHA-256
+`9d36b59a7b2d0d38ef47fc5bc0514a51cb5a754629e3242597b9d4400849a51f`.
+The guarded canonical WAL checkpoint returned
+`busy/log/checkpointed: 0/0/0`, integrity `ok`, zero foreign-key violations,
+schema `54`, and both source sidecars absent.
+
+The next abort plan passed with exact classification `to_b_accepted`, phase
+one `published`, and return `none`. A first execute using a manually
+transcribed plan value failed safely with
+`RELEASE_QA_STRICT_RESTORE_PLAN_MISMATCH` and did not materialize the target.
+Using the exact byte-extracted plan values, first execution passed with
+`replayed: false`, zero authoritative-database mutations, two durable-
+filesystem mutations, `sourcePreserved: true`, and `targetVerified: true`.
+Immediate exact replay passed with `replayed: true`, zero authoritative-
+database mutations, zero durable-filesystem mutations, and no temporary
+plaintext restore. Post-checkpoint incident-preservation backup
+`fa8c7b2d-04c9-4454-aae4-285673432fb7` at
+`staging/backups/hundo-leago_staging_20260822T214720472Z_fa8c7b2d-04c9-4454-aae4-285673432fb7.manifest.json`
+verified the same plaintext SHA-256, proving the checkpoint did not change the
+authoritative database bytes.
+
+Only `DATABASE_PATH` was then changed to the verified inactive target while
+the full hold remained intact. Cutover deploy `dep-da51hjvqj5pc73bh8g3g`
+started at `2026-08-22T21:46:55.442059Z`, completed `LIVE` at
+`2026-08-22T22:37:35.066844Z`, and runs exact backend
+`23971a4d66ee6383c6ad54339e769dbc9a76561e`. Its hosted gate passed all `443`
+suites and `3,502/3,502` tests with zero fail/cancel/skip/todo in
+`3006420.142708ms`; build completion was `2026-08-22T22:37:16.851Z` after
+`1.9s` upload and `0.2s` compression. New instance
+`srv-d9eo2turnols73ekb830-qx9zx` ran `npm start` at
+`2026-08-22T22:37:29.025Z`, became live at `2026-08-22T22:37:35.170Z`, and
+recorded zero error logs through `2026-08-22T22:38:46Z`. Public live and ready
+checks returned `200`, `Cache-Control: no-store`, and `{status:'ok'}`.
+
+A fresh attached shell confirmed exact backend and frontend builds, target
+`DATABASE_PATH`, persistent root `/opt/render/project/data/hundo-staging`,
+`APP_ENV=staging`, `NODE_ENV=production`, environment `test:release-qa`,
+database `m7-release-qa-fixture`, and the unchanged full hold: maintenance
+true; writes closed; jobs, FAD routes, account email, debug routes, and backup
+schedule false; email capture; provider disabled.
+
+The read-only temporary-copy verifier had scratch SHA-256
+`5f7de38f2673d3bb4c7d2b086b5d699afab1d173aceb86298d6e40eacb48b77f`
+and returned `HL_POST_CUTOVER_TARGET_VERIFIED`. It never opened or mutated the
+authoritative database. It proved source preservation at SHA-256
+`859eda97cd4c55724907abb5cd91f8dd741dd4cab9f9543df8942a1e2310ee05`,
+target SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`,
+absent source/target sidecars, and activation-receipt SHA-256
+`009227a315708be575d553eb39d72797c6f18824f0cd63b6a95580d026cb67bb`.
+The abort receipt and derived plan verified at exact state
+`to_b_accepted/published/none`, semantic/smoke/hosted completion all false,
+and release-blocked/rollback-only both true. The target passed integrity `ok`,
+zero foreign-key violations, schema and data-model version `54`, `54` applied
+migrations, migration checksum
+`6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89`,
+exact environment/database identity, second-rotation receipt
+`9152f844-d8cd-42f7-b0d5-b12f530ad618`, zero active sessions, strict-fixture
+absence including league `60c82aa0-54f9-4c93-83f5-73b0d6d6f63e`, preparation
+receipt `0ed590d8-832a-469a-848e-f91b0b37fe56`, and its transfer chain, plus
+temporary-copy removal.
+
+Post-cutover backup `2044fcae-24e8-4392-a1ac-4064d9cd2807` passed from
+manifest
+`staging/backups/hundo-leago_staging_20260822T224011048Z_2044fcae-24e8-4392-a1ac-4064d9cd2807.manifest.json`.
+Encrypted SHA-256 was
+`cee039557278c41f59fa9d6a5b09cf4f69f1b9f3589cb3774420ef34be255162`,
+manifest checksum was
+`08e3d3bde81843a683017d9952b30e02dd02978181a8644323cfbd590eca2ac8`,
+and verification returned plaintext SHA-256
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`,
+integrity `ok`, and zero foreign-key violations. A fresh-shell anonymous
+session request returned `503 SERVICE_MAINTENANCE` with `no-store`. Held abort
+restoration, cutover, re-verification, and post-cutover backup are `PASS`; the
+strict privacy release remains `BLOCKED` and `ACTIVE`, and reopening is not
+authorized by this evidence.
+
+The temporary helper rollback submitted the exact sealed baseline and original
+Netlify configuration to canonical staging with title
+`HL-20260821-3-remove-strict-action-helper-baseline`. Deploy
+`6a8a09c13d5e25282f64d2c7` was created at
+`2026-08-22T20:42:41.902Z`, published at `2026-08-22T20:42:43.080Z`, and is
+current/ready. Netlify exited `0`. Remote verification passed `64/64` baseline
+byte checks, `8/8` original header checks, and `8/8` retired helper-path checks
+across canonical staging and the immutable deploy origin. Each retired
+extensionless HTML, JS, CSS, and marker path returned the exact `472`-byte SPA
+index fallback with SHA-256
+`1982ECF04CC456D989F7B42F15F3CED49A5D825DF0DEDD948DEAFFE8D8C1ADC8`; the
+physical `.html` path also fell back. The retired marker is `text/html`, not
+JSON, so a stale helper tab fails closed before any POST. Helper removal is
+`PASS`; abort materialization/replay also pass, while restored-target cutover
+deploy `dep-da51hjvqj5pc73bh8g3g`, target re-verification, and post-cutover
+backup also pass under the unchanged full hold.
+
+The exact fixture identities are:
+
+```text
+League:       60c82aa0-54f9-4c93-83f5-73b0d6d6f63e
+Team 1:       ebc815c7-8a41-4326-8faf-04548aa91c76
+Team 2:       b43e5c7f-0585-46d9-b71c-596c3c024b66
+Admin:        dbc0118a-21f9-408c-abf5-b01d9ca05e64
+Commissioner: 6d31c7c9-e636-440f-98f5-4fdf82a758f0
+Manager A:    e9f723c4-32d2-4823-a1d4-233fe0ce2f45
+Manager B:    c2684bf0-d30d-4b37-ae14-66620259798e
+```
+
+Both proposals and acceptances are direct authenticated browser API calls,
+not UI approximations. Admin calls
+`POST /api/v1/leagues/60c82aa0-54f9-4c93-83f5-73b0d6d6f63e/teams/ebc815c7-8a41-4326-8faf-04548aa91c76/manager-assignment`
+first with `{ "userId": "c2684bf0-d30d-4b37-ae14-66620259798e" }` for
+Manager B and later with
+`{ "userId": "e9f723c4-32d2-4823-a1d4-233fe0ce2f45" }` for Manager A. The
+target manager then calls
+`POST /api/v1/team-manager-assignments/<assignmentId emitted by that proposal>/accept`
+with the exact body `{}`. The four fixed `Idempotency-Key` values are, in
+order:
+
+```text
+HL-20260821-3-team1-to-b-propose
+HL-20260821-3-team1-to-b-accept
+HL-20260821-3-team1-to-a-propose
+HL-20260821-3-team1-to-a-accept
+```
+
+All six direct proposal, acceptance, and publisher calls use the active
+caller's authenticated cookie jar, `credentials: include`, JSON content type,
+the current session's `X-CSRF-Token`, an allowed staging `Origin`, and
+compatible browser fetch metadata. The two publisher calls use these exact
+phase contracts:
+
+| Phase | Caller | `Idempotency-Key` | Exact confirmation |
+| --- | --- | --- | --- |
+| `team1-to-manager-b` | Manager B `c2684bf0-d30d-4b37-ae14-66620259798e` | `HL-20260821-3-outbox-team1-to-manager-b` | `PUBLISH-HL-20260821-3-TEAM1-TO-MANAGER-B` |
+| `team1-return-to-manager-a` | Manager A `e9f723c4-32d2-4823-a1d4-233fe0ce2f45` | `HL-20260821-3-outbox-team1-return-to-manager-a` | `PUBLISH-HL-20260821-3-TEAM1-RETURN-TO-MANAGER-A` |
+
+Each publisher body has exactly `backendBuildId`, `confirmation`, `phase`, and
+`releaseId`; `backendBuildId` is the exact deployed `APP_BUILD_ID` SHA and
+`releaseId` is `HL-20260821-3`. A fresh success uses the canonical Socket.IO
+publication service, changes exactly the target row twice (claim then
+published), returns `databaseWriteCount: 2` and
+`schedulerRemainedDisabled: true`, and leaves Gamma, Team 2, job state, and
+every unrelated outbox row unchanged. Its exact already-published replay is
+zero-write. Normal restore requires both target rows to be published exactly
+once with their exact payload/audience evidence.
+
+The following two-cookie choreography remains the frozen acceptance comparator.
+The recorded phase-one `STOP` prohibits resuming its return phase:
+
+1. Record environment, database, and fixture prechecks under the full hold.
+   After the controlled unhold, Jar X signs in as Admin, performs the Admin
+   role/privacy prechecks, proposes Team 1 to Manager B, then signs out.
+   Manager A signs into Jar X, opens Team 1 results with
+   `?releaseQaT132=1`, and keeps that exact page/component mounted through both
+   publication events. Its settled initial checkpoint is offer `complete`,
+   loads/evictions/successful refetches `1/0/0`.
+2. Jar Y signs in as Manager B and opens Team 1 results plus the diagnostic
+   before acceptance. Its settled initial checkpoint is offer `null` and
+   `1/0/0`. Manager B accepts, then invokes phase one from a separate Jar-Y
+   action tab using the same cookie but a separate QueryClient. After the event
+   settles, Jar X is `null` at `2/1/1`; Jar Y is `complete` at `2/1/1`; and
+   the original T-132 Query object has been removed and replaced.
+3. Jar Y signs Manager B out, signs Admin in, proposes Team 1 back to Manager
+   A, signs Admin out, signs Manager B back in, and remounts Team 1 before
+   Manager A accepts. That fresh Jar-Y mount starts `complete` at `1/0/0`.
+   Jar X remains mounted and retains its phase-one cumulative `null` at
+   `2/1/1`.
+4. Manager A accepts and invokes phase two from a separate Jar-X action tab.
+   After settlement, persistent Jar X is `complete` at cumulative `3/2/2`;
+   remounted Jar Y is `null` at `2/1/1`. Do not report Jar Y as cumulative
+   across its sign-out and remount.
+
+Every settled diagnostic checkpoint must be `state=loaded` and
+`fetchStatus=idle`; transient pending/refetching state is allowed only while
+the event settles. T-131 and T-140 must independently refetch and flip between
+complete offer/action and null/no-action, while the T-132 diagnostic is the
+proof that the physical cache object was replaced. Evidence retains only the
+classification and counters, never money or raw response/socket payloads.
+
+If either publisher invocation fails, crashes, or leaves the target row
+`failed` or `publishing`, do not retry it. Immediately restore the full hold,
+preserve the failure state, and use the strict abort plan/execute path below.
+
+#### Fresh `HL-20260822-1` fixture preparation handoff
+
+Fixture preparation was an intentional write to the pinned authoritative
+source database, not to the fresh inactive target. The operator ran the exact
+prepare command below once under the full hold, then ran the identical command
+once more as the idempotency replay:
+
+```text
+npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
+
+npm run release:qa:fad:privacy-gate:prepare -- --database '/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3' --environment staging --persistent-root '/opt/render/project/data/hundo-staging' --release-id 'HL-20260822-1' --confirmation 'PREPARE-RELEASE-QA-FAD-PRIVACY-GATE:HL-20260822-1:staging:test:release-qa:m7-release-qa-fixture'
+```
+
+Both complete sanitized results were captured. They bind FAD
+`f474f00b-111c-4dec-8592-ffcbaf97e655`, restricted auction
+`551f475b-352f-4c06-831a-534b9750754a`, actionable deadline
+`1787554800000` (`2026-08-24T07:00:00.000Z`), receipt
+`88a56507-73fd-47f9-ac66-c305f0075d24`, fingerprint
+`1a097b50afa8915c7cd98154dc455604965739c6d61213ac9caec90a6487620b`, and
+prepared time `1787519331074`. The first reports `replayed: false` and
+`databaseWriteCount: 744`; the immediate identical replay reports
+`replayed: true` and `databaseWriteCount: 0` with the same IDs, times, public
+counts, and inserted-row counts. `databaseWriteCount` is the canonical field;
+the older `writeCount` wording elsewhere in historical narrative is only
+shorthand and must not be copied into fresh evidence. Do not invoke preparation
+again during this smoke attempt.
+
+Before either command, the inactive target, its WAL/SHM sidecars, activation
+receipt, and deterministic restore work area were proven absent. They remained
+absent throughout prepare and replay and, under the then-active contract, were
+required to remain absent through controlled unhold and hosted smoke. The
+release stopped before either phase; the selected abort execute later
+materialized the target and receipt under the full hold. This is a historical
+pre-abort absence rule, not the current filesystem state or authority to resume.
+The source bytes changed on the first prepare because the fixture was installed
+there; backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807`, not a post-prepare source hash, remains
+the clean restore point. Only the selected normal or abort restore execute may
+materialize the target and activation receipt under the restored full hold.
+
+The fixture's exact emitted deadline was `2026-08-24T07:00:00.000Z`
+(`actionableUntilMs: 1787554800000`), the next daily FAD rollover at midnight
+in `America/Vancouver`. The release terminated before either hosted phase and
+used abort recovery. This recorded deadline no longer permits preparation,
+smoke, or resumption.
+
+#### Fresh `HL-20260822-1` same-cookie helper record - blocked and retired
+
+The now-closed helper contract authorized only an additive overlay on sealed
+Netlify baseline `6a8a3880f946cc39a2bf2bb6`, under exact lowercase path
+`/release-qa/hl-20260822-1/`. The overlay was required to preserve all `33`
+application files and these pinned baseline identities:
+
+```text
+Frontend build: 4dfe12d1366314e3d9df722c50771324647743c9
+index.html:     472 bytes / 90620768a37b57b905a35cd576077cd4c4f1a760da28fc8c1c8a9347458383ca
+main bundle:    assets/index-BFtuYVmF.js / 527839 bytes / 19ee27ed0fa33016e9614b5dd63095b3f1d3af1fc8f33616b4c30a3c961cd201
+CSS:            assets/index-C-yMyteT.css / 108551 bytes / 74aab8400795639840c5efeff9e14ffe5539b71dda1a09c523e50edf63c1ab88
+```
+
+The closed contract required the marker to bind release `HL-20260822-1`, the
+frontend build above, exact backend commit
+`8e313902feefcd683b0f5edd746a9dd2a9029a18`, canonical frontend/API origins,
+and exact expiry `2026-08-24T07:00:00.000Z`. The helper was not deployed while
+that value was a placeholder. Every marker check, header, CSP, inert-load,
+empty isolated QueryClient, same-cookie, explicit arming, fresh CSRF/session,
+exact-identity, no-secret, no-retry, and fail-closed rule was part of that
+historical release-bound contract.
+
+The closed contract reserved these release-derived idempotency and publisher
+values; none was used because the strict smoke never began:
+
+```text
+HL-20260822-1-team1-to-b-propose
+HL-20260822-1-team1-to-b-accept
+HL-20260822-1-outbox-team1-to-manager-b
+PUBLISH-HL-20260822-1-TEAM1-TO-MANAGER-B
+HL-20260822-1-team1-to-a-propose
+HL-20260822-1-team1-to-a-accept
+HL-20260822-1-outbox-team1-return-to-manager-a
+PUBLISH-HL-20260822-1-TEAM1-RETURN-TO-MANAGER-A
+```
+
+Had the smoke begun, both phases would have run from the newly prepared fixture.
+The T-132 comparator would have counted distinct successful Query instances
+once and physical eviction/replacement separately: initial `1/0/0`, after
+A-to-B `2/1/1`, and after B-to-A `3/2/2`. The old `3/1/1` failure was not
+waivable or a valid extra refetch. The closed contract required helper and
+marker removal plus exact sealed-baseline republication after evidence capture;
+the actual pre-action retirement is recorded below.
+
+The additive overlay was published exactly once as deploy
+`6a8b678ddbcf0b4ea8ba623c`, title
+`HL-20260822-1-strict-helper-fe6d2dd`, at
+`2026-08-23T21:35:11.134Z`. Canonical and immutable checks passed all four
+helper byte/header boundaries and the sealed critical-file checks. The first
+browser entry incorrectly used the physical `.html` URL. The runtime rejected
+that pathname immediately as `STRICT_STOP / ORIGIN_GUARD /
+EXACT_STAGING_ORIGIN_REQUIRED`; all controls stayed disabled. The tab was
+closed without reload or replacement. Render recorded zero requests from
+`21:35Z` through `21:42Z`, proving no session, marker, API, XHR, WebSocket, or
+write request reached the backend. The full hold never lifted and the strict
+smoke did not begin. Under the release-specific no-retry rule, this closed the
+helper action path and selected abort recovery.
+
+Retirement deploy `6a8b6b25126dabed39fa404d`, title
+`HL-20260822-1-abort-retire-helper-baseline`, published at
+`2026-08-23T21:50:30.415Z` with five header rules and no functions. Exact
+baseline bytes and all `10/10` retired helper-path checks passed across
+canonical and immutable origins; each retired path returned the `472`-byte
+`text/html` SPA fallback with SHA-256 `90620768...`. The old helper must not be
+reopened or reused. This entire helper contract is historical and grants no
+authority to resume `HL-20260822-1` or reuse its marker, action, publisher, or
+idempotency values.
+
+### M7-26 fresh strict staging restore exception - exercised and closed
+
+The now-closed exception required the service to return to the full maintenance
+hold after either complete smoke or an exact recognized incomplete/failed state
+and before any restore command. Only release `HL-20260822-1`, Render service
+`srv-d9eo2turnols73ekb830`, environment `test:release-qa`, database
+`m7-release-qa-fixture`, source
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260821-3.sqlite3`,
+and inactive target
+`/opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260822-1.sqlite3`
+were authorized by that exception. The exact candidate was backup
+`2044fcae-24e8-4392-a1ac-4064d9cd2807`, schema `54`, migration checksum set
+`6032a48eb5126eff1bfa371937c3a086cb629bdbebaddfcb912cb4bb4799ff89`,
+and frontend build `4dfe12d1366314e3d9df722c50771324647743c9`.
+
+Backup and Restore records four exact commands. Under the then-active
+exception, the normal `release:qa:strict-restore:plan` /
+`release:qa:strict-restore:execute` pair was permitted only after complete
+hosted smoke; the rollback-only `release:qa:strict-restore:abort:plan` /
+`release:qa:strict-restore:abort:execute` pair applied after a recognized
+incomplete or failed smoke, including a publisher crash. The selected plan's
+complete sanitized result had to be retained, and only its emitted `planId` and
+`confirmation` could enter the matching execute mode; normal and abort evidence
+could not cross. The operator also had to confirm the attached Render service
+independently because the command's service ID is operator-asserted, not
+provider-verified. The abort pair was selected and completed; this exception
+grants no authority to run either pair again.
+
+The abort classifier accepts only:
+
+- `prepared_only` with publication states `none/none`;
+- `to_b_pending` with the exact B proposal/idempotency/one delivered
+  notification, no acceptance, and `none/none`;
+- `to_b_accepted` with phase one exactly
+  `pending|publishing|failed|published` and return `none`;
+- `return_to_a_pending` with phase one `published`, the exact A return
+  proposal/idempotency/one delivered notification, and return `none`; or
+- `return_to_a_accepted` with phase one `published` and return exactly
+  `pending|publishing|failed|published`.
+
+Only `return_to_a_accepted` reports
+`sourceSemanticChainCompleted: true`; every abort result/receipt reports
+`smokeCompleted: false`, `hostedSmokeCompleted: false`,
+`releaseBlocked: true`, and `rollbackOnly: true`. Anything else fails closed:
+do not apply a manual SQL fix and do not substitute a generic restore.
+
+Both plan modes perform zero authoritative-database and zero durable-
+filesystem mutations, but truthfully create and remove temporary plaintext
+database copies in the deterministic private work directory. A pre-existing
+directory or abrupt-termination residue blocks reuse until manually reviewed
+under the hold. Normal execute must prove the exact Admin-proposed and manager-
+accepted Team 1 `A -> B -> A` chain, unchanged Team 2 assignment, both exact
+publisher rows `published` once with attempt `1` and row version `3`, and no
+auction bid, resolution, allocation, or allocation-event drift. A first
+normal or abort execute may create only the
+inactive target plus its mode-specific receipt while preserving the source;
+exact replay must make zero authoritative-database and durable-filesystem
+mutations without an object-store request or encryption-key resolution.
+
+The commands do not change Render configuration or deploy. After successful
+execute and zero-mutation replay, the operator may change only `DATABASE_PATH`
+from the pinned source to the pinned target and redeploy the exact backend
+while every hold flag remains active. The release record must then prove the
+old source and receipt remain preserved; the target has the expected hash,
+identity, schema, checksum, integrity, foreign keys, second credential-
+rotation receipt, and zero active sessions; and the strict fixture and its
+transfer records are absent. A verified incident-preservation backup precedes
+fresh controlled activation. Account email remains disabled in capture mode
+unless a separate restored-outbox reconciliation decision and evidence
+authorize a change. This is not generic, in-place, or production restore
+authority.
+
+`HL-20260822-1` selected the abort namespace. Plan
+`release-qa-strict-restore-abort-v1-59641427f2021cbb3285f6ef59635301fbcdb93177288827afd787fed1a28a99`
+classified exact `prepared_only` with publication states `none/none`, source
+SHA-256 `c26fdebc...`, absent target, zero authoritative-database and durable-
+filesystem mutations, and verified temporary cleanup. Execute returned
+`RELEASE_QA_STRICT_RESTORE_ABORT_MATERIALIZED`, `replayed: false`, zero
+authoritative-database mutations, two durable-filesystem mutations,
+`sourcePreserved: true`, `targetVerified: true`, `releaseBlocked: true`, and
+`rollbackOnly: true`. Clean target plaintext SHA-256 is
+`cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc`, and the
+activation-receipt SHA-256 is
+`b846edcffca67b1e6ba29e7ff2d1335d44f30ab251bc4daf40e9dd49de920592`.
+Immediate identical replay reported `replayed: true`, zero mutations in both
+categories, and no temporary work.
+
+Only `DATABASE_PATH` was then merge-updated to the clean target. Held cutover
+deploy `dep-da5mmpu417fc73807ptg` was the then-newest `LIVE` deploy on exact B
+at the recovery boundary after its complete hosted gate passed. Corrected
+post-cutover verifier v2 returned
+`HL_POST_CUTOVER_TARGET_VERIFIED`, removed its owned scratch artifacts, and
+verified the clean target and abort receipt without opening the authoritative
+database. Fresh backup `e735e6a4-53d1-479a-bc5e-4b6bcf3d58a6` and separate
+plaintext/integrity/foreign-key verification passed. Recovery is complete under
+the unchanged full hold; this is not activation or reopening authority.
+
+No script or migration in this plan may open, repair, reset, or otherwise
+modify production data. The user must be warned again before any later
+production correction of Beta League or another protected membership record.
+
+## Separate Launch Gates After M7-26
+
+The strict staging rerun must not absorb or hide these independently confirmed
+launch-hardening gaps:
+
+1. T-005 session bootstrap omits the approved memberships and selected-safe
+   defaults.
+2. Session revocation or replacement in T-004/T-006/T-007/T-009/T-011 does
+   not yet proactively disconnect the affected live Socket.IO clients.
+3. Provider-neutral statistics and matchup-occurrence job operation, the
+   T-067/T-093 late-legal game-source contract, and T-074 atomic cancellation
+   for contract plus `prospect_right` trade assets remain incomplete.
+4. Production still requires its own backup, rehearsal, explicit authority,
+   migration, deployment, first-write, observation, and rollback gates.
+
+These items are not fixed or waived by an M7-26 staging pass. They become the
+next launch-readiness gates after strict release closeout.
+
+## Required Verification
+
+Frontend:
+
+```text
+npm run lint
+npm test
+npm run build
+npm run verify:m3-browser-authority
+npm ls --all
+git diff --check
+```
+
+Backend:
+
+```text
+npm run check
+npm test
+git diff --check
+```
+
+Focused tests must cover every changed response contract, role boundary,
+league-isolation case, hidden/internal-field rule, automatic acknowledgement,
+trade approval transition, result correction/rebuild transaction, protected
+administrator membership, commissioner transfer, legacy-history read, and the
+approved focused prospect sign/decline/release movement.
+
+Browser acceptance must cover manager, commissioner, and platform-
+administrator roles at desktop and narrow mobile widths. Hosted smoke tests
+avoid real auction, trade, roster, result, notification, membership, or data-
+repair writes unless the exact staging fixture action is separately planned,
+reversible, and recorded.
+
+## Stop Conditions
+
+Stop before production. Stop if an exact staging target, database identity,
+backup, restore, migration boundary, release identity, or rollback point cannot
+be proven. Stop rather than weakening authorization, exposing private offer or
+bid data, inventing frontend league calculations, deleting audit evidence, or
+removing a recovery path before its replacement is verified.
+
+## Completion Conditions
+
+M7-26 is complete only when:
+
+1. all checkpoints are implemented and verified;
+2. both repositories pass their focused and complete gates;
+3. required canonical specifications reflect the implemented behavior;
+4. exact frontend and backend commits are published separately to staging;
+5. any staging migration has verified backup, clean-restore, integrity,
+   foreign-key, and rollback evidence;
+6. Render and Netlify deployments identify the exact tested builds;
+7. public health and authenticated desktop/mobile role smoke tests pass;
+8. protected staging data changed only through recorded approved workflows;
+9. no production branch, service, data, configuration, job, or traffic changed;
+   and
+10. the release evidence records exact commands, results, deploy IDs, risks,
+    and remaining production decision.
+
+## Closeout and Archive Transition
+
+M7-26 remains `PENDING`. Release `HL-20260822-1` is closed to further action as
+`BLOCKED / ABORT-RECOVERED; VERIFIED HELD RECOVERY COMPLETE`. Fresh release
+`HL-20260823-1` is now blocked at operator-sequencing strict stop. Its clean
+backup boundary and pre-action fixture-bearing source are bound, its target is
+absent, and B-prime
+implementation, local verification, backend publication, held
+deployment/runtime, fixture prepare/replay, held postflight, helper
+construction/local verification, corrected helper publication/hosted proof,
+controlled-unhold deployment/runtime, and v2 unheld pre-smoke verification
+passed. Phase one reached accepted/published state with `fresh 2` / `replay 0`,
+but phase two never began. Full re-hold, abort-v2 B2 mint/publication, the held
+B2 deployment/runtime gate, and the fresh B2-pinned verifier now pass. The exact
+abort-v2 plan, its one published-authority first execute, and its one authorized
+byte-identical replay pass. The first-execute result is accepted at
+`replayed: false` / `0/2`; replay is accepted at `replayed: true` / `0/0`.
+Both authorities are consumed and neither may be rerun. The exact one-shot
+staging Netlify helper-retirement dispatch also ran and is consumed. Published
+incident amendment `0498fd4...`, refreshed provider postflight, corrected
+official HTTP proof, local postflight, and exact cleanup all pass. Helper
+retirement is complete with no retry. Every later post-abort gate awaits another
+evidence-bound amendment; Chrome disk/FD reproof remains pending and normal
+recovery remains forbidden.
+
+After the final hosted gates pass, this plan's status will change to
+`COMPLETE - STAGING ONLY`, the final evidence will replace every pending
+placeholder in the M7-26 release record, and this plan will move to:
+
+```text
+docs/06-work-plans/archive/M7-26_FULL_SITE_UI_REVIEW.md
+```
+
+The active-plan path must not be emptied or replaced until the next contained
+work plan is deliberately selected. No archive move, M7-26 completion claim,
+production release or uncontrolled execution authority is made by this mint.

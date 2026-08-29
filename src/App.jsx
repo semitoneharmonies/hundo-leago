@@ -1,6 +1,13 @@
 // src/App.jsx
-import React, { useEffect, useRef, useState } from "react";
-import "./App.css";
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 import { io as socketIOClient } from "socket.io-client";
 import { playSound } from "./sound";
 import { HOCKEY_QUOTES } from "./quotes";
@@ -8,7 +15,8 @@ import TeamRosterPanel from "./components/TeamRosterPanel";
 import LeagueHistoryPanel from "./components/LeagueHistoryPanel";
 import TeamToolsPanel from "./components/TeamToolsPanel";
 import CommissionerPanel from "./components/CommissionerPanel";
-import TopBar from "./components/TopBar";
+import { AppShell } from "./app/AppShell.jsx";
+import { ApplicationRoutes } from "./app/router.jsx";
 import {
   calculateBuyout,
   buildTradeFromDraft,
@@ -20,14 +28,109 @@ import {
   placeFreeAgentBid,
   resolveAuctions,
   removeAuctionBidById,
-  isTeamIllegal,
 } from "./leagueUtils";
-import { Routes, Route } from "react-router-dom";
-import FreeAgentsPage from "./pages/FreeAgentsPage";
-import MatchupsPage from "./pages/MatchupsPage";
-import StandingsPage from "./pages/StandingsPage";
+import { Route } from "react-router-dom";
+import { AccountHome } from "./features/accounts/AccountHome.jsx";
+import { loadLazyNamedRoute } from "./shared/lazyRoute.js";
 
+function lazyNamed(loadModule, exportName) {
+  return lazy(() => loadLazyNamedRoute({ loadModule, exportName }));
+}
 
+const loadAccountActions = () =>
+  import("./features/accounts/AccountActionPages.jsx");
+const ReactivateAccountPage = lazyNamed(
+  loadAccountActions,
+  "ReactivateAccountPage"
+);
+const ResetPasswordPage = lazyNamed(loadAccountActions, "ResetPasswordPage");
+const SetupAccountPage = lazyNamed(loadAccountActions, "SetupAccountPage");
+const VerifyEmailPage = lazyNamed(loadAccountActions, "VerifyEmailPage");
+const AccountSettingsPage = lazyNamed(
+  () => import("./features/accounts/AccountSettingsPage.jsx"),
+  "AccountSettingsPage"
+);
+
+const loadLeaguePages = () => import("./features/leagues/LeaguePages.jsx");
+const LeagueOverviewPage = lazyNamed(loadLeaguePages, "LeagueOverviewPage");
+const LeagueSelectionPage = lazyNamed(loadLeaguePages, "LeagueSelectionPage");
+const LeagueTeamsPage = lazyNamed(loadLeaguePages, "LeagueTeamsPage");
+const TeamWorkspacePage = lazyNamed(loadLeaguePages, "TeamWorkspacePage");
+
+const loadTransactionPages = () =>
+  import("./features/transactions/TransactionPages.jsx");
+const ActivityPage = lazyNamed(loadTransactionPages, "ActivityPage");
+const TradeDetailPage = lazyNamed(loadTransactionPages, "TradeDetailPage");
+const TradesPage = lazyNamed(loadTransactionPages, "TradesPage");
+
+const loadAuctionPages = () => import("./features/auctions/AuctionPages.jsx");
+const AuctionsPage = lazyNamed(loadAuctionPages, "AuctionsPage");
+const AuctionDetailPage = lazyNamed(loadAuctionPages, "AuctionDetailPage");
+
+const loadFreeAgentDraftPages = () =>
+  import("./features/freeAgentDraft/FreeAgentDraftPages.jsx");
+const CurrentFreeAgentDraftPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "CurrentFreeAgentDraftPage"
+);
+const DraftsPage = lazyNamed(loadFreeAgentDraftPages, "DraftsPage");
+const FreeAgentDraftPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "FreeAgentDraftPage"
+);
+const FreeAgentDraftResultsPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "FreeAgentDraftResultsPage"
+);
+const FreeAgentDraftAllocationResultsPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "FreeAgentDraftAllocationResultsPage"
+);
+const CandidateCardPage = lazyNamed(
+  loadFreeAgentDraftPages,
+  "CandidateCardPage"
+);
+
+const NotificationsPage = lazyNamed(
+  () => import("./features/notifications/NotificationsPage.jsx"),
+  "NotificationsPage"
+);
+
+const loadPlayerPages = () => import("./features/players/PlayerPages.jsx");
+const PlayerDetailPage = lazyNamed(loadPlayerPages, "PlayerDetailPage");
+const PlayersPage = lazyNamed(loadPlayerPages, "PlayersPage");
+
+const loadCompetitionPages = () =>
+  import("./features/competition/CompetitionPages.jsx");
+const CommissionerCompetitionPage = lazyNamed(
+  loadCompetitionPages,
+  "CommissionerCompetitionPage"
+);
+const CommissionerRosterPage = lazyNamed(
+  () =>
+    import("./features/commissioner/CommissionerRosterPage.jsx"),
+  "CommissionerRosterPage"
+);
+const LegacyMatchupsRedirect = lazyNamed(
+  loadCompetitionPages,
+  "LegacyMatchupsRedirect"
+);
+const LegacyPlayersRedirect = lazyNamed(
+  loadCompetitionPages,
+  "LegacyPlayersRedirect"
+);
+const LegacyStandingsRedirect = lazyNamed(
+  loadCompetitionPages,
+  "LegacyStandingsRedirect"
+);
+const LeagueMatchupsPage = lazyNamed(
+  loadCompetitionPages,
+  "LeagueMatchupsPage"
+);
+const LeagueStandingsPage = lazyNamed(
+  loadCompetitionPages,
+  "LeagueStandingsPage"
+);
 
 // Backend endpoint (Netlify env var first, fallback hard-coded)
 const API_URL =
@@ -61,23 +164,7 @@ const MAX_ROSTER_SIZE = 15;
 const MIN_FORWARDS = 8;
 const MIN_DEFENSEMEN = 4;
 
-  // Phase 0 safety: allow disabling autosave from Netlify env var
-const DISABLE_AUTOSAVE = import.meta.env.VITE_DISABLE_AUTOSAVE === "true";
-
-
-
-// Very simple "login" setup – front-end only
-const managers = [
-  { teamName: "Pacino Amigo", role: "manager", password: "pacino123" },
-  { teamName: "Bottle O Draino", role: "manager", password: "draino123" },
-  { teamName: "Imano Lizzo", role: "manager", password: "lizzo123" },
-  { teamName: "El Camino", role: "manager", password: "camino123" },
-  { teamName: "DeNiro Amigo", role: "manager", password: "deniro123" },
-  { teamName: "Champino", role: "manager", password: "champino123" },
-  // Commissioner user
-  { teamName: "Commissioner", role: "commissioner", password: "commish123" },
-];
-
+const normalizeKey = (s) => String(s || "").trim().toLowerCase();
 
 function App() {
 
@@ -142,17 +229,12 @@ const [integrityMsg, setIntegrityMsg] = useState("");
   // --- Core league state ---
 const [teams, setTeams] = useState([]); // start empty; backend is source of truth
 
-  // Who is logged in?
-  const [currentUser, setCurrentUser] = useState(null);
+  // M3-01 transition: identity will come only from the future backend session.
+  const currentUser = null;
+  const hasAuthenticatedBackendSession = false;
 
   // Selected team in the dropdown
   const [selectedTeamName, setSelectedTeamName] = useState("");
-
-
-  // Very simple login form state
-  const [loginTeamName, setLoginTeamName] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
 
   // Trade-related state
   const [tradeDraft, setTradeDraft] = useState(null);
@@ -166,8 +248,6 @@ const [freeAgents, setFreeAgents] = useState([]); // all auction bids
   const [leagueLog, setLeagueLog] = useState([]);
   const [historyFilter, setHistoryFilter] = useState("all");
   const [hasLoaded, setHasLoaded] = useState(false);
-const saveTimerRef = useRef(null);
-const lastSavedJsonRef = useRef("");
 const autoCancelLockRef = useRef(false);
 
 // ===============================
@@ -178,9 +258,7 @@ const playersByNameRef = useRef(new Map()); // ✅ NEW: normalized fullName/name
 const [playersTick, setPlayersTick] = useState(0);
 const [playersReady, setPlayersReady] = useState(false);
 
-const normalizeKey = (s) => String(s || "").trim().toLowerCase();
-
-const upsertPlayers = (arr) => {
+const upsertPlayers = useCallback((arr) => {
   if (!Array.isArray(arr) || arr.length === 0) return;
   let changed = false;
 
@@ -243,25 +321,25 @@ const upsertPlayers = (arr) => {
   }
 
   if (changed) setPlayersTick((x) => x + 1);
-};
+}, []);
 
 const [statsByPlayerId, setStatsByPlayerId] = useState({});
 const [statsReady, setStatsReady] = useState(false);
 
 
-const getPlayerById = (id) => {
+const getPlayerById = useCallback((id) => {
   const pid = Number(id);
   if (!Number.isFinite(pid)) return null;
   return playersByIdRef.current.get(pid) || null;
-};
+}, []);
 
-const getPlayerNameById = (id) => {
+const getPlayerNameById = useCallback((id) => {
   const p = getPlayerById(id);
   return p?.fullName || p?.name || "";
-};
+}, [getPlayerById]);
 
 // Fetch one player by ID (cached)
-const fetchPlayerById = async (id) => {
+const fetchPlayerById = useCallback(async (id) => {
   const pid = Number(id);
   if (!Number.isFinite(pid)) return null;
 
@@ -275,7 +353,7 @@ const fetchPlayerById = async (id) => {
   const p = data?.player || null;
   if (p) upsertPlayers([p]);
   return p || null;
-};
+}, [getPlayerById, upsertPlayers]);
 
 // Search players by name (cached)
 const searchPlayers = async (query, limit = 25) => {
@@ -336,16 +414,13 @@ useEffect(() => {
   (async () => {
     try {
       const url = `${PLAYERS_API_URL}?limit=100000`;
-      console.log("[PLAYERS] preload url =", url);
 
       const res = await fetch(url);
-      console.log("[PLAYERS] preload status =", res.status);
 
       if (!res.ok) return;
 
       const data = await res.json();
       const arr = Array.isArray(data?.players) ? data.players : [];
-      console.log("[PLAYERS] preload count =", arr.length);
 
       if (cancelled) return;
 
@@ -354,18 +429,16 @@ useEffect(() => {
         upsertPlayers(arr);
         setPlayersReady(true);
         setPlayersTick((x) => x + 1);
-      } else {
-        console.warn("[PLAYERS] preload too small, leaving playersReady=false");
       }
-    } catch (e) {
-      console.warn("[PLAYERS] preload failed:", e);
+    } catch {
+      // The legacy catalog preload remains unavailable until the next mount.
     }
   })();
 
   return () => {
     cancelled = true;
   };
-}, [hasLoaded, playersReady, PLAYERS_API_URL]);
+}, [hasLoaded, playersReady, upsertPlayers]);
 
 useEffect(() => {
   if (!hasLoaded) return;
@@ -374,9 +447,7 @@ useEffect(() => {
 
   const fetchStats = async () => {
     try {
-      console.log("[STATS] fetching:", STATS_API_URL);
       const res = await fetch(STATS_API_URL);
-      console.log("[STATS] status:", res.status);
 
       if (!res.ok) return;
 
@@ -394,10 +465,9 @@ const ready = res.ok && count > 0;
 setStatsByPlayerId(by);
 setStatsReady(ready);
 
-console.log("[STATS] ready =", ready, "count =", count);
 
-    } catch (e) {
-      console.warn("[STATS] fetch failed:", e);
+    } catch {
+      // The periodic refresh retries statistics without exposing provider details.
     }
   };
 
@@ -410,7 +480,7 @@ console.log("[STATS] ready =", ready, "count =", count);
     cancelled = true;
     clearInterval(t);
   };
-}, [hasLoaded, STATS_API_URL]);
+}, [hasLoaded]);
 
 // ===============================
 // Phase 2A: Prefetch names for all rostered players (so UI shows DB names)
@@ -471,7 +541,6 @@ if (missing.length === 0) {
     const batch = missing.slice(0, 120);
 
     for (const pid of batch) {
-      // eslint-disable-next-line no-await-in-loop
       await fetchPlayerById(pid);
     }
 
@@ -480,14 +549,14 @@ if (missing.length === 0) {
       (pid) => !playersByIdRef.current.has(pid)
     );
     if (!stillMissing) setPlayersReady(true);
-  } catch (e) {
-    console.warn("[PLAYERS] prefetch failed:", e);
+  } catch {
+    // A later dependency change retries unresolved legacy player names.
   } finally {
     prefetchLockRef.current.running = false;
   }
 })();
 
-}, [hasLoaded, teams, freeAgents, playersReady]);
+}, [hasLoaded, teams, freeAgents, playersReady, fetchPlayerById]);
 
 const playerApi = {
   byId: playersByIdRef.current,
@@ -510,6 +579,7 @@ const playerApi = {
 // Random quote: pick once per full page load
 // ------------------------------------
 useEffect(() => {
+  if (!hasAuthenticatedBackendSession) return;
   if (!Array.isArray(HOCKEY_QUOTES) || HOCKEY_QUOTES.length === 0) return;
 
   const lastIndex = Number(localStorage.getItem("hundo_lastQuoteIndex") || -1);
@@ -521,7 +591,7 @@ useEffect(() => {
 
   localStorage.setItem("hundo_lastQuoteIndex", String(nextIndex));
   setDailyQuote(HOCKEY_QUOTES[nextIndex]);
-}, []);
+}, [hasAuthenticatedBackendSession]);
 
 // ------------------------------------
 // Option B: Single write funnel (Phase 0)
@@ -569,9 +639,12 @@ function trimLeagueLogNewestFirst(log) {
 }
 
 const commitLeagueUpdate = (reason, updater) => {
+  if (!hasAuthenticatedBackendSession) {
+    return false;
+  }
+
   // Local freeze gate (fast UX)
   if (typeof guardWriteIfFrozen === "function" && guardWriteIfFrozen()) {
-    console.warn("[COMMIT] blocked (frozen):", reason);
     return false;
   }
 
@@ -586,7 +659,6 @@ const commitLeagueUpdate = (reason, updater) => {
   }
 
   if (!cappedPatch) {
-    console.warn("[COMMIT] no-op:", reason);
     return false;
   }
 
@@ -598,7 +670,6 @@ const commitLeagueUpdate = (reason, updater) => {
 
   // Phase 0 shape safety: don’t allow accidental wipes / malformed writes
   if (!leagueStateLooksValid(next)) {
-    console.error("[COMMIT] rejected (invalid next state):", reason, next);
     return false;
   }
 
@@ -614,54 +685,6 @@ const commitLeagueUpdate = (reason, updater) => {
   return true;
 };
 
-
-// -------------------------
-// Auction win sound (manager)
-// -------------------------
-const winSoundLockRef = useRef(false);
-
-const playAuctionWinSound = () => {
-  if (winSoundLockRef.current) return;
-  winSoundLockRef.current = true;
-  setTimeout(() => (winSoundLockRef.current = false), 1500);
-
-  playSound("/sounds/VGauctionwin-crop.wav", { volume: 0.8 });
-};
-
-// ------------------------------------
-// Auction win: play sound once per new win
-// ------------------------------------
-useEffect(() => {
-  if (!currentUser || currentUser.role !== "manager") return;
-
-  const teamName = currentUser.teamName;
-  if (!teamName) return;
-
-  // Find newest win entry for this manager
-  const latestWin = (leagueLog || [])
-    .filter((e) => e?.type === "faSigned" && e?.team === teamName)
-    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
-
-  if (!latestWin?.timestamp) return;
-
-  const key = `hundo_lastHeardAuctionWin_${teamName}`;
-  const lastHeard = Number(localStorage.getItem(key) || "0");
-
-  if (latestWin.timestamp > lastHeard) {
-    // Mark first, then play (prevents double-play if re-render happens mid-sound)
-    localStorage.setItem(key, String(latestWin.timestamp));
-    playAuctionWinSound();
-  }
-}, [currentUser, leagueLog]);
-
-
-// -------------------------
-// Notifications (TopBar bell)
-// -------------------------
-const [notifications, setNotifications] = useState([]);
-const [unreadCount, setUnreadCount] = useState(0);
-const [lastSeenTs, setLastSeenTs] = useState(0);
-const illegalFlagRef = useRef(false);
 
 const detectLegacyIdIssues = (state) => {
   const issues = [];
@@ -699,6 +722,8 @@ const detectLegacyIdIssues = (state) => {
  const socketRef = useRef(null);
 
 useEffect(() => {
+  if (!hasAuthenticatedBackendSession) return;
+
   // Prevent double-connect in React Strict Mode dev
   if (socketRef.current) return;
 
@@ -708,28 +733,13 @@ useEffect(() => {
 
   socketRef.current = socket;
 
-  socket.on("connect", () => {
-    console.log("[WS] connected:", socket.id);
-  });
-
-  socket.on("connect_error", (err) => {
-    const msg = String(err?.message || "");
-    if (import.meta.env.DEV && msg.includes("closed before the connection is established")) {
-      // harmless strict-mode hiccup
-      return;
-    }
-    console.warn("[WS] connect_error:", err);
-  });
-
   socket.on("league:updated", () => {
-    console.log("[WS] league updated → reloading");
     fetch(API_URL)
       .then((r) => r.json())
       .then((data) => {
         const loadedState = normalizeLoadedLeague(data);
 
         if (!leagueStateLooksValid(loadedState)) {
-          console.error("[WS] Invalid or incomplete league state on reload. Ignoring update.");
           return;
         }
 
@@ -747,45 +757,33 @@ useEffect(() => {
           ...loadedState.settings,
         });
 
-        lastSavedJsonRef.current = JSON.stringify({
-          teams: loadedState.teams,
-          tradeProposals: loadedState.tradeProposals,
-          freeAgents: loadedState.freeAgents,
-          leagueLog: loadedState.leagueLog,
-          tradeBlock: loadedState.tradeBlock,
-          settings: loadedState.settings,
-        });
-                const legacyIssues = detectLegacyIdIssues(loadedState);
+        const legacyIssues = detectLegacyIdIssues(loadedState);
         if (legacyIssues.length > 0) {
           setIntegrityLock(true);
           setIntegrityMsg(
             "⚠️ Player ID migration required. Managers cannot make changes right now."
           );
-          console.warn("[INTEGRITY] legacy issues:", legacyIssues);
         } else {
           setIntegrityLock(false);
           setIntegrityMsg("");
         }
 
       })
-      .catch((err) => console.error("[WS] reload failed:", err));
-  });
-
-  socket.on("disconnect", () => {
-    console.log("[WS] disconnected");
+      .catch(() => {});
   });
 
   return () => {
     socket.disconnect();
     socketRef.current = null;
   };
-}, []);
+}, [hasAuthenticatedBackendSession]);
 
 
 
 // Load league from backend on first page load
 useEffect(() => {
-  console.log("[LOAD] Fetching league from backend:", API_URL);
+  if (!hasAuthenticatedBackendSession) return;
+
 
   fetch(API_URL)
     .then((res) => {
@@ -793,15 +791,11 @@ useEffect(() => {
       return res.json();
     })
     .then((data) => {
-      console.log("[LOAD] Backend responded with keys:", Object.keys(data || {}));
 
       const loadedState = normalizeLoadedLeague(data);
 
       // CRITICAL: Do NOT enter "loaded" mode unless the response is valid.
       if (!leagueStateLooksValid(loadedState)) {
-        console.error(
-          "[LOAD] Invalid or incomplete league state from backend. NOT enabling autosave."
-        );
         return; // hasLoaded stays false -> autosave never runs
       }
 
@@ -823,16 +817,6 @@ setSelectedTeamName((prev) => {
         ...loadedState.settings,
       });
 
-      // IMPORTANT: initialize lastSavedJson so autosave doesn't immediately fire
-      lastSavedJsonRef.current = JSON.stringify({
-  teams: loadedState.teams,
-  tradeProposals: loadedState.tradeProposals,
-  freeAgents: loadedState.freeAgents,
-  leagueLog: loadedState.leagueLog,
-  tradeBlock: loadedState.tradeBlock,
-  settings: loadedState.settings,
-});
-
       // ✅ Phase 2A: detect legacy name-only players/bids and block manager writes
       const legacyIssues = detectLegacyIdIssues(loadedState);
       if (legacyIssues.length > 0) {
@@ -840,7 +824,6 @@ setSelectedTeamName((prev) => {
         setIntegrityMsg(
           "League contains legacy players/bids without playerId. Managers cannot make changes until commissioner migrates/fixes this."
         );
-        console.warn("[INTEGRITY] legacy issues:", legacyIssues);
       } else {
         setIntegrityLock(false);
         setIntegrityMsg("");
@@ -848,291 +831,20 @@ setSelectedTeamName((prev) => {
 
       setHasLoaded(true);
     })
-    .catch((err) => {
-      console.error("[LOAD] Failed to load league from backend:", err);
+    .catch(() => {
       // DO NOT setHasLoaded(true) here
     });
-}, []);
+}, [hasAuthenticatedBackendSession]);
 
 
-// Restore login from localStorage on refresh
-
-useEffect(() => {
-  try {
-    const raw = localStorage.getItem("hundo_currentUser");
-    if (!raw) return;
-
-    const saved = JSON.parse(raw);
-    if (!saved || !saved.role) return;
-
-    setCurrentUser(saved);
-
-    if (saved.role === "manager" && saved.teamName) {
-      setSelectedTeamName(saved.teamName);
-    }
-  } catch (e) {
-    console.warn("[LOGIN] Failed to restore saved login:", e);
-  }
-}, []);
-
-
-
-// Save current league state to backend
-// Returns: true = saved, false = rejected/failed
-const saveLeagueToBackend = async (nextState) => {
-  try {
-    const payload = {
-      ...nextState,
-      meta: {
-        actorRole: currentUser?.role || "unknown",
-        actorTeam: currentUser?.teamName || null,
-        clientTs: Date.now(),
-      },
-    };
-
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.status === 423) {
-  // Optional: still log details for debugging
-  const text = await res.text().catch(() => "");
-  console.warn("[SAVE] Blocked (423 frozen):", text);
-
-  // ✅ Show banner to user (managers only)
-  if (currentUser?.role === "manager") {
-  showFreezeBanner("League is frozen. Changes are disabled.");
-}
-
-
-  return false; // ✅ rejected
-}
-
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      console.error("[SAVE] Failed:", `HTTP ${res.status}`, text);
-      return false; // ✅ failed
-    }
-
-    // ✅ Successful save clears any prior banner
-    if (freezeBanner) setFreezeBanner("");
-
-    return true; // ✅ success
-  } catch (err) {
-    console.error("[SAVE] Failed to save league to backend:", err);
-    return false; // ✅ failed
-  }
-};
-
-
-
-
-// Auto-save whenever league state changes (after initial load)
+// M3-01: autosave remains disabled until backend sessions exist.
 useEffect(() => {
   if (!hasLoaded) return;
+  if (!hasAuthenticatedBackendSession) return;
 
-  // If a save was queued previously, and we now want to bail, cancel it.
-  const cancelQueuedSave = () => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-  };
+  // Compatibility state is never persisted from the browser.
+}, [hasLoaded, hasAuthenticatedBackendSession]);
 
-  if (DISABLE_AUTOSAVE) {
-    cancelQueuedSave();
-    console.warn("[SAVE] Autosave disabled via VITE_DISABLE_AUTOSAVE=true");
-    return;
-  }
-
-  const stateToSave = {
-    teams,
-    tradeProposals,
-    freeAgents,
-    leagueLog,
-    tradeBlock,
-    settings: leagueSettings,
-  };
-
-  if (!leagueStateLooksValid(stateToSave)) {
-    cancelQueuedSave();
-    console.warn("[SAVE] Skipping save: state does not look valid/seeded yet.");
-    return;
-  }
-
-  const json = JSON.stringify(stateToSave);
-
-  // If nothing changed since last save, do nothing
-  if (json === lastSavedJsonRef.current) return;
-
-  // Debounce: wait a bit after the last change
-  if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-
-  saveTimerRef.current = setTimeout(async () => {
-  console.log("[SAVE] Debounced save…");
-
-  const isManager = currentUser?.role === "manager";
-  const isFrozen = Boolean(leagueSettings?.frozen);
-
-  // ✅ Don’t even try autosave if frozen (backend will 423 anyway)
-  if (isManager && isFrozen) {
-    return;
-  }
-    if (isManager && integrityLock) {
-    return;
-  }
-
-
-  const ok = await saveLeagueToBackend(stateToSave);
-
-  // Only mark as saved if the backend actually accepted it
-  if (ok) {
-    lastSavedJsonRef.current = json;
-  }
-}, 800);
-
-
-
-
-  return () => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-  };
-}, [hasLoaded, teams, tradeProposals, freeAgents, leagueLog, tradeBlock, leagueSettings, DISABLE_AUTOSAVE, currentUser]);
-
-// ------------------------------------
-// Notifications: restore last-seen time
-// ------------------------------------
-useEffect(() => {
-  if (!currentUser) return;
-
-  const key =
-    currentUser.role === "manager"
-      ? `hundo_lastSeenNotif_${currentUser.teamName}`
-      : "hundo_lastSeenNotif_commish";
-
-  const raw = localStorage.getItem(key);
-  const ts = raw ? Number(raw) : 0;
-  setLastSeenTs(Number.isFinite(ts) ? ts : 0);
-}, [currentUser]);
-
-// ------------------------------------
-// Notifications: compute notification list
-// ------------------------------------
-useEffect(() => {
-  if (!currentUser) {
-    setNotifications([]);
-    setUnreadCount(0);
-    return;
-  }
-
-  const myTeamName =
-    currentUser.role === "manager" ? currentUser.teamName : null;
-
-  // 1) Incoming trade offers (pending trades addressed to you)
-  const tradeReceived = (tradeProposals || [])
-    .filter((tr) => tr?.status === "pending")
-    .filter((tr) =>
-      currentUser.role === "commissioner" ? true : tr.toTeam === myTeamName
-    )
-    .map((tr) => ({
-      id: `trade-received-${tr.id}`,
-      timestamp: tr.createdAt || tr.updatedAt || tr.id || 0,
-      title: `Trade offer from ${tr.fromTeam}`,
-      body: `Offered: ${(tr.offeredPlayers || []).join(", ")}`,
-    }));
-
-  // 2) Trades you sent that got accepted
- const tradeAccepted = (leagueLog || [])
-  .filter((e) => String(e?.type || "").toLowerCase() === "tradeaccepted")
-  .filter((e) =>
-    currentUser.role === "commissioner" ? true : e.fromTeam === myTeamName
-  )
-  .map((e) => ({
-    id: `trade-accepted-${e.id}`,
-    timestamp: e.timestamp,
-    title: `Trade accepted by ${e.toTeam}`,
-    body: `You received: ${(e.requestedPlayers || []).join(", ")}`,
-  }));
-
-
-  // 3) Auction wins
-  const auctionWins = (leagueLog || [])
-    .filter((e) => e?.type === "faSigned")
-    .filter((e) =>
-      currentUser.role === "commissioner" ? true : e.team === myTeamName
-    )
-    .map((e) => ({
-      id: `auction-${e.id}`,
-      timestamp: e.timestamp,
-      title: `Auction won: ${e.player}`,
-      body: `Signed for $${e.amount}`,
-    }));
-
-  // 4) Illegal roster (edge-triggered so it only fires when you become illegal)
-  let illegalNotifs = [];
-  if (currentUser.role === "manager") {
-    const myTeam = teams.find((t) => t.name === myTeamName);
-
-    const illegalNow = myTeam
-  ? isTeamIllegal(
-      { ...myTeam, roster: (myTeam.roster || []).filter((p) => !p.onIR) },
-      {
-        capLimit: CAP_LIMIT,
-        maxRosterSize: MAX_ROSTER_SIZE,
-        minForwards: MIN_FORWARDS,
-        minDefensemen: MIN_DEFENSEMEN,
-      }
-    )
-  : false;
-
-
-    if (illegalNow && !illegalFlagRef.current) {
-      illegalNotifs.push({
-        id: `illegal-${myTeamName}`,
-timestamp: Date.now(),
-
-        title: "Illegal roster",
-        body: "Your team violates cap or roster rules.",
-      });
-    }
-
-    illegalFlagRef.current = illegalNow;
-  }
-
-  const combined = [
-    ...tradeReceived,
-    ...tradeAccepted,
-    ...auctionWins,
-    ...illegalNotifs,
-  ].sort((a, b) => b.timestamp - a.timestamp);
-
-  const withUnread = combined.map((n) => ({
-    ...n,
-    unread: n.timestamp > lastSeenTs,
-  }));
-
-  setNotifications(withUnread);
-  setUnreadCount(withUnread.filter((n) => n.unread).length);
-}, [currentUser, tradeProposals, leagueLog, teams, lastSeenTs]);
-
-// ------------------------------------
-// Notifications: "mark all read"
-// ------------------------------------
-const markAllNotificationsRead = () => {
-  if (!currentUser) return;
-
-  const key =
-    currentUser.role === "manager"
-      ? `hundo_lastSeenNotif_${currentUser.teamName}`
-      : "hundo_lastSeenNotif_commish";
-
-  const now = Date.now();
-  localStorage.setItem(key, String(now));
-  setLastSeenTs(now);
-};
 
   // --- Helpers ---
 
@@ -1140,14 +852,7 @@ const markAllNotificationsRead = () => {
   (Array.isArray(teams) ? teams : []).find((t) => t.name === selectedTeamName) || null;
 
 
-  const canManageTeam = (teamName) => {
-    if (!currentUser) return false;
-    if (currentUser.role === "commissioner") return true;
-    if (currentUser.role === "manager") {
-      return currentUser.teamName === teamName;
-    }
-    return false;
-  };
+  const canManageTeam = () => false;
 const isManagerFrozen =
   leagueSettings?.frozen === true && currentUser?.role === "manager";
 
@@ -1204,8 +909,9 @@ const getRemovalReasonForTrade = ({ trade, teamName, playerName, leagueLog }) =>
 // Session 0D: auto-cancel broken pending trades (global safety net)
 // Catches ANY player removal path (including commissioner edits that bypass handlers)
 // ------------------------------------
-useEffect(() => {
+const autoCancelMissingPlayers = useEffectEvent(() => {
   if (!hasLoaded) return;
+  if (!hasAuthenticatedBackendSession) return;
   if (autoCancelLockRef.current) return;
 
   const pending = (tradeProposals || []).filter((tr) => tr?.status === "pending");
@@ -1286,7 +992,17 @@ useEffect(() => {
   setTimeout(() => {
     autoCancelLockRef.current = false;
   }, 0);
-}, [hasLoaded, teams, tradeProposals, leagueLog]);
+});
+
+useEffect(() => {
+  autoCancelMissingPlayers();
+}, [
+  hasLoaded,
+  hasAuthenticatedBackendSession,
+  teams,
+  tradeProposals,
+  leagueLog,
+]);
 
 
  // Update roster order for a team (used by drag & drop in TeamRosterPanel)
@@ -1722,19 +1438,24 @@ const offeredDetails = (newTrade.offeredPlayers || []).map((name) => {
 
 
   const handleCancelTrade = (tradeId) => {
-    const { nextTradeProposals, nextLeagueLog } = cancelTradeById(
-      tradeProposals,
-      leagueLog,
-      tradeId,
-      {
-        cancelledBy:
-          currentUser?.role === "commissioner"
-            ? "Commissioner"
-            : currentUser?.teamName || null,
-      }
-    );
-    setTradeProposals(nextTradeProposals);
-    setLeagueLog(nextLeagueLog);
+    commitLeagueUpdate("trade:cancel", (prev) => {
+      const { nextTradeProposals, nextLeagueLog } = cancelTradeById(
+        prev.tradeProposals,
+        prev.leagueLog,
+        tradeId,
+        {
+          cancelledBy:
+            currentUser?.role === "commissioner"
+              ? "Commissioner"
+              : currentUser?.teamName || null,
+        }
+      );
+
+      return {
+        tradeProposals: nextTradeProposals,
+        leagueLog: nextLeagueLog,
+      };
+    });
   };
   // --- Trade Block handlers ---
 
@@ -1789,8 +1510,6 @@ const offeredDetails = (newTrade.offeredPlayers || []).map((name) => {
   commitLeagueUpdate("removeTradeBlockEntry", (prev) => {
     const prevBlock = Array.isArray(prev?.tradeBlock) ? prev.tradeBlock : [];
 
-    const norm = (x) => String(x ?? "").trim().toLowerCase();
-
     const nextBlock = prevBlock.filter((e) => {
   // primary: remove by id (string-safe)
   if (id != null && e?.id != null) return String(e.id) !== String(id);
@@ -1819,7 +1538,6 @@ const offeredDetails = (newTrade.offeredPlayers || []).map((name) => {
 const handleCounterTrade = (trade) => {
   if (!trade || !currentUser) return;
 
-  console.log("[Counter] starting counter for trade:", trade);
 
   const now = Date.now();
 
@@ -1854,7 +1572,6 @@ const handleCounterTrade = (trade) => {
     retentionTo: { ...(trade.retentionFrom || {}) },
   };
 
-  console.log("[Counter] new draft built:", newDraft);
 
   setTradeDraft(newDraft);
 };
@@ -1884,17 +1601,6 @@ const normalizePlayerIdStrict = (raw) => {
 // ------------------------------
 // Phase 2: Player ref helpers (name OR id:####)
 // ------------------------------
-const isIdRef = (token) => String(token || "").trim().toLowerCase().startsWith("id:");
-
-const normalizePlayerRef = (token) => {
-  const s = String(token || "").trim();
-  if (!s) return "";
-  // keep canonical formatting for id refs
-  const pid = normalizePlayerIdStrict(s);
-  if (pid) return `id:${pid}`;
-  return s;
-};
-
 const getPlayerIdFromToken = (token) => normalizePlayerIdStrict(token);
 
 const getDisplayNameFromToken = (token) => {
@@ -1948,17 +1654,6 @@ const handlePlaceBid = ({ playerId, playerName, position, amount }) => {
   if (!currentUser || currentUser.role !== "manager") {
     window.alert("Only logged-in managers can place bids.");
     return;
-  }
-
-  // TEMP DEBUG (remove after verification)
-  if (import.meta.env.DEV) {
-    console.log("[BID] handlePlaceBid received:", {
-      playerId,
-      playerIdType: typeof playerId,
-      playerName,
-      position,
-      amount,
-    });
   }
 
   const biddingTeamName = currentUser.teamName;
@@ -2115,105 +1810,86 @@ const handleCommissionerRemoveBid = (bidId) => {
   });
 };
 
-
-  // --- Login / logout ---
-
-const handleLogin = () => {
-  const trimmedTeam = loginTeamName.trim();
-  const user = managers.find(
-    (m) => m.teamName === trimmedTeam && m.password === loginPassword
-  );
-
-  if (!user) {
-    setLoginError("Invalid team or password.");
-    return;
-  }
-
-  const nextUser = {
-    role: user.role,
-    teamName: user.role === "manager" ? user.teamName : null,
-  };
-
-  setCurrentUser(nextUser);
- // Record manager last-login — one entry per team (no ever-growing history)
-if (nextUser.role === "manager") {
-  const now = Date.now();
-  const entry = {
-    id: now + Math.random(),
-    teamName: nextUser.teamName,
-    timestamp: now,
-  };
-
-  if (typeof commitLeagueUpdate === "function") {
-    commitLeagueUpdate("managerLogin", (prev) => {
-      const prevSettings = prev?.settings || {};
-      const prevLast = prevSettings.managerLastLogin || {};
-
-      return {
-        settings: {
-          ...prevSettings,
-          managerLastLogin: {
-            ...prevLast,
-            [entry.teamName]: entry,
-          },
-        },
-      };
-    });
-  }
-}
-
-
-  localStorage.setItem("hundo_currentUser", JSON.stringify(nextUser));
-
-  setLoginError("");
-  setLoginPassword("");
-
-  // When a manager logs in, default selected team = their own
-  if (user.role === "manager") {
-    setSelectedTeamName(user.teamName);
-  }
-};
-
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setLoginTeamName("");
-    setLoginPassword("");
-    setLoginError("");
-    setTradeDraft(null);
-    localStorage.removeItem("hundo_currentUser");
-
-  };
-
 return (
-  <div className="page">
-    <div className="container">
-      {/* TopBar shows on ALL pages */}
-      <TopBar
-        currentUser={currentUser}
-        loginTeamName={loginTeamName}
-        loginPassword={loginPassword}
-        loginError={loginError}
-        selectedTeamName={selectedTeamName}
-        teams={teams}
-        managers={managers}
-        setLoginTeamName={setLoginTeamName}
-        setLoginPassword={setLoginPassword}
-        handleLogin={handleLogin}
-        handleLogout={handleLogout}
-        setSelectedTeamName={setSelectedTeamName}
-        notifications={notifications}
-        unreadCount={unreadCount}
-        onMarkAllNotificationsRead={markAllNotificationsRead}
-        freezeBanner={freezeBanner}
-      />
-
-      <Routes>
+  <AppShell freezeBanner={freezeBanner}>
+    <Suspense fallback={<p role="status">Loading page…</p>}>
+      <ApplicationRoutes>
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/setup-account" element={<SetupAccountPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/reactivate" element={<ReactivateAccountPage />} />
+        <Route path="/account" element={<AccountSettingsPage />} />
+        <Route path="/leagues" element={<LeagueSelectionPage />} />
+        <Route path="/leagues/:leagueId" element={<LeagueOverviewPage />} />
+        <Route path="/leagues/:leagueId/players" element={<PlayersPage />} />
+        <Route
+          path="/leagues/:leagueId/players/:playerId"
+          element={<PlayerDetailPage />}
+        />
+        <Route path="/leagues/:leagueId/auctions" element={<AuctionsPage />} />
+        <Route
+          path="/leagues/:leagueId/auctions/:auctionId"
+          element={<AuctionDetailPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/drafts"
+          element={<DraftsPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/drafts/:draftType"
+          element={<DraftsPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/drafts/free-agent/:fadId/cards/:teamId"
+          element={<CandidateCardPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/drafts/free-agent/:fadId/results"
+          element={<FreeAgentDraftAllocationResultsPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/free-agent-draft"
+          element={<CurrentFreeAgentDraftPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/free-agent-draft/:fadId"
+          element={<FreeAgentDraftPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/free-agent-draft/:fadId/results"
+          element={<FreeAgentDraftResultsPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/free-agent-draft/:fadId/cards/:teamId"
+          element={<CandidateCardPage />}
+        />
+        <Route path="/leagues/:leagueId/trades" element={<TradesPage />} />
+        <Route path="/leagues/:leagueId/trades/:tradeId" element={<TradeDetailPage />} />
+        <Route path="/leagues/:leagueId/activity" element={<ActivityPage />} />
+        <Route path="/leagues/:leagueId/matchups" element={<LeagueMatchupsPage />} />
+        <Route path="/leagues/:leagueId/standings" element={<LeagueStandingsPage />} />
+        <Route path="/leagues/:leagueId/commissioner" element={<CommissionerCompetitionPage />} />
+        <Route
+          path="/leagues/:leagueId/commissioner/rosters"
+          element={<CommissionerRosterPage />}
+        />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route
+          path="/leagues/:leagueId/teams"
+          element={<LeagueTeamsPage />}
+        />
+        <Route
+          path="/leagues/:leagueId/teams/:teamId/roster"
+          element={<TeamWorkspacePage />}
+        />
         {/* HOME */}
         <Route
           path="/"
           element={
             <>
+              <AccountHome />
+              {hasAuthenticatedBackendSession && (
+                <>
               {dailyQuote && (
                 <div
                   style={{
@@ -2247,6 +1923,9 @@ return (
               <div style={{ marginTop: "12px", marginBottom: "12px" }}>
                 <CommissionerPanel
                   currentUser={currentUser}
+                  hasAuthenticatedBackendSession={
+                    hasAuthenticatedBackendSession
+                  }
                   apiUrl={API_URL}
                   teams={teams}
                   tradeProposals={tradeProposals}
@@ -2357,50 +2036,22 @@ setSelectedTeamName={setSelectedTeamName}
   onDeleteLogEntry={handleCommissionerDeleteLogEntry}
   playerApi={playerApi}
 />
+                </>
+              )}
 
             </>
           }
         />
 
-  {/* FREE AGENTS */}
-<Route
-  path="/free-agents"
-  element={
-    <FreeAgentsPage
-      currentUser={currentUser}
-      teams={teams}
-      capLimit={CAP_LIMIT}
-      maxRosterSize={MAX_ROSTER_SIZE}
-      minForwards={MIN_FORWARDS}
-      minDefensemen={MIN_DEFENSEMEN}
-      freeAgents={freeAgents}
-      onPlaceBid={handlePlaceBid}
-      playerApi={playerApi}
-      statsByPlayerId={statsByPlayerId}
-      statsReady={statsReady}
-    />
-  }
-/>
-<Route path="/standings" element={<StandingsPage />} />
+<Route path="/free-agents" element={<LegacyPlayersRedirect />} />
+<Route path="/standings" element={<LegacyStandingsRedirect />} />
 
-<Route
-  path="/matchups"
-  element={
-    <MatchupsPage
-      currentUser={currentUser}
-      teams={teams}
-      playerApi={playerApi}
-      statsByPlayerId={statsByPlayerId}
-      statsReady={statsReady}
-      apiBaseUrl={API_BASE_URL}
-    />
-  }
-/>
+<Route path="/matchups" element={<LegacyMatchupsRedirect />} />
 
 
-      </Routes>
-    </div>
-  </div>
+      </ApplicationRoutes>
+    </Suspense>
+  </AppShell>
 );
 
 }

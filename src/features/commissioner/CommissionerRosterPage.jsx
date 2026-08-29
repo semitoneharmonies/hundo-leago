@@ -1,0 +1,1367 @@
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, Navigate, useParams } from "react-router-dom";
+
+import { routePaths } from "../../app/routePaths.js";
+import {
+  ErrorBlock,
+  LoadingBlock,
+  PageHeading,
+  PanelHeading,
+  StatusBadge,
+  Surface,
+} from "../../components/HundoUi.jsx";
+import {
+  effectiveLeagueAuthority,
+  hasCommissionerAuthority,
+  PLATFORM_ADMINISTRATOR_AUTHORITY,
+} from "../../shared/leagueAuthority.js";
+import {
+  visibleLeaguesQuery,
+} from "../leagues/leagueQueries.js";
+import { useSession } from "../session/sessionContext.js";
+import {
+  applyCommissionerCorrection,
+  commissionerKeys,
+  commissionerWorkspaceQuery,
+  previewCommissionerCorrection,
+  resetStagingFixture,
+} from "./commissionerQueries.js";
+import styles from "./CommissionerRosterPage.module.css";
+
+const ROSTER_CATEGORIES = Object.freeze([
+  "Active",
+  "Bench",
+  "Injured Reserve",
+  "Prospect",
+]);
+const RESET_CONFIRMATION = "RESET STAGING TEST LEAGUES";
+
+function money(cents) {
+  if (!Number.isSafeInteger(cents)) return "Unavailable";
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+  }).format(cents / 100);
+}
+
+function reason(value) {
+  const normalized = value.trim();
+  return normalized ? normalized : null;
+}
+
+function dollarsToCents(value, label) {
+  const normalized = String(value).trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) {
+    throw new Error(`${label} must be a dollar amount with at most two decimals.`);
+  }
+  const cents = Math.round(Number(normalized) * 100);
+  if (!Number.isSafeInteger(cents)) {
+    throw new Error(`${label} is outside the supported range.`);
+  }
+  return cents;
+}
+
+function positiveInteger(value, label, maximum = null) {
+  const number = Number(value);
+  if (
+    !Number.isSafeInteger(number) ||
+    number < 1 ||
+    (maximum !== null && number > maximum)
+  ) {
+    throw new Error(
+      maximum === null
+        ? `${label} must be a positive whole number.`
+        : `${label} must be between 1 and ${maximum}.`
+    );
+  }
+  return number;
+}
+
+function newOperationId() {
+  const id = globalThis.crypto?.randomUUID?.();
+  if (!id) {
+    throw new Error(
+      "This browser cannot create a secure confirmation. Reload in a supported browser."
+    );
+  }
+  return id;
+}
+
+function automaticRosterSlot(
+  roster,
+  { teamId, category, positionGroup, excludeOwnershipId = null }
+) {
+  if (category === "Prospect") return null;
+  const maximum =
+    category === "Active" ? (positionGroup === "F" ? 12 : 6) : 4;
+  const occupied = new Set(
+    roster
+      .filter(
+        (entry) =>
+          entry.ownershipId !== excludeOwnershipId &&
+          entry.teamId === teamId &&
+          entry.rosterCategory === category &&
+          (category !== "Active" || entry.positionGroup === positionGroup)
+      )
+      .map((entry) => entry.slotNumber)
+  );
+  return (
+    Array.from({ length: maximum }, (_, index) => index + 1).find(
+      (slotNumber) => !occupied.has(slotNumber)
+    ) ?? null
+  );
+}
+
+function hasPreviewWarnings(preview) {
+  return (
+    preview.warnings.length > 0 ||
+    preview.capImpact.some((impact) => impact.warnings.length > 0)
+  );
+}
+
+async function invalidateCommissionerReads(queryClient, leagueId) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["league", leagueId] }),
+    queryClient.invalidateQueries({ queryKey: ["players"] }),
+    queryClient.invalidateQueries({
+      queryKey: ["public-roster", leagueId],
+    }),
+    queryClient.invalidateQueries({
+      queryKey: commissionerKeys.workspace(leagueId),
+    }),
+  ]);
+}
+
+function useCorrectionWorkflow(httpClient, leagueId, operation) {
+  const queryClient = useQueryClient();
+  const [preview, setPreview] = useState(null);
+  const [previewInput, setPreviewInput] = useState(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [localError, setLocalError] = useState(null);
+  const [applied, setApplied] = useState(null);
+
+  const previewMutation = useMutation({
+    mutationFn: (input) =>
+      previewCommissionerCorrection(
+        httpClient,
+        leagueId,
+        operation,
+        input
+      ),
+    onSuccess(data, input) {
+      setPreview(data);
+      setPreviewInput(input);
+      setConfirmed(false);
+      setApplied(null);
+    },
+  });
+  const applyMutation = useMutation({
+    mutationFn: ({ input, idempotencyKey }) =>
+      applyCommissionerCorrection(
+        httpClient,
+        leagueId,
+        operation,
+        input,
+        idempotencyKey
+      ),
+    async onSuccess(data) {
+      setPreview(null);
+      setPreviewInput(null);
+      setConfirmed(false);
+      setApplied(data);
+      await invalidateCommissionerReads(queryClient, leagueId);
+    },
+  });
+
+  function clearPreview() {
+    setPreview(null);
+    setPreviewInput(null);
+    setConfirmed(false);
+    setLocalError(null);
+    setApplied(null);
+    previewMutation.reset();
+    applyMutation.reset();
+  }
+
+  function requestPreview(buildInput) {
+    setLocalError(null);
+    setApplied(null);
+    try {
+      previewMutation.mutate(buildInput());
+    } catch (error) {
+      setLocalError(error);
+    }
+  }
+
+  function applyPreview() {
+    setLocalError(null);
+    if (!preview || !previewInput || !confirmed) {
+      setLocalError(
+        new Error("Review the preview and confirm it before applying.")
+      );
+      return;
+    }
+    try {
+      applyMutation.mutate({
+        input: {
+          ...previewInput,
+          confirmWarnings: hasPreviewWarnings(preview),
+        },
+        idempotencyKey: newOperationId(),
+      });
+    } catch (error) {
+      setLocalError(error);
+    }
+  }
+
+  return {
+    applied,
+    applyPreview,
+    clearPreview,
+    confirmed,
+    error: localError || previewMutation.error || applyMutation.error,
+    isPending: previewMutation.isPending || applyMutation.isPending,
+    preview,
+    requestPreview,
+    setConfirmed,
+  };
+}
+
+function CapImpact({ impacts, teamsById }) {
+  if (impacts.length === 0) {
+    return <p>No team cap totals change in this preview.</p>;
+  }
+  return (
+    <div className={styles.tableScroll}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th scope="col">Team</th>
+            <th scope="col">Usage</th>
+            <th scope="col">Space</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {impacts.map((impact) => (
+            <tr key={impact.teamId}>
+              <td>{teamsById.get(impact.teamId)?.name || "Affected team"}</td>
+              <td>{money(impact.cap.capUsageCents)}</td>
+              <td>{money(impact.cap.capSpaceCents)}</td>
+              <td>
+                <StatusBadge tone={impact.cap.overCap ? "danger" : "success"}>
+                  {impact.cap.overCap ? "Over cap" : "Within cap"}
+                </StatusBadge>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PreviewResult({ label, workflow, teamsById }) {
+  if (!workflow.preview && !workflow.applied && !workflow.error) return null;
+  return (
+    <div className={styles.preview} aria-live="polite">
+      {workflow.error && <ErrorBlock error={workflow.error} />}
+      {workflow.applied && (
+        <div className={styles.success} role="status">
+          <strong>{label} applied.</strong>
+        </div>
+      )}
+      {workflow.preview && (
+        <>
+          <h3>Preview</h3>
+          {hasPreviewWarnings(workflow.preview) ? (
+            <div className={styles.warning} role="alert">
+              <strong>Review warnings before applying</strong>
+              <ul>
+                {workflow.preview.warnings.map((warning, index) => (
+                  <li key={`${warning.code}-${index}`}>
+                    {warning.message ||
+                      "The roster may need another correction after this change."}
+                  </li>
+                ))}
+                {workflow.preview.capImpact.flatMap((impact) =>
+                  impact.warnings.map((warning, index) => (
+                    <li key={`${impact.teamId}-${warning.code}-${index}`}>
+                      {teamsById.get(impact.teamId)?.name || "Affected team"}:{" "}
+                      {warning.message ||
+                        "review the roster and cap impact before applying."}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          ) : (
+            <p className={styles.cleanPreview}>No rule warnings were returned.</p>
+          )}
+          <CapImpact
+            impacts={workflow.preview.capImpact}
+            teamsById={teamsById}
+          />
+          <p className={styles.previewSummary}>
+            Review the roster and cap result above before applying this change.
+          </p>
+          <label className={styles.confirmation}>
+            <input
+              type="checkbox"
+              checked={workflow.confirmed}
+              onChange={(event) =>
+                workflow.setConfirmed(event.target.checked)
+              }
+            />
+            I reviewed this preview, its cap impact, and every warning.
+          </label>
+          <button
+            className="hl-button hl-button--primary"
+            type="button"
+            disabled={!workflow.confirmed || workflow.isPending}
+            onClick={workflow.applyPreview}
+          >
+            {workflow.isPending ? "Applying…" : `Apply confirmed ${label}`}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, children, hint }) {
+  return (
+    <label className={styles.field}>
+      <span>{label}</span>
+      {children}
+      {hint && <small>{hint}</small>}
+    </label>
+  );
+}
+
+function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
+  const [search, setSearch] = useState("");
+  const [playerId, setPlayerId] = useState("");
+  const [teamId, setTeamId] = useState("");
+  const [category, setCategory] = useState("Bench");
+  const [contractType, setContractType] = useState("normal");
+  const [totalValue, setTotalValue] = useState("3.00");
+  const [term, setTerm] = useState("1");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const filteredAgents = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("en-CA");
+    return workspace.freeAgents
+      .filter(
+        (player) =>
+          !query || player.fullName.toLocaleLowerCase("en-CA").includes(query)
+      )
+      .slice(0, 100);
+  }, [search, workspace.freeAgents]);
+  const selectedPlayer = workspace.freeAgents.find(
+    (player) => player.playerId === playerId
+  );
+
+  function changed(callback) {
+    workflow.clearPreview();
+    callback();
+  }
+
+  function buildInput() {
+    if (!selectedPlayer || !teamId) {
+      throw new Error("Choose both a free agent and a destination team.");
+    }
+    const prospect = category === "Prospect";
+    const positionGroup = selectedPlayer.effectivePosition;
+    return {
+      seasonId: workspace.league.currentSeasonId,
+      playerId: selectedPlayer.playerId,
+      teamId,
+      rosterCategory: category,
+      positionGroup,
+      slotNumber: automaticRosterSlot(workspace.roster, {
+        teamId,
+        category,
+        positionGroup,
+      }),
+      contractType: prospect ? null : contractType,
+      originalTotalValueCents: prospect
+        ? null
+        : dollarsToCents(totalValue, "Total contract value"),
+      termYears: prospect ? null : positiveInteger(term, "Contract term", 3),
+      reason: reason(correctionReason),
+    };
+  }
+
+  return (
+    <Surface className={styles.operation} id="add-player" hidden={hidden}>
+      <PanelHeading
+        eyebrow="Commissioner correction"
+        title="Add a player"
+        description="Assign a free agent or prospect right and preview the resulting roster and cap state."
+      />
+      <div className={styles.formGrid}>
+        <Field label="Find free agent">
+          <input
+            role="combobox"
+            aria-label="Find free agent"
+            aria-autocomplete="list"
+            aria-controls="commissioner-free-agent-suggestions"
+            list="commissioner-free-agent-suggestions"
+            value={search}
+            onChange={(event) =>
+              changed(() => {
+                const value = event.target.value;
+                setSearch(value);
+                setPlayerId(
+                  workspace.freeAgents.find(
+                    (player) =>
+                      player.fullName.toLocaleLowerCase("en-CA") ===
+                      value.trim().toLocaleLowerCase("en-CA")
+                  )?.playerId || ""
+                );
+              })
+            }
+            placeholder="Type a player name"
+          />
+          <datalist id="commissioner-free-agent-suggestions">
+            {filteredAgents.map((player) => (
+              <option key={player.playerId} value={player.fullName}>
+                {player.effectivePosition}
+              </option>
+            ))}
+          </datalist>
+          <small>
+            Select a matching player; position and open slot are assigned
+            automatically.
+          </small>
+        </Field>
+        <Field label="Destination team">
+          <select
+            value={teamId}
+            onChange={(event) => changed(() => setTeamId(event.target.value))}
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Roster category">
+          <select
+            value={category}
+            onChange={(event) => {
+              const next = event.target.value;
+              changed(() => setCategory(next));
+            }}
+          >
+            {ROSTER_CATEGORIES.map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Contract type">
+          <select
+            value={contractType}
+            disabled={category === "Prospect"}
+            onChange={(event) => {
+              const next = event.target.value;
+              changed(() => {
+                setContractType(next);
+                if (next === "fantasy_elc") {
+                  setTotalValue("3.00");
+                  setTerm("3");
+                }
+              });
+            }}
+          >
+            <option value="normal">Normal</option>
+            <option value="fantasy_elc">Fantasy ELC</option>
+          </select>
+        </Field>
+        <Field label="Total contract value" hint="Dollars across the full term.">
+          <input
+            inputMode="decimal"
+            value={totalValue}
+            disabled={category === "Prospect" || contractType === "fantasy_elc"}
+            onChange={(event) =>
+              changed(() => setTotalValue(event.target.value))
+            }
+          />
+        </Field>
+        <Field label="Term" hint="One to three years.">
+          <input
+            type="number"
+            min="1"
+            max="3"
+            value={term}
+            disabled={category === "Prospect" || contractType === "fantasy_elc"}
+            onChange={(event) => changed(() => setTerm(event.target.value))}
+          />
+        </Field>
+        <Field label="Reason" hint="Optional; recorded in league activity.">
+          <input
+            maxLength="500"
+            value={correctionReason}
+            onChange={(event) =>
+              changed(() => setCorrectionReason(event.target.value))
+            }
+          />
+        </Field>
+      </div>
+      <button
+        className="hl-button hl-button--secondary"
+        type="button"
+        disabled={workflow.isPending}
+        onClick={() => workflow.requestPreview(buildInput)}
+      >
+        {workflow.isPending ? "Checking…" : "Preview player addition"}
+      </button>
+      <PreviewResult
+        label="player addition"
+        workflow={workflow}
+        teamsById={teamsById}
+      />
+    </Surface>
+  );
+}
+
+function RemovePlayerPanel({
+  workspace,
+  teamsById,
+  workflow,
+  hidden = false,
+}) {
+  const [teamId, setTeamId] = useState("");
+  const [ownershipId, setOwnershipId] = useState("");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const entry = workspace.roster.find(
+    (candidate) => candidate.ownershipId === ownershipId
+  );
+  const teamRoster = workspace.roster.filter(
+    (candidate) => candidate.teamId === teamId
+  );
+
+  function changed(callback) {
+    workflow.clearPreview();
+    callback();
+  }
+
+  function buildInput() {
+    if (!entry) throw new Error("Choose a rostered player to remove.");
+    return {
+      seasonId: entry.seasonId,
+      ownershipId: entry.ownershipId,
+      playerId: entry.playerId,
+      expectedVersion: entry.ownershipVersion,
+      contractId: entry.contract?.id ?? null,
+      expectedContractVersion: entry.contract?.version ?? null,
+      reason: reason(correctionReason),
+    };
+  }
+
+  return (
+    <Surface className={styles.operation} id="remove-player" hidden={hidden}>
+      <PanelHeading
+        eyebrow="Commissioner correction"
+        title="Remove a player"
+        description="Release a rostered player and their active contract after reviewing the preview."
+      />
+      <div className={styles.formGrid}>
+        <Field label="Team">
+          <select
+            value={teamId}
+            onChange={(event) =>
+              changed(() => {
+                setTeamId(event.target.value);
+                setOwnershipId("");
+              })
+            }
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Rostered player">
+          <select
+            value={ownershipId}
+            onChange={(event) =>
+              changed(() => setOwnershipId(event.target.value))
+            }
+          >
+            <option value="">Choose a rostered player</option>
+            {teamRoster.map((candidate) => (
+              <option
+                key={candidate.ownershipId}
+                value={candidate.ownershipId}
+              >
+                {candidate.player.fullName} · {candidate.rosterCategory}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Reason" hint="Optional; recorded in league activity.">
+          <input
+            maxLength="500"
+            value={correctionReason}
+            onChange={(event) =>
+              changed(() => setCorrectionReason(event.target.value))
+            }
+          />
+        </Field>
+      </div>
+      <button
+        className="hl-button hl-button--secondary"
+        type="button"
+        disabled={workflow.isPending}
+        onClick={() => workflow.requestPreview(buildInput)}
+      >
+        {workflow.isPending ? "Checking…" : "Preview player removal"}
+      </button>
+      <PreviewResult
+        label="player removal"
+        workflow={workflow}
+        teamsById={teamsById}
+      />
+    </Surface>
+  );
+}
+
+function RosterCorrectionPanel({
+  workspace,
+  teamsById,
+  workflow,
+  hidden = false,
+}) {
+  const [teamId, setTeamId] = useState("");
+  const [ownershipId, setOwnershipId] = useState("");
+  const [destinationTeamId, setDestinationTeamId] = useState("");
+  const [category, setCategory] = useState("Bench");
+  const [positionGroup, setPositionGroup] = useState("F");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const entry = workspace.roster.find(
+    (candidate) => candidate.ownershipId === ownershipId
+  );
+  const teamRoster = workspace.roster.filter(
+    (candidate) => candidate.teamId === teamId
+  );
+  const availableCategories =
+    entry && entry.contract === null ? ["Prospect"] : ROSTER_CATEGORIES;
+
+  function changed(callback) {
+    workflow.clearPreview();
+    callback();
+  }
+
+  function chooseEntry(nextOwnershipId) {
+    const selected = workspace.roster.find(
+      (candidate) => candidate.ownershipId === nextOwnershipId
+    );
+    changed(() => {
+      setOwnershipId(nextOwnershipId);
+      if (!selected) return;
+      setDestinationTeamId(selected.teamId);
+      setCategory(selected.rosterCategory);
+      setPositionGroup(selected.positionGroup);
+    });
+  }
+
+  function buildInput() {
+    if (!entry) {
+      throw new Error("Choose a rostered player.");
+    }
+    if (entry.contract === null && category !== "Prospect") {
+      throw new Error(
+        "An unsigned prospect right cannot move to a contracted roster category."
+      );
+    }
+    return {
+      seasonId: entry.seasonId,
+      ownershipId: entry.ownershipId,
+      playerId: entry.playerId,
+      expectedVersion: entry.ownershipVersion,
+      correctedTeamId: destinationTeamId,
+      correctedOwnershipKind:
+        entry.contract === null ? "Prospect Right" : "Rostered",
+      correctedRosterCategory: category,
+      correctedPositionGroup: positionGroup,
+      correctedSlotNumber: automaticRosterSlot(workspace.roster, {
+        teamId: destinationTeamId,
+        category,
+        positionGroup,
+        excludeOwnershipId: entry.ownershipId,
+      }),
+      reason: reason(correctionReason),
+    };
+  }
+
+  return (
+    <Surface className={styles.operation} id="correct-roster" hidden={hidden}>
+      <PanelHeading
+        eyebrow="Commissioner correction"
+        title="Move or re-slot a player"
+        description="Correct a player’s team, roster category, position, or slot without rebuilding their ownership history."
+      />
+      <div className={styles.formGrid}>
+        <Field label="Current team">
+          <select
+            value={teamId}
+            onChange={(event) =>
+              changed(() => {
+                setTeamId(event.target.value);
+                setOwnershipId("");
+                setDestinationTeamId("");
+              })
+            }
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Rostered player">
+          <select
+            value={ownershipId}
+            onChange={(event) => chooseEntry(event.target.value)}
+          >
+            <option value="">Choose a rostered player</option>
+            {teamRoster.map((candidate) => (
+              <option
+                key={candidate.ownershipId}
+                value={candidate.ownershipId}
+              >
+                {candidate.player.fullName} · {candidate.rosterCategory}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Destination team">
+          <select
+            value={destinationTeamId}
+            disabled={!entry}
+            onChange={(event) =>
+              changed(() => setDestinationTeamId(event.target.value))
+            }
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Roster category">
+          <select
+            value={category}
+            onChange={(event) => {
+              const next = event.target.value;
+              changed(() => setCategory(next));
+            }}
+          >
+            {availableCategories.map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Position">
+          <select
+            value={positionGroup}
+            disabled={!entry}
+            onChange={(event) =>
+              changed(() => setPositionGroup(event.target.value))
+            }
+          >
+            <option value="F">Forward</option>
+            <option value="D">Defence</option>
+          </select>
+        </Field>
+        <Field label="Reason" hint="Optional; recorded in league activity.">
+          <input
+            maxLength="500"
+            value={correctionReason}
+            onChange={(event) =>
+              changed(() => setCorrectionReason(event.target.value))
+            }
+          />
+        </Field>
+      </div>
+      <button
+        className="hl-button hl-button--secondary"
+        type="button"
+        disabled={workflow.isPending}
+        onClick={() => workflow.requestPreview(buildInput)}
+      >
+        {workflow.isPending ? "Checking…" : "Preview roster correction"}
+      </button>
+      <PreviewResult
+        label="roster correction"
+        workflow={workflow}
+        teamsById={teamsById}
+      />
+    </Surface>
+  );
+}
+
+function ContractCorrectionPanel({
+  workspace,
+  teamsById,
+  workflow,
+  hidden = false,
+}) {
+  const contractEntries = workspace.roster.filter(
+    (candidate) => candidate.contract !== null
+  );
+  const [teamId, setTeamId] = useState("");
+  const [ownershipId, setOwnershipId] = useState("");
+  const [totalValue, setTotalValue] = useState("3.00");
+  const [term, setTerm] = useState("1");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const entry = contractEntries.find(
+    (candidate) => candidate.ownershipId === ownershipId
+  );
+  const teamContracts = contractEntries.filter(
+    (candidate) => candidate.teamId === teamId
+  );
+
+  function changed(callback) {
+    workflow.clearPreview();
+    callback();
+  }
+
+  function chooseEntry(nextOwnershipId) {
+    const selected = contractEntries.find(
+      (candidate) => candidate.ownershipId === nextOwnershipId
+    );
+    changed(() => {
+      setOwnershipId(nextOwnershipId);
+      if (!selected) return;
+      setTotalValue(
+        (selected.contract.originalTotalValueCents / 100).toFixed(2)
+      );
+      setTerm(String(selected.contract.originalTermYears));
+    });
+  }
+
+  function buildInput() {
+    if (!entry) {
+      throw new Error("Choose a contracted player.");
+    }
+    const termYears = positiveInteger(term, "Contract term", 3);
+    const totalValueCents = dollarsToCents(
+      totalValue,
+      "Total contract value"
+    );
+    if (totalValueCents < termYears * 100) {
+      throw new Error(
+        "Total contract value must provide at least $1.00 per contract year."
+      );
+    }
+    if (termYears > 1 && totalValueCents % 100 !== 0) {
+      throw new Error(
+        "Multi-year total contract value must use whole-dollar increments."
+      );
+    }
+    return {
+      seasonId: entry.seasonId,
+      contractId: entry.contract.id,
+      playerId: entry.playerId,
+      expectedVersion: entry.contract.version,
+      correctedOriginalTotalValueCents: totalValueCents,
+      correctedOriginalTermYears: termYears,
+      reason: reason(correctionReason),
+    };
+  }
+
+  const totalValueCents = /^\d+(?:\.\d{1,2})?$/.test(totalValue)
+    ? Math.round(Number(totalValue) * 100)
+    : null;
+  const termYears = Number(term);
+  const projectedAav =
+    Number.isSafeInteger(totalValueCents) &&
+    Number.isSafeInteger(termYears) &&
+    termYears > 0
+      ? Math.round(totalValueCents / termYears)
+      : null;
+
+  return (
+    <Surface
+      className={styles.operation}
+      id="correct-contract"
+      hidden={hidden}
+    >
+      <PanelHeading
+        eyebrow="Commissioner correction"
+        title="Correct a contract"
+        description="Correct original contract value, term, and the resulting AAV schedule. Ownership and lifecycle fields remain read-only."
+      />
+      <div className={styles.formGrid}>
+        <Field label="Team">
+          <select
+            value={teamId}
+            onChange={(event) =>
+              changed(() => {
+                setTeamId(event.target.value);
+                setOwnershipId("");
+              })
+            }
+          >
+            <option value="">Choose a team</option>
+            {workspace.teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Contracted player">
+          <select
+            value={ownershipId}
+            onChange={(event) => chooseEntry(event.target.value)}
+          >
+            <option value="">Choose a contracted player</option>
+            {teamContracts.map((candidate) => (
+              <option
+                key={candidate.ownershipId}
+                value={candidate.ownershipId}
+              >
+                {candidate.player.fullName} ·{" "}
+                {money(candidate.contract.aavCents)} AAV
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field
+          label="Total contract value"
+          hint={
+            projectedAav === null
+              ? "Enter a valid value and term."
+              : `Projected AAV: ${money(projectedAav)}`
+          }
+        >
+          <input
+            inputMode="decimal"
+            value={totalValue}
+            onChange={(event) =>
+              changed(() => setTotalValue(event.target.value))
+            }
+          />
+        </Field>
+        <Field label="Term" hint="One to three years.">
+          <input
+            type="number"
+            min="1"
+            max="3"
+            value={term}
+            onChange={(event) => changed(() => setTerm(event.target.value))}
+          />
+        </Field>
+        <Field label="Reason" hint="Optional; recorded in league activity.">
+          <input
+            maxLength="500"
+            value={correctionReason}
+            onChange={(event) =>
+              changed(() => setCorrectionReason(event.target.value))
+            }
+          />
+        </Field>
+      </div>
+      <button
+        className="hl-button hl-button--secondary"
+        type="button"
+        disabled={workflow.isPending}
+        onClick={() => workflow.requestPreview(buildInput)}
+      >
+        {workflow.isPending ? "Checking…" : "Preview contract correction"}
+      </button>
+      <PreviewResult
+        label="contract correction"
+        workflow={workflow}
+        teamsById={teamsById}
+      />
+    </Surface>
+  );
+}
+
+function TeamCapSummary({ teams }) {
+  const overCapCount = teams.filter(({ cap }) => cap.overCap).length;
+  return (
+    <details className={styles.disclosure}>
+      <summary>
+        <span>
+          <strong>Team cap position</strong>
+          <small>
+            {teams.length} teams ·{" "}
+            {overCapCount === 0
+              ? "all currently within cap"
+              : `${overCapCount} currently over cap`}
+          </small>
+        </span>
+        <span aria-hidden="true">View details</span>
+      </summary>
+      <Surface className={styles.disclosurePanel}>
+        <PanelHeading
+          eyebrow="Cap impact"
+          title="Team cap position"
+          description="Current active-roster cap totals before a correction."
+        />
+        <div className={styles.tableScroll}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">Team</th>
+                <th scope="col">Usage</th>
+                <th scope="col">Limit</th>
+                <th scope="col">Space</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {teams.map((team) => (
+                <tr key={team.id}>
+                  <td>{team.name}</td>
+                  <td>{money(team.cap.capUsageCents)}</td>
+                  <td>{money(team.cap.capLimitCents)}</td>
+                  <td>{money(team.cap.capSpaceCents)}</td>
+                  <td>
+                    <StatusBadge
+                      tone={team.cap.overCap ? "danger" : "success"}
+                    >
+                      {team.cap.overCap ? "Over cap" : "Within cap"}
+                    </StatusBadge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Surface>
+    </details>
+  );
+}
+
+const OPERATIONS = Object.freeze([
+  { key: "add", panelId: "add-player", label: "Add player" },
+  { key: "remove", panelId: "remove-player", label: "Remove player" },
+  {
+    key: "roster",
+    panelId: "correct-roster",
+    label: "Move or re-slot player",
+  },
+  {
+    key: "contract",
+    panelId: "correct-contract",
+    label: "Correct contract",
+  },
+]);
+
+function OperationsGuide({ selectedOperation, onSelect }) {
+  return (
+    <Surface className={styles.guide}>
+      <div>
+        <p className="hl-eyebrow">Correction workflow</p>
+        <h2>Choose a task</h2>
+        <p>
+          Work with one correction at a time. Every change is previewed first,
+          then explicitly confirmed and recorded in League Activity.
+        </p>
+      </div>
+      <nav aria-label="Roster correction tasks" role="tablist">
+        {OPERATIONS.map((operation) => (
+          <button
+            key={operation.key}
+            type="button"
+            role="tab"
+            aria-selected={selectedOperation === operation.key}
+            aria-controls={operation.panelId}
+            className={
+              selectedOperation === operation.key ? styles.activeGuideTab : ""
+            }
+            onClick={() => onSelect(operation.key)}
+          >
+            {operation.label}
+          </button>
+        ))}
+      </nav>
+    </Surface>
+  );
+}
+
+function StagingResetPanel({ session }) {
+  const [confirmation, setConfirmation] = useState("");
+  const [resetReason, setResetReason] = useState("");
+  const [localError, setLocalError] = useState(null);
+  const mutation = useMutation({
+    mutationFn: ({ input, idempotencyKey }) =>
+      resetStagingFixture(session.httpClient, input, idempotencyKey),
+    async onSuccess(result) {
+      await session.clearAuthentication("staging-fixture-reset", result);
+    },
+  });
+  const validReason =
+    resetReason.length >= 1 &&
+    resetReason.length <= 500 &&
+    resetReason.trim() === resetReason;
+  const enabled =
+    confirmation === RESET_CONFIRMATION && validReason && !mutation.isPending;
+
+  function submit(event) {
+    event.preventDefault();
+    setLocalError(null);
+    try {
+      mutation.mutate({
+        input: { confirmation, reason: resetReason },
+        idempotencyKey: newOperationId(),
+      });
+    } catch (error) {
+      setLocalError(error);
+    }
+  }
+
+  return (
+    <Surface className={styles.dangerZone}>
+      <PanelHeading
+        eyebrow="Platform administrator only"
+        title="Reset staging test leagues"
+        description="Rebuild the deterministic Alpha and Beta staging fixture after creating a verified backup."
+      />
+      <div className={styles.warning} role="alert">
+        This action replaces staging test data and invalidates every staging
+        session, including yours. It cannot operate on production.
+      </div>
+      <form onSubmit={submit}>
+        <div className={styles.formGrid}>
+          <Field
+            label={`Type “${RESET_CONFIRMATION}”`}
+            hint="The phrase must match exactly."
+          >
+            <input
+              value={confirmation}
+              autoComplete="off"
+              onChange={(event) => setConfirmation(event.target.value)}
+            />
+          </Field>
+          <Field label="Reset reason" hint="Required; 1 to 500 characters.">
+            <input
+              value={resetReason}
+              maxLength="500"
+              onChange={(event) => setResetReason(event.target.value)}
+            />
+          </Field>
+        </div>
+        <button
+          className="hl-button hl-button--danger"
+          type="submit"
+          disabled={!enabled}
+        >
+          {mutation.isPending
+            ? "Resetting staging…"
+            : "Reset staging test leagues and sign out"}
+        </button>
+      </form>
+      {(localError || mutation.error) && (
+        <ErrorBlock error={localError || mutation.error} />
+      )}
+    </Surface>
+  );
+}
+
+function CommissionerWorkspace({
+  workspace,
+  session,
+  platformAdministrator,
+  leagueId,
+}) {
+  const [selectedOperation, setSelectedOperation] = useState("add");
+  const teamsById = useMemo(
+    () => new Map(workspace.teams.map((team) => [team.id, team])),
+    [workspace.teams]
+  );
+  const addWorkflow = useCorrectionWorkflow(
+    session.httpClient,
+    leagueId,
+    "add"
+  );
+  const removeWorkflow = useCorrectionWorkflow(
+    session.httpClient,
+    leagueId,
+    "remove"
+  );
+  const rosterWorkflow = useCorrectionWorkflow(
+    session.httpClient,
+    leagueId,
+    "roster"
+  );
+  const contractWorkflow = useCorrectionWorkflow(
+    session.httpClient,
+    leagueId,
+    "contract"
+  );
+
+  return (
+    <main className={`hl-page hl-page--wide ${styles.page}`}>
+      <PageHeading
+        eyebrow={`${workspace.league.name} · ${workspace.league.currentSeasonLabel}`}
+        title="Commissioner roster operations"
+        actions={
+          <Link
+            className="hl-button hl-button--quiet"
+            to={routePaths.leagueCommissioner(leagueId)}
+          >
+            Competition tools
+          </Link>
+        }
+      />
+      <OperationsGuide
+        selectedOperation={selectedOperation}
+        onSelect={setSelectedOperation}
+      />
+      <TeamCapSummary teams={workspace.teams} />
+      <div className={styles.operations}>
+        <AddPlayerPanel
+          workspace={workspace}
+          teamsById={teamsById}
+          workflow={addWorkflow}
+          hidden={selectedOperation !== "add"}
+        />
+        <RemovePlayerPanel
+          workspace={workspace}
+          teamsById={teamsById}
+          workflow={removeWorkflow}
+          hidden={selectedOperation !== "remove"}
+        />
+        <RosterCorrectionPanel
+          workspace={workspace}
+          teamsById={teamsById}
+          workflow={rosterWorkflow}
+          hidden={selectedOperation !== "roster"}
+        />
+        <ContractCorrectionPanel
+          workspace={workspace}
+          teamsById={teamsById}
+          workflow={contractWorkflow}
+          hidden={selectedOperation !== "contract"}
+        />
+      </div>
+      {platformAdministrator && session.appEnv === "staging" && (
+        <details className={`${styles.disclosure} ${styles.dangerDisclosure}`}>
+          <summary>
+            <span>
+              <strong>Staging fixture reset</strong>
+              <small>Platform administrator only · destructive test tool</small>
+            </span>
+            <span aria-hidden="true">Open safeguards</span>
+          </summary>
+          <StagingResetPanel session={session} />
+        </details>
+      )}
+      <p className="hl-page-backlink">
+        <Link to={routePaths.league(leagueId)}>Back to dashboard</Link>
+      </p>
+    </main>
+  );
+}
+
+export function CommissionerRosterPage() {
+  const { leagueId } = useParams();
+  const session = useSession();
+  const leagues = useQuery({
+    ...visibleLeaguesQuery(session.httpClient),
+    enabled: session.status === "authenticated",
+  });
+  const league =
+    leagues.data?.find((candidate) => candidate.id === leagueId) || null;
+  const commissioner = hasCommissionerAuthority(league?.membership);
+  const authority = effectiveLeagueAuthority(league?.membership);
+  const workspace = useQuery({
+    ...commissionerWorkspaceQuery(session.httpClient, leagueId),
+    enabled:
+      session.status === "authenticated" && Boolean(league) && commissioner,
+  });
+  if (session.status === "unauthenticated") {
+    return <Navigate to={routePaths.home} replace state={{ reason: "sign-in" }} />;
+  }
+  if (session.status === "unknown" || leagues.isPending) {
+    return (
+      <main className="hl-page">
+        <Surface>
+          <LoadingBlock>Checking secure commissioner access…</LoadingBlock>
+        </Surface>
+      </main>
+    );
+  }
+  if (leagues.isError) {
+    return (
+      <main className="hl-page">
+        <Surface>
+          <ErrorBlock error={leagues.error} />
+        </Surface>
+      </main>
+    );
+  }
+  if (!league) {
+    return (
+      <main className="hl-page">
+        <PageHeading title="Commissioner roster operations" />
+        <p className="hl-form-message is-error" role="alert">
+          This league is not in your active memberships.
+        </p>
+      </main>
+    );
+  }
+  if (!commissioner) {
+    return (
+      <main className="hl-page">
+        <PageHeading
+          eyebrow={league.name}
+          title="Commissioner roster operations"
+        />
+        <p className="hl-form-message is-error" role="alert">
+          Current commissioner authority is required.
+        </p>
+      </main>
+    );
+  }
+  if (workspace.isPending) {
+    return (
+      <main className="hl-page">
+        <Surface>
+          <LoadingBlock>Loading roster tools…</LoadingBlock>
+        </Surface>
+      </main>
+    );
+  }
+  if (workspace.isError) {
+    return (
+      <main className="hl-page">
+        <PageHeading
+          eyebrow={league.name}
+          title="Commissioner roster operations"
+        />
+        <Surface>
+          <ErrorBlock error={workspace.error} />
+        </Surface>
+      </main>
+    );
+  }
+
+  return (
+    <CommissionerWorkspace
+      workspace={workspace.data}
+      session={session}
+      platformAdministrator={
+        authority === PLATFORM_ADMINISTRATOR_AUTHORITY
+      }
+      leagueId={leagueId}
+    />
+  );
+}

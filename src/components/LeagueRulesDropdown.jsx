@@ -1,295 +1,126 @@
-// src/components/LeagueRulesDropdown.jsx
-import React from "react";
+const QUICK_RULES = Object.freeze([
+  ["Salary cap", "$100"],
+  ["Active roster", "18 · 12 F / 6 D"],
+  ["Bench", "4 · maximum $4 AAV"],
+  ["Injured reserve", "4 players"],
+  ["Prospects", "Unlimited eligible slots"],
+  ["Contracts", "1–3 years · no extensions"],
+  ["Retention", "50% cumulative · 3 slots"],
+  ["Weekly roster lock", "Monday · 4:00 PM Pacific"],
+]);
+
+function RuleSection({ title, children, open = false }) {
+  return (
+    <details className="hl-rules-section" open={open}>
+      <summary>{title}</summary>
+      <div>{children}</div>
+    </details>
+  );
+}
 
 function LeagueRulesDropdown({ onClose }) {
   return (
-    <div style={wrap}>
-      <div style={headerRow}>
-        <div style={title}>League Rules & How To</div>
+    <section
+      className="hl-rules-panel"
+      aria-labelledby="league-rules-title"
+    >
+      <header>
+        <div>
+          <p className="hl-eyebrow">Approved Season 2 baseline</p>
+          <h2 id="league-rules-title">League rules</h2>
+        </div>
         <button
+          className="hl-rules-panel__close"
+          type="button"
           onClick={onClose}
-          style={closeBtn}
           aria-label="Close League Rules"
         >
-          ✕
+          ×
         </button>
+      </header>
+
+      <dl className="hl-rules-quick">
+        {QUICK_RULES.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="hl-rules-sections">
+        <RuleSection title="Rosters, cap and scoring" open>
+          <ul>
+            <li>Only the persisted active-roster snapshot can score.</li>
+            <li>Bench, injured reserve and prospects do not score.</li>
+            <li>
+              An illegal team scores nothing until a new legal
+              team-specific snapshot and baseline exist.
+            </li>
+            <li>Regular-season results are wins, losses or ties.</li>
+            <li>Wins award 2 standings points; ties 1; losses 0.</li>
+          </ul>
+        </RuleSection>
+
+        <RuleSection title="Auctions">
+          <ul>
+            <li>
+              New auctions open Monday at 12:00 AM and may start through
+              Thursday at 11:59 PM Pacific.
+            </li>
+            <li>Existing-auction bidding closes Sunday at 4:00 PM Pacific.</li>
+            <li>
+              Active bids are blind. You see only your own value and term;
+              commissioners cannot reveal competitors.
+            </li>
+            <li>
+              Starting bids require at least $1 AAV. Joining bids require at
+              least $1.50 AAV for one or two years, or $1.75 AAV for three
+              years. AAV uses $0.25 increments.
+            </li>
+            <li>
+              The starter receives two edits, later bidders one, with a
+              75-minute cooldown after each submission or edit.
+            </li>
+            <li>
+              Bids rank by total contract value, then AAV. Ordinary auction
+              ties use the original timestamp; exact Free Agent Draft ties use
+              an auditable equal-chance draw.
+            </li>
+          </ul>
+        </RuleSection>
+
+        <RuleSection title="Trades, retention and buyouts">
+          <ul>
+            <li>
+              A trade proposal expires after 7 days or at the league trade
+              deadline, whichever arrives first.
+            </li>
+            <li>
+              Proposals do not reserve assets; acceptance revalidates every
+              asset and completes atomically.
+            </li>
+            <li>
+              A trade containing Future considerations needs commissioner
+              approval after the receiving manager accepts it.
+            </li>
+            <li>
+              Retained salary lasts for every remaining contract year and
+              remains a cap obligation.
+            </li>
+            <li>
+              The standard annual buyout penalty is 25% of AAV for each
+              remaining contract year.
+            </li>
+            <li>
+              Auction signings have a 14-day buyout lock that follows the
+              player if traded.
+            </li>
+          </ul>
+        </RuleSection>
       </div>
-
-      {/* QUICK REFERENCE */}
-      <div style={quickRefBox}>
-        <div style={sectionTitle}>Quick Reference</div>
-        <div style={quickGrid}>
-          <RuleLine label="Cap Limit" value="$100" />
-          <RuleLine label="Max Roster Size" value="15" />
-          <RuleLine label="Minimum Positions" value="8F / 4D" />
-          <RuleLine label="IR Slots" value="4 (IR players don’t count vs cap)" />
-          <RuleLine label="Trade Expiry" value="7 days after proposal" />
-          <RuleLine label="Retention Limit" value="Max 50% per player" />
-          <RuleLine label="Retention Spots" value="3 retained players max" />
-          <RuleLine label="Auction Rollover" value="Sunday @ 4:00 PM" />
-          <RuleLine label="New Auctions Close" value="Thursday @ 11:59 PM" />
-          <RuleLine label="Auction Tiebreaker" value="Earliest bid wins (if tied)" />
-<RuleLine label="Joining Existing Auction" value="Min $2 bid (non-starter)" />
-<RuleLine label="Bid Edit Cooldown" value="75 minutes between edits" />
-<RuleLine label="Bid Edit Limits" value="Starter: 2 edits • Joiner: 1 edit" />
-<RuleLine label="Buyout Penalty" value="25% of salary (rounded up)" />
-          <RuleLine
-            label="Auction Buyout Lock"
-            value="14 days after signing (follows player if traded)"
-          />
-        </div>
-      </div>
-
-      {/* FULL SECTIONS */}
-      <div style={content}>
-        <Section title="Rosters & Salary Cap">
-          <p style={p}>
-            Each team must stay under the league cap limit and maintain a legal
-            active roster.
-          </p>
-          <ul style={ul}>
-            <li style={li}>
-              Cap Limit: <strong>$100</strong>
-            </li>
-            <li style={li}>
-              Max active roster size: <strong>15</strong>
-            </li>
-            <li style={li}>
-              Minimum positions: <strong>8 Forwards</strong> and{" "}
-              <strong>4 Defense</strong>
-            </li>
-          </ul>
-        </Section>
-
-        <Section title="Injured Reserve (IR)">
-          <p style={p}>
-            IR is for injured players and helps keep your active roster legal.
-          </p>
-          <ul style={ul}>
-            <li style={li}>
-              Max IR slots: <strong>4</strong>
-            </li>
-            <li style={li}>
-              IR players do <strong>not</strong> count toward your cap.
-            </li>
-          </ul>
-        </Section>
-
-        <Section title="Buyouts">
-          <p style={p}>
-            Buyouts remove a player from your roster and add a buyout penalty to
-            your team.
-          </p>
-          <ul style={ul}>
-            <li style={li}>
-              Buyout penalty is <strong>25%</strong> of the player’s salary
-              (rounded up).
-            </li>
-            <li style={li}>
-              Players signed via free-agent auction have a{" "}
-              <strong>14-day buyout lock</strong> (the lock follows the player
-              if traded).
-            </li>
-          </ul>
-        </Section>
-
-        <Section title="Trades">
-          <p style={p}>
-            Trades are proposed between two teams and must be accepted to take
-            effect.
-          </p>
-          <ul style={ul}>
-            <li style={li}>
-              Trade proposals expire <strong>1 week</strong> after they’re
-              created.
-            </li>
-            <li style={li}>
-              Trades can include retained salary and/or buyout penalty transfers
-              (when enabled in the trade builder).
-            </li>
-            <li style={li}>
-              Retained salary limit: <strong>max 50%</strong> of a player’s
-              salary.
-            </li>
-            <li style={li}>
-              Retention spots: <strong>3</strong> retained-salary players max.
-            </li>
-          </ul>
-        </Section>
-
-        <Section title="Free Agent Auctions">
-          <p style={p}>Free agents are signed through weekly auctions.</p>
-          <ul style={ul}>
-  <li style={li}>
-    Auction rollover: <strong>Sunday at 4:00 PM</strong>
-  </li>
-  <li style={li}>
-    New auctions close: <strong>Thursday at 11:59 PM</strong>
-  </li>
-  <li style={li}>
-    Ties: if two bids are the same amount, the <strong>earlier</strong> bid wins.
-  </li>
-
-  <li style={li}>
-    <strong>Joining an existing auction:</strong> your first bid must be{" "}
-    <strong>$2 or higher</strong>.
-  </li>
-
-  <li style={li}>
-    <strong>Editing bids is limited:</strong> the team who started the auction can
-    edit their bid <strong>twice</strong>, and teams who join later can edit{" "}
-    <strong>once</strong>.
-  </li>
-
-  <li style={li}>
-    <strong>Edit cooldown:</strong> you must wait <strong>75 minutes</strong>{" "}
-    between bid edits (per auction).
-  </li>
-
-  <li style={li}>
-    <strong>Anti-bluff pricing:</strong> your bid is your <em>max</em>, but you may
-    end up paying less depending on competition. If you win and your{" "}
-    <strong>lowest bid</strong> still beats everyone else (or ties but you were earlier),
-    you pay your <strong>lowest bid</strong>. Otherwise you pay your current bid.
-  </li>
-
-  <li style={li}>
-    Winning a bid signs the player to your roster at the winning salary.
-  </li>
-</ul>
-        </Section>
-
-        <Section title="Commissioner Tools">
-          <p style={p}>
-            Commissioner features are for maintaining and administering the
-            league.
-          </p>
-          <ul style={ul}>
-            <li style={li}>
-              Reset League: restores the league back to the original default
-              state.
-            </li>
-            <li style={li}>
-              Resolve Auctions: processes the current weekly auctions at
-              rollover.
-            </li>
-            <li style={li}>
-              Snapshots: create/restore saved league states (useful as
-              checkpoints).
-            </li>
-            <li style={li}>
-              Freeze League (when enabled): prevents normal roster changes.
-            </li>
-          </ul>
-        </Section>
-      </div>
-    </div>
+    </section>
   );
 }
-
-function Section({ title, children }) {
-  return (
-    <div style={{ marginTop: 14 }}>
-      <div style={sectionTitle}>{title}</div>
-      {children}
-    </div>
-  );
-}
-
-function RuleLine({ label, value }) {
-  return (
-    <div style={ruleLine}>
-      <span style={ruleLabel}>{label}</span>
-      <span style={ruleValue}>{value}</span>
-    </div>
-  );
-}
-
-/* styles */
-const wrap = {
-  position: "absolute",
-  top: "100%",
-  left: 0,
-  marginTop: 8,
-  width: 520,
-  maxWidth: "90vw",
-
-  maxHeight: "calc(100vh - 140px)",
-  overflowY: "auto",
-
-  background: "#020617",
-  border: "1px solid #1f2937",
-  borderRadius: 10,
-  padding: 12,
-  color: "#e5e7eb",
-  zIndex: 9999,
-  boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
-};
-
-const headerRow = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 10,
-  marginBottom: 8,
-};
-
-const title = { fontSize: "0.95rem", fontWeight: 700 };
-
-const closeBtn = {
-  padding: "4px 8px",
-  fontSize: "0.85rem",
-  backgroundColor: "#111827",
-  color: "#e5e7eb",
-  border: "1px solid #1f2937",
-  borderRadius: 6,
-  cursor: "pointer",
-};
-
-const quickRefBox = {
-  border: "1px solid #1f2937",
-  borderRadius: 10,
-  padding: 10,
-  background: "#0b1220",
-};
-
-const quickGrid = {
-  display: "grid",
-  gridTemplateColumns: "1fr",
-  gap: 6,
-  marginTop: 8,
-};
-
-const ruleLine = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 14,
-  fontSize: "0.85rem",
-};
-
-const ruleLabel = { color: "#9ca3af" };
-const ruleValue = { color: "#e5e7eb", fontWeight: 600 };
-
-const content = { marginTop: 10 };
-
-const sectionTitle = {
-  fontSize: "0.85rem",
-  fontWeight: 800,
-  color: "#e5e7eb",
-};
-
-const p = {
-  margin: "8px 0",
-  color: "#cbd5e1",
-  fontSize: "0.85rem",
-  lineHeight: 1.35,
-};
-const ul = {
-  margin: "6px 0 0 18px",
-  color: "#cbd5e1",
-  fontSize: "0.85rem",
-  lineHeight: 1.35,
-};
-const li = { marginBottom: 6 };
 
 export default LeagueRulesDropdown;
