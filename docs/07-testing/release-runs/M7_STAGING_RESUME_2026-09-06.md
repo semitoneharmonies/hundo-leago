@@ -103,3 +103,10 @@ Verification after the correction:
 
 Graem subsequently authorized continued unattended work while away for several hours, without repeated approval requests. Necessary staging fixes, commits, pushes and deployment checks remain authorized. [The short staging test tour](M7_STAGING_TEST_TOUR_2026-09-06.md) is prepared for his review.
 
+## Corrected frontend published; final backend deployment queued — 2026-09-06 13:08Z
+
+Frontend application commit 7d87fd285defe5a38060648d4d26fe5488ac60e8 is committed, pushed and verified at origin/staging. The corrected artifact contains 33 public files / 1,931,846 bytes with unchanged security configuration. Netlify deploy 6a9d654e4f3ec47cb82c27c2 published at 13:06:41.769Z. All 64 asset byte/hash checks across the staging and immutable origins passed at 13:07:41.839Z. Receipt: staging-a11y-publication-verified.json.
+
+FRONTEND_BUILD_ID alone was merged to the corrected frontend commit at 13:08Z, preserving all credentials, data paths and other settings. Render accepted the automatic deployment request and subsequently created dep-daembf79r02s73ep1t80, exact unchanged backend B2. It is queued behind the initial reopening build dep-daem0luq1p3s739tru3g. Both deployment requests are accounted for; do not submit another trigger or repeat either environment mutation.
+
+Current completion boundary: corrected frontend publication and local acceptance passed; backend full-suite/live verification and hosted account checks are pending. Production is unchanged. Once the final deployment is live, verify its actual runtime identity and flags, run the prepared read-only .hundo.local/launch-resume-20260906/verify-hosted-public.cjs, and inspect the staging browser. Existing credentials must be preserved; if sign-in needs Graem, complete the independent checks and record that specific remaining item.
