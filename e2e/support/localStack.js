@@ -1,10 +1,13 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
+import { promisify } from 'node:util'
 import { once } from 'node:events'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
+
+const execFileAsync = promisify(execFile)
 
 const SUPPORT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const FRONTEND_DIRECTORY = path.resolve(SUPPORT_DIRECTORY, '..', '..')
@@ -196,12 +199,37 @@ function createFrontendEnvironment(backendOrigin, environment = process.env) {
   })
 }
 
-function startFrontend(backendOrigin) {
+async function buildFrontend(backendOrigin) {
+  const buildsRoot = path.join(FRONTEND_DIRECTORY, '.hundo.local', 'browser-builds')
+  fs.mkdirSync(buildsRoot, { recursive: true })
+  const buildDirectory = fs.mkdtempSync(path.join(buildsRoot, 'release-'))
+  try {
+    await execFileAsync(
+      process.execPath,
+      [VITE_ENTRY, 'build', '--outDir', buildDirectory],
+      {
+        cwd: FRONTEND_DIRECTORY,
+        env: createFrontendEnvironment(backendOrigin),
+        maxBuffer: 4 * 1024 * 1024,
+        windowsHide: true,
+      }
+    )
+  } catch (error) {
+    fail(
+      'FAD_E2E_FRONTEND_BUILD_FAILED',
+      'The local browser acceptance build failed.',
+      error
+    )
+  }
+  return buildDirectory
+}
+
+function startFrontend(backendOrigin, buildDirectory) {
   let stderr = ''
   let spawnError = null
   const child = spawn(
     process.execPath,
-    [VITE_ENTRY, '--host', '127.0.0.1', '--port', '5173', '--strictPort'],
+    [VITE_ENTRY, 'preview', '--outDir', buildDirectory, '--host', '127.0.0.1', '--port', '5173', '--strictPort'],
     {
       cwd: FRONTEND_DIRECTORY,
       env: createFrontendEnvironment(backendOrigin),
@@ -244,7 +272,7 @@ async function waitForFrontend(frontend, fetchImplementation = fetch) {
       if (
         response.status === 200 &&
         document.includes('<div id="root"></div>') &&
-        document.includes('src="/src/main.jsx"')
+        /src="\/assets\/[^"]+\.js"/.test(document)
       ) {
         return
       }
@@ -334,7 +362,8 @@ export async function startLocalFadStack() {
     })
     process.env[MANIFEST_ENVIRONMENT_KEY] = encodeManifest(manifest)
     process.env[PASSWORD_ENVIRONMENT_KEY] = password
-    frontend = startFrontend(started.baseUrl)
+    const buildDirectory = await buildFrontend(started.baseUrl)
+    frontend = startFrontend(started.baseUrl, buildDirectory)
     await waitForFrontend(frontend)
   } catch (error) {
     await closeStack({ frontend, started })

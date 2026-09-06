@@ -6,6 +6,9 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores([
+    '.hundo.local/**',
+    '.netlify/**',
+    '.tools/**',
     'dist',
     'coverage',
     'test-results',

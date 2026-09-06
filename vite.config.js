@@ -6,6 +6,7 @@ import { configDefaults } from 'vitest/config'
 export default defineConfig({
   plugins: [react()],
   test: {
+    dir: './src',
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',
     clearMocks: true,

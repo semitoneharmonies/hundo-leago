@@ -1,5 +1,7 @@
 # Hundo Leago - Release Checklist
 
+> Current M7-26 continuation (6 September 2026): see [the staging resume record](release-runs/M7_STAGING_RESUME_2026-09-06.md). Graem has authorized completion, commits, pushes and staging testing. Earlier V1-V10 execution restrictions below describe retired attempts; the resume record governs subsequent staging work and preserves production/data protection.
+
 ## Document Status
 
 `APPROVED`
