@@ -2,7 +2,7 @@
 
 Open [the staging website](https://staging.hundoleago.com). Use your existing staging sign-in details. The latest deployment and verification status is in [the staging release record](M7_STAGING_RESUME_2026-09-06.md).
 
-This site contains the separate Alpha and Beta test leagues. Its test players and statistics are synthetic; live statistics, scheduled jobs and outgoing email are disabled.
+This is separate staging data. Depending on your account memberships, Alpha, Beta and/or Gamma may appear. Live statistics, scheduled jobs and outgoing email are disabled, so some statistics may show unavailable.
 
 ## Start with a manager
 
@@ -23,16 +23,15 @@ As the Alpha commissioner, check:
 
 - The league home separates Team managers from League members.
 - Administrator membership and team access remain protected.
-- Competition tools use named teams and weeks, explain blocked actions, and offer a schedule preview.
+- Competition tools use named teams and weeks, explain blocked actions, and offer a schedule preview. The current test data reports missing schedule prerequisites; no schedule is created by previewing.
 - Draft management can be collapsed.
 - Roster operations separate Add player, Remove player, Move or re-slot player, and Correct contract. Changes require a preview and confirmation.
 - Result corrections start from the relevant result and explain their standings impact.
 
-As the platform administrator, confirm both leagues are visible and Create a league is available. You do not need to create a league, remove a member or reset test data for this visual review.
+As the platform administrator, confirm Alpha, Beta and Gamma are visible and Create a league is available. You do not need to create a league, remove a member or reset test data for this visual review.
 
 ## Reporting a problem
 
 Note the page, which role you used, what you tried and what you expected. A screenshot is helpful. Do not include your password.
 
 The collectible player-card redesign remains a later item, as agreed in the original review. Completing this staging UI review is separate from the remaining season-operation work and production launch.
-
