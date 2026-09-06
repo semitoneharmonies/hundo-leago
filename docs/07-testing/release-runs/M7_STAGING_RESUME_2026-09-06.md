@@ -1,5 +1,7 @@
 # M7-26 staging completion — 6 September 2026
 
+> Current result (6 September 2026, 14:45 UTC): **STAGING READY FOR GRAEM TO TEST**. The original review scope is implemented, committed, pushed and published. Final backend tests, runtime, public access protection and authenticated hosted acceptance passed. See the final verification below and [the short test tour](M7_STAGING_TEST_TOUR_2026-09-06.md). Earlier pending statements are preserved as dated execution history. This completes the staging UI update; separate season-operation work and production launch remain outstanding.
+
 ## Current authority
 
 Graem explicitly authorized: "you have my approval to keep working until the update is finished, committed and pushed so i can try it out on the staging website."
@@ -15,9 +17,9 @@ The V1–V10 attempts and frozen files remain historical evidence. V10's success
 - Netlify staging site: 95af8aa7-0b13-4954-af6d-855762acb147
 - User testing URL: https://staging.hundoleago.com
 - Backend commit: 6359ec9997f90dddf17ba2c9b07481746ae171bb
-- Existing frontend application artifact: 4dfe12d1366314e3d9df722c50771324647743c9
+- Pre-continuation frontend application artifact: 4dfe12d1366314e3d9df722c50771324647743c9
 - Selected database: /opt/render/project/data/hundo-staging/sqlite/hundo-leago-schema54-strict-restore-HL-20260823-1.sqlite3
-- Expected database: 37105664 bytes, SHA-256 cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
+- Pre-reopening database fingerprint: 37105664 bytes, SHA-256 cf3ca07d0500888edf60f2742541ace6f5b7db0e1f2fd9b57f00db56aacacabc
 - Expected activation receipt: 4991 bytes, SHA-256 24adf2d36c1adae8674552d44fc99fb43fd875dd58be85008f0c00b35450e8c8
 
 ## Ordered checks and actions
@@ -129,3 +131,24 @@ Authenticated hosted acceptance completed using ordinary sign-in and existing br
 Qualification: the single hosted schedule preview returned an explanatory missing-prerequisites result and explicitly confirmed that no schedule was created or changed. Successful schedule generation remains covered by isolated tests, not claimed as a hosted result. The current commissioner member list did not expose an administrator row, so the administrator-row protection was verified by the existing local browser/backend cases rather than by mutating hosted membership.
 
 The hosted data contains Alpha, Beta and Gamma and real catalogue names; it must not be described as the two-league synthetic local fixture. The test tour now reflects observed staging data and the deliberately unavailable live statistics. Final deployment/runtime verification remains the only release-completion step; production launch and the separately documented season-operation work remain outside this staging UI completion.
+
+## Final verification - staging ready for testing
+
+At 2026-09-06T14:45Z, the approved M7-26 staging UI update is complete and ready for Graem to test at https://staging.hundoleago.com. No approval, password entry or local command is needed to complete this release continuation.
+
+| Final check | Verified result |
+| --- | --- |
+| Published frontend | Netlify deploy 6a9d654e4f3ec47cb82c27c2 remains READY, published 13:06:41.769Z; exact application source 7d87fd285defe5a38060648d4d26fe5488ac60e8. The previously recorded 64 asset byte/hash checks passed; final nested-route and browser checks still load index-DTSTeyrl.js. |
+| Final backend | Render dep-daembf79r02s73ep1t80 is LIVE, finished 14:29:53.291537Z, exact backend 6359ec9997f90dddf17ba2c9b07481746ae171bb. Only the two already-recorded automatic deployment requests occurred. |
+| Final backend suite | 3,519 tests / 443 suites passed at 14:29:04.107Z, zero failures, cancellations, skips or todos; duration 3,091,639 ms. Build successful at 14:29:07Z. Receipt final-backend-suite-verified.json. |
+| Actual runtime | Read at 14:44:12.400Z from instance srv-d9eo2turnols73ekb830-6588fcb796-df8ph: Node v24.14.1, npm 11.11.0, exact backend and corrected frontend IDs, staging database identity and preserved path. All 18 allowlisted settings matched. Receipt final-live-runtime-verified.json. |
+| Public access | verify-hosted-public.cjs passed at 14:44:21.233Z: live/ready 200; anonymous session/leagues/operations health 401 SESSION_REQUIRED without protected data; staging CORS and no-store checks passed; nested frontend route 200. Dated hosted-public-verified receipt retained. |
+| Authenticated final instance | Existing Alpha manager session survived deployment and opening a fresh tab. Dashboard data and a subsequent full reload passed at 14:45:22.555Z, no unexpected alert or horizontal overflow at width 1280. Receipt final-hosted-session-verified.json. Final screenshot saved on E and visually inspected. |
+| Catalogue interactions | Second page produced 200 distinct player links; Morrissey search returned only Josh Morrissey; combined Defence/Winnipeg filters returned 16 rows, all D/WPG. Receipt hosted-catalogue-verified.json. |
+| Wider hosted coverage | All four roles, manager pages, mobile layouts, commissioner roster-task tabs, administrator league access, Beta-manager Alpha isolation and manager denial of commissioner controls passed as recorded above. These ran on the initial live deployment with the same backend code and corrected frontend application. |
+
+Read-only verification did not reset, reseed, restore or change league records. Normal session actions and the documented notification acknowledgement remain expected application behavior. Existing staging data and credentials are preserved. Scheduled jobs, outgoing email, debug routes, backup scheduling and live provider requests remain disabled; maintenance hold is false, league writes are open, draft routes are enabled and email mode is capture. Production is untouched.
+
+The only application correction in this continuation removes three redundant native-selector ARIA attributes in src/features/commissioner/CommissionerRosterPage.jsx. It preserves selection, API contracts, permissions and roster-preview/write behavior. Test setup changes in vite.config.js, eslint.config.js and e2e/support/localStack.js support verification after the E-drive move; e2e/ui-review-role-pages.spec.js adds role-page coverage. Local results remain 388 frontend tests, lint/build/browser-authority verification, 45 original browser cases before the correction, then 8 commissioner tests and 15 role-page browser cases after it. The 45-case suite was not rerun after the three-line correction; the added 15 cases directly covered the changed component. The interrupted local backend run is not counted as a pass; both actual hosted backend builds independently passed 3,519 tests.
+
+Graem can use the linked test tour and existing staging accounts. The current schedule preview's missing-prerequisite response, intentionally unavailable live statistics, unexercised hosted administrator-row mutation, and explicit post-launch player-card redesign remain qualified as above. Remaining season-operation/account hardening and production rollout are separate from this completed staging UI update. All new local artifacts, screenshots, temporary files and caches for this continuation were directed to E.

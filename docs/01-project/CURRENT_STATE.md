@@ -1,6 +1,6 @@
 # Hundo Leago — Current State
 
-> Current M7-26 continuation (6 September 2026): see [the staging resume record](../07-testing/release-runs/M7_STAGING_RESUME_2026-09-06.md). Graem has authorized completion, commits, pushes and staging testing. Earlier V1-V10 execution restrictions below describe retired attempts; the resume record governs subsequent staging work and preserves production/data protection.
+> Current M7-26 result (6 September 2026): **STAGING READY FOR GRAEM TO TEST**. See [the staging resume record](../07-testing/release-runs/M7_STAGING_RESUME_2026-09-06.md) for the published commits/deployments and passed final tests, runtime and hosted checks. The original review update is complete. Earlier August matrices and V1-V10 restrictions below are retained history, superseded by that current record. Separate season-operation work and production launch remain outstanding; production and data protection continue to apply.
 
 ## Document Purpose
 
