@@ -403,10 +403,7 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
       <div className={styles.formGrid}>
         <Field label="Find free agent">
           <input
-            role="combobox"
             aria-label="Find free agent"
-            aria-autocomplete="list"
-            aria-controls="commissioner-free-agent-suggestions"
             list="commissioner-free-agent-suggestions"
             value={search}
             onChange={(event) =>

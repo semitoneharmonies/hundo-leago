@@ -83,3 +83,23 @@ Approved scope qualifications remain explicit:
 - Interactive staging has live/paid statistics requests, scheduled jobs and outbound email disabled. Completing this UI update does not complete the separately documented launch work on session bootstrap, proactive socket revocation, statistics/matchup job operation, late-legal game handling, the signed-Prospect buyout/trade-cancellation limitation, or production rollout.
 
 The user should be told the site is ready to test only after publication, reopening, public health, and hosted account checks succeed. The passing 45-case local browser suite is not presented as a hosted sign-in result.
+
+## Publication and additional role-page acceptance
+
+The exact original artifact was published to Netlify staging as deploy 6a9d5fa1d0aeb949e48eb445 at 2026-09-06T12:42:27Z. All 64 public asset byte/hash checks across its staging and immutable URLs passed, together with the existing security and no-store headers. The earlier automatic approval-review rejection was resolved by Graem's explicit conditional confirmation of the exact payload and destination.
+
+A fresh protected-data and completed-backup precheck passed at 12:44:28Z. The three approved staging access settings were merged once at 12:45:11Z, automatically creating Render deploy dep-daem0luq1p3s739tru3g on unchanged backend B2. No separate deploy trigger was issued. The build is running its required npm ci, check and full test suite; its final result is not yet verified.
+
+Additional real-browser coverage was added in e2e/ui-review-role-pages.spec.js for commissioner competition and roster tools, protected administrator membership, both administrator leagues and league creation controls, denied manager controls, account settings and League Rules. The first run found a critical aria-required-attr defect in the commissioner free-agent input: a native input/datalist was redundantly declared as a custom combobox without managed expansion state.
+
+The correction in src/features/commissioner/CommissionerRosterPage.jsx removes the redundant custom role, autocomplete and controls attributes, retaining the named native input and its datalist association. Player matching, roster preview, writes, permissions and league data behavior are unchanged. Native semantics follow [W3C ARIA in HTML](https://www.w3.org/TR/html-aria/#el-input-text-list). This supersedes the former frontend application F for the next publication; frozen historical helpers and receipts retain their original identities.
+
+Verification after the correction:
+- Existing CommissionerRosterPage component cases: 8/8 passed.
+- ESLint on the exact changed component and new browser file: passed.
+- Added role-page acceptance: 15/15 passed in 7.5 minutes, no retries, across desktop/mobile Chromium, Firefox and desktop/mobile WebKit.
+- The earlier 45-case release suite remains recorded against the prior application source. The expanded 15-case run directly covers the sole changed component and all the added role pages.
+- The new staging-configured artifact and its public hashes must be verified before calling the correction published. Backend full-suite completion and hosted authenticated acceptance remain pending.
+
+Graem subsequently authorized continued unattended work while away for several hours, without repeated approval requests. Necessary staging fixes, commits, pushes and deployment checks remain authorized. [The short staging test tour](M7_STAGING_TEST_TOUR_2026-09-06.md) is prepared for his review.
+
