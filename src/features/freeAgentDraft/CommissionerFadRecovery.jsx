@@ -423,6 +423,7 @@ export function CommissionerFadRecovery({
     return true;
   });
   const blockedCount = recovery.data.availableActions.filter((action) => !action.enabled).length;
+  const draftCompleted = recovery.data.fad.status === "completed";
 
   return (
     <section className={styles.page} aria-labelledby="commissioner-fad-recovery-title">
@@ -522,10 +523,10 @@ export function CommissionerFadRecovery({
               <div className={styles.recoveryItem} key={operation.operationId}>
                 <div className={styles.panelHeader}>
                   <strong>{operationLabel(operation.operationKind)}</strong>
-                  <StatusBadge tone={operation.status === "succeeded" ? "success" : operation.status === "failed" ? "danger" : "warning"}>{operation.status === "succeeded" ? "Completed" : operation.status === "failed" ? "Needs attention" : "In progress"}</StatusBadge>
+                  <StatusBadge tone={operation.status === "succeeded" || draftCompleted ? "success" : operation.status === "failed" ? "danger" : "warning"}>{operation.status === "succeeded" ? "Completed" : draftCompleted ? "Archived step" : operation.status === "failed" ? "Needs attention" : "In progress"}</StatusBadge>
                 </div>
                 <span>
-                  Tried {operation.attemptCount} {operation.attemptCount === 1 ? "time" : "times"}. {operation.blocksCompletion ? "This step must finish before the draft can complete." : "The draft can continue without this step."}
+                  Tried {operation.attemptCount} {operation.attemptCount === 1 ? "time" : "times"}. {draftCompleted ? "The draft is complete. No further action is required for this step." : operation.blocksCompletion ? "This step must finish before the draft can complete." : "The draft can continue without this step."}
                 </span>
               </div>
             ))}

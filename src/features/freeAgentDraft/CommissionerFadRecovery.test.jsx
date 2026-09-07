@@ -443,6 +443,29 @@ function renderRecovery(fetchImpl) {
 }
 
 describe("FAD-16 commissioner recovery and correction", () => {
+  it("keeps unfinished historical jobs as archived steps after the draft completes", async () => {
+    const evidence = completedRecoveryEvidence();
+    evidence.rapidOperations = [{
+      ...operation(), operationKind: "fallback_activation", status: "running",
+      blocksCompletion: true, leaseExpiresAtMs: 1_720_000_000_600,
+      completedAtMs: null, lastErrorCode: null, recoveryId: null,
+    }];
+    evidence.availableActions.unshift({action:"activate_fallback",resourceId:allocationId,enabled:false,reasonCode:"RECOVERY_NOT_AVAILABLE"});
+    const fetchImpl = vi.fn(async (url) => {
+      const parsed = new URL(url);
+      if (parsed.pathname === "/api/v1/session") return sessionResponse();
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}/recovery`)) return response(evidence);
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    const view = renderRecovery(fetchImpl);
+    await screen.findByRole("heading", { name: "Recovery and correction" });
+    await view.user.click(screen.getByText("Draft step history"));
+    expect(screen.getByText("Archived step")).toBeVisible();
+    expect(screen.getByText(/The draft is complete. No further action is required for this step/)).toBeVisible();
+    expect(screen.queryByText(/This step must finish before the draft can complete/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Review action" })).toBeNull();
+  });
+
   it("keeps recovery discoverable without a current season and accepts only the returned action with a secure intent", async () => {
     const requests = [];
     const fetchImpl = vi.fn(async (url, options = {}) => {
