@@ -491,6 +491,9 @@ describe("league player catalog", () => {
     ).not.toBeInTheDocument();
     expect(playerPageRequests).toBe(1);
     expect(screen.queryByRole("link", { name: "Start auction" })).toBeNull();
+    expect(
+      screen.getByLabelText(/Start auction unavailable for First Page Player/i)
+    ).toHaveAttribute("title", "This action isn’t available right now.");
 
     await view.user.click(
       screen.getByRole("button", { name: "Load next 100 players" })

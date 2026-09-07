@@ -71,6 +71,15 @@ function team(teamId = IDS.team, name = "Snow Owls") {
   };
 }
 
+function workspaceResponse(teamId = IDS.team, usageCents = 2_000) {
+  return {
+    data: {
+      team: team(teamId),
+      cap: { complete: true, usageCents },
+    },
+  };
+}
+
 function player() {
   return {
     playerId: IDS.player,
@@ -561,6 +570,12 @@ describe("FAD-16 auction pages", () => {
         return listResponse(restrictedAuction(), starts);
       }
       if (path.startsWith("/api/v1/players?")) return playerSearchResponse();
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.team}/roster`) {
+        return workspaceResponse();
+      }
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.teamTwo}/roster`) {
+        return workspaceResponse(IDS.teamTwo, 2_500);
+      }
       if (path === `/api/v1/leagues/${IDS.league}/auctions` && options.method === "POST") {
         startBody = options.body;
         return {
@@ -620,6 +635,12 @@ describe("FAD-16 auction pages", () => {
     );
     expect(totalValue.tagName).toBe("OUTPUT");
     expect(totalValue).toHaveTextContent("$4.00");
+    const capSummary = within(startPanel)
+      .getByRole("heading", { name: "Salary cap impact" })
+      .closest("section");
+    expect(await within(capSummary).findByText("$20.00")).toBeInTheDocument();
+    expect(within(capSummary).getByText("+$4.00")).toBeInTheDocument();
+    expect(within(capSummary).getByText("$24.00")).toBeInTheDocument();
     expect(screen.queryByRole("checkbox", { name: /binding/i })).not.toBeInTheDocument();
     await view.user.click(within(startPanel).getByRole("button", { name: "Nominate player" }));
 
@@ -951,6 +972,9 @@ describe("FAD-16 auction pages", () => {
       if (path === "/api/v1/leagues") return leagueResponse();
       if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}`) {
         return { data: current };
+      }
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.team}/roster`) {
+        return workspaceResponse();
       }
       if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}/bids/mine`) {
         submitted = { body: options.body, version: options.version };
@@ -1352,6 +1376,9 @@ describe("FAD-16 auction pages", () => {
       if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}`) {
         return { data: current };
       }
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.team}/roster`) {
+        return workspaceResponse();
+      }
       if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}/bids/mine`) {
         versions.push(options.version);
         if (versions.length === 1) {
@@ -1383,6 +1410,11 @@ describe("FAD-16 auction pages", () => {
     const aav = await screen.findByLabelText("AAV (dollars per year)");
     await view.user.clear(aav);
     await view.user.type(aav, "9.00");
+    const capSummary = screen
+      .getByRole("heading", { name: "Salary cap impact" })
+      .closest("section");
+    expect(await within(capSummary).findByText("+$9.00")).toBeInTheDocument();
+    expect(within(capSummary).getByText("$29.00")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Update my bid" })).toBeEnabled();
     expect(screen.queryByRole("checkbox", { name: /binding/i })).not.toBeInTheDocument();
     await view.user.click(screen.getByRole("button", { name: "Update my bid" }));

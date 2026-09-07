@@ -913,6 +913,53 @@
   padding-left: 1.25rem;
 }
 
+.actionDiagnostics {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actionDiagnostics li {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--hl-warning, #f59e0b) 44%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--hl-warning, #f59e0b) 8%, transparent);
+}
+
+.actionDiagnostics p {
+  margin: 0;
+}
+
+.actionDiagnostics p span,
+.actionDiagnostics small {
+  color: var(--hl-text-muted, #94a3b8);
+}
+
+.secondaryDisclosure {
+  border: 1px solid rgb(148 163 184 / 22%);
+  border-radius: 0.65rem;
+  background: rgb(2 6 23 / 22%);
+}
+
+.secondaryDisclosure > summary {
+  padding: 0.7rem 0.8rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.secondaryDisclosure[open] > summary {
+  border-bottom: 1px solid rgb(148 163 184 / 18%);
+}
+
+.secondaryDisclosure > .diagnostics,
+.secondaryDisclosure > .readinessTeams {
+  margin: 0.7rem 0.8rem;
+}
+
 .readinessTeam {
   display: grid;
   grid-template-columns: minmax(10rem, 1fr) repeat(4, auto);

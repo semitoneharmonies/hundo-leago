@@ -47,7 +47,8 @@ results view. This amendment supersedes older post-deadline language that
 exposes all teams' Candidate offer values or terms to every member.
 On 2026-08-14, Grae changed Candidate offers to AAV-first entry in exact
 `$0.25` increments, with a server-derived total, save-time contract and cap
-blocking, and an Active-AAV summary on the Candidate Card.
+blocking, and an Active-AAV summary on the Candidate Card. Every FAD auction
+offer ranks by total contract value first and AAV second.
 On 2026-08-17, Grae approved the compact selected-team results and Auctions
 redesign. Manager results use only `Signed`, `Not won`, and an eligible
 participant's actionable `Tie`; post-deadline open-player nominations are
@@ -1170,7 +1171,7 @@ After the Candidate minimums are created, restricted tie auctions use the
 ordinary Auction specification's:
 
 * blind visibility for post-opening bid edits;
-* AAV-first ranking;
+* total-contract-value-first, AAV-second ranking;
 * anti-bluff pricing;
 * ordinary joining-team edit allowance after the opening improvement;
 * ordinary 75-minute cooldown anchored to that team's auction bid activity;
@@ -1189,8 +1190,8 @@ minimum and that a team must actively improve once to contend.
 
 Restricted-auction ranking is:
 
-1. highest current AAV;
-2. if tied, shortest current contract term;
+1. highest current total contract value;
+2. if tied, highest current AAV;
 3. if still tied, an auditable equal-chance draw among the remaining exactly
    tied teams.
 

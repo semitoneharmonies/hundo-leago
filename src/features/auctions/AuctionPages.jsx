@@ -27,6 +27,7 @@ import {
   StatusBadge,
   Surface,
 } from "../../components/HundoUi.jsx";
+import { CapImpactSummary } from "../../components/CapImpactSummary.jsx";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 import {
@@ -41,6 +42,7 @@ import {
   playerKeys,
   playerSearchQuery,
 } from "../players/playerQueries.js";
+import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import {
   cancelAuctionAsCommissioner,
@@ -182,6 +184,35 @@ function statusTone(status) {
 
 function teamName(team) {
   return team?.name || "Team";
+}
+
+function safeOfferPreview(aav, term, options) {
+  try {
+    return validateAuctionOffer(aav, term, options);
+  } catch {
+    return null;
+  }
+}
+
+function auctionCapTeam(team, workspace, offer) {
+  const currentCents =
+    workspace?.cap?.complete !== false &&
+    Number.isSafeInteger(workspace?.cap?.usageCents)
+      ? workspace.cap.usageCents
+      : null;
+  const changeCents = Number.isSafeInteger(offer?.aavCents)
+    ? offer.aavCents
+    : null;
+  return {
+    id: team?.teamId || team?.id || EMPTY_ID,
+    name: teamName(team),
+    currentCents,
+    changeCents,
+    projectedCents:
+      Number.isSafeInteger(currentCents) && Number.isSafeInteger(changeCents)
+        ? currentCents + changeCents
+        : null,
+  };
 }
 
 function safeAuctionSearch(value) {
@@ -413,6 +444,21 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
   const selectedStartTeam =
     startTeams.find((team) => team.teamId === teamId) || startTeams[0] || null;
   const isFad = selectedStartTeam?.sourceKind === "fad_open_rapid";
+  const capWorkspace = useQuery({
+    ...teamWorkspaceQuery(
+      context.session.httpClient,
+      leagueId,
+      selectedStartTeam?.teamId || EMPTY_ID
+    ),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league) &&
+      Boolean(selectedStartTeam?.teamId),
+  });
+  const offerPreview = safeOfferPreview(aav, term, {
+    action: "start",
+    sourceKind: selectedStartTeam?.sourceKind,
+  });
   const mutation = useMutation({
     gcTime: 0,
     mutationFn: ({ body, idempotencyKey }) =>
@@ -469,7 +515,10 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
       if (!selectedPlayer || selectedPlayer.fullName !== playerSearch) {
         throw new Error("Select a player from the available search results.");
       }
-      const offer = validateAuctionOffer(aav, term, { action: "start" });
+      const offer = validateAuctionOffer(aav, term, {
+        action: "start",
+        sourceKind: selectedStartTeam.sourceKind,
+      });
       const body = {
         teamId: selectedStartTeam.teamId,
         playerId: selectedPlayer.id,
@@ -585,6 +634,27 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
               term={term}
             />
           </div>
+          <CapImpactSummary
+            description="If this offer wins, its AAV is added to the team’s Active cap. Active bids do not reserve cap space."
+            pendingText={
+              !offerPreview
+                ? "Enter a valid AAV and term to calculate the conditional cap impact."
+                : capWorkspace.isPending
+                  ? "Loading the team’s current cap total…"
+                  : capWorkspace.isError
+                    ? "The current cap total could not be loaded. No missing value has been estimated."
+                    : capWorkspace.data?.cap?.complete === false
+                      ? "The server marked this cap total incomplete, so no projected total is shown."
+                      : null
+            }
+            teams={[
+              auctionCapTeam(
+                selectedStartTeam?.team,
+                capWorkspace.data,
+                offerPreview
+              ),
+            ]}
+          />
           {selectedStartTeam?.sourceKind === "fad_open_rapid" && (
             <p className={styles.timingNotice}>
               Next rollover: {shortLeagueDateTime(
@@ -959,6 +1029,24 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
   const hasBid = viewerTeam.bid !== null;
   const capability = hasBid ? viewerTeam.edit : viewerTeam.join;
   const action = hasBid ? "edit" : "join";
+  const capWorkspace = useQuery({
+    ...teamWorkspaceQuery(
+      context.session.httpClient,
+      leagueId,
+      viewerTeam.teamId || EMPTY_ID
+    ),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league) &&
+      Boolean(viewerTeam.teamId) &&
+      capability.allowed,
+  });
+  const offerPreview = safeOfferPreview(aav, term, {
+    action,
+    sourceKind: auction.sourceKind,
+    fadOrigin: auction.fadOrigin,
+    minimumContract: auction.minimumContract,
+  });
   const mutation = useMutation({
     gcTime: 0,
     mutationFn: ({ body, idempotencyKey, version }) =>
@@ -1080,6 +1168,23 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
             term={term}
           />
         </div>
+        <CapImpactSummary
+          description="If this bid wins, its full AAV is added to the team’s Active cap. The sealed bid itself does not reserve cap space."
+          pendingText={
+            !offerPreview
+              ? "Enter a valid AAV and term to calculate the conditional cap impact."
+              : capWorkspace.isPending
+                ? "Loading the team’s current cap total…"
+                : capWorkspace.isError
+                  ? "The current cap total could not be loaded. No missing value has been estimated."
+                  : capWorkspace.data?.cap?.complete === false
+                    ? "The server marked this cap total incomplete, so no projected total is shown."
+                    : null
+          }
+          teams={[
+            auctionCapTeam(viewerTeam.team, capWorkspace.data, offerPreview),
+          ]}
+        />
         <button
           className="hl-button hl-button--primary"
           disabled={mutation.isPending}

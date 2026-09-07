@@ -35,12 +35,51 @@ function readableStatus(status) {
   }[status] || "Unavailable";
 }
 
+function groupDiagnostics(items) {
+  const groups = new Map();
+  for (const item of items) {
+    const key = `${item.code}:${item.message}`;
+    const existing = groups.get(key);
+    if (existing) existing.count += 1;
+    else groups.set(key, { ...item, count: 1 });
+  }
+  return [...groups.values()];
+}
+
+function blockerNextStep(code) {
+  if (
+    code === "FIRST_MATCHUP_REQUIRED" ||
+    code?.includes("MATCHUP") ||
+    code?.includes("SCHEDULE")
+  ) {
+    return "Review Schedule generation below, then run the opening check again.";
+  }
+  if (code?.includes("MANAGER")) {
+    return "Assign one active manager to each affected team, then run the opening check again.";
+  }
+  if (code?.includes("PARTICIPATING_TEAM")) {
+    return "Review the league’s active teams and team limit, then run the opening check again.";
+  }
+  if (code?.includes("ENTRY_DRAFT")) {
+    return "Complete the target season Entry Draft, then run the opening check again.";
+  }
+  if (code === "FAD_ALREADY_EXISTS") {
+    return "Open the existing Free Agent Draft instead of starting another one.";
+  }
+  if (code?.includes("ROLLOVER")) {
+    return "Review the prior-season rollover in recovery tools, then run the opening check again.";
+  }
+  if (code?.includes("SEASON")) {
+    return "Review the current season setup, then run the opening check again.";
+  }
+  return "Correct the league setup described above, then run the opening check again.";
+}
+
 function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
   const session = useSession();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const [confirming, setConfirming] = useState(false);
-  const [receipt, setReceipt] = useState(null);
   const [message, setMessage] = useState("");
   const readinessOptions = seasonId
     ? freeAgentDraftReadinessQuery(session.httpClient, leagueId, seasonId)
@@ -71,19 +110,15 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
         version,
         idempotencyKey,
       }),
-    onSuccess: async (result) => {
-      setReceipt(result);
+    onSuccess: async () => {
       setConfirming(false);
-      setMessage(
-        "The opening check was queued. Every requirement will be checked again."
-      );
+      setMessage("The opening check was queued.");
       await queryClient.invalidateQueries({
         queryKey: freeAgentDraftKeys.readiness(leagueId, seasonId),
       });
     },
     onError: async (error) => {
       setConfirming(false);
-      setReceipt(null);
       if (
         error.status === 412 ||
         error.code === "FAD_READINESS_PRECONDITION_FAILED"
@@ -217,11 +252,19 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
 
           {readiness.data.blockers.length > 0 && (
             <section aria-labelledby="fad-readiness-blockers-title">
-              <h3 id="fad-readiness-blockers-title">Needs attention</h3>
-              <ul className={styles.diagnostics}>
-                {readiness.data.blockers.map((blocker) => (
-                  <li key={`${blocker.code}:${blocker.resourceId || "league"}`}>
-                    {blocker.message}
+              <h3 id="fad-readiness-blockers-title">Needs your action</h3>
+              <ul className={styles.actionDiagnostics}>
+                {groupDiagnostics(readiness.data.blockers).map((blocker) => (
+                  <li key={`${blocker.code}:${blocker.message}`}>
+                    <p>
+                      {blocker.message}
+                      {blocker.count > 1 && (
+                        <span> Affects {blocker.count} items.</span>
+                      )}
+                    </p>
+                    <small>
+                      <strong>Next:</strong> {blockerNextStep(blocker.code)}
+                    </small>
                   </li>
                 ))}
               </ul>
@@ -229,21 +272,26 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
           )}
 
           {readiness.data.warnings.length > 0 && (
-            <section aria-labelledby="fad-readiness-warnings-title">
-              <h3 id="fad-readiness-warnings-title">Things to review</h3>
+            <details className={styles.secondaryDisclosure}>
+              <summary>
+                Things to review ({readiness.data.warnings.length})
+              </summary>
               <ul className={styles.diagnostics}>
-                {readiness.data.warnings.map((warning) => (
-                  <li key={`${warning.code}:${warning.resourceId || "league"}`}>
+                {groupDiagnostics(readiness.data.warnings).map((warning) => (
+                  <li key={`${warning.code}:${warning.message}`}>
                     {warning.message}
+                    {warning.count > 1 && ` (${warning.count} items)`}
                   </li>
                 ))}
               </ul>
-            </section>
+            </details>
           )}
 
           {readiness.data.teamProjections.length > 0 && (
-            <section aria-labelledby="fad-readiness-teams-title">
-              <h3 id="fad-readiness-teams-title">Participating teams</h3>
+            <details className={styles.secondaryDisclosure}>
+              <summary>
+                Team capacity ({readiness.data.teamProjections.length})
+              </summary>
               <div className={styles.readinessTeams}>
                 {readiness.data.teamProjections.map((team) => (
                   <div className={styles.readinessTeam} key={team.teamId}>
@@ -255,7 +303,7 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
                   </div>
                 ))}
               </div>
-            </section>
+            </details>
           )}
 
           {readiness.data.resultFadId && (
@@ -316,11 +364,6 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
           {message && (
             <p className={styles.notice} role="status">
               {message}
-            </p>
-          )}
-          {receipt && (
-            <p className={styles.success}>
-              The opening check was queued.
             </p>
           )}
           {retry.error &&

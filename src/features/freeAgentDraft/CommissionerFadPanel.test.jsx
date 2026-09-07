@@ -80,8 +80,24 @@ function readiness() {
         message: "The first matchup schedule must be confirmed.",
         resourceId: seasonId,
       },
+      {
+        code: "FIRST_MATCHUP_REQUIRED",
+        message: "The first matchup schedule must be confirmed.",
+        resourceId: operationId,
+      },
     ],
-    warnings: [],
+    warnings: [
+      {
+        code: "ROSTER_REVIEW_RECOMMENDED",
+        message: "Review one team roster before opening.",
+        resourceId: teamId,
+      },
+      {
+        code: "ROSTER_REVIEW_RECOMMENDED",
+        message: "Review one team roster before opening.",
+        resourceId: assignmentId,
+      },
+    ],
     resultFadId: null,
     retryReadiness: { allowed: true, reasonCode: null },
   };
@@ -152,9 +168,24 @@ describe("CommissionerFadPanel", () => {
       }
     );
 
-    expect(
-      await screen.findByText("The first matchup schedule must be confirmed.")
-    ).toBeInTheDocument();
+    const actionSection = (await screen.findByRole("heading", {
+      name: "Needs your action",
+    })).closest("section");
+    expect(actionSection).toHaveTextContent(
+      "The first matchup schedule must be confirmed. Affects 2 items."
+    );
+    expect(actionSection).toHaveTextContent(
+      "Next: Review Schedule generation below, then run the opening check again."
+    );
+    const reviewDetails = screen
+      .getByText("Things to review (2)")
+      .closest("details");
+    expect(reviewDetails).not.toHaveAttribute("open");
+    expect(reviewDetails).toHaveTextContent(
+      "Review one team roster before opening. (2 items)"
+    );
+    expect(screen.getByText("Team capacity (1)").closest("details"))
+      .not.toHaveAttribute("open");
     expect(screen.queryByLabelText(/opening time/i)).toBeNull();
     expect(screen.queryByLabelText(/team list/i)).toBeNull();
     expect(screen.queryByText("Operation version")).not.toBeInTheDocument();

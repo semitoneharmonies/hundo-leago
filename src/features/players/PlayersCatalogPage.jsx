@@ -18,6 +18,7 @@ import {
   visibleLeaguesQuery,
 } from "../leagues/leagueQueries.js";
 import { auctionListQuery } from "../auctions/auctionQueries.js";
+import { capabilityMessage } from "../auctions/auctionUi.js";
 import { useSession } from "../session/sessionContext.js";
 import {
   leaguePlayerInfiniteQuery,
@@ -242,11 +243,38 @@ export function PlayersCatalogPage() {
     ...auctionListQuery(session.httpClient, leagueId, { limit: 1 }),
     enabled: session.status === "authenticated" && Boolean(league),
   });
-  const canStartAuction = Boolean(
-    auctionActions.data?.pages.some((page) =>
-      page.actions.startTeams.some(({ startAuction }) => startAuction.allowed)
-    )
-  );
+  const auctionAction = useMemo(() => {
+    if (auctionActions.isPending) {
+      return {
+        allowed: false,
+        message: "Checking auction availability…",
+      };
+    }
+    if (auctionActions.isError) {
+      return {
+        allowed: false,
+        message:
+          "Auction availability could not be checked. Refresh the page to try again.",
+      };
+    }
+    const startTeams =
+      auctionActions.data?.pages.flatMap(
+        (page) => page.actions.startTeams
+      ) || [];
+    if (startTeams.some(({ startAuction }) => startAuction.allowed)) {
+      return { allowed: true, message: null };
+    }
+    if (startTeams.length === 0) {
+      return {
+        allowed: false,
+        message: "You do not control a team that can start an auction.",
+      };
+    }
+    return {
+      allowed: false,
+      message: capabilityMessage(startTeams[0].startAuction.reasonCode),
+    };
+  }, [auctionActions.data, auctionActions.isError, auctionActions.isPending]);
 
   const loadedPlayers = useMemo(() => {
     const playersById = new Map();
@@ -706,18 +734,30 @@ export function PlayersCatalogPage() {
                           <HockeyStickIcon />
                           <span>Favourites</span>
                         </button>
-                        {!player.league.ownership && canStartAuction && (
-                          <Link
-                            className="hl-player-action hl-player-auction-action"
-                            to={routePaths.leagueAuctionForPlayer(
-                              leagueId,
-                              player.id
-                            )}
-                          >
-                            <Gavel aria-hidden="true" />
-                            <span>Start auction</span>
-                          </Link>
-                        )}
+                        {!player.league.ownership &&
+                          (auctionAction.allowed ? (
+                            <Link
+                              className="hl-player-action hl-player-auction-action"
+                              to={routePaths.leagueAuctionForPlayer(
+                                leagueId,
+                                player.id
+                              )}
+                            >
+                              <Gavel aria-hidden="true" />
+                              <span>Start auction</span>
+                            </Link>
+                          ) : (
+                            <span
+                              className="hl-player-action hl-player-auction-action is-disabled"
+                              aria-disabled="true"
+                              aria-label={`Start auction unavailable for ${player.fullName}: ${auctionAction.message}`}
+                              tabIndex={0}
+                              title={auctionAction.message}
+                            >
+                              <Gavel aria-hidden="true" />
+                              <span>Start auction</span>
+                            </span>
+                          ))}
                       </div>
                     </td>
                   </tr>

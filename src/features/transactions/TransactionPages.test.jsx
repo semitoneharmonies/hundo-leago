@@ -60,14 +60,39 @@ function teamWorkspace(teamId) {
       logoReference: null,
       version: 1,
     },
-    players: [],
+    players: teamId === teamA ? [{
+      ownershipId,
+      ownershipVersion: 1,
+      playerId: playerSearchId,
+      name: "Trade Player",
+      normalizedPosition: "F",
+      rosterCategory: "Active",
+      ownershipKind: "Rostered",
+      slotNumber: 1,
+      displayOrder: 1,
+      onTradeBlock: false,
+      nhlTeamAbbreviation: "VAN",
+      injuredReserveEligible: false,
+      age: 28,
+      contract: {
+        id: assetId,
+        version: 1,
+        type: "Standard",
+        originalTotalValueCents: 1_000,
+        originalTermYears: 2,
+        aavCents: 500,
+        retainedAavCents: 0,
+        remainingYears: 2,
+      },
+      statistics: null,
+    }] : [],
     cap: {
       limitCents: 10_000,
-      usageCents: 0,
-      spaceCents: 10_000,
-      activePlayerCents: 0,
+      usageCents: teamId === teamA ? 625 : 0,
+      spaceCents: teamId === teamA ? 9_375 : 10_000,
+      activePlayerCents: teamId === teamA ? 500 : 0,
       retainedSalaryCents: 0,
-      buyoutPenaltyCents: 0,
+      buyoutPenaltyCents: teamId === teamA ? 125 : 0,
       retentionSlotsUsed: 0,
       retentionSlotLimit: 3,
       complete: true,
@@ -388,6 +413,21 @@ describe("M5-11 authenticated transaction pages", () => {
       }),
       "Conditional 2027 consideration"
     );
+    const capSummary = screen
+      .getByRole("heading", { name: "Salary cap impact" })
+      .closest("section");
+    const managedCap = within(capSummary)
+      .getByText("Managed Team")
+      .closest("article");
+    const otherCap = within(capSummary)
+      .getByText("Other Team")
+      .closest("article");
+    expect(managedCap).toHaveTextContent("Current cap$6.25");
+    expect(managedCap).toHaveTextContent("Change−$3.75");
+    expect(managedCap).toHaveTextContent("Projected cap$2.50");
+    expect(otherCap).toHaveTextContent("Current cap$0.00");
+    expect(otherCap).toHaveTextContent("Change+$3.75");
+    expect(otherCap).toHaveTextContent("Projected cap$3.75");
     await view.user.click(
       screen.getByRole("button", { name: "Send proposal" })
     );
@@ -503,6 +543,17 @@ describe("M5-11 authenticated transaction pages", () => {
             limitCents: 10_000,
           }],
           generallyIllegal: true,
+        }, {
+          teamId: teamB,
+          rosterCounts: {},
+          cap: {
+            salaryCapCents: 10_000,
+            usageCents: 500,
+            spaceCents: 9_500,
+          },
+          retentionSlots: 0,
+          issues: [],
+          generallyIllegal: false,
         }],
         generallyIllegal: true,
       });
@@ -513,6 +564,11 @@ describe("M5-11 authenticated transaction pages", () => {
       "This trade would leave at least one roster generally illegal."
     )).toBeInTheDocument();
     expect(screen.getByText("SALARY CAP EXCEEDED")).toBeInTheDocument();
+    const capSummary = screen
+      .getByRole("heading", { name: "Salary cap impact" })
+      .closest("section");
+    expect(within(capSummary).getByText("+$94.75")).toBeInTheDocument();
+    expect(within(capSummary).getByText("+$5.00")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Confirm and accept trade" })).toBeInTheDocument();
   });
 
@@ -667,6 +723,17 @@ describe("M5-11 authenticated transaction pages", () => {
               salaryCapCents: 10_000,
               usageCents: 5_000,
               spaceCents: 5_000,
+            },
+            retentionSlots: 0,
+            issues: [],
+            generallyIllegal: false,
+          }, {
+            teamId: teamB,
+            rosterCounts: {},
+            cap: {
+              salaryCapCents: 10_000,
+              usageCents: 0,
+              spaceCents: 10_000,
             },
             retentionSlots: 0,
             issues: [],

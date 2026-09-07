@@ -17,6 +17,7 @@ import {
   StatusBadge,
   Surface,
 } from "../../components/HundoUi.jsx";
+import { CapImpactSummary } from "../../components/CapImpactSummary.jsx";
 import { leagueTeamsQuery, visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import {
   leaguePlayerDetailQuery,
@@ -49,6 +50,7 @@ import {
   transactionKeys,
 } from "./transactionQueries.js";
 import { TradeBlockPanel } from "./TradeBlockPanel.jsx";
+import { projectDraftTradeCap } from "./tradeCapPreview.js";
 
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
 const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" };
@@ -73,6 +75,33 @@ function key(prefix) {
 
 function money(cents) {
   return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(cents / 100);
+}
+
+function workspaceCapUsage(workspace) {
+  if (
+    workspace?.cap?.complete === false ||
+    !Number.isSafeInteger(workspace?.cap?.usageCents)
+  ) {
+    return null;
+  }
+  return workspace.cap.usageCents;
+}
+
+function capImpactTeam({ id, name, previewTeam = null, workspace }) {
+  const currentCents = workspaceCapUsage(workspace);
+  const projectedCents = Number.isSafeInteger(previewTeam?.cap?.usageCents)
+    ? previewTeam.cap.usageCents
+    : null;
+  return {
+    id,
+    name,
+    currentCents,
+    changeCents:
+      Number.isSafeInteger(currentCents) && Number.isSafeInteger(projectedCents)
+        ? projectedCents - currentCents
+        : null,
+    projectedCents,
+  };
 }
 
 function time(value) {
@@ -966,6 +995,12 @@ function NewTradeForm({ context, leagueId }) {
       Boolean(context.league) &&
       Boolean(receiving),
   });
+  const draftCapPreview = projectDraftTradeCap({
+    proposingAssets,
+    proposingWorkspace: proposerWorkspace.data,
+    receivingAssets,
+    receivingWorkspace: receivingWorkspace.data,
+  });
   const mutation = useMutation({
     mutationFn: (body) => createTrade(context.session.httpClient, leagueId, body, key("trade-proposal")),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) }),
@@ -1060,6 +1095,34 @@ function NewTradeForm({ context, leagueId }) {
           pending={receivingWorkspace.isPending}
         />
       </div>
+      <CapImpactSummary
+        description="Conditional estimate for the assets shown. It follows the established Active-roster, retained-salary, buyout, and zero-cap asset rules; the final server acceptance preview remains authoritative."
+        pendingText={
+          proposerWorkspace.isPending || receivingWorkspace.isPending
+            ? "Loading current cap totals…"
+            : proposerWorkspace.isError || receivingWorkspace.isError
+              ? "One or more current cap totals could not be loaded. No missing value has been estimated."
+              : draftCapPreview.message
+        }
+        teams={[
+          {
+            id: proposer,
+            name:
+              proposerWorkspace.data?.team?.name ||
+              context.teams.data?.find(({ id }) => id === proposer)?.name ||
+              "Proposing team",
+            ...draftCapPreview.teams[0],
+          },
+          {
+            id: receiving,
+            name:
+              receivingWorkspace.data?.team?.name ||
+              context.teams.data?.find(({ id }) => id === receiving)?.name ||
+              "Receiving team",
+            ...draftCapPreview.teams[1],
+          },
+        ]}
+      />
       <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>Send proposal</button>
       <ErrorMessage error={clientError || proposerWorkspace.error || receivingWorkspace.error || mutation.error} />
     </form>
@@ -1319,6 +1382,29 @@ export function TradeDetailPage() {
   });
   const [acceptancePreview, setAcceptancePreview] = useState(null);
   const [reversalPreview, setReversalPreview] = useState(null);
+  const proposal = trade.data;
+  const proposingWorkspace = useQuery({
+    ...teamWorkspaceQuery(
+      context.session.httpClient,
+      leagueId,
+      proposal?.proposingTeam?.id || "invalid"
+    ),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league) &&
+      Boolean(proposal?.proposingTeam?.id),
+  });
+  const receivingWorkspace = useQuery({
+    ...teamWorkspaceQuery(
+      context.session.httpClient,
+      leagueId,
+      proposal?.receivingTeam?.id || "invalid"
+    ),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league) &&
+      Boolean(proposal?.receivingTeam?.id),
+  });
   const refresh = async () => {
     setAcceptancePreview(null);
     setReversalPreview(null);
@@ -1332,7 +1418,6 @@ export function TradeDetailPage() {
   const command = useMutation({ mutationFn: ({ action }) => ({ accept: acceptTrade, approve: approveTrade, decline: declineTrade, cancel: cancelTrade }[action])(context.session.httpClient, leagueId, tradeId, key(`trade-${action}`)), onSuccess: refresh });
   const previewReversal = useMutation({ mutationFn: () => previewTradeReversal(context.session.httpClient, leagueId, tradeId), onSuccess: (data) => setReversalPreview(data.preview) });
   const recovery = useMutation({ mutationFn: (action) => recoverTrade(context.session.httpClient, leagueId, tradeId, action, key(`trade-${action}`)), onSuccess: refresh });
-  const proposal = trade.data;
   const commissioner = hasCommissionerAuthority(context.league?.membership);
   const managedIds = new Set(
     context.managerControlledTeams.map(({ id }) => id)
@@ -1395,6 +1480,40 @@ export function TradeDetailPage() {
             )}
           />
         </div>
+        <CapImpactSummary
+          description={
+            acceptancePreview
+              ? "Projected totals come from the server’s acceptance preview and include retained salary and transferred obligations."
+              : "Current totals come from live rosters. Preview acceptance to calculate each team’s exact trade change and projected cap."
+          }
+          pendingText={
+            proposingWorkspace.isPending || receivingWorkspace.isPending
+              ? "Loading current cap totals…"
+              : proposingWorkspace.isError || receivingWorkspace.isError
+                ? "One or more current cap totals could not be loaded. No missing value has been estimated."
+                : acceptancePreview
+                  ? null
+                  : "Change and projected cap are unavailable until the server previews acceptance."
+          }
+          teams={[
+            capImpactTeam({
+              id: proposal.proposingTeam.id,
+              name: proposal.proposingTeam.name,
+              previewTeam: acceptancePreview?.teams.find(
+                ({ teamId }) => teamId === proposal.proposingTeam.id
+              ),
+              workspace: proposingWorkspace.data,
+            }),
+            capImpactTeam({
+              id: proposal.receivingTeam.id,
+              name: proposal.receivingTeam.name,
+              previewTeam: acceptancePreview?.teams.find(
+                ({ teamId }) => teamId === proposal.receivingTeam.id
+              ),
+              workspace: receivingWorkspace.data,
+            }),
+          ]}
+        />
         {canRespond && <div className="hl-trade-action">
           <div className="hl-button-row">
           <button className="hl-button hl-button--primary" disabled={previewAcceptance.isPending} onClick={() => previewAcceptance.mutate()}>Preview acceptance</button>

@@ -560,6 +560,97 @@
   line-height: 1.5;
 }
 
+.hl-cap-impact {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, #60a5fa 42%, var(--hl-border));
+  border-radius: var(--hl-radius-lg);
+  background: color-mix(in srgb, #1d4ed8 8%, var(--hl-panel));
+}
+
+.hl-cap-impact > header h3,
+.hl-cap-impact > header p,
+.hl-cap-impact__status {
+  margin: 0;
+}
+
+.hl-cap-impact > header h3 {
+  font-family: var(--hl-font-display);
+  font-size: 0.86rem;
+}
+
+.hl-cap-impact > header p,
+.hl-cap-impact__status {
+  margin-top: 3px;
+  color: var(--hl-muted-foreground);
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+
+.hl-cap-impact__teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.hl-cap-impact__team {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--hl-border) 72%, transparent);
+  border-radius: var(--hl-radius-md);
+  background: rgb(2 6 23 / 22%);
+}
+
+.hl-cap-impact__team > strong {
+  overflow: hidden;
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hl-cap-impact__team dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+
+.hl-cap-impact__team dl > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.hl-cap-impact__team dt {
+  color: var(--hl-muted-foreground);
+  font-size: 0.49rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hl-cap-impact__team dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--hl-font-mono);
+  font-size: 0.62rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hl-cap-impact__team dd.is-increase {
+  color: #fca5a5;
+}
+
+.hl-cap-impact__team dd.is-decrease {
+  color: #86efac;
+}
+
 .hl-technical-details {
   margin-top: 10px;
   color: var(--hl-muted-foreground);
@@ -3423,14 +3514,16 @@ textarea {
   border-top: 3px solid rgba(37, 99, 235, 0.68);
 }
 
-.hl-standings-table {
-  min-width: 680px;
-  font-size: 0.61rem;
+.hl-data-table.hl-standings-table {
+  min-width: 650px;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  font-size: 0.6rem;
 }
 
 .hl-standings-table th,
 .hl-standings-table td {
-  padding: 7px 8px;
+  padding: 6px 7px;
 }
 
 .hl-standings-table td:not(:nth-child(2)),
@@ -3450,9 +3543,23 @@ textarea {
 }
 
 .hl-standings-table tbody .hl-standings-team-row > * {
+  border-bottom: 0;
   background: transparent;
   color: #fff;
   text-shadow: 0 1px 2px rgb(2 6 23 / 88%);
+}
+
+.hl-standings-table tbody .hl-standings-team-row {
+  border-radius: 999px;
+  clip-path: inset(0 round 999px);
+}
+
+.hl-standings-table tbody .hl-standings-team-row > :first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.hl-standings-table tbody .hl-standings-team-row > :last-child {
+  border-radius: 0 999px 999px 0;
 }
 
 .hl-activity-timeline > .hl-activity-entry {
@@ -5057,6 +5164,28 @@ textarea {
   opacity: 1;
 }
 
+.hl-player-actions .hl-player-auction-action,
+.hl-player-actions .hl-player-auction-action:hover,
+.hl-player-actions .hl-player-auction-action:focus-visible {
+  width: auto;
+  min-width: 0;
+  max-width: 150px;
+  padding-inline: 7px 9px;
+}
+
+.hl-player-actions .hl-player-auction-action span,
+.hl-player-actions .hl-player-auction-action:hover span,
+.hl-player-actions .hl-player-auction-action:focus-visible span {
+  max-width: 115px;
+  opacity: 1;
+}
+
+.hl-player-auction-action.is-disabled {
+  border-color: color-mix(in srgb, var(--hl-border) 72%, transparent);
+  color: color-mix(in srgb, var(--hl-muted-foreground) 72%, transparent);
+  cursor: not-allowed;
+}
+
 .hl-player-favourite.is-active {
   border-color: rgb(249 115 22 / 68%);
   background: rgb(249 115 22 / 13%);
@@ -5821,6 +5950,22 @@ textarea {
   .hl-player-action:focus-visible span {
     max-width: 0;
     opacity: 0;
+  }
+
+  .hl-player-actions .hl-player-auction-action,
+  .hl-player-actions .hl-player-auction-action:hover,
+  .hl-player-actions .hl-player-auction-action:focus-visible {
+    width: auto;
+    min-width: 0;
+    max-width: 132px;
+    padding-inline: 6px 8px;
+  }
+
+  .hl-player-actions .hl-player-auction-action span,
+  .hl-player-actions .hl-player-auction-action:hover span,
+  .hl-player-actions .hl-player-auction-action:focus-visible span {
+    max-width: 96px;
+    opacity: 1;
   }
 
   .hl-auction-form-grid {

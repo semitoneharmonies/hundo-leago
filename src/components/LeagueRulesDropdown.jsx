@@ -62,6 +62,65 @@ function LeagueRulesDropdown({ onClose }) {
           </ul>
         </RuleSection>
 
+        <RuleSection title="Free Agent Draft">
+          <ul>
+            <li>
+              When Candidate Cards open, use your team&apos;s private card to
+              choose eligible free agents for open Forward, Defence and optional
+              Bench spots. Enter each player&apos;s annual salary (AAV) and a
+              one-, two- or three-year term.
+            </li>
+            <li>
+              Use Save to keep your changes. There is no final Submit button:
+              you may add, remove or change free-agent choices, salary and term
+              until the displayed deadline. Every card locks automatically at
+              that deadline.
+            </li>
+            <li>
+              Before the deadline, only managers assigned to your team can see
+              its card. A commissioner who does not manage your team can see or
+              edit it only after your team asks for help during the help window.
+            </li>
+            <li>
+              The card checks roster fit and the $100 active salary cap. Offers
+              must be at least $1 AAV in $0.25 steps, contracts last one to three
+              years, and a Bench player may not exceed $4 AAV. Valid offers on
+              an incomplete but otherwise legal card still take part; new offers
+              on an over-cap or structurally conflicted card are excluded.
+            </li>
+            <li>
+              At the deadline, each player goes to the valid offer with the
+              highest total contract value (AAV × years). If totals match, the
+              higher AAV wins. For example, $3 AAV for three years totals $9 and
+              beats $4 AAV for two years, which totals $8.
+            </li>
+            <li>
+              If the best offers have the same total and term, only those tied
+              teams enter a restricted blind auction. A team must improve its
+              original offer to contend. If no team improves, the player moves
+              into a new league-wide rapid auction.
+            </li>
+            <li>
+              Restricted and league-wide rapid auctions also rank total contract
+              value first, then AAV. An exact top tie is settled by an auditable
+              equal-chance draw. Rapid auctions resolve at daily rollovers during
+              the preseason period.
+            </li>
+            <li>
+              After the deadline, league members can see each selected team&apos;s
+              requested players and the result status they are allowed to see.
+              Only managers of that team can see its salary, term and any tied
+              result that needs action. A Candidate Card win creates the offered
+              contract and places the player in the requested roster spot.
+            </li>
+            <li>
+              Rapid-auction bids do not reserve cap or roster space. Winning
+              several auctions may leave your team illegal, so you must fix any
+              resulting roster or cap problem before the team can score.
+            </li>
+          </ul>
+        </RuleSection>
+
         <RuleSection title="Auctions">
           <ul>
             <li>

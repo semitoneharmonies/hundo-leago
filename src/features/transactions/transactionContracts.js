@@ -27,9 +27,9 @@ function id(value, message) {
   return value;
 }
 
-function integer(value, message, { nullable = false } = {}) {
+function integer(value, message, { nullable = false, signed = false } = {}) {
   if (nullable && value === null) return value;
-  contract(Number.isSafeInteger(value) && value >= 0, message);
+  contract(Number.isSafeInteger(value) && (signed || value >= 0), message);
   return value;
 }
 
@@ -177,6 +177,20 @@ export function validateAcceptancePreview(data) {
   for (const team of data.teams) {
     object(team, "An acceptance team preview is invalid.");
     id(team.teamId, "An acceptance-preview team ID is invalid.");
+    object(team.cap, "An acceptance-preview team cap is invalid.");
+    integer(
+      team.cap.salaryCapCents,
+      "The acceptance-preview salary cap is invalid."
+    );
+    integer(
+      team.cap.usageCents,
+      "The acceptance-preview cap usage is invalid."
+    );
+    integer(
+      team.cap.spaceCents,
+      "The acceptance-preview cap space is invalid.",
+      { signed: true }
+    );
     contract(
       typeof team.generallyIllegal === "boolean",
       "An acceptance-preview team warning is invalid."
