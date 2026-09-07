@@ -8,6 +8,12 @@ import { readConnectedFadFixture } from '../support/fadManifest.js'
 import { startLocalFadStack } from '../support/localStack.js'
 
 export const test = base.extend({
+  context: async ({ context }, provide) => {
+    // Local acceptance uses the site's fallback fonts and never depends on a CDN.
+    await context.route('https://fonts.googleapis.com/**', (route) => route.abort())
+    await context.route('https://fonts.gstatic.com/**', (route) => route.abort())
+    await provide(context)
+  },
   fadFixture: [
     async ({ browserName }, provide) => {
       if (!browserName) throw new Error('A Playwright browser is required.')
