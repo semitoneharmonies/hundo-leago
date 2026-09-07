@@ -26,7 +26,7 @@ function LeagueRulesDropdown({ onClose }) {
     >
       <header>
         <div>
-          <p className="hl-eyebrow">Approved Season 2 baseline</p>
+          <p className="hl-eyebrow">League guide</p>
           <h2 id="league-rules-title">League rules</h2>
         </div>
         <button
@@ -51,15 +51,34 @@ function LeagueRulesDropdown({ onClose }) {
       <div className="hl-rules-sections">
         <RuleSection title="Rosters, cap and scoring" open>
           <ul>
-            <li>Only the persisted active-roster snapshot can score.</li>
+            <li>The active roster has 12 Forwards and 6 Defence. Bench and Injured Reserve each hold up to four players; a Bench player may have at most $4 AAV. There are no goalie slots.</li>
+            <li>The $100 salary cap includes active-player AAV after retention, retained-salary obligations and buyout penalties. Bench, Injured Reserve and Prospects salaries do not count against the cap.</li>
+            <li>Your active lineup locks for each matchup week on Monday at 4:00 PM Pacific. Only players in that saved lineup can score for that week. Later moves do not change earlier weeks.</li>
             <li>Bench, injured reserve and prospects do not score.</li>
+            <li>Goals earn 1.25 fantasy points and assists earn 1.00. Matchup points count only the games included in that matchup period.</li>
             <li>
-              An illegal team scores nothing until a new legal
-              team-specific snapshot and baseline exist.
+              A team with an illegal roster or cap position scores nothing until the team is legal and a new scoring baseline is recorded. Points are not awarded retroactively for the illegal period.
             </li>
             <li>Regular-season results are wins, losses or ties.</li>
             <li>Wins award 2 standings points; ties 1; losses 0.</li>
           </ul>
+        </RuleSection>
+
+        <RuleSection title="Matchups and standings">
+          <p>Historical matchup weeks show the saved players and points for that week. Bench players at lock do not score, even if moved to Active later.</p>
+          <p>Standings update from recorded matchup results. GP = wins + losses + ties. PTS = 2 × wins + ties. PCT = PTS ÷ (2 × GP), or zero before any games. PF is points for, PA is points against, and DIFF = PF − PA. Byes do not count as games.</p>
+          <p>Official order uses standings points, then point differential, then points for. Teams still equal share a rank. Click a statistical heading to sort the view; sorting never changes official standings. Commissioners correct source matchup results instead of editing standings rows.</p>
+        </RuleSection>
+
+        <RuleSection title="Contracts and roster moves">
+          <p>Contracts last one to three years and cannot be extended. AAV is the annual salary; total contract value is AAV × term. Check the salary-cap preview before signing or trading.</p>
+          <p>Managers may move their own players between eligible roster categories. Injured Reserve is for players unavailable through injury or illness. A roster move does not change a player's Forward or Defence position. Hockey-line dragging swaps the exact selected slots.</p>
+        </RuleSection>
+
+        <RuleSection title="Prospects and fantasy entry-level contracts">
+          <p>Entry Draft picks and traded prospect rights belong in Prospects. Before signing a prospect, confirm that the player has signed their real-life NHL entry-level contract.</p>
+          <p>A fantasy entry-level contract (ELC) totals $3 over three seasons: $1 AAV. Signing cannot be undone from your roster. A signed prospect may stay in Prospects without counting against the cap. Once moved to Active, Bench or Injured Reserve, they cannot return to Prospects.</p>
+          <p>Prospects do not score. Empty categories show no players until you add an eligible player through the appropriate draft, trade or roster action.</p>
         </RuleSection>
 
         <RuleSection title="Free Agent Draft">
@@ -151,6 +170,7 @@ function LeagueRulesDropdown({ onClose }) {
 
         <RuleSection title="Trades, retention and buyouts">
           <ul>
+            <li>Trading opens with the Entry Draft, or when the Free Agent Draft opens in an approved inaugural league without an Entry Draft. Trading closes at the league trade deadline.</li>
             <li>
               A trade proposal expires after 7 days or at the league trade
               deadline, whichever arrives first.
@@ -161,12 +181,14 @@ function LeagueRulesDropdown({ onClose }) {
             </li>
             <li>
               A trade containing Future considerations needs commissioner
-              approval after the receiving manager accepts it.
+              approval after the receiving manager accepts it. No assets move while it is Awaiting Commissioner Approval; every asset and permission is checked again at approval.
             </li>
+            <li>Managers can propose trades using assets they currently control. Trade-block listings show interest in a trade and do not reserve the player. Multiple proposals can involve the same asset; unavailable assets are checked again when a trade is accepted.</li>
             <li>
               Retained salary lasts for every remaining contract year and
               remains a cap obligation.
             </li>
+            <li>Retention is limited to 50% of a contract's original AAV cumulatively, with three retention slots per team. Review retained obligations in the cap preview.</li>
             <li>
               The standard annual buyout penalty is 25% of AAV for each
               remaining contract year.
@@ -176,6 +198,18 @@ function LeagueRulesDropdown({ onClose }) {
               player if traded.
             </li>
           </ul>
+        </RuleSection>
+
+        <RuleSection title="Entry Draft and draft archives">
+          <p>Entry Draft selections award prospect rights to the team that owns the pick. Those rights can be traded and follow the prospect-signing rules above. The complete Entry Draft experience is planned for a later release.</p>
+          <p>Free Agent Draft results are read-only. Choose a draft year to view that year's teams, players and results. Draft years such as 2026 are distinct from seasons such as 2026–2027. Completed Entry Drafts will use the same year-by-year archive.</p>
+        </RuleSection>
+
+        <RuleSection title="League access, notifications and commissioner tools">
+          <p>Your league lists your memberships and pending invitations. Accept a league invitation or commissioner assignment to receive its access. Managing one league never grants access to another league.</p>
+          <p>Notifications can be filtered by type. Reading a notification moves it to Previous notifications; it does not accept an invitation, trade or commissioner role. Open the relevant item to review and take that action.</p>
+          <p>Commissioners can preview and confirm schedule creation, manage matchup weeks, and correct rosters and contracts. Add Player and Correct Contract use AAV and term, with the total shown for review. Move / re-slot changes the roster category and slot while preserving the player's position.</p>
+          <p>Seasonal draft tools show the actions currently available to the commissioner. A preview does not apply a change; review its effects before confirming. Managers cannot use commissioner controls or access another team's private bids.</p>
         </RuleSection>
       </div>
     </section>

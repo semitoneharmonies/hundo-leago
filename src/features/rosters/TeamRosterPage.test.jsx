@@ -119,7 +119,7 @@ function workspace() {
         ownershipKind: "Contract",
         nhlTeamAbbreviation: "MTL",
         slotNumber: 1,
-        displayOrder: 0,
+        displayOrder: 1,
         age: 26,
         contract: {
           id: contractId,
@@ -751,9 +751,7 @@ describe("authoritative team roster page", () => {
       />
     );
 
-    expect(screen.getByRole("note")).toHaveTextContent(
-      "confirm the player has signed their real-life NHL entry-level contract"
-    );
+    expect(screen.queryByText(/Before signing, confirm/)).not.toBeInTheDocument();
     const keepButton = screen.getByRole("button", {
       name: "Sign ELC and keep in prospects Prospect Player",
     });
@@ -925,7 +923,7 @@ describe("authoritative team roster page", () => {
       playerId: secondActivePlayerId,
       name: "Second Forward",
       slotNumber: 2,
-      displayOrder: 1,
+      displayOrder: 2,
     });
     let savedInput = null;
     const httpClient = {
@@ -982,6 +980,59 @@ describe("authoritative team roster page", () => {
       ]);
     });
     expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
+  });
+
+  it.each([4, 5])("swaps Suzuki with the exact target slot %i without shifting other columns", async (targetIndex) => {
+    const data = workspace();
+    data.orderVersion = 1;
+    const names = ["Left Wing One", "Nick Suzuki", "Right Wing One", "Left Wing Two", "Rupe Hintz", "Right Wing Two"];
+    const players = names.map((name, index) => ({
+      ...data.players[0],
+      name,
+      ownershipId: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      playerId: `00000000-0000-4000-8000-${String(index + 101).padStart(12, "0")}`,
+      slotNumber: index + 1,
+      displayOrder: index + 1,
+    }));
+    data.players = players;
+    const httpClient = { request: vi.fn(async () => ({ data: { orderVersion: 2 } })) };
+    const view = renderWithProviders(
+      <TeamRosterPage workspace={data} teams={[data.team]} managerName="League Manager"
+        onTeamChange={() => {}} httpClient={httpClient} />
+    );
+    await view.user.click(screen.getByRole("button", { name: /Hockey lines/ }));
+    const source = screen.getByRole("button", { name: "Drag Nick Suzuki to reorder" });
+    const target = screen.getByText(names[targetIndex]).closest(".hl-line-player");
+    const restorePointerTarget = mockPointerTarget(target);
+    fireEvent.pointerDown(source, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(source, { pointerId: 1, pointerType: "mouse", buttons: 1, clientX: 40, clientY: 40 });
+    fireEvent.pointerUp(source, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 40, clientY: 40 });
+    restorePointerTarget();
+    const expected = players.map(({ ownershipId }) => ownershipId);
+    [expected[1], expected[targetIndex]] = [expected[targetIndex], expected[1]];
+    await waitFor(() => expect(httpClient.request).toHaveBeenCalledTimes(1));
+    expect(httpClient.request.mock.calls[0][1].body.forwardOwnerships.map(({ id }) => id)).toEqual(expected);
+    expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
+    const rendered = [...view.container.querySelectorAll(".hl-hockey-line .hl-line-player strong")].map((node) => node.textContent);
+    const expectedNames = [...names];
+    [expectedNames[1], expectedNames[targetIndex]] = [expectedNames[targetIndex], expectedNames[1]];
+    expect(rendered).toEqual(expectedNames);
+  });
+
+  it("preserves empty slots when moving a forward to another line", async () => {
+    const data = workspace();
+    const httpClient = { request: vi.fn(async () => ({ data: { orderVersion: 2 } })) };
+    const view = renderWithProviders(<TeamRosterPage workspace={data} teams={[data.team]} managerName="League Manager" onTeamChange={() => {}} httpClient={httpClient} />);
+    await view.user.click(screen.getByRole("button", { name: /Hockey lines/ }));
+    const target = view.container.querySelector('[data-line-slot="slot:F:4"]');
+    fireEvent.drop(target, { dataTransfer: { getData: () => activeOwnershipId } });
+    await waitFor(() => expect(httpClient.request).toHaveBeenCalledTimes(1));
+    expect(httpClient.request.mock.calls[0][1].body.forwardOwnerships).toEqual([
+      null, null, null, null, { id: activeOwnershipId, version: data.players[0].ownershipVersion },
+    ]);
+    const slots = view.container.querySelectorAll(".hl-hockey-line .hl-line-player");
+    expect(slots[0]).toHaveTextContent("Open slot");
+    expect(slots[4]).toHaveTextContent(data.players[0].name);
   });
 
   it("moves a Bench player to Active by drag and drop", async () => {

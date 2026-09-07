@@ -36,6 +36,7 @@ import {
 import { leagueAuthorityLabel } from "../../shared/leagueAuthority.js";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import { createIntentKey } from "../accounts/accountApi.js";
+import { PendingLeagueAccess } from "../notifications/NotificationsPage.jsx";
 
 function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
   const queryClient = useQueryClient();
@@ -318,11 +319,6 @@ export function LeagueSelectionPage() {
               league membership. A commissioner can invite you.
             </EmptyBlock>
           </Surface>
-        ) : leaguesQuery.data.length === 1 && !platformAdministrator ? (
-          <Navigate
-            to={routePaths.league(leaguesQuery.data[0].id)}
-            replace
-          />
         ) : (
           <>
             {leaguesQuery.data.length > 0 ? (
@@ -353,6 +349,7 @@ export function LeagueSelectionPage() {
             )}
           </>
         )}
+        <PendingLeagueAccess session={session} />
       </main>
     </SessionGate>
   );

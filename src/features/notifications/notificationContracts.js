@@ -6,6 +6,15 @@ function contract(condition, message) {
 
 const STABLE_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+export function validateCommissionerAssignment(data, assignmentId) {
+  contract(data?.assignment?.id === assignmentId &&
+    ["pending", "accepted", "declined", "expired"].includes(data?.assignment?.status) &&
+    STABLE_ID_PATTERN.test(data?.league?.id || "") &&
+    typeof data?.league?.name === "string" && data.league.name.trim().length > 0,
+  "The commissioner assignment response is invalid.");
+  return true;
+}
 const FAD_STABLE_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_MACHINE_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,99}$/u;
@@ -628,6 +637,13 @@ export function validateNotifications(data) {
           stableId(notification.messageData.teamId),
         "A league invitation notification team is invalid."
       );
+    }
+    if (notification.type === "commissioner_assignment_proposed") {
+      contract(stableId(notification.messageData.assignmentId), "A commissioner assignment ID is invalid.");
+      contract(stableId(notification.messageData.leagueId) && notification.leagueId === notification.messageData.leagueId,
+        "A commissioner assignment league is invalid.");
+      contract(typeof notification.messageData.leagueName === "string" && notification.messageData.leagueName.trim() !== "",
+        "A commissioner assignment league name is invalid.");
     }
     if (notification.type === "trade_proposal_received") {
       for (const [field, description] of [

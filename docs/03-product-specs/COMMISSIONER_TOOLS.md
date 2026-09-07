@@ -4,6 +4,15 @@
 
 `APPROVED`
 
+### Staging review amendment — 7 September 2026
+
+Grae approved AAV and term inputs for Add player and Correct contract; total
+contract value is calculated as AAV × term. Preview, confirmation, contract
+validation and activity history remain required. Move or re-slot changes only
+team, roster category and placement; it cannot change the player's position,
+including through a direct backend request. This supersedes the earlier
+position-editing scope of this particular workflow. Remove player is unchanged.
+
 This product specification consolidates:
 
 * approved league-scoped commissioner authority;

@@ -1235,6 +1235,42 @@ describe("FAD-16 published Candidate Card and allocation history", () => {
     );
   });
 
+  it("changes the selected draft year and resets team results and player search", async () => {
+    const nextTeam = team(secondTeamId, "2027 Team");
+    const requests = [];
+    const fetchImpl = baseFetch((parsed) => {
+      requests.push(parsed);
+      if (parsed.pathname.endsWith("/navigation")) return envelope({
+        ...navigation(),
+        availableDrafts: [
+          { fadId: routeReuseFadId, seasonId, year: 2027, status: "completed" },
+          { fadId, seasonId, year: 2026, status: "completed" },
+        ],
+      });
+      const next = parsed.pathname.includes(routeReuseFadId);
+      const selectedId = next ? routeReuseFadId : fadId;
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${selectedId}`)) return envelope({ ...publishedOverview(), fadId: selectedId, candidateDeadlineAtMs: Date.parse(`${next ? "2027" : "2026"}-08-01T23:00:00Z`) });
+      if (parsed.pathname.endsWith("/candidate-cards")) return collectionEnvelope([{ ...publishedSummary(next ? nextTeam : team()), fadId: selectedId }]);
+      if (parsed.pathname.endsWith("/teams")) return envelope(teamsFound([leagueTeam(teamId), leagueTeam(secondTeamId, "2027 Team")]));
+      if (parsed.pathname.endsWith("/results")) return collectionEnvelope(publishedResultsCard(next ? nextTeam : team(), [[next ? "2027 Player" : "2026 Player", "not_won", null, false]]).results);
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    const view = renderRoute({
+      path: routePaths.draftFreeAgentAllocationResults(leagueId, fadId),
+      route: "/leagues/:leagueId/drafts/free-agent/:fadId/results",
+      element: <FreeAgentDraftAllocationResultsPage />,
+      fetchImpl,
+    });
+    expect(await screen.findByText("2026 Player")).toBeInTheDocument();
+    await view.user.type(screen.getByLabelText("Search players"), "2026");
+    await view.user.selectOptions(screen.getByLabelText("Draft year"), routeReuseFadId);
+    expect(await screen.findByText("2027 Player")).toBeInTheDocument();
+    expect(screen.queryByText("2026 Player")).toBeNull();
+    expect(screen.getByLabelText("Search players")).toHaveValue("");
+    expect(screen.getByLabelText("Team")).toHaveValue(secondTeamId);
+    expect(requests.filter(url => url.pathname.includes(routeReuseFadId) && url.pathname.endsWith("/results")).every(url => url.searchParams.get("teamId") === secondTeamId && !url.searchParams.get("q"))).toBe(true);
+  });
+
   it("uses exact selected-team T-140 searches and never renders another team's offer", async () => {
     expect(validatePublishedCandidateCard(publishedResultsCard())).toBe(true);
     const resultRequests = [];

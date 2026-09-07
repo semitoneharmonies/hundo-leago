@@ -14,7 +14,9 @@ export class AccountPage {
     await form.getByLabel('Email address').fill(account.email)
     await form.getByLabel('Password').fill(this.fixture.password)
     await form.getByRole('button', { name: 'Sign in' }).click()
-    await expect(this.page).toHaveURL(/\/leagues(?:\/|$)/)
+    await expect(this.page).toHaveURL(/\/leagues(?:\/|$)/, {
+      timeout: Number(process.env.HUNDO_E2E_SIGN_IN_TIMEOUT_MS || 10_000),
+    })
     await expect(
       this.page.getByRole('button', { name: 'Account menu' })
     ).toBeVisible()

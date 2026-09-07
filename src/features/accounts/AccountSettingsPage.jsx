@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 
@@ -65,6 +65,10 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
   const [patternTemplateOverride, setPatternTemplateOverride] =
     useState(null);
   const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  useEffect(() => {
+    return () => { if (logoPreview) URL.revokeObjectURL(logoPreview); };
+  }, [logoPreview]);
   const [removeLogo, setRemoveLogo] = useState(false);
   const [message, setMessage] = useState("");
   const savedPrimaryColour = team.primaryColour || "#16324f";
@@ -255,20 +259,27 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
             <small>{selectedPattern.colourCount} colours</small>
           </span>
         </div>
-        <label className="hl-field">
-          Team logo
+        <fieldset className="hl-team-logo-control">
+          <legend>Team logo</legend>
+          <TeamMark team={previewTeam} className="hl-account-team-mark"
+            logoUrl={removeLogo ? null : (logoFile && logoPreview) || (team.logoReference ? httpClient.resourceUrl(team.logoReference) : null)} />
+          <label className="hl-field">
+          <span>{team.logoReference || logoFile ? "Replace logo" : "Choose logo"}</span>
           <input
+            aria-label="Team logo"
+            key={removeLogo ? "removed" : "selected"}
             type="file"
             accept="image/png,image/jpeg,image/webp"
             onChange={(event) => {
-              setLogoFile(event.target.files?.[0] || null);
+              const file = event.target.files?.[0] || null;
+              setLogoFile(file);
+              setLogoPreview(file && typeof URL.createObjectURL === "function" ? URL.createObjectURL(file) : null);
               setRemoveLogo(false);
             }}
           />
           <small>PNG, JPEG, or WebP; maximum 512 KB and 2048×2048.</small>
         </label>
-      </div>
-      {team.logoReference && (
+      {(team.logoReference || logoFile) && (
         <label className="hl-check-field">
           <input
             type="checkbox"
@@ -281,6 +292,8 @@ function TeamProfileForm({ leagueId, team, httpClient }) {
           Remove the current logo
         </label>
       )}
+        </fieldset>
+      </div>
       <button
         type="submit"
         className="hl-button hl-button--primary"

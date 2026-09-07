@@ -1,5 +1,15 @@
 # Hundo Leago - API Contracts
 
+## Staging review amendment — 2026-09-07
+
+- Notification reads accept `category=all|auction|trade|draft|league|account` and optional `pendingLeagueAccess=true|false`. Filtering occurs before cursor pagination. Pending access includes only the requesting user's unexpired pending invitations or commissioner assignments, including notifications already read.
+- Free Agent Draft navigation adds `availableDrafts: [{ fadId, seasonId, year, status }]`, ordered newest year first and scoped to the authorized league. Results remain read-only and use the selected exact draft ID.
+- Auction start-team projections may include `nextRolloverAtMs` (timestamp or null), calculated by the backend for the applicable window.
+- Roster display-order arrays may contain null placeholders within the twelve forward or six defence slots. Every current ownership must still appear exactly once, with its version and original position group validated. Existing contiguous arrays remain supported.
+- Commissioner Move/re-slot rejects any change to the player's position. Add/Correct contract continues to submit the derived total and term; the UI collects AAV and preserves historical totals when unchanged.
+- A closed trade window returns `409 TRADE_WINDOW_CLOSED` with a useful draft/deadline explanation. Grae approved inaugural trading on 2026-09-07: a current-season Free Agent Draft with the approved `no_draft_inaugural` setup opens trading at its persisted `opened_at_ms`, without requiring an Entry Draft. Existing Entry Draft opening, trade deadline, current-season, ownership and authorization checks remain in force.
+- Existing schedule preview and confirmation contracts are unchanged; the UI now supplies all five calendar values and the confirmed request's exact season version and idempotency key.
+
 ## Document Status
 
 `APPROVED`

@@ -107,6 +107,8 @@ function fantasyPointsPerGame(hundredths, gamesPlayed) {
 
 function dashboardSeasonLabel(currentSeason) {
   const label = currentSeason?.label;
+  const year = typeof label === "string" ? /^(\d{4})(?:[-–](\d{2}|\d{4}))?$/.exec(label.trim()) : null;
+  if (year) return `${year[1]}–${Number(year[1]) + 1} season`;
   return typeof label === "string" && label.trim()
     ? `${label} season`
     : undefined;
@@ -1485,6 +1487,7 @@ export function LeagueDashboard({ league, teams, session }) {
       )}
 
       <TradeBlockPanel
+        currentUserId={session.user?.id}
         enabled={enabled}
         httpClient={session.httpClient}
         leagueId={leagueId}

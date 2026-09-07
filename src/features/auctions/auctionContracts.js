@@ -685,7 +685,9 @@ export function validateAuctionCollection(value) {
 }
 
 function startTeam(value, location) {
-  exact(value, START_TEAM_FIELDS, location);
+  const hasRollover = value && Object.hasOwn(value, "nextRolloverAtMs");
+  exact(value, hasRollover ? [...START_TEAM_FIELDS, "nextRolloverAtMs"] : START_TEAM_FIELDS, location);
+  if (hasRollover && value.nextRolloverAtMs !== null) timestamp(value.nextRolloverAtMs, `${location}.nextRolloverAtMs`);
   stableId(value.teamId, `${location}.teamId`);
   team(value.team, `${location}.team`);
   contract(value.team.teamId === value.teamId, `${location}.team is mismatched.`);

@@ -99,6 +99,9 @@
   font-size: 0.88rem;
 }
 
+.deadlineRow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.deadlineRow label { min-width: 120px; margin: 0; }
+
 .deadlineLine strong {
   color: var(--hl-foreground, #f8fafc);
 }

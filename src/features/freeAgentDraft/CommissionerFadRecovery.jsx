@@ -415,6 +415,15 @@ export function CommissionerFadRecovery({
     return <Surface><ErrorBlock error={recovery.error} fallback="Free Agent Draft recovery could not be loaded." /></Surface>;
   }
 
+  const seenActions = new Set();
+  const enabledActions = recovery.data.availableActions.filter((action) => {
+    const key = `${action.action}:${action.resourceId || "fad"}`;
+    if (!action.enabled || seenActions.has(key)) return false;
+    seenActions.add(key);
+    return true;
+  });
+  const blockedCount = recovery.data.availableActions.filter((action) => !action.enabled).length;
+
   return (
     <section className={styles.page} aria-labelledby="commissioner-fad-recovery-title">
       <Surface className={styles.panel}>
@@ -439,7 +448,8 @@ export function CommissionerFadRecovery({
         <h3 id="fad-available-actions-title">Needs your action</h3>
         <p>Only safe actions currently available for this draft are shown.</p>
         <div className={styles.resultList}>
-          {recovery.data.availableActions.map((action) => (
+          {enabledActions.length === 0 && <p>No commissioner action is available right now.</p>}
+          {enabledActions.map((action) => (
             <div className={styles.recoveryItem} key={`${action.action}:${action.resourceId || "fad"}`}>
               <strong>{actionLabel(action.action)}</strong>
               {action.enabled ? (
@@ -452,6 +462,10 @@ export function CommissionerFadRecovery({
             </div>
           ))}
         </div>
+        {blockedCount > 0 && <details className={styles.historyDisclosure}>
+          <summary>Why some actions are unavailable</summary>
+          <p>A retry is offered only when a draft step can safely run again. Completed and locked steps have no action here. Review the draft step history below for their status; available corrective actions appear above.</p>
+        </details>}
         {selectedAction && (
           <RecoveryActionForm
             key={`${selectedAction.action}:${selectedAction.resourceId || "fad"}`}

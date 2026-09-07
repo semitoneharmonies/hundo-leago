@@ -105,6 +105,9 @@ function fetchScenario(
     if (path === "/api/v1/leagues") {
       return response({ code: "LEAGUES_FOUND", leagues }, "request-leagues");
     }
+    if (path === "/api/v1/notifications") {
+      return response({ code: "NOTIFICATIONS_FOUND", notifications: [], page: { limit: 25, nextCursor: null } }, "request-invitations");
+    }
     if (path === "/api/v1/admin/users") {
       return platformAdmin
         ? response({
@@ -438,14 +441,16 @@ describe("league selection", () => {
     );
   });
 
-  it("automatically enters exactly one visible league and offers its team", async () => {
-    renderLeagueRoutes(
+  it("keeps one visible membership in the hub and opens it only when selected", async () => {
+    const view = renderLeagueRoutes(
       "/leagues",
       fetchScenario([league(leagueOneId, "Only League")])
     );
-    expect(
-      await screen.findByRole("heading", { name: "Only League" })
-    ).toBeInTheDocument();
+    const leagueLink = await screen.findByRole("link", { name: "Only League" });
+    expect(screen.getByRole("heading", { name: "Your leagues" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Invitations and commissioner assignments" })).toBeInTheDocument();
+    await view.user.click(leagueLink);
+    await screen.findByRole("heading", { name: "Only League" });
     expect(
       screen.getByRole("link", { name: "Target Owls" })
     ).toHaveAttribute(

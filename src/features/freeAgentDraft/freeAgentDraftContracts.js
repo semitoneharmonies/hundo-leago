@@ -320,8 +320,9 @@ function managedCardSummary(value, location, { descriptor = false, urgency = fal
 export function validateFreeAgentDraftNavigation(data) {
   exact(
     data,
-    [
-      "serverNowMs",
+      [
+        ...(record(data) && Object.hasOwn(data, "availableDrafts") ? ["availableDrafts"] : []),
+        "serverNowMs",
       "timeZone",
       "fadId",
       "seasonId",
@@ -335,8 +336,20 @@ export function validateFreeAgentDraftNavigation(data) {
       "rosterLinks",
       "urgencyCode",
     ],
-    "FAD navigation"
-  );
+      "FAD navigation"
+    );
+    if (Object.hasOwn(data, "availableDrafts")) {
+      contract(Array.isArray(data.availableDrafts), "Available draft years are invalid.");
+      const seen = new Set();
+      for (const draft of data.availableDrafts) {
+        exact(draft, ["fadId", "seasonId", "year", "status"], "Available draft");
+        stableId(draft.fadId, "Available draft ID");
+        stableId(draft.seasonId, "Available draft season ID");
+        contract(Number.isInteger(draft.year) && draft.year >= 1900 && draft.year <= 9999 && !seen.has(draft.fadId), "Available draft year is invalid.");
+        oneOf(draft.status, ["cards_open", "deadline_locked", "allocating", "rapid", "completed"], "Available draft status");
+        seen.add(draft.fadId);
+      }
+    }
   safeInteger(data.serverNowMs, "FAD navigation.serverNowMs");
   text(data.timeZone, "FAD navigation.timeZone");
   nullableId(data.fadId, "FAD navigation.fadId");
@@ -1858,9 +1871,10 @@ function validateRecoveryProjectionBindings(data) {
     const recoveries = recoveriesByCapability.get(actionKeys[index]) || [];
     const latest = recoveries.at(-1) || null;
     const enabled = latest !== null && ["pending", "ready"].includes(latest.status);
+    const retryableCorrection = latest?.status === "correction_required" && operations.some((operation) => operation.operationId === latest.createdByOperationId && operation.status === "failed");
     contract(
-      action.enabled === enabled &&
-        action.reasonCode === (enabled ? null : "RECOVERY_NOT_AVAILABLE"),
+      (action.enabled === enabled || (action.enabled && retryableCorrection)) &&
+        action.reasonCode === (action.enabled ? null : "RECOVERY_NOT_AVAILABLE"),
       "Free Agent Draft recovery available-action state is invalid."
     );
   });

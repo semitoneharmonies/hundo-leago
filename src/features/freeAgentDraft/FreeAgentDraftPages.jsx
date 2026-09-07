@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
@@ -119,6 +119,7 @@ function OverviewHero({
   title = "Free Agent Draft",
   headingId = "fad-page-title",
   headingLevel = "h1",
+  archiveControl = null,
 }) {
   const Heading = headingLevel;
   return (
@@ -128,13 +129,17 @@ function OverviewHero({
           <Heading id={headingId}>{title}</Heading>
         </div>
       </div>
+      <div className={styles.deadlineRow}>
       <p className={styles.deadlineLine}>
         <strong>Candidate card deadline:</strong>{" "}
         {shortLeagueDateTime(
           overview.candidateDeadlineAtMs,
-          overview.timeZone
+          overview.timeZone,
+          true
         )}
       </p>
+      {archiveControl}
+      </div>
     </header>
   );
 }
@@ -284,10 +289,21 @@ function FreeAgentDraftResultsExperience({
   onSelectedTeamIdChange,
   embedded = false,
 }) {
+  const navigate = useNavigate();
+  const navigation = useQuery({
+    ...freeAgentDraftNavigationQuery(context.session.httpClient, leagueId),
+    enabled: context.session.status === "authenticated" && Boolean(context.league),
+  });
+  const drafts = navigation.data?.availableDrafts || [{ fadId, year: new Intl.DateTimeFormat("en", { year: "numeric", timeZone: overview.timeZone }).format(overview.candidateDeadlineAtMs) }];
   return (
     <>
       <OverviewHero
         overview={overview}
+        archiveControl={<label className="hl-field">Draft year
+          <select value={fadId} onChange={(event) => navigate(routePaths.draftFreeAgentAllocationResults(leagueId, event.target.value))}>
+            {drafts.map((draft) => <option key={draft.fadId} value={draft.fadId}>{draft.year}</option>)}
+          </select>
+        </label>}
         observedAtClientMs={observedAtClientMs}
         title="Free Agent Draft results"
         headingId={embedded ? "free-agent-draft-title" : "fad-page-title"}
@@ -312,7 +328,7 @@ function DraftsFreeAgentArea({ context, leagueId }) {
     enabled:
       context.session.status === "authenticated" && Boolean(context.league),
   });
-  const fadId = navigation.data?.fadId || null;
+  const fadId = navigation.data?.fadId || navigation.data?.availableDrafts?.[0]?.fadId || null;
   const overview = useQuery({
     ...(fadId
       ? freeAgentDraftOverviewQuery(context.session.httpClient, leagueId, fadId)
@@ -339,7 +355,7 @@ function DraftsFreeAgentArea({ context, leagueId }) {
       </Surface>
     );
   }
-  if (navigation.data.fadId === null) {
+  if (fadId === null) {
     return (
       <Surface className={styles.panel}>
         <p className="hl-eyebrow">Free Agent Draft</p>
@@ -370,7 +386,7 @@ function DraftsFreeAgentArea({ context, leagueId }) {
   return PREPARATION_PHASES.has(overview.data.phase) ? (
     <FreeAgentDraftPreparationContent
       embedded
-      fadId={navigation.data.fadId}
+      fadId={fadId}
       leagueId={leagueId}
       observedAtClientMs={overview.dataUpdatedAt}
       overview={overview.data}
@@ -380,7 +396,7 @@ function DraftsFreeAgentArea({ context, leagueId }) {
       embedded
       compact
       context={context}
-      fadId={navigation.data.fadId}
+      fadId={fadId}
       leagueId={leagueId}
       observedAtClientMs={overview.dataUpdatedAt}
       overview={overview.data}

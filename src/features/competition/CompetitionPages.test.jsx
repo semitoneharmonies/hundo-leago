@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -335,6 +335,19 @@ function baseFetch(
     }
     return extra(path, options);
   });
+}
+
+async function fillScheduleCalendar() {
+  const dates = {
+    "NHL regular season starts": "2026-10-04T00:00",
+    "NHL regular season ends": "2027-04-12T00:00",
+    "Fantasy playoffs start": "2027-03-15T00:00",
+    "Fantasy playoffs end": "2027-04-12T00:00",
+    "Week 1 starts": "2026-10-05T00:00",
+  };
+  for (const [label, value] of Object.entries(dates)) {
+    fireEvent.change(await screen.findByLabelText(label), { target: { value } });
+  }
 }
 
 describe("M6-12 authenticated competition pages", () => {
@@ -1068,7 +1081,7 @@ describe("M6-12 authenticated competition pages", () => {
         name: "Preview schedule generation",
       })
     ).toBeInTheDocument();
-    const weekSelector = await screen.findByRole("combobox", { name: "Week" });
+    const weekSelector = await screen.findByRole("combobox", { name: "Matchup week" });
     expect(within(weekSelector).getByRole("option")).toHaveTextContent("Week 1:");
     expect(screen.queryByRole("heading", { name: "Result correction" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Standings rebuild" })).not.toBeInTheDocument();
@@ -1115,16 +1128,16 @@ describe("M6-12 authenticated competition pages", () => {
       fetchImpl
     );
 
-    const weekSelector = await screen.findByRole("combobox", { name: "Week" });
+    const weekSelector = await screen.findByRole("combobox", { name: "Matchup week" });
     expect(within(weekSelector).getAllByRole("option")).toHaveLength(2);
     expect(within(weekSelector).getByRole("option", { name: /Week 2:/ })).toHaveValue(futureWeekId);
     await view.user.selectOptions(weekSelector, futureWeekId);
     await view.user.click(screen.getByRole("button", {
-      name: "Preview week transition",
+      name: "Preview edit matchup week",
     }));
 
     expect(await screen.findByRole("region", {
-      name: "Week transition preview",
+      name: "Edit matchup week preview",
     })).toHaveTextContent("Scheduled");
     expect(requests).toEqual([{ body: { confirmed: false }, method: "PATCH" }]);
   });
@@ -1147,7 +1160,7 @@ describe("M6-12 authenticated competition pages", () => {
           return envelope({
             code: "MATCHUP_SCHEDULE_PREVIEWED",
             preview: {
-              expectedVersion: 3,
+              expectedSeasonVersion: 3,
               participantCount: 6,
               weekCount: 22,
               matchupCount: 66,
@@ -1167,6 +1180,7 @@ describe("M6-12 authenticated competition pages", () => {
       <CommissionerCompetitionPage />,
       fetchImpl
     );
+    await fillScheduleCalendar();
     await view.user.click(await screen.findByRole("button", { name: "Preview schedule generation" }));
     const preview = await screen.findByRole("region", {
       name: "Schedule generation preview",
@@ -1179,9 +1193,17 @@ describe("M6-12 authenticated competition pages", () => {
     expect(preview.querySelector("pre")).toBeNull();
     await view.user.click(screen.getByRole("button", { name: "Confirm schedule generation" }));
     await waitFor(() => expect(requests).toHaveLength(2));
-    expect(requests.map(({ body }) => body)).toEqual([{ confirmed: false }, { confirmed: true }]);
+    const expectedCalendar = {
+      nhlRegularSeasonStartsAtMs: Date.parse("2026-10-04T07:00:00Z"),
+      nhlRegularSeasonEndsAtMs: Date.parse("2027-04-12T07:00:00Z"),
+      fantasyPlayoffsStartAtMs: Date.parse("2027-03-15T07:00:00Z"),
+      fantasyPlayoffsEndAtMs: Date.parse("2027-04-12T07:00:00Z"),
+      firstWeekStartsAtMs: Date.parse("2026-10-05T07:00:00Z"),
+    };
+    expect(requests.map(({ body }) => body)).toEqual([{ ...expectedCalendar, confirmed: false }, { ...expectedCalendar, confirmed: true }]);
     expect(requests[1].headers.get("If-Match")).toBe('"3"');
     expect(requests[1].headers.get("X-CSRF-Token")).toBe("D".repeat(43));
+    expect(requests[1].headers.get("Idempotency-Key")).toBeTruthy();
   });
 
   it("explains schedule prerequisites without exposing internal error details and offers a retry", async () => {
@@ -1215,6 +1237,7 @@ describe("M6-12 authenticated competition pages", () => {
       fetchImpl
     );
 
+    await fillScheduleCalendar();
     await view.user.click(await screen.findByRole("button", {
       name: "Preview schedule generation",
     }));

@@ -90,8 +90,8 @@ async function command(httpClient, path, method, body, { version, idempotencyKey
   })).data;
 }
 
-export function scheduleCommand(httpClient, leagueId, seasonId, confirmed, version) {
-  return command(httpClient, `${base(leagueId, seasonId)}/matchup-schedules`, "POST", { confirmed }, { version });
+export function scheduleCommand(httpClient, leagueId, seasonId, confirmed, version, calendar, idempotencyKey) {
+  return command(httpClient, `${base(leagueId, seasonId)}/matchup-schedules`, "POST", { ...calendar, confirmed }, { version, idempotencyKey });
 }
 
 export function weekTransitionCommand(httpClient, leagueId, seasonId, weekId, confirmed, version, idempotencyKey) {

@@ -1,5 +1,6 @@
 import { useQueries } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { ArrowLeftRight } from "lucide-react";
 
 import { routePaths } from "../../app/routePaths.js";
 import {
@@ -38,7 +39,10 @@ export function TradeBlockPanel({
   teams,
   enabled = true,
   showTradesLink = false,
+  currentUserId = null,
 }) {
+  const managedTeams = teams.filter((team) => team.currentManager?.userId === currentUserId && currentUserId);
+  const managedIds = new Set(managedTeams.map(({ id }) => id));
   const workspaces = useQueries({
     queries: teams.map((team) => ({
       ...teamWorkspaceQuery(httpClient, leagueId, team.id),
@@ -101,6 +105,7 @@ export function TradeBlockPanel({
                 <th scope="col">P</th>
                 <th scope="col">FP</th>
                 <th scope="col">FP/G</th>
+                {managedTeams.length > 0 && <th scope="col"><span className="hl-visually-hidden">Actions</span></th>}
               </tr>
             </thead>
             <tbody>
@@ -160,6 +165,27 @@ export function TradeBlockPanel({
                     <td className="hl-player-col-stat">
                       {fantasyPointsPerGame(statistics)}
                     </td>
+                    {managedTeams.length > 0 && (
+                      <td className="hl-player-col-actions">
+                        {!managedIds.has(team.id) && (
+                          <Link
+                            className="hl-player-action"
+                            aria-label={`Propose trade for ${player.name}`}
+                            title="Propose trade"
+                            to={routePaths.leagueTradeForRequestedAsset(
+                              leagueId,
+                              managedTeams.length === 1 ? managedTeams[0].id : "",
+                              team.id,
+                              player.contract ? "contract" : "prospect_right",
+                              player.contract?.id || player.playerId
+                            )}
+                          >
+                            <ArrowLeftRight aria-hidden="true" />
+                            <span>Propose trade</span>
+                          </Link>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

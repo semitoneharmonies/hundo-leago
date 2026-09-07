@@ -18,12 +18,15 @@ export const notificationKeys = Object.freeze({
 export function notificationsQuery(
   httpClient,
   cursor = null,
-  readStatus = "all"
+  readStatus = "all",
+  { category = "all", pendingLeagueAccess = false } = {}
 ) {
   const query = new URLSearchParams({ limit: "25", readStatus });
   if (cursor) query.set("cursor", cursor);
+  if (category !== "all") query.set("category", category);
+  if (pendingLeagueAccess) query.set("pendingLeagueAccess", "true");
   return queryOptions({
-    queryKey: notificationKeys.page(readStatus, cursor),
+    queryKey: [...notificationKeys.page(readStatus, cursor), category, pendingLeagueAccess],
     queryFn: async ({ signal }) => {
       const response = await httpClient.request(`/api/v1/notifications?${query}`, {
         authenticated: true,

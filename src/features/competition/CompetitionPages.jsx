@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { calendarInputValue, calendarTimestamp } from "../../shared/leagueCalendar.js";
 import {
   EmptyBlock,
   ErrorBlock,
@@ -661,6 +662,11 @@ export function LeagueStandingsPage() {
   const [correctionDraft, setCorrectionDraft] = useState(null);
   const [correctionPreview, setCorrectionPreview] = useState(null);
   const [correctionNotice, setCorrectionNotice] = useState("");
+  const [sort, setSort] = useState({ key: "rank", direction: "asc" });
+  const columns = [["GP", "gamesPlayed"], ["W", "wins"], ["L", "losses"], ["T", "ties"],
+    ["PTS", "standingsPoints"], ["PCT", "pointsPercentageHundredths"],
+    ["PF", "fantasyPointsForHundredths"], ["PA", "fantasyPointsAgainstHundredths"],
+    ["DIFF", "fantasyPointsDifferentialHundredths"]];
   const correctionHeadingRef = useRef(null);
   const correctionTriggerRef = useRef(null);
   const enabled = context.session.status === "authenticated" && Boolean(context.league && context.seasonId);
@@ -761,18 +767,25 @@ export function LeagueStandingsPage() {
         : standings.isError || teams.isError ? <ErrorMessage error={standings.error || teams.error} />
           : (
             <>
-              <Health health={standings.data.health} />
               {standings.data.rows.length === 0 ? <Surface><EmptyBlock title="No teams are registered for this season." /></Surface> : (
                 <Surface className="hl-standings-panel">
                 <TableScroll label="League standings">
                   <table className="hl-data-table hl-standings-table">
                     <thead>
                       <tr>
-                        <th>Rank</th><th>Team</th><th>GP</th><th>W</th><th>L</th>
-                        <th>T</th><th>PTS</th><th>PCT</th><th>PF</th><th>PA</th><th>DIFF</th>
+                        <th scope="col">Rank</th><th scope="col">Team</th>
+                        {columns.map(([label, key]) => <th scope="col" key={key}
+                          aria-sort={sort.key === key ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}>
+                          <button type="button" className="hl-sort-button" aria-label={`Sort standings by ${label}`}
+                            onClick={() => setSort((current) => ({ key, direction: current.key === key && current.direction === "desc" ? "asc" : "desc" }))}>
+                            {label}{sort.key === key ? (sort.direction === "asc" ? " ↑" : " ↓") : ""}
+                          </button>
+                        </th>)}
                       </tr>
                     </thead>
-                    <tbody>{standings.data.rows.map((item) => {
+                    <tbody>{[...standings.data.rows].sort((a, b) =>
+                      (sort.direction === "asc" ? 1 : -1) * (a[sort.key] - b[sort.key]) || a.rank - b.rank
+                    ).map((item) => {
                       const team = currentTeams.get(item.teamId) || null;
                       return (
                       <tr
@@ -1107,12 +1120,27 @@ function previewTimestamp(value) {
 
 export function CommissionerCompetitionPage() {
   const { leagueId } = useParams();
+  const [searchParams] = useSearchParams();
   const context = useCompetitionContext(leagueId);
   const queryClient = useQueryClient();
   const [schedulePreview, setSchedulePreview] = useState(null);
   const [weekPreview, setWeekPreview] = useState(null);
   const [weekId, setWeekId] = useState("");
+  const [calendarEdits, setCalendarEdits] = useState({});
   const seasonId = context.seasonId;
+  const seasons = useQuery({ ...leagueSeasonsQuery(context.session.httpClient, leagueId), enabled: Boolean(context.league && seasonId) });
+  const selectedSeason = seasons.data?.find((season) => season.id === seasonId);
+  const timeZone = context.league?.timezone || "America/Vancouver";
+  const calendarFields = [
+    ["nhlRegularSeasonStartsAtMs", "NHL regular season starts", selectedSeason?.regularSeasonStartsAtMs],
+    ["nhlRegularSeasonEndsAtMs", "NHL regular season ends", selectedSeason?.regularSeasonEndsAtMs],
+    ["fantasyPlayoffsStartAtMs", "Fantasy playoffs start", selectedSeason?.fantasyPlayoffsStartAtMs],
+    ["fantasyPlayoffsEndAtMs", "Fantasy playoffs end", selectedSeason?.fantasyPlayoffsEndAtMs],
+    ["firstWeekStartsAtMs", "Week 1 starts", null],
+  ];
+  const calendar = Object.fromEntries(calendarFields.map(([key, , value]) => [key,
+    calendarTimestamp(calendarEdits[key] ?? calendarInputValue(value, timeZone), timeZone)]));
+  const calendarReady = Object.values(calendar).every(Number.isSafeInteger);
   const commissioner = hasCommissionerAuthority(
     context.league?.membership
   );
@@ -1133,7 +1161,7 @@ export function CommissionerCompetitionPage() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["league", leagueId, "season", seasonId] });
   const scheduleMutation = useMutation({
-    mutationFn: ({ confirmed, version }) => scheduleCommand(context.session.httpClient, leagueId, seasonId, confirmed, version),
+    mutationFn: ({ confirmed, version }) => scheduleCommand(context.session.httpClient, leagueId, seasonId, confirmed, version, calendar, confirmed ? operationId() : undefined),
     onSuccess(data, variables) {
       if (!variables.confirmed) setSchedulePreview(data.preview);
       else { setSchedulePreview(null); invalidate(); }
@@ -1152,15 +1180,27 @@ export function CommissionerCompetitionPage() {
     <CompetitionGate context={context} title="Commissioner competition tools">
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
-          <CommissionerFadPanel
-            leagueId={leagueId}
-            seasonId={seasonId}
-            timeZone={context.league?.timezone}
-          />
+          <Surface>
+            <h2>Roster corrections</h2>
+            <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
+            <Link className="hl-button hl-button--secondary" to={routePaths.leagueCommissionerRoster(leagueId)}>Manage rosters</Link>
+          </Surface>
           <PreviewAction title="Schedule generation" mutation={scheduleMutation} preview={schedulePreview}
+            previewDisabled={!calendarReady}
             onPreview={() => scheduleMutation.mutate({ confirmed: false })}
-            onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedVersion })} />
-          <PreviewAction title="Week transition" mutation={weekMutation} preview={weekPreview}
+            onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedSeasonVersion })}>
+            <p>Review the league calendar before generating a schedule. All dates use {timeZone}. Week 1 and playoffs start on Monday at midnight; playoffs reserve the final 28 days.</p>
+            <div className="hl-form-grid">
+              {calendarFields.map(([key, label, value]) => <label className="hl-field" key={key}>{label}
+                <input type="datetime-local" value={calendarEdits[key] ?? calendarInputValue(value, timeZone)} onChange={(event) => {
+                  setCalendarEdits((current) => ({ ...current, [key]: event.target.value }));
+                  setSchedulePreview(null); scheduleMutation.reset();
+                }} />
+              </label>)}
+            </div>
+            {!calendarReady && <p>Complete all five calendar dates to enable the preview.</p>}
+          </PreviewAction>
+          <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview}
             previewDisabled={!selectedWeekId || weeks.isPending || weeks.isError}
             confirmDisabled={!selectedWeekId}
             onPreview={() => weekMutation.mutate({ confirmed: false })}
@@ -1172,7 +1212,7 @@ export function CommissionerCompetitionPage() {
             ) : null}
             {!weeks.isPending && !weeks.isError && availableWeeks.length > 0 ? (
               <label className="hl-field">
-                Week
+                Matchup week
                 <select
                   value={selectedWeekId}
                   onChange={(event) => {
@@ -1190,6 +1230,10 @@ export function CommissionerCompetitionPage() {
               </label>
             ) : null}
           </PreviewAction>
+          <details className="hl-surface hl-seasonal-tools" open={searchParams.has("fadId") || searchParams.has("recoveryId")}>
+            <summary>Seasonal tools · Free Agent Draft</summary>
+            <CommissionerFadPanel leagueId={leagueId} seasonId={seasonId} timeZone={context.league?.timezone} />
+          </details>
         </>
       )}
       <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>

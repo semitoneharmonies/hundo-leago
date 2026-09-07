@@ -480,7 +480,7 @@ describe("FAD-16 commissioner recovery and correction", () => {
       Node.DOCUMENT_POSITION_FOLLOWING
     );
     expect(recoveryHistory).toHaveAttribute("open");
-    expect(screen.getAllByText(/Resolve the earlier blocked draft step/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/A retry is offered only when a draft step can safely run again/).length).toBeGreaterThan(0);
     expect(page).toContainElement(actionPanel);
     expect(screen.queryByText("Complete Free Agent Draft")).toBeNull();
     await waitFor(() =>

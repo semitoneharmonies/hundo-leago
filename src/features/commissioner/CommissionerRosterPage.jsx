@@ -346,7 +346,7 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
   const [teamId, setTeamId] = useState("");
   const [category, setCategory] = useState("Bench");
   const [contractType, setContractType] = useState("normal");
-  const [totalValue, setTotalValue] = useState("3.00");
+  const [aav, setAav] = useState("1.00");
   const [term, setTerm] = useState("1");
   const [correctionReason, setCorrectionReason] = useState("");
   const filteredAgents = useMemo(() => {
@@ -387,7 +387,7 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
       contractType: prospect ? null : contractType,
       originalTotalValueCents: prospect
         ? null
-        : dollarsToCents(totalValue, "Total contract value"),
+        : dollarsToCents(aav, "AAV") * positiveInteger(term, "Contract term", 3),
       termYears: prospect ? null : positiveInteger(term, "Contract term", 3),
       reason: reason(correctionReason),
     };
@@ -468,7 +468,7 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
               changed(() => {
                 setContractType(next);
                 if (next === "fantasy_elc") {
-                  setTotalValue("3.00");
+                  setAav("1.00");
                   setTerm("3");
                 }
               });
@@ -478,13 +478,13 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
             <option value="fantasy_elc">Fantasy ELC</option>
           </select>
         </Field>
-        <Field label="Total contract value" hint="Dollars across the full term.">
+        <Field label="AAV" hint={`Annual salary. Total: ${money(Math.round(Number(aav) * 100) * Number(term))}`}>
           <input
             inputMode="decimal"
-            value={totalValue}
+            value={aav}
             disabled={category === "Prospect" || contractType === "fantasy_elc"}
             onChange={(event) =>
-              changed(() => setTotalValue(event.target.value))
+              changed(() => setAav(event.target.value))
             }
           />
         </Field>
@@ -640,7 +640,6 @@ function RosterCorrectionPanel({
   const [ownershipId, setOwnershipId] = useState("");
   const [destinationTeamId, setDestinationTeamId] = useState("");
   const [category, setCategory] = useState("Bench");
-  const [positionGroup, setPositionGroup] = useState("F");
   const [correctionReason, setCorrectionReason] = useState("");
   const entry = workspace.roster.find(
     (candidate) => candidate.ownershipId === ownershipId
@@ -665,7 +664,6 @@ function RosterCorrectionPanel({
       if (!selected) return;
       setDestinationTeamId(selected.teamId);
       setCategory(selected.rosterCategory);
-      setPositionGroup(selected.positionGroup);
     });
   }
 
@@ -687,11 +685,11 @@ function RosterCorrectionPanel({
       correctedOwnershipKind:
         entry.contract === null ? "Prospect Right" : "Rostered",
       correctedRosterCategory: category,
-      correctedPositionGroup: positionGroup,
+      correctedPositionGroup: entry.positionGroup,
       correctedSlotNumber: automaticRosterSlot(workspace.roster, {
         teamId: destinationTeamId,
         category,
-        positionGroup,
+        positionGroup: entry.positionGroup,
         excludeOwnershipId: entry.ownershipId,
       }),
       reason: reason(correctionReason),
@@ -703,7 +701,7 @@ function RosterCorrectionPanel({
       <PanelHeading
         eyebrow="Commissioner correction"
         title="Move or re-slot a player"
-        description="Correct a player’s team, roster category, position, or slot without rebuilding their ownership history."
+        description="Move a player to another team, roster category or slot. Their position stays the same."
       />
       <div className={styles.formGrid}>
         <Field label="Current team">
@@ -770,18 +768,6 @@ function RosterCorrectionPanel({
             ))}
           </select>
         </Field>
-        <Field label="Position">
-          <select
-            value={positionGroup}
-            disabled={!entry}
-            onChange={(event) =>
-              changed(() => setPositionGroup(event.target.value))
-            }
-          >
-            <option value="F">Forward</option>
-            <option value="D">Defence</option>
-          </select>
-        </Field>
         <Field label="Reason" hint="Optional; recorded in league activity.">
           <input
             maxLength="500"
@@ -820,7 +806,7 @@ function ContractCorrectionPanel({
   );
   const [teamId, setTeamId] = useState("");
   const [ownershipId, setOwnershipId] = useState("");
-  const [totalValue, setTotalValue] = useState("3.00");
+  const [aav, setAav] = useState("1.00");
   const [term, setTerm] = useState("1");
   const [correctionReason, setCorrectionReason] = useState("");
   const entry = contractEntries.find(
@@ -842,8 +828,8 @@ function ContractCorrectionPanel({
     changed(() => {
       setOwnershipId(nextOwnershipId);
       if (!selected) return;
-      setTotalValue(
-        (selected.contract.originalTotalValueCents / 100).toFixed(2)
+      setAav(
+        (selected.contract.aavCents / 100).toFixed(2)
       );
       setTerm(String(selected.contract.originalTermYears));
     });
@@ -854,18 +840,18 @@ function ContractCorrectionPanel({
       throw new Error("Choose a contracted player.");
     }
     const termYears = positiveInteger(term, "Contract term", 3);
-    const totalValueCents = dollarsToCents(
-      totalValue,
-      "Total contract value"
-    );
+    const enteredAavCents = dollarsToCents(aav, "AAV");
+    const totalValueCents = enteredAavCents === entry.contract.aavCents && termYears === entry.contract.originalTermYears
+      ? entry.contract.originalTotalValueCents
+      : enteredAavCents * termYears;
     if (totalValueCents < termYears * 100) {
       throw new Error(
-        "Total contract value must provide at least $1.00 per contract year."
+        "AAV must be at least $1.00."
       );
     }
-    if (termYears > 1 && totalValueCents % 100 !== 0) {
+    if (termYears > 1 && totalValueCents % 100 !== 0 && totalValueCents % (termYears * 25) !== 0) {
       throw new Error(
-        "Multi-year total contract value must use whole-dollar increments."
+        "Use $0.25 AAV increments for a new multi-year contract value."
       );
     }
     return {
@@ -879,15 +865,17 @@ function ContractCorrectionPanel({
     };
   }
 
-  const totalValueCents = /^\d+(?:\.\d{1,2})?$/.test(totalValue)
-    ? Math.round(Number(totalValue) * 100)
+  const aavCents = /^\d+(?:\.\d{1,2})?$/.test(aav)
+    ? Math.round(Number(aav) * 100)
     : null;
   const termYears = Number(term);
-  const projectedAav =
-    Number.isSafeInteger(totalValueCents) &&
+  const projectedTotal =
+    Number.isSafeInteger(aavCents) &&
     Number.isSafeInteger(termYears) &&
     termYears > 0
-      ? Math.round(totalValueCents / termYears)
+      ? aavCents === entry?.contract.aavCents && termYears === entry?.contract.originalTermYears
+        ? entry.contract.originalTotalValueCents
+        : aavCents * termYears
       : null;
 
   return (
@@ -938,18 +926,18 @@ function ContractCorrectionPanel({
           </select>
         </Field>
         <Field
-          label="Total contract value"
+          label="AAV"
           hint={
-            projectedAav === null
+            projectedTotal === null
               ? "Enter a valid value and term."
-              : `Projected AAV: ${money(projectedAav)}`
+              : `Total contract value: ${money(projectedTotal)}`
           }
         >
           <input
             inputMode="decimal"
-            value={totalValue}
+            value={aav}
             onChange={(event) =>
-              changed(() => setTotalValue(event.target.value))
+              changed(() => setAav(event.target.value))
             }
           />
         </Field>

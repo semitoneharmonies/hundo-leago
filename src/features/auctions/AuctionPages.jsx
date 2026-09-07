@@ -634,7 +634,7 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
               term={term}
             />
           </div>
-          <CapImpactSummary
+          {(selectedPlayer || playerSearch.trim()) && <CapImpactSummary
             description="If this offer wins, its AAV is added to the team’s Active cap. Active bids do not reserve cap space."
             pendingText={
               !offerPreview
@@ -654,13 +654,13 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
                 offerPreview
               ),
             ]}
-          />
-          {selectedStartTeam?.sourceKind === "fad_open_rapid" && (
+          />}
+          {selectedStartTeam && (
             <p className={styles.timingNotice}>
-              Next rollover: {shortLeagueDateTime(
-                selectedStartTeam.targetRolloverAtMs,
+              {Number.isSafeInteger(selectedStartTeam.nextRolloverAtMs ?? selectedStartTeam.targetRolloverAtMs) ? <>Next rollover: {shortLeagueDateTime(
+                selectedStartTeam.nextRolloverAtMs ?? selectedStartTeam.targetRolloverAtMs,
                 context.league.timezone
-              )}
+              )}</> : "The next auction rollover will be available when this draft phase opens."}
             </p>
           )}
           {!selectedStartTeam?.startAuction.allowed && (

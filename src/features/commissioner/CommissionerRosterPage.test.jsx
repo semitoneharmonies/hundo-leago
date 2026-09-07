@@ -496,7 +496,7 @@ describe("M7-10 commissioner roster operations", () => {
     expect(
       within(movePanel).getByLabelText("Destination team")
     ).toHaveValue(IDS.secondTeam);
-    expect(within(movePanel).getByLabelText("Position")).toHaveValue("F");
+    expect(within(movePanel).queryByLabelText("Position")).not.toBeInTheDocument();
 
     await view.user.click(
       screen.getByRole("tab", { name: "Add player" })
@@ -515,11 +515,11 @@ describe("M7-10 commissioner roster operations", () => {
       "Bench"
     );
     await view.user.clear(
-      form.getByLabelText(/^Total contract value/)
+      form.getByLabelText(/^AAV/)
     );
     await view.user.type(
-      form.getByLabelText(/^Total contract value/),
-      "6.00"
+      form.getByLabelText(/^AAV/),
+      "3.00"
     );
     await view.user.clear(form.getByLabelText(/^Term/));
     await view.user.type(form.getByLabelText(/^Term/), "2");
@@ -670,10 +670,7 @@ describe("M7-10 commissioner roster operations", () => {
       within(movePanel).getByLabelText("Destination team"),
       IDS.secondTeam
     );
-    await view.user.selectOptions(
-      within(movePanel).getByLabelText("Position"),
-      "D"
-    );
+    expect(within(movePanel).queryByLabelText("Position")).not.toBeInTheDocument();
     await view.user.click(
       within(movePanel).getByRole("button", {
         name: "Preview roster correction",
@@ -691,7 +688,7 @@ describe("M7-10 commissioner roster operations", () => {
       correctedTeamId: IDS.secondTeam,
       correctedOwnershipKind: "Rostered",
       correctedRosterCategory: "Bench",
-      correctedPositionGroup: "D",
+      correctedPositionGroup: "F",
       correctedSlotNumber: 1,
       reason: null,
     });
@@ -711,11 +708,11 @@ describe("M7-10 commissioner roster operations", () => {
       IDS.ownership
     );
     await view.user.clear(
-      within(contractPanel).getByLabelText(/^Total contract value/)
+      within(contractPanel).getByLabelText(/^AAV/)
     );
     await view.user.type(
-      within(contractPanel).getByLabelText(/^Total contract value/),
-      "12.00"
+      within(contractPanel).getByLabelText(/^AAV/),
+      "6.00"
     );
     await view.user.clear(within(contractPanel).getByLabelText(/^Term/));
     await view.user.type(

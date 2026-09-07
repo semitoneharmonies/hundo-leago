@@ -4,6 +4,15 @@
 
 `APPROVED`
 
+### Completed-draft archive — approved 7 September 2026
+
+When Entry Draft is implemented, completed drafts must use a draft-year
+selector and show one year's results at a time, following the Free Agent Draft
+archive. Default to the current or latest available draft. Do not stack all
+historical drafts on one page. Draft years such as 2026 remain distinct from
+season ranges such as 2026–2027. This does not bring Entry Draft implementation
+into the current staging-review scope.
+
 This product specification consolidates:
 
 * approved rules for prospect rights, prospect rosters, fantasy ELCs, traded draft picks, and trading windows;

@@ -496,13 +496,6 @@ function CategoryTable({
         <h2 id={headingId}>{category.title}</h2>
         <span>{capacity}</span>
       </div>
-      {category.key === "Prospect" && prospectDecisionAllowed && (
-        <p className="hl-form-note" role="note">
-          Before signing, confirm the player has signed their real-life NHL
-          entry-level contract. A fantasy ELC is $3 over three seasons and
-          cannot be undone here.
-        </p>
-      )}
       {players.length === 0 ? (
         <p className="hl-roster-category__empty">
           No players occupy this category.
@@ -754,8 +747,31 @@ function chunk(values, size, count) {
   );
 }
 
+function lineSlots(players, position) {
+  const peers = players.filter(({ normalizedPosition }) => normalizedPosition === position);
+  const slots = Array(Math.max(position === "F" ? 12 : 6, peers.length)).fill(null);
+  for (const player of peers) {
+    const index = Number.isInteger(player.displayOrder) ? player.displayOrder - 1 : -1;
+    if (index >= 0 && index < slots.length && !slots[index]) slots[index] = player;
+  }
+  for (const player of peers) {
+    if (!slots.includes(player)) {
+      const empty = slots.indexOf(null);
+      if (empty !== -1) slots[empty] = player;
+    }
+  }
+  return slots;
+}
+
+function orderPayload(players, position) {
+  const slots = lineSlots(players, position);
+  while (slots.at(-1) === null) slots.pop();
+  return slots.map((player) => player ? { id: player.ownershipId, version: player.ownershipVersion } : null);
+}
+
 function LinePlayer({
   player,
+  emptySlotId,
   canManage,
   category = "Active",
   muted = false,
@@ -771,7 +787,13 @@ function LinePlayer({
   onMove,
 }) {
   if (!player) {
-    return <div className="hl-line-player is-empty">Open slot</div>;
+    return <div className="hl-line-player is-empty" data-line-slot={emptySlotId} data-roster-order-id={canManage ? emptySlotId : undefined} data-roster-category={category}
+      onDragOver={(event) => { if (canManage && emptySlotId) event.preventDefault(); }}
+      onDrop={(event) => {
+        if (!canManage || !emptySlotId) return;
+        event.preventDefault();
+        onCategoryDrop(event.dataTransfer.getData?.("text/plain") || draggingId, category, emptySlotId);
+      }}>Open slot</div>;
   }
   return (
     <div
@@ -908,12 +930,8 @@ function HockeyLines({
   onCategoryDrop,
   onMove,
 }) {
-  const forwards = activePlayers.filter(
-    ({ normalizedPosition }) => normalizedPosition === "F"
-  );
-  const defence = activePlayers.filter(
-    ({ normalizedPosition }) => normalizedPosition === "D"
-  );
+  const forwards = lineSlots(activePlayers, "F");
+  const defence = lineSlots(activePlayers, "D");
   return (
     <section
       className="hl-hockey-lines"
@@ -957,6 +975,7 @@ function HockeyLines({
                 return (
                   <LinePlayer
                     key={player?.ownershipId || `f-open-${absoluteIndex}`}
+                    emptySlotId={`slot:F:${absoluteIndex}`}
                     player={player}
                     canManage={canManage}
                     team={team}
@@ -997,6 +1016,7 @@ function HockeyLines({
                 return (
                   <LinePlayer
                     key={player?.ownershipId || `d-open-${absoluteIndex}`}
+                    emptySlotId={`slot:D:${absoluteIndex}`}
                     player={player}
                     canManage={canManage}
                     team={team}
@@ -1340,18 +1360,8 @@ export function TeamRosterPage({
     mutationFn: (nextPlayers) =>
       saveRosterDisplayOrder(httpClient, league.id, team.id, {
         expectedVersion: workspace.orderVersion,
-        forwardOwnerships: nextPlayers
-          .filter(({ normalizedPosition }) => normalizedPosition === "F")
-          .map(({ ownershipId: id, ownershipVersion: version }) => ({
-            id,
-            version,
-          })),
-        defenceOwnerships: nextPlayers
-          .filter(({ normalizedPosition }) => normalizedPosition === "D")
-          .map(({ ownershipId: id, ownershipVersion: version }) => ({
-            id,
-            version,
-          })),
+        forwardOwnerships: orderPayload(nextPlayers, "F"),
+        defenceOwnerships: orderPayload(nextPlayers, "D"),
       }),
     onSuccess: async () => {
       setSaveMessage("Line order saved.");
@@ -1552,27 +1562,25 @@ export function TeamRosterPage({
     const target = basisPlayers.find(
       ({ ownershipId }) => ownershipId === targetId
     );
-    if (!source || !target || source.normalizedPosition !== target.normalizedPosition) {
+    const emptySlot = /^slot:([FD]):(\d+)$/.exec(targetId || "");
+    if (!source || (!target && !emptySlot) || source.normalizedPosition !== (target?.normalizedPosition || emptySlot?.[1])) {
       setSaveMessage("Players can be reordered only within the same position group.");
       setDraggingId(null);
       setDragTargetId(null);
       return;
     }
-    const positionPlayers = basisPlayers.filter(
-      ({ normalizedPosition }) => normalizedPosition === source.normalizedPosition
-    );
+    const positionPlayers = lineSlots(basisPlayers, source.normalizedPosition);
     const from = positionPlayers.findIndex(
-      ({ ownershipId }) => ownershipId === sourceId
+      (player) => player?.ownershipId === sourceId
     );
-    const to = positionPlayers.findIndex(
-      ({ ownershipId }) => ownershipId === targetId
-    );
+    const to = emptySlot ? Number(emptySlot[2]) : positionPlayers.findIndex((player) => player?.ownershipId === targetId);
+    if (from < 0 || to < 0 || to >= positionPlayers.length) return;
     const reorderedPosition = [...positionPlayers];
-    const [moved] = reorderedPosition.splice(from, 1);
-    reorderedPosition.splice(to, 0, moved);
+    [reorderedPosition[from], reorderedPosition[to]] =
+      [reorderedPosition[to], reorderedPosition[from]];
     const next = ["F", "D"].flatMap((position) =>
       position === source.normalizedPosition
-        ? reorderedPosition
+        ? reorderedPosition.map((player, index) => player ? { ...player, displayOrder: index + 1 } : null).filter(Boolean)
         : basisPlayers.filter(
             ({ normalizedPosition }) => normalizedPosition === position
           )

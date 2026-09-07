@@ -19,7 +19,7 @@ test('reviewed league surfaces remain usable at desktop and mobile widths', asyn
   accountPage,
   fadFixture,
   page,
-}) => {
+}, testInfo) => {
   test.setTimeout(60_000)
 
   const { manifest } = fadFixture
@@ -54,6 +54,12 @@ test('reviewed league surfaces remain usable at desktop and mobile widths', asyn
       accessibilityFailures.push({ heading, violations })
     }
     await expect(page.getByText(/Request ID|operation version|provider identifiers/i)).toHaveCount(0)
+    if (process.env.HUNDO_E2E_CAPTURE_REVIEW === 'true') {
+      await page.screenshot({
+        path: testInfo.outputPath(`${heading.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`),
+        fullPage: true,
+      })
+    }
   }
   expect(accessibilityFailures).toEqual([])
 })

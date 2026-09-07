@@ -1,5 +1,9 @@
 # Hundo Leago — Trades
 
+## Approved inaugural trading amendment — 2026-09-07
+
+Grae explicitly approved allowing trading in the approved inaugural setup without an Entry Draft. An opened Free Agent Draft with the persisted `no_draft_inaugural` setup path establishes the trading opening for that same league and season. An unapproved or unopened setup does not establish an opening. The existing Entry Draft path remains valid, and league deadlines, current-season checks, permissions, ownership, retention, asset validation and Future Considerations approval requirements remain unchanged.
+
 ## Document Status
 
 `APPROVED`

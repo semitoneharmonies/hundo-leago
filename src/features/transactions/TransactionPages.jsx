@@ -205,6 +205,7 @@ function namedTeam(teamNames, teamId, fallback = "A team") {
 }
 
 function activityTitle(item, teamNames) {
+  if (item.type === "free_agent_draft_completed") return "Free Agent Draft ended.";
   const metadata = item.metadata || {};
   const category = activityCategory(item.type);
   const playerName =
@@ -966,7 +967,7 @@ function NewTradeForm({ context, leagueId }) {
   const proposer =
     context.managerControlledTeams.some(({ id }) => id === proposingTeamId)
       ? proposingTeamId
-      : context.managerControlledTeams[0]?.id || "";
+      : context.managerControlledTeams.length === 1 ? context.managerControlledTeams[0].id : "";
   const receiving =
     context.teams.data?.some(
       ({ id }) => id === receivingTeamId && id !== proposer
@@ -1156,6 +1157,7 @@ export function TradesPage() {
     <LeaguePageState context={context} title="Trades">
       <NewTradeForm context={context} leagueId={leagueId} />
       <TradeBlockPanel
+        currentUserId={context.session.user?.id}
         enabled={context.session.status === "authenticated" && Boolean(context.league?.currentSeason) && !context.teams.isPending}
         httpClient={context.session.httpClient}
         leagueId={leagueId}
@@ -1568,8 +1570,8 @@ export function ActivityPage() {
   );
   return (
     <LeaguePageState context={context} title="League Activity">
-      <Surface className="hl-activity-filter" aria-labelledby="activity-filter-title">
-        <h2 id="activity-filter-title">Filter league events</h2>
+      <Surface className="hl-activity-filter" aria-label="Filter league events">
+        <h2>Filter league events</h2>
         <label className="hl-field">
           Event type
           <select

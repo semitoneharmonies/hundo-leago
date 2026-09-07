@@ -8,7 +8,8 @@ vi.mock("socket.io-client", () => ({
 
 import { renderWithProviders } from "../../test/render.jsx";
 import { createQueryClient } from "../../shared/query/queryClient.js";
-import { NotificationsPage } from "./NotificationsPage.jsx";
+import { NotificationsPage, PendingLeagueAccess } from "./NotificationsPage.jsx";
+import { useSession } from "../session/sessionContext.js";
 
 const notificationId = "11111111-1111-4111-8111-111111111111";
 const invitationId = "22222222-2222-4222-8222-222222222222";
@@ -206,7 +207,42 @@ function LocationProbe() {
   return <output data-testid="location">{useLocation().pathname + useLocation().search}</output>;
 }
 
+function PendingAccessHarness() {
+  return <PendingLeagueAccess session={useSession()} />;
+}
+
 describe("M5-11 owner notifications", () => {
+  it("keeps a read commissioner invitation in the league hub and accepts its exact assignment", async () => {
+    let accepted = false;
+    const fetchImpl = vi.fn(async (url, options = {}) => {
+      const parsed = new URL(url);
+      if (parsed.pathname === "/api/v1/session") return envelope(sessionData());
+      if (parsed.pathname === "/api/v1/notifications") {
+        expect(parsed.searchParams.get("pendingLeagueAccess")).toBe("true");
+        return envelope({ code: "NOTIFICATIONS_FOUND", notifications: accepted ? [] : [{
+          id: notificationId, leagueId, type: "commissioner_assignment_proposed",
+          messageData: { leagueId, leagueName: "Giggles", assignmentId: invitationId },
+          related: { feature: "commissioner_assignment", recordId: invitationId },
+          deliveryStatus: "delivered", createdAtMs: 1, readAtMs: 2, deliveredAtMs: 1, version: 2,
+        }], page: { limit: 25, nextCursor: null } });
+      }
+      if (parsed.pathname.startsWith(`/api/v1/commissioner-assignments/${invitationId}`)) {
+        if (options.method === "POST") {
+          expect(parsed.pathname).toBe(`/api/v1/commissioner-assignments/${invitationId}/accept`);
+          expect(options.body).toBe("{}");
+          expect(options.headers.get("X-CSRF-Token")).toBe("D".repeat(43));
+          accepted = true;
+        }
+        return envelope({ assignment: { id: invitationId, status: accepted ? "accepted" : "pending" }, league: { id: leagueId, name: "Giggles" } });
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    const view = renderWithProviders(<PendingAccessHarness />, { enableSession: true, config, sessionOptions: { fetchImpl } });
+    await view.user.click(await screen.findByText("Commissioner invitation for Giggles — Review"));
+    await view.user.click(await screen.findByRole("button", { name: "Accept commissioner role" }));
+    expect(await screen.findByRole("link", { name: "Continue league setup" })).toHaveAttribute("href", `/leagues/${leagueId}`);
+    expect(accepted).toBe(true);
+  });
   it("renders the unread batch, acknowledges exactly those rows, and keeps them visible", async () => {
     let read = false;
     const fetchImpl = vi.fn(async (url, options = {}) => {
@@ -246,7 +282,7 @@ describe("M5-11 owner notifications", () => {
       sessionOptions: { fetchImpl },
     });
     expect(await screen.findByText("A private account notice.")).toBeInTheDocument();
-    expect(screen.getByText("Other notification")).toBeInTheDocument();
+    expect(screen.getByText("Account update")).toBeInTheDocument();
     expect(screen.queryByText("internal unknown event")).not.toBeInTheDocument();
     const initialNotificationCalls = fetchImpl.mock.calls.filter(([url]) => new URL(url).pathname === "/api/v1/notifications");
     expect(initialNotificationCalls).toHaveLength(1);
@@ -319,7 +355,7 @@ describe("M5-11 owner notifications", () => {
     });
 
     const link = await screen.findByRole("link", {
-      name: /Trade proposal received from Other Team/i,
+      name: /Other Team proposed a trade/i,
     });
     expect(link).toHaveAttribute(
       "href",

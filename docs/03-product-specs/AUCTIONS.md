@@ -1,5 +1,11 @@
 # Hundo Leago — Auctions
 
+## Staging review amendment — 2026-09-07
+
+Staging may enable `STAGING_DAILY_AUCTIONS_ENABLED=true` to test ordinary auctions with a daily 4:00 PM boundary in the league timezone (the reviewed leagues use America/Vancouver). This option is rejected in production and defaults off. It preserves eligibility, authorization, ownership, contract and bid validation. The intended production Sunday 4:00 PM Pacific cadence is unchanged.
+
+With this option enabled, the deployment scheduler selects only ordinary auction resolution, Free Agent Draft auction resolution, and league outbox delivery. Statistics providers, matchup processing, draft setup/allocation processing and account email are not enabled by this setting. FAD nomination and rollover still require their valid existing phase and occurrence state.
+
 ## Document Status
 
 `APPROVED`

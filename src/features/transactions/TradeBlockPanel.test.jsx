@@ -23,7 +23,7 @@ function workspace(players) {
   };
 }
 
-function renderPanel(players) {
+function renderPanel(players, { currentUserId = null, currentManager = null } = {}) {
   const queryClient = createQueryClient();
   queryClient.setQueryData(
     teamWorkspaceKeys.detail(leagueId, teamId),
@@ -33,13 +33,35 @@ function renderPanel(players) {
     <TradeBlockPanel
       httpClient={{ request: vi.fn() }}
       leagueId={leagueId}
-      teams={[{ id: teamId }]}
+      teams={[{ id: teamId, currentManager }]}
+      currentUserId={currentUserId}
     />,
     { queryClient, initialEntries: [`/leagues/${leagueId}/trades`] }
   );
 }
 
 describe("league trade block", () => {
+  it("does not offer a trade action on the viewer's own trade block", () => {
+    renderPanel([{ ownershipId, playerId, name: "Own Player", onTradeBlock: true }], {
+      currentUserId: "manager", currentManager: { userId: "manager" },
+    });
+    expect(screen.queryByRole("link", { name: /Propose trade/ })).not.toBeInTheDocument();
+  });
+
+  it("prefills the requested player, owning team and unambiguous managed team", () => {
+    const managedTeamId = "77777777-7777-4777-8777-777777777777";
+    const contractId = "88888888-8888-4888-8888-888888888888";
+    const queryClient = createQueryClient();
+    queryClient.setQueryData(teamWorkspaceKeys.detail(leagueId, teamId), workspace([
+      { ownershipId, playerId, name: "Trade Player", onTradeBlock: true, contract: { id: contractId, aavCents: 500 } },
+    ]));
+    queryClient.setQueryData(teamWorkspaceKeys.detail(leagueId, managedTeamId), { team: { id: managedTeamId, name: "My Team" }, players: [] });
+    renderWithProviders(<TradeBlockPanel httpClient={{ request: vi.fn() }} leagueId={leagueId} currentUserId="manager"
+      teams={[{ id: teamId }, { id: managedTeamId, currentManager: { userId: "manager" } }]} />, { queryClient });
+    const destination = new URL(screen.getByRole("link", { name: "Propose trade for Trade Player" }).getAttribute("href"), "https://example.test");
+    expect(Object.fromEntries(destination.searchParams)).toEqual({ assetDirection: "requested", assetType: "contract", assetId: contractId, sourceTeamId: teamId, proposingTeamId: managedTeamId });
+  });
+
   it("shows current team and player data for blocked players", async () => {
     renderPanel([
       {

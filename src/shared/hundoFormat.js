@@ -64,7 +64,7 @@ export function leagueDateTime(value, timeZone) {
   }
 }
 
-export function shortLeagueDateTime(value, timeZone) {
+export function shortLeagueDateTime(value, timeZone, includeYear = false) {
   if (
     !Number.isSafeInteger(value) ||
     typeof timeZone !== "string" ||
@@ -75,6 +75,7 @@ export function shortLeagueDateTime(value, timeZone) {
   }
   try {
     return new Intl.DateTimeFormat("en-CA", {
+      ...(includeYear ? { year: "numeric" } : {}),
       month: "short",
       day: "numeric",
       hour: "numeric",
