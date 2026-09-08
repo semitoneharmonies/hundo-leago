@@ -2,7 +2,7 @@
 
 ## Current release status
 
-**Overall completion: 97%. The final frontend and schema-55 backend are deployed to staging. All 3,535 backend tests passed. The combined Alpha/Beta recovery is blocked by automatic approval review pending explicit Beta approval; authenticated hosted acceptance also requires current QA access.**
+**Overall completion: 99%. The final frontend and schema-55 backend are deployed to staging. All 3,535 backend tests passed. Alpha/Beta recovery completed successfully after explicit approval. The remaining acceptance item is the signed-in hosted walkthrough; the user reports an admin sign-in, but the browser still needs to be connected to this task.**
 
 Grae authorized the supplied review brief, both E: repositories, necessary staging commits/pushes, inaugural trading without an Entry Draft, and the encrypted staging backup. Production changes are excluded. The current operating mode remains OFFSEASON_RESET.
 
@@ -10,7 +10,7 @@ Grae authorized the supplied review brief, both E: repositories, necessary stagi
 | --- | ---: | ---: |
 | Brief and scope review | 10% | 100% |
 | Rosters, trades and permissions | 25% | 100% |
-| Draft recovery and scheduling | 25% | 92% |
+| Draft recovery and scheduling | 25% | 100% |
 | Interface adjustments | 20% | 100% |
 | Deployment and final verification | 20% | 95% |
 
@@ -30,7 +30,7 @@ These estimates include deployment and acceptance; source completion alone is in
 | Served Render deploy | dep-dafl9rgn74is73ahid3g; live at 2026-09-08T00:47:55Z |
 | Final local/backend staging source | e0d59c9731990a78ff7ca1a81d9f6fa5edd8878c |
 | Render staging service | srv-d9eo2turnols73ekb830, workspace tea-d4prbj7diees738tmg90 |
-| Served database | Schema 55, exact identity verified, zero foreign-key errors; Alpha/Beta recovery has not run |
+| Served database | Schema 55, exact identity verified, zero foreign-key errors; Alpha/Beta drafts completed with zero open recoveries |
 | Staging scheduler | Daily auctions enabled; only auction resolution, FAD auction resolution and league outbox run automatically |
 
 The frontend was deployed as a compiled artifact through the authenticated Netlify CLI. Its reviewed source was subsequently pushed to GitHub staging as c00e9e98. The CLI primary-site deployment flag targeted the staging site above.
@@ -57,9 +57,25 @@ At00:50:17Z, the original build command (`npm ci && npm run check && npm test`) 
 
 All six public health, protected-route, CORS, cache and SPA checks passed against the served release at00:50:23Z. All30 signed-out account and Alpha/Beta read checks passed at00:50:26Z, with zero protected-data exposure. The final frontend checks also matched56 asset copies and passed desktop/mobile sign-in checks. These remain public checks, not signed-in hosted acceptance.
 
-Read-only checks at00:55:39Z confirmed that no recovery attempt, recovery backup or completion receipt exists. Alpha remains allocating with two open auction recoveries and one of seven rollovers complete. Beta remains rapid with no open recovery records and three of seven rollovers complete. Both retain their original frozen draft dates. Receipt: `verify-served-recovery-pending.receipt.txt`.
+Before recovery, read-only checks at00:55:39Z confirmed that no recovery attempt, recovery backup or completion receipt existed. Alpha was allocating with two open auction recoveries and one of seven rollovers complete. Beta was rapid with no open recovery records and three of seven rollovers complete. Both retained their original frozen draft dates. Preserved receipt: `schema55-recovery-pending-verified.json`.
 
-At00:55:47Z, read-only verification confirmed Miro's Active/D/slot5 move and ownership version2, Morrissey's removal, unchanged contract states, and exact hashes for both ownership-event histories. No foreign-key errors were present. Receipt: `verify-served-recovery-history.receipt.txt`. This verifies migration preservation; it does not claim that pending draft recovery ran.
+At00:55:47Z, read-only verification confirmed Miro's Active/D/slot5 move and ownership version2, Morrissey's removal, unchanged contract states, and exact hashes for both ownership-event histories. No foreign-key errors were present. Preserved receipt: `schema55-migration-history-preserved.json`. This initial check verified migration preservation; post-recovery verification is below.
+
+## Completed Alpha/Beta recovery — 8 September UTC
+
+The user explicitly approved the pending combined Alpha/Beta operation. Fresh read-only checks at01:24:41Z and01:24:43Z confirmed the exact deployed source, schema55, expected draft state and absence of any prior recovery attempt. The reviewed script executed once from01:25:07Z to01:25:15Z and exited0.
+
+The fresh encrypted pre-operation backup was verified before league-data changes:
+
+- Backup ID: fd1f57e2-1de1-45a5-8b51-df629beebd82.
+- Encrypted SHA-256: 79e825861e68ca92380bbc74b0ce672c128047728ae77decd6e0b196c990c7ac.
+- Manifest checksum: 01ae96899be5ac230cde422a9f33f90b35f6f295f7690492025a4cdd65881ee7.
+
+Seven pending Alpha player allocations, two auction recoveries, ten remaining rollovers and both draft completions succeeded. All eight job passes reported success with zero failure, transient-failure, correction-required or recovery-required counts. Both recovery projections reported completed drafts, zero pending allocations, zero open auctions/recoveries, seven of seven rollovers complete, and no enabled recovery actions. Reading those projections made no writes. Ten obsolete fallback-activation records remain unchanged as archived history in the published interface.
+
+The script verified unchanged frozen dates and other draft roots, plus zero foreign-key errors. A separate read-only check at01:27:21Z matched the persistent attempt, backup and completion receipts to the actual served database. At01:27:18Z, post-recovery checks confirmed Miro's move, Morrissey's removal, contract states and exact ownership-history hashes remained intact. All six public health/access/cache/CORS/SPA checks passed after recovery.
+
+Evidence: `schema55-recovery-completed-verified.json`, `schema55-recovery-persistent-receipts.json`, `schema55-post-recovery-history-verified.json`, and `execute-served-schema55-recovery.receipt.txt` under the local review directory. The remote attempt and completion receipts now exist: **do not rerun the recovery script or the pre-recovery pending-state verifier**. No further application deployment was needed.
 
 ## Implemented brief
 
@@ -149,7 +165,7 @@ Approved encrypted staging backup e170cd58-fdda-4e43-96dd-b6027a045dbb completed
 
 A fresh backup is required before schema-55 cutover because staging jobs have run since that backup. The migration uses the existing exact identity/path checks. [Render pre-deploy commands cannot access the persistent disk](https://render.com/docs/deploys), so the cutover runs the explicit migration when the new instance has disk access. The reviewed backup/migration/start command was configured and verified at23:25:28Z.
 
-Merging only APP_BUILD_ID=fb45d031 and FRONTEND_BUILD_ID=414dca8 triggered deployment `dep-dafkg0n40ujc73bmsqc0` at23:25:54Z. Its failed full gate prevented migration and startup. After all failing test locations were reconciled with the verified fixes, the guarded start command was rebound to e0d59c9 at00:20:46Z. Merging only APP_BUILD_ID=e0d59c9 then started the successful replacement deployment above; no duplicate deployment was requested. Schema55 migration is complete. Alpha/Beta recovery remains pending for the specific approval below.
+Merging only APP_BUILD_ID=fb45d031 and FRONTEND_BUILD_ID=414dca8 triggered deployment `dep-dafkg0n40ujc73bmsqc0` at23:25:54Z. Its failed full gate prevented migration and startup. After all failing test locations were reconciled with the verified fixes, the guarded start command was rebound to e0d59c9 at00:20:46Z. Merging only APP_BUILD_ID=e0d59c9 then started the successful replacement deployment above; no duplicate deployment was requested. Schema55 migration and the approved Alpha/Beta recovery are complete.
 
 The following controls are prepared locally in the review directory, with syntax checks complete:
 
@@ -160,19 +176,19 @@ The following controls are prepared locally in the review directory, with syntax
 
 The Render PATCH payload was checked against the official OpenAPI schema. [Updating the service configuration does not itself deploy](https://api-docs.render.com/reference/update-service); deployment and environment changes must be reconciled separately to avoid duplicate builds.
 
-The final backend passed its complete gate, migrated the exact staging database and passed served identity, integrity, history-preservation, health and scheduler checks. The rehearsed scoped recovery and its zero-recovery-count acceptance remain outstanding.
+The final backend passed its complete gate, migrated the exact staging database and passed served identity, integrity, history-preservation, health and scheduler checks. The scoped recovery and its zero-recovery-count acceptance passed. Signed-in hosted page acceptance remains outstanding.
 
 ## Publication approval and remaining acceptance
 
 The combined recovery command was rejected before process creation at00:49Z. A read of this task's recorded conversation then confirmed the explicit15:32:13Z user approval to include Alpha recovery, following the15:22:45Z recovery question. On review of that evidence, automatic approval review accepted Alpha's authorization but still rejected the unchanged combined operation because Beta was not explicitly named. Evidence: `recovery-authorization-evidence.md`. No workaround, indirect execution or data mutation followed either rejection.
 
-A specific async request now asks for approval of the one-shot Alpha/Beta operation: seven pending Alpha player allocations, two auction retries, remaining Alpha/Beta rollovers and draft completion, with a new encrypted backup and preservation checks. Alpha cannot be separated by merely changing the job filter: the reviewed rollover/completion job-creation methods scan both rapid drafts. The prepared, rehearsed combined operation is preserved pending approval. Before any future execution, reconcile the attempt files and current served identities; do not blindly retry.
+A specific async request then named the one-shot Alpha/Beta operation: seven pending Alpha player allocations, two auction retries, remaining Alpha/Beta rollovers and draft completion, with a new encrypted backup and preservation checks. The user replied "approve". Automatic approval review accepted this explicit combined scope, and the unchanged prepared operation succeeded as recorded above. The recovery approval blocker is resolved.
 
 Grae explicitly renewed approval with "approve and continue" for the reviewed fixture/release-record commits and both named staging pushes. The exact ten-file backend fixture commit succeeded as `fb45d0310971653f48671da3cc2c97b1f2d66129`, with source hashes checked against the passing receipt. Publication and deployment are proceeding under that approval. The historical review rejections below are retained for provenance; the publication approval is no longer pending.
 
 Automatic approval review initially rejected the local fixture commit and GitHub pushes, requiring specific change and destination approval. The renewed approval resolved that restriction; both commits and ordinary staging pushes succeeded. The exact scope is retained in `PUBLICATION_REVIEW.md` and `schema55-fixture-corrections-current.patch`. No rejected action was bypassed.
 
-Authenticated hosted browser review remains unavailable. The documented QA password failed one normal sign-in attempt, and the named QA password environment variables were unavailable. A request remains pending for legitimate QA access through the existing secure configuration or an enabled, connected signed-in staging browser.
+The user reports being signed in as admin in their browser. This task has no initialized browser connection, and Browser/Chrome is not listed among its enabled skills. A request now asks the user to attach the signed-in staging tab with `@`, enabling the browser in Settings > Computer Use if it is missing from that menu. The earlier documented QA password failed one normal sign-in attempt, and the named QA password environment variables were unavailable; no further password attempts were made. Hosted acceptance is not inferred from local fixtures, public checks, or the user's sign-in alone.
 
 The app browser bridge had rejected its trusted dependency path. Further read-only diagnosis found the active app's bundled browser instructions, but neither Browser nor Chrome is enabled in this task's skill list; those instructions require an enabled browser skill. No trust settings, browser profiles or app files were changed, and the app was not restarted during verification. [Official browser troubleshooting](https://learn.chatgpt.com/docs/chrome-extension#troubleshooting) describes connection setup through the app.
 
