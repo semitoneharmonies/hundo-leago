@@ -1185,8 +1185,15 @@ export function CommissionerCompetitionPage() {
             <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
             <Link className="hl-button hl-button--secondary" to={routePaths.leagueCommissionerRoster(leagueId)}>Manage rosters</Link>
           </Surface>
+          {availableWeeks.length > 0 ? (
+            <Surface>
+              <h2>Schedule generation</h2>
+              <p>This season already has a schedule. Use Edit matchup week below to review a week.</p>
+              <Link className="hl-button hl-button--secondary" to={routePaths.leagueMatchups(leagueId)}>View schedule</Link>
+            </Surface>
+          ) : (
           <PreviewAction title="Schedule generation" mutation={scheduleMutation} preview={schedulePreview}
-            previewDisabled={!calendarReady}
+            previewDisabled={!calendarReady || weeks.isPending || weeks.isError}
             onPreview={() => scheduleMutation.mutate({ confirmed: false })}
             onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedSeasonVersion })}>
             <p>Review the league calendar before generating a schedule. All dates use {timeZone}. Week 1 and playoffs start on Monday at midnight; playoffs reserve the final 28 days.</p>
@@ -1200,6 +1207,7 @@ export function CommissionerCompetitionPage() {
             </div>
             {!calendarReady && <p>Complete all five calendar dates to enable the preview.</p>}
           </PreviewAction>
+          )}
           <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview}
             previewDisabled={!selectedWeekId || weeks.isPending || weeks.isError}
             confirmDisabled={!selectedWeekId}

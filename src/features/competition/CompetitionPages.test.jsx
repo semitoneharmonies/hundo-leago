@@ -1077,10 +1077,12 @@ describe("M6-12 authenticated competition pages", () => {
     );
 
     expect(
-      await screen.findByRole("button", {
-        name: "Preview schedule generation",
+      await screen.findByRole("link", {
+        name: "View schedule",
       })
-    ).toBeInTheDocument();
+    ).toHaveAttribute("href", `/leagues/${leagueId}/matchups`);
+    expect(screen.getByText(/This season already has a schedule/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Preview schedule generation" })).not.toBeInTheDocument();
     const weekSelector = await screen.findByRole("combobox", { name: "Matchup week" });
     expect(within(weekSelector).getByRole("option")).toHaveTextContent("Week 1:");
     expect(screen.queryByRole("heading", { name: "Result correction" })).not.toBeInTheDocument();
@@ -1149,7 +1151,7 @@ describe("M6-12 authenticated competition pages", () => {
       if (path === `${prefix}/matchup-weeks`) {
         return envelope({
           code: "MATCHUP_WEEKS_FOUND",
-          weeks: [week({ status: "scheduled" })],
+          weeks: [],
           health: health("fresh"),
         });
       }
@@ -1213,7 +1215,7 @@ describe("M6-12 authenticated competition pages", () => {
       if (path === `${prefix}/matchup-weeks`) {
         return envelope({
           code: "MATCHUP_WEEKS_FOUND",
-          weeks: [week({ status: "scheduled" })],
+          weeks: [],
           health: health("fresh"),
         });
       }
