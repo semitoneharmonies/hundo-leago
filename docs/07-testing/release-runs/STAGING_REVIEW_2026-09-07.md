@@ -2,7 +2,7 @@
 
 ## Current release status
 
-**Overall completion: 99%. The final frontend and schema-55 backend are deployed to staging. All 3,535 backend tests passed. Alpha/Beta recovery completed successfully after explicit approval. The remaining acceptance item is the signed-in hosted walkthrough; the user reports an admin sign-in, but the browser still needs to be connected to this task.**
+**Overall completion: 100%. The approved implementation is deployed to staging and the signed-in hosted walkthrough is complete. The final backend passed all 3,538 tests; final frontend checks and deployment verification passed. Alpha/Beta recovery remains complete. Production was not changed.**
 
 Grae authorized the supplied review brief, both E: repositories, necessary staging commits/pushes, inaugural trading without an Entry Draft, and the encrypted staging backup. Production changes are excluded. The current operating mode remains OFFSEASON_RESET.
 
@@ -12,7 +12,7 @@ Grae authorized the supplied review brief, both E: repositories, necessary stagi
 | Rosters, trades and permissions | 25% | 100% |
 | Draft recovery and scheduling | 25% | 100% |
 | Interface adjustments | 20% | 100% |
-| Deployment and final verification | 20% | 95% |
+| Deployment and final verification | 20% | 100% |
 
 These estimates include deployment and acceptance; source completion alone is insufficient.
 
@@ -20,15 +20,15 @@ These estimates include deployment and acceptance; source completion alone is in
 
 | Component | Verified state |
 | --- | --- |
-| Frontend | Commit 414dca8da0350102f13a5847d22cd7531e87bb20 |
+| Frontend | Commit 49f1e953ba84455e5ae94bd2410986d3378f3dba |
 | Netlify staging site | 95af8aa7-0b13-4954-af6d-855762acb147 |
-| Current frontend deploy | 6a9ef3bb9c3114ad69192845 |
+| Current frontend deploy | 6a9f87db15d51bf8a333a74a |
 | Staging URL | https://staging.hundoleago.com |
-| Immutable frontend URL | https://6a9ef3bb9c3114ad69192845--hundoleago-staging.netlify.app |
-| Main frontend asset | assets/index-Cmspq7xr.js |
-| Served backend | e0d59c9731990a78ff7ca1a81d9f6fa5edd8878c |
-| Served Render deploy | dep-dafl9rgn74is73ahid3g; live at 2026-09-08T00:47:55Z |
-| Final local/backend staging source | e0d59c9731990a78ff7ca1a81d9f6fa5edd8878c |
+| Immutable frontend URL | https://6a9f87db15d51bf8a333a74a--hundoleago-staging.netlify.app |
+| Main frontend asset | assets/index-DNZ8YOkJ.js |
+| Served backend | e3167ec831369478944cdaff9bc0d0aed6558de4 |
+| Served Render deploy | dep-dafo6s5g1s2s73fd7ig0; live at 2026-09-08T04:06:25.427955Z |
+| Final local/backend staging source | e3167ec831369478944cdaff9bc0d0aed6558de4 |
 | Render staging service | srv-d9eo2turnols73ekb830, workspace tea-d4prbj7diees738tmg90 |
 | Served database | Schema 55, exact identity verified, zero foreign-key errors; Alpha/Beta drafts completed with zero open recoveries |
 | Staging scheduler | Daily auctions enabled; only auction resolution, FAD auction resolution and league outbox run automatically |
@@ -37,11 +37,32 @@ The frontend was deployed as a compiled artifact through the authenticated Netli
 
 At 2026-09-07T17:29:33Z, all 56 JavaScript/CSS asset copies matched their local SHA-256 hashes across the primary and immutable URLs. Six public health, protected-route, cache, CORS and SPA-fallback checks passed. Real published desktop (1440px) and mobile (390px) sign-in pages passed with zero page errors, no horizontal overflow and only staging API requests.
 
-The final frontend asset and browser checks were repeated during the schema-55 deployment build. All 56 published asset copies matched again, and desktop/mobile sign-in checks passed with zero page errors, no horizontal overflow and only staging API requests. Both screenshots were visually inspected. Evidence: `published-final-schema55-asset-hashes.json`, `frontend-final-schema55-browser-manifest.json`, and `staging-final-schema55-sign-in-1440.png` / `staging-final-schema55-sign-in-390.png`. Authenticated hosted acceptance is separate and remains pending.
+The final frontend asset and browser checks were repeated during the schema-55 deployment build. All 56 published asset copies matched again, and desktop/mobile sign-in checks passed with zero page errors, no horizontal overflow and only staging API requests. Both screenshots were visually inspected. Evidence: `published-final-schema55-asset-hashes.json`, `frontend-final-schema55-browser-manifest.json`, and `staging-final-schema55-sign-in-1440.png` / `staging-final-schema55-sign-in-390.png`. Authenticated hosted acceptance was pending at this stage and is completed in the final acceptance section below.
 
 At 2026-09-07T18:11:29Z, 30 additional signed-out read checks passed across Alpha, Beta, account and notification endpoints. Every request returned 401 with no protected data and no-store caching. The checked surfaces included rosters/teams, players, trades, auctions, activity, settings, memberships, draft navigation/results/recovery, commissioner roster workspace, matchup weeks and standings. Receipt: `published-signed-out-guards.json`. These checks do not substitute for signed-in permission or visual review.
 
-## Final deployment verification — 8 September UTC
+## Final hosted acceptance and fixes — 8 September UTC
+
+The user connected the in-app browser and signed in as Admin. The hosted walkthrough covered the league hub, Alpha Dashboard, Teams and Big Mac roster/Table/Hockey Lines, Drafts, Players search, Auctions, Trades and Trade block, Matchups Weeks 1 and 2, sortable Standings, League Activity, Notifications, Account settings, every League Rules section, commissioner tools and roster operations. Beta draft years and completed commissioner state, plus Gamma auction permissions, were checked in their own league context. Manager, receiving-manager, commissioner and administrator separation and two-league mutation/isolation scenarios remain covered by the separate local integrated fixtures and staging-copy rehearsals below; this was one hosted Admin session, not four hosted account sessions.
+
+The walkthrough exposed four final issues, all now fixed and verified:
+
+- Fractional AAV contract correction accepts quarter-dollar AAV totals. The hosted $1.25 × two-year preview returns $2.50 with cap impact and an explicit confirmation boundary. Isolated service tests verify preview and persisted correction values, including $1.25 × three years and legacy whole-dollar totals, and reject invalid increments.
+- Alpha draft results now read their original immutable acquisition receipts. Later trades, contract corrections or removals cannot erase the published award. Read-only served checks loaded all eight Alpha and six Beta team histories, preserving Morrissey's approved removal and cancelled contract.
+- Candidate allocation entries are suppressed using both legacy and current event names, across activity pagination. Completed-draft summaries and ordinary auction signings remain visible; no activity rows were deleted.
+- A season with existing matchup weeks shows View schedule and guidance to Edit matchup week. It no longer offers duplicate schedule generation and then reports missing prerequisites. New-season preview/confirmation coverage is retained.
+
+Backend commit e3167ec831369478944cdaff9bc0d0aed6558de4 passed 76 targeted tests in six suites locally, then all 3538 tests in 443 suites on Render, with zero failures, cancellations, skips or todos. The complete deployment gate used two workers on the existing hardware. The normal build command was restored after the exact commit became live, without another deploy. Startup remained ordinary npm start: no migration or recovery operation was repeated.
+
+Frontend commit 49f1e953ba84455e5ae94bd2410986d3378f3dba passed all 17 competition-page tests, focused lint and the staging build. The only application-source change since the previously verified frontend was the existing-schedule guidance. All 56 published JavaScript/CSS copies matched their local hashes on both primary and immutable URLs. The authenticated browser loaded assets/index-DNZ8YOkJ.js; the new schedule guidance and destination were verified with no horizontal overflow at the current 545px pane width. The earlier desktop/mobile and broader frontend checks remain recorded below.
+
+The served database remains schema55 with exact identity and migration compatibility checks passing, zero foreign-key errors, unchanged frozen draft dates and completed Alpha/Beta recovery with zero open recoveries and seven of seven rollovers each. Miro's Active/D/slot5 move, Morrissey's removal, both contract states and both ownership-history hashes were preserved. All 30 signed-out route/CORS/cache guards passed again. These verification reads made no writes. Browser previews were not confirmed; opening a notification retained the application's intended read-history behavior.
+
+The backend's configured frontend diagnostic ID retains its previous binding to 414dca8; the independently deployed frontend is the exact 49f1e953ba84455e5ae94bd2410986d3378f3dba artifact verified above. This UI-only frontend update changes no API contract. Daily staging auctions and the restricted scheduler remain configured as before; production, email, live statistics and automatic matchup processing were not enabled or changed.
+
+Final evidence: E:/hundo-leago-backend/.hundo.local/hosted-review-20260908/. Key receipts are render-full-test-result.json, render-live.json, served-review-fixes-verified.json, frontend-published-verified.json, hosted-final-acceptance.json, hosted-browser-observations.json and build-gate-restore-verified.json. Existing recovery receipts under the earlier review directory remain authoritative and must not be rerun. The earlier status and approval history below describes superseded stages; no approval or browser-connection blocker remains.
+
+## Earlier schema-55 deployment verification — 8 September UTC
 
 The exact e0d59c9 backend passed **3,535 tests in 443 suites, with zero failures, cancellations, skips or todos**. The full suite took 1,558.53 seconds. Receipt: `render-e0d59c9-full-test-result.json`. Render then completed the encrypted pre-deploy backup, applied migration 55, started the exact build and marked deployment `dep-dafl9rgn74is73ahid3g` live. Receipt: `schema55-deployment-startup-verified.json`.
 
@@ -176,7 +197,7 @@ The following controls are prepared locally in the review directory, with syntax
 
 The Render PATCH payload was checked against the official OpenAPI schema. [Updating the service configuration does not itself deploy](https://api-docs.render.com/reference/update-service); deployment and environment changes must be reconciled separately to avoid duplicate builds.
 
-The final backend passed its complete gate, migrated the exact staging database and passed served identity, integrity, history-preservation, health and scheduler checks. The scoped recovery and its zero-recovery-count acceptance passed. Signed-in hosted page acceptance remains outstanding.
+The final backend passed its complete gate, migrated the exact staging database and passed served identity, integrity, history-preservation, health and scheduler checks. The scoped recovery and its zero-recovery-count acceptance passed. Signed-in hosted page acceptance was outstanding at this earlier stage; it is completed above.
 
 ## Publication approval and remaining acceptance
 
