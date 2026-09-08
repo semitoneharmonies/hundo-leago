@@ -2,7 +2,7 @@
 
 ## Current release status
 
-**Overall completion: 96%. The final frontend is deployed. Local verification passed. Final backend recovery deployment and authenticated hosted acceptance remain pending.**
+**Overall completion: 97%. The final frontend and schema-55 backend are deployed to staging. All 3,535 backend tests passed. The combined Alpha/Beta recovery is blocked by automatic approval review pending explicit Beta approval; authenticated hosted acceptance also requires current QA access.**
 
 Grae authorized the supplied review brief, both E: repositories, necessary staging commits/pushes, inaugural trading without an Entry Draft, and the encrypted staging backup. Production changes are excluded. The current operating mode remains OFFSEASON_RESET.
 
@@ -10,9 +10,9 @@ Grae authorized the supplied review brief, both E: repositories, necessary stagi
 | --- | ---: | ---: |
 | Brief and scope review | 10% | 100% |
 | Rosters, trades and permissions | 25% | 100% |
-| Draft recovery and scheduling | 25% | 90% |
+| Draft recovery and scheduling | 25% | 92% |
 | Interface adjustments | 20% | 100% |
-| Deployment and final verification | 20% | 90% |
+| Deployment and final verification | 20% | 95% |
 
 These estimates include deployment and acceptance; source completion alone is insufficient.
 
@@ -26,18 +26,40 @@ These estimates include deployment and acceptance; source completion alone is in
 | Staging URL | https://staging.hundoleago.com |
 | Immutable frontend URL | https://6a9ef3bb9c3114ad69192845--hundoleago-staging.netlify.app |
 | Main frontend asset | assets/index-Cmspq7xr.js |
-| Served backend | 73b25f56d63b5b650badb4cc912403bc47b28c58 |
-| Served Render deploy | dep-dafdd5v9l3cc73c4439g |
-| Final local backend candidate | fb45d0310971653f48671da3cc2c97b1f2d66129 |
+| Served backend | e0d59c9731990a78ff7ca1a81d9f6fa5edd8878c |
+| Served Render deploy | dep-dafl9rgn74is73ahid3g; live at 2026-09-08T00:47:55Z |
+| Final local/backend staging source | e0d59c9731990a78ff7ca1a81d9f6fa5edd8878c |
 | Render staging service | srv-d9eo2turnols73ekb830, workspace tea-d4prbj7diees738tmg90 |
-| Served database | Schema 54; schema-55 migration and actual Alpha/Beta repair have not run |
+| Served database | Schema 55, exact identity verified, zero foreign-key errors; Alpha/Beta recovery has not run |
 | Staging scheduler | Daily auctions enabled; only auction resolution, FAD auction resolution and league outbox run automatically |
 
-The frontend was deployed as a compiled artifact through the authenticated Netlify CLI. Its GitHub source push remains blocked. The CLI primary-site deployment flag targeted the staging site above.
+The frontend was deployed as a compiled artifact through the authenticated Netlify CLI. Its reviewed source was subsequently pushed to GitHub staging as c00e9e98. The CLI primary-site deployment flag targeted the staging site above.
 
 At 2026-09-07T17:29:33Z, all 56 JavaScript/CSS asset copies matched their local SHA-256 hashes across the primary and immutable URLs. Six public health, protected-route, cache, CORS and SPA-fallback checks passed. Real published desktop (1440px) and mobile (390px) sign-in pages passed with zero page errors, no horizontal overflow and only staging API requests.
 
+The final frontend asset and browser checks were repeated during the schema-55 deployment build. All 56 published asset copies matched again, and desktop/mobile sign-in checks passed with zero page errors, no horizontal overflow and only staging API requests. Both screenshots were visually inspected. Evidence: `published-final-schema55-asset-hashes.json`, `frontend-final-schema55-browser-manifest.json`, and `staging-final-schema55-sign-in-1440.png` / `staging-final-schema55-sign-in-390.png`. Authenticated hosted acceptance is separate and remains pending.
+
 At 2026-09-07T18:11:29Z, 30 additional signed-out read checks passed across Alpha, Beta, account and notification endpoints. Every request returned 401 with no protected data and no-store caching. The checked surfaces included rosters/teams, players, trades, auctions, activity, settings, memberships, draft navigation/results/recovery, commissioner roster workspace, matchup weeks and standings. Receipt: `published-signed-out-guards.json`. These checks do not substitute for signed-in permission or visual review.
+
+## Final deployment verification — 8 September UTC
+
+The exact e0d59c9 backend passed **3,535 tests in 443 suites, with zero failures, cancellations, skips or todos**. The full suite took 1,558.53 seconds. Receipt: `render-e0d59c9-full-test-result.json`. Render then completed the encrypted pre-deploy backup, applied migration 55, started the exact build and marked deployment `dep-dafl9rgn74is73ahid3g` live. Receipt: `schema55-deployment-startup-verified.json`.
+
+The pre-deploy backup was verified at00:47:45Z:
+
+- Backup ID: e695df27-c1a3-4478-9b17-9bdc1711d571.
+- Encrypted SHA-256: d0d79983358f9bd69030c88919bf3db46c83cfd02aa5cbb7b5460d95ee0be69f.
+- Manifest checksum: e40185befe7f1a7a42ae6891aa07ee24e812771413d4e4b20c1c5c9d2a50f5dc.
+
+Read-only SSH verification at00:48:36Z confirmed the exact backend/frontend build IDs, physical database identity, schema55 migration compatibility, zero foreign-key errors, open staging writes, FAD routes, daily auction settings and restricted scheduler configuration. Email, scheduled backups and statistics/live providers remain disabled. Receipt: `schema55-served-verified.json`.
+
+At00:50:17Z, the original build command (`npm ci && npm run check && npm test`) and ordinary `npm start` were restored and verified. No additional deployment was triggered. Receipt: `staging-start-restore-verified.json`.
+
+All six public health, protected-route, CORS, cache and SPA checks passed against the served release at00:50:23Z. All30 signed-out account and Alpha/Beta read checks passed at00:50:26Z, with zero protected-data exposure. The final frontend checks also matched56 asset copies and passed desktop/mobile sign-in checks. These remain public checks, not signed-in hosted acceptance.
+
+Read-only checks at00:55:39Z confirmed that no recovery attempt, recovery backup or completion receipt exists. Alpha remains allocating with two open auction recoveries and one of seven rollovers complete. Beta remains rapid with no open recovery records and three of seven rollovers complete. Both retain their original frozen draft dates. Receipt: `verify-served-recovery-pending.receipt.txt`.
+
+At00:55:47Z, read-only verification confirmed Miro's Active/D/slot5 move and ownership version2, Morrissey's removal, unchanged contract states, and exact hashes for both ownership-event histories. No foreign-key errors were present. Receipt: `verify-served-recovery-history.receipt.txt`. This verifies migration preservation; it does not claim that pending draft recovery ran.
 
 ## Implemented brief
 
@@ -56,13 +78,13 @@ At 2026-09-07T18:11:29Z, 30 additional signed-out read checks passed across Alph
 - AAV/term contract correction with calculated total; roster re-slotting cannot alter actual player position.
 - Completed drafts display obsolete job records as archived history without rewriting those records.
 
-## Verification evidence
+## Verification evidence and earlier attempts
 
 Frontend: 401 tests in 60 files passed, plus the subsequent 16 Activity/transaction checks and five completed-draft history checks. Lint and final production build passed. The existing main-bundle size warning remains nonblocking.
 
 Integrated browser fixtures: eight desktop/mobile role/page checks and two visual-capture checks passed. Separate manager, commissioner and administrator fixture accounts covered two leagues and the reviewed pages. These were local integrated fixtures; they are not authenticated hosted acceptance.
 
-The served backend commit 73b25f5 passed Render's complete build gate: **3,525 tests in 443 suites, zero failures, cancellations, skips or todos**. It became live at 2026-09-07T16:22:22Z.
+The earlier backend commit 73b25f5 passed Render's complete build gate: **3,525 tests in 443 suites, zero failures, cancellations, skips or todos**. It became live at 2026-09-07T16:22:22Z and is superseded by e0d59c9 above.
 
 The schema-55 candidate passed the migration/history checks, completion-job checks and fresh staging-copy recovery below. Sixteen repaired historical compatibility checks, five current-schema checks and all five historical cutover checks passed. Retired release/reset protocols retain schema 54 and their existing trusted checksums. Current runtime tests use schema 55.
 
@@ -79,7 +101,7 @@ Frontend commit57cc812 changes only the local browser fixture to use fallback fo
 
 The earlier queued browser wrapper was stopped before launching a browser when the full suite reported failures. The final `run-final-serial-browser.cjs` waited for the complete twelve-file corrected-fixture result, verified its hashes and unchanged application source, then ran four desktop checks serially. All four passed; the cutover guard requires their separate `browser-final-schema55-serial-result.json` receipt.
 
-The full run exposed additional current-schema test fixtures still expecting54. A focused reproduction confirmed55-versus54 assertions in commissioner correction and draft allocation-correction setup; the failed setup also cancelled dependent tests and left the temporary SQLite handle open during cleanup. Ten fixture files now contain13 narrowly reviewed assertion/name corrections for schema55. A twelve-file verification run covers those fixtures plus the previously corrected browser fixture and integrated acceptance. Evidence: `schema55-current-fixture-rerun.log`, XML report and source-hash manifest in the review directory. These changes are not yet committed or reported as passing. Application code is unchanged in this correction, and the prepared cutover controls must be rebound to the verified final candidate before use.
+The full run exposed additional current-schema test fixtures still expecting54. A focused reproduction confirmed55-versus54 assertions in commissioner correction and draft allocation-correction setup; the failed setup also cancelled dependent tests and left the temporary SQLite handle open during cleanup. Ten fixture files received13 narrowly reviewed assertion/name corrections for schema55, followed by the synthetic setup batching below. The first twelve-file rerun was stopped and preserved as incomplete. Its passing replacement covers those fixtures plus the browser fixture and integrated acceptance. The final corrections are committed as fb45d031, and the deployment controls are bound to that verified candidate.
 
 `Reconcile-LocalFinalVerification.ps1` is retained as an unused earlier approach; it has not issued a success receipt and is not the current deployment prerequisite. Local pre-publication evidence consists of the focused schema/recovery rehearsals, all twelve current fixture files and the serial browser checks. Render's unchanged `npm ci && npm run check && npm test` gate must run the entire suite against the exact final commit before its backup/migration/start sequence executes. No local or older-snapshot full-suite pass is inferred.
 
@@ -93,9 +115,13 @@ That existing-snapshot run subsequently stopped at20:07:04Z when its memory guar
 
 The first current-fixture rerun was also stopped and preserved as incomplete after the allocation-correction fixture spent more than30 minutes on individual setup writes. Only its two identified local test processes were terminated; the independent frozen full suite continued. Setup now batches trigger removal, synthetic seed writes and trigger restoration in the allocation-correction fixture, plus trigger removal in the preview fixture. Foreign-key and check-constraint mode changes retain their original positions outside those transactions. Repository commands and assertions are unchanged. The two focused correction/preview checks passed with zero failures or cancellations in167.45 seconds.
 
-The fresh twelve-file run completed at20:59:21Z: **126 tests in10 suites passed, with zero failures, cancellations, skips or todos**, in1,832.25 seconds. It used isolated E: test environment variables and verified unchanged fixture hashes and application source. Evidence: `schema55-current-fixture-batched.log`, XML and result/manifest files; source fingerprint `424769f67a3bdb1645ca5bc63b40b048b60d3760f0cbdaca68a5cb02938fc70f`. The ten-file uncommitted fixture patch contains24 insertions and20 deletions, including the schema assertions and setup batching.
+The fresh twelve-file run completed at20:59:21Z: **126 tests in10 suites passed, with zero failures, cancellations, skips or todos**, in1,832.25 seconds. It used isolated E: test environment variables and verified unchanged fixture hashes and application source. Evidence: `schema55-current-fixture-batched.log`, XML and result/manifest files; source fingerprint `424769f67a3bdb1645ca5bc63b40b048b60d3760f0cbdaca68a5cb02938fc70f`. The ten-file fixture commit contains24 insertions and20 deletions, including the schema assertions and setup batching.
 
 The four serial browser checks passed at21:01:51Z in2.4 minutes against those verified sources, with exit0 and unchanged-source confirmation. They covered reviewed league pages, commissioner operations, administrator visibility, manager restrictions, account settings and League Rules. These remain local integrated checks, not authenticated hosted review. Current staging publication scope is recorded in `PUBLICATION_REVIEW.md` in the local review directory.
+
+The complete Render run for fb45d031 finished at2026-09-08T00:16:13Z:3,535 tests in443 suites,3,526 passed,9 failed, and zero cancellations, skips or todos. All nine failures belonged to two stale test fixtures. The historical authority replay must stop at schema54, while the current reset-report repository fixture must describe schema55. Those corrections are committed and pushed as d01c3c2 and e0d59c9. Their complete local files passed16 and8 tests respectively; application source is unchanged. Evidence: `render-fb45-full-test-result.json`, `schema55-authority-historical-fixed-result.json`, and `schema55-reset-report-fixed-result.json`.
+
+The replacement controls verified all150 targeted tests and the four browser source bindings. A two-worker smoke check also passed. Replacement deployment `dep-dafl9rgn74is73ahid3g` for e0d59c9 started at00:21:02Z and runs every test with `npm ci && npm run check && npm test -- --test-concurrency=2`. This temporarily uses two test workers on the existing staging build hardware; no workspace tier, subscription, service compute plan or production configuration was changed. The original build command will be restored with `npm start` after verified schema55 startup.
 
 ## Staging-data rehearsals
 
@@ -114,39 +140,43 @@ The repair recognizes exact durable auction receipts and recorded roster moves, 
 
 Other preserved rehearsal copies: approved-trade-09f00240-63fa-4c0a-bb51-ea9aac9ea9ef.sqlite3; two-week-simulation-8dc9f010-b000-4a31-8744-0979cdc3f975.sqlite3; schedule-rehearsal-63c44c94-f41d-4bf3-9c75-a4f0c4826ae1.sqlite3; daily-auction-05ee4d6d-151b-44a8-ae65-c4ced4540908.sqlite3. They are under the same remote review directory.
 
-## Backup and remaining cutover
+## Earlier backup and cutover preparation
 
 Approved encrypted staging backup e170cd58-fdda-4e43-96dd-b6027a045dbb completed at 2026-09-07T15:32:43Z in the existing private R2 bucket hundo-leago-staging-backups.
 
 - Encrypted SHA-256: 6a0441cebf425502ef6e0508228048ddb9ca369ac49c5e9896fed454127fb6d3
 - Manifest checksum: 849a3626eb754e72844cbd4169bdc12c43e19bb14001a7937e51530e47f5827d
 
-A fresh backup is required before schema-55 cutover because staging jobs have run since that backup. The migration must use the existing exact identity/path checks. [Render pre-deploy commands cannot access the persistent disk](https://render.com/docs/deploys), so the cutover must run the explicit migration when the new instance has disk access. No cutover configuration has been changed yet.
+A fresh backup is required before schema-55 cutover because staging jobs have run since that backup. The migration uses the existing exact identity/path checks. [Render pre-deploy commands cannot access the persistent disk](https://render.com/docs/deploys), so the cutover runs the explicit migration when the new instance has disk access. The reviewed backup/migration/start command was configured and verified at23:25:28Z.
+
+Merging only APP_BUILD_ID=fb45d031 and FRONTEND_BUILD_ID=414dca8 triggered deployment `dep-dafkg0n40ujc73bmsqc0` at23:25:54Z. Its failed full gate prevented migration and startup. After all failing test locations were reconciled with the verified fixes, the guarded start command was rebound to e0d59c9 at00:20:46Z. Merging only APP_BUILD_ID=e0d59c9 then started the successful replacement deployment above; no duplicate deployment was requested. Schema55 migration is complete. Alpha/Beta recovery remains pending for the specific approval below.
 
 The following controls are prepared locally in the review directory, with syntax checks complete:
 
 - `staging-cutover-plan.json`: exact service/commit/path guards, encrypted backup before migration, full build gate and restoration of the ordinary start command after verified startup.
-- `Set-ReviewedStagingStartCommand.ps1`: defaults to inspection; checks the twelve-file corrected-fixture receipt and hashes, current browser receipt, exact final fixture delta, unchanged tested application source and remote staging commit before configuration. It also requires Render's complete build command to remain unchanged. Its read-only inspection confirmed the exact service and unchanged `npm start` command. Configuration and restoration each have attempt receipts to prevent blind retries.
+- `Set-ReviewedStagingStartCommand.ps1`: defaults to inspection; checks all corrected-fixture receipts and hashes, browser receipt, exact final fixture delta, unchanged tested application source and remote staging commit. Validate is read-only; Rebind verifies the exact prior service command before changing candidate bindings. The temporary complete two-worker build gate is explicit. Restoration returns both the original build command and ordinary `npm start`; writes have attempt receipts to prevent blind retries.
 - `execute-served-schema55-recovery.cjs`: refuses the wrong served commit/schema, verifies physical database identity, takes a new encrypted backup, and runs the rehearsed Alpha/Beta recovery. It preserves other draft roots and frozen dates, checks all job failure categories and foreign keys, and refuses to repeat an existing attempt.
-- `verify-served-schema55.cjs`: read-only deployed-source, database identity/migration and restricted-scheduler configuration verification. It has not been executed against staging because schema55 is not served yet.
+- `verify-served-schema55.cjs`: read-only deployed-source, database identity/migration and restricted-scheduler configuration verification. It passed against staging at00:48:36Z; the actual receipt is recorded above.
 
 The Render PATCH payload was checked against the official OpenAPI schema. [Updating the service configuration does not itself deploy](https://api-docs.render.com/reference/update-service); deployment and environment changes must be reconciled separately to avoid duplicate builds.
 
-The final backend must pass the complete deployment gate, migrate exactly the staging database, execute the rehearsed scoped recovery and verify served identities, zero recovery counts, original history, health and scheduler restrictions.
+The final backend passed its complete gate, migrated the exact staging database and passed served identity, integrity, history-preservation, health and scheduler checks. The rehearsed scoped recovery and its zero-recovery-count acceptance remain outstanding.
 
-## Remaining blockers
+## Publication approval and remaining acceptance
+
+The combined recovery command was rejected before process creation at00:49Z. A read of this task's recorded conversation then confirmed the explicit15:32:13Z user approval to include Alpha recovery, following the15:22:45Z recovery question. On review of that evidence, automatic approval review accepted Alpha's authorization but still rejected the unchanged combined operation because Beta was not explicitly named. Evidence: `recovery-authorization-evidence.md`. No workaround, indirect execution or data mutation followed either rejection.
+
+A specific async request now asks for approval of the one-shot Alpha/Beta operation: seven pending Alpha player allocations, two auction retries, remaining Alpha/Beta rollovers and draft completion, with a new encrypted backup and preservation checks. Alpha cannot be separated by merely changing the job filter: the reviewed rollover/completion job-creation methods scan both rapid drafts. The prepared, rehearsed combined operation is preserved pending approval. Before any future execution, reconcile the attempt files and current served identities; do not blindly retry.
 
 Grae explicitly renewed approval with "approve and continue" for the reviewed fixture/release-record commits and both named staging pushes. The exact ten-file backend fixture commit succeeded as `fb45d0310971653f48671da3cc2c97b1f2d66129`, with source hashes checked against the passing receipt. Publication and deployment are proceeding under that approval. The historical review rejections below are retained for provenance; the publication approval is no longer pending.
 
-1. Automatic approval review rejected GitHub pushes because it requires destination-specific source-publication approval. Requests are pending for:
-   - https://github.com/semitoneharmonies/hundo-leago.git, staging branch.
-   - https://github.com/semitoneharmonies/hundo-leago-backend.git, staging branch.
-   The reviewed backend candidate includes the recovery and subsequent compatibility/test commits.
-   The local current-fixture commit was also rejected twice. Task history was checked and confirmed Grae's earlier explicit approval of staging commits/pushes, but the second review required authorization identifying this specific commit and did not accept retrieved history as sufficient. No files were staged by either rejected command. The updated pending request identifies the now-tested ten-file fixture commit (24 insertions and20 deletions), the frontend release-record commit, and both exact GitHub staging destinations. Review: `PUBLICATION_REVIEW.md` and `schema55-fixture-corrections-current.patch`. No rejected action was bypassed.
-2. Authenticated hosted browser review remains unavailable. The app browser bridge rejects its trusted dependency path, the documented QA password failed one normal sign-in attempt, and the named QA password environment variables were unavailable. No browser credential extraction or password guessing was used.
-   A request is pending for a connected signed-in staging browser or legitimate QA access through the existing secure configuration.
-   Further read-only diagnosis found the active app's bundled browser instructions, but neither Browser nor Chrome is enabled in this task's skill list. Those instructions explicitly require an enabled browser skill. No trust settings, browser profiles or app files were changed, and the app was not restarted while tests were running. [Official browser troubleshooting](https://learn.chatgpt.com/docs/chrome-extension#troubleshooting) describes connection setup through the app.
-3. Automatic approval review also rejected refreshing the remote full-source verification snapshot. No alternate source transfer was used. The final full suite will run through Render's ordinary exact-commit build gate after approved staging source publication; local focused verification continues on E:.
+Automatic approval review initially rejected the local fixture commit and GitHub pushes, requiring specific change and destination approval. The renewed approval resolved that restriction; both commits and ordinary staging pushes succeeded. The exact scope is retained in `PUBLICATION_REVIEW.md` and `schema55-fixture-corrections-current.patch`. No rejected action was bypassed.
+
+Authenticated hosted browser review remains unavailable. The documented QA password failed one normal sign-in attempt, and the named QA password environment variables were unavailable. A request remains pending for legitimate QA access through the existing secure configuration or an enabled, connected signed-in staging browser.
+
+The app browser bridge had rejected its trusted dependency path. Further read-only diagnosis found the active app's bundled browser instructions, but neither Browser nor Chrome is enabled in this task's skill list; those instructions require an enabled browser skill. No trust settings, browser profiles or app files were changed, and the app was not restarted during verification. [Official browser troubleshooting](https://learn.chatgpt.com/docs/chrome-extension#troubleshooting) describes connection setup through the app.
+
+An earlier remote full-source verification refresh was also rejected. No alternate source transfer was used. The final full suite now runs through Render's ordinary exact-commit build gate after the approved GitHub staging push.
 
 ## Production boundary and rollback references
 
@@ -154,7 +184,7 @@ Production main references were rechecked unchanged:
 - Frontend: 6f7d166eb931fb4202c4eb93a50fad3ef569bfb7
 - Backend: bff785e047817686ccf094a4032e04bab10197c1
 
-Remote staging references remain frontend 227675231f539da5890be578532bd1b592163f61 and backend 73b25f56d63b5b650badb4cc912403bc47b28c58 until the pending pushes are authorized. The prior frontend deploy 6a9ee93fb0abde777c0bcdc9 remains an immutable rollback artifact.
+Approved non-force staging pushes succeeded: frontend c00e9e98e38c5ae99c849ee78fe40e733b9bb475 and backend fb45d0310971653f48671da3cc2c97b1f2d66129. Production main references were rechecked unchanged immediately after those pushes. The prior frontend deploy 6a9ee93fb0abde777c0bcdc9 remains an immutable rollback artifact.
 
 Production data, deployments, schedules and jobs were not changed. Live-provider requests, automatic matchup/statistics processing and account email remain outside this staging release.
 
