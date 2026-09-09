@@ -6,6 +6,8 @@ Graem requested the next work toward launch and then authorized the proposed sta
 
 **Published and operationally verified on staging:** backend `23709ea093cc393718af49e1207cba5e6291ed43` passed the complete Render gate: **3,566 tests across 443 suites, zero failures or skips**. Both new controls are explicitly false. No authenticated refresh, automatic matchup enablement or production release is claimed. Earlier local counts below are historical checkpoints, not additional unique tests.
 
+**Approved identity update completed, 9 September UTC:** 2,677 verified NHL links were added after a fresh encrypted staging backup. All 132 protected tables and 2,807 original provider IDs were preserved, with independent read-only verification. Current roster coverage is 402 of 411 players. The nine excluded identities, old-source weeks and authenticated acceptance remain separate gates; see the latest checkpoint at the end of this record.
+
 This amendment implements the completed-game model clarified on 11 August. It replaces the deferred provider-neutral implementation clauses in Scoring Rules, Matchups, and API Contracts for this candidate. Historical provider-specific clauses remain evidence of the earlier design. The frontend remains the September UI review release; the backend now serves this statistics candidate with its new controls disabled.
 
 ## Statistics source and schedule
@@ -148,7 +150,7 @@ Six synthetic checks passed for read-only preview, approval and backup guards, s
 
 Automatic approval review rejected an earlier attempt to export the full staging database because the publication approval did not cover a durable local copy of all league and account data. That command did not run. Preparation continued with public catalogue evidence, synthetic fixtures and read-only hosted validation. No full database export is needed for the proposed next step.
 
-### Remaining gates
+### Remaining gates at publication — identity subset subsequently approved below
 
 1. Approve the concrete 2,677-link staging data plan separately from code publication, then take and verify a fresh encrypted staging backup before any application. Recheck the exact plan, target identity and unchanged player fields. The operation must stop on any mismatch; do not infer permission to alter the nine disputed records.
 2. Resolve the nine excluded roster identities using source evidence. After the verified subset alone, statistics readiness still fails for those nine players.
@@ -157,3 +159,21 @@ Automatic approval review rejected an earlier attempt to export the full staging
 5. Only after identity/source readiness and the applicable staging authorization: verify an administrator current-season refresh, role boundaries and a disposable normal/late matchup week before automatic processing. Production remains a separate release decision.
 
 Current receipts in the same local directory: `render-live-release-receipt.json`, `build-gate-restore-verified.json`, `inspect-published-staging.receipt.json`, `public-release-checks.json`, `nhl-full-catalog-audit.json`, `identity-link-plan.json`, `inspect-identity-plan-staging.receipt.json`, `identity-link-verified-plan.json`, `identity-link-rehearsal.log`, `catalogue-plan-rehearsal.json`, and `IDENTITY_RECONCILIATION_REVIEW.md`. The local identity scripts are preparation artifacts, not deployed application code.
+
+## Approved identity application — 9 September 2026 UTC
+
+Graem answered “yes continue” to the exact proposal to apply 2,677 verified links after a fresh encrypted staging backup, keeping both jobs off and excluding the nine disputed identities. The plan remained `1695255c6bee02b316074e6a1ada28ad8233f123535eeb2bceb52e16d805ae7d`, operation `fdddaabe-05fd-441b-b643-328a3f4a0132`. All 2,677 evidence files were rechecked against their saved hashes. Fresh hosted preflight found 2,677 additions, zero conflicts, zero existing NHL links and no prior attempt. A new full-catalogue synthetic rehearsal proved the application wrapper preserves all 132 other application tables.
+
+Backup `5e3039ab-b1da-449a-b6d1-ea3dbd6e1f9d` completed before the operation. The private encrypted artifact and manifest were verified, downloaded on the staging server, decrypted in memory, and checked against the plaintext checksum. Its encrypted SHA-256 is `197103c46de2d22f8925b7d898488f7d4e136cee47b8e33a6dea9768a63cbb7a`; manifest checksum is `f4650a8ae5ceb64badfd573c587bd7f6b5e56b871f27633b094b7d09ba5e7166`. No database contents were exported to E:. The existing verified backup process was used without a migration or restore.
+
+The single application succeeded at **02:50:51 UTC**: **2,677 external identity rows and one audit event** were added in one transaction. All **132 protected tables** and all **2,807 original external IDs** remained unchanged. There are now 5,484 external IDs in total. The independent read-only postflight found all approved links, zero remaining approved additions, zero conflicts, no changed protected-table fingerprints, `integrity_check=ok` and zero foreign-key violations. Both new controls remain false, and public staging readiness/frontend checks returned HTTP 200. Backend `23709ea` stayed deployed; no application redeployment or production change occurred. Local and server-side single-attempt receipts are retained; the successful operation must not be rerun.
+
+### Remaining source and execution gates after application
+
+The catalogue-size gate now passes with 2,677 NHL identities, but nine rostered identities remain missing. Fresh public NHL evidence and additional official sources were reviewed for all nine. Eight NHL birth dates have corroborating evidence; this supports review of their identity links without changing stored dates. Anthony Beauregard remains a primary-source discrepancy: NHL reports 14 November 1995, whereas [ECHL's official profile](https://echl.com/players/6458/anthony-beauregard) reports 15 November 1995, matching Hundo's stored value. Do not describe Hundo's date as proven wrong. All nine were explicitly excluded and remain unmodified. The detailed source-by-source review is in the local `IDENTITY_APPLICATION_OUTCOME.md` and `excluded-identity-source-review.json`.
+
+Read-only inspection identified the exact three unfinished old-source weeks: **Gamma League / regular-01** is live with 14 saved locks; **Release QA Alpha League / week-02** is scheduled with six saved locks; **Release QA Beta League / week-02** is scheduled with ten saved locks. All use `release_qa_fixture` baselines. The 936 pending matchup occurrences still include 51 overdue jobs. None was cancelled, replaced, skipped or executed. A future NHL acceptance scope must preserve these weeks and must not silently process their old jobs or substitute new baselines. The current global controls alone are not a verified execution scope.
+
+Authenticated acceptance still requires a working administrator Browser session; the previously reported invalid QA credentials and runtime trust error were not resolved by the identity operation. The next work is to settle the excluded identity links, define and verify a safe matchup scope, and restore hosted session acceptance. No new job enablement is authorized by this completed identity update.
+
+Receipts under `E:/hundo-leago-backend/.hundo.local/statistics-staging-20260908/`: `approved-identity-preflight.receipt.json`, `approved-identity-wrapper-rehearsal.json`, `approved-identity-backup.receipt.json`, `approved-identity-apply.receipt.json`, `approved-identity-postflight.receipt.json`, `inspect-post-link-readiness-context.receipt.json`, `excluded-identity-source-review.json`, `post-identity-public-health.json`, and `identity-application-completion.json`. All operation code is retained locally in the ignored directory; only this shared status record changes in Git.
