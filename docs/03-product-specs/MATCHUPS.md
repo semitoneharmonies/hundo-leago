@@ -1,5 +1,7 @@
 # Hundo Leago — Matchups
 
+> 8 September 2026 implementation amendment: [NHL statistics and automatic matchups](../06-work-plans/STATISTICS_MATCHUPS_2026-09-08.md) defines the completed-game source, immutable late-lock exclusions, week-boundary handling and explicit job controls now published on staging with the new controls off. The earlier deferred provider-neutral clauses below are superseded for this candidate; authenticated staging acceptance is still separate.
+
 ## Document Status
 
 `APPROVED`

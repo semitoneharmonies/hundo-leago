@@ -1,5 +1,7 @@
 # Hundo Leago - API Contracts
 
+> 8 September 2026 implementation amendment: the target runtime now implements administrator statistics refresh and read-only status routes. See [NHL statistics and automatic matchups](../06-work-plans/STATISTICS_MATCHUPS_2026-09-08.md) for exact inputs, enablement, source evidence and the replacement for deferred provider-neutral clauses. The routes are published on staging with refreshes disabled; authenticated acceptance remains pending.
+
 ## Staging review amendment — 2026-09-07
 
 - Notification reads accept `category=all|auction|trade|draft|league|account` and optional `pendingLeagueAccess=true|false`. Filtering occurs before cursor pagination. Pending access includes only the requesting user's unexpired pending invitations or commissioner assignments, including notifications already read.

@@ -1,5 +1,7 @@
 # Hundo Leago - Active Work Plan
 
+> Current season-operation work (8 September 2026, updated 9 September UTC): Graem authorized implementation and the subsequent staging publication. [NHL statistics and automatic matchups](STATISTICS_MATCHUPS_2026-09-08.md) records backend `23709ea`, its complete 3,566-test pass, healthy staging release with both new controls off, and the prepared identity links. Identity/source readiness, authenticated acceptance and job enablement remain separate gates. This work does not change the operating mode or authorize production.
+
 > Current M7-26 result (6 September 2026): **STAGING READY FOR GRAEM TO TEST**. See [the staging resume record](../07-testing/release-runs/M7_STAGING_RESUME_2026-09-06.md) for the published commits/deployments and passed final tests, runtime and hosted checks. The original review update is complete. Earlier August matrices and V1-V10 restrictions below are retained history, superseded by that current record. Separate season-operation work and production launch remain outstanding; production and data protection continue to apply.
 
 ## Document Status

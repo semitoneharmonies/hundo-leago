@@ -1,5 +1,7 @@
 # Hundo Leago — Scoring Rules
 
+> 8 September 2026 implementation amendment: [NHL completed-game statistics and automatic matchups](../06-work-plans/STATISTICS_MATCHUPS_2026-09-08.md) defines the provider, four evening refreshes, game-window scoring, late-lock evidence and release controls now published on staging with the new controls off. It supersedes the deferred implementation clauses below for this candidate. Hosted enablement remains a separate gate.
+
 ## Document Status
 
 `APPROVED`
