@@ -178,3 +178,36 @@ with `render-final-gate.json`, `render-live-release.json`, and
 `runtime-before.json` / `runtime-after.json` in the same directory. Netlify
 verification receipts and the exact artifact are under
 `E:/hundo-test-work/20260910-review-release/published-artifact/`.
+
+## Follow-up deployment verified
+
+The later approved dashboard-priority package is now live on staging as backend
+45251f9b7c2fcdb21253a956b4a250fa2da05f5b. Full-build deploy dep-dahb6lp5efls738pj9eg passed
+the unchanged complete command, npm ci && npm run check && npm test:
+3590/3590 tests across 443 suites, with zero failures,
+cancellations, skips or todos. The first running-instance check found that
+APP_BUILD_ID still named the previous release. The corrected identifier was
+saved and applied through Render's Save and deploy option, reusing that exact
+tested build. Runtime-only deploy dep-dahbvvdbedkc73a16q00 finished at
+09/10/2026 14:35:15; no application source or processing control changed,
+and the full suite was not rerun for this metadata-only deployment.
+
+The read-only running-instance check at 09/10/2026 14:36:05 confirms that the
+served commit and application build identifier both match this release. All
+nine protected table counts and fingerprints match the pre-deploy snapshot;
+all 936 pending matchup jobs are preserved. There are zero foreign-key
+violations and zero diagnostic database changes. Statistics and matchup
+processing remain disabled, and account email sending and its worker remain
+enabled. The frontend remains the previously verified staging artifact,
+6aa2571ac9d661e0f79481c6; the documentation commits change no application assets.
+
+This completes the approved source publication, full deployment gate and
+runtime preservation checks. The separate signed-in first-login, two-session
+revocation, password recovery and buyout workflow checks still require suitable
+authorized hosted views or specifically scoped data operations. Existing
+nine-review unavailable views remain open as recorded above. No real buyout,
+trade, account reset, schedule creation, statistics job activation or production
+operation was performed for this publication.
+
+Exact full-gate, deploy, before/after runtime, source and documentation receipts
+are saved privately under E:/hundo-leago-backend/.hundo.local/launch-publication/20260910/.
