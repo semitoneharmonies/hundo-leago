@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import { validateCommissionerAssignment } from "./notificationContracts.js";
+import { TeamManagerAssignmentActions } from "./TeamManagerAssignmentActions.jsx";
 import {
   EmptyBlock,
   ErrorBlock,
@@ -44,6 +45,7 @@ function message(notification) {
     return `Invitation to ${notification.messageData.leagueName}`;
   }
   if (notification.type === "commissioner_assignment_proposed") return `Commissioner invitation for ${notification.messageData.leagueName}`;
+  if (notification.type === "team_manager_assignment_proposed") return `Team assignment: ${notification.messageData.teamName} in ${notification.messageData.leagueName}`;
   if (notification.type === "trade_proposal_received") return `${notification.messageData.proposingTeamName} proposed a trade with ${notification.messageData.receivingTeamName}`;
   return (
     notification.messageData.message ||
@@ -108,7 +110,7 @@ export function PendingLeagueAccess({ session }) {
     enabled: session.status === "authenticated",
   });
   const items = pending.data?.notifications || [];
-  return <Surface>
+  return <Surface className="hl-pending-league-access">
     <h2>Invitations and commissioner assignments</h2>
     {acceptedLeague && <p role="status">You accepted the commissioner role for {acceptedLeague.name}. <Link to={routePaths.league(acceptedLeague.id)}>Continue league setup</Link></p>}
     {pending.isPending ? <LoadingBlock>Loading pending invitations…</LoadingBlock>
@@ -116,7 +118,7 @@ export function PendingLeagueAccess({ session }) {
       : items.length === 0 && !requested ? <p>No pending league invitations or commissioner assignments.</p> : null}
     {requested && !items.some((item) => item.messageData.assignmentId === requested) &&
       <CommissionerAssignmentActions assignmentId={requested} session={session} />}
-    {items.map((notification) => <details className="hl-rules-section" key={notification.id} open={requested === notification.messageData.assignmentId}>
+    {items.map((notification) => <details className="hl-invitation-card" key={notification.id} open={requested === notification.messageData.assignmentId}>
       <summary>{message(notification)} — Review</summary>
       {notification.type === "commissioner_assignment_proposed"
         ? <CommissionerAssignmentActions assignmentId={notification.messageData.assignmentId} session={session} onAccepted={setAcceptedLeague} />
@@ -570,6 +572,9 @@ export function NotificationsPage() {
                           notification={notification}
                           session={session}
                         />
+                      )}
+                      {notification.type === "team_manager_assignment_proposed" && (
+                        <TeamManagerAssignmentActions notification={notification} session={session} />
                       )}
                     </div>
                   )}

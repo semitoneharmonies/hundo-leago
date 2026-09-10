@@ -88,7 +88,9 @@ function workspaceCapUsage(workspace) {
 }
 
 function capImpactTeam({ id, name, previewTeam = null, workspace }) {
-  const currentCents = workspaceCapUsage(workspace);
+  const currentCents = Number.isSafeInteger(previewTeam?.before?.cap?.usageCents)
+    ? previewTeam.before.cap.usageCents
+    : workspaceCapUsage(workspace);
   const projectedCents = Number.isSafeInteger(previewTeam?.cap?.usageCents)
     ? previewTeam.cap.usageCents
     : null;
@@ -1251,7 +1253,7 @@ function AssetSummary({ asset, requestedRetention = null }) {
       description = "Tradeable league asset";
   }
   return (
-    <article className="hl-trade-asset-card">
+    <article className={`hl-trade-asset-card hl-trade-asset-card--${asset.type}`}>
       <span className="hl-position-tag">
         {requestedRetention
           ? "Contract + retention"
@@ -1319,34 +1321,52 @@ function TradeTeamPanel({ team, assets }) {
   );
 }
 
-function AcceptancePreview({ preview }) {
-  return (
-    <div className="hl-acceptance-preview">
-      <p>
-        {preview.generallyIllegal
-          ? "This trade would leave at least one roster generally illegal."
-          : "No roster warning was found during the preview."}
-      </p>
-      <div className="hl-trade-team-preview">
-        {preview.teams.map((team) => (
-          <article key={team.teamId}>
-            <strong>
-              {team.generallyIllegal ? "Roster issue found" : "No roster issue"}
-            </strong>
-            {team.issues.length > 0 && (
-              <ul>
-                {team.issues.map((issue, index) => (
-                  <li key={`${issue.code}-${index}`}>
-                    {activityWords(issue.code)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
-        ))}
-      </div>
+function tradeIssueDescription(issue, count) {
+  const counts = Number.isSafeInteger(issue.count) && Number.isSafeInteger(issue.limit)
+    ? ` (${issue.count}/${issue.limit})` : "";
+  switch (issue.code) {
+    case "ACTIVE_FORWARD_LIMIT_EXCEEDED": return "Too many active forwards" + counts + ".";
+    case "ACTIVE_DEFENCE_LIMIT_EXCEEDED": return "Too many active defence players" + counts + ".";
+    case "BENCH_LIMIT_EXCEEDED": return "Too many players on the bench" + counts + ".";
+    case "INJURED_RESERVE_LIMIT_EXCEEDED": return "Too many players on injured reserve" + counts + ".";
+    case "SALARY_CAP_EXCEEDED": return Number.isSafeInteger(issue.usageCents) && Number.isSafeInteger(issue.limitCents)
+      ? `Salary cap exceeded: ${money(issue.usageCents)} used against a ${money(issue.limitCents)} cap.`
+      : "Salary cap exceeded.";
+    case "NORMAL_ROSTER_SLOT_UNPLACED": return `${count} ${count === 1 ? "player needs" : "players need"} an available, eligible roster slot.`;
+    case "BENCH_AAV_LIMIT_EXCEEDED": return `${count} benched ${count === 1 ? "player exceeds" : "players exceed"} the bench salary limit.`;
+    case "ROSTER_SLOT_COLLISION": return "Multiple players occupy the same roster slot.";
+    case "ROSTERED_CONTRACT_INVALID": return "A rostered player needs a valid current contract.";
+    case "RETENTION_SLOT_LIMIT_EXCEEDED": return "Too many retained-salary obligations" + counts + ".";
+    default: return activityWords(issue.code);
+  }
+}
+
+function AcceptancePreview({ preview, proposal }) {
+  const names = new Map([proposal.proposingTeam, proposal.receivingTeam].map((team) => [team.id, team.name]));
+  return <div className="hl-acceptance-preview" aria-label="Acceptance preview">
+    <p>{preview.generallyIllegal
+      ? "This trade would leave at least one roster generally illegal."
+      : "No roster warning was found during the preview."}</p>
+    <div className="hl-trade-team-preview">
+      {preview.teams.map((team) => {
+        const groups = new Map();
+        for (const issue of team.issues) {
+          const group = groups.get(issue.code) || [];
+          if (!group.some((item) => JSON.stringify(item) === JSON.stringify(issue))) group.push(issue);
+          groups.set(issue.code, group);
+        }
+        const counts = team.rosterCounts;
+        return <article key={team.teamId}>
+          <h3>{names.get(team.teamId)}</h3>
+          <strong>{team.generallyIllegal ? "Roster issue found" : "No roster issue"}</strong>
+          {Number.isSafeInteger(counts?.activeForwards) && <p>
+            After trade: {counts.activeForwards} active forwards · {counts.activeDefence} active defence · {counts.bench} bench · {counts.injuredReserve} injured reserve · {counts.prospects} prospects
+          </p>}
+          {groups.size > 0 && <ul>{[...groups].map(([code, issues]) => <li key={code}>{tradeIssueDescription(issues[0], issues.length)}</li>)}</ul>}
+        </article>;
+      })}
     </div>
-  );
+  </div>;
 }
 
 function tradeHistorySummary(event, proposal) {
@@ -1375,14 +1395,13 @@ function tradeHistorySummary(event, proposal) {
 
 export function TradeDetailPage() {
   const { leagueId, tradeId } = useParams();
-  const [searchParams] = useSearchParams();
   const context = useLeagueContext(leagueId);
   const queryClient = useQueryClient();
   const trade = useQuery({
     ...tradeQuery(context.session.httpClient, leagueId, tradeId),
     enabled: context.session.status === "authenticated" && Boolean(context.league),
   });
-  const [acceptancePreview, setAcceptancePreview] = useState(null);
+  const [approvalPreview, setAcceptancePreview] = useState(null);
   const [reversalPreview, setReversalPreview] = useState(null);
   const proposal = trade.data;
   const proposingWorkspace = useQuery({
@@ -1432,29 +1451,25 @@ export function TradeDetailPage() {
   const canCancel =
     (pending || awaitingCommissionerApproval) &&
     managedIds.has(proposal.proposingTeam.id);
-  const openAcceptancePreview = searchParams.get("preview") === "acceptance";
-  const requestAcceptancePreview = previewAcceptance.mutate;
-  useEffect(() => {
-    if (
-      !openAcceptancePreview ||
-      !canRespond ||
-      acceptancePreview ||
-      previewAcceptance.isPending ||
-      previewAcceptance.isSuccess ||
-      previewAcceptance.isError
-    ) {
-      return;
-    }
-    requestAcceptancePreview();
-  }, [
-    acceptancePreview,
-    canRespond,
-    openAcceptancePreview,
-    previewAcceptance.isError,
-    previewAcceptance.isPending,
-    previewAcceptance.isSuccess,
-    requestAcceptancePreview,
-  ]);
+  const acceptanceQuery = useQuery({
+    queryKey: [...transactionKeys.trade(leagueId, tradeId), "acceptance-preview", proposal?.version],
+    queryFn: async () => {
+      const result = await previewTradeAcceptance(context.session.httpClient, leagueId, tradeId);
+      if (result.proposal?.id !== tradeId || (result.proposal.leagueId && result.proposal.leagueId !== leagueId)) {
+        throw new Error("The acceptance preview does not belong to this proposal.");
+      }
+      const previewTeamIds = new Set(result.teams.map(({ teamId }) => teamId));
+      if (result.teams.length !== 2 || !previewTeamIds.has(proposal.proposingTeam.id) || !previewTeamIds.has(proposal.receivingTeam.id) ||
+          (result.proposal.version !== undefined && result.proposal.version !== proposal.version)) {
+        throw new Error("The proposal changed. Refresh it before confirming.");
+      }
+      return result;
+    },
+    enabled: Boolean(canRespond),
+    meta: { private: true, leagueId },
+    retry: false,
+  });
+  const acceptancePreview = canRespond ? (acceptanceQuery.isError ? null : acceptanceQuery.data) : approvalPreview;
   return (
     <LeaguePageState context={context} title="Trade proposal">
       {trade.isPending ? <Surface><LoadingBlock>Loading trade…</LoadingBlock></Surface> : trade.isError ? <ErrorMessage error={trade.error} /> : <Surface className="hl-trade-detail">
@@ -1486,7 +1501,7 @@ export function TradeDetailPage() {
           description={
             acceptancePreview
               ? "Projected totals come from the server’s acceptance preview and include retained salary and transferred obligations."
-              : "Current totals come from live rosters. Preview acceptance to calculate each team’s exact trade change and projected cap."
+              : canRespond ? "Calculating both teams’ cap and roster impact…" : "Current totals come from live rosters. An acceptance preview is available to the receiving manager."
           }
           pendingText={
             proposingWorkspace.isPending || receivingWorkspace.isPending
@@ -1517,18 +1532,20 @@ export function TradeDetailPage() {
           ]}
         />
         {canRespond && <div className="hl-trade-action">
+          {acceptanceQuery.isFetching && <LoadingBlock>Checking current cap and roster placement…</LoadingBlock>}
+          {acceptancePreview && <AcceptancePreview preview={acceptancePreview} proposal={proposal} />}
           <div className="hl-button-row">
-          <button className="hl-button hl-button--primary" disabled={previewAcceptance.isPending} onClick={() => previewAcceptance.mutate()}>Preview acceptance</button>
-          <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "decline" })}>Decline</button>
+            <button className="hl-button hl-button--primary" disabled={command.isPending || !acceptancePreview || acceptanceQuery.isFetching || acceptanceQuery.isError} onClick={() => command.mutate({ action: "accept" })}>Confirm</button>
+            <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "decline" })}>Decline</button>
           </div>
-          {acceptancePreview && <div><AcceptancePreview preview={acceptancePreview} /><button className="hl-button hl-button--primary" disabled={command.isPending} onClick={() => command.mutate({ action: "accept" })}>Confirm and accept trade</button></div>}
-          <ErrorMessage error={previewAcceptance.error || command.error} />
+          <ErrorMessage error={acceptanceQuery.error || command.error} />
+          {acceptanceQuery.isError && <button type="button" className="hl-button hl-button--quiet" onClick={() => acceptanceQuery.refetch()}>Retry preview</button>}
         </div>}
         {canApprove && <div className="hl-trade-action">
           <h3>Commissioner approval</h3>
           <p>Review the current roster and cap impact before completing this trade.</p>
           <button className="hl-button hl-button--primary" disabled={previewAcceptance.isPending} onClick={() => previewAcceptance.mutate()}>Preview commissioner approval</button>
-          {acceptancePreview && <div><AcceptancePreview preview={acceptancePreview} /><button className="hl-button hl-button--primary" disabled={command.isPending} onClick={() => command.mutate({ action: "approve" })}>Approve and complete trade</button></div>}
+          {acceptancePreview && <div><AcceptancePreview preview={acceptancePreview} proposal={proposal} /><button className="hl-button hl-button--primary" disabled={command.isPending} onClick={() => command.mutate({ action: "approve" })}>Approve and complete trade</button></div>}
           <ErrorMessage error={previewAcceptance.error || command.error} />
         </div>}
         {canCancel && <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "cancel" })}>Cancel proposal</button>}

@@ -550,13 +550,14 @@
 
 .hl-trade-asset-card > strong {
   font-family: var(--hl-font-display);
-  font-size: 0.82rem;
+  font-size: 1.05rem;
+  font-weight: 800;
 }
 
 .hl-trade-asset-card > p {
   margin: 0;
-  color: var(--hl-muted-foreground);
-  font-size: 0.6rem;
+  color: var(--hl-foreground);
+  font-size: 0.85rem;
   line-height: 1.5;
 }
 
@@ -3561,11 +3562,19 @@ textarea {
 }
 
 .hl-standings-table tbody .hl-standings-team-row > * {
-  border-top: 1px solid color-mix(in srgb, var(--hl-border) 75%, #60a5fa);
-  border-bottom: 1px solid color-mix(in srgb, var(--hl-border) 75%, #60a5fa);
+  border-top: 3px solid color-mix(in srgb, var(--hl-border) 55%, #93c5fd);
+  border-bottom: 3px solid color-mix(in srgb, var(--hl-border) 55%, #93c5fd);
   background: transparent;
   color: #fff;
-  text-shadow: 0 1px 2px rgb(2 6 23 / 88%);
+  font-weight: 800;
+  -webkit-text-stroke: 0.75px #020617;
+  paint-order: stroke fill;
+  text-shadow:
+    -0.6px -0.6px 0 #020617,
+    0.6px -0.6px 0 #020617,
+    -0.6px 0.6px 0 #020617,
+    0.6px 0.6px 0 #020617,
+    0 2px 3px rgb(2 6 23 / 80%);
 }
 
 .hl-standings-table tbody .hl-standings-team-row {
@@ -3574,12 +3583,12 @@ textarea {
 }
 
 .hl-standings-table tbody .hl-standings-team-row > :first-child {
-  border-left: 1px solid var(--hl-border);
+  border-left: 3px solid color-mix(in srgb, var(--hl-border) 55%, #93c5fd);
   border-radius: 999px 0 0 999px;
 }
 
 .hl-standings-table tbody .hl-standings-team-row > :last-child {
-  border-right: 1px solid var(--hl-border);
+  border-right: 3px solid color-mix(in srgb, var(--hl-border) 55%, #93c5fd);
   border-radius: 0 999px 999px 0;
 }
 
@@ -5751,12 +5760,27 @@ textarea {
 }
 
 .hl-dashboard-matchup--spotlight {
-  animation: hl-dashboard-spotlight-swipe 460ms
+  overflow: hidden;
+}
+
+.hl-dashboard-matchup--spotlight .hl-dashboard-matchup-score {
+  height: 210px;
+  min-height: 210px;
+  animation: hl-dashboard-spotlight-swipe 780ms
     cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.hl-dashboard-matchup--spotlight .hl-matchup-score__team > strong {
+  display: -webkit-box;
+  min-height: 2.6em;
+  line-height: 1.3;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hl-dashboard-matchup--spotlight {
+  .hl-dashboard-matchup--spotlight .hl-dashboard-matchup-score {
     animation: none;
   }
 }
@@ -6367,3 +6391,46 @@ textarea {
     grid-auto-columns: minmax(270px, calc(100vw - 64px));
   }
 }
+
+/* September review: scoped controls and invitation presentation. */
+.hl-account-search { position: relative; min-width: 0; }
+.hl-account-search__options {
+  position: absolute; z-index: 20; top: 100%; left: 0; right: 0;
+  max-height: 20rem; overflow-y: auto; padding: 0.4rem;
+  border: 1px solid var(--hl-border); border-radius: var(--hl-radius-md);
+  background: var(--hl-panel); box-shadow: 0 12px 24px rgb(0 0 0 / 35%);
+}
+.hl-account-search__options > button {
+  display: grid; gap: 0.2rem; width: 100%; padding: 0.65rem;
+  border: 0; border-radius: 0.4rem; background: transparent;
+  color: var(--hl-foreground); text-align: left; cursor: pointer;
+}
+.hl-account-search__options > button:hover,
+.hl-account-search__options > button.is-active { background: rgb(59 130 246 / 18%); }
+.hl-account-search__options > button[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
+.hl-account-search__options span, .hl-account-search__options small { overflow-wrap: anywhere; color: var(--hl-muted-foreground); }
+.hl-competition-setup-card {
+  display: grid; gap: 1rem; padding: clamp(1rem, 3vw, 2rem) !important;
+  align-content: center; justify-items: center; text-align: center;
+}
+.hl-competition-setup-card > h2, .hl-competition-setup-card > p { margin: 0; }
+.hl-competition-setup-card h2 { font: 700 1.25rem var(--hl-font-display); }
+.hl-competition-setup-card p { max-width: 52rem; line-height: 1.6; }
+.hl-competition-setup-card > .hl-form-grid { width: 100%; max-width: 64rem; text-align: left; }
+.hl-competition-setup-card .hl-field { font-size: 0.85rem; }
+.hl-competition-setup-card > .hl-button { min-height: 2.75rem; }
+.hl-pending-league-access { padding: clamp(1rem, 3vw, 2rem); }
+.hl-pending-league-access > h2 { margin-top: 0; font: 700 1.25rem var(--hl-font-display); }
+.hl-invitation-card {
+  margin-top: 1rem; border: 1px solid var(--hl-border); border-radius: var(--hl-radius-md);
+  background: rgb(255 255 255 / 2%); overflow: hidden;
+}
+.hl-invitation-card > summary { padding: 1rem 1.25rem; cursor: pointer; font-size: 0.95rem; font-weight: 700; line-height: 1.5; }
+.hl-pending-league-access .hl-notification-invitation { margin: 0.25rem 1rem 1rem; padding: 1.25rem; gap: 0.85rem; }
+.hl-pending-league-access .hl-notification-invitation p { margin: 0; font-size: 0.9rem; line-height: 1.6; }
+.hl-pending-league-access .hl-notification-invitation .hl-button { min-height: 2.75rem; justify-self: start; }
+.hl-trade-asset-card--contract { background: rgb(59 130 246 / 9%); border-color: rgb(96 165 250 / 35%); }
+.hl-trade-asset-card--prospect_right { background: rgb(16 185 129 / 9%); border-color: rgb(52 211 153 / 35%); }
+.hl-trade-asset-card--draft_pick { background: rgb(168 85 247 / 9%); border-color: rgb(192 132 252 / 35%); }
+
+.hl-dashboard-matchup--spotlight .hl-dashboard-matchup-health { min-height: calc(3em + 21px); margin-bottom: 0; }

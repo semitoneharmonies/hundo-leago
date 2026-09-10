@@ -15,8 +15,34 @@
 }
 
 .operation {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: clamp(1rem, 3vw, 2rem);
   scroll-margin-top: 5.5rem;
   border-top: 3px solid #2563eb;
+}
+
+.operation > h2,
+.operation > p {
+  margin: 0;
+}
+
+.operation > h2 {
+  font-family: var(--hl-font-display);
+  font-size: 1.25rem;
+}
+
+.operation > p {
+  line-height: 1.6;
+}
+
+.operation > button {
+  justify-self: center;
+  min-width: min(100%, 16rem);
+  min-height: 2.75rem;
+  margin-top: 0.5rem;
 }
 
 .operation[hidden] {

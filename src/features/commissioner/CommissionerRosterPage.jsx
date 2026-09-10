@@ -509,7 +509,7 @@ function AddPlayerPanel({ workspace, teamsById, workflow, hidden = false }) {
         </Field>
       </div>
       <button
-        className="hl-button hl-button--secondary"
+        className="hl-button hl-button--primary"
         type="button"
         disabled={workflow.isPending}
         onClick={() => workflow.requestPreview(buildInput)}
@@ -614,7 +614,7 @@ function RemovePlayerPanel({
         </Field>
       </div>
       <button
-        className="hl-button hl-button--secondary"
+        className="hl-button hl-button--primary"
         type="button"
         disabled={workflow.isPending}
         onClick={() => workflow.requestPreview(buildInput)}
@@ -779,7 +779,7 @@ function RosterCorrectionPanel({
         </Field>
       </div>
       <button
-        className="hl-button hl-button--secondary"
+        className="hl-button hl-button--primary"
         type="button"
         disabled={workflow.isPending}
         onClick={() => workflow.requestPreview(buildInput)}
@@ -961,7 +961,7 @@ function ContractCorrectionPanel({
         </Field>
       </div>
       <button
-        className="hl-button hl-button--secondary"
+        className="hl-button hl-button--primary"
         type="button"
         disabled={workflow.isPending}
         onClick={() => workflow.requestPreview(buildInput)}

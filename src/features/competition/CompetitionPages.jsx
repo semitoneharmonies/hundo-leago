@@ -1,3 +1,4 @@
+import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
@@ -1059,7 +1060,7 @@ function PreviewAction({
         ];
 
   return (
-    <section className="hl-surface hl-preview-action" style={card}>
+    <section className={`hl-surface hl-preview-action${title === "Schedule generation" ? " hl-competition-setup-card" : ""}`} style={card}>
       <h2>{title}</h2>
       {children}
       <ErrorMessage
@@ -1086,6 +1087,10 @@ function PreviewAction({
                 </div>
               ))}
             </dl>
+            {title === "Schedule generation" && preview.weeks?.length > 0 && <details>
+              <summary>Review every matchup week</summary>
+              <ol>{preview.weeks.map((week) => <li key={week.sequence}>{weekLabel(week.sequence, week.startsAtMs, week.endsAtMs)}</li>)}</ol>
+            </details>}
           </section>
           <div className="hl-button-row">
           <button className="hl-button hl-button--primary" type="button" onClick={onConfirm} disabled={mutation.isPending || confirmDisabled}>
@@ -1123,7 +1128,7 @@ export function CommissionerCompetitionPage() {
   const [searchParams] = useSearchParams();
   const context = useCompetitionContext(leagueId);
   const queryClient = useQueryClient();
-  const [schedulePreview, setSchedulePreview] = useState(null);
+  const [schedulePreviewState, setSchedulePreviewState] = useState(null);
   const [weekPreview, setWeekPreview] = useState(null);
   const [weekId, setWeekId] = useState("");
   const [calendarEdits, setCalendarEdits] = useState({});
@@ -1131,6 +1136,11 @@ export function CommissionerCompetitionPage() {
   const seasons = useQuery({ ...leagueSeasonsQuery(context.session.httpClient, leagueId), enabled: Boolean(context.league && seasonId) });
   const selectedSeason = seasons.data?.find((season) => season.id === seasonId);
   const timeZone = context.league?.timezone || "America/Vancouver";
+  const defaults = seasonCalendarDefaults(selectedSeason);
+  const seasonEdits = calendarEdits[seasonId] || {};
+  const schedulePreview = schedulePreviewState?.seasonId === seasonId ? schedulePreviewState.preview : null;
+  const setSchedulePreview = (preview) => setSchedulePreviewState(preview ? { seasonId, preview } : null);
+  const calendarValue = (key, value) => seasonEdits[key] ?? defaults?.[key] ?? calendarInputValue(value, timeZone);
   const calendarFields = [
     ["nhlRegularSeasonStartsAtMs", "NHL regular season starts", selectedSeason?.regularSeasonStartsAtMs],
     ["nhlRegularSeasonEndsAtMs", "NHL regular season ends", selectedSeason?.regularSeasonEndsAtMs],
@@ -1139,7 +1149,7 @@ export function CommissionerCompetitionPage() {
     ["firstWeekStartsAtMs", "Week 1 starts", null],
   ];
   const calendar = Object.fromEntries(calendarFields.map(([key, , value]) => [key,
-    calendarTimestamp(calendarEdits[key] ?? calendarInputValue(value, timeZone), timeZone)]));
+    calendarTimestamp(calendarValue(key, value), timeZone)]));
   const calendarReady = Object.values(calendar).every(Number.isSafeInteger);
   const commissioner = hasCommissionerAuthority(
     context.league?.membership
@@ -1180,13 +1190,13 @@ export function CommissionerCompetitionPage() {
     <CompetitionGate context={context} title="Commissioner competition tools">
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
-          <Surface>
+          <Surface className="hl-competition-setup-card">
             <h2>Roster corrections</h2>
             <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
             <Link className="hl-button hl-button--secondary" to={routePaths.leagueCommissionerRoster(leagueId)}>Manage rosters</Link>
           </Surface>
           {availableWeeks.length > 0 ? (
-            <Surface>
+            <Surface className="hl-competition-setup-card">
               <h2>Schedule generation</h2>
               <p>This season already has a schedule. Use Edit matchup week below to review a week.</p>
               <Link className="hl-button hl-button--secondary" to={routePaths.leagueMatchups(leagueId)}>View schedule</Link>
@@ -1196,11 +1206,13 @@ export function CommissionerCompetitionPage() {
             previewDisabled={!calendarReady || weeks.isPending || weeks.isError}
             onPreview={() => scheduleMutation.mutate({ confirmed: false })}
             onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedSeasonVersion })}>
-            <p>Review the league calendar before generating a schedule. All dates use {timeZone}. Week 1 and playoffs start on Monday at midnight; playoffs reserve the final 28 days.</p>
+            <p>Review the league calendar before generating a schedule. All dates use {timeZone}. End times are exclusive: April 11 at midnight includes games through April 10.</p>
+            {defaults ? <p className="hl-form-message">2026–27 default: September 29–April 10. Matchups follow Monday–Sunday where possible, with adjusted weeks around December 23–25 and February 4–7. Playoffs: March 15–21, March 22–28, and March 29–April 10. Review the preview before confirming.</p>
+              : <p>Use the saved calendar for this season. Custom calendars use Monday starts and reserve the final 28 days for playoffs.</p>}
             <div className="hl-form-grid">
               {calendarFields.map(([key, label, value]) => <label className="hl-field" key={key}>{label}
-                <input type="datetime-local" value={calendarEdits[key] ?? calendarInputValue(value, timeZone)} onChange={(event) => {
-                  setCalendarEdits((current) => ({ ...current, [key]: event.target.value }));
+                <input type="datetime-local" value={calendarValue(key, value)} onChange={(event) => {
+                  setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], [key]: event.target.value } }));
                   setSchedulePreview(null); scheduleMutation.reset();
                 }} />
               </label>)}

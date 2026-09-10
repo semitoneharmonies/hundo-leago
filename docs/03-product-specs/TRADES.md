@@ -412,18 +412,23 @@ history rule.
 
 ## Receiving Category
 
-The receiving team preserves the player’s roster category:
+Approved September 10, 2026: acceptance calculates placements after removing
+all outgoing players from both teams. Incoming non-prospect players use an
+available Active slot for their actual position; otherwise they go to Bench.
+Prospects remain in Prospect. A full category leaves the incoming player
+explicitly unplaced there and produces a genuine warning. Bench AAV, total
+roster, position, cap and other limits still apply to the resulting roster.
 
-```text
-Active → Active
-Bench → Bench
-Injured Reserve → Injured Reserve
-Prospect → Prospect
-```
-
-The receiving team may make a separate normal roster move after the trade.
-
-Preserving category may create an illegal normal roster; the trade may still complete through the approved general warning and confirmation.
+Opening a pending proposal as its receiving manager automatically loads the
+read-only acceptance preview, including both teams' current, change and
+projected cap totals and understandable roster warnings. Confirm executes the
+existing authorized acceptance command; Decline rejects the proposal.
+Commissioner approval remains a separate required action for Future
+Considerations. Preview, execution, history, replay and reversal must agree
+about the planned category and slot; reversal restores the original category.
+Historical receipts without a destination category retain their original
+category-preserving meaning. The overall trade and confirmation rules remain
+unchanged.
 
 ---
 

@@ -15,6 +15,20 @@ export function validateCommissionerAssignment(data, assignmentId) {
   "The commissioner assignment response is invalid.");
   return true;
 }
+
+export function validateTeamManagerAssignment(data, { assignmentId, leagueId, teamId, userId }) {
+  contract(
+    ["TEAM_MANAGER_ASSIGNMENT_FOUND", "TEAM_MANAGER_ASSIGNMENT_ACCEPTED", "TEAM_MANAGER_ASSIGNMENT_DECLINED"].includes(data?.code) &&
+      data?.assignment?.id === assignmentId &&
+      ["pending", "accepted", "declined", "ended"].includes(data.assignment.status) &&
+      data?.league?.id === leagueId && data?.team?.id === teamId &&
+      data?.proposedUser?.id === userId &&
+      typeof data.league.name === "string" && data.league.name.trim() !== "" &&
+      typeof data.team.name === "string" && data.team.name.trim() !== "",
+    "The team assignment response does not match this invitation."
+  );
+  return true;
+}
 const FAD_STABLE_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_MACHINE_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,99}$/u;
@@ -637,6 +651,15 @@ export function validateNotifications(data) {
           stableId(notification.messageData.teamId),
         "A league invitation notification team is invalid."
       );
+    }
+    if (notification.type === "team_manager_assignment_proposed") {
+      contract(stableId(notification.messageData.assignmentId), "A team assignment ID is invalid.");
+      contract(stableId(notification.messageData.teamId), "A team assignment team is invalid.");
+      contract(stableId(notification.messageData.leagueId) && notification.leagueId === notification.messageData.leagueId,
+        "A team assignment league is invalid.");
+      contract(["teamName", "leagueName"].every((field) =>
+        typeof notification.messageData[field] === "string" && notification.messageData[field].trim() !== ""),
+      "A team assignment name is invalid.");
     }
     if (notification.type === "commissioner_assignment_proposed") {
       contract(stableId(notification.messageData.assignmentId), "A commissioner assignment ID is invalid.");

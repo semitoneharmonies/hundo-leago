@@ -36,7 +36,7 @@ test('commissioner tools use the reviewed task layout and protect administrator 
 
   await navigateToAppPath(page, `${leagueRoot}/commissioner`)
   await expect(page.getByRole('heading', { name: 'Commissioner competition tools', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Preview schedule generation', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'View schedule', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: /^(Result correction|Standings rebuild)$/ })).toHaveCount(0)
   await expectUsablePage(page)
 

@@ -137,6 +137,29 @@ export async function removeLeagueMembership(
   ).data;
 }
 
+export async function proposeTeamManagerAssignment(
+  httpClient,
+  leagueId,
+  teamId,
+  userId,
+  idempotencyKey
+) {
+  return (
+    await httpClient.request(
+      `/api/v1/leagues/${encodeURIComponent(
+        leagueId
+      )}/teams/${encodeURIComponent(teamId)}/manager-assignment`,
+      {
+        method: "POST",
+        authenticated: true,
+        body: { userId },
+        idempotencyKey,
+        dataKind: "object",
+      }
+    )
+  ).data;
+}
+
 export async function removeTeamManagerAssignment(
   httpClient,
   leagueId,

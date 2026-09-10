@@ -179,6 +179,33 @@ Matchups are not public in the initial release.
 
 ## Season Length and Fantasy Playoffs
 
+### Approved default for new 2026–27 seasons
+
+The September 10, 2026 approval adds a bounded exception to the general
+full-week rules below. New unconfigured 2026–27 seasons default to September
+29 through April 10, with an exclusive April 11 local-midnight end. Week 1
+begins September 29. Playoffs occupy March 15–21, March 22–28 and March
+29–April 10; the closing fantasy week is six days. The complete range is
+reviewed and explicitly confirmed before any calendar or schedule is stored.
+
+Regular matchups use Monday–Sunday where possible. The Christmas and All-Star
+breaks (December 23–25 and February 4–7) remain outside matchup windows.
+Short adjacent fragments join the week on the same side of each break:
+December 14–22, December 26–January 3, and January 25–February 3. The resulting
+default has 22 regular-season matchup weeks. Baseline and roster lock remain 1 AM
+and 4 PM on each actual week-opening day. End and rollover instants remain
+exclusive midnight boundaries, including immediately before a break.
+
+Only the exact approved 2026–27 calendar receives these rules. Existing
+calendars and schedules are preserved, and other seasons keep their existing
+validation. A pre-FAD Week 1 correction may shorten the opening partial week
+while preserving matchup identities, count, pairings and all holiday gaps.
+The existing no-write preview, confirmation, version, FAD-freeze and
+idempotency requirements still apply. See
+[the review implementation record](../06-work-plans/STAGING_REVIEW_2026-09-10.md).
+
+### General calendar rules
+
 The number of regular-season matchup weeks is derived from the NHL regular-season calendar rather than fixed at 26.
 
 Before schedule generation, an authorized commissioner or administrator

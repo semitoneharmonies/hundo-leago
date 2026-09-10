@@ -177,6 +177,11 @@ export function validateAcceptancePreview(data) {
   for (const team of data.teams) {
     object(team, "An acceptance team preview is invalid.");
     id(team.teamId, "An acceptance-preview team ID is invalid.");
+    if (team.before !== undefined) {
+      object(team.before, "The current team preview is invalid.");
+      object(team.before.cap, "The current team cap is invalid.");
+      integer(team.before.cap.usageCents, "The current cap usage is invalid.");
+    }
     object(team.cap, "An acceptance-preview team cap is invalid.");
     integer(
       team.cap.salaryCapCents,

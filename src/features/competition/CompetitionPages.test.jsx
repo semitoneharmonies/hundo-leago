@@ -1144,6 +1144,24 @@ describe("M6-12 authenticated competition pages", () => {
     expect(requests).toEqual([{ body: { confirmed: false }, method: "PATCH" }]);
   });
 
+  it("loads approved defaults for an unconfigured new season and previews without applying them", async () => {
+    const requests = [];
+    const prefix = `/api/v1/leagues/${leagueId}/seasons/${seasonId}`;
+    const fetchImpl = baseFetch((path, options) => {
+      if (path === `/api/v1/leagues/${leagueId}/seasons`) return envelope({ code: "LEAGUE_SEASONS_FOUND", leagueId, seasons: [{ id: seasonId, label: "2026-27", nhlSeasonKey: "20262027", status: "planned", version: 1, regularSeasonStartsAtMs: null, regularSeasonEndsAtMs: null, fantasyPlayoffsStartAtMs: null, fantasyPlayoffsEndAtMs: null }] });
+      if (path === `${prefix}/matchup-weeks`) return envelope({ code: "MATCHUP_WEEKS_FOUND", weeks: [], health: health("fresh") });
+      if (path === `${prefix}/matchup-schedules`) { requests.push(JSON.parse(options.body)); return envelope({ code: "MATCHUP_SCHEDULE_PREVIEWED", preview: { seasonId, expectedSeasonVersion: 1, participantCount: 2, weekCount: 22, matchupCount: 22, byeCount: 0, weeks: [{ sequence: 1, startsAtMs: Date.parse("2026-09-29T07:00:00Z"), endsAtMs: Date.parse("2026-10-05T07:00:00Z") }] } }); }
+      throw new Error(`Unexpected request: ${path}`);
+    }, "commissioner");
+    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    await waitFor(() => expect(screen.getByLabelText("Week 1 starts")).toHaveValue("2026-09-29T00:00"));
+    expect(screen.getByLabelText("NHL regular season ends")).toHaveValue("2027-04-11T00:00");
+    expect(requests).toHaveLength(0);
+    await view.user.click(screen.getByRole("button", { name: "Preview schedule generation" }));
+    await screen.findByText("Review every matchup week");
+    expect(requests).toEqual([{ confirmed: false, nhlRegularSeasonStartsAtMs: Date.parse("2026-09-29T07:00:00Z"), nhlRegularSeasonEndsAtMs: Date.parse("2027-04-11T07:00:00Z"), fantasyPlayoffsStartAtMs: Date.parse("2027-03-15T07:00:00Z"), fantasyPlayoffsEndAtMs: Date.parse("2027-04-11T07:00:00Z"), firstWeekStartsAtMs: Date.parse("2026-09-29T07:00:00Z") }]);
+  });
+
   it("previews and confirms schedule generation with CSRF and the preview version", async () => {
     const requests = [];
     const prefix = `/api/v1/leagues/${leagueId}/seasons/${seasonId}`;
