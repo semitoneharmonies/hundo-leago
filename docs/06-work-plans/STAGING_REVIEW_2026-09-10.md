@@ -6,9 +6,38 @@ seasons. Production and existing league schedules/data are outside this release.
 
 Graem directly answered yes in the release task to committing, pushing and
 deploying the prepared nine review fixes to staging. This supersedes the
-earlier no-commit hold for this exact scope. Backend review commit
-65edb714889860edf33a5de889742de2d39e18ba is pushed to staging. Render deployment
-dep-dah5a9rl550s73dl9t9g is running the normal build and full test gate.
+earlier no-commit hold for this exact scope. All nine adjustments are now
+published to `https://staging.hundoleago.com`.
+
+Backend `b60781ffa3661a3b1b442111e3010e5400026ce3` became live through Render
+deployment `dep-dah63nh42hec73ev80i0` at **08:44:25 UTC on 10 September**.
+Its unchanged `npm ci && npm run check && npm test` gate passed **3,573 tests
+across 443 suites**, with no failures, cancellations, skips or todo cases,
+in 3,036,998.598 ms. The ready startup event and independent read-only runtime
+inspection confirm the exact source commit and matching APP_BUILD_ID.
+
+Frontend `b98875cb3b1cd57671a3bbea02dd83a7354e9e71` was published by promoting
+the already-verified Netlify draft `6aa2571ac9d661e0f79481c6` at **08:45:58 UTC**.
+The exact target was the existing `hundoleago-staging` site,
+`95af8aa7-0b13-4954-af6d-855762acb147`. All **35 served asset checks** passed
+against the primary staging domain at 08:46:47 UTC, in addition to the same
+35 checks on the immutable draft. SPA routing and security headers passed.
+This was promotion of the existing artifact, without another frontend build.
+
+Independent runtime checks at 08:21 and 08:45 UTC found all **nine protected
+table fingerprints unchanged** from the pre-release snapshot, all **936 pending
+matchup jobs** preserved, zero SQL changes and zero foreign-key violations.
+Email remains in send mode with its independent worker enabled. Statistics and
+matchup processing controls remain false. No existing league calendar, roster,
+contract, baseline or matchup state was changed by the release verification.
+
+The first complete Render run is retained as failed evidence: 3,572 of 3,573
+tests passed, with one old schedule-preview expectation. The seven-line
+test-only correction added complete mocked week fields and asserted the new
+public date projection. All 23 affected HTTP checks passed locally, both
+affected suites passed in the replacement run, and the complete replacement
+gate passed as reported above. Application behavior did not change in that
+test correction.
 
 ## Approved behavior
 
@@ -48,7 +77,7 @@ endsAtMs. Existing request fields, confirmation, command hashes and persisted
 calendar fields are unchanged. The exact approved 2026–27 calendar identifies
 its immutable break rules; no migration or live data rewrite is required.
 
-## Verification checkpoint
+## Local verification checkpoint before publication
 
 All checks below used isolated local fixtures; no real trade was accepted and
 no existing hosted schedule was generated or changed.
@@ -74,18 +103,78 @@ no existing hosted schedule was generated or changed.
   verified entry assets, the expected staging API origin and build identifier,
   SPA redirects, and recorded file hashes. No environment, source-map or
   database files are in the artifact. Existing chunk-size advice is nonfatal.
-- Both isolated release checkouts pass git diff --check. Nothing is staged,
-  committed or pushed. Original worktrees and unrelated changes are preserved.
+- Both isolated release checkouts passed git diff --check. At this initial
+  local checkpoint, source had not yet been committed or pushed. The subsequent
+  approved publication actions are recorded above. Original working folders
+  and unrelated changes remain preserved.
 
 Private evidence is under
 E:/hundo-leago-backend/.hundo.local/staging-review/20260909/.
 The reviewable release checkouts and prepared artifact are under
 E:/hundo-test-work/20260910-review-release/.
 
-## Remaining publication and acceptance
+## Hosted observations and remaining launch work
 
-Publish only the isolated review commits to the existing staging services,
-wait for Render's normal build checks, and verify the hosted result. The
-current build is not yet hosted acceptance. Render and Netlify production
-targets remain outside this release. Unrelated account email, statistics,
-session and buyout source changes are excluded.
+The published asset checks and read-only running-instance checks above prove
+the served versions and preservation boundaries. The selected local browser
+and functional checks remain separate evidence. The existing Chrome review
+task subsequently reported these nonidentifying
+read-only observations against the newly published frontend:
+
+| Review item | Hosted result | Coverage |
+| --- | --- | --- |
+| Spotlight | Passed | Fixed outer viewport; continuous leftward inner movement; readable health copy. |
+| Account selector | Unavailable | The required selector was not accessible in the current session. |
+| Competition cards | Unavailable | The required management view was not accessible. |
+| Calendar defaults | Unavailable | No accessible unconfigured season preview; no season was created. |
+| Roster forms | Unavailable | The required operations view was not accessible. |
+| Receiving-manager trade preview | Unavailable | The required decision view was not accessible; no decision was made. |
+| Trade assets | Passed | Larger bold names; distinct subtle contract and draft-pick colors. |
+| Standings | Passed | 3px themed borders, bold outlined values, contained 390px viewport with internal table scrolling. |
+| Invitations | Unavailable | No existing invitation card was available; none was created. |
+
+The review task reported no state-changing action. Three available views passed;
+six were unavailable, not failed or accepted. No real team assignment, invitation
+acceptance, trade confirmation/decline, roster correction or hosted schedule
+application was tested. Those functional and role-specific acceptance gaps remain
+open on their existing dashboard tasks. Local coverage and publication are
+complete; this record does not claim full hosted acceptance of all nine workflows.
+
+A separate observation found a displayed draft-pick year of 2026 where an
+earlier request/review note described 2028. The reviewer did not inspect the
+proposal payload, so this is not a confirmed payload-versus-render defect.
+Local tracing shows the chooser preserves the backend pick ID and label;
+proposal creation snapshots the exact pick's joined target-season label, and
+the card displays that saved label directly. The review release did not change
+the year-label expression. No stored data or display override was changed.
+The discrepancy remains open for a narrowly authorized comparison with the
+intended request; see the private `DRAFT_PICK_YEAR_TRACE.md` evidence note.
+The existing focused draft-pick display regression test also passed (one
+selected case; sixteen other cases excluded by its name filter), preserving
+the supplied season label without any application change.
+
+The next dashboard-priority package remains separate: 29 backend source/test
+files and four shared documents passed 262 local compatibility checks on the
+new review base. Graem subsequently approved the exact source publication,
+this completed review record, and the existing Render staging deployment.
+Backend commit `45251f9b7c2fcdb21253a956b4a250fa2da05f5b` was pushed to
+`staging` at 13:40 UTC on September 10. Render deploy
+`dep-dahb6lp5efls738pj9eg` started the unchanged full build/test gate;
+this checkpoint does not yet claim its completion. The read-only pre-deploy
+snapshot confirmed the nine protected table fingerprints, 936 pending matchup
+jobs, both processing controls off, email delivery and its worker enabled,
+zero foreign-key violations, and zero diagnostic database changes.
+Its source, exact GitHub staging destinations and limits are recorded in
+`EMAIL_CALENDAR_PREPARATION_2026-09-08.md` and the private
+`E:/hundo-test-work/20260910-launch-followups/PUBLICATION_REVIEW.md`.
+Current publication receipts are under
+`E:/hundo-leago-backend/.hundo.local/launch-publication/20260910/`.
+Statistics/matchup job activation, isolated hosted acceptance that requires
+data operations, and production launch remain separate gates.
+
+Private publication evidence is
+`E:/hundo-leago-backend/.hundo.local/staging-review/20260909/STAGING_PUBLISHED.json`,
+with `render-final-gate.json`, `render-live-release.json`, and
+`runtime-before.json` / `runtime-after.json` in the same directory. Netlify
+verification receipts and the exact artifact are under
+`E:/hundo-test-work/20260910-review-release/published-artifact/`.

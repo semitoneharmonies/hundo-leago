@@ -1647,7 +1647,15 @@ player, including a signed player still rostered as `Prospect` whose immutable
 trade snapshot uses `prospect_right`. The current staging command misses that
 compatibility representation and fails atomically with no partial write. This
 is a separate P1 production-promotion follow-up outside the M7-26 isolated-
-staging gate; T-074 remains `PLANNED`.
+staging gate. A local candidate on 8 September now handles signed Prospect
+Right ownership and atomically cancels all matching contract/prospect-right
+proposals, including those awaiting commissioner approval. It returns the
+additive `automaticallyCancelledTradeIds` array and retains snapshots, reasons,
+Activity, notifications, and transactional outbox history. Exact internal
+command replay is read-only; no HTTP idempotency-key contract is added.
+Staging still runs the previous implementation. Verification and publication
+status are recorded in
+`docs/06-work-plans/ACCOUNT_BUYOUT_FOLLOWUPS_2026-09-08.md`.
 
 Normal contract creation occurs only through approved feature commands such as
 automatic FAD allocation, an auction win, prospect signing, or commissioner
