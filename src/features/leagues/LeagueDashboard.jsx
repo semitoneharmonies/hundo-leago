@@ -42,7 +42,7 @@ import {
   matchupQuery,
   standingsQuery,
 } from "../competition/competitionQueries.js";
-import { publicRosterQuery } from "../rosters/publicRosterQueries.js";
+import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { TradeBlockPanel } from "../transactions/TradeBlockPanel.jsx";
 import {
   activityQuery,
@@ -1293,6 +1293,28 @@ function TeamsPanel({ leagueId, teams, currentUserId, httpClient }) {
   );
 }
 
+function dashboardRoster(workspace) {
+  if (workspace.cap.complete !== true) {
+    throw new Error("The team cap projection is incomplete.");
+  }
+  return {
+    cap: {
+      capUsageCents: workspace.cap.usageCents,
+      capLimitCents: workspace.cap.limitCents,
+      capSpaceCents: workspace.cap.spaceCents,
+      retainedSalaryTotalCents: workspace.cap.retainedSalaryCents,
+      buyoutPenaltyTotalCents: workspace.cap.buyoutPenaltyCents,
+    },
+    players: workspace.players.map((player) => ({
+      ...player,
+      playerReference: player.playerId,
+      aavCents: player.contract?.aavCents ?? null,
+      remainingContractYears: player.contract?.remainingYears ?? 0,
+      seasonStatistics: player.statistics,
+    })),
+  };
+}
+
 export function LeagueDashboard({ league, teams, session }) {
   const queryClient = useQueryClient();
   const leagueId = league.id;
@@ -1359,6 +1381,7 @@ export function LeagueDashboard({ league, teams, session }) {
             ) || null
           : null
       : null;
+  const matchupEnabled = enabled && Boolean(week && matchupSummary);
   const matchup = useQuery({
     ...matchupQuery(
       session.httpClient,
@@ -1367,7 +1390,7 @@ export function LeagueDashboard({ league, teams, session }) {
       week?.id || "pending",
       matchupSummary?.id || "pending"
     ),
-    enabled: enabled && Boolean(week && matchupSummary),
+    enabled: matchupEnabled,
     placeholderData: commissioner ? (previous, previousQuery) =>
       previousQuery?.queryKey[1] === leagueId && previousQuery?.queryKey[3] === seasonId &&
       previousQuery?.queryKey[5] === week?.id ? previous : undefined : undefined,
@@ -1378,12 +1401,13 @@ export function LeagueDashboard({ league, teams, session }) {
     enabled,
   });
   const roster = useQuery({
-    ...publicRosterQuery(
+    ...teamWorkspaceQuery(
       session.httpClient,
       leagueId,
       managedTeam?.id || "pending"
     ),
     enabled: enabled && Boolean(managedTeam),
+    select: dashboardRoster,
   });
   const auctions = useInfiniteQuery({
     ...auctionListQuery(session.httpClient, leagueId, {
@@ -1466,7 +1490,7 @@ export function LeagueDashboard({ league, teams, session }) {
           matchup={matchup.data}
           managedTeam={managedTeam}
           commissionerView={commissioner}
-          isPending={enabled && (currentWeek.isPending || matchup.isPending)}
+          isPending={enabled && (currentWeek.isPending || (matchupEnabled && matchup.isPending))}
           error={currentWeek.error || matchup.error}
         />
         {commissioner ? (

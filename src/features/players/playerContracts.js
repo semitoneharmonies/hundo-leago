@@ -92,7 +92,7 @@ function validateStatistics(statistics) {
     "The player statistics are invalid."
   );
   contract(
-    ["sportsdataio-discovery-lab", "release_qa_fixture"].includes(
+    ["nhl-completed-games", "sportsdataio-discovery-lab", "release_qa_fixture"].includes(
       statistics.provider
     ),
     "The player statistics provider is invalid."

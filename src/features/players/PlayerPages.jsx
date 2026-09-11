@@ -100,8 +100,11 @@ function displayStatistics(statistics) {
 }
 
 function statisticsSourceLabel(statistics) {
+  if (statistics?.provider === "nhl-completed-games") {
+    return "NHL completed games";
+  }
   if (statistics?.provider === "sportsdataio-discovery-lab") {
-    return "SportsDataIO Discovery Lab last-season data";
+    return "SportsDataIO historical data";
   }
   if (statistics?.provider === "release_qa_fixture") {
     return "Synthetic Release QA fixture data";
@@ -226,7 +229,7 @@ export function LegacyPlayersPage() {
                 <th>Position</th>
                 <th>NHL team</th>
                 <th>Age</th>
-                <th>Last-season stats</th>
+                <th>Season stats</th>
                 <th>League assignment</th>
                 <th>Contract / cap</th>
                 <th>Status</th>
@@ -245,8 +248,10 @@ export function LegacyPlayersPage() {
                   <td>{ageFromBirthDate(player.birthDate)}</td>
                   <td>
                     {displayStatistics(player.statistics)}
-                    {player.statistics?.provider === "release_qa_fixture" ? (
-                      <span className="hl-player-stat-source">Synthetic fixture</span>
+                    {player.statistics ? (
+                      <span className="hl-player-stat-source">
+                        {player.statistics.nhlSeasonKey.slice(0, 4)}–{player.statistics.nhlSeasonKey.slice(6, 8)} · {statisticsSourceLabel(player.statistics)}
+                      </span>
                     ) : null}
                   </td>
                   <td>{ownershipLabel(player)}</td>
@@ -394,8 +399,8 @@ export function PlayerDetailPage() {
                 </p>
               )}
           </section>
-          <section className="hl-profile-statistics" aria-labelledby="last-season-statistics-heading">
-            <h3 id="last-season-statistics-heading">Last-season statistics</h3>
+          <section className="hl-profile-statistics" aria-labelledby="season-statistics-heading">
+            <h3 id="season-statistics-heading">Season statistics</h3>
             {player.data.statistics ? (
               <dl className="hl-detail-list">
                 <dt>Season</dt>
@@ -414,7 +419,7 @@ export function PlayerDetailPage() {
                 <dd>{(player.data.statistics.fantasyPointsHundredths / 100).toFixed(2)}</dd>
               </dl>
             ) : (
-              <p>Last-season statistics are not available for this player.</p>
+              <p>Statistics are not available for this player.</p>
             )}
           </section>
         </Surface>

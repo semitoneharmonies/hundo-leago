@@ -8,6 +8,7 @@ vi.mock("socket.io-client", () => ({
 
 import { renderWithProviders } from "../../test/render.jsx";
 import { PlayerDetailPage, PlayersPage } from "./PlayerPages.jsx";
+import { validateLeaguePlayerDetail } from "./playerContracts.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 const playerOneId = "22222222-2222-4222-8222-222222222222";
@@ -247,8 +248,8 @@ describe("authenticated player pages", () => {
     expect(screen.queryByText("nhl: 8470001")).not.toBeInTheDocument();
     expect(screen.queryByText("Provider identifiers")).not.toBeInTheDocument();
     expect(screen.queryByText(/authoritative/i)).not.toBeInTheDocument();
-    expect(screen.getByText("Last-season statistics")).toBeInTheDocument();
-    expect(screen.getByText("SportsDataIO Discovery Lab last-season data")).toBeInTheDocument();
+    expect(screen.getByText("Season statistics")).toBeInTheDocument();
+    expect(screen.getByText("SportsDataIO historical data")).toBeInTheDocument();
     expect(screen.getByText("90")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
@@ -263,5 +264,69 @@ describe("authenticated player pages", () => {
       "href",
       `/leagues/${leagueId}/players`
     );
+  });
+
+  it.each([
+    { label: "preseason zero totals", gamesPlayed: 0, goals: 0, assists: 0, fantasyPointsHundredths: 0 },
+    { label: "completed-game totals", gamesPlayed: 2, goals: 2, assists: 3, fantasyPointsHundredths: 550 },
+  ])("renders NHL $label with the exact season and source", async (totals) => {
+    const { label: _label, ...values } = totals;
+    const detail = {
+      ...player(playerOneId, "Alex Example"),
+      externalIds: [],
+      statistics: {
+        provider: "nhl-completed-games",
+        nhlSeasonKey: "20262027",
+        ...values,
+        nhlPoints: values.goals + values.assists,
+        sourceUpdatedAtMs: 1,
+      },
+    };
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname === `/api/v1/leagues/${leagueId}/players/${playerOneId}`) return envelope(detail);
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderPage(`/leagues/${leagueId}/players/${playerOneId}`, "/leagues/:leagueId/players/:playerId", <PlayerDetailPage />, fetchImpl);
+    const statistics = await screen.findByRole("region", { name: "Season statistics" });
+    expect(within(statistics).getByText("2026–27")).toBeInTheDocument();
+    expect(within(statistics).getByText("NHL completed games")).toBeInTheDocument();
+    expect(within(statistics).getByText((values.fantasyPointsHundredths / 100).toFixed(2))).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Last-season/)).not.toBeInTheDocument();
+  });
+
+  it("loads current-season NHL player search results through the shared contract", async () => {
+    const current = player(playerOneId, "Alex Example");
+    current.statistics = { ...current.statistics, provider: "nhl-completed-games", nhlSeasonKey: "20262027" };
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname === `/api/v1/leagues/${leagueId}/players`) return envelope([current], { nextCursor: null, hasMore: false });
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderPage(`/leagues/${leagueId}/players`, "/leagues/:leagueId/players", <PlayersPage />, fetchImpl);
+    expect(await screen.findByRole("row", { name: /Alex Example/ })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    { label: "fixture", statistics: { ...player(playerOneId, "Alex Example").statistics, provider: "release_qa_fixture", nhlSeasonKey: "20262027" } },
+    { label: "unavailable", statistics: null },
+  ])("keeps $label statistics distinct from completed NHL games", async ({ statistics }) => {
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname === `/api/v1/leagues/${leagueId}/players/${playerOneId}`) return envelope({ ...player(playerOneId, "Alex Example"), statistics, externalIds: [] });
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderPage(`/leagues/${leagueId}/players/${playerOneId}`, "/leagues/:leagueId/players/:playerId", <PlayerDetailPage />, fetchImpl);
+    const region = await screen.findByRole("region", { name: "Season statistics" });
+    expect(within(region).getByText(statistics ? "Synthetic Release QA fixture data" : "Statistics are not available for this player.")).toBeInTheDocument();
+    expect(within(region).queryByText("NHL completed games")).not.toBeInTheDocument();
+  });
+
+  it("retains strict source, season and numeric validation for NHL statistics", () => {
+    const detail = { ...player(playerOneId, "Alex Example"), externalIds: [] };
+    detail.statistics = { ...detail.statistics, provider: "nhl-completed-games", nhlSeasonKey: "20262027" };
+    expect(validateLeaguePlayerDetail(detail, leagueId)).toBe(true);
+    for (const invalid of [{ provider: "unapproved-provider" }, { nhlSeasonKey: "2026" }, { gamesPlayed: -1 }, { nhlPoints: 999 }]) {
+      expect(() => validateLeaguePlayerDetail({ ...detail, statistics: { ...detail.statistics, ...invalid } }, leagueId)).toThrow();
+    }
   });
 });
