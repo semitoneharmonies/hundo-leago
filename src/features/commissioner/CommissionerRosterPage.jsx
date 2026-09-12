@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createOperationId } from "../../shared/api/idempotency.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useParams } from "react-router-dom";
 
@@ -79,13 +80,7 @@ function positiveInteger(value, label, maximum = null) {
 }
 
 function newOperationId() {
-  const id = globalThis.crypto?.randomUUID?.();
-  if (!id) {
-    throw new Error(
-      "This browser cannot create a secure confirmation. Reload in a supported browser."
-    );
-  }
-  return id;
+  return createOperationId();
 }
 
 function automaticRosterSlot(

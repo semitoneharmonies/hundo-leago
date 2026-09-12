@@ -1,4 +1,5 @@
 import { ApiError } from "./ApiError.js";
+import { RECOVERY_EPOCH_HEADER } from "./recoveryIntent.js";
 import {
   ResponseContractError,
   parseErrorEnvelope,
@@ -55,6 +56,7 @@ export function createHttpClient({
   fetchImpl = globalThis.fetch,
   getCsrfToken = () => null,
   onUnauthorized = () => {},
+  onRecoveryEpoch = () => {},
 } = {}) {
   let origin;
   try {
@@ -68,7 +70,7 @@ export function createHttpClient({
   if (typeof fetchImpl !== "function") {
     throw new TypeError("The HTTP client requires fetch.");
   }
-  if (typeof getCsrfToken !== "function" || typeof onUnauthorized !== "function") {
+  if (typeof getCsrfToken !== "function" || typeof onUnauthorized !== "function" || typeof onRecoveryEpoch !== "function") {
     throw new TypeError("The HTTP client requires session callbacks.");
   }
 
@@ -145,6 +147,10 @@ export function createHttpClient({
       });
     }
 
+    let recoveryContextError = null;
+    try { onRecoveryEpoch(response.headers.get(RECOVERY_EPOCH_HEADER)); }
+    catch { recoveryContextError = applicationDataError(response); }
+
     if (response.status === 401 && authenticated) {
       try {
         await onUnauthorized();
@@ -152,6 +158,7 @@ export function createHttpClient({
         // Authentication loss still takes precedence over cleanup callback failure.
       }
     }
+    if (recoveryContextError) throw recoveryContextError;
 
     if (response.status === 204 && response.ok) {
       return Object.freeze({ data: null, meta: Object.freeze({ requestId: null }) });

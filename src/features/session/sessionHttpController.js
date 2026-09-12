@@ -1,4 +1,5 @@
 import { createHttpClient } from "../../shared/api/httpClient.js";
+import { observeRecoveryEpoch } from "../../shared/api/recoveryIntent.js";
 
 export function createSessionHttpController({ apiOrigin, fetchImpl }) {
   let csrfToken = null;
@@ -8,6 +9,7 @@ export function createSessionHttpController({ apiOrigin, fetchImpl }) {
     fetchImpl,
     getCsrfToken: () => csrfToken,
     onUnauthorized: () => onUnauthorized(),
+    onRecoveryEpoch: observeRecoveryEpoch,
   });
 
   return Object.freeze({

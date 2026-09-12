@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Link,
@@ -68,9 +69,7 @@ const ACTIVITY_STATE_FIELDS = Object.freeze([
 ]);
 
 function key(prefix) {
-  const suffix = globalThis.crypto?.randomUUID?.() ||
-    `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  return `${prefix}-${suffix}`;
+  return createIdempotencyKey(prefix, globalThis.crypto, "-");
 }
 
 function money(cents) {

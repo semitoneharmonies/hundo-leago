@@ -1,4 +1,5 @@
 import { ApiError } from "./ApiError.js";
+import { bindNewIntentToRecovery } from "./recoveryIntent.js";
 
 const INTENT_SCOPE = /^[a-z][a-z0-9-]{1,39}$/;
 const UUID_V4 =
@@ -12,10 +13,8 @@ function unavailable() {
   });
 }
 
-export function createIdempotencyKey(scope, cryptoImpl = globalThis.crypto) {
+function secureId(cryptoImpl) {
   if (
-    typeof scope !== "string" ||
-    !INTENT_SCOPE.test(scope) ||
     !cryptoImpl ||
     typeof cryptoImpl.randomUUID !== "function"
   ) {
@@ -31,5 +30,14 @@ export function createIdempotencyKey(scope, cryptoImpl = globalThis.crypto) {
   if (typeof id !== "string" || !UUID_V4.test(id)) {
     throw unavailable();
   }
-  return `${scope}:${id}`;
+  return id;
+}
+
+export function createOperationId(cryptoImpl = globalThis.crypto) {
+  return bindNewIntentToRecovery(secureId(cryptoImpl));
+}
+
+export function createIdempotencyKey(scope, cryptoImpl = globalThis.crypto, separator = ":") {
+  if (typeof scope !== "string" || !INTENT_SCOPE.test(scope) || ![":", "-"].includes(separator)) throw unavailable();
+  return bindNewIntentToRecovery(`${scope}${separator}${secureId(cryptoImpl)}`);
 }

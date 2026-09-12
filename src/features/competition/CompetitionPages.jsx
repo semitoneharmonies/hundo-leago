@@ -1,4 +1,5 @@
 import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
+import { createOperationId } from "../../shared/api/idempotency.js";
 import { candidateDeadlineForWeekOne, suggestedRollovers, draftTimingIssue, MAX_ROLLOVERS } from "./fadScheduleTiming.js";
 import { LeagueDraftSetup } from "../leagues/LeagueDraftSetup.jsx";
 import { useCurrentTime } from "../../shared/useCurrentTime.js";
@@ -42,7 +43,7 @@ import {
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
 
 function operationId() {
-  return globalThis.crypto?.randomUUID?.() || "00000000-0000-4000-8000-000000000001";
+  return createOperationId();
 }
 
 function points(value) {

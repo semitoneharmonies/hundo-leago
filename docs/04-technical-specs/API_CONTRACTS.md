@@ -582,6 +582,36 @@ The server scopes the key by actor, league, and operation.
 
 Reusing a key with the same request returns the original result. Reusing it with a different request returns `409 IDEMPOTENCY_KEY_REUSED`.
 
+### Recovery boundary for client intentions
+
+The post-restore safety requirement in `../08-operations/BACKUP_AND_RESTORE.md`
+includes a new recovery epoch. Isolated preparation increments its generation
+and binds a fresh recovery UUID in `application_metadata.recovery_epoch_v1`, in
+the same transaction that invalidates restored credentials and worker leases.
+The recovery hold remains until the separate reconciliation and reopening gates.
+
+Responses using the common target request-security boundary expose
+`X-Hundo-Recovery-Epoch` through credentialed CORS.
+Its value is `initial` before any recovery, or the current opaque recovery UUID.
+It is available on an anonymous session-bootstrap `401` and uses the normal
+`Cache-Control: no-store` policy. It contains no session or action-token secret.
+Reading it does not initialize or change the database.
+
+An initial database retains its existing opaque-key contract. After recovery,
+unsafe requests carrying an idempotency key must use
+`recovery:<current-recovery-uuid>:<new-intent-key>`. Existing actor, league,
+operation, request-hash, authorization and replay checks still apply. Missing
+keys remain subject to each endpoint's existing requirement. Stale namespaces
+return `409 RECOVERY_REQUEST_STALE` before command handling; the user must
+refresh, review and deliberately submit a new action. Damaged recovery context
+fails closed with `503 RECOVERY_CONTEXT_UNAVAILABLE`.
+
+The client attaches context when it creates an intention, preserving existing
+key formats in the initial state and the backend 128-character limit after
+recovery. Sending a saved key never changes its namespace, including after
+fresh sign-in or CSRF refresh. The transport does not retry a failed write or
+turn an old request into a new intention. Durable idempotency history is retained.
+
 For auction-administration commands `T-080` through `T-083`, the original
 result is not reconstructed from the current auction or job. One immutable
 `auction_administration_command_results` row stores the successful response

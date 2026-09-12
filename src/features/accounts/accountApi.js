@@ -1,4 +1,4 @@
-import { ApiError } from "../../shared/api/ApiError.js";
+import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { validateSessionData } from "../session/sessionContracts.js";
 
 function acceptedData(data) {
@@ -15,19 +15,7 @@ function registrationData(data) {
 }
 
 export function createIntentKey(scope, cryptoImpl = globalThis.crypto) {
-  if (
-    typeof scope !== "string" ||
-    !/^[a-z][a-z0-9-]{1,39}$/.test(scope) ||
-    !cryptoImpl ||
-    typeof cryptoImpl.randomUUID !== "function"
-  ) {
-    throw new ApiError({
-      code: "SECURE_INTENT_ID_UNAVAILABLE",
-      message: "This request cannot be submitted securely in this browser.",
-      category: "client",
-    });
-  }
-  return `${scope}:${cryptoImpl.randomUUID()}`;
+  return createIdempotencyKey(scope, cryptoImpl);
 }
 
 export async function registerAccount(httpClient, input, idempotencyKey) {
