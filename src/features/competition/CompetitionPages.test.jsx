@@ -344,6 +344,7 @@ async function fillScheduleCalendar() {
     "Fantasy playoffs start": "2027-03-15T00:00",
     "Fantasy playoffs end": "2027-04-12T00:00",
     "Week 1 starts": "2026-10-05T00:00",
+    "Candidate Card deadline": "2026-09-28T00:00",
   };
   for (const [label, value] of Object.entries(dates)) {
     fireEvent.change(await screen.findByLabelText(label), { target: { value } });
@@ -1159,13 +1160,17 @@ describe("M6-12 authenticated competition pages", () => {
     expect(requests).toHaveLength(0);
     await view.user.click(screen.getByRole("button", { name: "Preview schedule generation" }));
     await screen.findByText("Review every matchup week");
-    expect(requests).toEqual([{ confirmed: false, nhlRegularSeasonStartsAtMs: Date.parse("2026-09-29T07:00:00Z"), nhlRegularSeasonEndsAtMs: Date.parse("2027-04-11T07:00:00Z"), fantasyPlayoffsStartAtMs: Date.parse("2027-03-15T07:00:00Z"), fantasyPlayoffsEndAtMs: Date.parse("2027-04-11T07:00:00Z"), firstWeekStartsAtMs: Date.parse("2026-09-29T07:00:00Z") }]);
+    expect(requests).toEqual([{ confirmed: false, nhlRegularSeasonStartsAtMs: Date.parse("2026-09-29T07:00:00Z"), nhlRegularSeasonEndsAtMs: Date.parse("2027-04-11T07:00:00Z"), fantasyPlayoffsStartAtMs: Date.parse("2027-03-15T07:00:00Z"), fantasyPlayoffsEndAtMs: Date.parse("2027-04-11T07:00:00Z"), firstWeekStartsAtMs: Date.parse("2026-09-29T07:00:00Z"), draftTiming: {
+      candidateDeadlineAtMs: Date.parse("2026-09-22T07:00:00Z"),
+      rolloverTimesAtMs: Array.from({ length: 7 }, (_, i) => Date.parse("2026-09-23T07:00:00Z") + i * 86400000),
+    } }]);
     expect(screen.getByLabelText("Candidate Card deadline")).toHaveValue("2026-09-22T00:00");
     fireEvent.change(screen.getByLabelText("Candidate Card deadline"), { target: { value: "2026-10-01T00:00" } });
-    expect(screen.getByLabelText("Week 1 starts")).toHaveValue("2026-10-08T00:00");
+    expect(screen.getByLabelText("Week 1 starts")).toHaveValue("2026-09-29T00:00");
+    expect(screen.getByRole("button", { name: "Preview schedule generation" })).toBeDisabled();
     expect(screen.queryByText("Review every matchup week")).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Week 1 starts"), { target: { value: "2026-11-02T00:00" } });
-    expect(screen.getByLabelText("Candidate Card deadline")).toHaveValue("2026-10-26T01:00");
+    expect(screen.getByLabelText("Candidate Card deadline")).toHaveValue("2026-10-01T00:00");
     fireEvent.change(screen.getByLabelText("Candidate Card deadline"), { target: { value: "2020-01-01T00:00" } });
     expect(screen.getByRole("button", { name: "Preview schedule generation" })).toBeDisabled();
     expect(requests).toHaveLength(1);
@@ -1228,11 +1233,68 @@ describe("M6-12 authenticated competition pages", () => {
       fantasyPlayoffsStartAtMs: Date.parse("2027-03-15T07:00:00Z"),
       fantasyPlayoffsEndAtMs: Date.parse("2027-04-12T07:00:00Z"),
       firstWeekStartsAtMs: Date.parse("2026-10-05T07:00:00Z"),
+      draftTiming: {
+        candidateDeadlineAtMs: Date.parse("2026-09-28T07:00:00Z"),
+        rolloverTimesAtMs: Array.from({ length: 7 }, (_, i) => Date.parse("2026-09-29T07:00:00Z") + i * 86400000),
+      },
     };
     expect(requests.map(({ body }) => body)).toEqual([{ ...expectedCalendar, confirmed: false }, { ...expectedCalendar, confirmed: true }]);
     expect(requests[1].headers.get("If-Match")).toBe('"3"');
     expect(requests[1].headers.get("X-CSRF-Token")).toBe("D".repeat(43));
     expect(requests[1].headers.get("Idempotency-Key")).toBeTruthy();
+  });
+
+  it.each([
+    ["playoff_length", "requires 28 full days for playoffs"],
+    ["week_one_outside_season", "change the Candidate Card deadline instead of the NHL calendar"],
+  ])("explains the public calendar issue %s without exposing server details", async (calendarIssue, expected) => {
+    const prefix = `/api/v1/leagues/${leagueId}/seasons/${seasonId}`;
+    const fetchImpl = baseFetch((path) => {
+      if (path === `${prefix}/matchup-weeks`) return envelope({ code: "MATCHUP_WEEKS_FOUND", weeks: [], health: health("fresh") });
+      if (path === `${prefix}/matchup-schedules`) return new Response(JSON.stringify({ error: {
+        code: "MATCHUP_INPUT_INVALID", message: "private server detail", details: { calendarIssue }, requestId: "private-request",
+      } }), { status: 400, headers: { "Content-Type": "application/json" } });
+      throw new Error(`Unexpected request: ${path}`);
+    }, "commissioner");
+    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    await fillScheduleCalendar();
+    await view.user.click(await screen.findByRole("button", { name: "Preview schedule generation" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Check the season calendar.");
+    expect(alert).toHaveTextContent(expected);
+    expect(alert).not.toHaveTextContent("private");
+  });
+
+  it("lets the commissioner choose five rounds, edit final-day times and review the exact timetable", async () => {
+    const requests = [];
+    const prefix = `/api/v1/leagues/${leagueId}/seasons/${seasonId}`;
+    const fetchImpl = baseFetch((path, options) => {
+      if (path === `${prefix}/matchup-weeks`) return envelope({ code: "MATCHUP_WEEKS_FOUND", weeks: [], health: health("fresh") });
+      if (path === `${prefix}/matchup-schedules`) {
+        const body = JSON.parse(options.body); requests.push(body);
+        return envelope({ code: "MATCHUP_SCHEDULE_PREVIEWED", preview: { expectedSeasonVersion: 3, participantCount: 4,
+          weekCount: 20, matchupCount: 40, byeCount: 0, draftTiming: body.draftTiming } });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    }, "commissioner");
+    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    await fillScheduleCalendar();
+    fireEvent.change(screen.getByLabelText("Candidate Card deadline"), { target: { value: "2026-10-03T12:00" } });
+    fireEvent.change(screen.getByLabelText("Total rapid-auction rounds"), { target: { value: "5" } });
+    expect(screen.queryByLabelText("Round 6 rolls over")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Round 4 rolls over"), { target: { value: "2026-10-04T22:00" } });
+    await view.user.click(screen.getByRole("button", { name: "Preview schedule generation" }));
+    expect(await screen.findByRole("region", { name: "Free Agent Draft timetable" })).toHaveTextContent("5 rapid-auction rounds");
+    expect(requests[0].draftTiming.rolloverTimesAtMs[3]).toBe(Date.parse("2026-10-05T05:00:00Z"));
+    expect(requests[0].draftTiming.candidateDeadlineAtMs).toBe(Date.parse("2026-10-03T19:00:00Z"));
+    fireEvent.change(screen.getByLabelText("Week 1 starts"), { target: { value: "2026-10-06T00:00" } });
+    expect(screen.getByLabelText("Candidate Card deadline")).toHaveValue("2026-10-03T12:00");
+    expect(screen.getByLabelText("Round 4 rolls over")).toHaveValue("2026-10-04T22:00");
+    expect(screen.queryByRole("button", { name: "Confirm schedule generation" })).not.toBeInTheDocument();
+    expect(requests).toHaveLength(1);
+    fireEvent.change(screen.getByLabelText("Round 4 rolls over"), { target: { value: "2026-10-04T13:00" } });
+    expect(screen.getByRole("button", { name: "Preview schedule generation" })).toBeDisabled();
+    expect(screen.getByText("Round 4 must end after round 3.")).toBeVisible();
   });
 
   it("explains schedule prerequisites without exposing internal error details and offers a retry", async () => {

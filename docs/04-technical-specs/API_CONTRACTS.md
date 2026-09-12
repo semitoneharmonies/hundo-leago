@@ -2,9 +2,22 @@
 
 ## September 12, 2026: draft setup and annual lock
 
-- Existing schedule preview/confirmation and pre-card Week 1 shifts return
-  `409 FAD_DEADLINE_NOT_FUTURE` when Week 1 minus 168 hours is at or before
-  server time. The safe message asks the commissioner to choose a later Week 1.
+- Schedule preview/confirmation accepts optional `draftTiming: {
+  candidateDeadlineAtMs, rolloverTimesAtMs }`. The deadline is independent of
+  Week 1; 1–1000 strictly increasing rollover instants follow it and finish no
+  later than Week 1. The preview returns this exact timing object, and confirmed
+  request replay binds it along with the calendar. Legacy callers retain their
+  seven-day default and existing canonical request shape.
+- Preview/confirmation and pre-card Week 1 shifts return
+  `409 FAD_DEADLINE_NOT_FUTURE` when the selected deadline is at or before
+  server time. Malformed or out-of-order timetables return `400 FAD_TIMING_INVALID`.
+  Pre-card Week 1 shifts preserve the selected deadline and rollover times and
+  reject any new Week 1 that would precede a selected rollover.
+- Known calendar validation failures retain `400 MATCHUP_INPUT_INVALID` and
+  expose only a whitelisted `details.calendarIssue`: `date_order`,
+  `playoff_length`, `season_year`, `playoffs_start_day`, `week_one_start_day`,
+  `week_one_in_past`, or `week_one_outside_season`. The interface supplies safe,
+  actionable guidance for these values; unknown internal details stay private.
 - Human FAD write routes return `409 FAD_SEASON_CLOSED` after competition
   starts, or `409 FAD_ENTRY_DRAFT_REQUIRED` for an upcoming season whose
   Entry Draft has not completed. Readiness retry, recovery, Candidate Card and FAD auction administration
@@ -15,8 +28,10 @@
   `{ tradeDeadlineAtMs }`; `POST /api/v1/leagues/:leagueId/start` receives
   `{}`. Both writes retain CSRF, an intent-specific idempotency key, and the
   current league version in `If-Match`. Refetch after either operation.
-- No GET writes, stored-data migrations, or new shared league defaults are
-  introduced by this amendment.
+- GET requests remain read-only. Schema 56 adds nullable timing metadata to
+  confirmed generations and freezes the initial rollover list when a new draft
+  opens. Existing draft clocks and league records retain their values. See
+  `FREE_AGENT_DRAFT.md` for the migration and auction timing invariants.
 
 > 8 September 2026 implementation amendment: the target runtime now implements administrator statistics refresh and read-only status routes. See [NHL statistics and automatic matchups](../06-work-plans/STATISTICS_MATCHUPS_2026-09-08.md) for exact inputs, enablement, source evidence and the replacement for deferred provider-neutral clauses. The routes are published on staging with refreshes disabled; authenticated acceptance remains pending.
 

@@ -1,5 +1,5 @@
 import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
-import { candidateDeadlineForWeekOne, weekOneForCandidateDeadline } from "./fadScheduleTiming.js";
+import { candidateDeadlineForWeekOne, suggestedRollovers, draftTimingIssue, MAX_ROLLOVERS } from "./fadScheduleTiming.js";
 import { LeagueDraftSetup } from "../leagues/LeagueDraftSetup.jsx";
 import { useCurrentTime } from "../../shared/useCurrentTime.js";
 import { useEffect, useRef, useState } from "react";
@@ -97,11 +97,28 @@ function weekLabel(sequence, startsAtMs, endsAtMs) {
 
 function competitionErrorGuidance(error, context) {
   if (context === "schedule") {
-    if (error?.code === "FAD_DEADLINE_NOT_FUTURE") {
+    const calendarGuidance = {
+      date_order: "Start the NHL season before the playoffs, and end the playoffs at the NHL season end.",
+      playoff_length: "Changing the NHL season dates selects a custom calendar, which requires 28 full days for playoffs. Restore the default season dates or adjust the custom playoff dates.",
+      season_year: "Use dates within the selected NHL season's starting and ending years.",
+      playoffs_start_day: "Start fantasy playoffs on a Monday at midnight in the league timezone.",
+      week_one_start_day: "Start Week 1 at midnight outside a scoring break. Custom calendars require a Monday start.",
+      week_one_in_past: "Choose a future Week 1 start, then preview the schedule again.",
+      week_one_outside_season: "Place Week 1 on or after the NHL season start and before the playoffs. To test Candidate Cards earlier, change the Candidate Card deadline instead of the NHL calendar.",
+    };
+    const issue = error?.details?.calendarIssue;
+    if (error?.code === "MATCHUP_INPUT_INVALID" && Object.hasOwn(calendarGuidance, issue)) {
       return {
-        fallback: "The draft needs more time before Week 1.",
-        impact: "The Candidate Card deadline must still be ahead, followed by seven full days of rapid auctions.",
-        recovery: "Choose a later Week 1 or draft deadline, then review a fresh schedule preview.",
+        fallback: "Check the season calendar.",
+        impact: "No schedule was created or changed.",
+        recovery: calendarGuidance[issue],
+      };
+    }
+    if (["FAD_DEADLINE_NOT_FUTURE", "FAD_TIMING_INVALID"].includes(error?.code)) {
+      return {
+        fallback: "Check the draft dates and rollover times.",
+        impact: "Choose a future Candidate Card deadline and rollover times that finish by Week 1.",
+        recovery: "Review the deadline and each round, then request a fresh schedule preview.",
       };
     }
     if (error?.code === "MATCHUP_PRECONDITION_FAILED") {
@@ -1040,6 +1057,7 @@ function PreviewAction({
   onConfirm,
   confirmDisabled = false,
   previewDisabled = false,
+  timeZone = "America/Vancouver",
   children,
 }) {
   const previewMetrics =
@@ -1051,11 +1069,11 @@ function PreviewAction({
           ["Team byes", preview?.byeCount ?? 0],
           [
             "First week starts",
-            previewTimestamp(preview?.firstWeekStartsAtMs),
+            previewTimestamp(preview?.firstWeekStartsAtMs, timeZone),
           ],
           [
             "Regular season ends",
-            previewTimestamp(preview?.lastWeekEndsAtMs),
+            previewTimestamp(preview?.lastWeekEndsAtMs, timeZone),
           ],
         ]
       : [
@@ -1065,7 +1083,7 @@ function PreviewAction({
           ],
           [
             "Transition time",
-            previewTimestamp(preview?.effectiveAtMs),
+            previewTimestamp(preview?.effectiveAtMs, timeZone),
           ],
         ];
 
@@ -1101,6 +1119,12 @@ function PreviewAction({
               <summary>Review every matchup week</summary>
               <ol>{preview.weeks.map((week) => <li key={week.sequence}>{weekLabel(week.sequence, week.startsAtMs, week.endsAtMs)}</li>)}</ol>
             </details>}
+            {title === "Schedule generation" && preview.draftTiming && <section aria-label="Free Agent Draft timetable">
+              <p>Candidate Card deadline: {previewTimestamp(preview.draftTiming.candidateDeadlineAtMs, timeZone)} ({timeZone})</p>
+              <details open><summary>{preview.draftTiming.rolloverTimesAtMs.length} rapid-auction rounds</summary>
+                <ol>{preview.draftTiming.rolloverTimesAtMs.map((time, index) => <li key={index}>Round {index + 1}: {previewTimestamp(time, timeZone)}</li>)}</ol>
+              </details>
+            </section>}
           </section>
           <div className="hl-button-row">
           <button className="hl-button hl-button--primary" type="button" onClick={onConfirm} disabled={mutation.isPending || confirmDisabled}>
@@ -1124,12 +1148,12 @@ function humanizeStatus(value) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function previewTimestamp(value) {
+function previewTimestamp(value, timeZone = "America/Vancouver") {
   if (!Number.isSafeInteger(value) || value < 0) return "Not set";
   return new Intl.DateTimeFormat("en-CA", {
     dateStyle: "medium",
     timeStyle: "short",
-    timeZone: "America/Vancouver",
+    timeZone,
   }).format(new Date(value));
 }
 
@@ -1157,17 +1181,28 @@ export function CommissionerCompetitionPage() {
     ["fantasyPlayoffsEndAtMs", "Fantasy playoffs end", selectedSeason?.fantasyPlayoffsEndAtMs],
     ["firstWeekStartsAtMs", "Week 1 starts", null],
   ];
-  const calendar = Object.fromEntries(calendarFields.map(([key, , value]) => [key,
+  const calendarDates = Object.fromEntries(calendarFields.map(([key, , value]) => [key,
     calendarTimestamp(calendarValue(key, value), timeZone)]));
+  const initialWeekOneAtMs = calendarTimestamp(defaults?.firstWeekStartsAtMs || "", timeZone);
+  const deadlineValue = seasonEdits.candidateDeadlineAtMs ?? calendarInputValue(candidateDeadlineForWeekOne(initialWeekOneAtMs), timeZone);
+  const candidateDeadlineAtMs = calendarTimestamp(deadlineValue, timeZone);
+  const rolloverValues = seasonEdits.rollovers ?? suggestedRollovers(candidateDeadlineAtMs, calendarDates.firstWeekStartsAtMs).map((time) => calendarInputValue(time, timeZone));
+  const rolloverTimesAtMs = rolloverValues.map((value) => calendarTimestamp(value, timeZone));
+  const timingIssue = draftTimingIssue(candidateDeadlineAtMs, rolloverTimesAtMs, calendarDates.firstWeekStartsAtMs, nowMs);
+  const calendar = { ...calendarDates, draftTiming: { candidateDeadlineAtMs, rolloverTimesAtMs } };
   const calendarKey = JSON.stringify(calendar);
   const schedulePreview = schedulePreviewState?.seasonId === seasonId && schedulePreviewState.calendarKey === calendarKey
     ? schedulePreviewState.preview : null;
   const setSchedulePreview = (preview, previewCalendarKey) => setSchedulePreviewState(preview ? { seasonId, calendarKey: previewCalendarKey, preview } : null);
-  const candidateDeadlineAtMs = candidateDeadlineForWeekOne(calendar.firstWeekStartsAtMs);
-  const draftTimingReady = Number.isSafeInteger(candidateDeadlineAtMs) && candidateDeadlineAtMs > nowMs;
-  const calendarReady = Object.values(calendar).every(Number.isSafeInteger) && draftTimingReady;
+  const calendarReady = Object.values(calendarDates).every(Number.isSafeInteger) && timingIssue === null;
   function changeCalendarField(key, value) {
-    setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], [key]: value } }));
+    setCalendarEdits((current) => ({ ...current, [seasonId]: {
+      ...current[seasonId],
+      ...(key === "firstWeekStartsAtMs" && current[seasonId]?.candidateDeadlineAtMs === undefined ? {
+        candidateDeadlineAtMs: deadlineValue || calendarInputValue(candidateDeadlineForWeekOne(calendarTimestamp(value, timeZone)), timeZone),
+      } : {}),
+      [key]: value,
+    } }));
     setSchedulePreview(null); scheduleMutation.reset();
   }
   const commissioner = hasCommissionerAuthority(
@@ -1222,31 +1257,48 @@ export function CommissionerCompetitionPage() {
               <Link className="hl-button hl-button--secondary" to={routePaths.leagueMatchups(leagueId)}>View schedule</Link>
             </Surface>
           ) : (
-          <PreviewAction title="Schedule generation" mutation={scheduleMutation} preview={schedulePreview}
+          <PreviewAction title="Schedule generation" mutation={scheduleMutation} preview={schedulePreview} timeZone={timeZone}
             previewDisabled={!calendarReady || weeks.isPending || weeks.isError || context.league.status === "setup"}
             confirmDisabled={!calendarReady || context.league.status === "setup"}
             onPreview={() => scheduleMutation.mutate({ confirmed: false, calendar })}
             onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedSeasonVersion, calendar })}>
             <p>Review the league calendar before generating a schedule. All dates use {timeZone}. End times are exclusive: April 11 at midnight includes games through April 10.</p>
-            <p>The Free Agent Draft comes first. Its Candidate Card deadline is exactly seven days before Week 1, leaving a full week for rapid auctions. Moving either date moves the other. Week 1 must begin at an eligible league-local midnight.</p>
+            <p>The Free Agent Draft comes first. Choose the Candidate Card deadline independently of Week 1. Seven days is a starting suggestion; you decide how many rapid-auction rounds to hold and when each round ends. Week 1 must begin at an eligible league-local midnight.</p>
             {context.league.status === "setup" && <p>Finish the league setup above to enable the schedule preview.</p>}
             {defaults ? <p className="hl-form-message">2026–27 default: September 29–April 10. Matchups follow Monday–Sunday where possible, with adjusted weeks around December 23–25 and February 4–7. Playoffs: March 15–21, March 22–28, and March 29–April 10. Review the preview before confirming.</p>
               : <p>Use the saved calendar for this season. Custom calendars use Monday starts and reserve the final 28 days for playoffs.</p>}
             <div className="hl-form-grid">
               <label className="hl-field">Candidate Card deadline
-                <input type="datetime-local" value={calendarInputValue(candidateDeadlineAtMs, timeZone)} onChange={(event) => {
-                  const deadline = calendarTimestamp(event.target.value, timeZone);
-                  changeCalendarField("firstWeekStartsAtMs", calendarInputValue(weekOneForCandidateDeadline(deadline), timeZone));
-                }} />
+                <input type="datetime-local" value={deadlineValue} onChange={(event) => changeCalendarField("candidateDeadlineAtMs", event.target.value)} />
               </label>
               {calendarFields.map(([key, label, value]) => <label className="hl-field" key={key}>{label}
                 <input type="datetime-local" value={calendarValue(key, value)} onChange={(event) => changeCalendarField(key, event.target.value)} />
               </label>)}
             </div>
-            {!calendarReady && <p>Complete the calendar with a future Candidate Card deadline and seven full days before Week 1. If there is too little time, choose a later deadline or Week 1 start.</p>}
+            <fieldset className="hl-competition-setup-card">
+              <legend>Rapid-auction rollovers</legend>
+              <p>Start with one rollover every 24 hours, then adjust any date or time. Extra rounds fit into the final day. Every rollover must follow the previous round and finish by Week 1.</p>
+              <label className="hl-field">Total rapid-auction rounds
+                <input type="number" min="1" max={MAX_ROLLOVERS} step="1" value={seasonEdits.roundCount ?? rolloverValues.length} onChange={(event) => {
+                  const count = event.target.value;
+                  setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], roundCount: count,
+                    rollovers: suggestedRollovers(candidateDeadlineAtMs, calendarDates.firstWeekStartsAtMs, Number(count)).map((time) => calendarInputValue(time, timeZone)),
+                  } }));
+                  setSchedulePreview(null); scheduleMutation.reset();
+                }} />
+              </label>
+              <button type="button" className="hl-button hl-button--quiet" onClick={() => {
+                setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], roundCount: undefined, rollovers: undefined } }));
+                setSchedulePreview(null); scheduleMutation.reset();
+              }}>Use daily rollovers</button>
+              <div className="hl-form-grid">{rolloverValues.map((value, index) => <label className="hl-field" key={index}>Round {index + 1} rolls over
+                <input type="datetime-local" value={value} onChange={(event) => changeCalendarField("rollovers", rolloverValues.map((time, position) => position === index ? event.target.value : time))} />
+              </label>)}</div>
+            </fieldset>
+            {!calendarReady && <p role="status">{timingIssue || "Complete every date in the season calendar."}</p>}
           </PreviewAction>
           )}
-          <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview}
+          <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview} timeZone={timeZone}
             previewDisabled={!selectedWeekId || weeks.isPending || weeks.isError}
             confirmDisabled={!selectedWeekId}
             onPreview={() => weekMutation.mutate({ confirmed: false })}

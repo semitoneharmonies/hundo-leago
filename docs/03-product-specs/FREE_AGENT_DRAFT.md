@@ -8,10 +8,22 @@
 
 Graem confirmed that a new league prepares its inaugural Free Agent Draft
 before competition so managers can fill their rosters. The Candidate Card
-deadline defaults to exactly 168 hours before Week 1. Commissioners may choose
-the deadline and Week 1 during setup; those inputs stay linked by seven full
-auction days. If setup is late, move Week 1 forward and keep the card deadline
-in the future. Do not shorten the rapid-auction period.
+deadline initially defaults to 168 hours before Week 1. Graem's later September
+12 staging feedback supersedes the fixed interval: the commissioner edits the
+Candidate Card deadline independently and chooses the number of rapid-auction
+rounds and the exact date and time of each rollover. Daily rollovers are the
+default, including more than seven rounds for longer periods. Short periods
+may have multiple commissioner-timed rollovers on the final day. The form must
+not silently move the deadline when Week 1 changes, or vice versa.
+
+The saved rollover schedule must be ordered after the Candidate Card deadline
+and finish no later than Week 1. The initial suggestion ends at Week 1; custom
+rollover times may finish earlier. Preview and confirmation include the entire
+draft timetable. These commissioner-controlled timings supersede the older
+fixed seven-day/seven-initial-rollover clauses below for newly configured
+drafts. Preserve previously opened drafts and their frozen timetable. Existing
+auction blockers and recovery still prevent competition starting with an
+unfinished draft.
 
 Once competition starts, commissioner Free Agent Draft adjustments close.
 Season end alone does not reopen them: the upcoming season's Entry Draft

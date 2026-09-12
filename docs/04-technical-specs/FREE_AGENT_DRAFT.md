@@ -6,13 +6,40 @@
 
 ## September 12, 2026: setup timing and annual adjustment lock
 
-The commissioner setup form exposes linked Candidate Card deadline and Week 1
-inputs. Persist the existing Week 1 timestamp and derive the card deadline as
-`firstWeekStartsAtMs - 604800000`; no independent deadline field or migration
-is introduced. New schedule preview, confirmation, and pre-card Week 1 shifts
-reject a deadline at or before server time. Existing eligible Week 1 calendar
-boundaries and the freeze after card opening remain authoritative. Automatic
-post-draft schedule recovery is not subject to this new setup-only check.
+The later September 12 feedback supersedes the linked-date implementation.
+Expose independent Candidate Card deadline and Week 1 inputs plus an editable
+ordered list of rapid-auction rollover instants. Default to daily rollovers
+and a final rollover at Week 1, while allowing the commissioner to choose the
+round count and exact rollover times, including several on the final day.
+
+Persist this timing with the confirmed schedule generation, bind it to the
+preview/version/idempotency evidence, and freeze the chosen initial timetable
+when Candidate Cards open. A forward migration must preserve all existing
+draft clocks and receipts while permitting newly configured independent
+deadlines and variable rollover counts/times. Legacy commands without an
+explicit timetable retain their existing clock and canonical replay shape.
+Fresh commands require a future deadline followed by strictly increasing
+rollovers no later than Week 1. Public calendar errors expose only a known
+`details.calendarIssue` value, retaining the existing public error code.
+Existing eligible Week 1 calendar boundaries and annual locks remain in force.
+
+The optional schedule-command field is `draftTiming: { candidateDeadlineAtMs,
+rolloverTimesAtMs }`. Validate 1–1000 ordered rollover instants after the future
+deadline and no later than Week 1. Store the exact JSON in
+`season_matchup_schedule_generations.fad_timing_json`; schema 56 stores the
+frozen initial array in `free_agent_drafts.initial_rollover_times_json`.
+NULL keeps the legacy seven-day clock. Bind request replay to the complete
+timing object and preserve it when a pre-opening Week 1 change is valid.
+
+Opening allocates exactly the configured number of rollover jobs. Queued
+nominations and restricted fallback auctions use the next persisted round's
+end, including short final-day rounds. New-auction cutoff is one hour before
+the rollover, clamped to the round's opening. Restricted activation keeps its
+existing one-hour fair-access guard for ordinary rounds; for rounds shorter
+than two hours, require more than half of the configured round to remain.
+After the configured final round, unresolved work retains the existing daily
+extension and competition-blocking recovery rules. A missed custom opening
+deadline blocks opening instead of silently moving the commissioner's dates.
 
 Human draft writes recheck the league/season window within the existing SQLite
 transaction: readiness retries, recovery actions, allocation corrections,
