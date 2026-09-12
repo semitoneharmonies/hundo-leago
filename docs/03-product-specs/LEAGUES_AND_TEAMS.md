@@ -4,6 +4,18 @@
 
 `APPROVED`
 
+## September 12, 2026: first-draft setup
+
+The commissioner workspace leads a setup league into its inaugural Free Agent
+Draft. Show accepted manager/invitation prerequisites, save the existing
+informational season trade deadline, and explicitly prepare the league using
+the existing versioned start operation. Then preview and confirm the schedule
+that supplies the draft clock. Preparing the league does not start matchup
+competition; managers first fill rosters through the Free Agent Draft.
+Keep seven full days between the Candidate Card deadline and Week 1, moving
+Week 1 forward when necessary. See the Free Agent Draft specification for the
+annual commissioner lock and upcoming-season Entry Draft requirement.
+
 This product specification consolidates:
 
 * approved Season 2 league and team requirements;

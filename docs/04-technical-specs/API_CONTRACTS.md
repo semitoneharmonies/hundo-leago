@@ -1,5 +1,23 @@
 # Hundo Leago - API Contracts
 
+## September 12, 2026: draft setup and annual lock
+
+- Existing schedule preview/confirmation and pre-card Week 1 shifts return
+  `409 FAD_DEADLINE_NOT_FUTURE` when Week 1 minus 168 hours is at or before
+  server time. The safe message asks the commissioner to choose a later Week 1.
+- Human FAD write routes return `409 FAD_SEASON_CLOSED` after competition
+  starts, or `409 FAD_ENTRY_DRAFT_REQUIRED` for an upcoming season whose
+  Entry Draft has not completed. Readiness retry, recovery, Candidate Card and FAD auction administration
+  capabilities accept these as disabled reason codes. Existing response
+  envelopes, success contracts, authentication, and idempotency remain intact.
+- Inaugural setup uses existing league detail, settings, teams, and memberships
+  reads. `PUT /api/v1/leagues/:leagueId/setup/trade-deadline` receives
+  `{ tradeDeadlineAtMs }`; `POST /api/v1/leagues/:leagueId/start` receives
+  `{}`. Both writes retain CSRF, an intent-specific idempotency key, and the
+  current league version in `If-Match`. Refetch after either operation.
+- No GET writes, stored-data migrations, or new shared league defaults are
+  introduced by this amendment.
+
 > 8 September 2026 implementation amendment: the target runtime now implements administrator statistics refresh and read-only status routes. See [NHL statistics and automatic matchups](../06-work-plans/STATISTICS_MATCHUPS_2026-09-08.md) for exact inputs, enablement, source evidence and the replacement for deferred provider-neutral clauses. The routes are published on staging with refreshes disabled; authenticated acceptance remains pending.
 
 ## Staging review amendment — 2026-09-07

@@ -188,6 +188,8 @@ const FAD_RECOVERY_STATUSES = new Set([
   "correction_required",
 ]);
 const ACTION_REASON_CODES = new Set([
+  "FAD_SEASON_CLOSED",
+  "FAD_ENTRY_DRAFT_REQUIRED",
   "NOT_AUTHORIZED",
   "HELP_NOT_GRANTED",
   "PHASE_CLOSED",

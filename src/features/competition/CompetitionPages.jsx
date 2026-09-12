@@ -1,4 +1,7 @@
 import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
+import { candidateDeadlineForWeekOne, weekOneForCandidateDeadline } from "./fadScheduleTiming.js";
+import { LeagueDraftSetup } from "../leagues/LeagueDraftSetup.jsx";
+import { useCurrentTime } from "../../shared/useCurrentTime.js";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
@@ -94,6 +97,13 @@ function weekLabel(sequence, startsAtMs, endsAtMs) {
 
 function competitionErrorGuidance(error, context) {
   if (context === "schedule") {
+    if (error?.code === "FAD_DEADLINE_NOT_FUTURE") {
+      return {
+        fallback: "The draft needs more time before Week 1.",
+        impact: "The Candidate Card deadline must still be ahead, followed by seven full days of rapid auctions.",
+        recovery: "Choose a later Week 1 or draft deadline, then review a fresh schedule preview.",
+      };
+    }
     if (error?.code === "MATCHUP_PRECONDITION_FAILED") {
       return {
         fallback: "The schedule preview is out of date.",
@@ -1124,6 +1134,7 @@ function previewTimestamp(value) {
 }
 
 export function CommissionerCompetitionPage() {
+  const nowMs = useCurrentTime();
   const { leagueId } = useParams();
   const [searchParams] = useSearchParams();
   const context = useCompetitionContext(leagueId);
@@ -1138,8 +1149,6 @@ export function CommissionerCompetitionPage() {
   const timeZone = context.league?.timezone || "America/Vancouver";
   const defaults = seasonCalendarDefaults(selectedSeason);
   const seasonEdits = calendarEdits[seasonId] || {};
-  const schedulePreview = schedulePreviewState?.seasonId === seasonId ? schedulePreviewState.preview : null;
-  const setSchedulePreview = (preview) => setSchedulePreviewState(preview ? { seasonId, preview } : null);
   const calendarValue = (key, value) => seasonEdits[key] ?? defaults?.[key] ?? calendarInputValue(value, timeZone);
   const calendarFields = [
     ["nhlRegularSeasonStartsAtMs", "NHL regular season starts", selectedSeason?.regularSeasonStartsAtMs],
@@ -1150,7 +1159,17 @@ export function CommissionerCompetitionPage() {
   ];
   const calendar = Object.fromEntries(calendarFields.map(([key, , value]) => [key,
     calendarTimestamp(calendarValue(key, value), timeZone)]));
-  const calendarReady = Object.values(calendar).every(Number.isSafeInteger);
+  const calendarKey = JSON.stringify(calendar);
+  const schedulePreview = schedulePreviewState?.seasonId === seasonId && schedulePreviewState.calendarKey === calendarKey
+    ? schedulePreviewState.preview : null;
+  const setSchedulePreview = (preview, previewCalendarKey) => setSchedulePreviewState(preview ? { seasonId, calendarKey: previewCalendarKey, preview } : null);
+  const candidateDeadlineAtMs = candidateDeadlineForWeekOne(calendar.firstWeekStartsAtMs);
+  const draftTimingReady = Number.isSafeInteger(candidateDeadlineAtMs) && candidateDeadlineAtMs > nowMs;
+  const calendarReady = Object.values(calendar).every(Number.isSafeInteger) && draftTimingReady;
+  function changeCalendarField(key, value) {
+    setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], [key]: value } }));
+    setSchedulePreview(null); scheduleMutation.reset();
+  }
   const commissioner = hasCommissionerAuthority(
     context.league?.membership
   );
@@ -1171,9 +1190,9 @@ export function CommissionerCompetitionPage() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["league", leagueId, "season", seasonId] });
   const scheduleMutation = useMutation({
-    mutationFn: ({ confirmed, version }) => scheduleCommand(context.session.httpClient, leagueId, seasonId, confirmed, version, calendar, confirmed ? operationId() : undefined),
+    mutationFn: ({ confirmed, version, calendar: commandCalendar }) => scheduleCommand(context.session.httpClient, leagueId, seasonId, confirmed, version, commandCalendar, confirmed ? operationId() : undefined),
     onSuccess(data, variables) {
-      if (!variables.confirmed) setSchedulePreview(data.preview);
+      if (!variables.confirmed) setSchedulePreview(data.preview, JSON.stringify(variables.calendar));
       else { setSchedulePreview(null); invalidate(); }
     },
   });
@@ -1190,6 +1209,7 @@ export function CommissionerCompetitionPage() {
     <CompetitionGate context={context} title="Commissioner competition tools">
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
+          {context.league.status === "setup" && <LeagueDraftSetup key={leagueId} leagueId={leagueId} />}
           <Surface className="hl-competition-setup-card">
             <h2>Roster corrections</h2>
             <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
@@ -1203,21 +1223,27 @@ export function CommissionerCompetitionPage() {
             </Surface>
           ) : (
           <PreviewAction title="Schedule generation" mutation={scheduleMutation} preview={schedulePreview}
-            previewDisabled={!calendarReady || weeks.isPending || weeks.isError}
-            onPreview={() => scheduleMutation.mutate({ confirmed: false })}
-            onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedSeasonVersion })}>
+            previewDisabled={!calendarReady || weeks.isPending || weeks.isError || context.league.status === "setup"}
+            confirmDisabled={!calendarReady || context.league.status === "setup"}
+            onPreview={() => scheduleMutation.mutate({ confirmed: false, calendar })}
+            onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedSeasonVersion, calendar })}>
             <p>Review the league calendar before generating a schedule. All dates use {timeZone}. End times are exclusive: April 11 at midnight includes games through April 10.</p>
+            <p>The Free Agent Draft comes first. Its Candidate Card deadline is exactly seven days before Week 1, leaving a full week for rapid auctions. Moving either date moves the other. Week 1 must begin at an eligible league-local midnight.</p>
+            {context.league.status === "setup" && <p>Finish the league setup above to enable the schedule preview.</p>}
             {defaults ? <p className="hl-form-message">2026–27 default: September 29–April 10. Matchups follow Monday–Sunday where possible, with adjusted weeks around December 23–25 and February 4–7. Playoffs: March 15–21, March 22–28, and March 29–April 10. Review the preview before confirming.</p>
               : <p>Use the saved calendar for this season. Custom calendars use Monday starts and reserve the final 28 days for playoffs.</p>}
             <div className="hl-form-grid">
-              {calendarFields.map(([key, label, value]) => <label className="hl-field" key={key}>{label}
-                <input type="datetime-local" value={calendarValue(key, value)} onChange={(event) => {
-                  setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], [key]: event.target.value } }));
-                  setSchedulePreview(null); scheduleMutation.reset();
+              <label className="hl-field">Candidate Card deadline
+                <input type="datetime-local" value={calendarInputValue(candidateDeadlineAtMs, timeZone)} onChange={(event) => {
+                  const deadline = calendarTimestamp(event.target.value, timeZone);
+                  changeCalendarField("firstWeekStartsAtMs", calendarInputValue(weekOneForCandidateDeadline(deadline), timeZone));
                 }} />
+              </label>
+              {calendarFields.map(([key, label, value]) => <label className="hl-field" key={key}>{label}
+                <input type="datetime-local" value={calendarValue(key, value)} onChange={(event) => changeCalendarField(key, event.target.value)} />
               </label>)}
             </div>
-            {!calendarReady && <p>Complete all five calendar dates to enable the preview.</p>}
+            {!calendarReady && <p>Complete the calendar with a future Candidate Card deadline and seven full days before Week 1. If there is too little time, choose a later deadline or Week 1 start.</p>}
           </PreviewAction>
           )}
           <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview}

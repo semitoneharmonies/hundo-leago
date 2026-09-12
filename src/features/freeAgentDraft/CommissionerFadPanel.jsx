@@ -14,6 +14,7 @@ import { leagueDateTime } from "../../shared/hundoFormat.js";
 import { useRealtime } from "../../shared/realtime/realtimeContext.js";
 import { useSession } from "../session/sessionContext.js";
 import { CommissionerFadRecovery } from "./CommissionerFadRecovery.jsx";
+import { FAD_SEASON_CLOSED_MESSAGE, fadCommissionerWindowClosed } from "./fadCommissionerWindow.js";
 import { retryFreeAgentDraftReadiness } from "./freeAgentDraftApi.js";
 import {
   freeAgentDraftKeys,
@@ -90,7 +91,9 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
   const readiness = useQuery({
     ...readinessOptions,
     enabled: session.status === "authenticated" && Boolean(seasonId),
+    refetchInterval: 60_000,
   });
+  const seasonLocked = fadCommissionerWindowClosed(readiness.data?.retryReadiness.reasonCode);
   const requestedFadId = searchParams.get("fadId");
   const requestedRecoveryId = searchParams.get("recoveryId");
   const [panelRequestedOpen, setPanelRequestedOpen] = useState(
@@ -136,6 +139,7 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
   });
 
   function submitRetry() {
+    if (!readiness.data?.retryReadiness.allowed) return;
     if (!readiness.data?.operationId || !readiness.data.operationVersion) return;
     let idempotencyKey;
     try {
@@ -320,11 +324,12 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
             </p>
           )}
 
-          {readiness.data.retryReadiness.allowed && !confirming && (
+          {seasonLocked && <p role="status">{FAD_SEASON_CLOSED_MESSAGE}</p>}
+          {((readiness.data.retryReadiness.allowed && !confirming) || seasonLocked) && (
             <button
               type="button"
               className="hl-button hl-button--secondary"
-              disabled={retry.isPending}
+              disabled={retry.isPending || seasonLocked}
               onClick={() => {
                 setMessage("");
                 setConfirming(true);
@@ -334,7 +339,7 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
             </button>
           )}
 
-          {confirming && (
+          {confirming && readiness.data.retryReadiness.allowed && (
             <div className={styles.pendingConfirmation} role="group" aria-label="Confirm readiness retry">
               <p>
                 Run the opening check again using the league’s current teams,
@@ -385,6 +390,7 @@ function CommissionerFadPanelContent({ leagueId, seasonId, timeZone }) {
       )}
       {recoveryFadId && requestedRecoveryValid && (
         <CommissionerFadRecovery
+          seasonLocked={seasonLocked}
           leagueId={leagueId}
           fadId={recoveryFadId}
           requestedRecoveryId={requestedRecoveryId}

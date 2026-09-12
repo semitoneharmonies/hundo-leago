@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FAD_SEASON_CLOSED_MESSAGE, fadCommissionerWindowClosed } from "./fadCommissionerWindow.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -330,6 +331,7 @@ export function CommissionerFadRecovery({
   fadId,
   requestedRecoveryId = null,
   timeZone,
+  seasonLocked: parentSeasonLocked = false,
 }) {
   const session = useSession();
   const queryClient = useQueryClient();
@@ -342,7 +344,10 @@ export function CommissionerFadRecovery({
   const correctionTriggerRef = useRef(null);
   const receiptRef = useRef(null);
   const recovery = useQuery(
-    freeAgentDraftRecoveryQuery(session.httpClient, leagueId, fadId)
+    { ...freeAgentDraftRecoveryQuery(session.httpClient, leagueId, fadId), refetchInterval: 60_000 }
+  );
+  const seasonLocked = parentSeasonLocked || recovery.data?.availableActions.some(
+    (action) => fadCommissionerWindowClosed(action.reasonCode)
   );
   const actionMutation = useMutation({
     mutationFn: ({ action, reason, idempotencyKey }) =>
@@ -393,6 +398,9 @@ export function CommissionerFadRecovery({
   }, [recovery.data]);
 
   function submitAction(reason) {
+    if (seasonLocked || !recovery.data?.availableActions.some((action) =>
+      action.enabled && action.action === selectedAction?.action && action.resourceId === selectedAction?.resourceId
+    )) return;
     let idempotencyKey;
     try {
       idempotencyKey = createIdempotencyKey("fad-recovery");
@@ -418,7 +426,7 @@ export function CommissionerFadRecovery({
   const seenActions = new Set();
   const enabledActions = recovery.data.availableActions.filter((action) => {
     const key = `${action.action}:${action.resourceId || "fad"}`;
-    if (!action.enabled || seenActions.has(key)) return false;
+    if (seasonLocked || !action.enabled || seenActions.has(key)) return false;
     seenActions.add(key);
     return true;
   });
@@ -447,6 +455,7 @@ export function CommissionerFadRecovery({
 
       <Surface className={`${styles.panel} ${styles.needsAction}`} as="section" aria-labelledby="fad-available-actions-title">
         <h3 id="fad-available-actions-title">Needs your action</h3>
+        {seasonLocked && <p role="status">{FAD_SEASON_CLOSED_MESSAGE}</p>}
         <p>Only safe actions currently available for this draft are shown.</p>
         <div className={styles.resultList}>
           {enabledActions.length === 0 && <p>No commissioner action is available right now.</p>}
@@ -467,7 +476,7 @@ export function CommissionerFadRecovery({
           <summary>Why some actions are unavailable</summary>
           <p>A retry is offered only when a draft step can safely run again. Completed and locked steps have no action here. Review the draft step history below for their status; available corrective actions appear above.</p>
         </details>}
-        {selectedAction && (
+        {selectedAction && !seasonLocked && (
           <RecoveryActionForm
             key={`${selectedAction.action}:${selectedAction.resourceId || "fad"}`}
             action={selectedAction}
@@ -560,7 +569,7 @@ export function CommissionerFadRecovery({
                 </div>
                 <span>Created {leagueDateTime(item.createdAtMs, timeZone)}</span>
                 {item.status === "correction_required" && item.allocationId && (
-                  <button type="button" className="hl-button hl-button--secondary" onClick={(event) => { correctionTriggerRef.current = event.currentTarget; setSelectedAllocationId(item.allocationId); }}>
+                  <button type="button" className="hl-button hl-button--secondary" disabled={seasonLocked} onClick={(event) => { correctionTriggerRef.current = event.currentTarget; setSelectedAllocationId(item.allocationId); }}>
                     Review correction
                   </button>
                 )}
@@ -571,7 +580,7 @@ export function CommissionerFadRecovery({
       </Surface>
       </details>
 
-      {selectedAllocationId && (
+      {selectedAllocationId && !seasonLocked && (
         <CorrectionPanel
           key={selectedAllocationId}
           allocationId={selectedAllocationId}

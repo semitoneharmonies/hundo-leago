@@ -1160,6 +1160,15 @@ describe("M6-12 authenticated competition pages", () => {
     await view.user.click(screen.getByRole("button", { name: "Preview schedule generation" }));
     await screen.findByText("Review every matchup week");
     expect(requests).toEqual([{ confirmed: false, nhlRegularSeasonStartsAtMs: Date.parse("2026-09-29T07:00:00Z"), nhlRegularSeasonEndsAtMs: Date.parse("2027-04-11T07:00:00Z"), fantasyPlayoffsStartAtMs: Date.parse("2027-03-15T07:00:00Z"), fantasyPlayoffsEndAtMs: Date.parse("2027-04-11T07:00:00Z"), firstWeekStartsAtMs: Date.parse("2026-09-29T07:00:00Z") }]);
+    expect(screen.getByLabelText("Candidate Card deadline")).toHaveValue("2026-09-22T00:00");
+    fireEvent.change(screen.getByLabelText("Candidate Card deadline"), { target: { value: "2026-10-01T00:00" } });
+    expect(screen.getByLabelText("Week 1 starts")).toHaveValue("2026-10-08T00:00");
+    expect(screen.queryByText("Review every matchup week")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Week 1 starts"), { target: { value: "2026-11-02T00:00" } });
+    expect(screen.getByLabelText("Candidate Card deadline")).toHaveValue("2026-10-26T01:00");
+    fireEvent.change(screen.getByLabelText("Candidate Card deadline"), { target: { value: "2020-01-01T00:00" } });
+    expect(screen.getByRole("button", { name: "Preview schedule generation" })).toBeDisabled();
+    expect(requests).toHaveLength(1);
   });
 
   it("previews and confirms schedule generation with CSRF and the preview version", async () => {

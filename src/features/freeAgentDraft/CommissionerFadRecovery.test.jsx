@@ -443,6 +443,25 @@ function renderRecovery(fetchImpl) {
 }
 
 describe("FAD-16 commissioner recovery and correction", () => {
+  it.each(["FAD_SEASON_CLOSED", "FAD_ENTRY_DRAFT_REQUIRED"])("keeps recovery history readable but disables actions and corrections for %s", async (reasonCode) => {
+    const evidence = recoveryEvidence("correction_required");
+    evidence.availableActions = evidence.availableActions.map((action) => ({ ...action, enabled: false, reasonCode }));
+    const writes = [];
+    const fetchImpl = vi.fn(async (url, options = {}) => {
+      const path = new URL(url).pathname;
+      if (path === "/api/v1/session") return sessionResponse();
+      if (options.method === "GET" && path.endsWith(`/free-agent-drafts/${fadId}/recovery`)) return response(evidence);
+      writes.push(path);
+      throw new Error("Locked recovery must not submit a command.");
+    });
+    renderRecovery(fetchImpl);
+    await screen.findByRole("heading", { name: "Recovery and correction" });
+    expect(screen.getByText(/Free Agent Draft changes are closed during the season/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Review action" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /review correction/i })).toBeDisabled();
+    expect(writes).toEqual([]);
+  });
+
   it("keeps unfinished historical jobs as archived steps after the draft completes", async () => {
     const evidence = completedRecoveryEvidence();
     evidence.rapidOperations = [{

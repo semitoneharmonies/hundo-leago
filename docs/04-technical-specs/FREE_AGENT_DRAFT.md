@@ -4,6 +4,34 @@
 
 `APPROVED`
 
+## September 12, 2026: setup timing and annual adjustment lock
+
+The commissioner setup form exposes linked Candidate Card deadline and Week 1
+inputs. Persist the existing Week 1 timestamp and derive the card deadline as
+`firstWeekStartsAtMs - 604800000`; no independent deadline field or migration
+is introduced. New schedule preview, confirmation, and pre-card Week 1 shifts
+reject a deadline at or before server time. Existing eligible Week 1 calendar
+boundaries and the freeze after card opening remain authoritative. Automatic
+post-draft schedule recovery is not subject to this new setup-only check.
+
+Human draft writes recheck the league/season window within the existing SQLite
+transaction: readiness retries, recovery actions, allocation corrections,
+Candidate Card edits/help, and administration of FAD auctions. The window
+closes on persisted competition activity, completed/cancelled seasons, or the
+first matchup start after FAD completion, even before a delayed worker runs.
+An overdue unopened inaugural draft alone does not imply competition started.
+
+An upcoming season with a prior league season requires its own completed
+Entry Draft, with a completion timestamp no later than server time. Preserve
+the existing explicit original initial-season exemption. Earlier seasons
+never reopen when an upcoming Entry Draft completes. Existing authority,
+privacy, version, immutable replay, and league isolation checks still apply.
+
+Readiness, recovery and commissioner card capabilities report the same lock.
+The browser withdraws stale confirmation/correction forms and disables writes;
+the server remains authoritative at the exact boundary. Historical reads and
+server-owned scheduled processing remain available under their existing rules.
+
 This technical specification defines the build contract for:
 
 * annual automatic Free Agent Draft readiness and timing;

@@ -298,6 +298,17 @@ function correctionAllocation() {
 }
 
 describe("auction response contracts", () => {
+  it.each(["FAD_SEASON_CLOSED", "FAD_ENTRY_DRAFT_REQUIRED"])("accepts disabled annual commissioner capabilities for %s", (reasonCode) => {
+    const auction = restrictedActive();
+    auction.capabilities.adminCancel = denied(reasonCode);
+    auction.capabilities.adminResolve = denied(reasonCode);
+    auction.administrativeBids = [{
+      bidId: IDS.bid, teamId: IDS.team, team: team(), version: 1, status: "active", participantStatus: "active",
+      capabilities: { adminEditBid: denied(reasonCode), adminRemoveBid: denied(reasonCode) },
+    }];
+    expect(validateAuction(auction)).toBe(true);
+  });
+
   it("accepts exact ordinary, restricted, and terminal FAD auction projections", () => {
     expect(validateAuction(ordinaryActive())).toBe(true);
     expect(validateAuction(restrictedActive())).toBe(true);

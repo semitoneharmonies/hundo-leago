@@ -19,6 +19,7 @@ import {
 } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { FAD_SEASON_CLOSED_MESSAGE, fadCommissionerWindowClosed } from "../freeAgentDraft/fadCommissionerWindow.js";
 import {
   EmptyBlock,
   ErrorBlock,
@@ -1479,6 +1480,7 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
           <h2 id="commissioner-auction-actions-title">Sealed auction controls</h2>
         </div>
       </div>
+      {fadCommissionerWindowClosed(auction.capabilities.adminCancel.reasonCode) && <p role="status">{FAD_SEASON_CLOSED_MESSAGE}</p>}
       <p>
         These controls identify bids by their server-provided record and team.
         Competing values and terms remain sealed, including while replacing or removing a bid.

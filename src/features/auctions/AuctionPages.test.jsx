@@ -495,6 +495,23 @@ afterEach(() => {
 });
 
 describe("FAD-16 auction pages", () => {
+  it.each(["FAD_SEASON_CLOSED", "FAD_ENTRY_DRAFT_REQUIRED"])("explains the annual lock and withholds commissioner auction writes for %s", async (reasonCode) => {
+    const auction = restrictedAuction({
+      viewerTeams: [], bidCount: 1, participatingTeamCount: 1,
+      administrativeBids: [administrativeBid({ capabilities: { adminEditBid: denied(reasonCode), adminRemoveBid: denied(reasonCode) } })],
+      capabilities: { view: allowed(), adminCancel: denied(reasonCode), adminResolve: denied(reasonCode) },
+    });
+    sessionHarness.request.mockImplementation(async (path) => {
+      if (path === "/api/v1/leagues") return leagueResponse();
+      if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}`) return { data: auction };
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    renderPage(`/leagues/${IDS.league}/auctions/${IDS.auction}`, "/leagues/:leagueId/auctions/:auctionId", <AuctionDetailPage />);
+    expect(await screen.findByText(/Free Agent Draft changes are closed during the season/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Replace active sealed|Remove active sealed|Cancel auction|Request resolution/i })).not.toBeInTheDocument();
+    expect(sessionHarness.request.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
+  });
+
   it("hides a single managed team selector and preselects a player from Start auction navigation", async () => {
     sessionHarness.request.mockImplementation(async (path) => {
       if (path === "/api/v1/leagues") return leagueResponse("manager");

@@ -126,6 +126,8 @@ const ACTION_REASON_CODES = new Set([
   "EDIT_LIMIT_REACHED",
   "PLAYER_QUARANTINED",
   "RECOVERY_NOT_AVAILABLE",
+  "FAD_SEASON_CLOSED",
+  "FAD_ENTRY_DRAFT_REQUIRED",
   "PREVIEW_ONLY",
 ]);
 
@@ -1742,7 +1744,7 @@ function recoveryAction(value, location) {
   contract(
     value.enabled
       ? value.reasonCode === null
-      : value.reasonCode === "RECOVERY_NOT_AVAILABLE",
+      : ["RECOVERY_NOT_AVAILABLE", "FAD_SEASON_CLOSED", "FAD_ENTRY_DRAFT_REQUIRED"].includes(value.reasonCode),
     `${location}.reasonCode is invalid.`
   );
   return true;
@@ -1872,9 +1874,11 @@ function validateRecoveryProjectionBindings(data) {
     const latest = recoveries.at(-1) || null;
     const enabled = latest !== null && ["pending", "ready"].includes(latest.status);
     const retryableCorrection = latest?.status === "correction_required" && operations.some((operation) => operation.operationId === latest.createdByOperationId && operation.status === "failed");
+    const seasonLocked = !action.enabled &&
+      ["FAD_SEASON_CLOSED", "FAD_ENTRY_DRAFT_REQUIRED"].includes(action.reasonCode);
     contract(
-      (action.enabled === enabled || (action.enabled && retryableCorrection)) &&
-        action.reasonCode === (action.enabled ? null : "RECOVERY_NOT_AVAILABLE"),
+      seasonLocked || ((action.enabled === enabled || (action.enabled && retryableCorrection)) &&
+        action.reasonCode === (action.enabled ? null : "RECOVERY_NOT_AVAILABLE")),
       "Free Agent Draft recovery available-action state is invalid."
     );
   });

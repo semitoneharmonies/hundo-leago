@@ -104,6 +104,40 @@ function readiness() {
 }
 
 describe("CommissionerFadPanel", () => {
+  it.each(["FAD_SEASON_CLOSED", "FAD_ENTRY_DRAFT_REQUIRED"])("withdraws an old confirmation when the server reports %s", async (reasonCode) => {
+    let locked = false;
+    const writes = [];
+    const fetchImpl = vi.fn(async (url, options = {}) => {
+      const path = new URL(url).pathname;
+      if (path === "/api/v1/session") return response({
+        csrfToken: "D".repeat(43),
+        session: { id: userId, userId, status: "active", createdAtMs: 1, lastUsedAtMs: 1, idleExpiresAtMs: 2, absoluteExpiresAtMs: 3, version: 1 },
+        user: { id: userId, displayName: "Commissioner", status: "active", version: 1 },
+      });
+      if (options.method === "GET" && path.endsWith("/free-agent-drafts/readiness")) {
+        const data = readiness();
+        if (locked) data.retryReadiness = { allowed: false, reasonCode };
+        return response(data);
+      }
+      writes.push(path);
+      throw new Error("An annual lock must not submit a write.");
+    });
+    const view = renderWithProviders(
+      <RealtimeContext.Provider value={{ status: "disconnected", privacyEpoch: 0 }}>
+        <CommissionerFadPanel leagueId={leagueId} seasonId={seasonId} />
+      </RealtimeContext.Provider>,
+      { enableSession: true, config, sessionOptions: { fetchImpl } }
+    );
+    await view.user.click(await screen.findByRole("button", { name: "Run opening check again" }));
+    expect(screen.getByRole("button", { name: "Run opening check" })).toBeInTheDocument();
+    locked = true;
+    await view.queryClient.invalidateQueries();
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Run opening check" })).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Run opening check again" })).toBeDisabled();
+    expect(screen.getByText(/Free Agent Draft changes are closed during the season/)).toBeInTheDocument();
+    expect(writes).toEqual([]);
+  });
+
   it("submits only the exact blocked operation retry with version and a secure intent key", async () => {
     const retryRequests = [];
     const fetchImpl = vi.fn(async (url, options = {}) => {

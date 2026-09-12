@@ -4,6 +4,26 @@
 
 `APPROVED`
 
+## September 12, 2026: inaugural setup and annual commissioner window
+
+Graem confirmed that a new league prepares its inaugural Free Agent Draft
+before competition so managers can fill their rosters. The Candidate Card
+deadline defaults to exactly 168 hours before Week 1. Commissioners may choose
+the deadline and Week 1 during setup; those inputs stay linked by seven full
+auction days. If setup is late, move Week 1 forward and keep the card deadline
+in the future. Do not shorten the rapid-auction period.
+
+Once competition starts, commissioner Free Agent Draft adjustments close.
+Season end alone does not reopen them: the upcoming season's Entry Draft
+must be complete. Only valid upcoming-season actions then reopen; earlier
+draft history remains closed. New leagues retain their inaugural exception
+and the approved original initial-season exemption remains valid.
+
+League preparation is distinct from competition start. A league may be active
+while its inaugural draft is being prepared. Existing roster, invitation,
+trade-deadline, authority, and automatic-readiness prerequisites still apply.
+Read-only history and server-owned recovery jobs retain their existing rules.
+
 This product specification consolidates:
 
 * the approved annual Free Agent Draft lifecycle;
