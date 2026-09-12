@@ -355,6 +355,21 @@ function renderLeagueRoutes(initialEntry, fetchImpl) {
 }
 
 describe("league selection", () => {
+  it("shows statistics refresh to an administrator without refreshing on page load", async () => {
+    const fetchImpl = fetchScenario([], { platformAdmin: true });
+    renderLeagueRoutes("/leagues", fetchImpl);
+    expect(await screen.findByRole("region", { name: "NHL statistics" })).toBeInTheDocument();
+    expect(fetchImpl.mock.calls.some(([url]) => url.includes("/operations/statistics"))).toBe(false);
+  });
+
+  it.each(["manager", "commissioner"])("hides statistics refresh from a %s", async (role) => {
+    const visibleLeague = league(leagueOneId, "Visible league");
+    visibleLeague.membership.permissionCategory = role;
+    renderLeagueRoutes("/leagues", fetchScenario([visibleLeague]));
+    expect(await screen.findByRole("link", { name: "Visible league" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "NHL statistics" })).not.toBeInTheDocument();
+  });
+
   it("uses correct singular and plural bidder labels", () => {
     expect(bidderCountLabel(0)).toBe("0 bidders");
     expect(bidderCountLabel(1)).toBe("1 bidder");

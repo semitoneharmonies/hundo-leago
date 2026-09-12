@@ -16,6 +16,7 @@ import { TeamRosterPage } from "../rosters/TeamRosterPage.jsx";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
+import { StatisticsRefreshPanel } from "./StatisticsRefreshPanel.jsx";
 import {
   adminUsersQuery,
   assignLeagueCommissioner,
@@ -341,11 +342,14 @@ export function LeagueSelectionPage() {
               </ul>
             ) : null}
             {platformAdministrator && (
-              <PlatformAdminLeaguePanel
-                httpClient={session.httpClient}
-                leagues={leaguesQuery.data || []}
-                usersQuery={adminUsers}
-              />
+              <>
+                <PlatformAdminLeaguePanel
+                  httpClient={session.httpClient}
+                  leagues={leaguesQuery.data || []}
+                  usersQuery={adminUsers}
+                />
+                <StatisticsRefreshPanel key={session.user.id} httpClient={session.httpClient} />
+              </>
             )}
           </>
         )}
