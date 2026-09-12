@@ -16,6 +16,14 @@ default, including more than seven rounds for longer periods. Short periods
 may have multiple commissioner-timed rollovers on the final day. The form must
 not silently move the deadline when Week 1 changes, or vice versa.
 
+The season trade deadline belongs in the same date form. New leagues must not
+save it in a separate prerequisite panel. Reviewing league setup is read-only;
+a clearly labeled confirmation saves the trade deadline and prepares the league,
+then loads the schedule preview for a separate schedule confirmation. Existing
+saved trade deadlines remain fixed. A default-calendar action restores the
+scoring dates while preserving the selected Candidate Card deadline and any
+explicit rollover choices.
+
 The saved rollover schedule must be ordered after the Candidate Card deadline
 and finish no later than Week 1. The initial suggestion ends at Week 1; custom
 rollover times may finish earlier. Preview and confirmation include the entire

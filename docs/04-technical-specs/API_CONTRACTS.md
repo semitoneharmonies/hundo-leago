@@ -28,6 +28,12 @@
   `{ tradeDeadlineAtMs }`; `POST /api/v1/leagues/:leagueId/start` receives
   `{}`. Both writes retain CSRF, an intent-specific idempotency key, and the
   current league version in `If-Match`. Refetch after either operation.
+- The commissioner calendar collects the trade deadline alongside the draft
+  and season dates. Reviewing setup is read-only. Its explicitly labeled setup
+  confirmation sequences the two existing commands, using the league version
+  returned by the deadline save for the start request, then loads a fresh
+  schedule preview. Schedule confirmation remains separate. A partial setup
+  failure preserves and displays a successfully saved trade deadline.
 - GET requests remain read-only. Schema 56 adds nullable timing metadata to
   confirmed generations and freezes the initial rollover list when a new draft
   opens. Existing draft clocks and league records retain their values. See

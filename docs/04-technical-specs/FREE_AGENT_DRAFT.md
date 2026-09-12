@@ -12,6 +12,14 @@ ordered list of rapid-auction rollover instants. Default to daily rollovers
 and a final rollover at Week 1, while allowing the commissioner to choose the
 round count and exact rollover times, including several on the final day.
 
+Collect the season trade deadline in this same form. The initial league-setup
+review has no writes. Its explicit confirmation sequences the existing trade
+deadline and league-start commands using the returned current league version,
+then requests the read-only schedule preview. It does not confirm a schedule
+automatically. Refetch after success or failure; if only the deadline saved,
+show that saved value and retry preparation without resaving it. Preserve
+intent keys for retries of the same version and payload.
+
 Persist this timing with the confirmed schedule generation, bind it to the
 preview/version/idempotency evidence, and freeze the chosen initial timetable
 when Candidate Cards open. A forward migration must preserve all existing

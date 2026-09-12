@@ -1,7 +1,7 @@
 import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
 import { createOperationId } from "../../shared/api/idempotency.js";
 import { candidateDeadlineForWeekOne, suggestedRollovers, draftTimingIssue, MAX_ROLLOVERS } from "./fadScheduleTiming.js";
-import { LeagueDraftSetup } from "../leagues/LeagueDraftSetup.jsx";
+import { useLeagueDraftSetup } from "../leagues/useLeagueDraftSetup.js";
 import { useCurrentTime } from "../../shared/useCurrentTime.js";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1058,6 +1058,8 @@ function PreviewAction({
   onConfirm,
   confirmDisabled = false,
   previewDisabled = false,
+  previewLabel,
+  hidePreviewAction = false,
   timeZone = "America/Vancouver",
   children,
 }) {
@@ -1097,9 +1099,9 @@ function PreviewAction({
         context={title === "Schedule generation" ? "schedule" : "week"}
         onRetry={onPreview}
       />
-      {!preview ? (
+      {!preview ? (!hidePreviewAction &&
         <button className="hl-button hl-button--primary" type="button" onClick={onPreview} disabled={mutation.isPending || previewDisabled}>
-          Preview {title.toLowerCase()}
+          {previewLabel || `Preview ${title.toLowerCase()}`}
         </button>
       ) : (
         <div>
@@ -1168,6 +1170,7 @@ export function CommissionerCompetitionPage() {
   const [weekPreview, setWeekPreview] = useState(null);
   const [weekId, setWeekId] = useState("");
   const [calendarEdits, setCalendarEdits] = useState({});
+  const [setupReview, setSetupReview] = useState(false);
   const seasonId = context.seasonId;
   const seasons = useQuery({ ...leagueSeasonsQuery(context.session.httpClient, leagueId), enabled: Boolean(context.league && seasonId) });
   const selectedSeason = seasons.data?.find((season) => season.id === seasonId);
@@ -1204,7 +1207,7 @@ export function CommissionerCompetitionPage() {
       } : {}),
       [key]: value,
     } }));
-    setSchedulePreview(null); scheduleMutation.reset();
+    setSetupReview(false); setSchedulePreview(null); scheduleMutation.reset();
   }
   const commissioner = hasCommissionerAuthority(
     context.league?.membership
@@ -1216,6 +1219,13 @@ export function CommissionerCompetitionPage() {
       Boolean(context.league && seasonId && commissioner),
   });
   const availableWeeks = weeks.data?.weeks || [];
+  const setup = useLeagueDraftSetup({ httpClient: context.session.httpClient, leagueId, league: context.league,
+    enabled: commissioner && Boolean(seasonId) && weeks.isSuccess && availableWeeks.length === 0 });
+  const savedTradeDeadline = setup.settings?.tradeDeadlineAtMs;
+  const tradeDeadlineValue = Number.isSafeInteger(savedTradeDeadline) ? calendarInputValue(savedTradeDeadline, timeZone) : seasonEdits.tradeDeadlineAtMs || "";
+  const tradeDeadlineAtMs = calendarTimestamp(tradeDeadlineValue, timeZone);
+  const tradeDeadlineReady = Number.isSafeInteger(savedTradeDeadline) || (Number.isSafeInteger(tradeDeadlineAtMs) && tradeDeadlineAtMs > nowMs);
+  const setupReady = !setup.needsPreparation || (setup.canPrepare && tradeDeadlineReady);
   const defaultWeek =
     availableWeeks.find(({ status }) => status !== "final") ||
     availableWeeks[0] ||
@@ -1241,11 +1251,18 @@ export function CommissionerCompetitionPage() {
       else { setWeekPreview(null); invalidate(); }
     },
   });
+  async function prepareAndPreview() {
+    if (!calendarReady || !setupReady || setup.mutation.isPending) return;
+    try {
+      await setup.mutation.mutateAsync(tradeDeadlineAtMs);
+      setSetupReview(false);
+      scheduleMutation.mutate({ confirmed: false, calendar });
+    } catch { setSetupReview(false); }
+  }
   return (
     <CompetitionGate context={context} title="Commissioner competition tools">
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
-          {context.league.status === "setup" && <LeagueDraftSetup key={leagueId} leagueId={leagueId} />}
           <Surface className="hl-competition-setup-card">
             <h2>Roster corrections</h2>
             <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
@@ -1259,24 +1276,35 @@ export function CommissionerCompetitionPage() {
             </Surface>
           ) : (
           <PreviewAction title="Schedule generation" mutation={scheduleMutation} preview={schedulePreview} timeZone={timeZone}
-            previewDisabled={!calendarReady || weeks.isPending || weeks.isError || context.league.status === "setup"}
-            confirmDisabled={!calendarReady || context.league.status === "setup"}
-            onPreview={() => scheduleMutation.mutate({ confirmed: false, calendar })}
+            previewDisabled={!calendarReady || !setupReady || setup.loading || Boolean(setup.error) || setup.mutation.isPending || weeks.isPending || weeks.isError}
+            confirmDisabled={!calendarReady || setup.needsPreparation}
+            previewLabel={setup.needsPreparation ? "Review league setup" : undefined}
+            hidePreviewAction={setupReview && setup.needsPreparation}
+            onPreview={() => { setup.mutation.reset(); if (setup.needsPreparation) setSetupReview(true); else scheduleMutation.mutate({ confirmed: false, calendar }); }}
             onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedSeasonVersion, calendar })}>
             <p>Review the league calendar before generating a schedule. All dates use {timeZone}. End times are exclusive: April 11 at midnight includes games through April 10.</p>
             <p>The Free Agent Draft comes first. Choose the Candidate Card deadline independently of Week 1. Seven days is a starting suggestion; you decide how many rapid-auction rounds to hold and when each round ends. Week 1 must begin at an eligible league-local midnight.</p>
-            {context.league.status === "setup" && <p>Finish the league setup above to enable the schedule preview.</p>}
+            {setup.needsPreparation && <p>Enter the season dates together. Review them here, then save the trade deadline and prepare your teams for the first Free Agent Draft. You will preview the schedule before confirming it.</p>}
             {defaults ? <p className="hl-form-message">2026–27 default: September 29–April 10. Matchups follow Monday–Sunday where possible, with adjusted weeks around December 23–25 and February 4–7. Playoffs: March 15–21, March 22–28, and March 29–April 10. Review the preview before confirming.</p>
               : <p>Use the saved calendar for this season. Custom calendars use Monday starts and reserve the final 28 days for playoffs.</p>}
-            <div className="hl-form-grid">
+            {defaults && <button type="button" className="hl-button hl-button--quiet" disabled={scheduleMutation.isPending || setup.mutation.isPending} onClick={() => {
+              setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], ...defaults } }));
+              setSetupReview(false); setSchedulePreview(null); scheduleMutation.reset();
+            }}>Use default season dates</button>}
+            <fieldset disabled={scheduleMutation.isPending || setup.mutation.isPending} className="hl-form-grid" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+              <legend className="hl-visually-hidden">Season dates</legend>
+              <div className="hl-field"><label htmlFor="season-trade-deadline">Season trade deadline</label>
+                <input id="season-trade-deadline" type="datetime-local" value={tradeDeadlineValue} disabled={Number.isSafeInteger(savedTradeDeadline) || !setup.needsPreparation} onChange={(event) => changeCalendarField("tradeDeadlineAtMs", event.target.value)} />
+                {Number.isSafeInteger(savedTradeDeadline) && <span>Already saved for this season.</span>}
+              </div>
               <label className="hl-field">Candidate Card deadline
                 <input type="datetime-local" value={deadlineValue} onChange={(event) => changeCalendarField("candidateDeadlineAtMs", event.target.value)} />
               </label>
               {calendarFields.map(([key, label, value]) => <label className="hl-field" key={key}>{label}
                 <input type="datetime-local" value={calendarValue(key, value)} onChange={(event) => changeCalendarField(key, event.target.value)} />
               </label>)}
-            </div>
-            <fieldset className="hl-competition-setup-card">
+            </fieldset>
+            <fieldset className="hl-competition-setup-card" disabled={scheduleMutation.isPending || setup.mutation.isPending}>
               <legend>Rapid-auction rollovers</legend>
               <p>Start with one rollover every 24 hours, then adjust any date or time. Extra rounds fit into the final day. Every rollover must follow the previous round and finish by Week 1.</p>
               <label className="hl-field">Total rapid-auction rounds
@@ -1285,18 +1313,35 @@ export function CommissionerCompetitionPage() {
                   setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], roundCount: count,
                     rollovers: suggestedRollovers(candidateDeadlineAtMs, calendarDates.firstWeekStartsAtMs, Number(count)).map((time) => calendarInputValue(time, timeZone)),
                   } }));
-                  setSchedulePreview(null); scheduleMutation.reset();
+                  setSetupReview(false); setSchedulePreview(null); scheduleMutation.reset();
                 }} />
               </label>
               <button type="button" className="hl-button hl-button--quiet" onClick={() => {
                 setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], roundCount: undefined, rollovers: undefined } }));
-                setSchedulePreview(null); scheduleMutation.reset();
+                setSetupReview(false); setSchedulePreview(null); scheduleMutation.reset();
               }}>Use daily rollovers</button>
               <div className="hl-form-grid">{rolloverValues.map((value, index) => <label className="hl-field" key={index}>Round {index + 1} rolls over
                 <input type="datetime-local" value={value} onChange={(event) => changeCalendarField("rollovers", rolloverValues.map((time, position) => position === index ? event.target.value : time))} />
               </label>)}</div>
             </fieldset>
             {!calendarReady && <p role="status">{timingIssue || "Complete every date in the season calendar."}</p>}
+            {setup.loading && <LoadingBlock>Loading league setup…</LoadingBlock>}
+            {setup.error && <ErrorBlock error={setup.error} fallback="League setup could not be loaded." />}
+            {setup.needsPreparation && !setup.loading && !setup.error && <>
+              <p>{setup.managedTeamCount} managed teams · {setup.pendingInvitations} pending invitations</p>
+              {!setup.canPrepare && <p>At least four teams need accepted managers, and all invitations must be resolved.</p>}
+              {!tradeDeadlineReady && <p>Choose a future season trade deadline with the other dates above.</p>}
+              {setupReview && <section aria-label="League setup review">
+                <h3>Review league setup</h3>
+                <dl>{[["Season trade deadline", tradeDeadlineAtMs], ["Candidate Card deadline", candidateDeadlineAtMs], ...calendarFields.map(([key, label]) => [label, calendarDates[key]])].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{previewTimestamp(value, timeZone)}</dd></div>)}</dl>
+                <p>{Number.isSafeInteger(savedTradeDeadline) ? "Keep the saved trade deadline and prepare" : "Save this trade deadline and prepare"} {setup.managedTeamCount} teams for the inaugural draft? The trade deadline is fixed once saved. Next, review the schedule preview before confirming the draft timetable.</p>
+                <div className="hl-button-row">
+                  <button type="button" className="hl-button hl-button--primary" disabled={!calendarReady || !setupReady || setup.mutation.isPending} onClick={prepareAndPreview}>{setup.mutation.isPending ? "Preparing…" : Number.isSafeInteger(savedTradeDeadline) ? "Prepare league and preview schedule" : "Save trade deadline and prepare league"}</button>
+                  <button type="button" className="hl-button hl-button--quiet" disabled={setup.mutation.isPending} onClick={() => setSetupReview(false)}>Back to dates</button>
+                </div>
+              </section>}
+            </>}
+            {setup.mutation.error && <ErrorBlock error={setup.mutation.error} fallback="League preparation could not be completed. Review the saved trade deadline and try again." />}
           </PreviewAction>
           )}
           <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview} timeZone={timeZone}
