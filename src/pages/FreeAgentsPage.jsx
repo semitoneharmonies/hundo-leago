@@ -1,13 +1,11 @@
 // src/pages/FreeAgentsPage.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   getNextSundayDeadline,
   getNewAuctionCutoff,
   computeBidUiStateForAuction,
   totalCap,
-  totalBuyoutPenalty,
-  totalRetainedSalary,
 } from "../leagueUtils";
 
 
@@ -156,8 +154,6 @@ export default function FreeAgentsPage({
   teams,
   capLimit,
   maxRosterSize,
-  minForwards,
-  minDefensemen,
   freeAgents,
   onPlaceBid,
   playerApi,
@@ -185,7 +181,6 @@ export default function FreeAgentsPage({
   const [posFilter, setPosFilter] = useState("ALL"); // ALL | F | D | G
   const [minGp, setMinGp] = useState(0); // 0,10,20,30,40,50
   const [listSearch, setListSearch] = useState("");
-const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
 
   const [visibleCount, setVisibleCount] = useState(50);
 
@@ -238,7 +233,10 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
 
   // NOTE: TeamRosterPanel cap math counts IR + buyouts + retained salary.
   // So we reuse the same leagueUtils helpers here to match exactly.
-  const myRoster = Array.isArray(myTeam?.roster) ? myTeam.roster : [];
+  const myRoster = useMemo(
+    () => (Array.isArray(myTeam?.roster) ? myTeam.roster : []),
+    [myTeam]
+  );
 
   const myCounts = useMemo(() => {
     let F = 0,
@@ -274,7 +272,7 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
 ];
 
   
-     const lookupPlayerById = (id) => {
+  const lookupPlayerById = useCallback((id) => {
     const pid = normalizeNhlId(id);
     if (!pid) return null;
 
@@ -285,7 +283,7 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
       return byId.get(pid) || byId.get(String(pid)) || null;
     }
     return byId[pid] || byId[String(pid)] || null;
-  };
+  }, [playerApi]);
 
   const normalizeSearchPlayer = (p) => {
     if (!p) return null;
@@ -370,7 +368,7 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
         const results = await playerApi.searchPlayers(q, 12);
         setPlayerSearchResults(Array.isArray(results) ? results : []);
         setPlayerSearchOpen(true);
-      } catch (e) {
+      } catch {
         setPlayerSearchResults([]);
       } finally {
         setPlayerSearchLoading(false);
@@ -403,7 +401,7 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
 
     setPlayerSearchQuery(fullName || "");
     setPlayerSearchOpen(false);
-  }, [auctionPrefill]);
+  }, [auctionPrefill, lookupPlayerById]);
 
   /* =========================================================
      Session 1 foundation:
@@ -503,19 +501,13 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
   /* =========================================================
      Session 2: scope filtering
      ========================================================= */
-  const parseScope = (raw) => {
-    const s = String(raw || "");
-    if (s.startsWith("NHL:")) {
-      return { type: "NHL", teamAbbrev: s.slice(4) }; // "ALL" or "VAN"
-    }
-    if (s.startsWith("TEAM:")) {
-      return { type: "TEAM", teamName: s.slice(5) };
-    }
-    return { type: s };
-  };
-
-  const applyScope = (arr) => {
-    const parsed = parseScope(scope);
+  const applyScope = useCallback((arr) => {
+    const rawScope = String(scope || "");
+    const parsed = rawScope.startsWith("NHL:")
+      ? { type: "NHL", teamAbbrev: rawScope.slice(4) }
+      : rawScope.startsWith("TEAM:")
+        ? { type: "TEAM", teamName: rawScope.slice(5) }
+        : { type: rawScope };
 
     if (parsed.type === "ALL_PLAYERS") return arr;
     if (parsed.type === "FREE_AGENTS") return arr.filter((p) => p.isFreeAgent);
@@ -532,7 +524,7 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
     }
 
     return arr;
-  };
+  }, [compareIds, myTeamName, scope]);
 
   /* =========================================================
      Session 4: clear compare when team changes
@@ -541,7 +533,6 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
     setCompareIds(new Set());
     // also snap scope back if you're on COMPARE with old team
     // (keeps behavior predictable)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myTeamName]);
 
   /* =========================================================
@@ -583,7 +574,7 @@ const [nhlScope, setNhlScope] = useState("ALL"); // ALL | e.g. "VAN"
     });
 
     return sorted;
-  }, [rowsAll, scope, posFilter, minGp, listSearch, sortKey, sortDir, compareIds, myTeamName]);
+  }, [rowsAll, posFilter, minGp, listSearch, sortKey, sortDir, applyScope]);
 
   const visibleRows = filteredRows.slice(0, visibleCount);
   const remaining = Math.max(0, filteredRows.length - visibleCount);

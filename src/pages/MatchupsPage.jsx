@@ -25,20 +25,6 @@ const getRosterPlayersNoIR = (team) => {
   return roster.filter((p) => !p?.onIR); // ✅ exclude IR players
 };
 
-function formatPT(ms) {
-  if (!Number.isFinite(ms)) return "—";
-  // show PT explicitly so we don't get lost in UTC again
-  return new Date(ms).toLocaleString("en-US", {
-    timeZone: "America/Los_Angeles",
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }) + " PT";
-}
 function formatPTDate(ms) {
   if (!Number.isFinite(ms)) return "—";
   return new Date(ms).toLocaleDateString("en-US", {
@@ -57,6 +43,39 @@ function formatPTTime(ms) {
     hour12: true,
   });
 }
+
+const getPlayerStats = (player, statsByPlayerId) => {
+  const playerId = Number(player?.playerId);
+  if (!Number.isFinite(playerId)) return null;
+  return statsByPlayerId?.[playerId] || null;
+};
+
+const calcFP = (stats) => {
+  if (!stats) return 0;
+  const goals = Number(stats.goals || 0);
+  const assists = Number(stats.assists || 0);
+  return goals * 1.25 + assists;
+};
+
+const getTeamTotals = (players, statsByPlayerId) => {
+  let gp = 0;
+  let goals = 0;
+  let assists = 0;
+  let points = 0;
+  let fantasyPoints = 0;
+
+  for (const player of players) {
+    const stats = getPlayerStats(player, statsByPlayerId);
+    if (!stats) continue;
+    gp += Number(stats.gamesPlayed || 0);
+    goals += Number(stats.goals || 0);
+    assists += Number(stats.assists || 0);
+    points += Number(stats.points || 0);
+    fantasyPoints += calcFP(stats);
+  }
+
+  return { gp, g: goals, a: assists, pts: points, fp: fantasyPoints };
+};
 
 export default function MatchupsPage({
   currentUser,
@@ -77,9 +96,9 @@ export default function MatchupsPage({
   const [currentWeekId, setCurrentWeekId] = useState(null);
   const [week, setWeek] = useState(null);
     // Session 7: standings context (READ-ONLY)
-  const [standingsLoading, setStandingsLoading] = useState(false);
-  const [standingsErr, setStandingsErr] = useState("");
-  const [standings, setStandings] = useState(null);
+  const [, setStandingsLoading] = useState(false);
+  const [, setStandingsErr] = useState("");
+  const [, setStandings] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -161,51 +180,22 @@ export default function MatchupsPage({
       }
     }
 
-    if (apiOk) run();
-    else {
-      setLoading(false);
-      setErr("Missing apiBaseUrl (App is not passing backend URL).");
+    async function runOrReportMissingApi() {
+      if (!apiOk) {
+        setLoading(false);
+        setErr("Missing apiBaseUrl (App is not passing backend URL).");
+        return;
+      }
+      await run();
     }
+
+    runOrReportMissingApi();
 
     return () => {
       alive = false;
     };
   }, [apiBaseUrlSafe]);
 
-
-  // ---------------------------
-  // existing stats helpers
-  // ---------------------------
-  const getPlayerStats = (p) => {
-    const pid = Number(p?.playerId);
-    if (!Number.isFinite(pid)) return null;
-    return statsByPlayerId?.[pid] || null;
-  };
-
-  const calcFP = (st) => {
-    if (!st) return 0;
-    const g = Number(st.goals || 0);
-    const a = Number(st.assists || 0);
-    return g * 1.25 + a;
-  };
-
-  const teamTotals = (players) => {
-    let gp = 0,
-      g = 0,
-      a = 0,
-      pts = 0,
-      fp = 0;
-    for (const p of players) {
-      const st = getPlayerStats(p);
-      if (!st) continue;
-      gp += Number(st.gamesPlayed || 0);
-      g += Number(st.goals || 0);
-      a += Number(st.assists || 0);
-      pts += Number(st.points || 0);
-      fp += calcFP(st);
-    }
-    return { gp, g, a, pts, fp };
-  };
 
   const teamsArr = useMemo(() => {
     if (Array.isArray(teams)) return teams;
@@ -221,40 +211,22 @@ export default function MatchupsPage({
     return m;
   }, [teamsArr]);
 
-    // Session 7: standings lookup by team name (READ-ONLY)
-  const standingsByTeam = useMemo(() => {
-    const m = new Map();
-    const rows = Array.isArray(standings?.standings) ? standings.standings : [];
-    rows.forEach((row, idx) => {
-      const name = row?.teamName;
-      if (!name) return;
-      m.set(name, {
-        rank: idx + 1,
-        W: Number(row.W || 0),
-        L: Number(row.L || 0),
-        T: Number(row.T || 0),
-        PTS: Number(row.PTS || 0),
-      });
-    });
-    return m;
-  }, [standings]);
-
   // backend week pairs
   const pairs = Array.isArray(week?.pairs) ? week.pairs : [];
 
   // default selected matchup = first in the week
-  const [selectedPairIndex, setSelectedPairIndex] = useState(0);
+  const [pairSelection, setPairSelection] = useState({
+    weekId: null,
+    index: 0,
+  });
+  const selectedPairIndex =
+    pairSelection.weekId === currentWeekId ? pairSelection.index : 0;
   const safePairIndex = clamp(
     selectedPairIndex,
     0,
     Math.max(0, (pairs?.length || 1) - 1)
   );
   const selectedPair = pairs?.[safePairIndex] || null;
-
-  // reset selected pair if week changes
-  useEffect(() => {
-    setSelectedPairIndex(0);
-  }, [currentWeekId]);
 
   const getDisplayName = (p) => {
     const pid = Number(p?.playerId);
@@ -278,14 +250,20 @@ export default function MatchupsPage({
 
   const rowCount = Math.max(leftPlayers.length, rightPlayers.length, 1);
 
-  const leftTotals = useMemo(() => teamTotals(leftPlayers), [leftPlayers]);
-  const rightTotals = useMemo(() => teamTotals(rightPlayers), [rightPlayers]);
+  const leftTotals = useMemo(
+    () => getTeamTotals(leftPlayers, statsByPlayerId),
+    [leftPlayers, statsByPlayerId]
+  );
+  const rightTotals = useMemo(
+    () => getTeamTotals(rightPlayers, statsByPlayerId),
+    [rightPlayers, statsByPlayerId]
+  );
 
   const renderTeamChip = (team, side) => {
     const name = team?.name || "—";
     const pic = team?.profilePic || null;
     const players = getRosterPlayersNoIR(team);
-    const totals = teamTotals(players);
+    const totals = getTeamTotals(players, statsByPlayerId);
 
        const fpText = statsReady ? `${totals.fp.toFixed(1)} FP` : "— FP";
     const isRight = side === "right";
@@ -394,7 +372,7 @@ export default function MatchupsPage({
 
     const name = String(getDisplayName(p)).trim() || "Unknown player";
     const pos = normPos(p?.position);
-    const st = getPlayerStats(p);
+    const st = getPlayerStats(p, statsByPlayerId);
     const fp = calcFP(st);
 
     return (
@@ -563,27 +541,14 @@ export default function MatchupsPage({
               {pairs.map((pair, idx) => {
                 const a = teamsByName.get(pair[0]);
                 const b = teamsByName.get(pair[1]);
-                const aTotals = teamTotals(getRosterPlayersNoIR(a));
-                const bTotals = teamTotals(getRosterPlayersNoIR(b));
                 const selected = idx === safePairIndex;
-                const aS = standingsByTeam.get(pair[0]) || null;
-                const bS = standingsByTeam.get(pair[1]) || null;
-
-                const aRank = aS ? `(${aS.rank})` : "";
-                const bRank = bS ? `(${bS.rank})` : "";
-
-                const aRec = aS ? `${aS.W}-${aS.L}-${aS.T}, ${aS.PTS} PTS` : "";
-                const bRec = bS ? `${bS.W}-${bS.L}-${bS.T}, ${bS.PTS} PTS` : "";
-
-                const aBetter =
-                  aS && bS ? (aS.rank < bS.rank) : false;
-                const bBetter =
-                  aS && bS ? (bS.rank < aS.rank) : false;
 
                 return (
                   <button
                     key={`${pair[0]}-${pair[1]}-${idx}`}
-                    onClick={() => setSelectedPairIndex(idx)}
+                    onClick={() =>
+                      setPairSelection({ weekId: currentWeekId, index: idx })
+                    }
                     style={{
                       textAlign: "left",
                       padding: 10,

@@ -1,0 +1,176 @@
+import React from "react";
+import { AlertTriangle, ArrowRight, LoaderCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+
+import {
+  teamColourClass,
+  teamColourStyle,
+} from "../shared/teamIdentity.js";
+
+function classes(...values) {
+  return values.filter(Boolean).join(" ");
+}
+
+export function PageHeading({
+  eyebrow,
+  title,
+  description,
+  actions,
+  id,
+}) {
+  return (
+    <header className="hl-page-heading">
+      <div className="hl-page-heading__copy">
+        {eyebrow && <p className="hl-eyebrow">{eyebrow}</p>}
+        <h1 id={id}>{title}</h1>
+        {description && <p>{description}</p>}
+      </div>
+      {actions && <div className="hl-page-heading__actions">{actions}</div>}
+    </header>
+  );
+}
+
+export function Surface({ as = "section", className, children, ...props }) {
+  return React.createElement(
+    as,
+    { className: classes("hl-surface", className), ...props },
+    children
+  );
+}
+
+export function PanelHeading({ eyebrow, title, description, action, id }) {
+  return (
+    <header className="hl-panel-heading">
+      <div>
+        {eyebrow && <p className="hl-eyebrow">{eyebrow}</p>}
+        <h2 id={id}>{title}</h2>
+        {description && <p>{description}</p>}
+      </div>
+      {action && <div className="hl-panel-heading__action">{action}</div>}
+    </header>
+  );
+}
+
+export function TextLink({ to, children, className }) {
+  return (
+    <Link className={classes("hl-text-link", className)} to={to}>
+      <span>{children}</span>
+      <ArrowRight aria-hidden="true" />
+    </Link>
+  );
+}
+
+export function StatusBadge({ tone = "neutral", children, className }) {
+  return (
+    <span className={classes("hl-status-badge", `is-${tone}`, className)}>
+      {children}
+    </span>
+  );
+}
+
+export function PositionTag({ position, category = "Free Agent" }) {
+  const positionClass =
+    position === "F" ? "is-forward" : position === "D" ? "is-defence" : "";
+  const categoryClass = {
+    Active: "is-active-roster",
+    Bench: "is-bench",
+    "Injured Reserve": "is-injured-reserve",
+    Prospect: "is-prospect",
+    "Free Agent": "is-free-agent",
+  }[category] || "is-free-agent";
+
+  return (
+    <span
+      className={classes("hl-position-tag", positionClass, categoryClass)}
+      aria-label={`${position} position, ${category}`}
+      title={`${position} · ${category}`}
+    >
+      {position}
+    </span>
+  );
+}
+
+export function TeamMark({ team, logoUrl = null, className }) {
+  return (
+    <span
+      className={classes("hl-team-mark", teamColourClass(className))}
+      style={teamColourStyle(team)}
+      aria-hidden="true"
+    >
+      {logoUrl ? (
+        <img
+          key={logoUrl}
+          src={logoUrl}
+          crossOrigin="use-credentials"
+          alt=""
+          onError={(event) => {
+            event.currentTarget.hidden = true;
+          }}
+        />
+      ) : null}
+    </span>
+  );
+}
+
+export function TableScroll({ label, className, children }) {
+  return (
+    <div
+      className={classes("hl-table-scroll", className)}
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function LoadingBlock({ children = "Loading…" }) {
+  return (
+    <div className="hl-state-block" role="status">
+      <LoaderCircle className="hl-state-block__spinner" aria-hidden="true" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+export function EmptyBlock({ title, children }) {
+  return (
+    <div className="hl-state-block hl-state-block--empty">
+      <h3>{title}</h3>
+      {children && <span>{children}</span>}
+    </div>
+  );
+}
+
+export function ErrorBlock({
+  error,
+  fallback,
+  impact = "This section may be incomplete until it loads successfully.",
+  recovery = "Try again. If the problem continues, come back in a moment.",
+  action,
+  elementRef,
+  id,
+  tabIndex,
+}) {
+  const message =
+    fallback || error?.message || "The request could not be completed.";
+
+  return (
+    <div
+      className="hl-state-block hl-state-block--error"
+      id={id}
+      ref={elementRef}
+      role="alert"
+      tabIndex={tabIndex}
+    >
+      <AlertTriangle aria-hidden="true" />
+      <div>
+        <strong>{message}</strong>
+        <span>{impact}</span>
+        <span>{recovery}</span>
+        {action && <div className="hl-state-block__action">{action}</div>}
+      </div>
+    </div>
+  );
+}
