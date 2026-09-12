@@ -1023,6 +1023,59 @@ generic restore that would replace an authoritative staging or production
 database. The single M7-26 exception below does not remove that blocker for any
 other release, environment, backup, source path, or target path.
 
+### September 12 recovery preparation follow-up — local verification
+
+The backend follow-up through `8c72a624b8c05be8703f584be0428a81850e9d12`
+and the coordinated frontend request boundary in
+`b52e4106f3367ea24fc036a516cdefd639da0dec` are locally verified. These
+identifiers record source evidence; they do not assert shared staging publication
+or generic restore activation.
+
+`release:qa:recovery` now returns report version 6. It uses private encrypted
+artifacts and disposable synthetic databases to verify the selected backup,
+clean restore, preserved-source comparison, credential preparation, recovery
+inventory, and a second encrypted restore of the prepared candidate. Its
+credential receipt is version 5; its read-only reconciliation plan is version 2.
+The default fixture's unresolved messages remain held. Separate positive tests
+cover a later real service buyout, invalidated statistics-worker leases, and
+fresh-session rejection of action keys created before recovery.
+
+Implemented preparation tools under backend `src/operations/backups/`:
+
+| Tool | Result and boundary |
+| --- | --- |
+| `prepareRecoveryCredentials` | Creates a new offline temporary derivative; atomically invalidates sessions, action tokens and restored worker leases, suppresses stale account links, records a fresh recovery epoch and audit, and installs a durable recovery hold. |
+| `buildRecoveryReconciliationPlan` | Binds the verified preparation receipt, epoch, all table fingerprints, and each held job/message to a read-only review artifact. It grants no execution or delivery permission. |
+| `compareRecoveryLossWindow` | Compares exact verified offline restored and preserved database snapshots. It reports row fingerprints and differences without reconstructing missing league transactions. |
+| `prepareRecoveryEmailReconciliation` | Creates another isolated derivative and suppresses eligible duplicate account messages only against exact administrator-attributed delivery evidence. It records durable review metadata and audit, preserves jobs and all other records, and retains the hold. |
+
+Email evidence includes the original message and payload hashes, delivery time,
+and provider message/receipt hashes. The operation records supplied evidence;
+it does not independently fetch provider records, send mail, or accept league
+notifications. It is an operation primitive, not an automatic stage of the
+default rehearsal. Inspect a separate exact copy when preparing its input plan;
+the offline source guard rejects SQLite sidecars and never removes them.
+
+The common target HTTP security boundary exposes `X-Hundo-Recovery-Epoch`.
+New frontend intentions use the current recovery namespace; saved retries are
+never rewritten. Both source components must be deployed and verified before a
+recovered database is opened to ordinary clients. See
+[API contracts](../04-technical-specs/API_CONTRACTS.md) for the exact protocol.
+
+Local evidence includes 39 backend request-boundary checks, all 497 frontend
+tests plus lint/build, 25 integrated recovery checks including reviewed email
+suppression and a 134-table encrypted roundtrip, and one additional restored
+league-publication check. The latter explicitly selects fixture events through
+the existing publisher with a local capture sink; replay and worker restart do
+not publish completed events again or change authoritative domain records.
+These runs overlap in coverage and are not an aggregate full-backend pass.
+
+The durable hold still prevents normal runtime startup. Generic activation,
+exact job and league-notification decisions, required loss-window corrections,
+final post-reconciliation backup, controlled reopening and the complete hosted
+drill remain unfinished. Local tests do not constitute provider delivery proof,
+browser acceptance, shared database migration, or production authority.
+
 ### M7-26 release-bound staging-only strict restore materializer - closed record
 
 Grae authorized one release-bound isolated-staging restoration for strict
