@@ -1038,6 +1038,27 @@ describe("FAD frontend response contracts", () => {
     );
   });
 
+  it("accepts configured recovery round counts and an opening-time cutoff while rejecting invalid clocks and empty rounds", () => {
+    for (const count of [1, 5, 14]) {
+      const value = recoveryProjection();
+      const first = value.rollovers[0];
+      value.rollovers = Array.from({ length: count }, (_, index) => ({ ...first,
+        rolloverId: id(100 + index), sequence: index + 1,
+        opensAtMs: first.opensAtMs + index * 20,
+        creationCutoffAtMs: first.opensAtMs + index * 20,
+        rollsOverAtMs: first.opensAtMs + (index + 1) * 20,
+      }));
+      value.fad.counts.rolloversPersisted = count;
+      value.availableActions = [...value.availableActions.filter(action => action.action !== "finalize_rollover"), ...rolloverActions(value.rollovers)];
+      expect(validateFreeAgentDraftRecovery(value)).toBe(true);
+      const invalid = structuredClone(value);
+      invalid.rollovers[0].creationCutoffAtMs -= 1;
+      expect(() => validateFreeAgentDraftRecovery(invalid)).toThrow();
+      value.rollovers = [];
+      expect(() => validateFreeAgentDraftRecovery(value)).toThrow();
+    }
+  });
+
   it("mirrors the T-141 operation, recovery, action, rollover, count, and schedule bindings", () => {
     const baseline = recoveryProjection();
     expect(validateFreeAgentDraftRecovery(baseline)).toBe(true);

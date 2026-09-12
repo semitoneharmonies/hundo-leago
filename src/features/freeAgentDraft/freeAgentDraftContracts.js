@@ -1681,7 +1681,7 @@ function recoveryRollover(value, location) {
   contract(typeof value.blocksCompletion === "boolean", `${location}.blocksCompletion is invalid.`);
   safeInteger(value.version, `${location}.version`, { positive: true });
   contract(
-    value.opensAtMs < value.creationCutoffAtMs &&
+    value.opensAtMs <= value.creationCutoffAtMs &&
       value.creationCutoffAtMs < value.rollsOverAtMs &&
       (["processing", "completed", "recovery_required"].includes(value.status) ===
         (value.processingStartedAtMs !== null)) &&
@@ -1985,7 +1985,7 @@ export function validateFreeAgentDraftRecovery(data) {
           data.completionOperation.resourceId === data.fad.fadId)),
     "Free Agent Draft recovery singleton operation partitions are invalid."
   );
-  contract(Array.isArray(data.rollovers) && data.rollovers.length >= 7, "Free Agent Draft recovery.rollovers is invalid.");
+  contract(Array.isArray(data.rollovers) && data.rollovers.length >= 1, "Free Agent Draft recovery.rollovers is invalid.");
   data.rollovers.forEach((rollover, index) => recoveryRollover(rollover, `Free Agent Draft recovery.rollovers[${index}]`));
   contract(
     data.rollovers.every((rollover, index) => rollover.sequence === index + 1),
