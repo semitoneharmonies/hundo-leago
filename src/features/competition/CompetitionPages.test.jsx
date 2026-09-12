@@ -333,6 +333,7 @@ function baseFetch(
     if (path === "/api/v1/leagues") {
       return envelope({ code: "LEAGUES_FOUND", leagues: visibleLeagues });
     }
+    if (path === `/api/v1/leagues/${leagueId}/settings`) return envelope({ code: "LEAGUE_SETTINGS_FOUND", settings: { leagueId, tradeDeadlineAtMs: Date.parse("2027-03-01T08:00:00Z"), version: 1 } });
     return extra(path, options);
   });
 }

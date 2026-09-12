@@ -61,7 +61,7 @@ async function fixture(page, baseURL, { locked = false } = {}) {
       if (path === prefix + '/seasons/' + seasonId + '/matchup-schedules' && !request.postDataJSON().confirmed) {
         const startsAtMs = request.postDataJSON().firstWeekStartsAtMs
         return reply(route, { code: 'MATCHUP_SCHEDULE_PREVIEWED', preview: { seasonId, expectedSeasonVersion: 1,
-          firstWeekStartsAtMs: startsAtMs, nhlRegularSeasonEndsAtMs: request.postDataJSON().nhlRegularSeasonEndsAtMs,
+          draftTiming: request.postDataJSON().draftTiming, firstWeekStartsAtMs: startsAtMs, nhlRegularSeasonEndsAtMs: request.postDataJSON().nhlRegularSeasonEndsAtMs,
           participantCount: 4, weekCount: 1, matchupCount: 2, byeCount: 0, weeks: [{ sequence: 1, startsAtMs, endsAtMs: startsAtMs + 604800000 }] } })
       }
     }
@@ -71,29 +71,44 @@ async function fixture(page, baseURL, { locked = false } = {}) {
   return { writes, unexpected }
 }
 
-test('commissioner prepares the inaugural draft and reviews linked dates', async ({ page, baseURL }, testInfo) => {
+test('commissioner reviews all dates together and chooses independent draft deadlines and rollovers', async ({ page, baseURL }, testInfo) => {
   const state = await fixture(page, baseURL)
   await page.goto('/leagues/' + leagueId + '/commissioner')
-  await expect(page.getByRole('heading', { name: 'Prepare your first Free Agent Draft' })).toBeVisible({ timeout: 15000 })
-  await expect(page.getByRole('button', { name: 'Preview schedule generation' })).toBeDisabled()
+  await expect(page.getByRole('heading', { name: 'Schedule generation', exact: true })).toBeVisible({ timeout: 15000 })
+  await expect(page.getByRole('button', { name: 'Review league setup' })).toBeDisabled()
   await page.getByLabel('Season trade deadline').fill('2027-03-01T00:00')
-  await page.getByRole('button', { name: 'Save trade deadline' }).click()
-  await page.getByRole('button', { name: 'Prepare league for draft' }).click()
-  expect(state.writes).toHaveLength(1)
+  await page.getByLabel('Candidate Card deadline').fill('2026-09-27T00:00')
+  await page.getByLabel('Total rapid-auction rounds').fill('5')
+  await page.getByLabel('Round 3 rolls over', { exact: true }).fill('2026-09-28T12:30')
+  await expect(page.getByLabel('Week 1 starts')).toHaveValue('2026-09-29T00:00')
+  await expect(page.getByRole('group', { name: 'Season dates' }).getByLabel('Season trade deadline')).toBeVisible()
+  await page.getByRole('button', { name: 'Review league setup' }).click()
+  expect(state.writes).toHaveLength(0)
   await expectNoAxeViolations(page)
   await page.screenshot({ path: testInfo.outputPath('draft-setup.png'), fullPage: true })
-  await page.getByRole('button', { name: 'Confirm draft setup' }).click()
-  await expect(page.getByRole('heading', { name: 'Prepare your first Free Agent Draft' })).toHaveCount(0)
-  await expect(page.getByLabel('Candidate Card deadline')).toHaveValue('2026-09-22T00:00')
-  await page.getByLabel('Candidate Card deadline').fill('2026-10-01T00:00')
-  await expect(page.getByLabel('Week 1 starts')).toHaveValue('2026-10-08T00:00')
-  await page.getByRole('button', { name: 'Preview schedule generation' }).click()
+  await page.getByRole('button', { name: 'Save trade deadline and prepare league' }).click()
   await expect(page.getByText('Review every matchup week')).toBeVisible()
   expect(state.writes).toHaveLength(3)
   expect(state.writes[1].headers['if-match']).toBe('"4"')
   expect(state.writes[1].headers['x-csrf-token']).toBe('D'.repeat(43))
-  expect(state.writes[2].body.firstWeekStartsAtMs).toBe(Date.parse('2026-10-08T07:00:00Z'))
+  expect(state.writes[2].body.firstWeekStartsAtMs).toBe(Date.parse('2026-09-29T07:00:00Z'))
   expect(state.writes[2].body.confirmed).toBe(false)
+  expect(state.writes[2].body.draftTiming.rolloverTimesAtMs).toHaveLength(5)
+  expect(state.writes[2].body.draftTiming.rolloverTimesAtMs[2]).toBe(Date.parse('2026-09-28T19:30:00Z'))
+  await expect(page.getByRole('region', { name: 'Free Agent Draft timetable' })).toBeVisible()
+  await page.getByLabel('Candidate Card deadline').fill('2026-09-13T00:00')
+  await page.getByLabel('NHL regular season starts').fill('2026-09-29T13:00')
+  await page.getByLabel('Week 1 starts').fill('2026-09-20T00:00')
+  await page.getByRole('button', { name: 'Use default season dates' }).click()
+  await expect(page.getByLabel('Candidate Card deadline')).toHaveValue('2026-09-13T00:00')
+  await expect(page.getByLabel('Week 1 starts')).toHaveValue('2026-09-29T00:00')
+  await expect(page.getByLabel('Round 3 rolls over', { exact: true })).toHaveValue('2026-09-28T12:30')
+  await page.getByRole('button', { name: 'Use daily rollovers' }).click()
+  await expect(page.getByLabel('Total rapid-auction rounds')).toHaveValue('16')
+  await page.getByRole('button', { name: 'Preview schedule generation' }).click()
+  await expect(page.getByRole('region', { name: 'Free Agent Draft timetable' })).toContainText('16 rapid-auction rounds')
+  expect(state.writes).toHaveLength(4)
+  expect(state.writes[3].body.draftTiming.candidateDeadlineAtMs).toBe(Date.parse('2026-09-13T07:00:00Z'))
   expect(state.unexpected).toEqual([])
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   await expectNoAxeViolations(page)
