@@ -16,6 +16,7 @@ import { TeamRosterPage } from "../rosters/TeamRosterPage.jsx";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
+import { TeamCreationPanel } from "./TeamCreationPanel.jsx";
 import { StatisticsRefreshPanel } from "./StatisticsRefreshPanel.jsx";
 import {
   adminUsersQuery,
@@ -34,7 +35,7 @@ import {
   readLeaguePreference,
   writeLeaguePreference,
 } from "./leaguePreference.js";
-import { leagueAuthorityLabel } from "../../shared/leagueAuthority.js";
+import { hasCommissionerAuthority, leagueAuthorityLabel } from "../../shared/leagueAuthority.js";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import { createIntentKey } from "../accounts/accountApi.js";
 import { PendingLeagueAccess } from "../notifications/NotificationsPage.jsx";
@@ -445,6 +446,9 @@ export function LeagueTeamsPage() {
               title="Teams"
               id="teams-title"
             />
+            {authorized.status === "setup" && hasCommissionerAuthority(authorized.membership) && (
+              <TeamCreationPanel key={leagueId} leagueId={leagueId} httpClient={session.httpClient} />
+            )}
             {teamsQuery.data.length === 0 ? (
               <Surface><EmptyBlock title="No teams have been created" /></Surface>
             ) : (

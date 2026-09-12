@@ -9,7 +9,9 @@ import {
   validateAdminUsers,
   validateTeamDetail,
   validateTeamList,
+  validateTeam,
 } from "./leagueContracts.js";
+import { ResponseContractError } from "../../shared/api/responseContracts.js";
 
 export const leagueKeys = Object.freeze({
   all: ["leagues"],
@@ -199,6 +201,26 @@ export async function createLeague(
       dataKind: "object",
     })
   ).data;
+}
+
+export async function createLeagueTeam(httpClient, leagueId, name, idempotencyKey) {
+  return (await httpClient.request(
+    `/api/v1/leagues/${encodeURIComponent(leagueId)}/teams`,
+    {
+      method: "POST",
+      authenticated: true,
+      body: { name },
+      idempotencyKey,
+      dataKind: "object",
+      validateData: (data) => {
+        if (data?.code !== "TEAM_CREATED" || data.team?.leagueId !== leagueId ||
+            data.team?.status !== "setup" || data.team?.currentManager !== null) {
+          throw new ResponseContractError("The created team response is invalid.");
+        }
+        return validateTeam(data.team);
+      },
+    }
+  )).data;
 }
 
 export async function assignLeagueCommissioner(

@@ -355,6 +355,24 @@ function renderLeagueRoutes(initialEntry, fetchImpl) {
 }
 
 describe("league selection", () => {
+  it.each([
+    ["commissioner", "setup", true],
+    ["platform_administrator", "setup", true],
+    ["manager", "setup", false],
+    ["member", "setup", false],
+    ["commissioner", "active", false],
+    ["platform_administrator", "active", false],
+  ])("gates empty-team creation for %s in %s", async (authority, status, visible) => {
+    const record = league(leagueOneId, "Setup League");
+    record.status = status;
+    record.membership.effectiveAuthority = authority;
+    const fetchImpl = fetchScenario([record]);
+    renderLeagueRoutes(`/leagues/${leagueOneId}/teams`, fetchImpl);
+    await screen.findByRole("heading", { name: "Teams", level: 1 });
+    expect(Boolean(screen.queryByRole("button", { name: "Create team" }))).toBe(visible);
+    expect(fetchImpl.mock.calls.some(([, options]) => options?.method === "POST")).toBe(false);
+  });
+
   it("shows statistics refresh to an administrator without refreshing on page load", async () => {
     const fetchImpl = fetchScenario([], { platformAdmin: true });
     renderLeagueRoutes("/leagues", fetchImpl);
