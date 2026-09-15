@@ -34,7 +34,10 @@ export function RealtimeProvider({
   const [socketStatus, setSocketStatus] = useState("disconnected");
   const [privacyEpoch, setPrivacyEpoch] = useState(0);
   const sessionStatus = session.status;
+  const sessionId = session.session?.id;
+  const userId = session.user?.id;
   const adoptSession = session.adoptSession;
+  const clearAuthentication = session.clearAuthentication;
   const httpClient = session.httpClient;
 
   if (
@@ -48,6 +51,8 @@ export function RealtimeProvider({
     if (sessionStatus !== "authenticated" || !socketOrigin) return undefined;
 
     let active = true;
+    let authorizationGeneration = 0;
+    let authorizationController;
     let reconnecting = 0;
     let eventPrivacyBoundaries = 0;
     let postPrivacyStatus = "connected";
@@ -95,27 +100,56 @@ export function RealtimeProvider({
       }
     };
 
-    const onConnect = async () => {
+    const reauthorizeSession = async (serverDisconnected = false) => {
+      const generation = ++authorizationGeneration;
+      authorizationController?.abort();
+      const controller = new AbortController();
+      authorizationController = controller;
+      const isCurrent = () => active && generation === authorizationGeneration;
       reconnecting += 1;
-      postPrivacyStatus = "connected";
+      postPrivacyStatus = serverDisconnected ? "disconnected" : "connected";
       setSocketStatus("reauthorizing");
       setPrivacyEpoch((value) => value + 1);
       try {
         await reauthorizePrivateQueriesOnReconnect(queryClient);
-        const current = await bootstrapSession(httpClient);
-        if (!active) return;
-        await adoptSession(current);
+        if (!isCurrent()) return;
+        const current = await bootstrapSession(httpClient, { signal: controller.signal });
+        if (!isCurrent()) return;
+        const adopted = await adoptSession(current);
+        if (!isCurrent() || adopted === false) return;
         await queryClient.invalidateQueries({ refetchType: "active" });
-      } catch {
-        postPrivacyStatus = "disconnected";
+        if (serverDisconnected && isCurrent()) socket.connect();
+      } catch (error) {
+        if (isCurrent()) {
+          postPrivacyStatus = "disconnected";
+          // An explicit server disconnect is an authority boundary. If its
+          // fresh HTTP check cannot confirm access, discard the old viewer.
+          // HTTP 401 already clears authentication through the session client.
+          if (serverDisconnected && error?.status !== 401) {
+            await clearAuthentication("session-expired");
+          }
+        }
       } finally {
         reconnecting -= 1;
         settlePrivacyStatus();
       }
     };
 
-    const onDisconnect = () => {
+    const onConnect = () => reauthorizeSession();
+    const onDisconnect = (reason) => {
       postPrivacyStatus = "disconnected";
+      if (reason === "io server disconnect") return reauthorizeSession(true);
+      authorizationGeneration += 1;
+      authorizationController?.abort();
+      settlePrivacyStatus();
+    };
+    const onConnectError = (error) => {
+      postPrivacyStatus = "disconnected";
+      if (error?.data?.code === "SOCKET_SESSION_REQUIRED") {
+        authorizationGeneration += 1;
+        authorizationController?.abort();
+        return clearAuthentication("session-expired");
+      }
       settlePrivacyStatus();
     };
 
@@ -123,25 +157,29 @@ export function RealtimeProvider({
     if (typeof socket.on === "function") {
       socket.on("connect", onConnect);
       socket.on("disconnect", onDisconnect);
-      socket.on("connect_error", onDisconnect);
+      socket.on("connect_error", onConnectError);
     }
 
     return () => {
       active = false;
+      authorizationController?.abort();
       socket.offAny(onAny);
       if (typeof socket.off === "function") {
         socket.off("connect", onConnect);
         socket.off("disconnect", onDisconnect);
-        socket.off("connect_error", onDisconnect);
+        socket.off("connect_error", onConnectError);
       }
       socket.disconnect();
     };
   }, [
     adoptSession,
+    clearAuthentication,
     httpClient,
     invalidationMappers,
     queryClient,
     sessionStatus,
+    sessionId,
+    userId,
     socketFactory,
     socketOrigin,
   ]);

@@ -40,7 +40,7 @@ test('sign-out removes private Candidate Card DOM and leaves no persistent copy'
   await expectNoPrivatePersistence(page, markers)
 })
 
-test('session replacement purges the first context before another private card loads', async ({
+test('session replacement immediately clears the private card and denies another card', async ({
   accountPage,
   browser,
   fadFixture,
@@ -65,11 +65,14 @@ test('session replacement purges the first context before another private card l
   const replacementAccount = new AccountPage(replacementPage, fadFixture)
   await replacementAccount.signIn(manager)
 
-  const secondTeamLink = freeAgentDraftPage.teamLink(
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await expectNoPrivateDom(page, markers)
+  await expectNoPrivatePersistence(page, markers)
+
+  await freeAgentDraftPage.openCard(
+    beta,
     managedTeams.find(({ teamId }) => teamId !== firstTeam.teamId)
   )
-  await expect(secondTeamLink).toBeVisible()
-  await secondTeamLink.click()
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
   await expectNoPrivateDom(page, markers)
   await expectNoPrivatePersistence(page, markers)

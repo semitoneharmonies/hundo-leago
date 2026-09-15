@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import { validateCommissionerAssignment } from "./notificationContracts.js";
+import { ResponseContractError } from "../../shared/api/responseContracts.js";
 import { TeamManagerAssignmentActions } from "./TeamManagerAssignmentActions.jsx";
 import {
   EmptyBlock,
@@ -67,36 +68,65 @@ function CommissionerAssignmentActions({ assignmentId, session, onAccepted }) {
   const queryClient = useQueryClient();
   const path = `/api/v1/commissioner-assignments/${encodeURIComponent(assignmentId)}`;
   const assignment = useQuery({
-    queryKey: ["commissioner-assignment", assignmentId],
+    queryKey: notificationKeys.commissionerAssignment(assignmentId),
     queryFn: async ({ signal }) => (await session.httpClient.request(path, { authenticated: true, dataKind: "object", signal, validateData: (data) => validateCommissionerAssignment(data, assignmentId) })).data,
     meta: { private: true },
+    // An invited user may not yet receive events from this league's socket room.
+    refetchInterval: query => query.state.status === "success" &&
+      query.state.data?.assignment.status === "pending" ? 15_000 : false,
+    refetchIntervalInBackground: true,
+    retry: false,
   });
+  const assignmentStatus = assignment.data?.assignment.status;
+  useEffect(() => {
+    if (["accepted", "declined", "expired"].includes(assignmentStatus)) {
+      void queryClient.invalidateQueries({ queryKey: leagueKeys.all });
+    }
+  }, [assignmentStatus, queryClient]);
   const action = useMutation({
-    mutationFn: async () => (await session.httpClient.request(`${path}/accept`, { method: "POST", body: {}, authenticated: true, dataKind: "object", validateData: (data) => validateCommissionerAssignment(data, assignmentId) })).data,
-    onSuccess: async (data) => {
-      onAccepted?.(data.league);
+    mutationFn: async (decision) => {
+      const data = (await session.httpClient.request(`${path}/${decision}`, {
+        method: "POST", body: {}, authenticated: true, dataKind: "object",
+        validateData: result => validateCommissionerAssignment(result, assignmentId),
+      })).data;
+      validateCommissionerAssignment(data, assignmentId);
+      if (data.assignment.status !== (decision === "accept" ? "accepted" : "declined") ||
+          data.league.id !== assignment.data.league.id) {
+        throw new ResponseContractError("The commissioner decision confirmation is invalid.");
+      }
+      return data;
+    },
+    onSuccess: async (data, decision) => {
+      queryClient.setQueryData(notificationKeys.commissionerAssignment(assignmentId), data);
+      if (decision === "accept") onAccepted?.(data.league);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["commissioner-assignment", assignmentId] }),
+        queryClient.invalidateQueries({ queryKey: notificationKeys.commissionerAssignment(assignmentId) }),
         queryClient.invalidateQueries({ queryKey: leagueKeys.all }),
         queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
       ]);
     },
   });
   if (assignment.isPending) return <LoadingBlock>Loading commissioner invitation…</LoadingBlock>;
-  if (assignment.isError) return <ErrorBlock error={assignment.error} fallback="This commissioner invitation is no longer available to your account." recovery="Ask the league administrator to review the assignment." />;
+  if (assignment.isError && !action.data) return <ErrorBlock error={assignment.error} fallback="This commissioner invitation is no longer available to your account." recovery="Ask the league administrator to review the assignment." />;
   const data = action.data || assignment.data;
   return <div className="hl-notification-invitation">
     <p>You have been invited to serve as commissioner of <strong>{data.league.name}</strong>.</p>
     {data.assignment.status === "pending" ? <>
       <p>Accept to manage league setup, invite managers and use commissioner tools.</p>
-      <button type="button" className="hl-button hl-button--primary" disabled={action.isPending} onClick={() => action.mutate()}>
-        {action.isPending ? "Accepting…" : "Accept commissioner role"}
-      </button>
+      <div className="hl-notification-invitation__actions">
+        <button type="button" className="hl-button hl-button--primary" disabled={action.isPending} onClick={() => { if (!action.isPending) action.mutate("accept"); }}>
+          {action.isPending && action.variables === "accept" ? "Accepting…" : "Accept commissioner role"}
+        </button>
+        <button type="button" className="hl-button hl-button--quiet" disabled={action.isPending} onClick={() => { if (!action.isPending) action.mutate("decline"); }}>
+          {action.isPending && action.variables === "decline" ? "Declining…" : "Decline commissioner role"}
+        </button>
+      </div>
     </> : data.assignment.status === "accepted" ? <>
       <p role="status">Commissioner role accepted.</p>
       <Link className="hl-button hl-button--primary" to={routePaths.league(data.league.id)}>Continue league setup</Link>
-    </> : <p>This commissioner invitation is no longer pending. Ask the administrator if you still need access.</p>}
-    {action.error && <ErrorBlock error={action.error} fallback="The commissioner assignment could not be accepted." recovery="Refresh the assignment and try again." />}
+    </> : data.assignment.status === "declined" ? <p role="status">Commissioner invitation declined.</p>
+      : <p>This commissioner invitation is no longer pending. Ask the administrator if you still need access.</p>}
+    {action.error && data.assignment.status === "pending" && <ErrorBlock error={action.error} fallback="Your commissioner response could not be confirmed." recovery="Refresh the assignment to check its current status, then try again if needed." />}
   </div>;
 }
 
@@ -259,6 +289,8 @@ function LeagueInvitationActions({ notification, session }) {
   const queryClient = useQueryClient();
   const invitationId = notification.messageData.invitationId;
   const [teamName, setTeamName] = useState("");
+  const canonicalTeamName = teamName.trim();
+  const validTeamName = canonicalTeamName.length > 0 && Array.from(canonicalTeamName).length <= 35;
   const [completedMessage, setCompletedMessage] = useState("");
   const invitation = useQuery(
     leagueInvitationQuery(session.httpClient, invitationId)
@@ -270,7 +302,7 @@ function LeagueInvitationActions({ notification, session }) {
             session.httpClient,
             invitationId,
             invitation.data.invitation.workflow === "create_team"
-              ? { teamName: teamName.trim() }
+              ? { teamName: canonicalTeamName }
               : {}
           )
         : declineLeagueInvitation(session.httpClient, invitationId),
@@ -329,21 +361,25 @@ function LeagueInvitationActions({ notification, session }) {
           : `Join ${invitation.data.league.name} as manager of ${invitation.data.team.name}.`}
       </span>
       {createsTeam && (
-        <label className="hl-field">
-          Team name
-          <input
-            value={teamName}
-            maxLength={80}
-            onChange={(event) => setTeamName(event.target.value)}
-          />
-        </label>
+        <>
+          <label className="hl-field">
+            Team name
+            <input
+              value={teamName}
+              maxLength={70}
+              aria-describedby={`invitation-team-name-hint-${invitationId}`}
+              onChange={(event) => setTeamName(event.target.value)}
+            />
+          </label>
+          <small id={`invitation-team-name-hint-${invitationId}`}>Up to 35 characters.</small>
+        </>
       )}
       <div className="hl-notification-invitation__actions">
         <button
           className="hl-button hl-button--primary"
           type="button"
           disabled={
-            action.isPending || (createsTeam && teamName.trim() === "")
+            action.isPending || (createsTeam && !validTeamName)
           }
           onClick={() => action.mutate("accept")}
         >

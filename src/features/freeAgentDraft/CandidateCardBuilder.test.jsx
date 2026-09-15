@@ -303,6 +303,31 @@ describe("CandidateCardBuilder whole-card form", () => {
     expect(httpClient.request).not.toHaveBeenCalled();
   });
 
+  it("keeps edits after a lost save response without claiming the server did not save", async () => {
+    const error = Object.assign(new Error("The response was lost."), {
+      code: "NETWORK_ERROR",
+      category: "network",
+    });
+    const httpClient = { request: vi.fn().mockRejectedValue(error) };
+    const { onProtectedFailure } = renderBuilder(card(), httpClient);
+    fireEvent.click(screen.getByRole("button", { name: "Choose player for F01 player name" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "F01 AAV" }), {
+      target: { value: "5.25" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "F01 term" }), {
+      target: { value: "2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Candidate Card" }));
+    expect(await screen.findByText("The Candidate Card save could not be confirmed.")).toBeVisible();
+    expect(screen.queryByText("Your Candidate Card has not been changed.")).toBeNull();
+    expect(screen.getByText("Your entries remain available on this page.")).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "F01 AAV" })).toHaveValue("5.25");
+    expect(screen.getByRole("combobox", { name: "F01 term" })).toHaveValue("2");
+    expect(screen.getByRole("button", { name: "Save Candidate Card" })).toBeEnabled();
+    expect(httpClient.request).toHaveBeenCalledTimes(1);
+    expect(onProtectedFailure).toHaveBeenCalledWith(error);
+  });
+
   it("preserves a dirty draft after 412 and retries with the refreshed version", async () => {
     const staleError = Object.assign(new Error("The card changed."), {
       status: 412,

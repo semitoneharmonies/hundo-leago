@@ -283,7 +283,7 @@ export function CandidateCardBuilder({
           "This card changed before your save was applied. Your entries are still here. Review the refreshed card and save again."
         );
       } else {
-        setFormError("The Candidate Card could not be saved.");
+        setFormError("The Candidate Card save could not be confirmed.");
       }
       onProtectedFailure?.(error);
     },
@@ -480,7 +480,7 @@ export function CandidateCardBuilder({
         {formError && (
           <ErrorBlock
             fallback={formError}
-            impact="Your Candidate Card has not been changed."
+            impact="Your entries remain available on this page."
             recovery="Review any highlighted rows, then try the save again."
           />
         )}

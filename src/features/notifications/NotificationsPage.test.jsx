@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useLocation } from "react-router-dom";
 
@@ -211,7 +211,64 @@ function PendingAccessHarness() {
   return <PendingLeagueAccess session={useSession()} />;
 }
 
+function renderCreateTeamInvitation() {
+  let accepted = false;
+  const request = vi.fn(async (path, options) => {
+    let data;
+    if (path.startsWith("/api/v1/notifications?")) {
+      data = { code: "NOTIFICATIONS_FOUND", notifications: accepted ? [] : [{
+        id: notificationId, leagueId, type: "league_invitation_created",
+        messageData: { invitationId, leagueId, leagueName: "New League", workflow: "create_team", teamId: null },
+        related: { feature: "league_invitation", recordId: invitationId }, deliveryStatus: "delivered",
+        createdAtMs: 1, readAtMs: null, deliveredAtMs: 1, version: 1,
+      }], page: { limit: 25, nextCursor: null } };
+    } else if (path.startsWith(`/api/v1/league-invitations/${invitationId}`)) {
+      if (options.method === "POST") accepted = true;
+      data = { code: accepted ? "LEAGUE_INVITATION_ACCEPTED" : "LEAGUE_INVITATION_FOUND",
+        invitation: { id: invitationId, status: accepted ? "accepted" : "pending", workflow: "create_team" },
+        league: { id: leagueId, name: "New League" }, team: null };
+    } else if (path === `/api/v1/notifications/${notificationId}/read`) {
+      data = { code: "NOTIFICATION_READ" };
+    } else throw new Error(`Unexpected request: ${path}`);
+    options.validateData?.(data);
+    return { data };
+  });
+  const session = { status: "authenticated", user: { id: "user-1" }, httpClient: { request } };
+  return { ...renderWithProviders(<PendingLeagueAccess session={session} />, { config }), request };
+}
+
 describe("M5-11 owner notifications", () => {
+  it("blocks an invitation team name over 35 characters without submitting", async () => {
+    const view = renderCreateTeamInvitation();
+    await view.user.click(await screen.findByText("Invitation to New League — Review"));
+    const input = await screen.findByRole("textbox", { name: "Team name" });
+    fireEvent.change(input, { target: { value: "A".repeat(36) } });
+    expect(screen.getByRole("button", { name: "Accept invitation" })).toBeDisabled();
+    expect(input).toHaveAccessibleDescription("Up to 35 characters.");
+    expect(view.request.mock.calls.some(([, options]) => options.method === "POST")).toBe(false);
+  });
+
+  it("accepts an invitation team name of exactly 35 Unicode characters", async () => {
+    const view = renderCreateTeamInvitation();
+    await view.user.click(await screen.findByText("Invitation to New League — Review"));
+    const name = "🏒".repeat(35);
+    fireEvent.change(await screen.findByRole("textbox", { name: "Team name" }), { target: { value: name } });
+    await view.user.click(screen.getByRole("button", { name: "Accept invitation" }));
+    expect(view.request).toHaveBeenCalledWith(`/api/v1/league-invitations/${invitationId}/accept`, expect.objectContaining({ method: "POST", body: { teamName: name } }));
+  });
+
+  it("blocks a blank invitation team name and trims a valid submission", async () => {
+    const view = renderCreateTeamInvitation();
+    await view.user.click(await screen.findByText("Invitation to New League — Review"));
+    const input = await screen.findByRole("textbox", { name: "Team name" });
+    fireEvent.change(input, { target: { value: "   " } });
+    expect(screen.getByRole("button", { name: "Accept invitation" })).toBeDisabled();
+    expect(view.request.mock.calls.some(([, options]) => options.method === "POST")).toBe(false);
+    fireEvent.change(input, { target: { value: "  Pacific Orcas  " } });
+    await view.user.click(screen.getByRole("button", { name: "Accept invitation" }));
+    expect(view.request).toHaveBeenCalledWith(`/api/v1/league-invitations/${invitationId}/accept`, expect.objectContaining({ method: "POST", body: { teamName: "Pacific Orcas" } }));
+  });
+
   it("keeps a read commissioner invitation in the league hub and accepts its exact assignment", async () => {
     let accepted = false;
     const fetchImpl = vi.fn(async (url, options = {}) => {

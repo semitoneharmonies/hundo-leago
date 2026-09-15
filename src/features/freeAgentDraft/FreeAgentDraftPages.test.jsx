@@ -948,6 +948,49 @@ describe("FAD-15 Candidate Card frontend", () => {
     expect(screen.queryByText("Old Manager View")).toBeNull();
   });
 
+  it.each(["manager", "commissioner"])("preserves a %s's unsaved card while the overview and card refresh", async (authority) => {
+    const queryClient = createQueryClient();
+    const helping = authority === "commissioner";
+    const evidence = helping ? authorizationEvidence("help_request", helpId) : authorizationEvidence();
+    const data = candidateCard({
+      candidatePlayerName: "Saved Candidate",
+      accessReason: helping ? "help_grant_commissioner" : "team_manager",
+      evidence,
+      helpContext: helping ? helpContext(1_100_000) : null,
+    });
+    const fetchImpl = baseFetch((parsed) => {
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) return envelope(overview());
+      if (parsed.pathname.endsWith("/free-agent-drafts/navigation")) {
+        return envelope(navigation({ rosterLinks: [descriptor({ evidence })] }));
+      }
+      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/private`)) return envelope(data);
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    }, authority);
+    function RefreshHarness() {
+      const [done, setDone] = React.useState(false);
+      return <>
+        <button onClick={async () => {
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: freeAgentDraftKeys.overview(leagueId, fadId) }),
+            queryClient.invalidateQueries({ queryKey: freeAgentDraftKeys.privateCard(leagueId, fadId, teamId) }),
+          ]);
+          setDone(true);
+        }}>Refresh saved data</button>
+        {done && <p>Refresh complete</p>}
+        <CandidateCardPage />
+      </>;
+    }
+    const view = renderRoute({ fetchImpl, queryClient, element: <RefreshHarness /> });
+    const aav = await screen.findByRole("textbox", { name: "F02 AAV" });
+    await view.user.clear(aav);
+    await view.user.type(aav, "8.25");
+    await view.user.click(screen.getByRole("button", { name: "Refresh saved data" }));
+    await screen.findByText("Refresh complete");
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "F02 AAV" })).toHaveValue("8.25"));
+    expect(screen.getByRole("button", { name: "Save Candidate Card" })).toBeEnabled();
+    expect(fetchImpl.mock.calls.some(([, options]) => options?.method === "PUT")).toBe(false);
+  });
+
   it("fails closed on a remount-style cached overview whose measured deadline already passed", async () => {
     const queryClient = createQueryClient();
     const staleOverview = overview({

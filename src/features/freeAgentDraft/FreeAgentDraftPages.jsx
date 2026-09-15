@@ -95,9 +95,10 @@ function FadGate({ context, title, children }) {
   );
 }
 
-function useClientClockSample(observationIdentity) {
+function useClientClockSample(observationIdentity, observationScope) {
   const [sample, setSample] = useState({
     observationIdentity: null,
+    observationScope: null,
     clientNowMs: null,
   });
   useEffect(() => {
@@ -105,13 +106,22 @@ function useClientClockSample(observationIdentity) {
       return undefined;
     }
     const timer = globalThis.setTimeout(() => {
-      setSample({ observationIdentity, clientNowMs: Date.now() });
+      setSample({ observationIdentity, observationScope, clientNowMs: Date.now() });
     }, 0);
     return () => globalThis.clearTimeout(timer);
-  }, [observationIdentity]);
-  return sample.observationIdentity === observationIdentity
-    ? sample.clientNowMs
-    : null;
+  }, [observationIdentity, observationScope]);
+  if (
+    sample.observationScope !== observationScope ||
+    sample.clientNowMs === null ||
+    !Number.isSafeInteger(observationIdentity) ||
+    observationIdentity <= 0 ||
+    observationIdentity < sample.observationIdentity
+  ) return null;
+
+  // A newer response in the same authorized card scope already has a client
+  // observation time. Keep the editor mounted while sampling the clock again.
+  // Initial, different-scope and older cached observations still fail closed.
+  return Math.max(sample.clientNowMs, observationIdentity);
 }
 
 function OverviewHero({
@@ -573,7 +583,8 @@ function AuthorizedCandidateCard({
   );
   const helpScoped = authorization.authorizationScope !== "team_manager";
   const privateCardClientNowMs = useClientClockSample(
-    privateCard.dataUpdatedAt
+    privateCard.dataUpdatedAt,
+    `${leagueId}:${fadId}:${teamId}:${authorizationIdentity(authorization)}`
   );
   const estimatedServerNowMs =
     privateCardClientNowMs === null
@@ -752,7 +763,10 @@ export function CandidateCardPage() {
   const [authorizationGate, setAuthorizationGate] = useState(null);
   const [expiredHelpGate, setExpiredHelpGate] = useState(null);
   const [protectedFailureGate, setProtectedFailureGate] = useState(null);
-  const overviewClientNowMs = useClientClockSample(overview.dataUpdatedAt);
+  const overviewClientNowMs = useClientClockSample(
+    overview.dataUpdatedAt,
+    `${leagueId}:${cardScope}:${privacyAuthorizationKey}`
+  );
   const estimatedServerNowMs = overview.data && overviewClientNowMs !== null
     ? overview.data.serverNowMs +
       (overviewClientNowMs - overview.dataUpdatedAt)

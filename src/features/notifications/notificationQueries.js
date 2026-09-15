@@ -13,6 +13,8 @@ export const notificationKeys = Object.freeze({
     cursor,
   ],
   invitation: (invitationId) => ["notifications", "league-invitation", invitationId],
+  teamManagerAssignment: (assignmentId) => ["notifications", "team-manager-assignment", assignmentId],
+  commissionerAssignment: (assignmentId) => ["notifications", "commissioner-assignment", assignmentId],
 });
 
 export function notificationsQuery(

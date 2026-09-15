@@ -192,7 +192,7 @@ export async function createLeague(
   name,
   idempotencyKey
 ) {
-  return (
+  const response = (
     await httpClient.request("/api/v1/admin/leagues", {
       method: "POST",
       authenticated: true,
@@ -201,6 +201,18 @@ export async function createLeague(
       dataKind: "object",
     })
   ).data;
+  const league = response?.league;
+  const season = response?.season;
+  if (response?.code !== "LEAGUE_CREATED" ||
+      !ADMIN_RESOURCE_ID.test(league?.id || "") || league.name !== name.trim() ||
+      !Number.isSafeInteger(league.version) || league.version < 1 ||
+      typeof league.status !== "string" || !league.status ||
+      typeof league.timezone !== "string" || !league.timezone ||
+      !ADMIN_RESOURCE_ID.test(season?.id || "") || league.currentSeasonId !== season.id ||
+      !Number.isSafeInteger(season.version) || season.version < 1) {
+    throw new ResponseContractError("The league creation confirmation is invalid.");
+  }
+  return response;
 }
 
 export async function createLeagueTeam(httpClient, leagueId, name, idempotencyKey) {
@@ -229,7 +241,7 @@ export async function assignLeagueCommissioner(
   userId,
   idempotencyKey
 ) {
-  return (
+  const response = (
     await httpClient.request(
       `/api/v1/admin/leagues/${encodeURIComponent(
         leagueId
@@ -243,7 +255,18 @@ export async function assignLeagueCommissioner(
       }
     )
   ).data;
+  if (response?.code !== "COMMISSIONER_ASSIGNMENT_PROPOSED" ||
+      response.league?.id !== leagueId || response.proposedUser?.id !== userId ||
+      typeof response.proposedUser?.displayName !== "string" || !response.proposedUser.displayName.trim() ||
+      !ADMIN_RESOURCE_ID.test(response.assignment?.id || "") ||
+      !Number.isSafeInteger(response.assignment.version) || response.assignment.version < 1 ||
+      !["pending", "accepted", "declined", "expired"].includes(response.assignment.status)) {
+    throw new ResponseContractError("The commissioner proposal confirmation is invalid.");
+  }
+  return response;
 }
+
+const ADMIN_RESOURCE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 export function leagueDetailQuery(httpClient, leagueId) {
   return queryOptions({

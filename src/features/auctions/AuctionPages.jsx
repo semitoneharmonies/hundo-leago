@@ -793,7 +793,8 @@ function AuctionCard({ auction, context, focused, leagueId, timeZone }) {
   const ownBids = auction.viewerTeams.filter((viewerTeam) => viewerTeam.bid !== null);
   const eligibleTeams = auction.viewerTeams.filter((viewerTeam) => viewerTeam.eligible);
   const restricted = auction.sourceKind === "fad_restricted";
-  const actionRequired = restricted && auction.status === "active" && eligibleTeams.length > 0;
+  const showInlineBidding = restricted && auction.status === "active" && eligibleTeams.length > 0;
+  const actionRequired = showInlineBidding && eligibleTeams.some((viewerTeam) => viewerTeam.bid === null);
   return (
     <article
       className={`${styles.card} ${focused ? styles.focusedCard : ""}`}
@@ -818,7 +819,7 @@ function AuctionCard({ auction, context, focused, leagueId, timeZone }) {
       </div>
       <AuctionTiming auction={auction} timeZone={timeZone} />
       <MinimumNotice auction={auction} />
-      {!restricted && ownBids.map((viewerTeam) => (
+      {ownBids.map((viewerTeam) => (
         <OwnBidSummary
           compact
           key={viewerTeam.teamId}
@@ -826,7 +827,7 @@ function AuctionCard({ auction, context, focused, leagueId, timeZone }) {
           timeZone={timeZone}
         />
       ))}
-      {actionRequired && eligibleTeams.map((viewerTeam) => (
+      {showInlineBidding && eligibleTeams.map((viewerTeam) => (
         <div className={styles.inlineBid} key={viewerTeam.teamId}>
           {eligibleTeams.length > 1 && <h3>{teamName(viewerTeam.team)}</h3>}
           <BidEditor
@@ -1074,7 +1075,7 @@ function BidEditor({ auction, context, leagueId, viewerTeam }) {
         "The auction changed before this edit was saved. Current server state has been refreshed; your entered amount and term were preserved. Review them before submitting again."
       );
       await queryClient.refetchQueries({
-        queryKey: auctionKeys.detail(leagueId, auction.auctionId),
+        queryKey: auctionKeys.root(leagueId),
         type: "active",
       });
     },

@@ -97,3 +97,14 @@ export async function reactivateAccount(httpClient, input) {
   });
   return response.data;
 }
+
+export async function deactivateAccount(httpClient, input) {
+  const response = await httpClient.request("/api/v1/account/deactivation", {
+    method: "POST",
+    authenticated: true,
+    body: input,
+    dataKind: "object",
+    validateData: (data) => data?.deactivated === true && data.signedOut === true,
+  });
+  return response.data;
+}

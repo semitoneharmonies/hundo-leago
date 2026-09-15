@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 
 import {
   REALTIME_REASON_CODES,
@@ -146,6 +147,91 @@ describe("canonical realtime invalidation envelope", () => {
 });
 
 describe("shared realtime mappings", () => {
+  it.each([
+    ["matchup.changed", "matchup_changed"],
+    ["matchup.changed", "correction_applied"],
+    ["standings.changed", "standings_changed"],
+    ["standings.changed", "correction_applied"],
+  ])("refreshes open competition data for %s/%s while preserving another league and roster data", async (type, reasonCode) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    const keys = [
+      ["league", leagueId, "season", resourceId, "standings"],
+      ["league", leagueId, "season", resourceId, "matchup-week", fadId, "matchup", teamId],
+      ["league", leagueId, "season", resourceId, "current-matchup-week"],
+      ["league", otherLeagueId, "season", resourceId, "standings"],
+      ["league", leagueId, "team", teamId, "workspace"],
+    ];
+    let revision = 1;
+    const reads = keys.map(() => vi.fn(async () => ({ revision })));
+    const observers = keys.map((queryKey, index) => new QueryObserver(client, { queryKey, queryFn: reads[index] }));
+    const unsubscribe = observers.map(observer => observer.subscribe(() => {}));
+    try {
+      await vi.waitFor(() => expect(observers.every(observer => observer.getCurrentResult().isSuccess)).toBe(true));
+      revision = 2;
+      await applyRealtimeInvalidation(client, parse({ type, reasonCode, relatedIds: related() }));
+      keys.forEach((key, index) => {
+        expect(client.getQueryData(key).revision).toBe(index < 3 ? 2 : 1);
+        expect(reads[index]).toHaveBeenCalledTimes(index < 3 ? 2 : 1);
+        expect(client.getQueryState(key).isInvalidated).toBe(false);
+      });
+    } finally { unsubscribe.forEach(stop => stop()); client.clear(); }
+  });
+
+  it.each([
+    ["roster.changed", "roster_changed", teamId],
+    ["contract.changed", "contract_changed", teamId],
+    ["roster.changed", "roster_changed", null],
+    ["contract.changed", "contract_changed", null],
+  ])("refreshes roster data for %s with related team %s in its own league", async (type, reasonCode, relatedTeamId) => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    const keys = [["league", leagueId, "team", teamId, "workspace"], ["league", leagueId, "team", otherTeamId, "workspace"], ["league", otherLeagueId, "team", teamId, "workspace"]];
+    let revision = 1;
+    const reads = keys.map(() => vi.fn(async () => ({ revision })));
+    const observers = keys.map((queryKey, index) => new QueryObserver(client, { queryKey, queryFn: reads[index] }));
+    const unsubscribe = observers.map(observer => observer.subscribe(() => {}));
+    try {
+      await vi.waitFor(() => expect(observers.every(observer => observer.getCurrentResult().isSuccess)).toBe(true));
+      revision = 2;
+      await applyRealtimeInvalidation(client, parse({ type, reasonCode, relatedIds: related({ teamId: relatedTeamId }) }));
+      expect(client.getQueryData(keys[0]).revision).toBe(2);
+      expect(reads[0]).toHaveBeenCalledTimes(2);
+      expect(reads[1]).toHaveBeenCalledTimes(relatedTeamId === null ? 2 : 1);
+      expect(client.getQueryData(keys[1]).revision).toBe(relatedTeamId === null ? 2 : 1);
+      expect(reads[2]).toHaveBeenCalledTimes(1);
+      expect(client.getQueryData(keys[2]).revision).toBe(1);
+      expect(client.getQueryState(keys[2]).isInvalidated).toBe(false);
+    } finally { unsubscribe.forEach(stop => stop()); client.clear(); }
+  });
+
+  it("refreshes open team workspaces after a trade event without refetching another league", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    const firstKey = ["league", leagueId, "team", teamId, "workspace"];
+    const secondKey = ["league", leagueId, "team", otherTeamId, "workspace"];
+    const outsideKey = ["league", otherLeagueId, "team", teamId, "workspace"];
+    let firstCap = 4000, secondCap = 4125;
+    const firstRead = vi.fn(async () => ({ cap: { usageCents: firstCap } }));
+    const secondRead = vi.fn(async () => ({ cap: { usageCents: secondCap } }));
+    const outsideRead = vi.fn(async () => ({ cap: { usageCents: 2500 } }));
+    const observers = [[firstKey, firstRead], [secondKey, secondRead], [outsideKey, outsideRead]]
+      .map(([queryKey, queryFn]) => new QueryObserver(client, { queryKey, queryFn }));
+    const unsubscribe = observers.map(observer => observer.subscribe(() => {}));
+    try {
+      await vi.waitFor(() => expect(observers.every(observer => observer.getCurrentResult().isSuccess)).toBe(true));
+      firstCap = 3900; secondCap = 4200;
+      await applyRealtimeInvalidation(client, parse({ type: "trade.changed", reasonCode: "trade_changed" }));
+      expect(client.getQueryData(firstKey).cap.usageCents).toBe(3900);
+      expect(client.getQueryData(secondKey).cap.usageCents).toBe(4200);
+      expect(firstRead).toHaveBeenCalledTimes(2);
+      expect(secondRead).toHaveBeenCalledTimes(2);
+      expect(outsideRead).toHaveBeenCalledTimes(1);
+      expect(client.getQueryData(outsideKey).cap.usageCents).toBe(2500);
+      expect(client.getQueryState(outsideKey).isInvalidated).toBe(false);
+    } finally {
+      unsubscribe.forEach(stop => stop());
+      client.clear();
+    }
+  });
+
   it("preserves ordinary transaction invalidation prefixes", () => {
     expect(
       realtimeInvalidationActions(
@@ -156,6 +242,7 @@ describe("shared realtime mappings", () => {
       { operation: "invalidate", queryKey: ["notifications"] },
       { operation: "invalidate", queryKey: ["league", leagueId, "trades"] },
       { operation: "invalidate", queryKey: ["league", leagueId, "trade"] },
+      { operation: "invalidate", queryKey: ["league", leagueId, "team"] },
     ]);
 
     expect(

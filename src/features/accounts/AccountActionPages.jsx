@@ -10,6 +10,7 @@ import {
   verifyEmail,
 } from "./accountApi.js";
 import { useActionToken } from "./actionTokenContext.js";
+import { accountPasswordError } from "./accountPasswordValidation.js";
 
 function safeMessage(error, fallback) {
   return error?.name === "ApiError" ? error.message : fallback;
@@ -51,8 +52,7 @@ function PasswordFields({
         <input
           type="password"
           autoComplete="new-password"
-          minLength={6}
-          maxLength={256}
+          maxLength={512}
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
@@ -63,8 +63,7 @@ function PasswordFields({
         <input
           type="password"
           autoComplete="new-password"
-          minLength={6}
-          maxLength={256}
+          maxLength={512}
           required
           value={confirmation}
           onChange={(event) => setConfirmation(event.target.value)}
@@ -105,8 +104,11 @@ function PasswordActionPage({ kind }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
-    if (passwords.password !== passwords.confirmation) {
-      setError("The password confirmation does not match.");
+    const validationError = accountPasswordError(
+      passwords.password, passwords.confirmation
+    );
+    if (validationError) {
+      setError(validationError);
       return;
     }
     setPending(true);

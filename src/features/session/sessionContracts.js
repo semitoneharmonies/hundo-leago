@@ -28,7 +28,7 @@ export function validateSessionData(data) {
     typeof data.user.displayName === "string" &&
       data.user.displayName === data.user.displayName.trim() &&
       data.user.displayName.length > 0 &&
-      data.user.displayName.length <= 80,
+      Array.from(data.user.displayName).length <= 80,
     "The display name is invalid."
   );
   for (const field of [

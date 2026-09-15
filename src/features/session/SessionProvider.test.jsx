@@ -83,6 +83,20 @@ function ReplacementProbe({ events, replacement }) {
 }
 
 describe("SessionProvider", () => {
+  it("authenticates a server-approved 50-character Unicode display name", async () => {
+    const envelope = sessionEnvelope();
+    envelope.data.user.displayName = "🙂".repeat(50);
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(envelope));
+    renderWithProviders(<SessionProbe />, {
+      enableSession: true,
+      config,
+      sessionOptions: { fetchImpl },
+    });
+
+    expect(await screen.findByText(`Private: ${envelope.data.user.displayName}`)).toBeInTheDocument();
+    expect(screen.queryByText("Checking session")).not.toBeInTheDocument();
+  });
+
   it("does not render authenticated content before bootstrap completes", async () => {
     let resolveBootstrap;
     const fetchImpl = vi.fn(

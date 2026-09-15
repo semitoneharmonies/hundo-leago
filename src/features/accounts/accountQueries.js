@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
+import { validateTeam } from "../leagues/leagueContracts.js";
 
 const ID =
   /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -61,6 +62,12 @@ export async function changePassword(httpClient, input) {
     body: input,
     dataKind: "object",
   });
+  if (
+    response.data?.changed !== true || response.data.signedOut !== true ||
+    response.data.code !== "PASSWORD_CHANGED_SIGN_IN_REQUIRED"
+  ) {
+    throw new ResponseContractError("The password-change confirmation is invalid.");
+  }
   return response.data;
 }
 
@@ -84,5 +91,14 @@ export async function updateTeamProfile(
       dataKind: "object",
     }
   );
-  return response.data.team;
+  const saved = response.data?.team;
+  if (
+    response.data?.code !== "TEAM_PROFILE_UPDATED" || !saved ||
+    saved.id !== teamId || saved.leagueId !== leagueId ||
+    !Number.isSafeInteger(saved.version) || saved.version <= expectedVersion
+  ) {
+    throw new ResponseContractError("The team-profile confirmation is invalid.");
+  }
+  validateTeam(saved);
+  return saved;
 }

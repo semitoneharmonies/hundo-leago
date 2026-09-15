@@ -318,6 +318,12 @@ export function realtimeInvalidationActions(envelope) {
   if (envelope.type === "trade.changed") {
     actions.push(invalidate(["league", envelope.leagueId, "trades"]));
     actions.push(invalidate(["league", envelope.leagueId, "trade"]));
+    // Trade events do not identify both teams; their roster totals may change.
+    actions.push(invalidate(["league", envelope.leagueId, "team"]));
+  }
+  if (["matchup.changed", "standings.changed"].includes(envelope.type)) {
+    // Competition events identify the league but do not carry a season ID.
+    actions.push(invalidate(["league", envelope.leagueId, "season"]));
   }
   if (envelope.type === "league.changed") {
     actions.push(invalidate(["leagues"]));
@@ -333,6 +339,9 @@ export function realtimeInvalidationActions(envelope) {
   }
   if (["roster.changed", "contract.changed"].includes(envelope.type)) {
     actions.push(invalidate(["league", envelope.leagueId, "players"]));
+    const teamKey = ["league", envelope.leagueId, "team"];
+    if (envelope.related.teamId !== null) teamKey.push(envelope.related.teamId);
+    actions.push(invalidate(teamKey));
   }
 
   return Object.freeze(actions);

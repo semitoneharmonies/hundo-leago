@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { screen, waitFor, within } from "@testing-library/react";
+import { QueryObserver } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sessionHarness = vi.hoisted(() => ({
@@ -21,6 +22,7 @@ vi.mock("../session/sessionContext.js", () => ({
 import { renderWithProviders } from "../../test/render.jsx";
 import { RealtimeContext } from "../../shared/realtime/realtimeContext.js";
 import { AuctionDetailPage, AuctionsPage } from "./AuctionPages.jsx";
+import { auctionKeys } from "./auctionQueries.js";
 
 const id = (number) =>
   `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
@@ -495,6 +497,210 @@ afterEach(() => {
 });
 
 describe("FAD-16 auction pages", () => {
+  it.each([null, "EDIT_LIMIT_REACHED"])("refreshes an inline edit conflict without touching another league when the new edit denial is %s", async (reasonCode) => {
+    let current = restrictedAuction({
+      bidCount: 1,
+      participatingTeamCount: 1,
+      viewerTeams: [{
+        ...restrictedAuction().viewerTeams[0],
+        bid: viewerBid(),
+        join: denied("ENTRY_NOT_EDITABLE"),
+        edit: allowed(),
+      }],
+    });
+    const submissions = [];
+    let listReads = 0;
+    sessionHarness.request.mockImplementation(async (path, options = {}) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path.startsWith(`/api/v1/leagues/${IDS.league}/auctions?`)) {
+        listReads += 1;
+        return listResponse(current);
+      }
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.team}/roster`) return workspaceResponse();
+      if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}/bids/mine` && options.method === "PUT") {
+        submissions.push(options);
+        if (submissions.length === 1) {
+          current = {
+            ...current,
+            viewerTeams: [{
+              ...current.viewerTeams[0],
+              bid: viewerBid({ version: 2, aavCents: 500, termYears: 2, totalValueCents: 1000, editCount: reasonCode ? 1 : 0 }),
+              edit: reasonCode ? denied(reasonCode) : allowed(),
+            }],
+          };
+          throw Object.assign(new Error("Bid version changed."), { status: 412, code: "AUCTION_PRECONDITION_FAILED" });
+        }
+        current = {
+          ...current,
+          viewerTeams: [{
+            ...current.viewerTeams[0],
+            bid: viewerBid({ version: 3, aavCents: 400, termYears: 3, totalValueCents: 1200, editCount: 1 }),
+            edit: denied("EDIT_LIMIT_REACHED"),
+          }],
+        };
+        return { data: bidReceipt(3) };
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    const view = renderPage(`/leagues/${IDS.league}/auctions`, "/leagues/:leagueId/auctions", <AuctionsPage />);
+    const otherLeagueRead = vi.fn(async () => ({ privateMarker: "Another league's cached auction" }));
+    const otherObserver = new QueryObserver(view.queryClient, {
+      queryKey: auctionKeys.root(IDS.otherLeague),
+      queryFn: otherLeagueRead,
+      staleTime: Infinity,
+    });
+    const unsubscribe = otherObserver.subscribe(() => {});
+    try {
+      const card = await screen.findByRole("article", { name: "Ada Player" });
+      await waitFor(() => expect(otherLeagueRead).toHaveBeenCalledTimes(1));
+      await view.user.clear(within(card).getByLabelText("AAV (dollars per year)"));
+      await view.user.type(within(card).getByLabelText("AAV (dollars per year)"), "4");
+      await view.user.selectOptions(within(card).getByLabelText("Contract term"), "3");
+      await view.user.click(within(card).getByRole("button", { name: "Update my bid" }));
+
+      await waitFor(() => expect(listReads).toBe(2));
+      expect(card).toHaveTextContent("Your bid for Snow Owls: $5.00 AAV · 2 years · $10.00 total");
+      expect(submissions).toHaveLength(1);
+      expect(submissions[0]).toMatchObject({ version: 1, body: { teamId: IDS.team, aavCents: 400, termYears: 3 } });
+      if (reasonCode) {
+        expect(within(card).getByText(/used every manager edit/i)).toBeInTheDocument();
+        expect(within(card).queryByRole("button", { name: "Update my bid" })).not.toBeInTheDocument();
+      } else {
+        expect(within(card).getByText(/your entered amount and term were preserved/i)).toBeInTheDocument();
+        expect(within(card).getByLabelText("AAV (dollars per year)")).toHaveValue(4);
+        expect(within(card).getByLabelText("Contract term")).toHaveValue("3");
+        await view.user.click(within(card).getByRole("button", { name: "Update my bid" }));
+        await waitFor(() => expect(card).toHaveTextContent("Your bid for Snow Owls: $4.00 AAV · 3 years · $12.00 total"));
+        expect(submissions).toHaveLength(2);
+        expect(submissions[1]).toMatchObject({ version: 2, body: { teamId: IDS.team, aavCents: 400, termYears: 3 } });
+        expect(listReads).toBe(3);
+      }
+      expect(otherLeagueRead).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText("Another league's cached auction")).not.toBeInTheDocument();
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it.each(["COOLDOWN_ACTIVE", null])("shows a saved restricted-list offer without a bid-needed warning when edit denial is %s", async (reasonCode) => {
+    const auction = restrictedAuction({
+      bidCount: 1,
+      participatingTeamCount: 1,
+      viewerTeams: [{
+        ...restrictedAuction().viewerTeams[0],
+        bid: viewerBid({ aavCents: 1100, termYears: 3, totalValueCents: 3300 }),
+        join: denied("ENTRY_NOT_EDITABLE"),
+        edit: reasonCode ? denied(reasonCode) : allowed(),
+      }],
+    });
+    sessionHarness.request.mockImplementation(async (path) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path.startsWith(`/api/v1/leagues/${IDS.league}/auctions?`)) return listResponse(auction);
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.team}/roster`) return workspaceResponse();
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    renderPage(`/leagues/${IDS.league}/auctions`, "/leagues/:leagueId/auctions", <AuctionsPage />);
+
+    const card = await screen.findByRole("article", { name: "Ada Player" });
+    expect(card).toHaveTextContent("Your bid for Snow Owls: $11.00 AAV · 3 years · $33.00 total");
+    expect(within(card).queryByText("Tie — bid needed")).not.toBeInTheDocument();
+    expect(within(card).queryByText("Action required")).not.toBeInTheDocument();
+    expect(within(card).getByText("Active")).toBeInTheDocument();
+    expect(within(card).queryByRole("button", { name: "Join auction" })).not.toBeInTheDocument();
+    if (reasonCode) {
+      expect(within(card).getByText(/cooldown is still active/i)).toBeInTheDocument();
+      expect(within(card).queryByRole("button", { name: "Update my bid" })).not.toBeInTheDocument();
+    } else {
+      expect(within(card).getByRole("button", { name: "Update my bid" })).toBeEnabled();
+      expect(within(card).getByLabelText("AAV (dollars per year)")).toHaveValue(11);
+      expect(within(card).getByLabelText("Contract term")).toHaveValue("3");
+    }
+    expect(sessionHarness.request.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
+  });
+
+  it("replaces the restricted-list bid-needed warning with the accepted offer during cooldown after one submission", async () => {
+    let current = restrictedAuction({ viewerTeams: [restrictedAuction().viewerTeams[0]] });
+    const submissions = [];
+    sessionHarness.request.mockImplementation(async (path, options = {}) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path.startsWith(`/api/v1/leagues/${IDS.league}/auctions?`)) return listResponse(current);
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.team}/roster`) return workspaceResponse();
+      if (path === `/api/v1/leagues/${IDS.league}/auctions/${IDS.auction}/bids/mine` && options.method === "PUT") {
+        submissions.push(options);
+        current = {
+          ...current,
+          bidCount: 1,
+          participatingTeamCount: 1,
+          viewerTeams: [{
+            ...current.viewerTeams[0],
+            bid: viewerBid({ aavCents: 1100, termYears: 3, totalValueCents: 3300 }),
+            join: denied("ENTRY_NOT_EDITABLE"),
+            edit: denied("COOLDOWN_ACTIVE"),
+          }],
+        };
+        return { data: bidReceipt(1) };
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    const view = renderPage(`/leagues/${IDS.league}/auctions`, "/leagues/:leagueId/auctions", <AuctionsPage />);
+    const card = await screen.findByRole("article", { name: "Ada Player" });
+    expect(within(card).getByText("Tie — bid needed")).toBeInTheDocument();
+    expect(within(card).getByText("Action required")).toBeInTheDocument();
+    await view.user.clear(within(card).getByLabelText("AAV (dollars per year)"));
+    await view.user.type(within(card).getByLabelText("AAV (dollars per year)"), "11");
+    await view.user.selectOptions(within(card).getByLabelText("Contract term"), "3");
+    await view.user.click(within(card).getByRole("button", { name: "Join auction" }));
+
+    expect(await within(card).findByText(/cooldown is still active/i)).toBeInTheDocument();
+    expect(card).toHaveTextContent("Your bid for Snow Owls: $11.00 AAV · 3 years · $33.00 total");
+    expect(within(card).queryByText("Tie — bid needed")).not.toBeInTheDocument();
+    expect(within(card).queryByText("Action required")).not.toBeInTheDocument();
+    expect(within(card).queryByRole("button", { name: /Join auction|Update my bid/ })).not.toBeInTheDocument();
+    expect(submissions).toHaveLength(1);
+    expect(submissions[0]).toMatchObject({ body: { teamId: IDS.team, aavCents: 1100, termYears: 3 } });
+    expect(submissions[0].version).toBeUndefined();
+  });
+
+  it("keeps the restricted-list warning for an unbid managed team while showing another managed team's saved offer", async () => {
+    const auction = restrictedAuction({
+      bidCount: 1,
+      participatingTeamCount: 1,
+      eligibleTeams: [team(), team(IDS.teamTwo, "Ice Foxes")],
+      viewerTeams: [{
+        ...restrictedAuction().viewerTeams[0],
+        bid: viewerBid(),
+        join: denied("ENTRY_NOT_EDITABLE"),
+        edit: denied("COOLDOWN_ACTIVE"),
+      }, {
+        ...restrictedAuction().viewerTeams[1],
+        eligible: true,
+        participantStatus: "active",
+        join: allowed(),
+        edit: denied("ENTRY_NOT_EDITABLE"),
+      }],
+    });
+    sessionHarness.request.mockImplementation(async (path) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path.startsWith(`/api/v1/leagues/${IDS.league}/auctions?`)) return listResponse(auction);
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.teamTwo}/roster`) return workspaceResponse(IDS.teamTwo);
+      throw new Error(`Unexpected request: ${path}`);
+    });
+
+    renderPage(`/leagues/${IDS.league}/auctions`, "/leagues/:leagueId/auctions", <AuctionsPage />);
+    const card = await screen.findByRole("article", { name: "Ada Player" });
+    expect(card).toHaveTextContent("Your bid for Snow Owls: $3.00 AAV · 2 years · $6.00 total");
+    expect(within(card).queryByText(/Your bid for Ice Foxes/)).not.toBeInTheDocument();
+    expect(within(card).getByText("Tie — bid needed")).toBeInTheDocument();
+    expect(within(card).getByText("Action required")).toBeInTheDocument();
+    expect(within(card).getByText(/cooldown is still active/i)).toBeInTheDocument();
+    expect(within(card).getAllByRole("button", { name: "Join auction" })).toHaveLength(1);
+    expect(within(card).queryByRole("button", { name: "Update my bid" })).not.toBeInTheDocument();
+    expect(sessionHarness.request.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
+  });
+
   it.each(["FAD_SEASON_CLOSED", "FAD_ENTRY_DRAFT_REQUIRED"])("explains the annual lock and withholds commissioner auction writes for %s", async (reasonCode) => {
     const auction = restrictedAuction({
       viewerTeams: [], bidCount: 1, participatingTeamCount: 1,

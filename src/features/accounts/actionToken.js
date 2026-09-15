@@ -6,6 +6,21 @@ const ACTION_PATHS = new Set([
 ]);
 const ACTION_TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
+export function watchActionTokenFragments({
+  eventTarget = globalThis,
+  location = globalThis.location,
+} = {}) {
+  function handleFragmentChange() {
+    if (ACTION_PATHS.has(location?.pathname) && location.hash) {
+      // Restart through the initial token reader so the previous action and
+      // any pending response cannot keep controlling the new link's page.
+      location.reload();
+    }
+  }
+  eventTarget.addEventListener("hashchange", handleFragmentChange);
+  return () => eventTarget.removeEventListener("hashchange", handleFragmentChange);
+}
+
 export function consumeActionTokenFragment({
   location = globalThis.location,
   history = globalThis.history,

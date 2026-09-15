@@ -142,7 +142,7 @@ describe("account and team settings", () => {
         teamName = teamPatch.name;
         teamVersion += 1;
         return envelope({
-          code: "TEAM_UPDATED",
+          code: "TEAM_PROFILE_UPDATED",
           team: {
             id: teamId,
             leagueId,
@@ -154,6 +154,15 @@ describe("account and team settings", () => {
             patternTemplate: teamPatch.patternTemplate,
             logoReference: `/api/v1/leagues/${leagueId}/teams/${teamId}/logo`,
             version: teamVersion,
+            createdAtMs: 1,
+            updatedAtMs: 2,
+            currentManager: {
+              assignmentId: membershipId,
+              userId,
+              displayName: "Original Manager",
+              acceptedAtMs: 1,
+              version: 1,
+            },
           },
         });
       }
@@ -192,7 +201,7 @@ describe("account and team settings", () => {
     const logo = document.querySelector(".hl-account-team-mark img");
     expect(logo).toHaveAttribute(
       "src",
-      `http://localhost:4000/api/v1/leagues/${leagueId}/teams/${teamId}/logo`
+      `http://localhost:4000/api/v1/leagues/${leagueId}/teams/${teamId}/logo?v=1`
     );
     expect(logo).toHaveAttribute("crossorigin", "use-credentials");
 
@@ -246,8 +255,10 @@ describe("account and team settings", () => {
         patternTemplate: "leopard",
       });
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ["league", leagueId],
+    await waitFor(() => {
+      expect(invalidateQueries).toHaveBeenCalledWith({
+        queryKey: ["league", leagueId],
+      });
     });
     expect(await screen.findByText("Team profile saved.")).toBeInTheDocument();
   });

@@ -25,7 +25,7 @@ import {
   playerKeys,
   playerSearchQuery,
 } from "../players/playerQueries.js";
-import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
+import { teamWorkspaceKeys, teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import {
   auctionDollarsToCents,
@@ -1432,6 +1432,8 @@ export function TradeDetailPage() {
       queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) }),
       queryClient.invalidateQueries({ queryKey: transactionKeys.trade(leagueId, tradeId) }),
       queryClient.invalidateQueries({ queryKey: ["league", leagueId, "activity"] }),
+      queryClient.invalidateQueries({ queryKey: teamWorkspaceKeys.detail(leagueId, proposal.proposingTeam.id), exact: true }),
+      queryClient.invalidateQueries({ queryKey: teamWorkspaceKeys.detail(leagueId, proposal.receivingTeam.id), exact: true }),
     ]);
   };
   const previewAcceptance = useMutation({ mutationFn: () => previewTradeAcceptance(context.session.httpClient, leagueId, tradeId), onSuccess: setAcceptancePreview });

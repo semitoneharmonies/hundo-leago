@@ -55,6 +55,7 @@ export function createHttpClient({
   apiOrigin,
   fetchImpl = globalThis.fetch,
   getCsrfToken = () => null,
+  getAuthenticationGeneration = () => 0,
   onUnauthorized = () => {},
   onRecoveryEpoch = () => {},
 } = {}) {
@@ -70,7 +71,7 @@ export function createHttpClient({
   if (typeof fetchImpl !== "function") {
     throw new TypeError("The HTTP client requires fetch.");
   }
-  if (typeof getCsrfToken !== "function" || typeof onUnauthorized !== "function" || typeof onRecoveryEpoch !== "function") {
+  if (typeof getCsrfToken !== "function" || typeof getAuthenticationGeneration !== "function" || typeof onUnauthorized !== "function" || typeof onRecoveryEpoch !== "function") {
     throw new TypeError("The HTTP client requires session callbacks.");
   }
 
@@ -123,6 +124,7 @@ export function createHttpClient({
       headers.set("X-CSRF-Token", csrfToken);
     }
 
+    const authenticationGeneration = getAuthenticationGeneration();
     let response;
     try {
       response = await fetchImpl(`${origin}${path}`, {
@@ -153,7 +155,7 @@ export function createHttpClient({
 
     if (response.status === 401 && authenticated) {
       try {
-        await onUnauthorized();
+        await onUnauthorized(authenticationGeneration);
       } catch {
         // Authentication loss still takes precedence over cleanup callback failure.
       }

@@ -1,14 +1,18 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../test/render.jsx";
 import { CommissionerCompetitionPage } from "../competition/CompetitionPages.jsx";
 
 vi.mock("socket.io-client", () => ({ io: () => ({ onAny() {}, offAny() {}, disconnect() {} }) }));
 const id = n => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const leagueId = id(1), userId = id(2), seasonId = id(3);
+const fixtureNowMs = Date.parse("2026-09-12T07:00:00Z");
 const config = { appEnv: "local", apiOrigin: "http://localhost:4000", socketOrigin: "http://localhost:4000", buildId: null };
 const envelope = data => new Response(JSON.stringify({ data, meta: { requestId: "draft-setup" } }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+beforeEach(() => { vi.spyOn(Date, "now").mockReturnValue(fixtureNowMs); });
+afterEach(() => { vi.restoreAllMocks(); });
 
 function setup({ pending = false, hasDeadline = false, failStart = false } = {}) {
   const requests = [];
@@ -41,7 +45,7 @@ function setup({ pending = false, hasDeadline = false, failStart = false } = {})
       if (path === `${prefix}/seasons/${seasonId}/matchup-weeks`) return envelope({ code: "MATCHUP_WEEKS_FOUND", weeks: [], health: {} });
       if (path === prefix + "/free-agent-drafts/readiness") return envelope({
         leagueId, seasonId, operationId: null, operationVersion: null, status: "not_triggered", triggerKind: null, entryDraftId: null, exemptionId: null,
-        serverNowMs: Date.parse("2026-09-12T07:00:00Z"), timeZone: "America/Vancouver", observedSeasonVersion: league.currentSeason.version,
+        serverNowMs: fixtureNowMs, timeZone: "America/Vancouver", observedSeasonVersion: league.currentSeason.version,
         firstMatchupWeekBefore: null, firstMatchupWeekAfter: null, candidateDeadlineAtMs: null, reminderAtMs: null, helpOpensAtMs: null,
         initialRollovers: [], priorSeasonRollover: null, participatingTeamCount: 0, teamProjections: [], blockers: [], warnings: [], resultFadId: null,
         retryReadiness: { allowed: false, reasonCode: "RECOVERY_NOT_AVAILABLE" },
@@ -78,6 +82,14 @@ async function enterDates() {
 }
 
 describe("combined inaugural calendar setup", () => {
+  it("keeps a deadline at the fixture clock closed without writing league setup", async () => {
+    const view = setup(); await enterDates();
+    fireEvent.change(screen.getByLabelText("Candidate Card deadline"), { target: { value: "2026-09-12T00:00" } });
+    expect(screen.getByText("Choose a Candidate Card deadline in the future.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review league setup" })).toBeDisabled();
+    expect(view.requests).toEqual([]);
+  });
+
   it("reviews all dates without writes, saves the deadline and prepares once, then confirms a fresh schedule preview", async () => {
     const view = setup(); await enterDates();
     const dates = screen.getByRole("group", { name: "Season dates" });

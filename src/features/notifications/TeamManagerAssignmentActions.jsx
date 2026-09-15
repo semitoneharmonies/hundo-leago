@@ -7,13 +7,14 @@ import { ErrorBlock, LoadingBlock } from "../../components/HundoUi.jsx";
 import { createIntentKey } from "../accounts/accountApi.js";
 import { leagueKeys } from "../leagues/leagueQueries.js";
 import { validateTeamManagerAssignment } from "./notificationContracts.js";
+import { notificationKeys } from "./notificationQueries.js";
 
 export function TeamManagerAssignmentActions({ notification, session }) {
   const queryClient = useQueryClient();
   const intentKeys = useRef({});
   const { assignmentId, leagueId, teamId } = notification.messageData;
   const path = `/api/v1/team-manager-assignments/${encodeURIComponent(assignmentId)}`;
-  const queryKey = ["team-manager-assignment", assignmentId];
+  const queryKey = notificationKeys.teamManagerAssignment(assignmentId);
   const validateData = (data) => validateTeamManagerAssignment(data, {
     assignmentId, leagueId, teamId, userId: session.user.id,
   });

@@ -4,6 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import { useSession } from "../session/sessionContext.js";
+import { accountPasswordError } from "./accountPasswordValidation.js";
 import {
   createIntentKey,
   registerAccount,
@@ -171,13 +172,9 @@ function SignUpForm({ session }) {
     event.preventDefault();
     setError("");
     setSuccess("");
-    const length = Array.from(password).length;
-    if (length < 6 || length > 256) {
-      setError("Use a password between 6 and 256 characters.");
-      return;
-    }
-    if (password !== passwordConfirmation) {
-      setError("The password confirmation does not match.");
+    const validationError = accountPasswordError(password, passwordConfirmation);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -246,8 +243,7 @@ function SignUpForm({ session }) {
         <input
           type="password"
           autoComplete="new-password"
-          minLength={6}
-          maxLength={256}
+          maxLength={512}
           required
           value={password}
           onChange={edit(setPassword)}
@@ -258,8 +254,7 @@ function SignUpForm({ session }) {
         <input
           type="password"
           autoComplete="new-password"
-          minLength={6}
-          maxLength={256}
+          maxLength={512}
           required
           value={passwordConfirmation}
           aria-describedby={error ? "sign-up-error" : undefined}
@@ -427,6 +422,16 @@ export function AccountHome() {
       )}
       {session.notice === "session-expired" && (
         <p className="hl-form-message is-error" role="alert">Your session ended. Sign in again to continue.</p>
+      )}
+      {session.notice === "account-deactivated" && (
+        <p className="hl-form-message is-success" role="status">
+          Your account is deactivated. To return, choose Reactivate an account below.
+        </p>
+      )}
+      {session.notice === "password-changed" && (
+        <p className="hl-form-message is-success" role="status">
+          Your password was changed. Sign in with the new password.
+        </p>
       )}
       <div className="hl-auth-grid">
         <SignInForm session={session} />

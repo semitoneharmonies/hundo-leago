@@ -31,8 +31,14 @@ export async function expectNoPrivatePersistence(page, markers) {
   }
 }
 
-export async function expectNoPrivateDom(page, markers) {
+export async function expectNoPrivateDom(page, markers, options = {}) {
   for (const marker of markers) {
-    await expect(page.locator('body')).not.toContainText(marker)
+    await expect.poll(
+      () => page.locator('body').evaluate(body => [
+        body.innerHTML,
+        ...Array.from(body.querySelectorAll('input, textarea'), field => field.value),
+      ].join('\n')),
+      options,
+    ).not.toContain(marker)
   }
 }

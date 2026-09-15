@@ -139,6 +139,7 @@ function fetchScenario(
           currentSeasonId: seasonId,
           version: 1,
         },
+        season: { id: seasonId, label: "2026", nhlSeasonKey: "20262027", status: "planned", version: 1 },
       });
     }
     if (
@@ -147,7 +148,12 @@ function fetchScenario(
         `/api/v1/admin/leagues/${leagueOneId}/commissioner-assignments` &&
       options.method === "POST"
     ) {
-      return response({ code: "COMMISSIONER_ASSIGNMENT_PROPOSED" });
+      return response({
+        code: "COMMISSIONER_ASSIGNMENT_PROPOSED",
+        assignment: { id: teamId, status: "pending", version: 1 },
+        league: { id: leagueOneId, name: "New Review League", status: "setup", version: 1 },
+        proposedUser: { id: playerId, displayName: "Commissioner Candidate" },
+      });
     }
     if (
       platformAdmin &&
@@ -535,7 +541,7 @@ describe("league selection", () => {
       .querySelector("img");
     expect(logo).toHaveAttribute(
       "src",
-      `http://localhost:4000/api/v1/leagues/${leagueOneId}/teams/${teamId}/logo`
+      `http://localhost:4000/api/v1/leagues/${leagueOneId}/teams/${teamId}/logo?v=1`
     );
     expect(logo).toHaveAttribute("crossorigin", "use-credentials");
   });

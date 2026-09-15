@@ -108,12 +108,17 @@ export function SessionProvider({
 
   const clearAuthentication = useCallback(
     async (notice = null, receipt = null) => {
+      const current = stateRef.current;
+      const keepCompletionNotice =
+        current.status === "unauthenticated" && current.notice !== null &&
+        (notice === null || notice === "session-expired");
       transitionRef.current += 1;
       httpController.clearCsrfToken();
       commitState(
         unauthenticatedSession(
-          notice,
-          sanitizeStagingResetReceipt(receipt, { appEnv, notice })
+          keepCompletionNotice ? current.notice : notice,
+          keepCompletionNotice ? current.stagingResetReceipt :
+            sanitizeStagingResetReceipt(receipt, { appEnv, notice })
         )
       );
       await clearPrivateCache();
@@ -164,15 +169,16 @@ export function SessionProvider({
 
   useEffect(() => {
     const controller = new AbortController();
+    const transition = transitionRef.current;
     let active = true;
     bootstrapInProgressRef.current = true;
 
     bootstrapSession(httpClient, { signal: controller.signal })
       .then(async (data) => {
-        if (active) await adoptSession(data);
+        if (active && transition === transitionRef.current) await adoptSession(data);
       })
       .catch((error) => {
-        if (!active || error?.code === "REQUEST_ABORTED") return;
+        if (!active || transition !== transitionRef.current || error?.code === "REQUEST_ABORTED") return;
         if (error?.status === 401) {
           clearAuthentication(null);
           return;

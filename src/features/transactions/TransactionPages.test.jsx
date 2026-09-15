@@ -145,6 +145,83 @@ function renderPage(path, route, element, fetchImpl) {
 }
 
 describe("M5-11 authenticated transaction pages", () => {
+  it.each(["accept", "approve"])("refreshes both current cap totals after %s without invalidating another team's workspace", async (action) => {
+    let completed = false;
+    let writes = 0;
+    const workspaceReads = { [teamA]: 0, [teamB]: 0 };
+    const initialStatus = action === "approve" ? "awaiting_commissioner_approval" : "proposed";
+    const request = baseFetch((path, options) => {
+      if (path.endsWith(`/${action}`) && options.method === "POST") {
+        writes += 1;
+        completed = true;
+        return envelope({ code: "TRADE_ACCEPTED" });
+      }
+      if (path === `/api/v1/leagues/${leagueId}/trades/${tradeId}`) return envelope({
+        code: "TRADE_PROPOSAL_FOUND",
+        proposal: {
+          id: tradeId, leagueId, seasonId,
+          proposingTeam: { id: teamB, name: "Other Team" },
+          receivingTeam: { id: teamA, name: "Managed Team" },
+          proposingUserId: "user-2",
+          status: completed ? "Accepted" : action === "approve" ? "Awaiting Commissioner Approval" : "Pending",
+          storageStatus: completed ? "completed" : initialStatus,
+          createdAtMs: 1, expiresAtMs: 99, tradeDeadlineAtMs: null, effectiveDeadlineAtMs: 99,
+          respondedAtMs: completed ? 2 : null, completedAtMs: completed ? 2 : null,
+          commissionerCompletionReference: null, version: completed ? 2 : 1,
+          assets: [{ id: assetId, type: "future_consideration_instruction", sourceTeamId: teamB,
+            snapshot: { type: "future_consideration_instruction", description: "Approved consideration" } }],
+          history: [{ id: assetId, actorUserId: "user-2", type: "proposal_created", reason: null, metadata: {}, occurredAtMs: 1 }],
+        },
+      });
+      if (path.endsWith("/acceptance-preview")) return envelope({
+        code: "TRADE_ACCEPTANCE_PREVIEWED", proposal: { id: tradeId }, assets: [], generallyIllegal: false,
+        teams: [teamA, teamB].map((teamId) => ({
+          teamId, before: { cap: { usageCents: teamId === teamA ? 625 : 0 } }, rosterCounts: {},
+          cap: { salaryCapCents: 10_000, usageCents: teamId === teamA ? 1_025 : 350, spaceCents: teamId === teamA ? 8_975 : 9_650 },
+          retentionSlots: 0, issues: [], generallyIllegal: false,
+        })),
+      });
+      throw new Error(`Unexpected request: ${path}`);
+    }, action === "approve" ? "commissioner" : "manager", action === "approve" ? null : "user-1");
+    const fetchImpl = vi.fn((url, options) => {
+      const match = new URL(url).pathname.match(new RegExp(`^/api/v1/leagues/${leagueId}/teams/([^/]+)/roster$`));
+      if (!match) return request(url, options);
+      const teamId = match[1];
+      workspaceReads[teamId] += 1;
+      const workspace = teamWorkspace(teamId);
+      if (completed) {
+        const usageCents = teamId === teamA ? 1_025 : 350;
+        workspace.cap = { ...workspace.cap, usageCents, spaceCents: 10_000 - usageCents,
+          activePlayerCents: usageCents - workspace.cap.buyoutPenaltyCents };
+      }
+      return envelope(workspace);
+    });
+    const view = renderPage(`/leagues/${leagueId}/trades/${tradeId}`, "/leagues/:leagueId/trades/:tradeId", <TradeDetailPage />, fetchImpl);
+    const untouchedKey = ["league", leagueId, "team", correctionId, "workspace"];
+    const foreignKey = ["league", correctionId, "team", teamA, "workspace"];
+    view.queryClient.setQueryData(untouchedKey, { marker: "another-team" });
+    view.queryClient.setQueryData(foreignKey, { marker: "another-league" });
+    if (action === "approve") {
+      await view.user.click(await screen.findByRole("button", { name: "Preview commissioner approval" }));
+    }
+    const confirm = await screen.findByRole("button", { name: action === "approve" ? "Approve and complete trade" : "Confirm" });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await waitFor(() => expect(workspaceReads).toEqual({ [teamA]: 1, [teamB]: 1 }));
+    await view.user.click(confirm);
+    await screen.findByText("Accepted");
+    const summary = screen.getByRole("heading", { name: "Salary cap impact" }).closest("section");
+    await waitFor(() => {
+      expect(within(summary).getByText("$10.25")).toBeInTheDocument();
+      expect(within(summary).getByText("$3.50")).toBeInTheDocument();
+    });
+    expect(workspaceReads).toEqual({ [teamA]: 2, [teamB]: 2 });
+    expect(writes).toBe(1);
+    expect(view.queryClient.getQueryState(untouchedKey).isInvalidated).toBe(false);
+    expect(view.queryClient.getQueryData(untouchedKey)).toEqual({ marker: "another-team" });
+    expect(view.queryClient.getQueryState(foreignKey).isInvalidated).toBe(false);
+    expect(view.queryClient.getQueryData(foreignKey)).toEqual({ marker: "another-league" });
+  });
+
   it("redirects a signed-out protected route without waiting on a disabled league query", async () => {
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify({
       error: { code: "SESSION_MISSING", message: "Sign in required." },

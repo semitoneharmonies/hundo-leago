@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 
@@ -40,6 +40,21 @@ import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import { createIntentKey } from "../accounts/accountApi.js";
 import { PendingLeagueAccess } from "../notifications/NotificationsPage.jsx";
 
+function AdminMutationError({ error, creation = false }) {
+  if (!error) return null;
+  const known = {
+    LEAGUE_NAME_UNAVAILABLE: ["That league name is already in use.", "Choose another league name and try again."],
+    LEAGUE_CREATION_INPUT_INVALID: ["The league details could not be saved.", "Check the league name and try again."],
+    COMMISSIONER_ASSIGNMENT_CONFLICT: ["The commissioner assignment could not be sent.", "Check the current commissioner and pending assignments before trying again."],
+    COMMISSIONER_ASSIGNMENT_INPUT_INVALID: ["The commissioner selection is invalid.", "Choose an eligible user and try again."],
+    PLATFORM_ADMINISTRATOR_REQUIRED: ["Administrator access is required.", "Check that you are signed in with your administrator account."],
+  }[error.code];
+  return <ErrorBlock error={error}
+    fallback={known?.[0] || (creation ? "We could not confirm whether the league was created." : "We could not confirm the commissioner assignment.")}
+    impact="Your entries are still here."
+    recovery={known?.[1] || (creation ? "Check Your leagues before retrying. An unchanged retry checks the same creation request." : "Check the current assignment before retrying. An unchanged retry checks the same request.")} />;
+}
+
 function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
   const queryClient = useQueryClient();
   const users = usersQuery;
@@ -48,6 +63,8 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [commissionerUserId, setCommissionerUserId] = useState("");
   const [message, setMessage] = useState("");
+  const creationIntent = useRef(null);
+  const assignmentIntent = useRef(null);
   const availableLeagues =
     createdLeague && !leagues.some(({ id }) => id === createdLeague.id)
       ? [...leagues, createdLeague]
@@ -73,13 +90,14 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
       id !== currentCommissioner?.user.id
   );
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: ({ name, key }) =>
       createLeague(
         httpClient,
-        leagueName.trim(),
-        createIntentKey("admin-league-create")
+        name,
+        key
       ),
     onSuccess: async (result) => {
+      creationIntent.current = null;
       setCreatedLeague(result.league);
       setSelectedLeagueId(result.league.id);
       setLeagueName("");
@@ -91,32 +109,39 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
     onError: () => setMessage(""),
   });
   const assignmentMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: ({ leagueId, userId, key }) =>
       assignLeagueCommissioner(
         httpClient,
-        selectedLeague.id,
-        commissionerUserId,
-        createIntentKey("commissioner-assignment")
+        leagueId,
+        userId,
+        key
       ),
-    onSuccess: async () => {
-      const selected = users.data?.find(
-        ({ id }) => id === commissionerUserId
-      );
+    onSuccess: async (result, submitted) => {
+      assignmentIntent.current = null;
       setMessage(
-        `Commissioner assignment sent to ${
-          selected?.displayName || "the selected user"
-        }. It becomes active after acceptance.`
+        result.assignment.status === "pending"
+          ? `Commissioner assignment sent to ${result.proposedUser.displayName}. It becomes active after acceptance.`
+          : `The earlier commissioner assignment for ${result.proposedUser.displayName} is ${result.assignment.status}.`
       );
       setCommissionerUserId("");
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: leagueKeys.memberships(selectedLeague.id),
+          queryKey: leagueKeys.memberships(submitted.leagueId),
         }),
         queryClient.invalidateQueries({ queryKey: leagueKeys.all }),
       ]);
     },
     onError: () => setMessage(""),
   });
+
+  const busy = createMutation.isPending || assignmentMutation.isPending;
+  const recoveringAssignment = assignmentMutation.isError &&
+    assignmentMutation.variables?.leagueId === selectedLeagueId &&
+    assignmentMutation.variables?.userId === commissionerUserId;
+  const recoveryUser = recoveringAssignment &&
+    !eligibleUsers.some(user => user.id === commissionerUserId)
+      ? users.data?.find(user => user.id === commissionerUserId)
+      : null;
 
   return (
     <Surface as="section" className="hl-admin-league-panel">
@@ -130,14 +155,21 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
         className="hl-feature-form"
         onSubmit={(event) => {
           event.preventDefault();
+          if (busy || !leagueName.trim()) return;
+          const name = leagueName.trim();
+          if (creationIntent.current?.name !== name) {
+            creationIntent.current = { name, key: createIntentKey("admin-league-create") };
+          }
           setMessage("");
-          createMutation.mutate();
+          assignmentMutation.reset();
+          createMutation.mutate({ ...creationIntent.current });
         }}
       >
         <label className="hl-field">
           League name
           <input
             value={leagueName}
+            disabled={busy}
             maxLength={120}
             required
             onChange={(event) => setLeagueName(event.target.value)}
@@ -146,7 +178,7 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
         <button
           className="hl-button hl-button--primary"
           type="submit"
-          disabled={createMutation.isPending || !leagueName.trim()}
+          disabled={busy || !leagueName.trim()}
         >
           {createMutation.isPending ? "Creating…" : "Create league"}
         </button>
@@ -156,10 +188,12 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
           League to manage
           <select
             value={selectedLeagueId}
+            disabled={busy}
             onChange={(event) => {
               setSelectedLeagueId(event.target.value);
               setCommissionerUserId("");
               setMessage("");
+              assignmentMutation.reset();
             }}
           >
             <option value="">Choose a league</option>
@@ -176,8 +210,15 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
           className="hl-feature-form hl-admin-commissioner-form"
           onSubmit={(event) => {
             event.preventDefault();
+            if (busy || !selectedLeague || users.isError || memberships.isError ||
+                (!recoveringAssignment && !eligibleUsers.some(user => user.id === commissionerUserId))) return;
+            const leagueId = selectedLeague.id, userId = commissionerUserId;
+            if (assignmentIntent.current?.leagueId !== leagueId || assignmentIntent.current?.userId !== userId) {
+              assignmentIntent.current = { leagueId, userId, key: createIntentKey("commissioner-assignment") };
+            }
             setMessage("");
-            assignmentMutation.mutate();
+            createMutation.reset();
+            assignmentMutation.mutate({ ...assignmentIntent.current });
           }}
         >
           <h3>
@@ -201,12 +242,16 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
                 Commissioner
                 <select
                   value={commissionerUserId}
+                  disabled={busy}
                   required
                   onChange={(event) =>
                     setCommissionerUserId(event.target.value)
                   }
                 >
                   <option value="">Choose a user</option>
+                  {recoveryUser && <option value={recoveryUser.id}>
+                    {recoveryUser.displayName} (earlier assignment)
+                  </option>}
                   {eligibleUsers.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.displayName} ({user.email})
@@ -218,10 +263,10 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
                 className="hl-button hl-button--primary"
                 type="submit"
                 disabled={
-                  assignmentMutation.isPending || !commissionerUserId
+                  busy || !commissionerUserId
                 }
               >
-                {currentCommissioner
+                {recoveringAssignment ? "Check earlier assignment" : currentCommissioner
                   ? "Send commissioner transfer"
                   : "Send commissioner assignment"}
               </button>
@@ -229,12 +274,9 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
           )}
         </form>
       )}
-      {message && <p className="hl-form-message">{message}</p>}
-      {(createMutation.error || assignmentMutation.error) && (
-        <SafeQueryError
-          error={createMutation.error || assignmentMutation.error}
-        />
-      )}
+      {message && <p className="hl-form-message" role="status">{message}</p>}
+      <AdminMutationError error={createMutation.error} creation />
+      <AdminMutationError error={assignmentMutation.error} />
     </Surface>
   );
 }
@@ -310,7 +352,7 @@ export function LeagueSelectionPage() {
           <Surface>
             <LoadingBlock>Loading your leagues…</LoadingBlock>
           </Surface>
-        ) : leaguesQuery.isError ? (
+        ) : leaguesQuery.isError && !leaguesQuery.data ? (
           <Surface className="hl-state-surface">
             <SafeQueryError error={leaguesQuery.error} />
           </Surface>
@@ -323,6 +365,7 @@ export function LeagueSelectionPage() {
           </Surface>
         ) : (
           <>
+            {leaguesQuery.isError && <SafeQueryError error={leaguesQuery.error} />}
             {leaguesQuery.data.length > 0 ? (
               <ul className="hl-league-picker">
                 {leaguesQuery.data.map((league) => (

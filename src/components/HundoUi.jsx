@@ -91,16 +91,20 @@ export function PositionTag({ position, category = "Free Agent" }) {
 }
 
 export function TeamMark({ team, logoUrl = null, className }) {
+  const imageUrl = logoUrl && !/^(blob:|data:)/i.test(logoUrl) &&
+    Number.isSafeInteger(team?.version)
+    ? `${logoUrl}${logoUrl.includes("?") ? "&" : "?"}v=${team.version}`
+    : logoUrl;
   return (
     <span
       className={classes("hl-team-mark", teamColourClass(className))}
       style={teamColourStyle(team)}
       aria-hidden="true"
     >
-      {logoUrl ? (
+      {imageUrl ? (
         <img
-          key={logoUrl}
-          src={logoUrl}
+          key={imageUrl}
+          src={imageUrl}
           crossOrigin="use-credentials"
           alt=""
           onError={(event) => {
