@@ -1343,11 +1343,14 @@ textarea {
 }
 
 .hl-main-menu {
+  --hl-menu-width: min(330px, calc(100vw - 24px));
+  --hl-menu-available-height: min(720px, calc(100dvh - 76px));
   left: 0;
-  width: min(330px, calc(100vw - 24px));
-  max-height: min(78vh, 720px);
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: var(--hl-menu-width);
+  max-height: var(--hl-menu-available-height);
+  overflow: visible;
 }
 
 .hl-main-menu__heading {
@@ -1379,6 +1382,9 @@ textarea {
   display: grid;
   gap: 2px;
   padding: 7px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .hl-menu-link {
@@ -1453,7 +1459,34 @@ textarea {
 }
 
 .hl-rules-menu {
-  position: relative;
+  position: absolute;
+  top: -1px;
+  left: calc(100% + 8px);
+  width: min(520px, calc(100vw - var(--hl-menu-width) - 40px));
+  border: 1px solid var(--hl-border);
+  border-radius: var(--hl-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--hl-shadow);
+}
+
+.hl-rules-menu .hl-rules-panel {
+  max-height: var(--hl-menu-available-height);
+  border-top: 0;
+  overscroll-behavior: contain;
+}
+
+.hl-rules-menu .hl-scoring-rules-table {
+  table-layout: fixed;
+}
+
+.hl-rules-menu .hl-scoring-rules-table th,
+.hl-rules-menu .hl-scoring-rules-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hl-rules-menu .hl-scoring-rules-table th:first-child {
+  width: 50%;
 }
 
 .hl-rules-panel {
@@ -1520,6 +1553,7 @@ textarea {
 
 .hl-rules-quick > div {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
@@ -1693,6 +1727,20 @@ textarea {
 }
 
 @media (max-width: 860px) {
+  .hl-main-menu {
+    --hl-menu-available-height: calc(100dvh - 110px);
+  }
+
+  .hl-main-menu__heading { gap: 1px; padding: 9px 12px 7px; }
+  .hl-main-menu__heading strong { font-size: 0.92rem; }
+  .hl-main-menu__links { gap: 1px; padding: 4px; }
+  .hl-main-menu__footer { padding: 4px; }
+  .hl-menu-link { min-height: 36px; padding: 4px 8px; gap: 7px; }
+  .hl-menu-link > span { gap: 1px; }
+  .hl-menu-link strong { font-size: 0.72rem; }
+  .hl-menu-link small { font-size: 0.56rem; }
+  .hl-menu-link__icon { width: 15px; height: 15px; }
+
   .hl-app-header__bar {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
@@ -1761,8 +1809,28 @@ textarea {
   }
 
   .hl-main-menu {
+    --hl-menu-available-height: calc(100dvh - 144px);
     top: calc(100% + 4px);
   }
+
+  .hl-main-menu.is-rules-open { --hl-menu-width: min(144px, 30vw); }
+  .hl-main-menu.is-rules-open .hl-main-menu__heading span { letter-spacing: 0.12em; }
+  .hl-main-menu.is-rules-open .hl-menu-link { grid-template-columns: minmax(0, 1fr); }
+  .hl-main-menu.is-rules-open .hl-menu-link--button { grid-template-columns: minmax(0, 1fr) 14px; }
+  .hl-main-menu.is-rules-open .hl-menu-link__icon,
+  .hl-main-menu.is-rules-open .hl-menu-link small { display: none; }
+  .hl-rules-menu .hl-rules-panel > header { gap: 6px; padding: 9px 8px; }
+  .hl-rules-menu .hl-rules-panel > header h2 { font-size: 0.95rem; }
+  .hl-rules-menu .hl-rules-panel__close { flex: 0 0 28px; width: 28px; height: 28px; }
+  .hl-rules-menu .hl-rules-quick { padding: 6px 8px; }
+  .hl-rules-menu .hl-rules-quick > div { display: grid; gap: 3px; }
+  .hl-rules-menu .hl-rules-quick dd { text-align: left; }
+  .hl-rules-menu .hl-rules-sections { padding: 0 4px 8px; }
+  .hl-rules-menu .hl-rules-section p { font-size: 0.7rem; line-height: 1.5; }
+  .hl-rules-menu .hl-scoring-rules-table th,
+  .hl-rules-menu .hl-scoring-rules-table td { padding: 5px 3px; font-size: 0.6rem; letter-spacing: normal; }
+  .hl-rules-menu .hl-scoring-rules-table th:first-child { width: 40%; }
+  .hl-rules-menu .hl-scoring-rules-table thead th { font-family: var(--hl-font-mono); font-size: 0.55rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

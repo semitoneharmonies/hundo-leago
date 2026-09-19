@@ -7,6 +7,7 @@ import {
   Bell,
   BookOpen,
   ChevronDown,
+  ChevronRight,
   ClipboardList,
   ClipboardPen,
   Gavel,
@@ -293,7 +294,7 @@ function TopBar({ freezeBanner }) {
             {menuOpen && (
               <nav
                 id="main-navigation-menu"
-                className="hl-main-menu"
+                className={`hl-main-menu${rulesOpen ? " is-rules-open" : ""}`}
                 aria-label="Main navigation"
               >
                 <div className="hl-main-menu__heading">
@@ -362,6 +363,7 @@ function TopBar({ freezeBanner }) {
                     type="button"
                     className="hl-menu-link hl-menu-link--button"
                     aria-expanded={rulesOpen}
+                    aria-controls="league-rules-panel"
                     onClick={() => setRulesOpen((open) => !open)}
                   >
                     <BookOpen className="hl-menu-link__icon" aria-hidden="true" />
@@ -369,17 +371,16 @@ function TopBar({ freezeBanner }) {
                       <strong>League Rules</strong>
                       <small>Approved rules and guidance</small>
                     </span>
-                    <ChevronDown
-                      className={rulesOpen ? "is-rotated" : ""}
+                    <ChevronRight
                       aria-hidden="true"
                     />
                   </button>
-                  {rulesOpen && (
-                    <div className="hl-rules-menu">
-                      <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
-                    </div>
-                  )}
                 </div>
+                {rulesOpen && (
+                  <div className="hl-rules-menu" id="league-rules-panel">
+                    <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
+                  </div>
+                )}
               </nav>
             )}
           </div>
