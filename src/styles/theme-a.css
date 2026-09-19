@@ -6664,10 +6664,12 @@ textarea {
 .hl-matchup-stat b { font-size: 0.6875rem; }
 .hl-matchup-stat-label { color: var(--hl-muted-foreground); }
 .hl-matchup-stat.is-muted { color: var(--hl-muted-foreground); }
+.hl-matchup-stat.is-zero { display: none; }
 @media (min-width: 1024px) {
   .hl-matchup-stat-headings { display: grid; }
   .hl-matchup-stats-grid { grid-template-columns: repeat(var(--matchup-stat-count), minmax(0, 1fr)); }
   .hl-matchup-stat { justify-content: center; }
+  .hl-matchup-stat.is-zero { display: inline-flex; }
   .hl-matchup-stat-label { display: none; }
 }
 @media (max-width: 660px) {
