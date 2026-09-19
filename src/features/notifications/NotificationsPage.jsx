@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -32,7 +32,6 @@ import {
   acceptLeagueInvitation,
   declineLeagueInvitation,
   leagueInvitationQuery,
-  markNotificationsReadBatch,
   markNotificationRead,
   notificationKeys,
   notificationsQuery,
@@ -414,56 +413,59 @@ function LeagueInvitationActions({ notification, session }) {
   );
 }
 
+function NotificationReadAction({ notification, label }) {
+  const session = useSession();
+  const queryClient = useQueryClient();
+  const action = useMutation({
+    mutationFn: async () => {
+      const result = await markNotificationRead(session.httpClient, notification.id);
+      const updated = result?.notification;
+      if (result?.code !== "NOTIFICATION_READ" || updated?.id !== notification.id ||
+          !Number.isSafeInteger(updated.readAtMs) || updated.readAtMs < 0) {
+        throw new ResponseContractError("The notification read confirmation is invalid.");
+      }
+      return updated;
+    },
+    onSuccess: async (updated) => {
+      const lists = {
+        queryKey: notificationKeys.all,
+        predicate: query => Array.isArray(query.state.data?.notifications),
+      };
+      await queryClient.cancelQueries(lists);
+      for (const query of queryClient.getQueryCache().findAll(lists)) {
+        queryClient.setQueryData(query.queryKey, data => ({
+          ...data,
+          notifications: query.queryKey[1] === "unread"
+            ? data.notifications.filter(item => item.id !== updated.id)
+            : data.notifications.map(item => item.id === updated.id ? updated : item),
+        }));
+      }
+      await queryClient.invalidateQueries(lists);
+    },
+  });
+
+  return <div className="hl-notification-read-action">
+    <button type="button" className="hl-button hl-button--quiet"
+      aria-label={`Mark as read: ${label}`} disabled={action.isPending}
+      onClick={() => { if (!action.isPending) action.mutate(); }}>
+      {action.isPending ? "Marking…" : "Mark as read"}
+    </button>
+    {action.isError && <span role="alert">Couldn’t mark as read. Try again.</span>}
+  </div>;
+}
+
 export function NotificationsPage() {
   const session = useSession();
   const leagues = useQuery({ ...visibleLeaguesQuery(session.httpClient), enabled: session.status === "authenticated", retry: false });
-  const queryClient = useQueryClient();
   const [view, setView] = useState("unread");
   const [cursor, setCursor] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [unreadSnapshots, setUnreadSnapshots] = useState({});
-  const acknowledgedBatches = useRef(new Set());
-  const pageKey = `${view}:${categoryFilter}:${cursor || "first"}`;
   const notifications = useQuery({
     ...notificationsQuery(session.httpClient, cursor, view, { category: categoryFilter }),
     enabled: session.status === "authenticated",
   });
-  const acknowledge = useMutation({
-    mutationFn: (notificationIds) =>
-      markNotificationsReadBatch(session.httpClient, notificationIds),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["notifications", "read"] }),
-  });
-  const acknowledgeBatch = acknowledge.mutate;
-
-  if (view === "unread" && notifications.data && !unreadSnapshots[pageKey]) {
-    setUnreadSnapshots({
-      ...unreadSnapshots,
-      [pageKey]: notifications.data,
-    });
-  }
-
-  const displayedData =
-    view === "unread"
-      ? unreadSnapshots[pageKey] || notifications.data
-      : notifications.data;
-  const displayedNotifications = view === "unread" && !cursor && displayedData
-    ? [...new Map([
-        ...Object.entries(unreadSnapshots).filter(([key]) => key.endsWith(":first")).flatMap(([, page]) => page.notifications),
-        ...displayedData.notifications,
-      ].filter((notification) => categoryFilter === "all" || notificationCategory(notification.type).tone === categoryFilter)
-        .map((notification) => [notification.id, notification])).values()]
-      .sort((left, right) => right.createdAtMs - left.createdAtMs || right.id.localeCompare(left.id))
-    : displayedData?.notifications || [];
-
-  useEffect(() => {
-    if (view !== "unread" || !displayedData?.notifications?.length) return;
-    const notificationIds = displayedData.notifications.map(({ id }) => id);
-    const signature = notificationIds.join("|");
-    if (acknowledgedBatches.current.has(signature)) return;
-    acknowledgedBatches.current.add(signature);
-    acknowledgeBatch(notificationIds);
-  }, [acknowledgeBatch, displayedData, view]);
+  const displayedData = notifications.data;
+  const displayedNotifications = displayedData?.notifications || [];
 
   if (session.status === "unknown") {
     return (
@@ -539,7 +541,9 @@ export function NotificationsPage() {
           <EmptyBlock
             title={
               view === "unread"
-                ? "You're all caught up"
+                ? cursor || displayedData?.page.nextCursor
+                  ? "No unread notifications on this page"
+                  : "You're all caught up"
                 : "No previous notifications"
             }
           />
@@ -572,6 +576,7 @@ export function NotificationsPage() {
                     className="hl-notification-list__indicator"
                     aria-hidden="true"
                   />
+                  <div className="hl-notification-content">
                   {notification.type === "fad_rapid_auction_result" ? (
                     <CompletedAuctionNotification notification={notification} notificationMessage={notificationMessage} timestamp={timestamp} />
                   ) : fadNotification ? (
@@ -614,7 +619,10 @@ export function NotificationsPage() {
                       )}
                     </div>
                   )}
-                  {view === "read" && <StatusBadge>Read</StatusBadge>}
+                  </div>
+                  {view === "unread"
+                    ? <NotificationReadAction notification={notification} label={notificationMessage} />
+                    : <StatusBadge>Read</StatusBadge>}
                 </li>
               );
             })}
@@ -643,24 +651,6 @@ export function NotificationsPage() {
         </nav>
       )}
 
-      {acknowledge.isError && view === "unread" && (
-        <div className="hl-form-message is-error" role="alert">
-          <span>
-            These notifications could not be moved to Previous notifications.
-            They are still safe in your unread inbox.
-          </span>
-          <button
-            className="hl-button hl-button--quiet"
-            type="button"
-            disabled={
-              acknowledge.isPending || !acknowledge.variables?.length
-            }
-            onClick={() => acknowledgeBatch(acknowledge.variables)}
-          >
-            Try again
-          </button>
-        </div>
-      )}
     </main>
   );
 }

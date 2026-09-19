@@ -10,6 +10,7 @@ import { renderWithProviders } from "../../test/render.jsx";
 import { createQueryClient } from "../../shared/query/queryClient.js";
 import { NotificationsPage, PendingLeagueAccess } from "./NotificationsPage.jsx";
 import { useSession } from "../session/sessionContext.js";
+import TopBar from "../../components/TopBar.jsx";
 
 const notificationId = "11111111-1111-4111-8111-111111111111";
 const invitationId = "22222222-2222-4222-8222-222222222222";
@@ -237,6 +238,48 @@ function renderCreateTeamInvitation() {
   return { ...renderWithProviders(<PendingLeagueAccess session={session} />, { config }), request };
 }
 
+function renderReadInbox({ failures = 0, malformed = null, beforeRead = null } = {}) {
+  const items = [
+    { id: notificationId, leagueId, type: "commissioner_assignment_proposed",
+      messageData: { assignmentId: invitationId, leagueId, leagueName: "Giggles" },
+      related: null, deliveryStatus: "delivered", createdAtMs: 3, deliveredAtMs: 3, readAtMs: null, version: 1 },
+    { id: tradeId, leagueId: null, type: "account_notice", messageData: { message: "A private account notice." },
+      related: null, deliveryStatus: "delivered", createdAtMs: 2, deliveredAtMs: 2, readAtMs: null, version: 1 },
+    { id: cardId, leagueId: null, type: "account_notice", messageData: { message: "An older read notice." },
+      related: null, deliveryStatus: "delivered", createdAtMs: 1, deliveredAtMs: 1, readAtMs: 2, version: 2 },
+  ];
+  const fetchImpl = vi.fn(async (url, options = {}) => {
+    const parsed = new URL(url);
+    const path = parsed.pathname;
+    if (path === "/api/v1/session") return envelope(sessionData());
+    if (path === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [] });
+    if (path === "/api/v1/notifications") {
+      const status = parsed.searchParams.get("readStatus");
+      const category = parsed.searchParams.get("category");
+      return envelope({ code: "NOTIFICATIONS_FOUND", notifications: items.filter(item =>
+        (status === "read" ? item.readAtMs !== null : status === "unread" ? item.readAtMs === null : true) &&
+        (!category || category === "all" || category === "league" && item.leagueId || category === "account" && !item.leagueId)),
+      page: { limit: 25, nextCursor: null } });
+    }
+    const item = items.find(item => path === `/api/v1/notifications/${item.id}/read`);
+    if (item && options.method === "POST") {
+      if (beforeRead) await beforeRead();
+      if (failures-- > 0) return new Response(JSON.stringify({ error: { code: "UNAVAILABLE", message: "Saving failed." } }),
+        { status: 503, headers: { "Content-Type": "application/json" } });
+      if (malformed) return envelope({ code: "NOTIFICATION_READ", notification: {
+        ...item, id: malformed === "wrong-id" ? teamId : item.id, readAtMs: malformed === "missing-time" ? null : 4,
+      } });
+      item.readAtMs = 4;
+      item.version += 1;
+      return envelope({ code: "NOTIFICATION_READ", notification: item });
+    }
+    throw new Error(`Unexpected request: ${path}`);
+  });
+  return { ...renderWithProviders(<><TopBar /><NotificationsPage /></>, {
+    enableSession: true, config, initialEntries: ["/notifications"], sessionOptions: { fetchImpl },
+  }), fetchImpl, items };
+}
+
 describe("M5-11 owner notifications", () => {
   it("blocks an invitation team name over 35 characters without submitting", async () => {
     const view = renderCreateTeamInvitation();
@@ -300,72 +343,71 @@ describe("M5-11 owner notifications", () => {
     expect(await screen.findByRole("link", { name: "Continue league setup" })).toHaveAttribute("href", `/leagues/${leagueId}`);
     expect(accepted).toBe(true);
   });
-  it("renders the unread batch, acknowledges exactly those rows, and keeps them visible", async () => {
-    let read = false;
-    const fetchImpl = vi.fn(async (url, options = {}) => {
-      const path = new URL(url).pathname;
-      if (path === "/api/v1/session") return envelope({
-        csrfToken: "D".repeat(43),
-        session: { id: "session-1", userId: "user-1", status: "active", createdAtMs: 1, lastUsedAtMs: 1, idleExpiresAtMs: 2, absoluteExpiresAtMs: 3, version: 1 },
-        user: { id: "user-1", displayName: "Manager", status: "active", version: 1 },
-      });
-      if (path === "/api/v1/notifications" && (!options.method || options.method === "GET")) {
-        return envelope({
-          code: "NOTIFICATIONS_FOUND",
-          notifications: [
-            { id: notificationId, leagueId: null, type: "account_notice", messageData: { message: "A private account notice." }, related: null, deliveryStatus: "delivered", createdAtMs: 1, readAtMs: read ? 2 : null, deliveredAtMs: 1, version: read ? 2 : 1 },
-            { id: invitationId, leagueId: null, type: "internal_unknown_event", messageData: {}, related: null, deliveryStatus: "delivered", createdAtMs: 2, readAtMs: read ? 2 : null, deliveredAtMs: 2, version: read ? 2 : 1 },
-          ],
-          page: { limit: 25, nextCursor: null },
-        });
-      }
-      if (path === "/api/v1/notifications/read-batch") {
-        expect(JSON.parse(options.body)).toEqual({
-          notificationIds: [notificationId, invitationId],
-        });
-        read = true;
-        return envelope({
-          code: "NOTIFICATIONS_READ",
-          changedCount: 2,
-          notificationIds: [notificationId, invitationId],
-          readAtMs: 2,
-        });
-      }
-      throw new Error(`Unexpected request: ${path}`);
-    });
-    const view = renderWithProviders(<NotificationsPage />, {
-      enableSession: true,
-      config,
-      sessionOptions: { fetchImpl },
-    });
-    expect(await screen.findByText("A private account notice.")).toBeInTheDocument();
-    expect(screen.getByText("Account update")).toBeInTheDocument();
-    expect(screen.queryByText("internal unknown event")).not.toBeInTheDocument();
-    const initialNotificationCalls = fetchImpl.mock.calls.filter(([url]) => new URL(url).pathname === "/api/v1/notifications");
-    expect(initialNotificationCalls).toHaveLength(1);
-    expect(initialNotificationCalls[0][1]?.method).toBe("GET");
-    expect(new URL(initialNotificationCalls[0][0]).searchParams.get("readStatus"))
-      .toBe("unread");
-    await waitFor(() => expect(fetchImpl.mock.calls.some(([url, options]) =>
-      new URL(url).pathname === "/api/v1/notifications/read-batch" &&
-      options.method === "POST" &&
-      options.headers.get("X-CSRF-Token") === "D".repeat(43)
-    )).toBe(true));
+  it("marks only the selected notification read, updates the bell, and keeps history across filters", async () => {
+    const view = renderReadInbox();
+    const label = "Commissioner invitation for Giggles";
+    const button = await screen.findByRole("button", { name: `Mark as read: ${label}` });
+    expect(await screen.findByRole("link", { name: "Notifications, 2 unread" })).toBeInTheDocument();
+    expect(view.fetchImpl.mock.calls.every(([, options]) => options.method === "GET")).toBe(true);
+    await view.user.click(button);
+    await waitFor(() => expect(screen.queryByText(label)).not.toBeInTheDocument());
+    expect(await screen.findByRole("link", { name: "Notifications, 1 unread" })).toBeInTheDocument();
     expect(screen.getByText("A private account notice.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /mark read/i })).not.toBeInTheDocument();
-    await view.user.click(
-      screen.getByRole("button", { name: "Previous notifications" })
-    );
-    await waitFor(() =>
-      expect(
-        fetchImpl.mock.calls.some(
-          ([url]) => new URL(url).searchParams.get("readStatus") === "read"
-        )
-      ).toBe(true)
-    );
-    expect(await screen.findAllByText("Read")).toHaveLength(2);
+    await view.user.selectOptions(screen.getByLabelText("Notification type"), "league");
+    expect(await screen.findByText("You're all caught up")).toBeInTheDocument();
+    await view.user.selectOptions(screen.getByLabelText("Notification type"), "all");
+    expect(await screen.findByText("A private account notice.")).toBeInTheDocument();
+    expect(screen.queryByText(label)).not.toBeInTheDocument();
+    await view.user.click(screen.getByRole("button", { name: "Previous notifications" }));
+    expect(await screen.findByText(label)).toBeInTheDocument();
+    expect(screen.getByText("An older read notice.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Mark as read:/ })).not.toBeInTheDocument();
+    await view.user.click(screen.getByRole("button", { name: "Unread", exact: true }));
+    await view.user.click(await screen.findByRole("button", { name: "Mark as read: A private account notice." }));
+    expect(await screen.findByText("You're all caught up")).toBeInTheDocument();
+    const bell = screen.getByRole("link", { name: "Notifications", exact: true });
+    expect(bell.querySelector("span")).toBeNull();
+    const writes = view.fetchImpl.mock.calls.filter(([, options]) => options.method === "POST");
+    expect(writes.map(([url]) => new URL(url).pathname)).toEqual([
+      `/api/v1/notifications/${notificationId}/read`, `/api/v1/notifications/${tradeId}/read`,
+    ]);
+    expect(writes.every(([, options]) => options.headers.get("X-CSRF-Token") === "D".repeat(43))).toBe(true);
   });
 
+  it("keeps the item and bell unchanged on failure and permits retry", async () => {
+    const view = renderReadInbox({ failures: 1 });
+    const button = await screen.findByRole("button", { name: "Mark as read: Commissioner invitation for Giggles" });
+    await view.user.click(button);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t mark as read. Try again.");
+    expect(screen.getByRole("link", { name: "Notifications, 2 unread" })).toBeInTheDocument();
+    expect(view.items[0].readAtMs).toBeNull();
+    await view.user.click(button);
+    await waitFor(() => expect(screen.queryByText("Commissioner invitation for Giggles")).not.toBeInTheDocument());
+    expect(await screen.findByRole("link", { name: "Notifications, 1 unread" })).toBeInTheDocument();
+  });
+
+  it.each(["wrong-id", "missing-time"])("rejects a %s read confirmation without hiding the notification", async malformed => {
+    const view = renderReadInbox({ malformed });
+    await view.user.click(await screen.findByRole("button", { name: "Mark as read: Commissioner invitation for Giggles" }));
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Commissioner invitation for Giggles")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Notifications, 2 unread" })).toBeInTheDocument();
+    expect(view.items[0].readAtMs).toBeNull();
+  });
+
+  it("disables the selected button while saving and prevents duplicate requests", async () => {
+    let finish;
+    const view = renderReadInbox({ beforeRead: () => new Promise(resolve => { finish = resolve; }) });
+    const button = await screen.findByRole("button", { name: "Mark as read: Commissioner invitation for Giggles" });
+    await view.user.click(button);
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent("Marking…");
+    expect(screen.getByRole("link", { name: "Notifications, 2 unread" })).toBeInTheDocument();
+    await view.user.click(button);
+    expect(view.fetchImpl.mock.calls.filter(([, options]) => options.method === "POST")).toHaveLength(1);
+    finish();
+    await waitFor(() => expect(screen.queryByText("Commissioner invitation for Giggles")).not.toBeInTheDocument());
+  });
   it("links a received-trade notification to its acceptance preview", async () => {
     const fetchImpl = vi.fn(async (url, options = {}) => {
       const path = new URL(url).pathname;

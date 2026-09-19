@@ -133,7 +133,7 @@ function TopBar({ freezeBanner }) {
     enabled: session.status === "authenticated",
   });
   const notificationQuery = useQuery({
-    ...notificationsQuery(session.httpClient),
+    ...notificationsQuery(session.httpClient, null, "unread"),
     enabled: session.status === "authenticated",
   });
   const leagues = leaguesQuery.data || [];
@@ -158,6 +158,7 @@ function TopBar({ freezeBanner }) {
     notificationQuery.data?.notifications?.filter(
       (notification) => notification.readAtMs === null
     ).length || 0;
+  const unreadLabel = `${unreadCount}${notificationQuery.data?.page.nextCursor ? "+" : ""}`;
 
   const logoTarget =
     session.status === "authenticated"
@@ -338,7 +339,7 @@ function TopBar({ freezeBanner }) {
                         label="Notifications"
                         description={
                           unreadCount
-                            ? `${unreadCount} unread`
+                            ? `${unreadLabel} unread`
                             : "Account updates and actions"
                         }
                         to={routePaths.notifications}
@@ -417,14 +418,14 @@ function TopBar({ freezeBanner }) {
                 to={routePaths.notifications}
                 aria-label={
                   unreadCount
-                    ? `Notifications, ${unreadCount} unread`
+                    ? `Notifications, ${unreadLabel} unread`
                     : "Notifications"
                 }
               >
                 <Bell aria-hidden="true" />
                 {unreadCount > 0 && (
                   <span aria-hidden="true">
-                    {unreadCount > 99 ? "99+" : unreadCount}
+                    {unreadLabel}
                   </span>
                 )}
               </Link>

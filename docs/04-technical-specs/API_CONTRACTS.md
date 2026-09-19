@@ -3318,9 +3318,17 @@ The array contains 1–100 unique stable IDs. The repository validates ownership
 of the complete set before updating any row; a missing or foreign ID rejects and
 rolls back the whole batch. Success returns `NOTIFICATIONS_READ`,
 `changedCount`, `readAtMs`, and the exact `notificationIds`. Exact replay is
-idempotent and may return `changedCount: 0`. The frontend sends one batch only
-after successfully rendering its captured unread page and keeps that rendered
-batch visible for the mounted visit even if acknowledgement fails.
+idempotent and may return `changedCount: 0`. The batch endpoint remains available.
+
+September 19 notification UI amendment: opening the notification page is read-only.
+Each unread row has an explicit **Mark as read** action using
+`POST /api/v1/notifications/:notificationId/read`. The response confirms
+`NOTIFICATION_READ` and the updated owned notification. Only after confirmation
+does the UI remove that item from unread lists and update the bell, then refresh
+the lists. Failed requests leave the item unread and offer retry. Read items
+remain in Previous notifications. Reading does not accept or decline invitations
+or commissioner assignments. The bell queries unread notifications directly;
+a trailing `+` indicates that further unread pages exist.
 
 Creating a pending trade proposal writes the proposal, proposal history,
 outbox evidence, and one `trade_proposal_received` in-app notification for

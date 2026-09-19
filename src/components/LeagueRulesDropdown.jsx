@@ -223,7 +223,7 @@ function LeagueRulesDropdown({ onClose }) {
 
         <RuleSection title="League access, notifications and commissioner tools">
           <p>Your league lists your memberships and pending invitations. Accept a league invitation or commissioner assignment to receive its access. Managing one league never grants access to another league.</p>
-          <p>Notifications can be filtered by type. Reading a notification moves it to Previous notifications; it does not accept an invitation, trade or commissioner role. Open the relevant item to review and take that action.</p>
+          <p>Notifications can be filtered by type. Use Mark as read to move an item to Previous notifications and clear it from the bell badge. This does not accept an invitation, trade or commissioner role. Open the relevant item to review and take that action.</p>
           <p>Commissioners can preview and confirm schedule creation, manage matchup weeks, and correct rosters and contracts. Add Player and Correct Contract use AAV and term, with the total shown for review. Move / re-slot changes the roster category and slot while preserving the player's position.</p>
           <p>Seasonal draft tools show the actions currently available to the commissioner. A preview does not apply a change; review its effects before confirming. Managers cannot use commissioner controls or access another team's private bids.</p>
         </RuleSection>
