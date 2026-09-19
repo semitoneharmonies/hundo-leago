@@ -1,5 +1,7 @@
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 
+import { validateExpandedScoring } from "../../shared/scoringCategories.js";
+
 const ID =
   /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 
@@ -75,8 +77,9 @@ function validateProvider(provider) {
   );
 }
 
-function validateStatistics(statistics) {
+function validateStatistics(statistics, position) {
   if (statistics === null) return;
+  const expanded = validateExpandedScoring(statistics, position);
   exactKeys(
     statistics,
     [
@@ -88,6 +91,7 @@ function validateStatistics(statistics) {
       "nhlPoints",
       "fantasyPointsHundredths",
       "sourceUpdatedAtMs",
+      ...(expanded ? ["scoringRuleVersion", "scoringStats"] : []),
     ],
     "The player statistics are invalid."
   );
@@ -110,7 +114,7 @@ function validateStatistics(statistics) {
     "sourceUpdatedAtMs",
   ]) {
     contract(
-      Number.isSafeInteger(statistics[field]) && statistics[field] >= 0,
+      Number.isSafeInteger(statistics[field]) && (statistics[field] >= 0 || (expanded && field === "fantasyPointsHundredths")),
       `The player ${field} statistic is invalid.`
     );
   }
@@ -153,7 +157,7 @@ export function validatePlayerSummary(player) {
     "The player status is invalid."
   );
   validateProvider(player.provider);
-  validateStatistics(player.statistics);
+  validateStatistics(player.statistics, player.provider?.normalizedPosition);
   contract(
     Number.isSafeInteger(player.version) && player.version >= 1,
     "The player version is invalid."

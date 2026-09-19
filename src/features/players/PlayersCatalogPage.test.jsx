@@ -8,6 +8,7 @@ vi.mock("socket.io-client", () => ({
 
 import { renderWithProviders } from "../../test/render.jsx";
 import { PlayersCatalogPage } from "./PlayersCatalogPage.jsx";
+import { SCORING_CATEGORIES, EXPANDED_SCORING_VERSION } from "../../shared/scoringCategories.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 const seasonId = "22222222-2222-4222-8222-222222222222";
@@ -172,6 +173,28 @@ function player({
 }
 
 describe("league player catalog", () => {
+  it("accepts and shows the complete expanded breakdown with negative fantasy points", async () => {
+    const entry = player({ id: freeAgentId, name: "Expanded Player", gamesPlayed: 1, fantasyPointsHundredths: -50 });
+    Object.assign(entry.statistics, { goals: 0, assists: 0, nhlPoints: 0, scoringRuleVersion: EXPANDED_SCORING_VERSION,
+      scoringStats: { ...Object.fromEntries(SCORING_CATEGORIES.map(({ key }) => [key, 0])), giveaways: 1, penaltiesTaken: 2 } });
+    const fetchImpl = async url => {
+      const path = new URL(url).pathname;
+      if (path === "/api/v1/session") return envelope(session());
+      if (path === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [league()] });
+      if (path.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [] });
+      if (path.endsWith("/players")) return envelope([entry], { page: { nextCursor: null, hasMore: false } });
+      if (path.endsWith("/auctions")) return envelope([], { actions: auctionActions(true), page: { nextCursor: null, hasMore: false } });
+      throw new Error(`Unexpected request: ${path}`);
+    };
+    renderWithProviders(<Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>, {
+      initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl },
+    });
+    const row = (await screen.findByRole("rowheader", { name: "Expanded Player" })).closest("tr");
+    expect(within(row).getAllByText("-0.50")).toHaveLength(2);
+    expect(within(row).getByTitle("Giveaways")).toHaveTextContent("1");
+    expect(within(row).getByTitle("Penalties taken")).toHaveTextContent("2");
+    for (const { abbreviation } of SCORING_CATEGORIES) expect(screen.getByRole("button", { name: `Sort by ${abbreviation}` })).toBeInTheDocument();
+  });
   it("shows FPG and filters favourites, teams, and prospects while hiding unavailable players", async () => {
     const players = [
       player({
@@ -294,6 +317,7 @@ describe("league player catalog", () => {
       "G",
       "A",
       "P",
+      "EVG", "PPG", "SHG", "GWG", "A1", "A2", "SOG", "HIT", "BLK", "TK", "GV", "PD", "PT",
       "FP",
       "FPG",
       "Actions",

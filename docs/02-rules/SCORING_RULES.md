@@ -1,5 +1,69 @@
 # Hundo Leago — Scoring Rules
 
+## Approved expanded scoring — 18 September 2026
+
+Graem approved implementation and production delivery before 29 September 2026,
+including the following clarification choices. This amendment supersedes the
+older goals-and-assists-only baseline below for **all 2026–27 league seasons**
+(`nhlSeasonKey = 20262027`). Previous seasons retain their original rules.
+The rule version is `expanded-2026-v1`.
+
+Publication boundary updated 19 September: deploy to staging for Graem's testing
+and review first. Production remains unchanged until explicit approval after
+that review; the September 29 target remains.
+
+| Statistic | Forward FP | Defence FP |
+| --- | ---: | ---: |
+| Even-strength goal | 3.00 | 3.00 |
+| Power-play goal | 2.75 | 2.75 |
+| Shorthanded goal | 3.25 | 3.25 |
+| Game-winning goal bonus | 1.00 | 1.00 |
+| Primary assist | 2.25 | 2.25 |
+| Secondary assist | 1.75 | 1.75 |
+| Shot on goal | 0.20 | 0.20 |
+| Hit | 0.20 | 0.35 |
+| Blocked shot | 0.20 | 0.35 |
+| Takeaway | 0.20 | 0.20 |
+| Giveaway | -0.10 | -0.10 |
+| Penalty drawn | 0.20 | 0.20 |
+| Penalty taken | -0.20 | -0.20 |
+
+Goal categories are mutually exclusive. Goal points, shot points and the
+game-winning goal bonus stack. There are no additional assist, ice-time,
+faceoff, hat-trick or goalie scoring categories. Calculate exact hundredths;
+negative player and team fantasy-point totals are valid and must not be floored.
+
+Count one penalty per NHL-recorded infraction, regardless of duration. A double
+minor counts once; a major or misconduct counts once; separate coincidental
+infractions count individually. Exclude bench penalties and do not charge a
+player merely serving another player's penalty. Credit a penalty drawn only
+when the NHL explicitly identifies the player who drew it.
+
+Empty-net goals retain the NHL's even-strength, power-play or shorthanded
+classification. A successful penalty shot earns 3.00 goal FP. Shootout attempts
+and shootout goals earn no statistics or fantasy points. An assist earns its
+primary or secondary value regardless of manpower situation.
+
+Persist complete game-level category evidence and the scoring-rule version.
+Missing data must remain distinguishable from a verified zero. The defence
+bonus in a matchup follows the player's saved scoring-position group. Apply
+late or corrected statistics to the original eligible roster and matchup week,
+including automatic correction of finalized regular-season results and
+standings, retaining prior result versions and an audit trail. Previously
+completed seasons are not rewritten. Existing playoff advancement/correction
+controls remain applicable.
+
+Players and roster pages must show all categories, total FP and FPG. Matchups
+must show a compact per-player breakdown for the selected matchup period.
+Scoring eligibility, normal/late roster locks, league isolation and read-only
+page behavior remain unchanged. Data-preserving migration, historical replay,
+staging verification, backup and production verification are required before
+the feature is considered complete.
+
+The remaining sections retain the original baseline and operational history;
+the amendment above controls conflicting formula/category statements for
+2026–27. Recording this amendment is not evidence of deployed implementation.
+
 > 8 September 2026 implementation amendment: [NHL completed-game statistics and automatic matchups](../06-work-plans/STATISTICS_MATCHUPS_2026-09-08.md) defines the provider, four evening refreshes, game-window scoring, late-lock evidence and release controls now published on staging with the new controls off. It supersedes the deferred implementation clauses below for this candidate. Hosted enablement remains a separate gate.
 
 ## Document Status

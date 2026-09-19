@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
+import { SCORING_CATEGORIES, scoringDescription, scoringWeight } from "../../shared/scoringCategories.js";
+import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
 import { calendarInputValue, calendarTimestamp } from "../../shared/leagueCalendar.js";
 import {
@@ -536,6 +538,36 @@ function playerStat(player, field) {
     : player[field];
 }
 
+function ExpandedTeamBreakdown({ team, slots }) {
+  return (
+    <TableScroll label={`${team.name} player scoring`}>
+      <table className="hl-data-table hl-expanded-matchup-table">
+        <caption>{team.name} · player scoring for this matchup</caption>
+        <thead><tr>
+          <th scope="col">Player</th><th scope="col" title="Games played in this matchup">GP</th>
+          {SCORING_CATEGORIES.map(({ key, abbreviation }) => <th scope="col" key={key} title={scoringDescription(key)}>{abbreviation}</th>)}
+          <th scope="col" className="hl-expanded-matchup-fp">FP</th>
+        </tr></thead>
+        <tbody>{slots.map(({ player, positionGroup, slotNumber }) => (
+          <tr key={`${positionGroup}-${slotNumber}`}>
+            <th scope="row" className="hl-expanded-matchup-name">
+              <span className="hl-expanded-matchup-position">{positionGroup}{slotNumber}</span>
+              {player ? player.fullName : "Empty slot"}
+            </th>
+            <td>{playerStat(player, "gamesPlayedDelta")}</td>
+            {SCORING_CATEGORIES.map(category => {
+              const count = player?.dataStatus === "available" ? player.scoringStats?.[category.key] : null;
+              const weight = scoringWeight(category, positionGroup);
+              return <td key={category.key} title={count == null ? "Stat unavailable" : `${category.label}: ${count} × ${(weight / 100).toFixed(2)} = ${(count * weight / 100).toFixed(2)} FP`}>{count ?? "—"}</td>;
+            })}
+            <td className="hl-expanded-matchup-fp">{playerStat(player, "scoreHundredths")}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </TableScroll>
+  );
+}
+
 function MatchupCard({ matchup, teams = [] }) {
   const official = matchup.result?.currentVersion || null;
   const scoring = matchup.scoring;
@@ -599,6 +631,13 @@ function MatchupCard({ matchup, teams = [] }) {
               no fantasy points were awarded.
             </p>
           ) : null}
+          {scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion ? (
+            <div className="hl-expanded-matchup-breakdowns">
+          <ScoringStatGuide />
+              <ExpandedTeamBreakdown team={homeTeam} slots={homeSlots} />
+              <ExpandedTeamBreakdown team={awayTeam} slots={awaySlots} />
+            </div>
+          ) : (
           <TableScroll
             label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}
           >
@@ -677,6 +716,7 @@ function MatchupCard({ matchup, teams = [] }) {
               </tbody>
             </table>
           </TableScroll>
+          )}
         </>
       )}
       {matchup.result?.status === "corrected" && <p className="hl-inline-copy">Official result corrected.</p>}

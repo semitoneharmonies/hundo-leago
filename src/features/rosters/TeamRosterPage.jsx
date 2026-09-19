@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
+import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
 import {
   ErrorBlock,
@@ -84,7 +86,7 @@ function orderedPlayers(players, respectDisplayOrder = false) {
 }
 
 function statisticValue(player, key) {
-  if (!player.statistics) return -1;
+  if (!player.statistics) return Number.NEGATIVE_INFINITY;
   switch (key) {
     case "gamesPlayed":
       return player.statistics.gamesPlayed;
@@ -99,7 +101,7 @@ function statisticValue(player, key) {
     case "fantasyPointsPerGame":
       return fantasyPointsPerGame(player.statistics);
     default:
-      return -1;
+      return player.statistics.scoringStats?.[key] ?? Number.NEGATIVE_INFINITY;
   }
 }
 
@@ -501,8 +503,10 @@ function CategoryTable({
           No players occupy this category.
         </p>
       ) : (
+        <>
+        <ScoringStatGuide />
         <TableScroll label={`${category.title} table`}>
-          <table className="hl-data-table hl-player-row-table hl-roster-table">
+          <table className="hl-data-table hl-player-row-table hl-roster-table hl-expanded-player-table">
             <thead>
               <tr>
                 <th className="hl-player-col-order" scope="col">
@@ -523,6 +527,7 @@ function CategoryTable({
                   ["G", "goals"],
                   ["A", "assists"],
                   ["P", "nhlPoints"],
+                  ...SCORING_CATEGORIES.map(({ abbreviation, key }) => [abbreviation, key]),
                   ["FP", "fantasyPoints"],
                   ["FPG", "fantasyPointsPerGame"],
                 ].map(([label, sortKey]) => (
@@ -536,6 +541,7 @@ function CategoryTable({
                     }
                     className="hl-player-col-stat hl-roster-stat"
                     key={sortKey}
+                    title={scoringDescription(sortKey)}
                     scope="col"
                   >
                     <RosterSortHeading
@@ -691,6 +697,9 @@ function CategoryTable({
                   <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.goals ?? "—"}</td>
                   <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.assists ?? "—"}</td>
                   <td className="hl-player-col-stat hl-roster-stat">{player.statistics?.nhlPoints ?? "—"}</td>
+                    {SCORING_CATEGORIES.map(({ key, label }) => (
+                      <td className="hl-player-col-stat hl-roster-stat" key={key} title={label}>{player.statistics?.scoringStats?.[key] ?? "—"}</td>
+                    ))}
                   <td className="hl-player-col-stat hl-roster-stat">
                     {player.statistics
                       ? (
@@ -736,6 +745,7 @@ function CategoryTable({
             </tbody>
           </table>
         </TableScroll>
+        </>
       )}
     </section>
   );

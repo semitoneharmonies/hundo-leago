@@ -3,6 +3,8 @@ import {
   isTeamPatternTemplate,
 } from "../../shared/teamPatternCatalog.js";
 
+import { validateExpandedScoring } from "../../shared/scoringCategories.js";
+
 const STABLE_ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const COLOUR = /^#[0-9a-f]{6}$/;
 const CATEGORIES = new Set(["Active", "Bench", "Injured Reserve", "Prospect"]);
@@ -30,11 +32,12 @@ function integer(value, { minimum = Number.MIN_SAFE_INTEGER, maximum = Number.MA
   return Number.isSafeInteger(value) && value >= minimum && value <= maximum;
 }
 
-function validateStatistics(value) {
+function validateStatistics(value, position) {
   if (value === null) return;
-  exactKeys(value, ["gamesPlayed", "goals", "assists", "nhlPoints", "fantasyPointsHundredths"], "The player statistics are invalid.");
+  const expanded = validateExpandedScoring(value, position);
+  exactKeys(value, ["gamesPlayed", "goals", "assists", "nhlPoints", "fantasyPointsHundredths", ...(expanded ? ["scoringRuleVersion", "scoringStats"] : [])], "The player statistics are invalid.");
   for (const field of ["gamesPlayed", "goals", "assists", "nhlPoints", "fantasyPointsHundredths"]) {
-    contract(integer(value[field], { minimum: 0 }), `The player ${field} value is invalid.`);
+    contract(integer(value[field], { minimum: expanded && field === "fantasyPointsHundredths" ? Number.MIN_SAFE_INTEGER : 0 }), `The player ${field} value is invalid.`);
   }
   contract(value.nhlPoints === value.goals + value.assists, "The player NHL points do not reconcile.");
 }
@@ -48,7 +51,7 @@ function validatePlayer(value) {
   contract(value.aavCents === null || integer(value.aavCents, { minimum: 1 }), "The player AAV is invalid.");
   contract(integer(value.remainingContractYears, { minimum: 0, maximum: 3 }), "The remaining contract years are invalid.");
   contract(value.age === null || integer(value.age, { minimum: 0, maximum: 150 }), "The player age is invalid.");
-  validateStatistics(value.seasonStatistics);
+  validateStatistics(value.seasonStatistics, value.normalizedPosition);
 }
 
 export function validatePublicRosterResponse(data) {

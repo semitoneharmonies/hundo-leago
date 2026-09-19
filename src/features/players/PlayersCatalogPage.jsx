@@ -3,6 +3,8 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Gavel } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
+import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
+import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
 import {
   EmptyBlock,
@@ -133,6 +135,7 @@ function SortableColumnHeading({
   return (
     <th
       className={className}
+      title={scoringDescription(sortKey)}
       scope="col"
       aria-sort={
         activeSort.key === sortKey
@@ -326,15 +329,15 @@ export function PlayersCatalogPage() {
         case "nhlPoints":
           return player.statistics?.nhlPoints ?? -1;
         case "fantasyPoints":
-          return player.statistics?.fantasyPointsHundredths ?? -1;
+          return player.statistics?.fantasyPointsHundredths ?? Number.NEGATIVE_INFINITY;
         case "fantasyPointsPerGame":
-          return fantasyPointsPerGame(player.statistics) ?? -1;
+          return fantasyPointsPerGame(player.statistics) ?? Number.NEGATIVE_INFINITY;
         case "assignment":
           return player.league.ownership?.team.name || "";
         case "contract":
           return player.league.activeContract?.aavCents ?? -1;
         default:
-          return "";
+          return player.statistics?.scoringStats?.[key] ?? Number.NEGATIVE_INFINITY;
       }
     };
     return availablePlayers
@@ -631,8 +634,9 @@ export function PlayersCatalogPage() {
         </Surface>
       ) : (
         <Surface className="hl-feature-section">
+          <ScoringStatGuide />
           <TableScroll label="Player catalog">
-            <table className="hl-data-table hl-player-row-table hl-player-table">
+            <table className="hl-data-table hl-player-row-table hl-player-table hl-expanded-player-table">
               <thead>
                 <tr>
                   <th className="hl-player-col-order" scope="col">Order</th>
@@ -647,6 +651,7 @@ export function PlayersCatalogPage() {
                     ["G", "goals"],
                     ["A", "assists"],
                     ["P", "nhlPoints"],
+                  ...SCORING_CATEGORIES.map(({ abbreviation, key }) => [abbreviation, key]),
                     ["FP", "fantasyPoints"],
                     ["FPG", "fantasyPointsPerGame"],
                   ].map(([label, sortKey]) => (
@@ -699,6 +704,9 @@ export function PlayersCatalogPage() {
                     <td className="hl-player-col-stat">{player.statistics?.goals ?? "—"}</td>
                     <td className="hl-player-col-stat">{player.statistics?.assists ?? "—"}</td>
                     <td className="hl-player-col-stat">{player.statistics?.nhlPoints ?? "—"}</td>
+                    {SCORING_CATEGORIES.map(({ key, label }) => (
+                      <td className="hl-player-col-stat" key={key} title={label}>{player.statistics?.scoringStats?.[key] ?? "—"}</td>
+                    ))}
                     <td className="hl-player-col-stat">
                       {player.statistics
                         ? (

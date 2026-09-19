@@ -1,5 +1,7 @@
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 
+import { validateExpandedScoring } from "../../shared/scoringCategories.js";
+
 const ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 
 function contract(condition, message) {
@@ -50,15 +52,16 @@ function validatePlayerScore(player, side) {
       player.slotNumber <= (player.positionGroup === "F" ? 12 : 6),
     `A ${side} player slot is invalid.`
   );
+  validateExpandedScoring(player, player.positionGroup, "scoreHundredths");
   for (const field of [
     "gamesPlayedDelta",
     "goalDelta",
     "assistDelta",
     "pointDelta",
-    "scoreHundredths",
   ]) {
     integer(player[field], `A ${side} player ${field} is invalid.`);
   }
+  signedInteger(player.scoreHundredths, `A ${side} player score is invalid.`);
   contract(
     player.pointDelta === player.goalDelta + player.assistDelta,
     `A ${side} player point total is inconsistent.`
@@ -80,7 +83,7 @@ function validateTeamScore(teamScore, side, expectedTeamId) {
     typeof teamScore.legal === "boolean",
     `The ${side} roster legality is invalid.`
   );
-  integer(teamScore.scoreHundredths, `The ${side} team score is invalid.`);
+  signedInteger(teamScore.scoreHundredths, `The ${side} team score is invalid.`);
   contract(
     Array.isArray(teamScore.players),
     `The ${side} player scores are invalid.`
@@ -255,8 +258,8 @@ export function validateStandings(data) {
     id(result.matchup.id, "An official result matchup ID is invalid.");
     validateTeam(result.matchup.homeTeam);
     validateTeam(result.matchup.awayTeam);
-    integer(result.homeScoreHundredths, "An official home score is invalid.");
-    integer(result.awayScoreHundredths, "An official away score is invalid.");
+    signedInteger(result.homeScoreHundredths, "An official home score is invalid.");
+    signedInteger(result.awayScoreHundredths, "An official away score is invalid.");
     contract(
       ["home_win", "away_win", "tie"].includes(result.outcome),
       "An official result outcome is invalid."
@@ -269,9 +272,10 @@ export function validateStandings(data) {
     contract(typeof row.teamDisplayName === "string" && row.teamDisplayName.trim(), "A standings team name is invalid.");
     for (const field of [
       "rank", "gamesPlayed", "wins", "losses", "ties", "standingsPoints",
-      "pointsPercentageHundredths", "fantasyPointsForHundredths",
-      "fantasyPointsAgainstHundredths",
+      "pointsPercentageHundredths",
     ]) integer(row[field], `The standings ${field} is invalid.`);
+    signedInteger(row.fantasyPointsForHundredths, "The standings points for are invalid.");
+    signedInteger(row.fantasyPointsAgainstHundredths, "The standings points against are invalid.");
     signedInteger(
       row.fantasyPointsDifferentialHundredths,
       "The standings fantasyPointsDifferentialHundredths is invalid."

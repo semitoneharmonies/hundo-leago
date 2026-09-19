@@ -6179,6 +6179,115 @@ textarea {
   font-size: 0.76rem;
 }
 
+.hl-player-row-table.hl-expanded-player-table,
+.hl-player-row-table.hl-roster-table.hl-expanded-player-table {
+  min-width: 1760px;
+}
+
+.hl-expanded-player-table .hl-player-col-name {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--hl-surface, #121c2c);
+  box-shadow: 3px 0 5px rgb(0 0 0 / 12%);
+}
+
+.hl-expanded-matchup-breakdowns {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.hl-expanded-matchup-table {
+  width: 100%;
+  min-width: 960px;
+  table-layout: fixed;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hl-expanded-matchup-table caption {
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.hl-expanded-matchup-table th,
+.hl-expanded-matchup-table td {
+  padding: 7px 5px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.hl-expanded-matchup-table tr > :first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: 192px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  background: var(--hl-surface, #121c2c);
+}
+
+.hl-expanded-matchup-position {
+  display: inline-block;
+  width: 30px;
+  color: var(--hl-muted-foreground);
+  font-size: 0.6875rem;
+}
+
+.hl-expanded-matchup-table .hl-expanded-matchup-fp {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  width: 66px;
+  font-weight: 800;
+  background: var(--hl-surface, #121c2c);
+}
+
+.hl-scoring-rules-table {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.8rem;
+}
+
+.hl-scoring-rules-table th,
+.hl-scoring-rules-table td {
+  padding: 6px;
+}
+
+.hl-scoring-stat-guide {
+  margin: 12px 0;
+  font-size: 0.8rem;
+  color: var(--hl-muted-foreground);
+}
+
+.hl-scoring-stat-guide summary {
+  cursor: pointer;
+}
+
+.hl-scoring-stat-guide dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px 16px;
+}
+
+.hl-scoring-stat-guide dl > div {
+  display: flex;
+  gap: 8px;
+}
+
+.hl-scoring-stat-guide dt {
+  min-width: 32px;
+  font-weight: 700;
+}
+
+.hl-scoring-stat-guide dd {
+  margin: 0;
+}
+
 .hl-player-row-table th,
 .hl-player-row-table td {
   padding: 8px 7px;

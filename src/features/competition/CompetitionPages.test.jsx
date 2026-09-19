@@ -7,6 +7,7 @@ vi.mock("socket.io-client", () => ({
 }));
 
 import { renderWithProviders } from "../../test/render.jsx";
+import { SCORING_CATEGORIES, EXPANDED_SCORING_VERSION } from "../../shared/scoringCategories.js";
 import { writeLeaguePreference } from "../leagues/leaguePreference.js";
 import {
   CommissionerCompetitionPage,
@@ -353,6 +354,34 @@ async function fillScheduleCalendar() {
 }
 
 describe("M6-12 authenticated competition pages", () => {
+  it("shows every expanded matchup category in compact team tables with signed points and defence weights", async () => {
+    const stats = Object.fromEntries(SCORING_CATEGORIES.map(({ key }) => [key, 0]));
+    const home = { ...playerScore({ playerId: homePlayerId, fullName: "Defence Example", positionGroup: "D", slotNumber: 1, scoreHundredths: 85 }),
+      gamesPlayedDelta: 1, scoringRuleVersion: EXPANDED_SCORING_VERSION, scoringStats: { ...stats, hits: 2, blockedShots: 1, penaltiesTaken: 1 } };
+    const away = { ...playerScore({ playerId: awayPlayerId, fullName: "Forward Example", scoreHundredths: -50 }),
+      gamesPlayedDelta: 1, scoringRuleVersion: EXPANDED_SCORING_VERSION, scoringStats: { ...stats, giveaways: 1, penaltiesTaken: 2 } };
+    const detail = matchupDetail(matchupSummary(), { homePlayers: [home], awayPlayers: [away] });
+    detail.matchup.scoring.home.scoringRuleVersion = EXPANDED_SCORING_VERSION;
+    detail.matchup.scoring.away.scoringRuleVersion = EXPANDED_SCORING_VERSION;
+    const prefix = `/api/v1/leagues/${leagueId}/seasons/${seasonId}`;
+    const matchupWeek = week({ matchups: [matchupSummary()] });
+    const fetchImpl = baseFetch(path => {
+      if (path.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [] });
+      if (path === `/api/v1/leagues/${leagueId}/seasons`) return envelope(seasonList());
+      if (path === `${prefix}/matchup-weeks`) return envelope({ code: "MATCHUP_WEEKS_FOUND", health: health(), weeks: [matchupWeek] });
+      if (path === `${prefix}/matchup-weeks/current`) return envelope({ code: "CURRENT_MATCHUP_WEEK_FOUND", health: health(), week: matchupWeek });
+      if (path === `${prefix}/matchup-weeks/${weekId}`) return envelope({ code: "MATCHUP_WEEK_FOUND", week: matchupWeek });
+      if (path.endsWith(`/matchups/${matchupId}`)) return envelope(detail);
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    renderPage(`/leagues/${leagueId}/matchups`, "/leagues/:leagueId/matchups", <LeagueMatchupsPage />, fetchImpl);
+    const table = await screen.findByRole("table", { name: "Home Team · player scoring for this matchup" });
+    for (const { abbreviation } of SCORING_CATEGORIES) expect(within(table).getByRole("columnheader", { name: abbreviation })).toBeInTheDocument();
+    expect(within(table).getByTitle("Hits: 2 × 0.35 = 0.70 FP")).toHaveTextContent("2");
+    expect(within(table).getByText("0.85")).toBeInTheDocument();
+    const awayTable = screen.getByRole("table", { name: "Away Team · player scoring for this matchup" });
+    expect(within(awayTable).getByText("-0.50")).toBeInTheDocument();
+  });
   it("redirects a signed-out protected route without waiting on a disabled league query", async () => {
     const fetchImpl = vi.fn(async () => envelope({ code: "SESSION_MISSING" }, 401));
     renderWithProviders(

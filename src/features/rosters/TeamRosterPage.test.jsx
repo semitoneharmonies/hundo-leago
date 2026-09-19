@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 import { renderWithProviders } from "../../test/render.jsx";
+import { SCORING_CATEGORIES, EXPANDED_SCORING_VERSION } from "../../shared/scoringCategories.js";
 import { TeamRosterPage } from "./TeamRosterPage.jsx";
 import { validatePublicRosterResponse } from "./publicRosterContracts.js";
 
@@ -24,6 +25,21 @@ const contractId = "88888888-8888-4888-8888-888888888888";
 const pickId = "99999999-9999-4999-8999-999999999999";
 const laterPickId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const managerTeamId = "abababab-abab-4aba-8aba-abababababab";
+
+it("renders expanded roster stats, including a negative FP total, and explains the categories", () => {
+  const data = workspace();
+  data.players[0].statistics = { gamesPlayed: 1, goals: 0, assists: 0, nhlPoints: 0, fantasyPointsHundredths: -50,
+    scoringRuleVersion: EXPANDED_SCORING_VERSION,
+    scoringStats: { ...Object.fromEntries(SCORING_CATEGORIES.map(({ key }) => [key, 0])), giveaways: 1, penaltiesTaken: 2 } };
+  renderWithProviders(<TeamRosterPage workspace={data} teams={[data.team]} onTeamChange={() => {}}
+    httpClient={{ request: async () => ({ data: {} }), resourceUrl: reference => reference }} />);
+  const table = screen.getByRole("region", { name: "Active roster table" });
+  for (const { abbreviation } of SCORING_CATEGORIES) expect(within(table).getByRole("button", { name: `Sort roster by ${abbreviation}` })).toBeInTheDocument();
+  const row = screen.getByRole("rowheader", { name: "Active Player" }).closest("tr");
+  expect(within(row).getAllByText("-0.50")).toHaveLength(2);
+  expect(within(row).getByTitle("Penalties taken")).toHaveTextContent("2");
+  expect(screen.getAllByText("Scoring stat key").length).toBeGreaterThan(0);
+});
 
 function mockPointerTarget(element) {
   const descriptor = Object.getOwnPropertyDescriptor(
@@ -358,6 +374,7 @@ describe("authoritative team roster page", () => {
       "G",
       "A",
       "P",
+      "EVG", "PPG", "SHG", "GWG", "A1", "A2", "SOG", "HIT", "BLK", "TK", "GV", "PD", "PT",
       "FP",
       "FPG",
       "Actions",
