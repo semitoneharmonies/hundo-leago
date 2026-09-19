@@ -374,10 +374,13 @@ describe("M6-12 authenticated competition pages", () => {
       expect(await screen.findByRole("heading", { name: "Sample completed week" })).toBeInTheDocument();
       expect(screen.getByText(/Fictional teams and stats/)).toBeInTheDocument();
       for (const name of ["North Stars", "Harbour Wolves"]) {
-        const table = screen.getByRole("table", { name: `${name} · player scoring for this matchup` });
-        expect(within(table).getAllByRole("row")).toHaveLength(19);
-        for (const { abbreviation } of SCORING_CATEGORIES) expect(within(table).getByRole("columnheader", { name: abbreviation })).toBeInTheDocument();
-        expect(within(table).getByText("-0.50")).toBeInTheDocument();
+        const players = screen.getAllByRole("article", { name: new RegExp(`^${name}:`) });
+        expect(players).toHaveLength(18);
+        for (const player of players) {
+          for (const { abbreviation } of SCORING_CATEGORIES) expect(within(player).getByText(abbreviation)).toBeInTheDocument();
+          expect(within(player).getByText("GP")).toBeInTheDocument();
+        }
+        expect(within(players[0]).getByText("-0.50")).toBeInTheDocument();
       }
       fireEvent.click(screen.getByRole("button", { name: "Back to league matchups" }));
       expect(await screen.findByText("No matchup schedule has been generated yet.")).toBeInTheDocument();
@@ -388,7 +391,7 @@ describe("M6-12 authenticated competition pages", () => {
     expect(fetchImpl.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
   });
 
-  it("shows every expanded matchup category in compact team tables with signed points and defence weights", async () => {
+  it("shows labelled scoring pills for each team's player, including signed points and defence weights", async () => {
     const stats = Object.fromEntries(SCORING_CATEGORIES.map(({ key }) => [key, 0]));
     const home = { ...playerScore({ playerId: homePlayerId, fullName: "Defence Example", positionGroup: "D", slotNumber: 1, scoreHundredths: 85 }),
       gamesPlayedDelta: 1, scoringRuleVersion: EXPANDED_SCORING_VERSION, scoringStats: { ...stats, hits: 2, blockedShots: 1, penaltiesTaken: 1 } };
@@ -409,12 +412,15 @@ describe("M6-12 authenticated competition pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     });
     renderPage(`/leagues/${leagueId}/matchups`, "/leagues/:leagueId/matchups", <LeagueMatchupsPage />, fetchImpl);
-    const table = await screen.findByRole("table", { name: "Home Team · player scoring for this matchup" });
-    for (const { abbreviation } of SCORING_CATEGORIES) expect(within(table).getByRole("columnheader", { name: abbreviation })).toBeInTheDocument();
-    expect(within(table).getByTitle("Hits: 2 × 0.35 = 0.70 FP")).toHaveTextContent("2");
-    expect(within(table).getByText("0.85")).toBeInTheDocument();
-    const awayTable = screen.getByRole("table", { name: "Away Team · player scoring for this matchup" });
-    expect(within(awayTable).getByText("-0.50")).toBeInTheDocument();
+    const homePlayer = await screen.findByRole("article", { name: "Home Team: Defence Example" });
+    for (const { abbreviation } of SCORING_CATEGORIES) expect(within(homePlayer).getByText(abbreviation)).toBeInTheDocument();
+    expect(within(homePlayer).getByTitle("Hits: 2 × 0.35 = 0.70 FP")).toHaveTextContent("2 HIT");
+    expect(within(homePlayer).getByTitle("Even-strength goals: 0 × 3.00 = 0.00 FP")).toHaveTextContent("0 EVG");
+    expect(within(homePlayer).getByText("0.85")).toBeInTheDocument();
+    const awayPlayer = screen.getByRole("article", { name: "Away Team: Forward Example" });
+    expect(within(awayPlayer).getByText("-0.50")).toBeInTheDocument();
+    const empty = screen.getByRole("article", { name: "Home Team: Empty F slot 1" });
+    expect(within(empty).getByTitle("Hits: stat unavailable")).toHaveTextContent("— HIT");
   });
   it("redirects a signed-out protected route without waiting on a disabled league query", async () => {
     const fetchImpl = vi.fn(async () => envelope({ code: "SESSION_MISSING" }, 401));
@@ -534,21 +540,13 @@ describe("M6-12 authenticated competition pages", () => {
         .getAllByRole("option")
     ).toHaveLength(2);
     expect(screen.getByText("2.25 FP", { exact: false })).toBeInTheDocument();
-    expect(
-      screen.getByRole("table", { name: "Player scoring for this matchup" })
-    ).toBeInTheDocument();
-    const scoringTable = screen.getByRole("table", {
-      name: "Player scoring for this matchup",
-    });
-    expect(
-      screen.getByRole("region", {
-        name: "Home Team versus Away Team player scoring",
-      })
-    ).toHaveAttribute("tabindex", "0");
-    expect(within(scoringTable).getAllByText("GP")).toHaveLength(2);
-    expect(within(scoringTable).getByText("2.25")).toHaveClass(
-      "hl-matchup-player-fp"
-    );
+    const scoringList = screen.getByRole("list", { name: "Home Team versus Away Team player scoring" });
+    expect(within(scoringList).getAllByRole("article")).toHaveLength(36);
+    const homePlayerCard = within(scoringList).getByRole("article", { name: "Home Team: Connor Example" });
+    expect(within(homePlayerCard).getByText("GP")).toBeInTheDocument();
+    expect(within(homePlayerCard).getByText("2.25")).toHaveClass("hl-matchup-player-fp");
+    const missingPlayer = within(scoringList).getByRole("article", { name: "Away Team: Jamie Missing — data unavailable" });
+    expect(within(missingPlayer).getByTitle("Goals: stat unavailable")).toHaveTextContent("— G");
     const scoreHeader = document.querySelector(".hl-matchup-score");
     const scoreCenter = scoreHeader.querySelector(".hl-matchup-score__center");
     expect(scoreCenter).toContainElement(
@@ -572,9 +570,7 @@ describe("M6-12 authenticated competition pages", () => {
     expect(
       awayScore.style.getPropertyValue("--team-pattern-image")
     ).not.toContain("#cc3300");
-    expect(screen.getByText("Connor Example")).toHaveClass(
-      "hl-matchup-player-name"
-    );
+    expect(within(homePlayerCard).getByText("Connor Example")).toBeInTheDocument();
     expect(screen.getByText("Jamie Missing — data unavailable")).toBeInTheDocument();
     expect(screen.getAllByText("Empty F slot 2")).toHaveLength(2);
     expect(

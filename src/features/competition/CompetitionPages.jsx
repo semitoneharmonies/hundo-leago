@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
-import { SCORING_CATEGORIES, scoringDescription, scoringWeight } from "../../shared/scoringCategories.js";
+import { SCORING_CATEGORIES, scoringWeight } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
 import { calendarInputValue, calendarTimestamp } from "../../shared/leagueCalendar.js";
@@ -394,7 +394,7 @@ export function LeagueMatchupsPage() {
       )}
       {showSample ? (
         <div className="hl-matchup-workspace">
-          <aside className="hl-surface hl-matchup-sidebar" aria-label="Sample week">
+          <aside className="hl-surface hl-matchup-selector" aria-label="Sample week">
             <header>
               <p className="hl-eyebrow">Sample week</p>
               <h2>Completed matchup</h2>
@@ -463,7 +463,7 @@ export function LeagueMatchupsPage() {
                     : week.isError ? <ErrorMessage error={week.error} />
                       : (
                         <div className="hl-matchup-workspace">
-                          <aside className="hl-surface hl-matchup-sidebar">
+                          <aside className="hl-surface hl-matchup-selector">
                             <header>
                               <p className="hl-eyebrow">Selected week</p>
                               <h2>
@@ -476,7 +476,7 @@ export function LeagueMatchupsPage() {
                               <StatusBadge>{week.data.status}</StatusBadge>
                             </header>
                             {week.data.matchups.length === 0 ? (
-                              <p className="hl-matchup-sidebar__empty">No pairings in this week.</p>
+                              <p className="hl-matchup-selector__empty">No pairings in this week.</p>
                             ) : (
                               <nav aria-label="Matchups in this week">
                                 {week.data.matchups.map((item) => (
@@ -578,33 +578,45 @@ function playerStat(player, field) {
     : player[field];
 }
 
-function ExpandedTeamBreakdown({ team, slots }) {
+function MatchupPlayer({ team, slot, expanded }) {
+  const { player, positionGroup, slotNumber } = slot;
+  const available = player?.dataStatus === "available";
+  const name = player
+    ? player.fullName + (available ? "" : " — data unavailable")
+    : `Empty ${positionGroup} slot ${slotNumber}`;
+  const categories = expanded ? SCORING_CATEGORIES : [
+    { key: "goalDelta", abbreviation: "G", label: "Goals" },
+    { key: "assistDelta", abbreviation: "A", label: "Assists" },
+    { key: "pointDelta", abbreviation: "P", label: "NHL points" },
+  ];
   return (
-    <TableScroll label={`${team.name} player scoring`}>
-      <table className="hl-data-table hl-expanded-matchup-table">
-        <caption>{team.name} · player scoring for this matchup</caption>
-        <thead><tr>
-          <th scope="col">Player</th><th scope="col" title="Games played in this matchup">GP</th>
-          {SCORING_CATEGORIES.map(({ key, abbreviation }) => <th scope="col" key={key} title={scoringDescription(key)}>{abbreviation}</th>)}
-          <th scope="col" className="hl-expanded-matchup-fp">FP</th>
-        </tr></thead>
-        <tbody>{slots.map(({ player, positionGroup, slotNumber }) => (
-          <tr key={`${positionGroup}-${slotNumber}`}>
-            <th scope="row" className="hl-expanded-matchup-name">
-              <span className="hl-expanded-matchup-position">{positionGroup}{slotNumber}</span>
-              {player ? player.fullName : "Empty slot"}
-            </th>
-            <td>{playerStat(player, "gamesPlayedDelta")}</td>
-            {SCORING_CATEGORIES.map(category => {
-              const count = player?.dataStatus === "available" ? player.scoringStats?.[category.key] : null;
-              const weight = scoringWeight(category, positionGroup);
-              return <td key={category.key} title={count == null ? "Stat unavailable" : `${category.label}: ${count} × ${(weight / 100).toFixed(2)} = ${(count * weight / 100).toFixed(2)} FP`}>{count ?? "—"}</td>;
-            })}
-            <td className="hl-expanded-matchup-fp">{playerStat(player, "scoreHundredths")}</td>
-          </tr>
-        ))}</tbody>
-      </table>
-    </TableScroll>
+    <article className="hl-matchup-player" aria-label={`${team.name}: ${name}`}>
+      <div className="hl-matchup-player__heading">
+        <span className="hl-matchup-player__position">{positionGroup}{slotNumber}</span>
+        <strong title={name}>{name}</strong>
+        <span className={`hl-matchup-player-fp${available && player.scoreHundredths < 0 ? " is-negative" : ""}`}>
+          {playerStat(player, "scoreHundredths")} <small>FP</small>
+        </span>
+      </div>
+      <ul className="hl-matchup-player__stats" aria-label="Player statistics">
+        <li className="hl-matchup-stat-pill" title="Games played in this matchup">
+          <b>{playerStat(player, "gamesPlayedDelta")}</b> <span>GP</span>
+        </li>
+        {categories.map(category => {
+          const count = available ? (expanded ? player.scoringStats?.[category.key] : player[category.key]) : null;
+          const weight = expanded ? scoringWeight(category, positionGroup) : null;
+          const description = count == null ? `${category.label}: stat unavailable`
+            : expanded ? `${category.label}: ${count} × ${(weight / 100).toFixed(2)} = ${(count * weight / 100).toFixed(2)} FP`
+              : `${category.label}: ${count}`;
+          return (
+            <li className={`hl-matchup-stat-pill${count === 0 || count == null ? " is-muted" : ""}`}
+              key={category.key} title={description} aria-label={description}>
+              <b>{count ?? "—"}</b> <span>{category.abbreviation}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </article>
   );
 }
 
@@ -671,92 +683,15 @@ function MatchupCard({ matchup, teams = [] }) {
               no fantasy points were awarded.
             </p>
           ) : null}
-          {scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion ? (
-            <div className="hl-expanded-matchup-breakdowns">
-          <ScoringStatGuide />
-              <ExpandedTeamBreakdown team={homeTeam} slots={homeSlots} />
-              <ExpandedTeamBreakdown team={awayTeam} slots={awaySlots} />
-            </div>
-          ) : (
-          <TableScroll
-            label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}
-          >
-            <table className="hl-data-table hl-matchup-table">
-              <caption>Player scoring for this matchup</caption>
-              <thead>
-                <tr>
-                  <th colSpan="6" scope="colgroup">{homeTeam.name}</th>
-                  <th colSpan="6" scope="colgroup">{awayTeam.name}</th>
-                </tr>
-                <tr>
-                  <th>Player</th><th>GP</th><th>G</th><th>A</th><th>PTS</th><th>FP</th>
-                  <th>Player</th><th>GP</th><th>G</th><th>A</th><th>PTS</th><th>FP</th>
-                </tr>
-              </thead>
-              <tbody>
-                {homeSlots.map((homeSlot, index) => {
-                  const awaySlot = awaySlots[index];
-                  const homePlayer = homeSlot.player;
-                  const awayPlayer = awaySlot.player;
-                  return (
-                    <tr key={`${homeSlot.positionGroup}-${homeSlot.slotNumber}`}>
-                      <th
-                        className={`hl-matchup-player-name${homePlayer ? "" : " is-empty"}`}
-                        scope="row"
-                      >
-                        {homePlayer
-                          ? `${homePlayer.fullName}${
-                              homePlayer.dataStatus === "missing"
-                                ? " — data unavailable"
-                                : ""
-                            }`
-                          : `Empty ${homeSlot.positionGroup} slot ${homeSlot.slotNumber}`}
-                      </th>
-                      <td>{playerStat(homePlayer, "gamesPlayedDelta")}</td>
-                      <td>{playerStat(homePlayer, "goalDelta")}</td>
-                      <td>{playerStat(homePlayer, "assistDelta")}</td>
-                      <td>{playerStat(homePlayer, "pointDelta")}</td>
-                      <td
-                        className={
-                          homePlayer?.dataStatus === "available"
-                            ? "hl-matchup-player-fp"
-                            : ""
-                        }
-                      >
-                        {playerStat(homePlayer, "scoreHundredths")}
-                      </td>
-                      <th
-                        className={`hl-matchup-player-name${awayPlayer ? "" : " is-empty"}`}
-                        scope="row"
-                      >
-                        {awayPlayer
-                          ? `${awayPlayer.fullName}${
-                              awayPlayer.dataStatus === "missing"
-                                ? " — data unavailable"
-                                : ""
-                            }`
-                          : `Empty ${awaySlot.positionGroup} slot ${awaySlot.slotNumber}`}
-                      </th>
-                      <td>{playerStat(awayPlayer, "gamesPlayedDelta")}</td>
-                      <td>{playerStat(awayPlayer, "goalDelta")}</td>
-                      <td>{playerStat(awayPlayer, "assistDelta")}</td>
-                      <td>{playerStat(awayPlayer, "pointDelta")}</td>
-                      <td
-                        className={
-                          awayPlayer?.dataStatus === "available"
-                            ? "hl-matchup-player-fp"
-                            : ""
-                        }
-                      >
-                        {playerStat(awayPlayer, "scoreHundredths")}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </TableScroll>
-          )}
+          {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide />}
+          <ol className="hl-matchup-player-pairs" aria-label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}>
+            {homeSlots.map((homeSlot, index) => (
+              <li className="hl-matchup-player-pair" key={`${homeSlot.positionGroup}-${homeSlot.slotNumber}`}>
+                <MatchupPlayer team={homeTeam} slot={homeSlot} expanded={Boolean(scoring.home.scoringRuleVersion)} />
+                <MatchupPlayer team={awayTeam} slot={awaySlots[index]} expanded={Boolean(scoring.away.scoringRuleVersion)} />
+              </li>
+            ))}
+          </ol>
         </>
       )}
       {matchup.result?.status === "corrected" && <p className="hl-inline-copy">Official result corrected.</p>}
