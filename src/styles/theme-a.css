@@ -6593,7 +6593,8 @@ textarea {
 }
 .hl-matchup-detail .hl-matchup-score b { font-size: clamp(1.4rem, 5vw, 4.25rem); }
 .hl-matchup-player-pairs { position: relative; margin: 0; padding: 0; list-style: none; }
-.hl-matchup-player-pairs::after {
+.hl-matchup-player-pairs::after,
+.hl-matchup-stat-headings::after {
   content: "";
   position: absolute;
   inset: 0 auto 0 50%;
@@ -6632,32 +6633,47 @@ textarea {
 }
 .hl-matchup-player-fp small { font-size: 0.55rem; }
 .hl-matchup-player .hl-matchup-player-fp.is-negative { color: #fda4af; }
+.hl-matchup-stat-headings {
+  position: relative;
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid var(--hl-border);
+  color: var(--hl-muted-foreground);
+  font: 600 0.5625rem var(--hl-font-mono);
+  text-align: center;
+}
+.hl-matchup-stat-headings > div { padding: 8px 12px; }
+.hl-matchup-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(42px, 1fr));
+  gap: 6px 4px;
+}
 .hl-matchup-player__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.hl-matchup-stat-pill {
+.hl-matchup-stat {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
-  padding: 3px 6px;
-  border: 1px solid rgb(148 163 184 / 24%);
-  border-radius: 999px;
-  background: rgb(148 163 184 / 8%);
+  gap: 3px;
+  padding: 0;
   font: 500 0.5625rem var(--hl-font-mono);
   white-space: nowrap;
 }
-.hl-matchup-stat-pill b { font-size: 0.625rem; }
-.hl-matchup-stat-pill.is-muted { color: var(--hl-muted-foreground); background: transparent; }
+.hl-matchup-stat b { font-size: 0.6875rem; }
+.hl-matchup-stat-label { color: var(--hl-muted-foreground); }
+.hl-matchup-stat.is-muted { color: var(--hl-muted-foreground); }
+@media (min-width: 1024px) {
+  .hl-matchup-stat-headings { display: grid; }
+  .hl-matchup-stats-grid { grid-template-columns: repeat(var(--matchup-stat-count), minmax(0, 1fr)); }
+  .hl-matchup-stat { justify-content: center; }
+  .hl-matchup-stat-label { display: none; }
+}
 @media (max-width: 660px) {
   .hl-matchup-player { padding: 9px 7px; }
   .hl-matchup-player__heading { grid-template-columns: minmax(0, 1fr) auto; gap: 4px; }
   .hl-matchup-player__position { grid-column: 1 / -1; }
   .hl-matchup-player__heading > strong { font-size: 0.65rem; white-space: normal; overflow-wrap: anywhere; }
   .hl-matchup-player .hl-matchup-player-fp { font-size: 0.7rem; }
-  .hl-matchup-stat-pill { padding: 3px 5px; gap: 3px; }
 }

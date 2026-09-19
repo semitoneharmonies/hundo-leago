@@ -391,7 +391,7 @@ describe("M6-12 authenticated competition pages", () => {
     expect(fetchImpl.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
   });
 
-  it("shows labelled scoring pills for each team's player, including signed points and defence weights", async () => {
+  it("shows labelled scoring stats for each team's player, including signed points and defence weights", async () => {
     const stats = Object.fromEntries(SCORING_CATEGORIES.map(({ key }) => [key, 0]));
     const home = { ...playerScore({ playerId: homePlayerId, fullName: "Defence Example", positionGroup: "D", slotNumber: 1, scoreHundredths: 85 }),
       gamesPlayedDelta: 1, scoringRuleVersion: EXPANDED_SCORING_VERSION, scoringStats: { ...stats, hits: 2, blockedShots: 1, penaltiesTaken: 1 } };

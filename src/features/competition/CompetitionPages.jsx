@@ -578,17 +578,35 @@ function playerStat(player, field) {
     : player[field];
 }
 
+const LEGACY_MATCHUP_CATEGORIES = [
+  { key: "goalDelta", abbreviation: "G", label: "Goals" },
+  { key: "assistDelta", abbreviation: "A", label: "Assists" },
+  { key: "pointDelta", abbreviation: "P", label: "NHL points" },
+];
+
+function MatchupStatHeaders({ scoring }) {
+  return (
+    <div className="hl-matchup-stat-headings" aria-hidden="true">
+      {["home", "away"].map(side => {
+        const categories = scoring[side].scoringRuleVersion ? SCORING_CATEGORIES : LEGACY_MATCHUP_CATEGORIES;
+        return (
+          <div className="hl-matchup-stats-grid" key={side} style={{ "--matchup-stat-count": categories.length + 1 }}>
+            <span title="Games played in this matchup">GP</span>
+            {categories.map(({ key, abbreviation, label }) => <span key={key} title={label}>{abbreviation}</span>)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function MatchupPlayer({ team, slot, expanded }) {
   const { player, positionGroup, slotNumber } = slot;
   const available = player?.dataStatus === "available";
   const name = player
     ? player.fullName + (available ? "" : " — data unavailable")
     : `Empty ${positionGroup} slot ${slotNumber}`;
-  const categories = expanded ? SCORING_CATEGORIES : [
-    { key: "goalDelta", abbreviation: "G", label: "Goals" },
-    { key: "assistDelta", abbreviation: "A", label: "Assists" },
-    { key: "pointDelta", abbreviation: "P", label: "NHL points" },
-  ];
+  const categories = expanded ? SCORING_CATEGORIES : LEGACY_MATCHUP_CATEGORIES;
   return (
     <article className="hl-matchup-player" aria-label={`${team.name}: ${name}`}>
       <div className="hl-matchup-player__heading">
@@ -598,9 +616,11 @@ function MatchupPlayer({ team, slot, expanded }) {
           {playerStat(player, "scoreHundredths")} <small>FP</small>
         </span>
       </div>
-      <ul className="hl-matchup-player__stats" aria-label="Player statistics">
-        <li className="hl-matchup-stat-pill" title="Games played in this matchup">
-          <b>{playerStat(player, "gamesPlayedDelta")}</b> <span>GP</span>
+      <ul className="hl-matchup-player__stats hl-matchup-stats-grid" aria-label="Player statistics"
+        style={{ "--matchup-stat-count": categories.length + 1 }}>
+        <li className="hl-matchup-stat" title="Games played in this matchup"
+          aria-label={`Games played in this matchup: ${playerStat(player, "gamesPlayedDelta")}`}>
+          <b>{playerStat(player, "gamesPlayedDelta")}</b> <span className="hl-matchup-stat-label">GP</span>
         </li>
         {categories.map(category => {
           const count = available ? (expanded ? player.scoringStats?.[category.key] : player[category.key]) : null;
@@ -609,9 +629,9 @@ function MatchupPlayer({ team, slot, expanded }) {
             : expanded ? `${category.label}: ${count} × ${(weight / 100).toFixed(2)} = ${(count * weight / 100).toFixed(2)} FP`
               : `${category.label}: ${count}`;
           return (
-            <li className={`hl-matchup-stat-pill${count === 0 || count == null ? " is-muted" : ""}`}
+            <li className={`hl-matchup-stat${count === 0 || count == null ? " is-muted" : ""}`}
               key={category.key} title={description} aria-label={description}>
-              <b>{count ?? "—"}</b> <span>{category.abbreviation}</span>
+              <b>{count ?? "—"}</b> <span className="hl-matchup-stat-label">{category.abbreviation}</span>
             </li>
           );
         })}
@@ -684,6 +704,7 @@ function MatchupCard({ matchup, teams = [] }) {
             </p>
           ) : null}
           {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide />}
+          <MatchupStatHeaders scoring={scoring} />
           <ol className="hl-matchup-player-pairs" aria-label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}>
             {homeSlots.map((homeSlot, index) => (
               <li className="hl-matchup-player-pair" key={`${homeSlot.positionGroup}-${homeSlot.slotNumber}`}>
