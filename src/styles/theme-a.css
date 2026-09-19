@@ -6592,7 +6592,16 @@ textarea {
   transform: translateX(-50%);
 }
 .hl-matchup-detail .hl-matchup-score b { font-size: clamp(1.4rem, 5vw, 4.25rem); }
-.hl-matchup-player-pairs { margin: 0; padding: 0; list-style: none; }
+.hl-matchup-player-pairs { position: relative; margin: 0; padding: 0; list-style: none; }
+.hl-matchup-player-pairs::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: #64748b;
+  pointer-events: none;
+}
 .hl-matchup-player-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .hl-matchup-player-pair:nth-child(even) { background: rgb(255 255 255 / 2%); }
 .hl-matchup-player {
@@ -6603,7 +6612,6 @@ textarea {
   padding: 10px 12px;
   border-bottom: 1px solid var(--hl-border);
 }
-.hl-matchup-player:first-child { border-right: 1px solid var(--hl-border); }
 .hl-matchup-player__heading {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
