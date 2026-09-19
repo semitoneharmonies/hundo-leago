@@ -6181,7 +6181,7 @@ textarea {
 
 .hl-player-row-table.hl-expanded-player-table,
 .hl-player-row-table.hl-roster-table.hl-expanded-player-table {
-  min-width: 1760px;
+  min-width: 1080px;
 }
 
 .hl-expanded-player-table .hl-player-col-name {
@@ -6200,9 +6200,9 @@ textarea {
 
 .hl-expanded-matchup-table {
   width: 100%;
-  min-width: 960px;
+  min-width: 720px;
   table-layout: fixed;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -6549,3 +6549,78 @@ textarea {
 .hl-trade-asset-card--draft_pick { background: rgb(168 85 247 / 9%); border-color: rgb(192 132 252 / 35%); }
 
 .hl-dashboard-matchup--spotlight .hl-dashboard-matchup-health { min-height: calc(3em + 21px); margin-bottom: 0; }
+
+/* Expanded scoring needs the dashboard's full row, with attention cards below. */
+.hl-dashboard-roster,
+.hl-dashboard__content > .hl-dashboard__aside {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .hl-dashboard__content > .hl-dashboard__aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Keep all desktop statistics visible. Mobile retains a scrollable table. */
+@media (min-width: 1024px) {
+  .hl-player-row-table.hl-expanded-player-table,
+  .hl-player-row-table.hl-roster-table.hl-expanded-player-table {
+    min-width: 0;
+    font-size: clamp(0.5625rem, 0.76vw, 0.6875rem);
+  }
+
+  .hl-player-row-table.hl-expanded-player-table :is(th, td) {
+    padding: 7px 2px;
+    font-size: inherit;
+  }
+
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-order { width: 32px; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-position { width: 32px; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-name { width: 128px; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-aav { width: 50px; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-years { width: 32px; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-age { width: 26px; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-nhl { width: 30px; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-stat { width: auto; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-stat:nth-last-child(-n+3) { width: 48px; }
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-actions { width: 60px; min-width: 0; }
+  .hl-player-row-table.hl-roster-table.hl-expanded-player-table .hl-player-col-actions { width: 150px; }
+
+  .hl-expanded-player-table :is(.hl-player-actions, .hl-roster-actions, .hl-roster-actions-group) { gap: 3px; }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) {
+    width: 24px;
+    min-width: 24px;
+    max-width: 24px;
+    height: 24px;
+    min-height: 24px;
+    padding: 4px;
+    gap: 0;
+    flex-shrink: 0;
+  }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) svg { width: 14px; height: 14px; }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) span { display: none; }
+  .hl-expanded-player-table .hl-position-tag { min-width: 24px; padding: 3px; font-size: 0.5625rem; }
+  .hl-expanded-player-table .hl-roster-order-controls .hl-roster-drag-handle { width: 26px; min-width: 26px; }
+  .hl-expanded-player-table .hl-player-row-action { padding: 4px 6px; }
+
+  .hl-expanded-matchup-table { min-width: 0; font-size: 0.6875rem; }
+  .hl-expanded-matchup-table :is(th, td) { padding: 6px 3px; }
+  .hl-expanded-matchup-table tr > :first-child { width: 174px; }
+  .hl-expanded-matchup-table .hl-expanded-matchup-fp { width: 54px; }
+  .hl-expanded-matchup-position { width: 24px; font-size: 0.5625rem; }
+}
+
+.hl-matchup-sample-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-color: var(--hl-accent, #60a5fa);
+}
+.hl-matchup-sample-notice h2 { margin: 0 0 6px; font-size: 1rem; }
+.hl-matchup-sample-notice p { margin: 0; font-size: 0.8rem; line-height: 1.5; }

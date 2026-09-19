@@ -354,6 +354,40 @@ async function fillScheduleCalendar() {
 }
 
 describe("M6-12 authenticated competition pages", () => {
+  it.each(["local", "staging", "production"])("limits the read-only sample to review environments (%s)", async (appEnv) => {
+    const fetchImpl = baseFetch((path) => {
+      if (path.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [] });
+      if (path.endsWith("/seasons")) return envelope(seasonList());
+      if (path.endsWith("/matchup-weeks")) return envelope({ code: "MATCHUP_WEEKS_FOUND", health: health(), weeks: [] });
+      if (path.endsWith("/matchup-weeks/current")) return envelope({ code: "CURRENT_MATCHUP_WEEK_FOUND", health: health(), week: null });
+      throw new Error(`Unexpected sample request: ${path}`);
+    });
+    renderWithProviders(<Routes><Route path="/leagues/:leagueId/matchups" element={<LeagueMatchupsPage />} /></Routes>, {
+      initialEntries: [`/leagues/${leagueId}/matchups?sample=completed-week`],
+      enableSession: true, config: { ...config, appEnv }, sessionOptions: { fetchImpl },
+    });
+    if (appEnv === "production") {
+      expect(await screen.findByText("No matchup schedule has been generated yet.")).toBeInTheDocument();
+      expect(screen.queryByText("Sample completed week")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Preview sample completed week" })).not.toBeInTheDocument();
+    } else {
+      expect(await screen.findByRole("heading", { name: "Sample completed week" })).toBeInTheDocument();
+      expect(screen.getByText(/Fictional teams and stats/)).toBeInTheDocument();
+      for (const name of ["North Stars", "Harbour Wolves"]) {
+        const table = screen.getByRole("table", { name: `${name} · player scoring for this matchup` });
+        expect(within(table).getAllByRole("row")).toHaveLength(19);
+        for (const { abbreviation } of SCORING_CATEGORIES) expect(within(table).getByRole("columnheader", { name: abbreviation })).toBeInTheDocument();
+        expect(within(table).getByText("-0.50")).toBeInTheDocument();
+      }
+      fireEvent.click(screen.getByRole("button", { name: "Back to league matchups" }));
+      expect(await screen.findByText("No matchup schedule has been generated yet.")).toBeInTheDocument();
+      expect(screen.queryByText("North Stars")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Preview sample completed week" }));
+      expect(screen.getByRole("heading", { name: "Sample completed week" })).toBeInTheDocument();
+    }
+    expect(fetchImpl.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
+  });
+
   it("shows every expanded matchup category in compact team tables with signed points and defence weights", async () => {
     const stats = Object.fromEntries(SCORING_CATEGORIES.map(({ key }) => [key, 0]));
     const home = { ...playerScore({ playerId: homePlayerId, fullName: "Defence Example", positionGroup: "D", slotNumber: 1, scoreHundredths: 85 }),

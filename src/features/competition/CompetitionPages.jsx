@@ -1,4 +1,5 @@
 import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
+import { sampleCompletedMatchup } from "./sampleCompletedMatchup.js";
 import { createOperationId } from "../../shared/api/idempotency.js";
 import { candidateDeadlineForWeekOne, suggestedRollovers, draftTimingIssue, MAX_ROLLOVERS } from "./fadScheduleTiming.js";
 import { useLeagueDraftSetup } from "../leagues/useLeagueDraftSetup.js";
@@ -286,6 +287,17 @@ export function LegacyMatchupsRedirect() {
 export function LeagueMatchupsPage() {
   const { leagueId } = useParams();
   const context = useCompetitionContext(leagueId);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const canPreviewSample = ["local", "staging"].includes(context.session.appEnv);
+  const showSample = canPreviewSample && searchParams.get("sample") === "completed-week";
+  const toggleSample = () => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (showSample) next.delete("sample");
+      else next.set("sample", "completed-week");
+      return next;
+    });
+  };
   const queryClient = useQueryClient();
   const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [selectedWeekId, setSelectedWeekId] = useState(null);
@@ -369,7 +381,35 @@ export function LeagueMatchupsPage() {
 
   return (
     <CompetitionGate context={gateContext} title="Matchups">
-      {seasons.isPending || weeks.isPending || current.isPending ? (
+      {canPreviewSample && (
+        <Surface className="hl-matchup-sample-notice">
+          <div>
+            <h2>{showSample ? "Sample completed week" : "Preview a completed week"}</h2>
+            <p>Fictional teams and stats for layout review. This sample does not affect league results or standings.</p>
+          </div>
+          <button className="hl-button hl-button--quiet" type="button" onClick={toggleSample}>
+            {showSample ? "Back to league matchups" : "Preview sample completed week"}
+          </button>
+        </Surface>
+      )}
+      {showSample ? (
+        <div className="hl-matchup-workspace">
+          <aside className="hl-surface hl-matchup-sidebar" aria-label="Sample week">
+            <header>
+              <p className="hl-eyebrow">Sample week</p>
+              <h2>Completed matchup</h2>
+              <StatusBadge>Final</StatusBadge>
+            </header>
+            <nav aria-label="Sample matchup">
+              <button type="button" aria-pressed="true">
+                <span>{sampleCompletedMatchup.homeTeam.name}</span><small>vs</small>
+                <span>{sampleCompletedMatchup.awayTeam.name}</span>
+              </button>
+            </nav>
+          </aside>
+          <div className="hl-matchup-main"><MatchupCard matchup={sampleCompletedMatchup} /></div>
+        </div>
+      ) : seasons.isPending || weeks.isPending || current.isPending ? (
         <Surface><LoadingBlock>Loading matchup schedule…</LoadingBlock></Surface>
       ) : seasons.isError ? <ErrorMessage error={seasons.error} />
         : weeks.isError ? <ErrorMessage error={weeks.error} />

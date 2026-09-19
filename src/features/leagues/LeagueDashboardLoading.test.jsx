@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/render.jsx";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
+import { EXPANDED_SCORING_VERSION, SCORING_CATEGORIES } from "../../shared/scoringCategories.js";
+import { sampleCompletedMatchup } from "../competition/sampleCompletedMatchup.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 const seasonId = "22222222-2222-4222-8222-222222222222";
@@ -28,7 +30,7 @@ function teamWorkspace() {
   };
 }
 
-function setup({ currentWeek = async () => ({ week: null }), hasSeason = true, hasTeam = false, leagueStatus = "setup", workspace = async () => teamWorkspace() } = {}) {
+function setup({ currentWeek = async () => ({ week: null }), matchup, hasSeason = true, hasTeam = false, leagueStatus = "setup", workspace = async () => teamWorkspace() } = {}) {
   const request = vi.fn(async (path, options = {}) => {
     if (options.method && options.method !== "GET") throw new Error("Dashboard reads must not mutate state.");
     if (path === `/api/v1/leagues/${leagueId}/teams/${teamId}/roster`) {
@@ -38,6 +40,7 @@ function setup({ currentWeek = async () => ({ week: null }), hasSeason = true, h
       return { data };
     }
     if (path.endsWith("/matchup-weeks/current")) return { data: await currentWeek() };
+    if (path.includes("/matchups/")) return { data: { matchup } };
     if (path.endsWith("/standings")) return { data: { rows: [] } };
     if (path.endsWith("/trades")) return { data: { proposals: [] } };
     if (path.includes("/auctions?")) return { data: [], page: { nextCursor: null, hasMore: false }, actions: { startTeams: [] } };
@@ -87,6 +90,44 @@ describe("dashboard current-week loading", () => {
 });
 
 describe("dashboard authenticated roster reads", () => {
+  it("shows all season scoring categories, including zero counts and negative FP", async () => {
+    const workspace = teamWorkspace();
+    workspace.players[0].statistics = {
+      gamesPlayed: 2, goals: 0, assists: 0, nhlPoints: 0, fantasyPointsHundredths: -50,
+      scoringRuleVersion: EXPANDED_SCORING_VERSION,
+      scoringStats: { ...Object.fromEntries(SCORING_CATEGORIES.map(({ key }) => [key, 0])), giveaways: 1, penaltiesTaken: 2 },
+    };
+    setup({ hasTeam: true, workspace: async () => workspace });
+    const player = await screen.findByRole("link", { name: "Example Player" });
+    const row = within(player.closest("tr"));
+    const table = within(player.closest("table"));
+    for (const { key, abbreviation, label } of SCORING_CATEGORIES) {
+      expect(table.getByRole("columnheader", { name: abbreviation })).toBeInTheDocument();
+      expect(row.getByTitle(label)).toHaveTextContent(String(workspace.players[0].statistics.scoringStats[key]));
+    }
+    expect(row.getByRole("cell", { name: "-0.50" })).toBeInTheDocument();
+    expect(row.getByRole("cell", { name: "-0.25" })).toBeInTheDocument();
+  });
+
+  it.each(["available", "missing"])("keeps matchup stats separate from season stats (%s)", async (dataStatus) => {
+    const player = { ...sampleCompletedMatchup.scoring.home.players[0], playerId, fullName: "Example Player", dataStatus };
+    const matchup = {
+      ...sampleCompletedMatchup,
+      homeTeam: { id: teamId, name: "Preview Team" },
+      scoring: { ...sampleCompletedMatchup.scoring, home: { ...sampleCompletedMatchup.scoring.home, players: [player] } },
+    };
+    setup({ hasTeam: true, matchup, currentWeek: async () => ({ week: {
+      id: "week", sequence: 1, status: "completed", startsAtMs: 1791183600000, endsAtMs: 1791788400000,
+      matchups: [matchup], byes: [],
+    } }) });
+    await screen.findByText("Matchup-period statistics");
+    const row = within(screen.getByRole("link", { name: "Example Player" }).closest("tr"));
+    for (const { key, label } of SCORING_CATEGORIES) {
+      expect(row.getByTitle(label)).toHaveTextContent(dataStatus === "missing" ? "—" : String(player.scoringStats[key]));
+    }
+    expect(row.queryByRole("cell", { name: "3.50" })).not.toBeInTheDocument();
+  });
+
   it.each(["setup", "active"])("shows authoritative team totals and player statistics for a %s league", async (leagueStatus) => {
     const request = setup({ hasTeam: true, leagueStatus });
     const team = await screen.findByRole("region", { name: "Preview Team" });

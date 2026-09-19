@@ -14,6 +14,8 @@ import {
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
+import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import {
   EmptyBlock,
   ErrorBlock,
@@ -928,6 +930,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
           goals: player.goalDelta,
           assists: player.assistDelta,
           points: player.pointDelta,
+          scoringStats: player.dataStatus === "missing" ? null : player.scoringStats,
           fantasyPoints,
           fantasyPointsPerGame: fantasyPointsPerGame(
             fantasyPoints,
@@ -951,6 +954,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
           goals: player.seasonStatistics?.goals ?? null,
           assists: player.seasonStatistics?.assists ?? null,
           points: player.seasonStatistics?.nhlPoints ?? null,
+          scoringStats: player.seasonStatistics?.scoringStats ?? null,
           fantasyPoints:
             player.seasonStatistics?.fantasyPointsHundredths ?? null,
           fantasyPointsPerGame: fantasyPointsPerGame(
@@ -999,8 +1003,10 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
           Roster or scoring data has not been published yet.
         </EmptyBlock>
       ) : (
+        <>
+        <ScoringStatGuide />
         <TableScroll label="Dashboard roster">
-          <table className="hl-data-table hl-player-row-table hl-dashboard-player-table">
+          <table className="hl-data-table hl-player-row-table hl-dashboard-player-table hl-expanded-player-table">
             <thead>
               <tr>
                 <th className="hl-player-col-order" scope="col">Order</th>
@@ -1014,6 +1020,9 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                 <th className="hl-player-col-stat" scope="col">G</th>
                 <th className="hl-player-col-stat" scope="col">A</th>
                 <th className="hl-player-col-stat" scope="col">P</th>
+                {SCORING_CATEGORIES.map(({ key, abbreviation }) => (
+                  <th className="hl-player-col-stat" scope="col" key={key} title={scoringDescription(key)}>{abbreviation}</th>
+                ))}
                 <th className="hl-player-col-stat" scope="col">FP</th>
                 <th className="hl-player-col-stat" scope="col">FPG</th>
                 <th className="hl-player-col-actions" scope="col">Actions</th>
@@ -1055,6 +1064,9 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                   <td className="hl-player-col-stat">{player.goals ?? "—"}</td>
                   <td className="hl-player-col-stat">{player.assists ?? "—"}</td>
                   <td className="hl-player-col-stat">{player.points ?? "—"}</td>
+                  {SCORING_CATEGORIES.map(({ key, label }) => (
+                    <td className="hl-player-col-stat" key={key} title={label}>{player.scoringStats?.[key] ?? "—"}</td>
+                  ))}
                   <td className="hl-player-col-stat is-highlight">
                     {fantasyPoints(player.fantasyPoints)}
                   </td>
@@ -1074,6 +1086,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
             </tbody>
           </table>
         </TableScroll>
+        </>
       )}
     </Surface>
   );
