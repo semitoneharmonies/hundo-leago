@@ -219,7 +219,7 @@ Contract values, bids, average annual values, retained salary, buyout penalties,
 * Entered AAV must be an exact `$0.25` increment and at least `$1.00`.
 * Total contract value is calculated exactly as AAV multiplied by contract years.
 * Historical contracts retain their original approved total and AAV precision.
-* Retained salary and buyout penalties are calculated from average annual value and rounded to the nearest hundredth.
+* Retained salary is calculated from average annual value and rounded to the nearest hundredth. New buyout penalties are 25% of full AAV, rounded up to the next $0.25 increment.
 * Stored and displayed cap amounts must not contain more than two decimal places.
 
 Examples:
@@ -787,10 +787,10 @@ The Trade and Contract specifications must define how chained retention records 
 The standard buyout formula is:
 
 ```text
-annual buyout penalty = 25% of player AAV, rounded to the nearest hundredth
+annual buyout penalty = 25% of full player AAV, rounded up to the next $0.25 increment
 ```
 
-The annual buyout penalty applies in each remaining contract year.
+The annual buyout penalty applies in each remaining contract year. Graem clarified this rounding rule on 2026-09-19: a $3.75 AAV creates a $1.00 annual penalty. Existing persisted buyout obligations retain their recorded amounts; this correction does not reprice historical obligations.
 
 An existing buyout-penalty obligation may be traded as a whole. Its annual amount, remaining schedule, underlying buyout reference, and history do not change. The receiving team becomes responsible for the cap charge.
 
@@ -1565,7 +1565,7 @@ FAD-related amendments on 2026-07-27, 2026-07-28, 2026-07-29, and
 ## Buyouts
 
 - [x] Buyout eliminates the contract and releases the player to free agency.
-- [x] Annual buyout penalty is `25% of AAV`, rounded to the nearest hundredth.
+- [x] Annual buyout penalty is `25% of full AAV`, rounded up to the next `$0.25` increment.
 - [x] The annual penalty applies in each remaining contract year.
 - [x] There is no penalty decay during the remaining contract term.
 - [x] Auction and direct automatic FAD signings have a `14-day` buyout lock.

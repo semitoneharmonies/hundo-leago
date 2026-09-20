@@ -1711,6 +1711,14 @@ Buyout requests require `confirmed: true`, `expectedContractVersion`, and
 ownership, provider injury status, available IR capacity, contract state,
 buyout lock, and pending-trade conflicts before writing.
 
+For an active free-agent signing lock, the buyout endpoint returns HTTP `409`
+with code `BUYOUT_LOCK_ACTIVE` and additive error details
+`{ buyoutLockExpiresAtMs: <persisted expiry timestamp> }`. The roster displays
+the lock reason and expiry rather than the generic request-failed fallback.
+The rejection leaves roster, contract, penalties, trades, and history unchanged.
+New buyouts charge 25% of full AAV rounded up to the next $0.25 per remaining
+year. Historical persisted obligations keep their recorded amounts.
+
 The target buyout transaction cancels every pending proposal involving the
 player, including a signed player still rostered as `Prospect` whose immutable
 trade snapshot uses `prospect_right`. The current staging command misses that

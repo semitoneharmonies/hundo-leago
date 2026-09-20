@@ -93,7 +93,7 @@ Current behaviour includes:
 * incomplete contract history;
 * no complete league-scoped rollover operation.
 
-For example, current frontend code rounds buyouts upward and exempts some low salaries. The approved Season 2 rule instead charges `25% of full underlying AAV`, rounded to the nearest hundredth, for every remaining year.
+The approved Season 2 rule charges `25% of full underlying AAV`, rounded up to the next `$0.25` increment, for every remaining year, with no low-salary exemption. Graem clarified this rounding on 2026-09-19; a `$3.75` AAV creates a `$1.00` annual penalty. Existing persisted buyout obligations retain their recorded amounts.
 
 Current code is implementation evidence only and must not override this specification.
 
@@ -580,7 +580,7 @@ The lock:
 The annual penalty is:
 
 ```text
-25% of full underlying AAV, rounded to the nearest hundredth
+25% of full underlying AAV, rounded up to the next $0.25 increment
 ```
 
 The penalty applies in every remaining contract year.
@@ -1121,7 +1121,7 @@ and the FAD-related amendments on 2026-07-27.
 - [x] Existing retention remains unchanged after a later buyout.
 - [x] Buyout-penalty obligations may be traded as whole obligation records; existing retention remains with its responsible team and is not selectable in a fresh proposal, while historical retention proposals/assets remain readable and executable or reversible when their recorded state permits and exact completed creation retries replay the original result.
 - [x] A buyout eliminates the contract and immediately releases the player to free agency.
-- [x] The annual buyout penalty is 25% of full underlying AAV, rounded to the nearest hundredth.
+- [x] The annual buyout penalty is 25% of full underlying AAV, rounded up to the next $0.25 increment.
 - [x] The penalty applies in every remaining year and does not decay.
 - [x] Auction and direct automatic FAD signings have a 14-day buyout lock that follows the player through trade.
 - [x] A buyout must atomically cancel pending trades involving the player, including a signed player still rostered as `Prospect` whose proposal snapshot uses `prospect_right`; the known staging limitation fails without partial writes and remains a separate P1 production-promotion follow-up outside the M7-26 isolated-staging gate.
