@@ -30,13 +30,13 @@ const managerTeamId = "abababab-abab-4aba-8aba-abababababab";
 it.each([
   ["lock with expiry", new ApiError({ status: 409, code: "BUYOUT_LOCK_ACTIVE",
     message: "Old backend wording", details: { buyoutLockExpiresAtMs: Date.parse("2026-09-22T01:25:13.364Z") } }),
-    "This player is still within the 14-day free-agent signing buyout lock.", /Sep 21, 2026.*6:25.*p\.m\..*PDT/],
+    "This player cannot be bought out during the 14-day window after signing.", /Sep 21, 2026.*6:25.*p\.m\..*PDT/],
   ["lock from older backend", new ApiError({ status: 409, code: "BUYOUT_LOCK_ACTIVE", message: "Old backend wording" }),
-    "This player is still within the 14-day free-agent signing buyout lock.", /once 14 days have passed/],
+    "This player cannot be bought out during the 14-day window after signing.", /eligible for buyout once 14 days have passed/],
   ["stale contract", new ApiError({ status: 409, code: "ROSTER_ACTION_CONFLICT", message: "The roster changed before this action could be completed." }),
-    "The roster changed before this action could be completed.", /Refresh the roster/],
+    "This player cannot be bought out during the 14-day window after signing.", /eligible for buyout once 14 days have passed/],
   ["unexpected failure", new Error("Private database detail"),
-    "The roster action could not be completed.", /Refresh the roster/],
+    "This player cannot be bought out during the 14-day window after signing.", /eligible for buyout once 14 days have passed/],
 ])("explains a rejected buyout: %s", async (_name, error, message, recovery) => {
   const data = workspace();
   const confirm = vi.spyOn(globalThis, "confirm").mockReturnValue(true);

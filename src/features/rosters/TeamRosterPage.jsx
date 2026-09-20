@@ -1515,10 +1515,10 @@ export function TeamRosterPage({
         queryKey: teamWorkspaceKeys.detail(league.id, team.id),
       });
     },
-    onError: (error) => {
+    onError: (error, { type }) => {
       setSaveMessage(
-        error instanceof ApiError && error.code === "BUYOUT_LOCK_ACTIVE"
-          ? "This player is still within the 14-day free-agent signing buyout lock."
+        type === "buyout"
+          ? "This player cannot be bought out during the 14-day window after signing."
           : error instanceof ApiError && error.status >= 400 && error.status < 500
             ? error.message
             : "The roster action could not be completed."
@@ -1817,10 +1817,11 @@ export function TeamRosterPage({
           error={mutation.error || actionMutation.error}
           fallback={saveMessage}
           impact="The roster remains unchanged."
-          recovery={actionMutation.error?.code === "BUYOUT_LOCK_ACTIVE"
-            ? Number.isSafeInteger(actionMutation.error.details?.buyoutLockExpiresAtMs)
+          recovery={actionMutation.variables?.type === "buyout"
+            ? actionMutation.error?.code === "BUYOUT_LOCK_ACTIVE" &&
+              Number.isSafeInteger(actionMutation.error.details?.buyoutLockExpiresAtMs)
               ? `You can buy out this player after ${leagueDateTime(actionMutation.error.details.buyoutLockExpiresAtMs, "America/Vancouver")}.`
-              : "You can buy out this player once 14 days have passed since the free-agent signing."
+              : "Players become eligible for buyout once 14 days have passed since signing."
             : "Refresh the roster, review the player’s current status, and try again."}
         />
       )}
