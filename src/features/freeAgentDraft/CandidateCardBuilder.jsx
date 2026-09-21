@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 import { ErrorBlock, StatusBadge, Surface } from "../../components/HundoUi.jsx";
@@ -188,20 +188,28 @@ export function CandidateCardBuilder({
   buildEligibleQueryOptions,
   onAuthoritativeCard,
   onProtectedFailure,
+  recoveredDraft = null,
+  onDraftChange,
 }) {
-  const [drafts, setDrafts] = useState(() => draftRows(card));
-  const [baseVersion, setBaseVersion] = useState(card.cardVersion);
-  const [dirty, setDirty] = useState(false);
-  const [touchedSlots, setTouchedSlots] = useState(() => new Set());
-  const [rowErrors, setRowErrors] = useState({});
-  const [formError, setFormError] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [helpError, setHelpError] = useState(null);
-  const [helpMessage, setHelpMessage] = useState("");
   const editable =
     card.visibilityMode === "private_editable" &&
     card.capabilities.editCard.allowed;
   const cardIdentity = `${card.leagueId}:${card.seasonId}:${card.fadId}:${card.teamId}:${card.cardId}`;
+  const initialDraft = editable && recoveredDraft?.cardIdentity === cardIdentity
+    ? recoveredDraft : null;
+  const [drafts, setDrafts] = useState(() => initialDraft
+    ? mergeTouchedDraftRows(card, initialDraft.drafts, initialDraft.touchedSlots)
+    : draftRows(card));
+  const [baseVersion, setBaseVersion] = useState(card.cardVersion);
+  const [dirty, setDirty] = useState(Boolean(initialDraft));
+  const [touchedSlots, setTouchedSlots] = useState(() => new Set(initialDraft?.touchedSlots));
+  const [rowErrors, setRowErrors] = useState({});
+  const [formError, setFormError] = useState("");
+  const [statusMessage, setStatusMessage] = useState(initialDraft
+    ? "Your unsaved entries were restored after reconnecting. Review your card and save it."
+    : "");
+  const [helpError, setHelpError] = useState(null);
+  const [helpMessage, setHelpMessage] = useState("");
   const [observedCard, setObservedCard] = useState(() => ({
     source: card,
     cardIdentity,
@@ -247,6 +255,14 @@ export function CandidateCardBuilder({
       setHelpMessage("");
     }
   }
+
+  // The page outlives the form while reconnect authorization hides private data.
+  // Retain only local edits; fresh authorized server data still supplies the base.
+  useEffect(() => {
+    onDraftChange?.(dirty && editable
+      ? { cardIdentity, drafts, touchedSlots: [...touchedSlots] }
+      : null);
+  }, [cardIdentity, dirty, drafts, editable, onDraftChange, touchedSlots]);
 
   const saveMutation = useMutation({
     mutationFn: ({ input, idempotencyKey, version }) =>

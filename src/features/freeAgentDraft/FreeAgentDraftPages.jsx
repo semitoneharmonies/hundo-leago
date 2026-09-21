@@ -570,6 +570,8 @@ function AuthorizedCandidateCard({
   overview,
   overviewObservedAtClientMs,
   teamId,
+  recoveredDraft,
+  onDraftChange,
 }) {
   const queryClient = useQueryClient();
   const privateCard = useQuery(
@@ -703,6 +705,8 @@ function AuthorizedCandidateCard({
       buildEligibleQueryOptions={buildEligibleQueryOptions}
       onAuthoritativeCard={acceptAuthoritativeCard}
       onProtectedFailure={onProtectedFailure}
+      recoveredDraft={recoveredDraft}
+      onDraftChange={onDraftChange}
     />
   );
 }
@@ -756,6 +760,16 @@ export function CandidateCardPage() {
     [context.league?.membership, descriptor]
   );
   const authorizationKey = authorizationIdentity(authorization);
+  const draftOwnerKey = context.session.status === "authenticated"
+    ? `${context.session.user.id}:${context.session.session.id}:${leagueId}:${fadId}:${teamId}`
+    : null;
+  const [draftRecovery, setDraftRecovery] = useState(null);
+  const rememberDraft = useCallback((snapshot) => {
+    setDraftRecovery((current) => snapshot
+      ? { ownerKey: draftOwnerKey, authorizationKey, snapshot }
+      : current?.ownerKey === draftOwnerKey && current.authorizationKey === authorizationKey
+        ? null : current);
+  }, [authorizationKey, draftOwnerKey]);
   const privacyAuthorizationKey =
     authorizationKey && realtime.status !== "reauthorizing"
       ? `${realtime.privacyEpoch}:${authorizationKey}`
@@ -777,6 +791,22 @@ export function CandidateCardPage() {
     estimatedServerNowMs >= overview.data.candidateDeadlineAtMs;
   const measuredDeadlineReached =
     deadlineReached || cachedDeadlineReached;
+
+  // Keep typed rows in this page's memory during a transient reconnect. They are
+  // never exposed until the same session, assignment and card are authorized.
+  const draftAccessChanged = realtime.status !== "reauthorizing" &&
+    rosterNavigation.isSuccess && authorizationGate === privacyAuthorizationKey &&
+    draftRecovery?.authorizationKey !== authorizationKey;
+  if (draftRecovery && (
+    draftRecovery.ownerKey !== draftOwnerKey || draftAccessChanged ||
+    measuredDeadlineReached ||
+    (overview.data && !PREPARATION_PHASES.has(overview.data.phase))
+  )) {
+    setDraftRecovery(null);
+  }
+  const recoveredDraft = draftRecovery?.ownerKey === draftOwnerKey &&
+    draftRecovery?.authorizationKey === authorizationKey
+    ? draftRecovery.snapshot : null;
 
   const removeProtectedData = useCallback(async () => {
     await queryClient.cancelQueries({
@@ -866,6 +896,7 @@ export function CandidateCardPage() {
   ]);
 
   const handleHelpPrivacyBoundary = useCallback(() => {
+    setDraftRecovery(null);
     setExpiredHelpGate(privacyAuthorizationKey);
     void clearPrivateCard({ remove: true });
   }, [clearPrivateCard, privacyAuthorizationKey]);
@@ -879,6 +910,7 @@ export function CandidateCardPage() {
           "FAD_DEADLINE_PASSED",
         ].includes(error.code);
       if (mustRemove) {
+        setDraftRecovery(null);
         setProtectedFailureGate(privacyAuthorizationKey);
         void clearPrivateCard({ remove: true });
       } else if (
@@ -1008,6 +1040,8 @@ export function CandidateCardPage() {
             overview={overview.data}
             overviewObservedAtClientMs={overview.dataUpdatedAt}
             teamId={teamId}
+            recoveredDraft={recoveredDraft}
+            onDraftChange={rememberDraft}
           />
           <p className="hl-page-backlink">
             <Link to={routePaths.leagueFreeAgentDrafts(leagueId)}>

@@ -24,6 +24,7 @@ import {
 } from "./FreeAgentDraftPages.jsx";
 import { freeAgentDraftKeys } from "./freeAgentDraftQueries.js";
 import { validatePublishedCandidateCard } from "./freeAgentDraftContracts.js";
+import { useSession } from "../session/sessionContext.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 const seasonId = "22222222-2222-4222-8222-222222222222";
@@ -946,6 +947,91 @@ describe("FAD-15 Candidate Card frontend", () => {
     await view.user.click(screen.getByRole("button", { name: "Finish reauthorization" }));
     expect(await screen.findByText("Replacement Help View")).toBeInTheDocument();
     expect(screen.queryByText("Old Manager View")).toBeNull();
+  });
+
+  it.each(["same manager", "different assignment", "different card", "read only", "different session", "access revoked"])("rechecks draft recovery after reconnect for %s", async (scenario) => {
+    const queryClient = createQueryClient();
+    let reconnected = false;
+    const evidence = () => authorizationEvidence("manager_assignment",
+      reconnected && scenario === "different assignment" ? replacementHelpId : assignmentId);
+    const fetchImpl = baseFetch((parsed, options) => {
+      if (options.method === "PUT") {
+        const saved = candidateCard({ candidatePlayerName: "Saved Candidate" });
+        saved.cardVersion = 3;
+        saved.slots[1].aavCents = 825;
+        saved.slots[1].totalValueCents = 1650;
+        saved.slots[1].termYears = 2;
+        return envelope({ card: saved, revisionId: replacementHelpId, changedEntryIds: [entryId] });
+      }
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) return envelope(overview());
+      if (parsed.pathname.endsWith("/free-agent-drafts/navigation")) {
+        return envelope(navigation({ rosterLinks: [descriptor({ evidence: evidence() })] }));
+      }
+      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/private`)) {
+        if (reconnected && scenario === "access revoked") return envelope(null, 403);
+        const data = candidateCard({ candidatePlayerName: "Saved Candidate", evidence: evidence() });
+        if (reconnected) data.cardVersion = 2;
+        if (reconnected && scenario === "different card") data.cardId = replacementHelpId;
+        if (reconnected && scenario === "read only") {
+          data.visibilityMode = "private_read_only";
+          data.capabilities.editCard = { allowed: false, reasonCode: "PHASE_CLOSED" };
+        }
+        return envelope(data);
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    function ReconnectHarness() {
+      const currentSession = useSession();
+      const [value, setValue] = React.useState({ status: "connected", privacyEpoch: 0 });
+      return <>
+        <button onClick={() => {
+          reconnected = true;
+          setValue({ status: "reauthorizing", privacyEpoch: 1 });
+        }}>Begin reconnect</button>
+        <button onClick={async () => {
+          if (scenario === "different session") {
+            const replacement = session();
+            replacement.session.id = replacementHelpId;
+            await currentSession.adoptSession(replacement);
+          }
+          setValue({ status: "connected", privacyEpoch: 1 });
+        }}>End reconnect</button>
+        <RealtimeContext.Provider value={value}><CandidateCardPage /></RealtimeContext.Provider>
+      </>;
+    }
+    const view = renderRoute({ fetchImpl, queryClient, element: <ReconnectHarness /> });
+    const aav = await screen.findByRole("textbox", { name: "F02 AAV" });
+    const savedValue = aav.value;
+    await view.user.clear(aav);
+    await view.user.type(aav, "8.25");
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "F02 term" }), "2");
+    await view.user.click(screen.getByRole("button", { name: "Begin reconnect" }));
+    expect(screen.queryByRole("textbox", { name: "F02 AAV" })).toBeNull();
+    await view.user.click(screen.getByRole("button", { name: "End reconnect" }));
+    if (scenario === "access revoked") {
+      await screen.findByText(/Private Candidate Card authorization changed/);
+      expect(screen.queryByRole("textbox", { name: "F02 AAV" })).toBeNull();
+    } else if (scenario === "read only") {
+      await screen.findByText("Saved Candidate");
+      expect(screen.getByRole("textbox", { name: "F02 AAV" })).toHaveAttribute("readonly");
+      expect(screen.getByRole("textbox", { name: "F02 AAV" })).toHaveValue("$6.00");
+    } else {
+      await waitFor(() => expect(screen.getByRole("textbox", { name: "F02 AAV" }))
+        .toHaveValue(scenario === "same manager" ? "8.25" : savedValue));
+      expect(screen.getByRole("combobox", { name: "F02 term" }))
+        .toHaveValue(scenario === "same manager" ? "2" : "1");
+    }
+    expect(fetchImpl.mock.calls.some(([, options]) => options?.method === "PUT")).toBe(false);
+    if (scenario === "same manager") {
+      await screen.findByText(/Your unsaved entries were restored/);
+      await view.user.click(screen.getByRole("button", { name: "Save Candidate Card" }));
+      await screen.findByText("Candidate Card saved. 1 row changed.");
+      const saves = fetchImpl.mock.calls.filter(([, options]) => options?.method === "PUT");
+      expect(saves).toHaveLength(1);
+      expect(new Headers(saves[0][1].headers).get("If-Match")).toBe('"2"');
+      expect(JSON.parse(saves[0][1].body).slots.find(row => row.slotKey === "F02").candidate)
+        .toEqual({ playerId, aavCents: 825, termYears: 2 });
+    }
   });
 
   it.each(["manager", "commissioner"])("preserves a %s's unsaved card while the overview and card refresh", async (authority) => {
