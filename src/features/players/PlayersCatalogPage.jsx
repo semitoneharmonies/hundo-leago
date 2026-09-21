@@ -367,6 +367,7 @@ export function PlayersCatalogPage() {
             : leftValue - rightValue;
         return (
           (sort.direction === "asc" ? comparison : -comparison) ||
+          left.lastName.localeCompare(right.lastName) ||
           left.fullName.localeCompare(right.fullName)
         );
       });

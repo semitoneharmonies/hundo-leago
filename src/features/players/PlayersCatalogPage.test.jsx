@@ -173,6 +173,32 @@ function player({
 }
 
 describe("league player catalog", () => {
+  it.each([0, 5000])("uses last names for FP ties while keeping FP first (%i)", async (points) => {
+    const players = [
+      player({ id: freeAgentId, name: "Aaron Zulu", gamesPlayed: 0, fantasyPointsHundredths: points }),
+      player({ id: ownedPlayerId, name: "Zach Alpha", gamesPlayed: 0, fantasyPointsHundredths: 0 }),
+      player({ id: prospectId, name: "Adam Alpha", gamesPlayed: 0, fantasyPointsHundredths: 0 }),
+    ];
+    const fetchImpl = vi.fn(async (url) => {
+      const path = new URL(url).pathname;
+      if (path === "/api/v1/session") return envelope(session());
+      if (path === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [league()] });
+      if (path === `/api/v1/leagues/${leagueId}/teams`) return envelope({ code: "TEAMS_FOUND", teams: [] });
+      if (path === `/api/v1/leagues/${leagueId}/players`) return envelope(players, { page: { nextCursor: null, hasMore: false } });
+      if (path === `/api/v1/leagues/${leagueId}/auctions`) return envelope([], { actions: auctionActions(), page: { nextCursor: null, hasMore: false } });
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    renderWithProviders(
+      <Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>,
+      { initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl } }
+    );
+    const table = await screen.findByRole("table");
+    expect(within(table).getAllByRole("rowheader").map((row) => row.textContent)).toEqual(
+      points ? ["Aaron Zulu", "Adam Alpha", "Zach Alpha"] : ["Adam Alpha", "Zach Alpha", "Aaron Zulu"]
+    );
+  });
+
+
   it("accepts and shows the complete expanded breakdown with negative fantasy points", async () => {
     const entry = player({ id: freeAgentId, name: "Expanded Player", gamesPlayed: 1, fantasyPointsHundredths: -50 });
     Object.assign(entry.statistics, { goals: 0, assists: 0, nhlPoints: 0, scoringRuleVersion: EXPANDED_SCORING_VERSION,
