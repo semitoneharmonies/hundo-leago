@@ -300,7 +300,7 @@ describe("FAD API boundary", () => {
     expect(httpClient.request.mock.calls.every(([, options]) => options.authenticated)).toBe(true);
   });
 
-  it("saves the exact 22-slot whole card at the card root with nullable partial terms", async () => {
+  it.each([IDS.player, "8ae09f7f-606b-57c9-90d0-93401460cdce"])("saves partial and completed 22-slot cards with player ID %s", async (playerId) => {
     const httpClient = client({ card: true });
     const slotKeys = [
       ...Array.from({ length: 12 }, (_, index) => `F${String(index + 1).padStart(2, "0")}`),
@@ -313,7 +313,7 @@ describe("FAD API boundary", () => {
         candidate:
           index === 0
             ? {
-                playerId: IDS.player,
+                playerId,
                 aavCents: null,
                 termYears: null,
               }
@@ -335,6 +335,29 @@ describe("FAD API boundary", () => {
         idempotencyKey: "candidate-card-save:uuid",
       })
     );
+    input.slots[0].candidate = { playerId, aavCents: 1550, termYears: 3 };
+    await saveCandidateCard(httpClient, "league", "fad", "team", input, {
+      version: 8,
+      idempotencyKey: "candidate-card-save:complete",
+    });
+    expect(httpClient.request).toHaveBeenCalledTimes(2);
+    expect(httpClient.request.mock.calls[1][1].body.slots[0].candidate).toEqual({
+      playerId, aavCents: 1550, termYears: 3,
+    });
+    for (const invalidPlayerId of [
+      "not-an-id",
+      "8AE09F7F-606B-57C9-90D0-93401460CDCE",
+      `${playerId} `,
+      "8ae09f7f-606b-67c9-90d0-93401460cdce",
+      "8ae09f7f-606b-57c9-70d0-93401460cdce",
+    ]) {
+      input.slots[0].candidate = { playerId: invalidPlayerId, aavCents: 1550, termYears: 3 };
+      await expect(saveCandidateCard(httpClient, "league", "fad", "team", input, {
+        version: 8,
+        idempotencyKey: "candidate-card-save:invalid",
+      })).rejects.toThrow("Candidate Card save player ID is invalid.");
+    }
+    expect(httpClient.request).toHaveBeenCalledTimes(2);
   });
 
   it("fails before transport for setup-like retry fields and malformed write controls", async () => {

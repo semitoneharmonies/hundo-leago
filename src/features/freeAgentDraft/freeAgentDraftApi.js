@@ -23,6 +23,8 @@ import {
 
 const UUID_V4 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const PLAYER_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const IDEMPOTENCY_KEY = /^[\x21-\x7E]{1,128}$/;
 const SLOT_KEY = /^(?:F(?:0[1-9]|1[0-2])|D0[1-6]|B0[1-4])$/;
 const CANDIDATE_CARD_SLOT_KEYS = Object.freeze([
@@ -52,8 +54,8 @@ function exactInput(value, fields, description) {
   return value;
 }
 
-function stableId(value, description) {
-  if (typeof value !== "string" || !UUID_V4.test(value)) {
+function stableId(value, description, pattern = UUID_V4) {
+  if (typeof value !== "string" || !pattern.test(value)) {
     throw new TypeError(`${description} is invalid.`);
   }
   return value;
@@ -520,7 +522,7 @@ function wholeCardDraft(input) {
       ["playerId", "aavCents", "termYears"],
       "Candidate Card save candidate"
     );
-    stableId(slot.candidate.playerId, "Candidate Card save player ID");
+    stableId(slot.candidate.playerId, "Candidate Card save player ID", PLAYER_UUID);
     if (
       slot.candidate.aavCents !== null &&
       (!Number.isSafeInteger(slot.candidate.aavCents) ||
