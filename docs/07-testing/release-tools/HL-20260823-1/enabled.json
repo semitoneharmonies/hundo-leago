@@ -1,0 +1,10 @@
+{
+  "contractVersion": 1,
+  "enabled": true,
+  "releaseId": "HL-20260823-1",
+  "frontendBuildId": "4dfe12d1366314e3d9df722c50771324647743c9",
+  "backendBuildId": "234547e4d8453b7515fc081ea6ebe4c2d022dc54",
+  "frontendOrigin": "https://staging.hundoleago.com",
+  "apiOrigin": "https://api-staging.hundoleago.com",
+  "expiresAt": "2026-08-25T07:00:00.000Z"
+}

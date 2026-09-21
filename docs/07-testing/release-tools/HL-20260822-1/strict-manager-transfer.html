@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; base-uri 'none'; connect-src 'self' https://api-staging.hundoleago.com; form-action 'none'; img-src 'none'; object-src 'none'; script-src 'self'; style-src 'self'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HL-20260822-1 Strict Manager Transfer</title>
+    <link rel="stylesheet" href="./strict-manager-transfer.css" />
+    <script src="./strict-manager-transfer.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <p class="eyebrow">Staging-only release QA</p>
+        <h1>Strict manager-transfer helper</h1>
+        <p>
+          Release <code>HL-20260822-1</code>. This page is inert until an
+          operator verifies the current session, arms writes, and clicks one
+          exact action. Initialization makes no script-initiated network calls
+          after the browser loads these static files.
+        </p>
+      </header>
+
+      <section class="status-card" aria-labelledby="guard-heading">
+        <h2 id="guard-heading">Safety boundary</h2>
+        <p id="guard-status" class="status status-waiting" role="status">
+          Checking the page origin locally. No helper fetch has run.
+        </p>
+        <ul>
+          <li>Exact frontend origin: <code>https://staging.hundoleago.com</code></li>
+          <li>Exact backend build: <code>8e313902feefcd683b0f5edd746a9dd2a9029a18</code></li>
+          <li>No passwords, cookies, CSRF values, raw responses, or notification content are displayed or persisted.</li>
+          <li>If a write reports <strong>STRICT STOP</strong>, do not reload or retry. Re-hold and use abort recovery.</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="session-heading">
+        <h2 id="session-heading">1. Verify this tab's account</h2>
+        <p>
+          Verification performs one credentialed <code>GET /api/v1/session</code>.
+          It never signs in, changes the session, or writes league data.
+        </p>
+        <button id="verify-session" type="button" disabled>
+          Verify current session
+        </button>
+        <pre id="session-output" class="output" aria-live="polite">No session verification has run.</pre>
+      </section>
+
+      <section aria-labelledby="arm-heading">
+        <h2 id="arm-heading">2. Arm exact staging writes</h2>
+        <label class="arm-control">
+          <input id="arm-writes" type="checkbox" disabled />
+          I am operating the exact HL-20260822-1 staging fixture and understand
+          that each enabled action writes persistent staging data.
+        </label>
+      </section>
+
+      <section class="phase" aria-labelledby="phase-one-heading">
+        <p class="eyebrow">Phase one</p>
+        <h2 id="phase-one-heading">Team 1: Manager A → Manager B</h2>
+        <ol>
+          <li>Admin proposes Manager B.</li>
+          <li>Manager B enters the emitted assignment ID and accepts.</li>
+          <li>Manager B publishes the exact event and verifies its zero-write replay.</li>
+        </ol>
+        <div class="actions">
+          <button id="propose-to-b" type="button" disabled>
+            Admin: propose Manager B
+          </button>
+          <label>
+            Exact phase-one assignment ID
+            <input
+              id="assignment-to-b"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="00000000-0000-4000-8000-000000000000"
+            />
+          </label>
+          <button id="accept-to-b" type="button" disabled>
+            Manager B: accept exact assignment
+          </button>
+          <button id="publish-to-b" type="button" disabled>
+            Manager B: publish + verify replay
+          </button>
+        </div>
+        <pre id="output-to-b" class="output" aria-live="polite">No phase-one write has run.</pre>
+      </section>
+
+      <section class="phase" aria-labelledby="phase-two-heading">
+        <p class="eyebrow">Phase two</p>
+        <h2 id="phase-two-heading">Team 1: Manager B → Manager A</h2>
+        <ol>
+          <li>Admin proposes the return to Manager A.</li>
+          <li>Manager A enters the emitted assignment ID and accepts.</li>
+          <li>Manager A publishes the exact event and verifies its zero-write replay.</li>
+        </ol>
+        <div class="actions">
+          <button id="propose-to-a" type="button" disabled>
+            Admin: propose Manager A
+          </button>
+          <label>
+            Exact phase-two assignment ID
+            <input
+              id="assignment-to-a"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="00000000-0000-4000-8000-000000000000"
+            />
+          </label>
+          <button id="accept-to-a" type="button" disabled>
+            Manager A: accept exact assignment
+          </button>
+          <button id="publish-to-a" type="button" disabled>
+            Manager A: publish + verify replay
+          </button>
+        </div>
+        <pre id="output-to-a" class="output" aria-live="polite">No phase-two write has run.</pre>
+      </section>
+
+      <aside class="warning" aria-label="Operator warning">
+        Do not open Notifications during this choreography. Keep both FAD
+        result pages mounted so their Socket.IO cache-eviction diagnostics can
+        observe each publisher action.
+      </aside>
+    </main>
+  </body>
+</html>

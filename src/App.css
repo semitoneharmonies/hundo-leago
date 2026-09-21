@@ -680,86 +680,180 @@ li {
 
 
 /* ===========================
-   Mobile (logged OUT): brand row + login row (NO overlap)
-   =========================== */
-@media (max-width: 720px) {
-  /* Logged-out: allow the right side to become a full-width second row */
-  .topbarRight.loggedOut {
-    width: 100%;
-    margin-left: 0;
-  }
-
-  /* Make the form sit under the brand */
-  .topbarAuth.stacked {
-    width: 100%;
-    margin-top: 6px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  /* Make inputs wrap instead of squeezing/overlapping */
-  .topbarAuth.stacked select,
-  .topbarAuth.stacked input {
-    flex: 1 1 140px;
-    min-width: 0;
-    width: auto;
-  }
-
-  .topbarAuth.stacked button {
-    flex: 0 0 auto;
-    padding: 5px 9px !important;
-    font-size: 0.82rem !important;
-    white-space: nowrap;
-  }
-}
-/* ===========================
-   Mobile (logged OUT): brand row + auth row
+   Mobile (logged OUT): logo row + navigation row
    =========================== */
 @media (max-width: 720px) {
   .topBar.loggedOut {
     display: grid !important;
-    grid-template-columns: 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
-      "brand"
-      "auth";
-    gap: 8px;
-    align-items: start;
+      "logo logo"
+      "menu right";
+    gap: 8px 10px;
+    align-items: center;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* IMPORTANT: do NOT use display:contents when logged out */
-  .topBar.loggedOut .topbarLeft,
-  .topBar.loggedOut .topbarRight {
-    display: block !important;
+  .topBar.loggedOut .topbarCenter {
+    grid-area: logo;
+    height: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+    pointer-events: auto;
+  }
+
+  .topBar.loggedOut .topbarLogoLink {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    z-index: auto !important;
+  }
+
+  .topBar.loggedOut .topbarCenter img {
+    height: 56px !important;
+    max-width: 92vw !important;
+    width: auto !important;
+    display: block;
+    object-fit: contain;
   }
 
   .topBar.loggedOut .topbarLeft {
-    grid-area: brand;
-  }
-
-  .topBar.loggedOut .topbarRight {
-    grid-area: auth;
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .topBar.loggedOut .topbarAuth.stacked {
-    width: 100%;
-    margin-top: 0;
+    grid-area: menu;
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .topBar.loggedOut .topbarAuth.stacked select,
-  .topBar.loggedOut .topbarAuth.stacked input {
-    flex: 1 1 140px;
+    justify-content: flex-start;
+    align-items: center;
     min-width: 0;
   }
 
-  .topBar.loggedOut .topbarAuth.stacked button {
-    flex: 0 0 auto;
-    white-space: nowrap;
+  .topBar.loggedOut .topbarRight {
+    grid-area: right;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: auto;
+    margin-left: 0;
+    min-width: 0;
+  }
+}
+
+/* ---------- Canonical responsive application header ---------- */
+.topBar {
+  display: grid !important;
+  grid-template-columns: minmax(120px, 1fr) minmax(180px, 360px) minmax(220px, 1fr);
+  grid-template-areas: "menu logo right";
+  align-items: center;
+  height: auto !important;
+  min-height: 80px;
+  overflow: visible !important;
+}
+
+.topbarLeft {
+  grid-area: menu;
+}
+
+.topbarCenter {
+  grid-area: logo;
+  min-width: 0;
+  height: auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  pointer-events: auto !important;
+}
+
+.topbarLogoLink {
+  position: static !important;
+  inset: auto !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  transform: none !important;
+}
+
+.topbarLogo {
+  display: block;
+  width: auto;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 72px;
+  object-fit: contain;
+}
+
+.topbarRight {
+  grid-area: right;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.topbarRight [role="status"] {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.topbarRight [role="status"] > span {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.topbarMainMenu {
+  scrollbar-gutter: stable;
+}
+
+.topbarLeagueLabel {
+  margin: 6px 10px 4px;
+  padding-top: 8px;
+  border-top: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1100px) {
+  .topBar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "logo logo"
+      "menu right";
+    gap: 10px 14px;
+  }
+
+  .topbarLogo {
+    max-height: 64px;
+    max-width: min(520px, 92vw) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .topBar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "logo"
+      "menu"
+      "right";
+  }
+
+  .topbarRight {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .topbarRight [role="status"] {
+    width: 100%;
+  }
+
+  .topbarRight [role="status"] > span {
+    justify-content: flex-start;
   }
 }
 

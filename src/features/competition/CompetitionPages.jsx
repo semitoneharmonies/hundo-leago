@@ -1,0 +1,1423 @@
+import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
+import { sampleCompletedMatchup } from "./sampleCompletedMatchup.js";
+import { createOperationId } from "../../shared/api/idempotency.js";
+import { candidateDeadlineForWeekOne, suggestedRollovers, draftTimingIssue, MAX_ROLLOVERS } from "./fadScheduleTiming.js";
+import { useLeagueDraftSetup } from "../leagues/useLeagueDraftSetup.js";
+import { useCurrentTime } from "../../shared/useCurrentTime.js";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+
+import { SCORING_CATEGORIES, scoringWeight } from "../../shared/scoringCategories.js";
+import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
+import { routePaths } from "../../app/routePaths.js";
+import { calendarInputValue, calendarTimestamp } from "../../shared/leagueCalendar.js";
+import {
+  EmptyBlock,
+  ErrorBlock,
+  LoadingBlock,
+  PageHeading,
+  StatusBadge,
+  Surface,
+  TableScroll,
+} from "../../components/HundoUi.jsx";
+import { readLeaguePreference } from "../leagues/leaguePreference.js";
+import {
+  leagueSeasonsQuery,
+  leagueTeamsQuery,
+  visibleLeaguesQuery,
+} from "../leagues/leagueQueries.js";
+import { useSession } from "../session/sessionContext.js";
+import { CommissionerFadPanel } from "../freeAgentDraft/CommissionerFadPanel.jsx";
+import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
+import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
+import {
+  competitionKeys,
+  currentMatchupWeekQuery,
+  matchupQuery,
+  matchupWeekQuery,
+  matchupWeeksQuery,
+  resultCorrectionCommand,
+  scheduleCommand,
+  standingsQuery,
+  weekTransitionCommand,
+} from "./competitionQueries.js";
+
+const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
+
+function operationId() {
+  return createOperationId();
+}
+
+function points(value) {
+  return (Number(value || 0) / 100).toFixed(2);
+}
+
+function matchupStatusLabel(status) {
+  return {
+    scheduled: "Scheduled",
+    live: "Live",
+    final: "Final",
+    completed: "Final",
+  }[status] || "Status unavailable";
+}
+
+function scoreInputValue(value) {
+  return (Number(value) / 100).toFixed(2);
+}
+
+function scoreInputHundredths(value) {
+  const match = /^(0|[1-9]\d*)(?:\.(\d{1,2}))?$/.exec(value.trim());
+  if (!match) return null;
+  const hundredths =
+    Number(match[1]) * 100 + Number((match[2] || "").padEnd(2, "0"));
+  return Number.isSafeInteger(hundredths) ? hundredths : null;
+}
+
+function weekLabel(sequence, startsAtMs, endsAtMs) {
+  const options = { month: "short", day: "numeric", timeZone: "America/Vancouver" };
+  const start = new Date(startsAtMs);
+  const end = new Date(Math.max(startsAtMs, endsAtMs - 1));
+  const startMonth = new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    timeZone: "America/Vancouver",
+  }).format(start);
+  const endMonth = new Intl.DateTimeFormat("en-CA", {
+    month: "short",
+    timeZone: "America/Vancouver",
+  }).format(end);
+  const startText =
+    startMonth === endMonth
+      ? new Intl.DateTimeFormat("en-CA", { day: "numeric", timeZone: options.timeZone }).format(start)
+      : new Intl.DateTimeFormat("en-CA", options).format(start);
+  const endText = new Intl.DateTimeFormat(
+    "en-CA",
+    startMonth === endMonth
+      ? { day: "numeric", timeZone: options.timeZone }
+      : options
+  ).format(end);
+  return `Week ${sequence}: ${startMonth === endMonth ? `${startMonth} ` : ""}${startText}–${endText}`;
+}
+
+function competitionErrorGuidance(error, context) {
+  if (context === "schedule") {
+    const calendarGuidance = {
+      date_order: "Start the NHL season before the playoffs, and end the playoffs at the NHL season end.",
+      playoff_length: "Changing the NHL season dates selects a custom calendar, which requires 28 full days for playoffs. Restore the default season dates or adjust the custom playoff dates.",
+      season_year: "Use dates within the selected NHL season's starting and ending years.",
+      playoffs_start_day: "Start fantasy playoffs on a Monday at midnight in the league timezone.",
+      week_one_start_day: "Start Week 1 at midnight outside a scoring break. Custom calendars require a Monday start.",
+      week_one_in_past: "Choose a future Week 1 start, then preview the schedule again.",
+      week_one_outside_season: "Place Week 1 on or after the NHL season start and before the playoffs. To test Candidate Cards earlier, change the Candidate Card deadline instead of the NHL calendar.",
+    };
+    const issue = error?.details?.calendarIssue;
+    if (error?.code === "MATCHUP_INPUT_INVALID" && Object.hasOwn(calendarGuidance, issue)) {
+      return {
+        fallback: "Check the season calendar.",
+        impact: "No schedule was created or changed.",
+        recovery: calendarGuidance[issue],
+      };
+    }
+    if (["FAD_DEADLINE_NOT_FUTURE", "FAD_TIMING_INVALID"].includes(error?.code)) {
+      return {
+        fallback: "Check the draft dates and rollover times.",
+        impact: "Choose a future Candidate Card deadline and rollover times that finish by Week 1.",
+        recovery: "Review the deadline and each round, then request a fresh schedule preview.",
+      };
+    }
+    if (error?.code === "MATCHUP_PRECONDITION_FAILED") {
+      return {
+        fallback: "The schedule preview is out of date.",
+        impact: "No schedule was created or changed.",
+        recovery: "Refresh the preview so it uses the latest season settings, then review it again.",
+      };
+    }
+    if (error?.code === "FAD_WEEK_ONE_FROZEN") {
+      return {
+        fallback: "Week 1 can no longer be moved.",
+        impact: "The existing competition schedule remains unchanged.",
+        recovery: "Candidate Cards are already open. Review the frozen Week 1 date before changing the surrounding schedule.",
+      };
+    }
+    return {
+      fallback: "The schedule preview is not ready.",
+      impact: "No schedule was created or changed.",
+      recovery: "Check that every league team, the NHL regular-season calendar, and the Week 1 date are complete, then try the preview again.",
+    };
+  }
+  if (context === "week") {
+    return {
+      fallback: "The week transition preview is not ready.",
+      impact: "The selected matchup week remains unchanged.",
+      recovery: "Refresh the matchup weeks, choose the current week again, and retry the preview.",
+    };
+  }
+  return {
+    fallback: "The competition request could not be completed.",
+    impact: "The latest competition information is unavailable.",
+    recovery: "Refresh the page and try again.",
+  };
+}
+
+function ErrorMessage({ error, context, onRetry }) {
+  if (!error) return null;
+  const guidance = competitionErrorGuidance(error, context);
+  return (
+    <ErrorBlock
+      error={error}
+      {...guidance}
+      action={onRetry ? (
+        <button className="hl-button hl-button--secondary" type="button" onClick={onRetry}>
+          Try the preview again
+        </button>
+      ) : null}
+    />
+  );
+}
+
+function Health({ health }) {
+  const source = health?.statistics || health?.scoring;
+  if (
+    !source ||
+    source.status === "fresh" ||
+    source.status === "not_live"
+  ) {
+    return null;
+  }
+  if (source.status === "unavailable") {
+    return (
+      <p role="alert">
+        Scores are temporarily unavailable. Try Refresh again later.
+      </p>
+    );
+  }
+  return (
+    <p role="status">
+      Scores may be delayed because the latest statistics are not current.
+    </p>
+  );
+}
+
+function useCompetitionContext(leagueId) {
+  const session = useSession();
+  const leagues = useQuery({
+    ...visibleLeaguesQuery(session.httpClient),
+    enabled: session.status === "authenticated",
+  });
+  const league = leagues.data?.find(({ id }) => id === leagueId) || null;
+  return { session, leagues, league, seasonId: league?.currentSeason?.id || null };
+}
+
+function CompetitionGate({ context, title, children }) {
+  if (context.session.status === "unauthenticated") {
+    return <Navigate to={routePaths.home} replace state={{ reason: "sign-in" }} />;
+  }
+  if (context.session.status === "unknown" || context.leagues.isPending) {
+    return <main className="hl-page"><Surface><LoadingBlock>Checking secure league access…</LoadingBlock></Surface></main>;
+  }
+  if (context.leagues.isError) return <main className="hl-page"><Surface className="hl-state-surface"><ErrorMessage error={context.leagues.error} /></Surface></main>;
+  if (!context.league) {
+    return <main className="hl-page"><PageHeading eyebrow="Competition" title={title} /><p className="hl-form-message is-error" role="alert">This league is not in your active memberships.</p></main>;
+  }
+  if (!context.seasonId) {
+    return <main className="hl-page"><PageHeading eyebrow={context.league.name} title={title} /><Surface><EmptyBlock title="No active season is configured for this league." /></Surface></main>;
+  }
+  return (
+    <main className="hl-page hl-page--wide hl-competition-page">
+      <PageHeading
+        eyebrow={context.league.name}
+        title={title}
+      />
+      {children}
+    </main>
+  );
+}
+
+function LegacyLeagueFeatureRedirect({ buildRoute }) {
+  const session = useSession();
+  const leagues = useQuery({
+    ...visibleLeaguesQuery(session.httpClient),
+    enabled: session.status === "authenticated",
+  });
+  if (session.status === "unauthenticated") {
+    return <Navigate to={routePaths.home} replace state={{ reason: "sign-in" }} />;
+  }
+  if (session.status === "unknown" || leagues.isPending) {
+    return <main className="hl-page"><Surface><LoadingBlock>Checking secure league access…</LoadingBlock></Surface></main>;
+  }
+  if (leagues.isError) {
+    return <main className="hl-page"><Surface className="hl-state-surface"><ErrorMessage error={leagues.error} /></Surface></main>;
+  }
+  const preferredLeagueId = readLeaguePreference();
+  const targetLeagueId = leagues.data.some(({ id }) => id === preferredLeagueId)
+    ? preferredLeagueId
+    : leagues.data.length === 1
+      ? leagues.data[0].id
+      : null;
+  return (
+    <Navigate
+      to={
+        targetLeagueId
+          ? buildRoute(targetLeagueId)
+          : routePaths.leagues
+      }
+      replace
+    />
+  );
+}
+
+export function LegacyPlayersRedirect() {
+  return (
+    <LegacyLeagueFeatureRedirect buildRoute={routePaths.leaguePlayers} />
+  );
+}
+
+export function LegacyStandingsRedirect() {
+  return (
+    <LegacyLeagueFeatureRedirect buildRoute={routePaths.leagueStandings} />
+  );
+}
+
+export function LegacyMatchupsRedirect() {
+  return (
+    <LegacyLeagueFeatureRedirect buildRoute={routePaths.leagueMatchups} />
+  );
+}
+
+export function LeagueMatchupsPage() {
+  const { leagueId } = useParams();
+  const context = useCompetitionContext(leagueId);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const canPreviewSample = ["local", "staging"].includes(context.session.appEnv);
+  const showSample = canPreviewSample && searchParams.get("sample") === "completed-week";
+  const toggleSample = () => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (showSample) next.delete("sample");
+      else next.set("sample", "completed-week");
+      return next;
+    });
+  };
+  const queryClient = useQueryClient();
+  const [selectedSeasonId, setSelectedSeasonId] = useState(null);
+  const [selectedWeekId, setSelectedWeekId] = useState(null);
+  const [selectedMatchupId, setSelectedMatchupId] = useState(null);
+  const seasons = useQuery({
+    ...leagueSeasonsQuery(context.session.httpClient, leagueId),
+    enabled:
+      context.session.status === "authenticated" && Boolean(context.league),
+  });
+  const effectiveSeasonId =
+    selectedSeasonId &&
+    seasons.data?.some(({ id }) => id === selectedSeasonId)
+      ? selectedSeasonId
+      : seasons.data?.find(({ id }) => id === context.seasonId)?.id ||
+        seasons.data?.[0]?.id ||
+        null;
+  const enabled =
+    context.session.status === "authenticated" &&
+    Boolean(context.league && effectiveSeasonId);
+  const weeks = useQuery({
+    ...matchupWeeksQuery(
+      context.session.httpClient,
+      leagueId,
+      effectiveSeasonId || "pending"
+    ),
+    enabled,
+  });
+  const teams = useQuery({
+    ...leagueTeamsQuery(context.session.httpClient, leagueId),
+    enabled: context.session.status === "authenticated" && Boolean(context.league),
+  });
+  const current = useQuery({
+    ...currentMatchupWeekQuery(
+      context.session.httpClient,
+      leagueId,
+      effectiveSeasonId || "pending"
+    ),
+    enabled,
+    refetchInterval: 60_000,
+  });
+
+  const effectiveWeekId =
+    selectedWeekId &&
+    weeks.data?.weeks.some(({ id }) => id === selectedWeekId)
+      ? selectedWeekId
+      : current.data?.week?.id || weeks.data?.weeks?.[0]?.id || null;
+
+  const week = useQuery({
+    ...matchupWeekQuery(
+      context.session.httpClient,
+      leagueId,
+      effectiveSeasonId || "pending",
+      effectiveWeekId || "pending"
+    ),
+    enabled: enabled && Boolean(effectiveWeekId),
+  });
+
+  const effectiveMatchupId =
+    selectedMatchupId && week.data?.matchups.some(({ id }) => id === selectedMatchupId)
+      ? selectedMatchupId
+      : week.data?.matchups?.[0]?.id || null;
+
+  const matchup = useQuery({
+    ...matchupQuery(
+      context.session.httpClient,
+      leagueId,
+      effectiveSeasonId || "pending",
+      effectiveWeekId || "pending",
+      effectiveMatchupId || "pending"
+    ),
+    enabled: enabled && Boolean(effectiveWeekId && effectiveMatchupId),
+    refetchInterval: 5 * 60_000,
+  });
+  const gateContext = {
+    ...context,
+    seasonId:
+      seasons.isPending && context.league
+        ? context.seasonId || "pending"
+        : effectiveSeasonId,
+  };
+
+  return (
+    <CompetitionGate context={gateContext} title="Matchups">
+      {canPreviewSample && (
+        <Surface className="hl-matchup-sample-notice">
+          <div>
+            <h2>{showSample ? "Sample completed week" : "Preview a completed week"}</h2>
+            <p>Fictional teams and stats for layout review. This sample does not affect league results or standings.</p>
+          </div>
+          <button className="hl-button hl-button--quiet" type="button" onClick={toggleSample}>
+            {showSample ? "Back to league matchups" : "Preview sample completed week"}
+          </button>
+        </Surface>
+      )}
+      {showSample ? (
+        <div className="hl-matchup-workspace">
+          <aside className="hl-surface hl-matchup-selector" aria-label="Sample week">
+            <header>
+              <p className="hl-eyebrow">Sample week</p>
+              <h2>Completed matchup</h2>
+              <StatusBadge>Final</StatusBadge>
+            </header>
+            <nav aria-label="Sample matchup">
+              <button type="button" aria-pressed="true">
+                <span>{sampleCompletedMatchup.homeTeam.name}</span><small>vs</small>
+                <span>{sampleCompletedMatchup.awayTeam.name}</span>
+              </button>
+            </nav>
+          </aside>
+          <div className="hl-matchup-main"><MatchupCard matchup={sampleCompletedMatchup} /></div>
+        </div>
+      ) : seasons.isPending || weeks.isPending || current.isPending ? (
+        <Surface><LoadingBlock>Loading matchup schedule…</LoadingBlock></Surface>
+      ) : seasons.isError ? <ErrorMessage error={seasons.error} />
+        : weeks.isError ? <ErrorMessage error={weeks.error} />
+        : current.isError ? <ErrorMessage error={current.error} />
+          : (
+            <>
+              <Surface className="hl-competition-toolbar">
+              <label className="hl-field">
+                Season{" "}
+                <select
+                  value={effectiveSeasonId || ""}
+                  onChange={(event) => {
+                    setSelectedSeasonId(event.target.value);
+                    setSelectedWeekId(null);
+                    setSelectedMatchupId(null);
+                  }}
+                >
+                  {seasons.data.map((season) => (
+                    <option key={season.id} value={season.id}>
+                      {season.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="hl-field">
+                Week{" "}
+                <select
+                  value={effectiveWeekId || ""}
+                  onChange={(event) => {
+                    setSelectedWeekId(event.target.value);
+                    setSelectedMatchupId(null);
+                  }}
+                  disabled={weeks.data.weeks.length === 0}
+                >
+                  {weeks.data.weeks.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {weekLabel(item.sequence, item.startsAtMs, item.endsAtMs)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Health health={current.data.health} />
+              </Surface>
+              {weeks.data.weeks.length === 0 ? (
+                <Surface>
+                  <EmptyBlock title="No matchup schedule has been generated yet." />
+                </Surface>
+                ) : (
+                  <>
+                  {week.isPending ? <Surface><LoadingBlock>Loading week…</LoadingBlock></Surface>
+                    : week.isError ? <ErrorMessage error={week.error} />
+                      : (
+                        <div className="hl-matchup-workspace">
+                          <aside className="hl-surface hl-matchup-selector">
+                            <header>
+                              <p className="hl-eyebrow">Selected week</p>
+                              <h2>
+                                {weekLabel(
+                                  week.data.sequence,
+                                  week.data.startsAtMs,
+                                  week.data.endsAtMs
+                                )}
+                              </h2>
+                              <StatusBadge>{week.data.status}</StatusBadge>
+                            </header>
+                            {week.data.matchups.length === 0 ? (
+                              <p className="hl-matchup-selector__empty">No pairings in this week.</p>
+                            ) : (
+                              <nav aria-label="Matchups in this week">
+                                {week.data.matchups.map((item) => (
+                                  <button
+                                    key={item.id}
+                                    type="button"
+                                    aria-label={`${item.homeTeam.name} vs ${item.awayTeam.name}`}
+                                    aria-pressed={item.id === effectiveMatchupId}
+                                    onClick={() => setSelectedMatchupId(item.id)}
+                                  >
+                                    <span>{item.homeTeam.name}</span>
+                                    <small>vs</small>
+                                    <span>{item.awayTeam.name}</span>
+                                  </button>
+                                ))}
+                              </nav>
+                            )}
+                            {week.data.byes.length > 0 && (
+                              <div className="hl-matchup-byes">
+                                {week.data.byes.map((bye) => <p key={bye.id}>Bye: {bye.team.name}</p>)}
+                              </div>
+                            )}
+                          </aside>
+                          <div className="hl-matchup-main">
+                            {matchup.isPending && effectiveMatchupId ? (
+                              <Surface><LoadingBlock>Loading matchup score…</LoadingBlock></Surface>
+                            ) : matchup.isError ? (
+                              <ErrorMessage error={matchup.error} />
+                            ) : matchup.data ? (
+                              <>
+                                <div className="hl-matchup-actions">
+                                  <button
+                                    className="hl-button hl-button--quiet"
+                                    type="button"
+                                    onClick={() =>
+                                      queryClient.invalidateQueries({
+                                        queryKey: competitionKeys.matchup(
+                                          leagueId,
+                                          effectiveSeasonId,
+                                          effectiveWeekId,
+                                          effectiveMatchupId
+                                        ),
+                                        exact: true,
+                                      })
+                                    }
+                                    disabled={matchup.isFetching}
+                                  >
+                                    Refresh
+                                  </button>
+                                  {matchup.isFetching && !matchup.isPending ? (
+                                    <p role="status">Refreshing matchup score…</p>
+                                  ) : null}
+                                </div>
+                                <MatchupCard
+                                  matchup={matchup.data}
+                                  teams={teams.data || []}
+                                />
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                      )}
+                </>
+              )}
+            </>
+          )}
+      <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>
+    </CompetitionGate>
+  );
+}
+
+function scoringSlots(teamScore) {
+  const playersBySlot = new Map(
+    (teamScore?.players || []).map((player) => [
+      `${player.positionGroup}:${player.slotNumber}`,
+      player,
+    ])
+  );
+  return [
+    ...Array.from({ length: 12 }, (_, index) => ({
+      positionGroup: "F",
+      slotNumber: index + 1,
+    })),
+    ...Array.from({ length: 6 }, (_, index) => ({
+      positionGroup: "D",
+      slotNumber: index + 1,
+    })),
+  ].map((slot) => ({
+    ...slot,
+    player:
+      playersBySlot.get(`${slot.positionGroup}:${slot.slotNumber}`) || null,
+  }));
+}
+
+function playerStat(player, field) {
+  if (!player || player.dataStatus === "missing") return "—";
+  return field === "scoreHundredths"
+    ? points(player[field])
+    : player[field];
+}
+
+const LEGACY_MATCHUP_CATEGORIES = [
+  { key: "goalDelta", abbreviation: "G", label: "Goals" },
+  { key: "assistDelta", abbreviation: "A", label: "Assists" },
+  { key: "pointDelta", abbreviation: "P", label: "NHL points" },
+];
+
+function MatchupStatHeaders({ scoring }) {
+  return (
+    <div className="hl-matchup-stat-headings" aria-hidden="true">
+      {["home", "away"].map(side => {
+        const categories = scoring[side].scoringRuleVersion ? SCORING_CATEGORIES : LEGACY_MATCHUP_CATEGORIES;
+        return (
+          <div className="hl-matchup-stats-grid" key={side} style={{ "--matchup-stat-count": categories.length + 1 }}>
+            <span title="Games played in this matchup">GP</span>
+            {categories.map(({ key, abbreviation, label }) => <span key={key} title={label}>{abbreviation}</span>)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MatchupPlayer({ team, slot, expanded }) {
+  const { player, positionGroup, slotNumber } = slot;
+  const available = player?.dataStatus === "available";
+  const gamesPlayed = playerStat(player, "gamesPlayedDelta");
+  const name = player
+    ? player.fullName + (available ? "" : " — data unavailable")
+    : `Empty ${positionGroup} slot ${slotNumber}`;
+  const categories = expanded ? SCORING_CATEGORIES : LEGACY_MATCHUP_CATEGORIES;
+  return (
+    <article className="hl-matchup-player" aria-label={`${team.name}: ${name}`}>
+      <div className="hl-matchup-player__heading">
+        <span className="hl-matchup-player__position">{positionGroup}{slotNumber}</span>
+        <strong title={name}>{name}</strong>
+        <span className={`hl-matchup-player-fp${available && player.scoreHundredths < 0 ? " is-negative" : ""}`}>
+          {playerStat(player, "scoreHundredths")} <small>FP</small>
+        </span>
+      </div>
+      <ul className="hl-matchup-player__stats hl-matchup-stats-grid" aria-label="Player statistics"
+        style={{ "--matchup-stat-count": categories.length + 1 }}>
+        <li className={`hl-matchup-stat${gamesPlayed === 0 ? " is-zero" : ""}`} title="Games played in this matchup"
+          aria-label={`Games played in this matchup: ${gamesPlayed}`}>
+          <b>{gamesPlayed}</b> <span className="hl-matchup-stat-label">GP</span>
+        </li>
+        {categories.map(category => {
+          const count = available ? (expanded ? player.scoringStats?.[category.key] : player[category.key]) : null;
+          const weight = expanded ? scoringWeight(category, positionGroup) : null;
+          const description = count == null ? `${category.label}: stat unavailable`
+            : expanded ? `${category.label}: ${count} × ${(weight / 100).toFixed(2)} = ${(count * weight / 100).toFixed(2)} FP`
+              : `${category.label}: ${count}`;
+          return (
+            <li className={`hl-matchup-stat${count === 0 || count == null ? " is-muted" : ""}${count === 0 ? " is-zero" : ""}`}
+              key={category.key} title={description} aria-label={description}>
+              <b>{count ?? "—"}</b> <span className="hl-matchup-stat-label">{category.abbreviation}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </article>
+  );
+}
+
+function MatchupCard({ matchup, teams = [] }) {
+  const official = matchup.result?.currentVersion || null;
+  const scoring = matchup.scoring;
+  const homeScore =
+    official?.homeScoreHundredths ?? scoring?.home.scoreHundredths ?? 0;
+  const awayScore =
+    official?.awayScoreHundredths ?? scoring?.away.scoreHundredths ?? 0;
+  const homeSlots = scoringSlots(scoring?.home);
+  const awaySlots = scoringSlots(scoring?.away);
+  const homeTeam =
+    teams.find(({ id }) => id === matchup.homeTeam.id) || matchup.homeTeam;
+  const awayTeam =
+    teams.find(({ id }) => id === matchup.awayTeam.id) || matchup.awayTeam;
+  return (
+    <section className="hl-surface hl-matchup-detail" aria-labelledby="matchup-detail-title">
+      <header className="hl-matchup-score">
+        <div
+          className={teamColourClass("hl-matchup-score__team", homeTeam)}
+          style={teamColourStyle(homeTeam)}
+        >
+          <span>Home</span>
+          <strong>{homeTeam.name}</strong>
+          <b>{points(homeScore)} FP</b>
+          <small>fantasy points</small>
+        </div>
+        <div className="hl-matchup-score__center">
+          <StatusBadge tone={matchup.status === "live" ? "live" : "neutral"}>
+            {matchupStatusLabel(matchup.status)}
+          </StatusBadge>
+          <span>VS</span>
+        </div>
+        <div
+          className={teamColourClass("hl-matchup-score__team", awayTeam)}
+          style={teamColourStyle(awayTeam)}
+        >
+          <span>Away</span>
+          <strong>{awayTeam.name}</strong>
+          <b>{points(awayScore)} FP</b>
+          <small>fantasy points</small>
+        </div>
+      </header>
+      <h2 className="hl-visually-hidden" id="matchup-detail-title">{homeTeam.name} vs {awayTeam.name}</h2>
+      <Health health={matchup.health} />
+      {!scoring ? (
+        <p>
+          {official
+            ? "Player scoring details are temporarily unavailable."
+            : "The week starts on Monday."}
+        </p>
+      ) : (
+        <>
+          {!scoring.home.legal ? (
+            <p role="alert">
+              {matchup.homeTeam.name} did not have a legal locked roster, so
+              no fantasy points were awarded.
+            </p>
+          ) : null}
+          {!scoring.away.legal ? (
+            <p role="alert">
+              {matchup.awayTeam.name} did not have a legal locked roster, so
+              no fantasy points were awarded.
+            </p>
+          ) : null}
+          {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide />}
+          <MatchupStatHeaders scoring={scoring} />
+          <ol className="hl-matchup-player-pairs" aria-label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}>
+            {homeSlots.map((homeSlot, index) => (
+              <li className="hl-matchup-player-pair" key={`${homeSlot.positionGroup}-${homeSlot.slotNumber}`}>
+                <MatchupPlayer team={homeTeam} slot={homeSlot} expanded={Boolean(scoring.home.scoringRuleVersion)} />
+                <MatchupPlayer team={awayTeam} slot={awaySlots[index]} expanded={Boolean(scoring.away.scoringRuleVersion)} />
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+      {matchup.result?.status === "corrected" && <p className="hl-inline-copy">Official result corrected.</p>}
+    </section>
+  );
+}
+
+export function LeagueStandingsPage() {
+  const { leagueId } = useParams();
+  const context = useCompetitionContext(leagueId);
+  const queryClient = useQueryClient();
+  const [correctionDraft, setCorrectionDraft] = useState(null);
+  const [correctionPreview, setCorrectionPreview] = useState(null);
+  const [correctionNotice, setCorrectionNotice] = useState("");
+  const [sort, setSort] = useState({ key: "rank", direction: "asc" });
+  const columns = [["GP", "gamesPlayed"], ["W", "wins"], ["L", "losses"], ["T", "ties"],
+    ["PTS", "standingsPoints"], ["PCT", "pointsPercentageHundredths"],
+    ["PF", "fantasyPointsForHundredths"], ["PA", "fantasyPointsAgainstHundredths"],
+    ["DIFF", "fantasyPointsDifferentialHundredths"]];
+  const correctionHeadingRef = useRef(null);
+  const correctionTriggerRef = useRef(null);
+  const enabled = context.session.status === "authenticated" && Boolean(context.league && context.seasonId);
+  const standings = useQuery({
+    ...standingsQuery(context.session.httpClient, leagueId, context.seasonId),
+    enabled,
+  });
+  const teams = useQuery({
+    ...leagueTeamsQuery(context.session.httpClient, leagueId),
+    enabled: context.session.status === "authenticated" && Boolean(context.league),
+  });
+  const currentTeams = new Map(
+    (teams.data || []).map((team) => [team.id, team])
+  );
+  const commissioner = hasCommissionerAuthority(
+    context.league?.membership
+  );
+  const correctionMutation = useMutation({
+    mutationFn: ({ confirmed, draft, version }) => {
+      const homeScoreHundredths = scoreInputHundredths(draft.homeScore);
+      const awayScoreHundredths = scoreInputHundredths(draft.awayScore);
+      if (homeScoreHundredths === null || awayScoreHundredths === null) {
+        throw new Error("Enter each score as a non-negative number with no more than two decimals.");
+      }
+      return resultCorrectionCommand(
+        context.session.httpClient,
+        leagueId,
+        context.seasonId,
+        draft.resultId,
+        {
+          confirmed,
+          homeScoreHundredths,
+          awayScoreHundredths,
+          ...(draft.reason.trim() ? { reason: draft.reason.trim() } : {}),
+        },
+        version,
+        confirmed ? operationId() : undefined
+      );
+    },
+    onSuccess(data, variables) {
+      if (!variables.confirmed) {
+        setCorrectionPreview(data.preview);
+        return;
+      }
+      setCorrectionDraft(null);
+      setCorrectionPreview(null);
+      setCorrectionNotice("Result corrected. Standings updated.");
+      globalThis.setTimeout(() => correctionTriggerRef.current?.focus(), 0);
+      queryClient.invalidateQueries({
+        queryKey: ["league", leagueId, "season", context.seasonId],
+      });
+    },
+  });
+
+  const correctionResultId = correctionDraft?.resultId || null;
+  useEffect(() => {
+    if (!correctionResultId) return;
+    correctionHeadingRef.current?.focus();
+  }, [correctionResultId]);
+
+  function editResult(result, trigger) {
+    correctionTriggerRef.current = trigger;
+    setCorrectionDraft({
+      resultId: result.id,
+      homeScore: scoreInputValue(result.homeScoreHundredths),
+      awayScore: scoreInputValue(result.awayScoreHundredths),
+      reason: "",
+    });
+    setCorrectionPreview(null);
+    setCorrectionNotice("");
+    correctionMutation.reset();
+  }
+
+  function closeCorrection() {
+    const trigger = correctionTriggerRef.current;
+    setCorrectionDraft(null);
+    setCorrectionPreview(null);
+    correctionMutation.reset();
+    globalThis.setTimeout(() => trigger?.focus(), 0);
+  }
+
+  function updateCorrectionDraft(fieldName, value) {
+    setCorrectionDraft((current) => ({ ...current, [fieldName]: value }));
+    setCorrectionPreview(null);
+    correctionMutation.reset();
+  }
+
+  const selectedResult = standings.data?.results.find(
+    ({ id }) => id === correctionDraft?.resultId
+  );
+  const correctionReady =
+    correctionDraft !== null &&
+    scoreInputHundredths(correctionDraft.homeScore) !== null &&
+    scoreInputHundredths(correctionDraft.awayScore) !== null;
+  return (
+    <CompetitionGate context={context} title="Standings">
+      {standings.isPending || teams.isPending ? <Surface><LoadingBlock>Loading official standings…</LoadingBlock></Surface>
+        : standings.isError || teams.isError ? <ErrorMessage error={standings.error || teams.error} />
+          : (
+            <>
+              {standings.data.rows.length === 0 ? <Surface><EmptyBlock title="No teams are registered for this season." /></Surface> : (
+                <Surface className="hl-standings-panel">
+                <TableScroll label="League standings">
+                  <table className="hl-data-table hl-standings-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Rank</th><th scope="col">Team</th>
+                        {columns.map(([label, key]) => <th scope="col" key={key}
+                          aria-sort={sort.key === key ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}>
+                          <button type="button" className="hl-sort-button" aria-label={`Sort standings by ${label}`}
+                            onClick={() => setSort((current) => ({ key, direction: current.key === key && current.direction === "desc" ? "asc" : "desc" }))}>
+                            {label}{sort.key === key ? (sort.direction === "asc" ? " ↑" : " ↓") : ""}
+                          </button>
+                        </th>)}
+                      </tr>
+                    </thead>
+                    <tbody>{[...standings.data.rows].sort((a, b) =>
+                      (sort.direction === "asc" ? 1 : -1) * (a[sort.key] - b[sort.key]) || a.rank - b.rank
+                    ).map((item) => {
+                      const team = currentTeams.get(item.teamId) || null;
+                      return (
+                      <tr
+                        className={teamColourClass("hl-standings-team-row")}
+                        key={item.teamId}
+                        style={teamColourStyle(team)}
+                      >
+                        <td>{item.rank}</td><th scope="row">{team?.name || item.teamDisplayName}</th>
+                        <td>{item.gamesPlayed}</td><td>{item.wins}</td><td>{item.losses}</td>
+                        <td>{item.ties}</td><td>{item.standingsPoints}</td>
+                        <td>{points(item.pointsPercentageHundredths)}%</td>
+                        <td>{points(item.fantasyPointsForHundredths)}</td>
+                        <td>{points(item.fantasyPointsAgainstHundredths)}</td>
+                        <td>{points(item.fantasyPointsDifferentialHundredths)}</td>
+                      </tr>
+                      );
+                    })}</tbody>
+                  </table>
+                </TableScroll>
+                </Surface>
+              )}
+              <p className="hl-standings-note">Scores updated weekly.</p>
+              {commissioner && standings.data.results.length > 0 ? (
+                <Surface className="hl-standings-results">
+                  <header>
+                    <h2>Official results</h2>
+                  </header>
+                  <TableScroll label="Official matchup results">
+                    <table className="hl-data-table hl-standings-results__table">
+                      <thead>
+                        <tr>
+                          <th>Week</th>
+                          <th>Matchup</th>
+                          <th>Score</th>
+                          <th><span className="hl-visually-hidden">Actions</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {standings.data.results.map((result) => (
+                          <tr key={result.id}>
+                            <td>
+                              {weekLabel(
+                                result.week.sequence,
+                                result.week.startsAtMs,
+                                result.week.endsAtMs
+                              )}
+                            </td>
+                            <th scope="row">
+                              {result.matchup.homeTeam.name} vs {result.matchup.awayTeam.name}
+                            </th>
+                            <td className="is-mono">
+                              {points(result.homeScoreHundredths)} - {points(result.awayScoreHundredths)}
+                            </td>
+                            <td>
+                              <button
+                                className="hl-button hl-button--quiet"
+                                type="button"
+                                aria-label={`Edit ${result.matchup.homeTeam.name} vs ${result.matchup.awayTeam.name} result`}
+                                onClick={(event) => editResult(result, event.currentTarget)}
+                              >
+                                Edit
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </TableScroll>
+                </Surface>
+              ) : null}
+              {commissioner && selectedResult && correctionDraft ? (
+                <Surface
+                  className="hl-result-correction"
+                  aria-label={`Edit ${selectedResult.matchup.homeTeam.name} vs ${selectedResult.matchup.awayTeam.name} result`}
+                >
+                  <header>
+                    <p className="hl-eyebrow">
+                      {weekLabel(
+                        selectedResult.week.sequence,
+                        selectedResult.week.startsAtMs,
+                        selectedResult.week.endsAtMs
+                      )}
+                    </p>
+                    <h2 ref={correctionHeadingRef} tabIndex={-1}>
+                      {selectedResult.matchup.homeTeam.name} vs {selectedResult.matchup.awayTeam.name}
+                    </h2>
+                  </header>
+                  <p>
+                    Update the official result. Confirming also recalculates the standings.
+                  </p>
+                  <div className="hl-result-correction__fields">
+                    <label className="hl-field">
+                      {selectedResult.matchup.homeTeam.name} score
+                      <input
+                        inputMode="decimal"
+                        value={correctionDraft.homeScore}
+                        onChange={(event) =>
+                          updateCorrectionDraft("homeScore", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className="hl-field">
+                      {selectedResult.matchup.awayTeam.name} score
+                      <input
+                        inputMode="decimal"
+                        value={correctionDraft.awayScore}
+                        onChange={(event) =>
+                          updateCorrectionDraft("awayScore", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className="hl-field">
+                      Note (optional)
+                      <input
+                        value={correctionDraft.reason}
+                        onChange={(event) =>
+                          updateCorrectionDraft("reason", event.target.value)
+                        }
+                      />
+                    </label>
+                  </div>
+                  <ErrorMessage error={correctionMutation.error} />
+                  {correctionPreview ? (
+                    <section
+                      className="hl-commissioner-preview"
+                      aria-label="Result correction preview"
+                    >
+                      <p className="hl-eyebrow">Review before confirming</p>
+                      <p>
+                        {selectedResult.matchup.homeTeam.name} {points(correctionPreview.currentVersion.homeScoreHundredths)} - {points(correctionPreview.currentVersion.awayScoreHundredths)} {selectedResult.matchup.awayTeam.name}
+                        {" to "}
+                        {selectedResult.matchup.homeTeam.name} {points(correctionPreview.proposedVersion.homeScoreHundredths)} - {points(correctionPreview.proposedVersion.awayScoreHundredths)} {selectedResult.matchup.awayTeam.name}
+                      </p>
+                      {correctionPreview.standingsImpact.changedTeamIds.length === 0 ? (
+                        <p>The visible standings rows will not change.</p>
+                      ) : (
+                        <TableScroll label="Projected standings after correction">
+                          <table className="hl-data-table hl-correction-standings-table">
+                            <caption>Projected standings after correction</caption>
+                            <thead>
+                              <tr>
+                                <th>Rank</th>
+                                <th>Team</th>
+                                <th>W</th>
+                                <th>L</th>
+                                <th>T</th>
+                                <th>PTS</th>
+                                <th>DIFF</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {correctionPreview.standingsImpact.projectedRows.map((standing) => (
+                                <tr
+                                  key={standing.teamId}
+                                  className={
+                                    correctionPreview.standingsImpact.changedTeamIds.includes(standing.teamId)
+                                      ? "is-affected"
+                                      : undefined
+                                  }
+                                >
+                                  <td>{standing.rank}</td>
+                                  <th scope="row">
+                                    {currentTeams.get(standing.teamId)?.name || standing.teamDisplayName}
+                                  </th>
+                                  <td>{standing.wins}</td>
+                                  <td>{standing.losses}</td>
+                                  <td>{standing.ties}</td>
+                                  <td>{standing.standingsPoints}</td>
+                                  <td>{points(standing.fantasyPointsDifferentialHundredths)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </TableScroll>
+                      )}
+                      <div className="hl-button-row">
+                        <button
+                          className="hl-button hl-button--primary"
+                          type="button"
+                          onClick={() =>
+                            correctionMutation.mutate({
+                              confirmed: true,
+                              draft: correctionDraft,
+                              version: correctionPreview.expectedVersion,
+                            })
+                          }
+                          disabled={correctionMutation.isPending}
+                        >
+                          Confirm correction and update standings
+                        </button>
+                        <button
+                          className="hl-button hl-button--quiet"
+                          type="button"
+                          onClick={closeCorrection}
+                          disabled={correctionMutation.isPending}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </section>
+                  ) : (
+                    <div className="hl-button-row">
+                      <button
+                        className="hl-button hl-button--primary"
+                        type="button"
+                        onClick={() =>
+                          correctionMutation.mutate({
+                            confirmed: false,
+                            draft: correctionDraft,
+                          })
+                        }
+                        disabled={!correctionReady || correctionMutation.isPending}
+                      >
+                        Preview correction
+                      </button>
+                      <button
+                        className="hl-button hl-button--quiet"
+                        type="button"
+                        onClick={closeCorrection}
+                        disabled={correctionMutation.isPending}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </Surface>
+              ) : null}
+              {correctionNotice ? <p role="status">{correctionNotice}</p> : null}
+            </>
+          )}
+      <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>
+    </CompetitionGate>
+  );
+}
+
+function PreviewAction({
+  title,
+  mutation,
+  preview,
+  onPreview,
+  onConfirm,
+  confirmDisabled = false,
+  previewDisabled = false,
+  previewLabel,
+  hidePreviewAction = false,
+  timeZone = "America/Vancouver",
+  children,
+}) {
+  const previewMetrics =
+    title === "Schedule generation"
+      ? [
+          ["Teams included", preview?.participantCount ?? 0],
+          ["Matchup weeks", preview?.weekCount ?? 0],
+          ["Scheduled matchups", preview?.matchupCount ?? 0],
+          ["Team byes", preview?.byeCount ?? 0],
+          [
+            "First week starts",
+            previewTimestamp(preview?.firstWeekStartsAtMs, timeZone),
+          ],
+          [
+            "Regular season ends",
+            previewTimestamp(preview?.lastWeekEndsAtMs, timeZone),
+          ],
+        ]
+      : [
+          [
+            "Current status",
+            humanizeStatus(preview?.currentStatus),
+          ],
+          [
+            "Transition time",
+            previewTimestamp(preview?.effectiveAtMs, timeZone),
+          ],
+        ];
+
+  return (
+    <section className={`hl-surface hl-preview-action${title === "Schedule generation" ? " hl-competition-setup-card" : ""}`} style={card}>
+      <h2>{title}</h2>
+      {children}
+      <ErrorMessage
+        error={mutation.error}
+        context={title === "Schedule generation" ? "schedule" : "week"}
+        onRetry={onPreview}
+      />
+      {!preview ? (!hidePreviewAction &&
+        <button className="hl-button hl-button--primary" type="button" onClick={onPreview} disabled={mutation.isPending || previewDisabled}>
+          {previewLabel || `Preview ${title.toLowerCase()}`}
+        </button>
+      ) : (
+        <div>
+          <section
+            className="hl-commissioner-preview"
+            aria-label={`${title} preview`}
+          >
+            <p className="hl-eyebrow">Review before confirming</p>
+            <dl>
+              {previewMetrics.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+            {title === "Schedule generation" && preview.weeks?.length > 0 && <details>
+              <summary>Review every matchup week</summary>
+              <ol>{preview.weeks.map((week) => <li key={week.sequence}>{weekLabel(week.sequence, week.startsAtMs, week.endsAtMs)}</li>)}</ol>
+            </details>}
+            {title === "Schedule generation" && preview.draftTiming && <section aria-label="Free Agent Draft timetable">
+              <p>Candidate Card deadline: {previewTimestamp(preview.draftTiming.candidateDeadlineAtMs, timeZone)} ({timeZone})</p>
+              <details open><summary>{preview.draftTiming.rolloverTimesAtMs.length} rapid-auction rounds</summary>
+                <ol>{preview.draftTiming.rolloverTimesAtMs.map((time, index) => <li key={index}>Round {index + 1}: {previewTimestamp(time, timeZone)}</li>)}</ol>
+              </details>
+            </section>}
+          </section>
+          <div className="hl-button-row">
+          <button className="hl-button hl-button--primary" type="button" onClick={onConfirm} disabled={mutation.isPending || confirmDisabled}>
+            Confirm {title.toLowerCase()}
+          </button>
+          <button className="hl-button hl-button--quiet" type="button" onClick={onPreview} disabled={mutation.isPending || previewDisabled}>
+            Refresh {title.toLowerCase()} preview
+          </button>
+          </div>
+        </div>
+      )}
+      {mutation.isSuccess && !preview && <p role="status">Action completed.</p>}
+    </section>
+  );
+}
+
+function humanizeStatus(value) {
+  if (typeof value !== "string" || value === "") return "Unavailable";
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function previewTimestamp(value, timeZone = "America/Vancouver") {
+  if (!Number.isSafeInteger(value) || value < 0) return "Not set";
+  return new Intl.DateTimeFormat("en-CA", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone,
+  }).format(new Date(value));
+}
+
+export function CommissionerCompetitionPage() {
+  const nowMs = useCurrentTime();
+  const { leagueId } = useParams();
+  const [searchParams] = useSearchParams();
+  const context = useCompetitionContext(leagueId);
+  const queryClient = useQueryClient();
+  const [schedulePreviewState, setSchedulePreviewState] = useState(null);
+  const [weekPreview, setWeekPreview] = useState(null);
+  const [weekId, setWeekId] = useState("");
+  const [calendarEdits, setCalendarEdits] = useState({});
+  const [setupReview, setSetupReview] = useState(false);
+  const seasonId = context.seasonId;
+  const seasons = useQuery({ ...leagueSeasonsQuery(context.session.httpClient, leagueId), enabled: Boolean(context.league && seasonId) });
+  const selectedSeason = seasons.data?.find((season) => season.id === seasonId);
+  const timeZone = context.league?.timezone || "America/Vancouver";
+  const defaults = seasonCalendarDefaults(selectedSeason);
+  const seasonEdits = calendarEdits[seasonId] || {};
+  const calendarValue = (key, value) => seasonEdits[key] ?? defaults?.[key] ?? calendarInputValue(value, timeZone);
+  const calendarFields = [
+    ["nhlRegularSeasonStartsAtMs", "NHL regular season starts", selectedSeason?.regularSeasonStartsAtMs],
+    ["nhlRegularSeasonEndsAtMs", "NHL regular season ends", selectedSeason?.regularSeasonEndsAtMs],
+    ["fantasyPlayoffsStartAtMs", "Fantasy playoffs start", selectedSeason?.fantasyPlayoffsStartAtMs],
+    ["fantasyPlayoffsEndAtMs", "Fantasy playoffs end", selectedSeason?.fantasyPlayoffsEndAtMs],
+    ["firstWeekStartsAtMs", "Week 1 starts", null],
+  ];
+  const calendarDates = Object.fromEntries(calendarFields.map(([key, , value]) => [key,
+    calendarTimestamp(calendarValue(key, value), timeZone)]));
+  const initialWeekOneAtMs = calendarTimestamp(defaults?.firstWeekStartsAtMs || "", timeZone);
+  const deadlineValue = seasonEdits.candidateDeadlineAtMs ?? calendarInputValue(candidateDeadlineForWeekOne(initialWeekOneAtMs), timeZone);
+  const candidateDeadlineAtMs = calendarTimestamp(deadlineValue, timeZone);
+  const rolloverValues = seasonEdits.rollovers ?? suggestedRollovers(candidateDeadlineAtMs, calendarDates.firstWeekStartsAtMs).map((time) => calendarInputValue(time, timeZone));
+  const rolloverTimesAtMs = rolloverValues.map((value) => calendarTimestamp(value, timeZone));
+  const timingIssue = draftTimingIssue(candidateDeadlineAtMs, rolloverTimesAtMs, calendarDates.firstWeekStartsAtMs, nowMs);
+  const calendar = { ...calendarDates, draftTiming: { candidateDeadlineAtMs, rolloverTimesAtMs } };
+  const calendarKey = JSON.stringify(calendar);
+  const schedulePreview = schedulePreviewState?.seasonId === seasonId && schedulePreviewState.calendarKey === calendarKey
+    ? schedulePreviewState.preview : null;
+  const setSchedulePreview = (preview, previewCalendarKey) => setSchedulePreviewState(preview ? { seasonId, calendarKey: previewCalendarKey, preview } : null);
+  const calendarReady = Object.values(calendarDates).every(Number.isSafeInteger) && timingIssue === null;
+  function changeCalendarField(key, value) {
+    setCalendarEdits((current) => ({ ...current, [seasonId]: {
+      ...current[seasonId],
+      ...(key === "firstWeekStartsAtMs" && current[seasonId]?.candidateDeadlineAtMs === undefined ? {
+        candidateDeadlineAtMs: deadlineValue || calendarInputValue(candidateDeadlineForWeekOne(calendarTimestamp(value, timeZone)), timeZone),
+      } : {}),
+      [key]: value,
+    } }));
+    setSetupReview(false); setSchedulePreview(null); scheduleMutation.reset();
+  }
+  const commissioner = hasCommissionerAuthority(
+    context.league?.membership
+  );
+  const weeks = useQuery({
+    ...matchupWeeksQuery(context.session.httpClient, leagueId, seasonId),
+    enabled:
+      context.session.status === "authenticated" &&
+      Boolean(context.league && seasonId && commissioner),
+  });
+  const availableWeeks = weeks.data?.weeks || [];
+  const setup = useLeagueDraftSetup({ httpClient: context.session.httpClient, leagueId, league: context.league,
+    enabled: commissioner && Boolean(seasonId) && weeks.isSuccess && availableWeeks.length === 0 });
+  const savedTradeDeadline = setup.settings?.tradeDeadlineAtMs;
+  const tradeDeadlineValue = Number.isSafeInteger(savedTradeDeadline) ? calendarInputValue(savedTradeDeadline, timeZone) : seasonEdits.tradeDeadlineAtMs || "";
+  const tradeDeadlineAtMs = calendarTimestamp(tradeDeadlineValue, timeZone);
+  const tradeDeadlineReady = Number.isSafeInteger(savedTradeDeadline) || (Number.isSafeInteger(tradeDeadlineAtMs) && tradeDeadlineAtMs > nowMs);
+  const setupReady = !setup.needsPreparation || (setup.canPrepare && tradeDeadlineReady);
+  const defaultWeek =
+    availableWeeks.find(({ status }) => status !== "final") ||
+    availableWeeks[0] ||
+    null;
+  const selectedWeekId = availableWeeks.some(({ id }) => id === weekId)
+    ? weekId
+    : defaultWeek?.id || "";
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["league", leagueId, "season", seasonId] });
+  const scheduleMutation = useMutation({
+    mutationFn: ({ confirmed, version, calendar: commandCalendar }) => scheduleCommand(context.session.httpClient, leagueId, seasonId, confirmed, version, commandCalendar, confirmed ? operationId() : undefined),
+    onSuccess(data, variables) {
+      if (!variables.confirmed) setSchedulePreview(data.preview, JSON.stringify(variables.calendar));
+      else { setSchedulePreview(null); invalidate(); }
+    },
+  });
+  const weekMutation = useMutation({
+    mutationFn: ({ confirmed, version }) => weekTransitionCommand(
+      context.session.httpClient, leagueId, seasonId, selectedWeekId, confirmed, version, confirmed ? operationId() : undefined
+    ),
+    onSuccess(data, variables) {
+      if (!variables.confirmed) setWeekPreview(data.preview);
+      else { setWeekPreview(null); invalidate(); }
+    },
+  });
+  async function prepareAndPreview() {
+    if (!calendarReady || !setupReady || setup.mutation.isPending) return;
+    try {
+      await setup.mutation.mutateAsync(tradeDeadlineAtMs);
+      setSetupReview(false);
+      scheduleMutation.mutate({ confirmed: false, calendar });
+    } catch { setSetupReview(false); }
+  }
+  return (
+    <CompetitionGate context={context} title="Commissioner competition tools">
+      {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
+        <>
+          <Surface className="hl-competition-setup-card">
+            <h2>Roster corrections</h2>
+            <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
+            <Link className="hl-button hl-button--secondary" to={routePaths.leagueCommissionerRoster(leagueId)}>Manage rosters</Link>
+          </Surface>
+          {availableWeeks.length > 0 ? (
+            <Surface className="hl-competition-setup-card">
+              <h2>Schedule generation</h2>
+              <p>This season already has a schedule. Use Edit matchup week below to review a week.</p>
+              <Link className="hl-button hl-button--secondary" to={routePaths.leagueMatchups(leagueId)}>View schedule</Link>
+            </Surface>
+          ) : (
+          <PreviewAction title="Schedule generation" mutation={scheduleMutation} preview={schedulePreview} timeZone={timeZone}
+            previewDisabled={!calendarReady || !setupReady || setup.loading || Boolean(setup.error) || setup.mutation.isPending || weeks.isPending || weeks.isError}
+            confirmDisabled={!calendarReady || setup.needsPreparation}
+            previewLabel={setup.needsPreparation ? "Review league setup" : undefined}
+            hidePreviewAction={setupReview && setup.needsPreparation}
+            onPreview={() => { setup.mutation.reset(); if (setup.needsPreparation) setSetupReview(true); else scheduleMutation.mutate({ confirmed: false, calendar }); }}
+            onConfirm={() => scheduleMutation.mutate({ confirmed: true, version: schedulePreview.expectedSeasonVersion, calendar })}>
+            <p>Review the league calendar before generating a schedule. All dates use {timeZone}. End times are exclusive: April 11 at midnight includes games through April 10.</p>
+            <p>The Free Agent Draft comes first. Choose the Candidate Card deadline independently of Week 1. Seven days is a starting suggestion; you decide how many rapid-auction rounds to hold and when each round ends. Week 1 must begin at an eligible league-local midnight.</p>
+            {setup.needsPreparation && <p>Enter the season dates together. Review them here, then save the trade deadline and prepare your teams for the first Free Agent Draft. You will preview the schedule before confirming it.</p>}
+            {defaults ? <p className="hl-form-message">2026–27 default: September 29–April 10. Matchups follow Monday–Sunday where possible, with adjusted weeks around December 23–25 and February 4–7. Playoffs: March 15–21, March 22–28, and March 29–April 10. Review the preview before confirming.</p>
+              : <p>Use the saved calendar for this season. Custom calendars use Monday starts and reserve the final 28 days for playoffs.</p>}
+            {defaults && <button type="button" className="hl-button hl-button--quiet" disabled={scheduleMutation.isPending || setup.mutation.isPending} onClick={() => {
+              setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], ...defaults } }));
+              setSetupReview(false); setSchedulePreview(null); scheduleMutation.reset();
+            }}>Use default season dates</button>}
+            <fieldset disabled={scheduleMutation.isPending || setup.mutation.isPending} className="hl-form-grid" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+              <legend className="hl-visually-hidden">Season dates</legend>
+              <div className="hl-field"><label htmlFor="season-trade-deadline">Season trade deadline</label>
+                <input id="season-trade-deadline" type="datetime-local" value={tradeDeadlineValue} disabled={Number.isSafeInteger(savedTradeDeadline) || !setup.needsPreparation} onChange={(event) => changeCalendarField("tradeDeadlineAtMs", event.target.value)} />
+                {Number.isSafeInteger(savedTradeDeadline) && <span>Already saved for this season.</span>}
+              </div>
+              <label className="hl-field">Candidate Card deadline
+                <input type="datetime-local" value={deadlineValue} onChange={(event) => changeCalendarField("candidateDeadlineAtMs", event.target.value)} />
+              </label>
+              {calendarFields.map(([key, label, value]) => <label className="hl-field" key={key}>{label}
+                <input type="datetime-local" value={calendarValue(key, value)} onChange={(event) => changeCalendarField(key, event.target.value)} />
+              </label>)}
+            </fieldset>
+            <fieldset className="hl-competition-setup-card" disabled={scheduleMutation.isPending || setup.mutation.isPending}>
+              <legend>Rapid-auction rollovers</legend>
+              <p>Start with one rollover every 24 hours, then adjust any date or time. Extra rounds fit into the final day. Every rollover must follow the previous round and finish by Week 1.</p>
+              <label className="hl-field">Total rapid-auction rounds
+                <input type="number" min="1" max={MAX_ROLLOVERS} step="1" value={seasonEdits.roundCount ?? rolloverValues.length} onChange={(event) => {
+                  const count = event.target.value;
+                  setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], roundCount: count,
+                    rollovers: suggestedRollovers(candidateDeadlineAtMs, calendarDates.firstWeekStartsAtMs, Number(count)).map((time) => calendarInputValue(time, timeZone)),
+                  } }));
+                  setSetupReview(false); setSchedulePreview(null); scheduleMutation.reset();
+                }} />
+              </label>
+              <button type="button" className="hl-button hl-button--quiet" onClick={() => {
+                setCalendarEdits((current) => ({ ...current, [seasonId]: { ...current[seasonId], roundCount: undefined, rollovers: undefined } }));
+                setSetupReview(false); setSchedulePreview(null); scheduleMutation.reset();
+              }}>Use daily rollovers</button>
+              <div className="hl-form-grid">{rolloverValues.map((value, index) => <label className="hl-field" key={index}>Round {index + 1} rolls over
+                <input type="datetime-local" value={value} onChange={(event) => changeCalendarField("rollovers", rolloverValues.map((time, position) => position === index ? event.target.value : time))} />
+              </label>)}</div>
+            </fieldset>
+            {!calendarReady && <p role="status">{timingIssue || "Complete every date in the season calendar."}</p>}
+            {setup.loading && <LoadingBlock>Loading league setup…</LoadingBlock>}
+            {setup.error && <ErrorBlock error={setup.error} fallback="League setup could not be loaded." />}
+            {setup.needsPreparation && !setup.loading && !setup.error && <>
+              <p>{setup.managedTeamCount} managed teams · {setup.pendingInvitations} pending invitations</p>
+              {!setup.canPrepare && <p>At least four teams need accepted managers, and all invitations must be resolved.</p>}
+              {!tradeDeadlineReady && <p>Choose a future season trade deadline with the other dates above.</p>}
+              {setupReview && <section aria-label="League setup review">
+                <h3>Review league setup</h3>
+                <dl>{[["Season trade deadline", tradeDeadlineAtMs], ["Candidate Card deadline", candidateDeadlineAtMs], ...calendarFields.map(([key, label]) => [label, calendarDates[key]])].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{previewTimestamp(value, timeZone)}</dd></div>)}</dl>
+                <p>{Number.isSafeInteger(savedTradeDeadline) ? "Keep the saved trade deadline and prepare" : "Save this trade deadline and prepare"} {setup.managedTeamCount} teams for the inaugural draft? The trade deadline is fixed once saved. Next, review the schedule preview before confirming the draft timetable.</p>
+                <div className="hl-button-row">
+                  <button type="button" className="hl-button hl-button--primary" disabled={!calendarReady || !setupReady || setup.mutation.isPending} onClick={prepareAndPreview}>{setup.mutation.isPending ? "Preparing…" : Number.isSafeInteger(savedTradeDeadline) ? "Prepare league and preview schedule" : "Save trade deadline and prepare league"}</button>
+                  <button type="button" className="hl-button hl-button--quiet" disabled={setup.mutation.isPending} onClick={() => setSetupReview(false)}>Back to dates</button>
+                </div>
+              </section>}
+            </>}
+            {setup.mutation.error && <ErrorBlock error={setup.mutation.error} fallback="League preparation could not be completed. Review the saved trade deadline and try again." />}
+          </PreviewAction>
+          )}
+          <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview} timeZone={timeZone}
+            previewDisabled={!selectedWeekId || weeks.isPending || weeks.isError}
+            confirmDisabled={!selectedWeekId}
+            onPreview={() => weekMutation.mutate({ confirmed: false })}
+            onConfirm={() => weekMutation.mutate({ confirmed: true, version: weekPreview.expectedVersion })}>
+            {weeks.isPending ? <LoadingBlock>Loading matchup weeks...</LoadingBlock> : null}
+            {weeks.isError ? <ErrorMessage error={weeks.error} /> : null}
+            {!weeks.isPending && !weeks.isError && availableWeeks.length === 0 ? (
+              <EmptyBlock title="No matchup weeks are available." />
+            ) : null}
+            {!weeks.isPending && !weeks.isError && availableWeeks.length > 0 ? (
+              <label className="hl-field">
+                Matchup week
+                <select
+                  value={selectedWeekId}
+                  onChange={(event) => {
+                    setWeekId(event.target.value);
+                    setWeekPreview(null);
+                    weekMutation.reset();
+                  }}
+                >
+                  {availableWeeks.map((week) => (
+                    <option key={week.id} value={week.id}>
+                      {weekLabel(week.sequence, week.startsAtMs, week.endsAtMs)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </PreviewAction>
+          <details className="hl-surface hl-seasonal-tools" open={searchParams.has("fadId") || searchParams.has("recoveryId")}>
+            <summary>Seasonal tools · Free Agent Draft</summary>
+            <CommissionerFadPanel leagueId={leagueId} seasonId={seasonId} timeZone={context.league?.timezone} />
+          </details>
+        </>
+      )}
+      <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>
+    </CompetitionGate>
+  );
+}
