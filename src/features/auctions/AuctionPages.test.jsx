@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Link, Route, Routes, useLocation } from "react-router-dom";
 import { screen, waitFor, within } from "@testing-library/react";
 import { QueryObserver } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -641,7 +641,7 @@ describe("FAD-16 auction pages", () => {
     expect(within(card).getByText("Active")).toBeInTheDocument();
     expect(within(card).queryByRole("button", { name: "Join auction" })).not.toBeInTheDocument();
     if (reasonCode) {
-      expect(within(card).getByText(/cooldown is still active/i)).toBeInTheDocument();
+      expect(within(card).getByText(/your bid is saved/i)).toBeInTheDocument();
       expect(within(card).queryByRole("button", { name: "Update my bid" })).not.toBeInTheDocument();
     } else {
       expect(within(card).getByRole("button", { name: "Update my bid" })).toBeEnabled();
@@ -685,7 +685,7 @@ describe("FAD-16 auction pages", () => {
     await view.user.selectOptions(within(card).getByLabelText("Contract term"), "3");
     await view.user.click(within(card).getByRole("button", { name: "Join auction" }));
 
-    expect(await within(card).findByText(/cooldown is still active/i)).toBeInTheDocument();
+    expect(await within(card).findByText(/your bid is saved/i)).toBeInTheDocument();
     expect(card).toHaveTextContent("Your bid for Snow Owls: $11.00 AAV · 3 years · $33.00 total");
     expect(within(card).queryByText("Tie — bid needed")).not.toBeInTheDocument();
     expect(within(card).queryByText("Action required")).not.toBeInTheDocument();
@@ -693,6 +693,55 @@ describe("FAD-16 auction pages", () => {
     expect(submissions).toHaveLength(1);
     expect(submissions[0]).toMatchObject({ body: { teamId: IDS.team, aavCents: 1100, termYears: 3 } });
     expect(submissions[0].version).toBeUndefined();
+  });
+
+  it.each(["ordinary_weekly", "fad_open_rapid"])("confirms a saved bid and permits a different %s auction join during cooldown", async (sourceKind) => {
+    const auctions = [IDS.auction, IDS.auctionTwo].map((auctionId, index) => {
+      const common = {
+        auctionId,
+        player: { ...player(), playerId: id(40 + index), fullName: `Player ${index + 1}` },
+        bidCount: 0,
+        participatingTeamCount: 0,
+        viewerTeams: [{ ...ordinaryAuction().viewerTeams[0], bid: null, join: allowed(), edit: denied("PHASE_CLOSED") }],
+      };
+      return sourceKind === "ordinary_weekly" ? ordinaryAuction(common) : restrictedAuction({
+        ...common, sourceKind, fadOrigin: "manager_nomination", eligibleTeams: [], minimumContract: null,
+      });
+    });
+    const submissions = [];
+    sessionHarness.request.mockImplementation(async (path, options = {}) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.team}/roster`) return workspaceResponse();
+      for (const [index, auction] of auctions.entries()) {
+        const base = `/api/v1/leagues/${IDS.league}/auctions/${auction.auctionId}`;
+        if (path === base) return { data: auction };
+        if (path === `${base}/bids/mine` && options.method === "PUT") {
+          submissions.push({ auctionId: auction.auctionId, ...options });
+          const bid = viewerBid({ bidId: index === 0 ? IDS.bid : IDS.bidTwo, cooldownEndsAtMs: NOW_MS + 4_500_000 });
+          if (sourceKind === "ordinary_weekly") delete bid.bindingIllegalityConfirmedAtMs;
+          auctions[index] = { ...auction, bidCount: 1, participatingTeamCount: 1, viewerTeams: [{
+            ...auction.viewerTeams[0], bid, join: denied("PHASE_CLOSED"), edit: denied("COOLDOWN_ACTIVE"),
+          }] };
+          const receipt = bidReceipt();
+          return { data: { ...receipt, auction: { ...receipt.auction, id: auction.auctionId }, bid: { ...receipt.bid, id: bid.bidId } } };
+        }
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const view = renderPage(`/leagues/${IDS.league}/auctions/${IDS.auction}`, "/leagues/:leagueId/auctions/:auctionId", <>
+      <Link to={`/leagues/${IDS.league}/auctions/${IDS.auctionTwo}`}>Go to Player 2</Link>
+      <AuctionDetailPage />
+    </>);
+    await view.user.click(await screen.findByRole("button", { name: "Join auction" }));
+    expect(await screen.findByText(/your bid is saved/i)).toHaveTextContent(/you can still join other auctions/i);
+    expect(screen.queryByRole("button", { name: "Update my bid" })).not.toBeInTheDocument();
+    await view.user.click(screen.getByRole("link", { name: "Go to Player 2" }));
+    await view.user.click(await screen.findByRole("button", { name: "Join auction" }));
+    expect(await screen.findByText(/your bid is saved/i)).toHaveTextContent(/you can still join other auctions/i);
+    expect(submissions.map(({ auctionId, version }) => ({ auctionId, version }))).toEqual([
+      { auctionId: IDS.auction, version: undefined }, { auctionId: IDS.auctionTwo, version: undefined },
+    ]);
+    expect(auctions.every((auction) => auction.viewerTeams[0].bid.editCount === 0)).toBe(true);
   });
 
   it("keeps the restricted-list warning for an unbid managed team while showing another managed team's saved offer", async () => {
@@ -726,7 +775,7 @@ describe("FAD-16 auction pages", () => {
     expect(within(card).queryByText(/Your bid for Ice Foxes/)).not.toBeInTheDocument();
     expect(within(card).getByText("Tie — bid needed")).toBeInTheDocument();
     expect(within(card).getByText("Action required")).toBeInTheDocument();
-    expect(within(card).getByText(/cooldown is still active/i)).toBeInTheDocument();
+    expect(within(card).getByText(/your bid is saved/i)).toBeInTheDocument();
     expect(within(card).getAllByRole("button", { name: "Join auction" })).toHaveLength(1);
     expect(within(card).queryByRole("button", { name: "Update my bid" })).not.toBeInTheDocument();
     expect(sessionHarness.request.mock.calls.every(([, options]) => !options?.method || options.method === "GET")).toBe(true);
@@ -1572,7 +1621,7 @@ describe("FAD-16 auction pages", () => {
     );
     expect(await screen.findByText(/2 bids placed/i)).toBeInTheDocument();
     expect(screen.queryByText("Original eligible Candidate-tie teams")).not.toBeInTheDocument();
-    expect(await screen.findByText(/cooldown is still active/i)).toBeInTheDocument();
+    expect(await screen.findByText(/your bid is saved/i)).toBeInTheDocument();
     expect(screen.getByText(/used every manager edit/i)).toBeInTheDocument();
     expect(screen.getAllByText("Removed from restricted participation")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: "Update my bid" })).not.toBeInTheDocument();

@@ -149,7 +149,7 @@ export function capabilityMessage(reasonCode) {
     ENTRY_NOT_EDITABLE: "This bid cannot be changed in its current state.",
     PLAYER_INELIGIBLE: "The player is not currently eligible for this action.",
     TEAM_NOT_PARTICIPANT: "This team is not an eligible participant in this auction.",
-    COOLDOWN_ACTIVE: "The server-enforced edit cooldown is still active.",
+    COOLDOWN_ACTIVE: "Your bid is saved. You can edit this player's bid 75 minutes after your last submission or edit. You can still join other auctions.",
     EDIT_LIMIT_REACHED: "This bid has used every manager edit.",
     PLAYER_QUARANTINED: "The player is awaiting a Free Agent Draft result or recovery.",
     RECOVERY_NOT_AVAILABLE: "This action is unavailable while recovery is pending.",
