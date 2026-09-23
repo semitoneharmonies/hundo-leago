@@ -240,11 +240,20 @@ function FormFeedback({ error, fallback, id, message, focusKey }) {
     }
   }, [error, focusKey, message]);
   if (error) {
+    const draftRestriction = error.code === "FAD_ALLOCATION_QUARANTINED";
     return (
       <ErrorBlock
         elementRef={feedbackRef}
         error={error}
-        fallback={error.message || fallback}
+        fallback={draftRestriction
+          ? "This player cannot be nominated for a new auction right now."
+          : error.message || fallback}
+        impact={draftRestriction
+          ? "A player can be unowned while their Free Agent Draft result is still pending."
+          : undefined}
+        recovery={draftRestriction
+          ? "Check Auctions for an auction your team can join. Otherwise, wait for the pending draft process to finish."
+          : undefined}
         id={id}
         tabIndex={-1}
       />

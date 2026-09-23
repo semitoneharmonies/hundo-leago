@@ -828,6 +828,44 @@ describe("FAD-16 auction pages", () => {
     ).toBeEnabled();
   });
 
+  it.each(["FAD_ALLOCATION_QUARANTINED", "AUCTION_REQUEST_FAILED"])("explains a Players-page nomination rejection without confusing draft restrictions with loading errors: %s", async (code) => {
+    const submissions = [];
+    sessionHarness.request.mockImplementation(async (path, options = {}) => {
+      if (path === "/api/v1/leagues") return leagueResponse("manager");
+      if (path.startsWith(`/api/v1/leagues/${IDS.league}/auctions?`)) return listResponse(null, [startTeam(IDS.team, "Snow Owls")]);
+      if (path === `/api/v1/leagues/${IDS.league}/players/${IDS.player}`) return { data: leaguePlayerDetail() };
+      if (path === `/api/v1/leagues/${IDS.league}/teams/${IDS.team}/roster`) return workspaceResponse();
+      if (path.startsWith("/api/v1/players?")) return { data: [], meta: { page: { hasMore: false, nextCursor: null } } };
+      if (path === `/api/v1/leagues/${IDS.league}/auctions` && options.method === "POST") {
+        submissions.push(options);
+        throw Object.assign(new Error(code === "FAD_ALLOCATION_QUARANTINED" ? "This player is temporarily unavailable." : "The auction request could not be completed."), {
+          code, status: code === "FAD_ALLOCATION_QUARANTINED" ? 409 : 503,
+        });
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const view = renderPage(`/leagues/${IDS.league}/auctions?playerId=${IDS.player}`, "/leagues/:leagueId/auctions", <AuctionsPage />);
+    const submit = await screen.findByRole("button", { name: "Nominate player" });
+    await waitFor(() => expect(submit).toBeEnabled());
+    await view.user.click(submit);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveFocus();
+    if (code === "FAD_ALLOCATION_QUARANTINED") {
+      expect(alert).toHaveTextContent("This player cannot be nominated for a new auction right now.");
+      expect(alert).toHaveTextContent("A player can be unowned while their Free Agent Draft result is still pending.");
+      expect(alert).toHaveTextContent("Check Auctions for an auction your team can join.");
+      expect(alert).not.toHaveTextContent(/incomplete until it loads|try again|come back in a moment/i);
+      expect(alert).not.toHaveTextContent(/Ada Player|Snow Owls|Ice Foxes|\$|queued|tied teams/i);
+    } else {
+      expect(alert).toHaveTextContent("The auction request could not be completed.");
+      expect(alert).toHaveTextContent("Try again. If the problem continues, come back in a moment.");
+      expect(alert).not.toHaveTextContent(/draft result is still pending/i);
+    }
+    expect(screen.getByRole("combobox", { name: "Player" })).toHaveValue("Ada Player");
+    expect(submissions).toHaveLength(1);
+    expect(submissions[0].body).toMatchObject({ playerId: IDS.player, teamId: IDS.team });
+  });
+
   it("redirects a manager restricted-tie deep link to the focused Auctions item", async () => {
     sessionHarness.request.mockImplementation(async (path) => {
       if (path === "/api/v1/leagues") return leagueResponse("manager");
