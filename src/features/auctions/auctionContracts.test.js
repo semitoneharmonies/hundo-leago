@@ -21,7 +21,7 @@ const IDS = Object.freeze({
   auction: id(3),
   fad: id(4),
   rollover: id(5),
-  player: id(6),
+  player: "47c61deb-cb7a-5890-af71-9f7e1efcfc8d",
   team: id(7),
   teamTwo: id(8),
   bid: id(9),
@@ -298,6 +298,20 @@ function correctionAllocation() {
 }
 
 describe("auction response contracts", () => {
+  it.each([id(6), IDS.player])("accepts canonical player %s without relaxing other identities", (playerId) => {
+    const auction = ordinaryActive();
+    auction.player.playerId = playerId;
+    expect(validateAuction(auction)).toBe(true);
+    auction.leagueId = IDS.player;
+    expect(() => validateAuction(auction)).toThrow("Auction.leagueId is invalid");
+  });
+
+  it.each(["not-a-player", IDS.player.toUpperCase(), IDS.player.replace("-5890-", "-7890-")])("rejects malformed player identity %s", (playerId) => {
+    const auction = ordinaryActive();
+    auction.player.playerId = playerId;
+    expect(() => validateAuction(auction)).toThrow("Auction.player.playerId is invalid");
+  });
+
   it.each(["FAD_SEASON_CLOSED", "FAD_ENTRY_DRAFT_REQUIRED"])("accepts disabled annual commissioner capabilities for %s", (reasonCode) => {
     const auction = restrictedActive();
     auction.capabilities.adminCancel = denied(reasonCode);

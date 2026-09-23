@@ -2,6 +2,8 @@ import { ResponseContractError } from "../../shared/api/responseContracts.js";
 
 const UUID_V4 =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+export const PLAYER_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 const MAX_TIMESTAMP_MS = 8_640_000_000_000_000;
@@ -235,8 +237,8 @@ function exactArray(value, location) {
   return value;
 }
 
-function stableId(value, location) {
-  contract(typeof value === "string" && UUID_V4.test(value), `${location} is invalid.`);
+function stableId(value, location, pattern = UUID_V4) {
+  contract(typeof value === "string" && pattern.test(value), `${location} is invalid.`);
   return value;
 }
 
@@ -285,7 +287,7 @@ function team(value, location) {
 
 function player(value, location) {
   exact(value, PLAYER_FIELDS, location);
-  stableId(value.playerId, `${location}.playerId`);
+  stableId(value.playerId, `${location}.playerId`, PLAYER_UUID);
   text(value.fullName, `${location}.fullName`);
   contract(["F", "D"].includes(value.positionGroup), `${location}.positionGroup is invalid.`);
   return value;
@@ -798,9 +800,10 @@ function ordinaryAuctionStartResult(value) {
     ],
     "Auction start result.auction"
   );
-  for (const field of ["id", "leagueId", "seasonId", "playerId", "openedByUserId"]) {
+  for (const field of ["id", "leagueId", "seasonId", "openedByUserId"]) {
     stableId(value.auction[field], `Auction start result.auction.${field}`);
   }
+  stableId(value.auction.playerId, "Auction start result.auction.playerId", PLAYER_UUID);
   contract(value.auction.status === "Active", "Auction start result.auction.status is invalid.");
   timestamp(value.auction.openedAtMs, "Auction start result.auction.openedAtMs");
   const close = timestamp(value.auction.bidClosesAtMs, "Auction start result.auction.bidClosesAtMs");

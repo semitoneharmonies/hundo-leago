@@ -33,7 +33,7 @@ const IDS = Object.freeze({
   auctionTwo: id(4),
   fad: id(5),
   rollover: id(6),
-  player: id(7),
+  player: "47c61deb-cb7a-5890-af71-9f7e1efcfc8d",
   team: id(8),
   teamTwo: id(9),
   teamThree: id(18),

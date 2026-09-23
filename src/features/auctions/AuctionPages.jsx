@@ -45,6 +45,7 @@ import {
 } from "../players/playerQueries.js";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
+import { PLAYER_UUID } from "./auctionContracts.js";
 import {
   cancelAuctionAsCommissioner,
   editAuctionBidAsCommissioner,
@@ -429,7 +430,7 @@ function StartAuctionPanel({ context, leagueId, startTeams }) {
   const [prefillConsumed, setPrefillConsumed] = useState(false);
   const feedbackId = useId();
   const prefilledPlayerId = searchParams.get("playerId");
-  const validPrefill = UUID_V4.test(prefilledPlayerId || "");
+  const validPrefill = PLAYER_UUID.test(prefilledPlayerId || "");
   const prefilledPlayer = useQuery({
     ...leaguePlayerDetailQuery(
       context.session.httpClient,

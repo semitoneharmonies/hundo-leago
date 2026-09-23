@@ -2,6 +2,7 @@ import { ResponseContractError } from "../../shared/api/responseContracts.js";
 import {
   AUCTION_PUBLIC_STATUSES,
   AUCTION_SOURCE_KINDS,
+  PLAYER_UUID,
   validateAuction,
   validateAuctionActions,
   validateAuctionBidResult,
@@ -32,8 +33,8 @@ function exactInput(value, fields, description) {
   return value;
 }
 
-function stableId(value, description) {
-  if (typeof value !== "string" || !UUID_V4.test(value)) {
+function stableId(value, description, pattern = UUID_V4) {
+  if (typeof value !== "string" || !pattern.test(value)) {
     throw new TypeError(`${description} is invalid.`);
   }
   return value;
@@ -184,7 +185,7 @@ function startBody(input) {
     ["playerId", "teamId", "termYears", "aavCents"],
     "Auction start body"
   );
-  stableId(input.playerId, "Auction player ID");
+  stableId(input.playerId, "Auction player ID", PLAYER_UUID);
   stableId(input.teamId, "Auction team ID");
   return input;
 }

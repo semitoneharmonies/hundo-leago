@@ -20,7 +20,7 @@ const IDS = Object.freeze({
   auction: id(3),
   fad: id(4),
   rollover: id(5),
-  player: id(6),
+  player: "47c61deb-cb7a-5890-af71-9f7e1efcfc8d",
   team: id(7),
   bid: id(8),
   queue: id(9),
@@ -156,6 +156,40 @@ function client(response) {
 }
 
 describe("auction API boundary", () => {
+  it.each([id(6), IDS.player])("submits canonical player %s and validates the returned FAD receipt", async (playerId) => {
+    for (const kind of ["auction_opened", "nomination_queued"]) {
+      const data = kind === "auction_opened"
+        ? { kind, auction: { ...fadAuction(), player: { ...player(), playerId } }, queuedNomination: null }
+        : { kind, auction: null, queuedNomination: { ...queuedNomination(), player: { ...player(), playerId } } };
+      const httpClient = {
+        request: vi.fn(async (_path, options) => {
+          options.validateData(data);
+          return { data };
+        }),
+      };
+      const body = { playerId, teamId: IDS.team, aavCents: 100, termYears: 1 };
+      await expect(startAuction(httpClient, IDS.league, body, { idempotencyKey: `player-format:${kind}` }))
+        .resolves.toMatchObject({ kind });
+      expect(httpClient.request).toHaveBeenCalledExactlyOnceWith(
+        `/api/v1/leagues/${IDS.league}/auctions`,
+        expect.objectContaining({ method: "POST", body })
+      );
+    }
+  });
+
+  it("rejects malformed player IDs and keeps non-player IDs strict before transport", async () => {
+    const httpClient = client({});
+    for (const playerId of ["not-a-player", IDS.player.toUpperCase(), IDS.player.replace("-5890-", "-7890-"), null]) {
+      await expect(startAuction(httpClient, IDS.league, {
+        playerId, teamId: IDS.team, aavCents: 100, termYears: 1,
+      }, { idempotencyKey: "invalid-player" })).rejects.toThrow("Auction player ID is invalid");
+    }
+    await expect(startAuction(httpClient, IDS.league, {
+      playerId: IDS.player, teamId: IDS.player, aavCents: 100, termYears: 1,
+    }, { idempotencyKey: "invalid-team" })).rejects.toThrow("Auction team ID is invalid");
+    expect(httpClient.request).not.toHaveBeenCalled();
+  });
+
   it("normalizes list filters and consumes authoritative actions with cursor paging", async () => {
     const httpClient = client({
       data: [ordinaryAuction()],
