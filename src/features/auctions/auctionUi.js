@@ -33,12 +33,12 @@ function offerMinimum({ action, sourceKind, termYears }) {
   return contractMinimum(termYears);
 }
 
-function floorComparison(totalValueCents, aavCents, floor) {
-  if (totalValueCents !== floor.totalValueCents) {
-    return totalValueCents > floor.totalValueCents ? 1 : -1;
+function floorComparison(termYears, aavCents, floor) {
+  if (aavCents !== floor.aavCents) {
+    return aavCents > floor.aavCents ? 1 : -1;
   }
-  if (aavCents === floor.aavCents) return 0;
-  return aavCents > floor.aavCents ? 1 : -1;
+  if (termYears === floor.termYears) return 0;
+  return termYears > floor.termYears ? 1 : -1;
 }
 
 export function validateAuctionOffer(
@@ -71,10 +71,10 @@ export function validateAuctionOffer(
     );
   }
   if (minimumContract !== null) {
-    const comparison = floorComparison(totalValueCents, aavCents, minimumContract);
+    const comparison = floorComparison(termYears, aavCents, minimumContract);
     if (sourceKind === "fad_restricted" && comparison <= 0) {
       throw new Error(
-        "To contend, this bid must improve the Candidate minimum with a higher total, or the same total and a higher AAV."
+        "To contend, this bid must improve the Candidate minimum with a higher AAV, or the same AAV and a longer contract."
       );
     }
     if (
@@ -82,7 +82,7 @@ export function validateAuctionOffer(
       comparison < 0
     ) {
       throw new Error(
-        "This bid must meet the fallback floor with a higher total, or the same total and at least the same AAV."
+        "This bid must meet the fallback floor with a higher AAV, or the same AAV and at least the same contract length."
       );
     }
   }
@@ -102,7 +102,7 @@ export function initialAuctionOffer(auction, viewerTeam) {
   if (floor !== null) {
     while (
       floorComparison(
-        auctionTotalValueCents(aavCents, termYears),
+        termYears,
         aavCents,
         floor
       ) < (auction.sourceKind === "fad_restricted" ? 1 : 0)

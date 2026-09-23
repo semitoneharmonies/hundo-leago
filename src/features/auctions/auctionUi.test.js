@@ -9,6 +9,13 @@ import {
 } from "./auctionUi.js";
 
 describe("auction UI offer guidance", () => {
+  it("compares Candidate floors by AAV and then longer term", () => {
+    const options = { action: "join", sourceKind: "fad_restricted", minimumContract: { totalValueCents: 2200, termYears: 2, aavCents: 1100 } };
+    expect(validateAuctionOffer("12.25", "1", options).aavCents).toBe(1225);
+    expect(validateAuctionOffer("11.00", "3", options).termYears).toBe(3);
+    expect(() => validateAuctionOffer("10.00", "3", options)).toThrow("must improve");
+    expect(() => validateAuctionOffer("11.00", "1", options)).toThrow("must improve");
+  });
   it("uses half-up AAV and preserves ordinary opening, joining, and edit rules", () => {
     expect(auctionAavCents(1_000, 3)).toBe(333);
     expect(auctionAavCents(1_001, 3)).toBe(334);
@@ -60,7 +67,7 @@ describe("auction UI offer guidance", () => {
       })
     ).toEqual({ totalValueCents: 500, termYears: 2, aavCents: 250 });
     expect(() =>
-      validateAuctionOffer("4.75", "1", {
+      validateAuctionOffer("2.25", "3", {
         action: "join",
         sourceKind: "fad_open_rapid",
         fadOrigin: "restricted_no_improvement_fallback",

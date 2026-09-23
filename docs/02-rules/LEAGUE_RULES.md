@@ -15,7 +15,13 @@ On 2026-08-08, Grae clarified the event-by-event rights-release evidence
 required before a released player may return to Candidate eligibility.
 On 2026-08-14, Grae changed manager-created Candidate Card and auction offers
 to AAV-first entry in exact `$0.25` increments, with total contract value
-derived from AAV and term. Those offers rank total value first and AAV second.
+derived from AAV and term.
+On 2026-09-22, Grae clarified the winning-contract rule: highest AAV wins;
+when AAV is equal, the longer contract wins. This clarification supersedes
+earlier total-first ranking language for Candidate Cards and auction bids.
+With competing auction bids, anti-bluff pricing uses the greater of the
+winner's lowest offered AAV and the runner-up's AAV, keeping the winning
+contract length. A sole bidder pays its full offer.
 
 This document consolidates:
 
@@ -927,9 +933,10 @@ At the deadline, exactly 168 elapsed hours before the frozen first-matchup
 start, every card locks as immutable internal evidence. Active league members
 receive the approved viewer-filtered result projection, not the card itself.
 
-Player allocation ranks highest total contract value first. When highest totals
-tie, the highest AAV wins, so the shorter term wins at an equal total. Only
-offers tied on both highest total and term create a restricted tie auction,
+Player allocation ranks highest AAV first. When the highest AAV is tied,
+the longest contract term wins. Total contract value is AAV multiplied by
+term and is not the primary ranking measure. Only offers tied on both highest
+AAV and longest term create a restricted tie auction,
 available only to those exact top-tied teams.
 
 The tied Candidate contract is the restricted auction's minimum, not a
@@ -938,14 +945,14 @@ strict improvement is its opening bid; after that submission it receives the
 ordinary joining-team edit allowance and 75-minute cooldown. At least one team
 must leave an eligible current active strictly improved offer at resolution
 for the restricted auction to produce a winner. An offer is above
-the floor when its total is higher, or its total is equal and its AAV is
-higher; a same-total lower-AAV longer term is below the floor. If every
+the floor when its AAV is higher, or its AAV is equal and its term is longer.
+A lower-AAV offer is below the floor even if its total value is higher. If every
 improvement is absent, invalid, or commissioner-removed at resolution, no
 random winner is selected. The restricted auction closes without a winner and
 the player enters a fresh league-wide blind rapid auction for the following
 24-hour cycle, with the tied contract retained as the minimum and no team
 beginning as leader. In that fallback, a bid may equal the floor, but may not
-rank below it under the same total-first/AAV-second comparison.
+rank below it under the same AAV-first/longest-term-second comparison.
 
 After automatic allocation, approved open and restricted FAD auctions normally
 resolve every 24 hours until the FAD is complete. A nomination committed in
@@ -1007,6 +1014,7 @@ Cross-feature rules include:
 * bids belong to one authorized team in that league;
 * players are identified by stable player ID;
 * an already-owned player cannot be assigned as an auction winner;
+* bids rank highest AAV first, then longest contract term;
 * ordinary weekly tie resolution must remain deterministic;
 * an FAD exact top tie must use persisted, auditable equal-chance draw
   evidence so retry and replay return the same winner;
@@ -1601,7 +1609,7 @@ FAD-related amendments on 2026-07-27, 2026-07-28, 2026-07-29, and
 - [x] Each fantasy-ELC decline or unsigned-prospect-rights release independently blocks Candidate eligibility until a later confirmed same-league, same-player `rights_release_reentry` row references that exact release event; unowned status or roster absence alone never clears it, and every later release blocks again.
 - [x] The complete Candidate Card must have no unresolved carried-roster structural conflict and must be cap compliant; either illegality locks the card and excludes all new offers without releasing carryovers or choosing offers arbitrarily.
 - [x] A conflict-free incomplete, cap-compliant card still locks and each individually valid new offer participates.
-- [x] Candidate Card allocation ranks highest total first, then highest AAV; only equal highest totals with equal terms create restricted tie auctions.
+- [x] Candidate Card allocation ranks highest AAV first, then longest term; only equal highest AAV with equal longest terms creates a restricted tie auction (clarified 2026-09-22).
 - [x] FAD rapid auctions are the approved preseason exception and normally resolve every 24 elapsed hours.
 - [x] FAD auctions inherit ordinary manager edit limits, the 75-minute cooldown, and the prohibition on manager withdrawal; a restricted participant begins with no bid or cooldown, submits its strict improvement as an opening bid, and then uses the ordinary joining-team edit allowance.
 - [x] Exact top ties in open and restricted FAD blind auctions use an auditable equal-chance draw; ordinary weekly auction tie rules remain unchanged.

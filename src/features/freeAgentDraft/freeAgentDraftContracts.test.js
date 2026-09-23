@@ -1184,3 +1184,12 @@ describe("FAD frontend response contracts", () => {
     );
   });
 });
+
+it.each(['highest_aav', 'highest_equal_aav_term'])('accepts the current Candidate ranking decision %s', (decisionCode) => {
+  const correction = correctionProjection();
+  correction.allocation.decisionCode = decisionCode;
+  expect(validateFreeAgentDraftCorrection(correction)).toBe(true);
+  const preview = correctionPreviewProjection();
+  preview.recomputedDecision.decisionCode = decisionCode;
+  expect(validateFreeAgentDraftCorrectionPreview(preview)).toBe(true);
+});

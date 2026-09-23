@@ -13,10 +13,10 @@ describe("LeagueRulesDropdown", () => {
       screen.getByText(/There is no final Submit button/)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/highest total contract value \(AAV × years\)/)
+      screen.getByText(/highest AAV. If AAV is tied, the longer contract wins/)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/\$3 AAV for three years totals \$9/)
+      screen.getByText(/\$4 AAV for one year beats \$3 AAV for three years/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/only those tied teams enter a restricted blind auction/)
@@ -34,7 +34,7 @@ describe("LeagueRulesDropdown", () => {
       screen.getByText(/Starting bids require at least \$1 AAV/)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Bids rank by total contract value, then AAV/)
+      screen.getByText(/Bids rank by AAV, then longer contract length/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/needs commissioner approval/)

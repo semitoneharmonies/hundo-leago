@@ -1,5 +1,28 @@
 # Hundo Leago - Free Agent Draft Technical Specification
 
+## Current ranking clarification - 2026-09-22
+
+Graem confirmed that the highest AAV wins every Candidate Card or auction
+offer comparison. If AAV is equal, the longer contract wins. This explicit
+clarification supersedes total-first and shorter-term ranking statements
+elsewhere in this document; those statements describe the prior implementation.
+
+Candidate Card winners receive their full saved offers. Exact AAV-and-term
+ties enter restricted auctions. Restricted bids must improve the tied floor by
+AAV, then longer term; fallback bids may equal that floor. Ordinary auction
+exact ties retain their timestamp rule; exact Free Agent Draft auction ties
+retain the committed equal-chance draw.
+
+With competing bids, anti-bluff pricing uses the greater of the winner's
+lowest offered AAV and the runner-up's AAV, retaining the winning term. A sole
+bidder pays its submitted offer. Restricted pricing must also meet the original
+floor under the AAV-then-term comparison. New contracts use quarter-dollar AAV.
+
+Schema 59 introduces Candidate decision codes `highest_aav` and
+`highest_equal_aav_term`. Historical decision codes and receipts remain
+readable and unchanged. Release verification belongs in the incident record;
+this rule clarification alone does not claim production publication.
+
 ## Document Status
 
 `APPROVED`

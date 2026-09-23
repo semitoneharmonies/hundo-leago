@@ -125,19 +125,18 @@ function LeagueRulesDropdown({ onClose }) {
             </li>
             <li>
               At the deadline, each player goes to the valid offer with the
-              highest total contract value (AAV × years). If totals match, the
-              higher AAV wins. For example, $3 AAV for three years totals $9 and
-              beats $4 AAV for two years, which totals $8.
+              highest AAV. If AAV is tied, the longer contract wins.
+              For example, $4 AAV for one year beats $3 AAV for three years.
             </li>
             <li>
-              If the best offers have the same total and term, only those tied
+              If the best offers have the same AAV and term, only those tied
               teams enter a restricted blind auction. A team must improve its
               original offer to contend. If no team improves, the player moves
               into a new league-wide rapid auction.
             </li>
             <li>
-              Restricted and league-wide rapid auctions also rank total contract
-              value first, then AAV. An exact top tie is settled by an auditable
+              Restricted and league-wide rapid auctions also rank AAV first,
+              then longer contract length. An exact top tie is settled by an auditable
               equal-chance draw. Rapid auctions resolve at daily rollovers during
               the preseason period.
             </li>
@@ -177,9 +176,14 @@ function LeagueRulesDropdown({ onClose }) {
               75-minute cooldown after each submission or edit.
             </li>
             <li>
-              Bids rank by total contract value, then AAV. Ordinary auction
+              Bids rank by AAV, then longer contract length. Ordinary auction
               ties use the original timestamp; exact Free Agent Draft ties use
               an auditable equal-chance draw.
+            </li>
+            <li>
+              With competing bids, the winner pays the higher of its own lowest
+              offered AAV and the runner-up&apos;s AAV, keeping its winning contract
+              length. A sole bidder pays its full offer.
             </li>
           </ul>
         </RuleSection>
