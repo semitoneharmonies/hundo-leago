@@ -1,5 +1,21 @@
 # Hundo Leago — League Rules
 
+## Auction tie and visibility clarification - 2026-09-23
+
+Graem confirmed that all active auctions, including restricted and open rapid
+Free Agent Draft auctions and ordinary in-season auctions, rank highest AAV,
+then longer contract, then earliest original bid submission. Editing a bid
+preserves that original timestamp. Identical timestamps retain ascending
+stable bid ID as the deterministic final fallback. No new auction winner is
+selected by a random draw. This supersedes the older FAD draw requirements
+below; existing completed results and historical draw evidence remain intact.
+Candidate Card offer ties still enter restricted auctions.
+
+Live auctions show the anonymous number of teams with an active bid, including
+the viewer's team when it has bid. Each team counts once; editing a bid does
+not increase the count. Other teams' identities, amounts, terms, and edit
+activity remain hidden. Show the count on both the auction list and detail.
+
 ## Document Status
 
 `APPROVED`

@@ -136,8 +136,8 @@ function LeagueRulesDropdown({ onClose }) {
             </li>
             <li>
               Restricted and league-wide rapid auctions also rank AAV first,
-              then longer contract length. An exact top tie is settled by an auditable
-              equal-chance draw. Rapid auctions resolve at daily rollovers during
+              then longer contract length. If both are tied, the team that bid
+              first wins. Rapid auctions resolve at daily rollovers during
               the preseason period.
             </li>
             <li>
@@ -165,6 +165,9 @@ function LeagueRulesDropdown({ onClose }) {
             <li>
               Active bids are blind. You see only your own value and term;
               commissioners cannot reveal competitors.
+              Every live auction shows how many teams have bid, including yours.
+              Each team counts once; bid edits do not change the count or reveal
+              another team&apos;s activity.
             </li>
             <li>
               Starting bids require at least $1 AAV. Joining bids require at
@@ -176,9 +179,9 @@ function LeagueRulesDropdown({ onClose }) {
               75-minute cooldown after each submission or edit.
             </li>
             <li>
-              Bids rank by AAV, then longer contract length. Ordinary auction
-              ties use the original timestamp; exact Free Agent Draft ties use
-              an auditable equal-chance draw.
+              Bids rank by AAV, then longer contract length. If both are tied,
+              the team that bid first wins, in both Free Agent Draft and
+              in-season auctions. Editing a bid keeps its original place in line.
             </li>
             <li>
               With competing bids, the winner pays the higher of its own lowest

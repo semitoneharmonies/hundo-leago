@@ -36,6 +36,9 @@ describe("LeagueRulesDropdown", () => {
     expect(
       screen.getByText(/Bids rank by AAV, then longer contract length/)
     ).toBeInTheDocument();
+    expect(screen.getByText(/the team that bid first wins, in both/)).toBeInTheDocument();
+    expect(screen.getByText(/Each team counts once/)).toBeInTheDocument();
+    expect(screen.queryByText(/equal-chance draw/)).not.toBeInTheDocument();
     expect(
       screen.getByText(/needs commissioner approval/)
     ).toBeInTheDocument();

@@ -818,6 +818,11 @@ function AuctionCard({ auction, context, focused, leagueId, timeZone }) {
         </StatusBadge>
       </div>
       <AuctionTiming auction={auction} timeZone={timeZone} />
+      {auction.status === "active" && (
+        <p>
+          {auction.participatingTeamCount} {auction.participatingTeamCount === 1 ? "bid" : "bids"} placed.
+        </p>
+      )}
       <MinimumNotice auction={auction} />
       {ownBids.map((viewerTeam) => (
         <OwnBidSummary
@@ -1675,27 +1680,27 @@ function DrawEvidence({ auction }) {
         </div>
         <StatusBadge tone={reveal?.selectionUsed ? "success" : "neutral"}>
           {auction.status === "active"
-            ? "Committed"
+            ? "First bid wins ties"
             : reveal?.selectionUsed
               ? "Draw used"
               : reveal
-                ? "No draw needed"
+                ? "No draw used"
                 : "Reveal pending"}
         </StatusBadge>
       </div>
       {auction.status === "active" ? (
         <p>
-          A fairness commitment was recorded before bidding closes. It does not
-          reveal any bid value. The reveal becomes available with the terminal result.
+          Bids rank by AAV, then longer contract length. If both are tied, the
+          team that bid first wins. Editing a bid keeps its original place in line.
         </p>
       ) : reveal?.selectionUsed ? (
         <p>
-          {reveal.orderedBidIds.length} bids remained exactly tied after total
-          value and AAV ranking. The server used one equal-chance draw and persisted the
-          selected result before assignment.
+          This historical result used an equal-chance draw among
+          {" "}{reveal.orderedBidIds.length} tied bids under the rules in effect
+          at the time. The recorded result is preserved.
         </p>
       ) : reveal ? (
-        <p>No exact-top tie required random selection for this result.</p>
+        <p>This result was recorded without a random draw.</p>
       ) : (
         <p>The fairness reveal is unavailable while correction is required.</p>
       )}
@@ -1764,7 +1769,7 @@ function AuctionDetailContent({ auction, context, leagueId }) {
           </StatusBadge>
         </div>
         <p>
-          {auction.bidCount} {auction.bidCount === 1 ? "bid" : "bids"} placed.
+          {auction.participatingTeamCount} {auction.participatingTeamCount === 1 ? "bid" : "bids"} placed.
           Bidder identities remain hidden; only each currently authorized
           team’s own value is shown here while active.
         </p>

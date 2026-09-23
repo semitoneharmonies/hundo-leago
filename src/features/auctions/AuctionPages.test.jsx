@@ -497,6 +497,37 @@ afterEach(() => {
 });
 
 describe("FAD-16 auction pages", () => {
+  it.each(["ordinary_weekly", "fad_restricted", "fad_open_rapid"])(
+    "shows anonymous bidder counts on the live auction list: %s",
+    async (sourceKind) => {
+      const auction = sourceKind === "ordinary_weekly"
+        ? ordinaryAuction({ bidCount: 2, participatingTeamCount: 2, viewerTeams: [] })
+        : restrictedAuction({
+          sourceKind,
+          fadOrigin: sourceKind === "fad_open_rapid" ? "manager_nomination" : "candidate_tie_restricted",
+          minimumContract: sourceKind === "fad_open_rapid" ? null : restrictedAuction().minimumContract,
+          bidCount: 2,
+          participatingTeamCount: 2,
+          viewerTeams: sourceKind === "fad_restricted" ? [{
+            ...restrictedAuction().viewerTeams[0],
+            bid: viewerBid({ editCount: 1 }),
+            join: denied("ENTRY_NOT_EDITABLE"),
+            edit: denied("EDIT_LIMIT_REACHED"),
+          }] : [],
+          eligibleTeams: [],
+        });
+      sessionHarness.request.mockImplementation(async (path) => {
+        if (path === "/api/v1/leagues") return leagueResponse("manager");
+        if (path.startsWith(`/api/v1/leagues/${IDS.league}/auctions?`)) return listResponse(auction);
+        throw new Error(`Unexpected request: ${path}`);
+      });
+      renderPage(`/leagues/${IDS.league}/auctions`, "/leagues/:leagueId/auctions", <AuctionsPage />);
+      expect(await screen.findByText("2 bids placed.")).toBeInTheDocument();
+      expect(screen.queryByText("Administrative Competitor")).not.toBeInTheDocument();
+      expect(screen.queryByText(/edited|cooldown/i)).not.toBeInTheDocument();
+    }
+  );
+
   it.each([null, "EDIT_LIMIT_REACHED"])("refreshes an inline edit conflict without touching another league when the new edit denial is %s", async (reasonCode) => {
     let current = restrictedAuction({
       bidCount: 1,
@@ -1704,7 +1735,7 @@ describe("FAD-16 auction pages", () => {
       "/leagues/:leagueId/auctions/:auctionId",
       <AuctionDetailPage />
     );
-    expect(await screen.findByText(/2 bids remained exactly tied/i)).toBeInTheDocument();
+    expect(await screen.findByText(/historical result used an equal-chance draw among 2 tied bids/i)).toBeInTheDocument();
     expect(screen.getByText("Draw used")).toBeInTheDocument();
     expect(screen.queryByText(IDS.bid)).not.toBeInTheDocument();
     expect(screen.queryByText(IDS.bidTwo)).not.toBeInTheDocument();
@@ -1775,6 +1806,6 @@ describe("FAD-16 auction pages", () => {
       <AuctionDetailPage />
     );
     expect(await screen.findByText(/returned to the unclaimed pool/i)).toBeInTheDocument();
-    expect(screen.getByText("No draw needed")).toBeInTheDocument();
+    expect(screen.getByText("No draw used")).toBeInTheDocument();
   });
 });

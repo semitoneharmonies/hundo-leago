@@ -1,5 +1,21 @@
 # Hundo Leago — Auctions
 
+## Auction tie and visibility clarification - 2026-09-23
+
+Graem confirmed that all active auctions, including restricted and open rapid
+Free Agent Draft auctions and ordinary in-season auctions, rank highest AAV,
+then longer contract, then earliest original bid submission. Editing a bid
+preserves that original timestamp. Identical timestamps retain ascending
+stable bid ID as the deterministic final fallback. No new auction winner is
+selected by a random draw. This supersedes the older FAD draw requirements
+below; existing completed results and historical draw evidence remain intact.
+Candidate Card offer ties still enter restricted auctions.
+
+Live auctions show the anonymous number of teams with an active bid, including
+the viewer's team when it has bid. Each team counts once; editing a bid does
+not increase the count. Other teams' identities, amounts, terms, and edit
+activity remain hidden. Show the count on both the auction list and detail.
+
 ## Current ranking clarification - 2026-09-22
 
 Graem confirmed that the highest AAV wins every Candidate Card or auction
@@ -9,9 +25,9 @@ elsewhere in this document; those statements describe the prior implementation.
 
 Candidate Card winners receive their full saved offers. Exact AAV-and-term
 ties enter restricted auctions. Restricted bids must improve the tied floor by
-AAV, then longer term; fallback bids may equal that floor. Ordinary auction
-exact ties retain their timestamp rule; exact Free Agent Draft auction ties
-retain the committed equal-chance draw.
+AAV, then longer term; fallback bids may equal that floor. Exact auction ties
+use the earliest original bid timestamp in both ordinary and Free Agent Draft
+auctions, as clarified on 2026-09-23.
 
 With competing bids, anti-bluff pricing uses the greater of the winner's
 lowest offered AAV and the runner-up's AAV, retaining the winning term. A sole
