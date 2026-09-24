@@ -690,3 +690,13 @@ describe("auction response contracts", () => {
     ).toThrow("mismatched");
   });
 });
+
+it("accepts a final term different from the highest offer and validates its AAV", () => {
+  const auction = resolvedFad();
+  auction.result.finalTermYears = 3;
+  auction.result.finalContractValueCents = 750;
+  auction.result.finalAavCents = 250;
+  expect(() => validateAuction(auction)).not.toThrow();
+  auction.result.finalAavCents = 375;
+  expect(() => validateAuction(auction)).toThrow(ResponseContractError);
+});

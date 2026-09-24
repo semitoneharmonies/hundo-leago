@@ -570,7 +570,10 @@ function nullablePositive(value, location) {
 }
 
 function terminalResult(value, auction, fad, location) {
-  exact(value, RESULT_FIELDS, location);
+  const hasFinalTerm = Object.hasOwn(value, "finalTermYears");
+  exact(value, hasFinalTerm ? [...RESULT_FIELDS, "finalTermYears"] : RESULT_FIELDS, location);
+  const finalTermYears = hasFinalTerm ? value.finalTermYears : value.submittedTermYears;
+  nullablePositive(finalTermYears, `${location}.finalTermYears`);
   contract(value.outcomeCode === auction.status, `${location}.outcomeCode is inconsistent.`);
   contract(
     timestamp(value.resolvedAtMs, `${location}.resolvedAtMs`) === auction.resolvedAtMs,
@@ -590,6 +593,7 @@ function terminalResult(value, auction, fad, location) {
   }
   const winnerFields = [
     value.winningTeam,
+    finalTermYears,
     value.submittedTotalValueCents,
     value.submittedTermYears,
     value.submittedAavCents,
@@ -601,6 +605,7 @@ function terminalResult(value, auction, fad, location) {
   if (auction.status === "resolved") {
     contract(winnerFields.every((field) => field !== null), `${location} winner is incomplete.`);
     team(value.winningTeam, `${location}.winningTeam`);
+    contract(finalTermYears <= 3, `${location}.finalTermYears is invalid.`);
     contract(value.submittedTermYears <= 3, `${location}.submittedTermYears is invalid.`);
     contract(
       roundedAavCents(value.submittedTotalValueCents, value.submittedTermYears) ===
@@ -608,7 +613,7 @@ function terminalResult(value, auction, fad, location) {
       `${location}.submittedAavCents is inconsistent.`
     );
     contract(
-      roundedAavCents(value.finalContractValueCents, value.submittedTermYears) ===
+      roundedAavCents(value.finalContractValueCents, finalTermYears) ===
         value.finalAavCents,
       `${location}.finalAavCents is inconsistent.`
     );

@@ -1,5 +1,20 @@
 # Hundo Leago — League Rules
 
+## Actual submitted offer pricing clarification - 2026-09-24
+
+The winner is ranked by highest AAV, then longer term, then earliest original
+bid submission. The winning team pays its lowest actual submitted offer that
+would still win against the other teams' final eligible bids. Use that entire
+offer, including its original contract length. This also applies to a sole
+bidder. Restricted and fallback offers must still satisfy their applicable
+floor. If no earlier cheaper offer qualifies, use the winning team's current
+offer. Never derive a new price from the runner-up or combine one offer's
+salary with another offer's term.
+
+This replaces all older anti-bluff/second-price descriptions below. Existing
+completed results are retained; correcting historical contracts is a separate
+operation. This documentation does not claim that the correction is deployed.
+
 ## Auction tie and visibility clarification - 2026-09-23
 
 Graem confirmed that all active auctions, including restricted and open rapid
@@ -35,9 +50,7 @@ derived from AAV and term.
 On 2026-09-22, Grae clarified the winning-contract rule: highest AAV wins;
 when AAV is equal, the longer contract wins. This clarification supersedes
 earlier total-first ranking language for Candidate Cards and auction bids.
-With competing auction bids, anti-bluff pricing uses the greater of the
-winner's lowest offered AAV and the runner-up's AAV, keeping the winning
-contract length. A sole bidder pays its full offer.
+Auction pricing uses the actual submitted offer rule clarified above.
 
 This document consolidates:
 

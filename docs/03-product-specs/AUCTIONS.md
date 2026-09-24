@@ -1,5 +1,20 @@
 # Hundo Leago — Auctions
 
+## Actual submitted offer pricing clarification - 2026-09-24
+
+The winner is ranked by highest AAV, then longer term, then earliest original
+bid submission. The winning team pays its lowest actual submitted offer that
+would still win against the other teams' final eligible bids. Use that entire
+offer, including its original contract length. This also applies to a sole
+bidder. Restricted and fallback offers must still satisfy their applicable
+floor. If no earlier cheaper offer qualifies, use the winning team's current
+offer. Never derive a new price from the runner-up or combine one offer's
+salary with another offer's term.
+
+This replaces all older anti-bluff/second-price descriptions below. Existing
+completed results are retained; correcting historical contracts is a separate
+operation. This documentation does not claim that the correction is deployed.
+
 ## Auction tie and visibility clarification - 2026-09-23
 
 Graem confirmed that all active auctions, including restricted and open rapid
@@ -29,10 +44,7 @@ AAV, then longer term; fallback bids may equal that floor. Exact auction ties
 use the earliest original bid timestamp in both ordinary and Free Agent Draft
 auctions, as clarified on 2026-09-23.
 
-With competing bids, anti-bluff pricing uses the greater of the winner's
-lowest offered AAV and the runner-up's AAV, retaining the winning term. A sole
-bidder pays its submitted offer. Restricted pricing must also meet the original
-floor under the AAV-then-term comparison. New contracts use quarter-dollar AAV.
+Auction pricing uses the actual submitted offer rule clarified above.
 
 Schema 59 introduces Candidate decision codes `highest_aav` and
 `highest_equal_aav_term`. Historical decision codes and receipts remain
