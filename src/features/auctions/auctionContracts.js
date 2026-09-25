@@ -568,7 +568,12 @@ function nullablePositive(value, location) {
 }
 
 function terminalResult(value, auction, fad, location) {
-  exact(value, RESULT_FIELDS, location);
+  const hasFinalTerm = value !== null && typeof value === "object" && Object.hasOwn(value, "finalTermYears");
+  exact(value, hasFinalTerm ? [...RESULT_FIELDS, "finalTermYears"] : RESULT_FIELDS, location);
+  if (hasFinalTerm) {
+    if (auction.status === "resolved") integer(value.finalTermYears, `${location}.finalTermYears`, { positive: true, maximum: 3 });
+    else contract(value.finalTermYears === null, `${location}.finalTermYears must be null.`);
+  }
   contract(value.outcomeCode === auction.status, `${location}.outcomeCode is inconsistent.`);
   contract(
     timestamp(value.resolvedAtMs, `${location}.resolvedAtMs`) === auction.resolvedAtMs,
@@ -606,7 +611,7 @@ function terminalResult(value, auction, fad, location) {
       `${location}.submittedAavCents is inconsistent.`
     );
     contract(
-      roundedAavCents(value.finalContractValueCents, value.submittedTermYears) ===
+      roundedAavCents(value.finalContractValueCents, value.finalTermYears ?? value.submittedTermYears) ===
         value.finalAavCents,
       `${location}.finalAavCents is inconsistent.`
     );

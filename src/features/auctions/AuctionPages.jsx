@@ -1726,6 +1726,7 @@ function TerminalResult({ auction, timeZone }) {
           <div><dt>Submitted term</dt><dd>{result.submittedTermYears} {result.submittedTermYears === 1 ? "year" : "years"}</dd></div>
           <div><dt>Submitted AAV</dt><dd>{money(result.submittedAavCents)}</dd></div>
           <div><dt>Final contract total</dt><dd>{money(result.finalContractValueCents)}</dd></div>
+          {result.finalTermYears != null && result.finalTermYears !== result.submittedTermYears && <div><dt>Final contract term</dt><dd>{result.finalTermYears} {result.finalTermYears === 1 ? "year" : "years"}</dd></div>}
           <div><dt>Final AAV</dt><dd>{money(result.finalAavCents)}</dd></div>
         </dl>
       )}

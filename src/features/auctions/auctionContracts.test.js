@@ -316,6 +316,27 @@ describe("auction response contracts", () => {
     expect(validateAuctionCollection([ordinaryActive(), resolvedFad()])).toBe(true);
   });
 
+  it("validates the final contract term independently of the submitted term and retains historical receipts", () => {
+    const auction = resolvedFad();
+    expect(validateAuction(auction)).toBe(true);
+    auction.result.finalTermYears = 1;
+    auction.result.finalContractValueCents = 250;
+    auction.result.finalAavCents = 250;
+    expect(validateAuction(auction)).toBe(true);
+    auction.result.finalAavCents = 125;
+    expect(() => validateAuction(auction)).toThrow(ResponseContractError);
+    auction.result.finalAavCents = 250;
+    for (const invalid of [null, 0, 4, "1", undefined]) {
+      auction.result.finalTermYears = invalid;
+      expect(() => validateAuction(auction)).toThrow(ResponseContractError);
+    }
+    const cancelled = terminalWithoutWinner(ordinaryActive(), "cancelled");
+    cancelled.result.finalTermYears = null;
+    expect(validateAuction(cancelled)).toBe(true);
+    cancelled.result.finalTermYears = 1;
+    expect(() => validateAuction(cancelled)).toThrow(ResponseContractError);
+  });
+
   it("accepts a restricted manager projection with the eligible-team identities hidden", () => {
     const auction = restrictedActive();
     auction.eligibleTeams = [];
