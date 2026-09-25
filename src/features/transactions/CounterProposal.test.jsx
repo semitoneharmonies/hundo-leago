@@ -17,6 +17,26 @@ function renderCounter(fixture, initialPath = `/leagues/${ids.league}/trades/${i
 const writes = fixture => fixture.requests.filter(request => request.method === "POST");
 
 describe("Counter Proposal", () => {
+  it("shows Counter Proposal beside Confirm and Decline even when the acceptance preview reports roster problems", async () => {
+    const fixture = createCounterFixture();
+    const originalFetch = fixture.fetch;
+    fixture.fetch = async (url, options) => {
+      const response = await originalFetch(url, options);
+      if (!new URL(url).pathname.endsWith("/acceptance-preview")) return response;
+      const body = await response.json();
+      body.data.generallyIllegal = true;
+      body.data.teams[0].generallyIllegal = true;
+      body.data.teams[0].issues = [{ code: "SALARY_CAP_EXCEEDED", usageCents: 10125, limitCents: 10000 }];
+      return new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+    };
+    renderCounter(fixture);
+    await screen.findByText("Salary cap exceeded: $101.25 used against a $100.00 cap.");
+    const counter = await screen.findByRole("button", { name: "Counter Proposal" });
+    expect(counter.parentElement).toContainElement(screen.getByRole("button", { name: "Confirm" }));
+    expect(counter.parentElement).toContainElement(screen.getByRole("button", { name: "Decline" }));
+    expect(counter).toBeEnabled();
+    expect(writes(fixture)).toHaveLength(0);
+  });
   it("reverses every supported asset and keeps retention on the original retaining team", () => {
     const fixture = createCounterFixture();
     const draft = counterProposalDraft(fixture.original, { leagueId: ids.league, tradeId: ids.trade, managedTeamIds: [ids.receivingTeam] });

@@ -928,6 +928,8 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const submission = useRef(null);
+  const sending = useRef(false);
+  const [sentProposal, setSentProposal] = useState(null);
   const [searchParams] = useSearchParams();
   const requestedAssetDirection = searchParams.get("assetDirection");
   const requestedAssetType = searchParams.get("assetType");
@@ -1015,19 +1017,37 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
     mutationFn: ({ body, idempotencyKey }) => counterTradeId
       ? counterTrade(context.session.httpClient, leagueId, counterTradeId, body, idempotencyKey)
       : createTrade(context.session.httpClient, leagueId, body, idempotencyKey),
-    onSuccess: (result) => {
+    onSuccess: (result, { body }) => {
       if (counterTradeId) {
         navigate(routePaths.trade(leagueId, result.proposal.id));
         void queryClient.invalidateQueries({ queryKey: transactionKeys.trade(leagueId, counterTradeId) });
         void queryClient.invalidateQueries({ queryKey: ["league", leagueId, "activity"] });
       } else {
-        submission.current = null;
+        setSentProposal({
+          id: result.proposal?.id,
+          teamName: context.teams.data.find(({ id }) => id === body.receivingTeamId)?.name || "the receiving team",
+        });
       }
-      return queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) });
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) });
     },
+    onError: () => { sending.current = false; },
   });
   if (context.teams.isPending) return <p>Loading trade teams…</p>;
   if (context.managerControlledTeams.length === 0) return <p>You do not currently control a team that can propose a trade.</p>;
+  if (sentProposal) return <section className="hl-surface" style={card}>
+    <p role="status">Trade proposal to {sentProposal.teamName} sent.</p>
+    <div className="hl-button-row">
+      {sentProposal.id && <Link className="hl-button hl-button--primary" to={routePaths.trade(leagueId, sentProposal.id)}>View proposal</Link>}
+      <button type="button" className="hl-button hl-button--quiet" onClick={() => {
+        submission.current = null;
+        sending.current = false;
+        mutation.reset();
+        setProposingAssets([{ type: "player", reference: "" }]);
+        setReceivingAssets([{ type: "player", reference: "" }]);
+        setSentProposal(null);
+      }}>Start another proposal</button>
+    </div>
+  </section>;
   function buildSide(items) {
     const built = items.flatMap((item) => {
       const asset = buildTradeAsset(item);
@@ -1068,7 +1088,7 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
   }
   function submit(event) {
     event.preventDefault();
-    if (mutation.isPending) return;
+    if (sending.current || mutation.isPending || sentProposal) return;
     try {
       if (counterTradeId) {
         for (const [assets, workspace] of [[proposingAssets, proposerWorkspace.data], [receivingAssets, receivingWorkspace.data]]) {
@@ -1089,6 +1109,7 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
       if (submission.current?.fingerprint !== fingerprint) {
         submission.current = { fingerprint, idempotencyKey: key(counterTradeId ? "trade-counter" : "trade-proposal") };
       }
+      sending.current = true;
       mutation.mutate({ body, idempotencyKey: submission.current.idempotencyKey });
     } catch (error) {
       setClientError(error);
@@ -1158,7 +1179,7 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
           },
         ]}
       />
-      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>{counterTradeId ? "Send counter proposal" : "Send proposal"}</button>
+      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>{mutation.isPending ? "Sending…" : counterTradeId ? "Send counter proposal" : "Send proposal"}</button>
       {counterTradeId && <Link className="hl-button hl-button--quiet" to={routePaths.trade(leagueId, counterTradeId)}>Back to original offer</Link>}
       <ErrorMessage error={clientError || proposerWorkspace.error || receivingWorkspace.error || mutation.error} />
     </form>
