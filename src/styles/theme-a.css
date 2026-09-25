@@ -6620,7 +6620,18 @@ textarea {
   }
 }
 
-/* Keep all desktop statistics visible. Mobile retains a scrollable table. */
+/* Size the full scoring table from its content; scroll instead of overlapping. */
+.hl-player-row-table.hl-expanded-player-table {
+  table-layout: auto;
+}
+
+.hl-player-row-table.hl-expanded-player-table thead th {
+  padding: 8px;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+}
+
+/* Keep desktop statistics compact within the scrollable table. */
 @media (min-width: 1024px) {
   .hl-player-row-table.hl-expanded-player-table,
   .hl-player-row-table.hl-roster-table.hl-expanded-player-table {

@@ -75,7 +75,7 @@ This document does not define:
 * exact database tables;
 * exact API routes or payloads;
 * email, push, or alternate notification channels planned for future updates;
-* multi-team trades unless later approved;
+* trades involving more than three teams;
 * the detailed fulfillment workflow for future-considerations obligations.
 
 ---
@@ -140,7 +140,7 @@ The frontend may preview a trade but may not independently transfer an asset or 
 
 ## League Isolation
 
-Every proposal belongs to one league and exactly two teams in that league.
+Every proposal belongs to one league and either two or three teams in that league.
 
 Every asset, contract, retention record, draft pick, and prospect right must belong to the same league.
 
@@ -173,9 +173,14 @@ The receiving team’s manager may:
 * reject a pending proposal;
 * view the proposal and acceptance-time preview.
 
-A one-command counterproposal workflow is planned but not implemented. A
-receiver may currently reject and then create a separate proposal only when
-they are the manager of the newly proposing team.
+Approved 2026-09-24: a receiving manager may choose **Counter Proposal** beside
+Confirm and Decline on a pending offer. It opens the new-proposal editor with
+the teams reversed and every supported offered asset and retention amount
+preloaded for editing. Opening or leaving the editor changes no saved state.
+Sending the counter creates a new proposal to the original sender and declines
+the original in one transaction. A failed submission does neither. The
+original assets and history remain preserved. Implementation and verification
+are local until separately published.
 
 Acceptance requires current authority for the receiving team.
 
@@ -263,11 +268,21 @@ Terminal proposals never become pending again.
 
 ---
 
-## Two-Team Limit
+## Two- and Three-Team Proposals
 
-The initial Season 2 workflow supports exactly two teams per proposal.
+Approved by Graem on 2026-09-25: the trade screen offers two-team and three-team proposals. The three-team extension is implemented and verified locally; it has not been published.
 
-Multi-team trades are out of scope until deliberately specified.
+For a three-team proposal:
+
+* Sending records the proposing team's agreement. Both invited teams must accept before any asset moves.
+* Each asset specifies its source and destination team. A team can send assets to either or both other participants. Every participant contributes at least one primary asset; requested retention stays attached to the same outgoing contract and destination.
+* All teams see each participant's current response. If the first invited team accepts, the remaining team sees that acceptance while its own response is pending. Trade-change notifications refresh open screens.
+* Any invited team's decline rejects the whole proposal, including after that team initially accepted. No further acceptance is available. A rejected proposal remains readable.
+* A participant can counter a rejected proposal. An invited team can also counter an open proposal. The editor preserves all teams, assets, destinations and retained salary. Sending a counter closes an open original atomically; a rejected original remains rejected.
+* Every counter is a new proposal. Both other teams must agree afresh, regardless of their responses to the original.
+* Sending a counter also acknowledges the original for the countering manager, clearing that team's pending item and related unread notifications.
+* **OK** on a rejected proposal acknowledges it for the viewing team, marks that manager's related notifications read, and removes it from that team's pending view. It remains available in trade history and the all-proposals view. Other teams' acknowledgments are independent.
+* Final acceptance revalidates every asset and all three rosters in one transaction. Future Considerations still require commissioner approval after both invited teams accept. Existing timing, ownership, retention, cap-warning, cancellation and safe-reversal rules continue to apply.
 
 ---
 
@@ -561,11 +576,13 @@ A pending proposal cannot be edited in place.
 
 The proposing team may cancel it and create a new proposal.
 
-No counter endpoint or atomic counter service is implemented. Until that
-planned workflow exists, the receiver may explicitly reject the original and
-then, only with manager authority for the new proposing team, create a separate
-proposal with reversed roles. Those are independent actions; documentation and
-UI must not imply atomic counter behavior.
+The receiving manager edits a new reversed-role proposal through Counter
+Proposal. Sending it atomically creates the counter and declines the original.
+The original must still be pending, within its deadline, and in the same
+league and season. The receiver must have current manager authority, and
+normal new-proposal asset validation applies. Exact retries create no duplicate
+proposal, rejection, history, or notification. Historical standalone retention
+obligations remain readable but cannot be copied into a new proposal.
 
 ---
 
@@ -575,7 +592,7 @@ UI must not imply atomic counter behavior.
 
 At the scheduled Entry Draft start, the automatic contract-year rollover runs.
 Trading opens only after that rollover succeeds. Entry Draft preparation may
-occur beforehand, but proposal creation, response, future countering, cancellation,
+occur beforehand, but proposal creation, response, countering, cancellation,
 and completion remain locked while rollover is pending or failed.
 
 Trading closes at the commissioner-configured league trade deadline.
@@ -886,7 +903,7 @@ The transaction may be marked `Correction Required` and routed to the commission
 ## League Freeze
 
 An active league freeze blocks manager proposal creation, acceptance, rejection,
-cancellation, and any future counter workflow.
+cancellation, and counter proposals.
 
 Commissioner safe inspection, awaiting-Future-Considerations approval, and
 separate recovery actions remain available through explicit controls.
@@ -980,9 +997,9 @@ proposal when the signed-in receiving manager is expected to respond. This
 presentation is not an authorization boundary.
 
 The initial release does not require separate email or push notifications for
-new, accepted, rejected, cancelled, or expired proposals. Notification behavior
-for the planned counter workflow remains unspecified until that workflow is
-implemented.
+new, accepted, rejected, cancelled, or expired proposals. A counter uses the
+normal new-proposal in-app notification to the original sender and records the
+original offer's rejection through the existing history and activity workflow.
 
 ---
 
@@ -1074,8 +1091,8 @@ Tests must cover:
 * multiple incoming and outgoing proposals involving the same asset;
 * acceptance-time stale-asset revalidation and automatic cancellation;
 * cancellation, rejection, expiry, deadline, and reopening;
-* proof that no counter endpoint or atomic counter behavior is advertised while
-  countering remains planned;
+* counter preloading, reversed manager authority, retained salary, atomic
+  create-and-decline, unchanged original on failure, and idempotent replay;
 * before, exactly at, and after all deadlines;
 * buyout and expiration automatic cancellation;
 * stale assets and concurrent acceptances;
@@ -1118,7 +1135,7 @@ Tests must cover:
 
 ## Approved Trade Decisions
 
-- [x] The initial trade workflow supports exactly two teams.
+- [x] Approved 2026-09-25: trade proposals support two or three teams, with unanimous agreement and per-team responses for three-team offers.
 - [x] Proposal presentation states are `Pending`, projected `Awaiting Commissioner Approval`, `Accepted`, `Rejected`, `Cancelled`, `Expired`, `Automatically Cancelled`, `Reversed`, and `Correction Required`.
 - [x] A terminal proposal never becomes pending again.
 - [x] Cash, cap space, free agents, matchup results, and unsupported unnamed assets are not tradeable.
@@ -1147,7 +1164,7 @@ Tests must cover:
 - [x] Acceptance revalidates ownership, eligibility, contract, obligation, and category state.
 - [x] A pending proposal cannot be edited in place.
 - [x] The proposer changes terms by cancelling and creating a new proposal.
-- [ ] **PLANNED — not implemented:** a future counterproposal command may define an atomic reversed-role workflow; no counter endpoint or service exists in M7-26.
+- [x] Approved 2026-09-24: Counter Proposal preloads an editable reversed offer; sending it atomically creates the counter and declines the original.
 - [x] Seven days means exactly 168 hours after creation.
 - [x] The effective deadline is the earlier of 168-hour expiry and the league trade deadline.
 - [x] At the exact effective deadline, the proposal becomes `Expired` and cannot be accepted.
@@ -1195,8 +1212,7 @@ The rule-approval phase for this specification is complete because:
 
 * every material trade decision was approved or revised;
 * tradeable and non-tradeable asset boundaries are explicit;
-* simultaneous proposals, expiry, and deadline behaviour are approved, while
-  counter behavior remains explicitly planned and unimplemented;
+* simultaneous proposals, expiry, deadlines, and atomic counter proposals are approved;
 * player-category, draft-pick, retention, buyout-penalty, Future Considerations, and reversal behaviour are explicit;
 * no unchecked workflow is presented as final behaviour.
 

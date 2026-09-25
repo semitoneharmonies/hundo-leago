@@ -1151,7 +1151,8 @@ function AuctionsPanel({ leagueId, auctions, pending, error }) {
 
 function TradesPanel({ leagueId, trades, pending, error, managedTeamId = null }) {
   const pendingTrades = trades.filter(
-    ({ storageStatus }) => storageStatus === "proposed"
+    ({ storageStatus, participants }) => storageStatus === "proposed" ||
+      (storageStatus === "declined" && participants?.some(p => p.teamId === managedTeamId && p.acknowledgedAtMs === null))
   );
   return (
     <Surface
@@ -1181,7 +1182,7 @@ function TradesPanel({ leagueId, trades, pending, error, managedTeamId = null })
               key={trade.id}
               className={
                 managedTeamId &&
-                [trade.proposingTeam.id, trade.receivingTeam.id].includes(
+                (trade.participants?.map(p => p.teamId) || [trade.proposingTeam.id, trade.receivingTeam.id]).includes(
                   managedTeamId
                 )
                   ? "is-managed-team"
@@ -1192,7 +1193,7 @@ function TradesPanel({ leagueId, trades, pending, error, managedTeamId = null })
                 <ArrowLeftRight aria-hidden="true" />
                 <span>
                   <strong>{trade.proposingTeam.name}</strong>
-                  <small>to {trade.receivingTeam.name}</small>
+                  <small>{trade.storageStatus === "declined" ? "Declined · review or dismiss" : `to ${trade.participants ? trade.participants.slice(1).map(p => p.name).join(" and ") : trade.receivingTeam.name}`}</small>
                 </span>
               </div>
               <Link to={routePaths.trade(leagueId, trade.id)}>

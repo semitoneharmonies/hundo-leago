@@ -1,0 +1,31 @@
+import { test, expect } from "@playwright/test";
+
+test("receiving manager edits and sends a preloaded counter without losing the original on failure", async ({ page }) => {
+  await page.goto("/e2e/fixtures/counter-proposal.html", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("button", { name: "Confirm", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Counter Proposal", exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: test.info().outputPath("pending-trade-actions.png"), fullPage: true });
+  await page.getByRole("button", { name: "Counter Proposal", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "New trade proposal" })).toBeVisible();
+  await expect(page.getByLabel("Receiving team sends asset 1 retained AAV dollars", { exact: true })).toHaveValue("1.25");
+  await expect(page.getByLabel("Proposing team sends asset 1", { exact: true })).toContainText("2027-28 Round 2");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => window.counterFixture.requests.filter(r => r.method === "POST").length)).toBe(0);
+  await page.getByLabel("Proposing team sends asset 3 notes", { exact: true }).fill("Conditional second-round pick");
+  await page.getByLabel("Receiving team sends asset 1 retained AAV dollars", { exact: true }).fill("1.50");
+  await page.screenshot({ path: test.info().outputPath("counter-proposal-editor.png"), fullPage: true });
+  await page.evaluate(() => { window.counterFixture.failNext = true; });
+  await page.getByRole("button", { name: "Send counter proposal", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("The trade request could not be completed.");
+  expect(await page.evaluate(() => window.counterFixture.original.storageStatus)).toBe("proposed");
+  await expect(page.getByLabel("Proposing team sends asset 3 notes", { exact: true })).toHaveValue("Conditional second-round pick");
+  await page.screenshot({ path: test.info().outputPath("counter-proposal-failed-send.png"), fullPage: true });
+  await page.getByRole("button", { name: "Send counter proposal", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "New trade proposal" })).toHaveCount(0);
+  expect(await page.evaluate(() => window.counterFixture.original.storageStatus)).toBe("declined");
+  const writes = await page.evaluate(() => window.counterFixture.requests.filter(r => r.method === "POST"));
+  expect(writes).toHaveLength(2);
+  expect(writes.every(r => r.pathname.endsWith("/counter"))).toBe(true);
+  expect(writes[1].body.receivingAssets).toContainEqual({ type: "requested_retention", contractId: "00000000-0000-4000-8000-000000000007", retainedAavCents: 150 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});

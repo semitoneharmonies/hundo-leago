@@ -1650,6 +1650,23 @@ Active F/D ownership set with ownership versions and an `If-Match`-equivalent
 body version. It stores presentation order separately and never changes roster
 category, slot, contract, cap, matchup lock, or ownership authority.
 
+The authenticated workspace additionally exposes `capOutlook` (2026-09-25):
+`seasons` contains three columns with `key`, `label`, `offset`, `complete`,
+`limitCents`, `usageCents`, `spaceCents`, `forwardCents`, `defenceCents`,
+`retainedSalaryCents`, `buyoutPenaltyCents`, `benchCents`, `injuredReserveCents`,
+and `prospectCents`. `rows` contains `id`, nullable `ownershipId`, `playerId`,
+`name`, `category`, and three `amountsCents` values (null when no commitment
+exists). Categories are `Forwards`, `Defence`, `Retained salary`, `Buyouts`,
+`Bench`, `Injured Reserve`, and `Prospect`. Saved year records and current
+responsibility determine amounts; the shared backend cap policy determines
+totals with current roster categories and cap limit held constant. Incoming
+retention is deducted from the matching contract-year salary; outgoing
+retention and buyouts remain separate obligations. No year rollover, season
+creation, or state mutation occurs. `capOutlook: null` means the projection is
+unavailable. Clients accept older responses without this additive field and
+display an unavailable state instead of inventing future totals. The public
+roster contract is unchanged.
+
 Commissioner previews use `POST` because they accept an exact proposed command,
 but they run inside a rolled-back transaction and remain byte-for-byte
 read-only. Apply commands require `Idempotency-Key`; retrying the same request
@@ -1918,6 +1935,8 @@ auction handoff behind the same contract boundary.
 |---|---|---|
 | `GET /api/v1/leagues/:leagueId/trades` | League member | List proposals involving authorized teams plus allowed league views |
 | `POST /api/v1/leagues/:leagueId/trades` | Authorized proposing team manager | Create a proposal with typed assets |
+| `POST /api/v1/leagues/:leagueId/trades/:tradeId/counter` | Current receiving manager for two-team offers; eligible participant for three-team offers as specified below | Atomically create the counter and close/acknowledge the original; no asset transfers |
+| `POST /api/v1/leagues/:leagueId/trades/:tradeId/acknowledge` | Current manager of a participant in a rejected three-team offer | Acknowledge for that team and mark that manager's related notifications read; preserve history and other teams' state |
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId` | Authorized participant or commissioner safe view | Read a proposal |
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId/acceptance-preview` | Authorized receiving team manager | Revalidate the current proposal and project acceptance effects without writes |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/accept` | Authorized receiving team manager | Revalidate and either complete atomically or persist the acceptance snapshot that projects Awaiting Commissioner Approval when Future Considerations are present |
@@ -1927,6 +1946,37 @@ auction handoff behind the same contract boundary.
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId/reversal-preview` | Current commissioner | Preview exact direct-reversal recoverability without writes |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/reverse` | Current commissioner | Reverse atomically only when every asset remains exactly recoverable |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/correction-required` | Current commissioner | Route an unsafe completed trade to explicit correction recovery without moving assets |
+
+Approved 2026-09-25, local implementation only: three-team creation and counters
+use `{ proposingTeamId, participants: [{ teamId, assets }] }`. Exactly three
+distinct same-league teams are required, with the proposer first. Every typed
+asset also has `destinationTeamId`, identifying a different participant. Each
+team supplies 1–100 assets including a primary asset. Requested retention must
+match the outgoing contract's source and destination. Existing two-team
+request bodies remain supported unchanged.
+
+Three-team list/detail responses add `participants`, ordered with proposer
+first, containing `teamId`, `name`, `decision` (`pending`, `accepted`, or
+`declined`), `respondedAtMs`, and `acknowledgedAtMs`. These GETs are read-only.
+The legacy `proposingTeam` and `receivingTeam` fields identify participants
+one and two; clients must use `participants` for the complete three-team scope.
+
+Either invited manager may preview, accept, or decline. The first acceptance
+returns `TRADE_PARTICIPANT_ACCEPTED` with `storageStatus: proposed`, saves that
+team's response and a `trade.changed` publication, and moves no assets. The
+final invited acceptance executes the whole proposal, or enters commissioner
+approval for Future Considerations. All participants see saved responses.
+Any decline is terminal. The acknowledge endpoint takes `{}` and is safe to
+repeat; it affects only that team and manager's notifications.
+
+Three-team counters retain the original participant set and may originate from
+an invited manager on a pending original, or any participating manager on a
+declined original. Sending atomically creates a fresh proposal, gives only its
+proposer an accepted response, and declines an open original. It acknowledges
+an already-declined original for the countering team only. The two other
+teams must accept again. Expired, completed, cancelled and approval-pending
+originals cannot be countered. Creation/counter and acceptance idempotency
+remain scoped to the acting user and operation.
 
 Proposal creation accepts standalone Player (contracted Active/Bench/IR or
 prospect right), Draft pick, Buyout obligation, and Future Considerations asset
@@ -1956,10 +2006,18 @@ proposal, missing receiver acceptance, terminal state, stale asset, or expired
 deadline fails without moving any asset. Commissioner authority alone grants no
 proposal, receiver-response, or cancellation write.
 
-No counter endpoint or atomic counter service exists in M7-26. A receiver may
-reject and later create an independent reversed-role proposal only when they
-hold proposing-team manager authority; documentation and clients must not
-present that sequence as atomic countering.
+Approved 2026-09-24, implemented locally pending publication: `counter` accepts
+the same typed body as proposal creation and requires `Idempotency-Key`. Its
+proposing and receiving teams must exactly reverse the original offer. It
+requires the same league and season, current receiving-manager authority, a
+pending original that is not awaiting commissioner approval, open trading,
+and valid current assets. One transaction creates the new proposal, its normal
+history and notification, and the original rejection. Any failure rolls back
+all effects. HTTP 201 returns `TRADE_COUNTER_PROPOSAL_CREATED` (or
+`TRADE_COUNTER_PROPOSAL_REPLAYED`), the normal creation `proposal`, and
+`originalProposal: { id, status: "Rejected", storageStatus: "declined" }`.
+Idempotency is scoped to actor, league, original offer, and key; changed payloads
+conflict. Counter editor loading uses only the existing read endpoints.
 
 For every transferred player or prospect right, that transaction closes the
 source ownership tenure, creates a distinct destination ownership at version

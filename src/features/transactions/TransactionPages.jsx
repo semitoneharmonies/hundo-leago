@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Link,
   Navigate,
+  useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
@@ -35,11 +36,13 @@ import {
 } from "./transactionContracts.js";
 import {
   acceptTrade,
+  acknowledgeTrade,
   activityQuery,
   approveTrade,
   auctionsQuery,
   cancelTrade,
   createTrade,
+  counterTrade,
   declineTrade,
   previewTradeAcceptance,
   previewTradeReversal,
@@ -52,6 +55,8 @@ import {
 } from "./transactionQueries.js";
 import { TradeBlockPanel } from "./TradeBlockPanel.jsx";
 import { projectDraftTradeCap } from "./tradeCapPreview.js";
+import { ThreeTeamTradeForm } from "./ThreeTeamTradeForm.jsx";
+import { counterProposalDraft } from "./counterProposal.js";
 
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
 const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" };
@@ -807,13 +812,14 @@ function assetChoices(asset, workspace) {
     case "buyout_obligation":
       return workspace.tradeAssets.buyouts;
     case "future_considerations":
-      return [];
+      return workspace.tradeAssets.futureConsiderations;
     default:
       return [];
   }
 }
 
 function AssetEditor({
+  destinations = null,
   label,
   assets,
   setAssets,
@@ -829,6 +835,7 @@ function AssetEditor({
       {pending && <p role="status">Loading this team’s tradeable assets…</p>}
       {assets.map((asset, index) => (
         <div key={index} style={{ ...row, marginBottom: 10 }}>
+          {destinations && <label className="hl-field">To team<select aria-label={`${label} asset ${index + 1} destination`} required value={asset.destinationTeamId || ""} onChange={event => update(index, { destinationTeamId: event.target.value })}><option value="">Choose destination</option>{destinations.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>}
           <select
             aria-label={`${label} asset ${index + 1} type`}
             style={input}
@@ -846,7 +853,7 @@ function AssetEditor({
           >
             {ASSET_TYPES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
           </select>
-          {asset.type === "future_considerations" ? (
+          {asset.type === "future_considerations" && asset.mode !== "existing" ? (
             <input
               aria-label={`${label} asset ${index + 1} notes`}
               style={input}
@@ -869,6 +876,9 @@ function AssetEditor({
               }
             >
               <option value="">Choose an item</option>
+              {asset.reference && !pending && !assetChoices(asset, workspace).some(({ id }) => id === asset.reference) && (
+                <option value={asset.reference} disabled>Previously offered item is unavailable — choose another</option>
+              )}
               {assetChoices(asset, workspace).map((choice) => (
                 <option key={choice.id} value={choice.id}>
                   {choice.label}
@@ -918,8 +928,10 @@ function AssetEditor({
   );
 }
 
-function NewTradeForm({ context, leagueId }) {
+function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeId = null }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const submission = useRef(null);
   const [searchParams] = useSearchParams();
   const requestedAssetDirection = searchParams.get("assetDirection");
   const requestedAssetType = searchParams.get("assetType");
@@ -943,12 +955,12 @@ function NewTradeForm({ context, leagueId }) {
   const prefillRequestedAsset =
     requestedAssetDirection === "requested" && Boolean(requestedAssetId);
   const [proposingTeamId, setProposingTeamId] = useState(
-    requestedProposingTeamId
+    initialProposal?.proposingTeamId ?? requestedProposingTeamId
   );
   const [receivingTeamId, setReceivingTeamId] = useState(
-    prefillRequestedAsset ? requestedSourceTeamId : ""
+    initialProposal?.receivingTeamId ?? (prefillRequestedAsset ? requestedSourceTeamId : "")
   );
-  const [proposingAssets, setProposingAssets] = useState([
+  const [proposingAssets, setProposingAssets] = useState(initialProposal?.proposingAssets ?? [
     prefillRequestedAsset
       ? { type: "player", reference: "" }
       : {
@@ -956,7 +968,7 @@ function NewTradeForm({ context, leagueId }) {
           reference: initialAssetReference,
         },
   ]);
-  const [receivingAssets, setReceivingAssets] = useState([
+  const [receivingAssets, setReceivingAssets] = useState(initialProposal?.receivingAssets ?? [
     prefillRequestedAsset
       ? {
           type: initialAssetType,
@@ -1004,8 +1016,19 @@ function NewTradeForm({ context, leagueId }) {
     receivingWorkspace: receivingWorkspace.data,
   });
   const mutation = useMutation({
-    mutationFn: (body) => createTrade(context.session.httpClient, leagueId, body, key("trade-proposal")),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) }),
+    mutationFn: ({ body, idempotencyKey }) => counterTradeId
+      ? counterTrade(context.session.httpClient, leagueId, counterTradeId, body, idempotencyKey)
+      : createTrade(context.session.httpClient, leagueId, body, idempotencyKey),
+    onSuccess: (result) => {
+      if (counterTradeId) {
+        navigate(routePaths.trade(leagueId, result.proposal.id));
+        void queryClient.invalidateQueries({ queryKey: transactionKeys.trade(leagueId, counterTradeId) });
+        void queryClient.invalidateQueries({ queryKey: ["league", leagueId, "activity"] });
+      } else {
+        submission.current = null;
+      }
+      return queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) });
+    },
   });
   if (context.teams.isPending) return <p>Loading trade teams…</p>;
   if (context.managerControlledTeams.length === 0) return <p>You do not currently control a team that can propose a trade.</p>;
@@ -1049,7 +1072,16 @@ function NewTradeForm({ context, leagueId }) {
   }
   function submit(event) {
     event.preventDefault();
+    if (mutation.isPending) return;
     try {
+      if (counterTradeId) {
+        for (const [assets, workspace] of [[proposingAssets, proposerWorkspace.data], [receivingAssets, receivingWorkspace.data]]) {
+          if (assets.some(asset => !(asset.type === "future_considerations" && asset.mode === "new") &&
+              !assetChoices(asset, workspace).some(({ id }) => id === asset.reference))) {
+            throw new Error("An offered item is no longer available. Choose a replacement or remove it before sending.");
+          }
+        }
+      }
       const body = {
         proposingTeamId: proposer,
         receivingTeamId: receiving,
@@ -1057,7 +1089,11 @@ function NewTradeForm({ context, leagueId }) {
         receivingAssets: buildSide(receivingAssets),
       };
       setClientError(null);
-      mutation.mutate(body);
+      const fingerprint = JSON.stringify(body);
+      if (submission.current?.fingerprint !== fingerprint) {
+        submission.current = { fingerprint, idempotencyKey: key(counterTradeId ? "trade-counter" : "trade-proposal") };
+      }
+      mutation.mutate({ body, idempotencyKey: submission.current.idempotencyKey });
     } catch (error) {
       setClientError(error);
     }
@@ -1065,8 +1101,9 @@ function NewTradeForm({ context, leagueId }) {
   return (
     <form className="hl-surface hl-feature-form" style={card} onSubmit={submit}>
       <h2>New trade proposal</h2>
+      {counterTradeId && <p>Counter proposal: edit the offer below. Sending it will decline the original offer.</p>}
       <div style={row}>
-        <label>Proposing team<br /><select style={input} value={proposer} onChange={(e) => {
+        <label>Proposing team<br /><select style={input} value={proposer} disabled={Boolean(counterTradeId)} onChange={(e) => {
           setProposingTeamId(e.target.value);
           setReceivingTeamId("");
           setProposingAssets([{ type: "player", reference: "" }]);
@@ -1074,7 +1111,7 @@ function NewTradeForm({ context, leagueId }) {
         }}>
           {context.managerControlledTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
         </select></label>
-        <label>Receiving team<br /><select style={input} value={receiving} onChange={(e) => {
+        <label>Receiving team<br /><select style={input} value={receiving} disabled={Boolean(counterTradeId)} onChange={(e) => {
           setReceivingTeamId(e.target.value);
           setReceivingAssets([{ type: "player", reference: "" }]);
         }}>
@@ -1125,23 +1162,55 @@ function NewTradeForm({ context, leagueId }) {
           },
         ]}
       />
-      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>Send proposal</button>
+      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>{counterTradeId ? "Send counter proposal" : "Send proposal"}</button>
+      {counterTradeId && <Link className="hl-button hl-button--quiet" to={routePaths.trade(leagueId, counterTradeId)}>Back to original offer</Link>}
       <ErrorMessage error={clientError || proposerWorkspace.error || receivingWorkspace.error || mutation.error} />
     </form>
   );
 }
 
+function TradeComposer({ context, leagueId }) {
+  const [format, setFormat] = useState("two");
+  if (context.teams.isPending) return <LoadingBlock>Loading trade teams…</LoadingBlock>;
+  return <><label className="hl-field hl-compact-filter">Trade format<select value={format} onChange={event => setFormat(event.target.value)}>
+    <option value="two">Two-team trade</option><option value="three">Three-team trade</option>
+  </select></label>{format === "three" ? <ThreeTeamTradeForm context={context} leagueId={leagueId} AssetEditor={AssetEditor} assetChoices={assetChoices} /> : <NewTradeForm context={context} leagueId={leagueId} />}</>;
+}
+
+function CounterTradeForm({ context, leagueId, tradeId }) {
+  const original = useQuery({
+    ...tradeQuery(context.session.httpClient, leagueId, tradeId),
+    enabled: context.session.status === "authenticated" && Boolean(context.league),
+  });
+  if (original.isPending || context.teams.isPending) return <LoadingBlock>Loading the original offer…</LoadingBlock>;
+  if (original.isError) return <ErrorMessage error={original.error} />;
+  let initialProposal;
+  try {
+    initialProposal = counterProposalDraft(original.data, {
+      leagueId, tradeId, managedTeamIds: context.managerControlledTeams.map(({ id }) => id),
+    });
+  } catch (error) {
+    return <p role="alert">{error.message}</p>;
+  }
+  if (initialProposal.participants) return <ThreeTeamTradeForm key={`${context.session.user.id}:${leagueId}:${tradeId}`} context={context} leagueId={leagueId} initialProposal={initialProposal} counterTradeId={tradeId} AssetEditor={AssetEditor} assetChoices={assetChoices} />;
+  return <NewTradeForm key={`${context.session.user.id}:${leagueId}:${tradeId}`} context={context} leagueId={leagueId} initialProposal={initialProposal} counterTradeId={tradeId} />;
+}
+
 export function TradesPage() {
   const { leagueId } = useParams();
+  const [searchParams] = useSearchParams();
+  const counterTradeId = searchParams.get("counterTradeId");
   const context = useLeagueContext(leagueId);
   const [status, setStatus] = useState("pending");
   const trades = useQuery({
     ...tradesQuery(context.session.httpClient, leagueId),
     enabled: context.session.status === "authenticated" && Boolean(context.league),
   });
+  const controlledIds = new Set(context.managerControlledTeams.map(team => team.id));
   const visible = (trades.data || []).filter((trade) =>
     trade.storageStatus !== "expired" &&
     (status === "all" ||
+      (trade.storageStatus === "declined" && trade.participants?.some(p => controlledIds.has(p.teamId) && p.acknowledgedAtMs === null)) ||
       ["proposed", "awaiting_commissioner_approval"].includes(
         trade.storageStatus
       ))
@@ -1156,7 +1225,9 @@ export function TradesPage() {
   );
   return (
     <LeaguePageState context={context} title="Trades">
-      <NewTradeForm context={context} leagueId={leagueId} />
+      {counterTradeId
+        ? <CounterTradeForm key={`${leagueId}:${counterTradeId}`} context={context} leagueId={leagueId} tradeId={counterTradeId} />
+        : <TradeComposer key={`${context.session.user?.id}:${leagueId}`} context={context} leagueId={leagueId} />}
       <TradeBlockPanel
         currentUserId={context.session.user?.id}
         enabled={context.session.status === "authenticated" && Boolean(context.league?.currentSeason) && !context.teams.isPending}
@@ -1164,12 +1235,12 @@ export function TradesPage() {
         leagueId={leagueId}
         teams={context.teams.data || []}
       />
-      <label className="hl-field hl-compact-filter">Status <select value={status} onChange={(e) => setStatus(e.target.value)}><option value="pending">Pending</option><option value="all">All non-expired</option></select></label>
+      <label className="hl-field hl-compact-filter">Status <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)}><option value="pending">Pending</option><option value="all">All non-expired</option></select></label>
       {trades.isPending ? <Surface><LoadingBlock>Loading trades…</LoadingBlock></Surface> : trades.isError ? <ErrorMessage error={trades.error} /> : visible.length === 0 ? <Surface><EmptyBlock title="No proposals in this view." /></Surface> : (
         <Surface><ul className="hl-trade-list">{visible.map((trade) => {
           const awaitingManagedTeam =
             trade.storageStatus === "proposed" &&
-            managedTeamIds.has(trade.receivingTeam.id);
+            (trade.participants ? trade.participants.some(p => managedTeamIds.has(p.teamId) && p.decision === "pending") : managedTeamIds.has(trade.receivingTeam.id));
           const awaitingCommissioner =
             trade.storageStatus === "awaiting_commissioner_approval";
           return (
@@ -1179,7 +1250,7 @@ export function TradesPage() {
             >
               <Link to={routePaths.trade(leagueId, trade.id)}>
                 <span>
-                  <strong>{trade.proposingTeam.name} → {trade.receivingTeam.name}</strong>
+                  <strong>{tradeTeams(trade).map(team => team.name).join(" ↔ ")}</strong>
                   <small>
                     {awaitingManagedTeam
                       ? "Awaiting your response"
@@ -1202,7 +1273,11 @@ export function TradesPage() {
   );
 }
 
-function AssetSummary({ asset, requestedRetention = null }) {
+function tradeTeams(proposal) {
+  return proposal?.participants?.map(p => ({ id: p.teamId, name: p.name })) || [proposal?.proposingTeam, proposal?.receivingTeam].filter(Boolean);
+}
+
+function AssetSummary({ asset, requestedRetention = null, destination = null }) {
   const snapshot = asset.snapshot;
   let title = activityWords(asset.type);
   let description = "";
@@ -1259,6 +1334,7 @@ function AssetSummary({ asset, requestedRetention = null }) {
           : activityWords(asset.type)}
       </span>
       <strong>{title}</strong>
+      {destination && <p>To {destination}</p>}
       <p>{description}</p>
     </article>
   );
@@ -1298,7 +1374,7 @@ function groupRequestedRetention(assets) {
     }));
 }
 
-function TradeTeamPanel({ team, assets }) {
+function TradeTeamPanel({ team, assets, teams = null }) {
   const groupedAssets = groupRequestedRetention(assets);
   return (
     <section className="hl-trade-team-panel">
@@ -1312,6 +1388,7 @@ function TradeTeamPanel({ team, assets }) {
               key={asset.id}
               asset={asset}
               requestedRetention={requestedRetention}
+              destination={teams?.find(team => team.id === asset.destinationTeamId)?.name}
             />
           ))}
         </div>
@@ -1341,7 +1418,7 @@ function tradeIssueDescription(issue, count) {
 }
 
 function AcceptancePreview({ preview, proposal }) {
-  const names = new Map([proposal.proposingTeam, proposal.receivingTeam].map((team) => [team.id, team.name]));
+  const names = new Map(tradeTeams(proposal).map((team) => [team.id, team.name]));
   return <div className="hl-acceptance-preview" aria-label="Acceptance preview">
     <p>{preview.generallyIllegal
       ? "This trade would leave at least one roster generally illegal."
@@ -1369,17 +1446,19 @@ function AcceptancePreview({ preview, proposal }) {
 }
 
 function tradeHistorySummary(event, proposal) {
+  const respondingName = tradeTeams(proposal).find(team => team.id === event.metadata?.respondingTeamId)?.name || proposal.receivingTeam.name;
   switch (event.type) {
+    case "participant_accepted": return `${respondingName} accepted. Waiting for the remaining team.`;
     case "proposal_created":
-      return `${proposal.proposingTeam.name} sent the proposal to ${proposal.receivingTeam.name}.`;
+      return `${proposal.proposingTeam.name} sent the proposal to ${tradeTeams(proposal).filter(team => team.id !== proposal.proposingTeam.id).map(team => team.name).join(" and ")}.`;
     case "proposal_accepted":
       return event.metadata?.action === "approve"
         ? "The commissioner approved and completed the trade."
-        : `${proposal.receivingTeam.name} accepted the proposal.`;
+        : proposal.participants ? "All teams accepted and the trade completed." : `${proposal.receivingTeam.name} accepted the proposal.`;
     case "proposal_accepted_awaiting_commissioner_approval":
-      return `${proposal.receivingTeam.name} accepted the proposal. Commissioner approval is still required.`;
+      return proposal.participants ? "All teams accepted. Commissioner approval is still required." : `${proposal.receivingTeam.name} accepted the proposal. Commissioner approval is still required.`;
     case "proposal_rejected":
-      return `${proposal.receivingTeam.name} declined the proposal.`;
+      return `${respondingName} declined the proposal.`;
     case "proposal_cancelled":
       return `${proposal.proposingTeam.name} cancelled the proposal.`;
     case "proposal_expired":
@@ -1394,6 +1473,7 @@ function tradeHistorySummary(event, proposal) {
 
 export function TradeDetailPage() {
   const { leagueId, tradeId } = useParams();
+  const navigate = useNavigate();
   const context = useLeagueContext(leagueId);
   const queryClient = useQueryClient();
   const trade = useQuery({
@@ -1402,6 +1482,7 @@ export function TradeDetailPage() {
   });
   const [approvalPreview, setAcceptancePreview] = useState(null);
   const [reversalPreview, setReversalPreview] = useState(null);
+  const commandKeys = useRef(new Map());
   const proposal = trade.data;
   const proposingWorkspace = useQuery({
     ...teamWorkspaceQuery(
@@ -1425,19 +1506,26 @@ export function TradeDetailPage() {
       Boolean(context.league) &&
       Boolean(proposal?.receivingTeam?.id),
   });
+  const thirdTeam = proposal?.participants?.[2];
+  const thirdWorkspace = useQuery({ ...teamWorkspaceQuery(context.session.httpClient, leagueId, thirdTeam?.teamId || "invalid"), enabled: Boolean(thirdTeam && context.league && context.session.status === "authenticated") });
   const refresh = async () => {
     setAcceptancePreview(null);
     setReversalPreview(null);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) }),
       queryClient.invalidateQueries({ queryKey: transactionKeys.trade(leagueId, tradeId) }),
+      queryClient.invalidateQueries({ queryKey: ["notifications"] }),
       queryClient.invalidateQueries({ queryKey: ["league", leagueId, "activity"] }),
       queryClient.invalidateQueries({ queryKey: teamWorkspaceKeys.detail(leagueId, proposal.proposingTeam.id), exact: true }),
       queryClient.invalidateQueries({ queryKey: teamWorkspaceKeys.detail(leagueId, proposal.receivingTeam.id), exact: true }),
     ]);
   };
   const previewAcceptance = useMutation({ mutationFn: () => previewTradeAcceptance(context.session.httpClient, leagueId, tradeId), onSuccess: setAcceptancePreview });
-  const command = useMutation({ mutationFn: ({ action }) => ({ accept: acceptTrade, approve: approveTrade, decline: declineTrade, cancel: cancelTrade }[action])(context.session.httpClient, leagueId, tradeId, key(`trade-${action}`)), onSuccess: refresh });
+  const command = useMutation({ mutationFn: ({ action }) => {
+    const request = `${leagueId}:${tradeId}:${proposal.version}:${action}`;
+    if (!commandKeys.current.has(request)) commandKeys.current.set(request, key(`trade-${action}`));
+    return ({ accept: acceptTrade, approve: approveTrade, decline: declineTrade, cancel: cancelTrade, acknowledge: acknowledgeTrade }[action])(context.session.httpClient, leagueId, tradeId, commandKeys.current.get(request));
+  }, onSuccess: refresh });
   const previewReversal = useMutation({ mutationFn: () => previewTradeReversal(context.session.httpClient, leagueId, tradeId), onSuccess: (data) => setReversalPreview(data.preview) });
   const recovery = useMutation({ mutationFn: (action) => recoverTrade(context.session.httpClient, leagueId, tradeId, action, key(`trade-${action}`)), onSuccess: refresh });
   const commissioner = hasCommissionerAuthority(context.league?.membership);
@@ -1447,7 +1535,11 @@ export function TradeDetailPage() {
   const pending = proposal?.storageStatus === "proposed";
   const awaitingCommissionerApproval =
     proposal?.storageStatus === "awaiting_commissioner_approval";
-  const canRespond = pending && managedIds.has(proposal.receivingTeam.id);
+  const ownParticipant = proposal?.participants?.find(p => managedIds.has(p.teamId));
+  const invitedParticipant = ownParticipant && ownParticipant.teamId !== proposal.proposingTeam.id;
+  const canRespond = pending && (proposal.participants ? invitedParticipant && ownParticipant.decision === "pending" : managedIds.has(proposal.receivingTeam.id));
+  const canCounter = proposal?.participants ? ownParticipant && (proposal.storageStatus === "declined" || (pending && invitedParticipant)) : canRespond;
+  const canAcknowledge = ownParticipant && proposal.storageStatus === "declined" && ownParticipant.acknowledgedAtMs === null;
   const canApprove = awaitingCommissionerApproval && commissioner;
   const canCancel =
     (pending || awaitingCommissionerApproval) &&
@@ -1460,7 +1552,7 @@ export function TradeDetailPage() {
         throw new Error("The acceptance preview does not belong to this proposal.");
       }
       const previewTeamIds = new Set(result.teams.map(({ teamId }) => teamId));
-      if (result.teams.length !== 2 || !previewTeamIds.has(proposal.proposingTeam.id) || !previewTeamIds.has(proposal.receivingTeam.id) ||
+      if (result.teams.length !== tradeTeams(proposal).length || tradeTeams(proposal).some(team => !previewTeamIds.has(team.id)) ||
           (result.proposal.version !== undefined && result.proposal.version !== proposal.version)) {
         throw new Error("The proposal changed. Refresh it before confirming.");
       }
@@ -1474,46 +1566,36 @@ export function TradeDetailPage() {
   return (
     <LeaguePageState context={context} title="Trade proposal">
       {trade.isPending ? <Surface><LoadingBlock>Loading trade…</LoadingBlock></Surface> : trade.isError ? <ErrorMessage error={trade.error} /> : <Surface className="hl-trade-detail">
-        <h2>{proposal.proposingTeam.name} ↔ {proposal.receivingTeam.name}</h2>
+        <h2>{tradeTeams(proposal).map(team => team.name).join(" ↔ ")}</h2>
         <p><StatusBadge>{proposal.status}</StatusBadge> Created {time(proposal.createdAtMs)}.</p>
+        {proposal.participants && <ul aria-label="Team responses">{proposal.participants.map(p => <li key={p.teamId}><strong>{p.name}</strong>: {p.decision === "accepted" ? "Accepted" : p.decision === "declined" ? "Declined" : proposal.storageStatus === "declined" ? "Trade rejected" : "Awaiting response"}</li>)}</ul>}
+        {proposal.participants && proposal.storageStatus === "declined" && <p role="status">This trade was declined. It cannot be accepted. You can send a counter proposal or press OK to clear it from your pending trades.</p>}
+        {pending && invitedParticipant && ownParticipant.decision === "accepted" && <p role="status">You accepted. Waiting for the remaining team; no assets have moved.</p>}
         {awaitingCommissionerApproval && (
           <p className="hl-form-message is-warning" role="status">
-            The receiving team accepted this proposal. No assets move until a
-            commissioner reviews and approves it.
+            All invited teams accepted this proposal. No assets move until a commissioner reviews and approves it.
           </p>
         )}
         <div className="hl-trade-team-grid">
-          <TradeTeamPanel
-            team={proposal.proposingTeam}
-            assets={proposal.assets.filter(
-              ({ sourceTeamId }) =>
-                sourceTeamId === proposal.proposingTeam.id
-            )}
-          />
-          <TradeTeamPanel
-            team={proposal.receivingTeam}
-            assets={proposal.assets.filter(
-              ({ sourceTeamId }) =>
-                sourceTeamId === proposal.receivingTeam.id
-            )}
-          />
+          {tradeTeams(proposal).map(team => <TradeTeamPanel key={team.id} team={team} teams={proposal.participants ? tradeTeams(proposal) : null} assets={proposal.assets.filter(asset => asset.sourceTeamId === team.id)} />)}
         </div>
         <CapImpactSummary
           description={
             acceptancePreview
               ? "Projected totals come from the server’s acceptance preview and include retained salary and transferred obligations."
-              : canRespond ? "Calculating both teams’ cap and roster impact…" : "Current totals come from live rosters. An acceptance preview is available to the receiving manager."
+              : canRespond ? "Calculating the teams’ cap and roster impact…" : "Current totals come from live rosters. An acceptance preview is available to the receiving manager."
           }
           pendingText={
-            proposingWorkspace.isPending || receivingWorkspace.isPending
+            proposingWorkspace.isPending || receivingWorkspace.isPending || (thirdTeam && thirdWorkspace.isPending)
               ? "Loading current cap totals…"
-              : proposingWorkspace.isError || receivingWorkspace.isError
+              : proposingWorkspace.isError || receivingWorkspace.isError || (thirdTeam && thirdWorkspace.isError)
                 ? "One or more current cap totals could not be loaded. No missing value has been estimated."
                 : acceptancePreview
                   ? null
                   : "Change and projected cap are unavailable until the server previews acceptance."
           }
           teams={[
+            ...(thirdTeam ? [capImpactTeam({ id: thirdTeam.teamId, name: thirdTeam.name, previewTeam: acceptancePreview?.teams.find(team => team.teamId === thirdTeam.teamId), workspace: thirdWorkspace.data })] : []),
             capImpactTeam({
               id: proposal.proposingTeam.id,
               name: proposal.proposingTeam.name,
@@ -1538,9 +1620,16 @@ export function TradeDetailPage() {
           <div className="hl-button-row">
             <button className="hl-button hl-button--primary" disabled={command.isPending || !acceptancePreview || acceptanceQuery.isFetching || acceptanceQuery.isError} onClick={() => command.mutate({ action: "accept" })}>Confirm</button>
             <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "decline" })}>Decline</button>
+            <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => navigate(`${routePaths.leagueTrades(leagueId)}?counterTradeId=${encodeURIComponent(tradeId)}`)}>Counter Proposal</button>
           </div>
           <ErrorMessage error={acceptanceQuery.error || command.error} />
           {acceptanceQuery.isError && <button type="button" className="hl-button hl-button--quiet" onClick={() => acceptanceQuery.refetch()}>Retry preview</button>}
+        </div>}
+        {canCounter && !canRespond && <div className="hl-button-row">
+          {pending && invitedParticipant && <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "decline" })}>Decline</button>}
+          <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => navigate(`${routePaths.leagueTrades(leagueId)}?counterTradeId=${encodeURIComponent(tradeId)}`)}>Counter Proposal</button>
+          {canAcknowledge && <button className="hl-button hl-button--primary" disabled={command.isPending} onClick={() => command.mutate({ action: "acknowledge" }, { onSuccess: () => navigate(routePaths.leagueTrades(leagueId)) })}>OK</button>}
+          <ErrorMessage error={command.error} />
         </div>}
         {canApprove && <div className="hl-trade-action">
           <h3>Commissioner approval</h3>

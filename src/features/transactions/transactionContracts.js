@@ -142,6 +142,19 @@ function validateTradeSummary(trade) {
       `The ${side} name is invalid.`);
   }
   contract(TRADE_STATUSES.has(trade.storageStatus), "The trade status is invalid.");
+  if (trade.participants !== undefined) {
+    contract(Array.isArray(trade.participants) && trade.participants.length === 3, "The trade participants are invalid.");
+    const teamIds = new Set();
+    for (const participant of trade.participants) {
+      id(participant.teamId, "A trade participant ID is invalid.");
+      contract(!teamIds.has(participant.teamId), "The trade participants are duplicated.");
+      teamIds.add(participant.teamId);
+      contract(typeof participant.name === "string" && participant.name.length > 0, "A trade participant name is invalid.");
+      contract(["pending", "accepted", "declined"].includes(participant.decision), "A trade response is invalid.");
+      for (const field of ["respondedAtMs", "acknowledgedAtMs"]) contract(participant[field] === null || Number.isSafeInteger(participant[field]), "A trade response time is invalid.");
+    }
+    contract(trade.participants[0].teamId === trade.proposingTeam.id && trade.participants[1].teamId === trade.receivingTeam.id, "The trade participant order is invalid.");
+  }
   for (const field of ["createdAtMs", "expiresAtMs", "effectiveDeadlineAtMs", "version"]) {
     integer(trade[field], `The trade ${field} is invalid.`);
   }
