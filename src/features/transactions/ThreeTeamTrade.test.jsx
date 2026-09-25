@@ -8,6 +8,7 @@ import { counterProposalDraft } from "./counterProposal.js";
 import { buildThreeTeamProposal } from "./threeTeamProposal.js";
 import { validateTradeDetail } from "./transactionContracts.js";
 import { teamWorkspaceKeys } from "../rosters/teamWorkspaceQueries.js";
+import { observeRecoveryEpoch } from "../../shared/api/recoveryIntent.js";
 import { applyRealtimeInvalidation, parseRealtimeEnvelope, REALTIME_RELATED_ID_KEYS } from "../../shared/realtime/realtimeInvalidation.js";
 
 vi.mock("socket.io-client", () => ({ io: () => ({ onAny() {}, offAny() {}, disconnect() {} }) }));
@@ -18,6 +19,22 @@ function renderTrade(fixture, path = `/leagues/${ids.league}/trades/${ids.trade}
 }
 const writes = fixture => fixture.requests.filter(r => r.method === "POST" && !r.pathname.endsWith("/trades/preview"));
 describe("Three-team trades", () => {
+  it("binds three-team send keys to the recovery boundary and preserves them on retry", async () => {
+    const recoveryId = "22222222-2222-4222-8222-222222222222";
+    observeRecoveryEpoch(recoveryId);
+    try {
+      const fixture = createThreeTeamFixture(), view = renderTrade(fixture, `/leagues/${ids.league}/trades?counterTradeId=${ids.trade}`);
+      const send = await screen.findByRole("button", { name: "Send counter proposal" });
+      await waitFor(() => expect(send).toBeEnabled());
+      fixture.failNext = true;
+      await view.user.click(send); await screen.findByRole("alert");
+      const firstKey = writes(fixture)[0].headers.get("Idempotency-Key");
+      expect(firstKey).toMatch(new RegExp(`^recovery:${recoveryId}:three-team-`));
+      await view.user.click(send);
+      await waitFor(() => expect(fixture.counter).not.toBeNull());
+      expect(writes(fixture)[1].headers.get("Idempotency-Key")).toBe(firstKey);
+    } finally { observeRecoveryEpoch("initial"); }
+  });
   it("requires separate consent when the same manager controls both invited teams", async () => {
     const fixture = createThreeTeamFixture({ sharedManager: true }), view = renderTrade(fixture);
     const selector = await screen.findByRole("combobox", { name: "Respond as" });

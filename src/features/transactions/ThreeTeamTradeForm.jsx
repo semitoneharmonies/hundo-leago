@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { routePaths } from "../../app/routePaths.js";
+import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { buildThreeTeamProposal } from "./threeTeamProposal.js";
 import { counterTrade, createTrade, previewDraftTrade, transactionKeys } from "./transactionQueries.js";
@@ -61,7 +62,7 @@ export function ThreeTeamTradeForm({ context, leagueId, initialProposal, counter
         if (side.assets.some(asset => !(asset.type === "future_considerations" && asset.mode !== "existing") && !assetChoices(asset, workspaces[index].data).some(choice => choice.id === asset.reference))) throw new Error("An offered item is no longer available. Choose a replacement or remove it before sending.");
       });
       const body = buildThreeTeamProposal(sides[0].teamId, sides), fingerprint = JSON.stringify(body);
-      if (submission.current?.fingerprint !== fingerprint) submission.current = { fingerprint, idempotencyKey: `three-team-${globalThis.crypto.randomUUID()}` };
+      if (submission.current?.fingerprint !== fingerprint) submission.current = { fingerprint, idempotencyKey: createIdempotencyKey("three-team", globalThis.crypto, "-") };
       setError(null); mutation.mutate({ body, idempotencyKey: submission.current.idempotencyKey });
     } catch (caught) { setError(caught); }
   }
