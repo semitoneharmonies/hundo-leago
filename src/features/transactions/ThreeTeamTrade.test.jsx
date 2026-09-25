@@ -16,8 +16,56 @@ function renderTrade(fixture, path = `/leagues/${ids.league}/trades/${ids.trade}
   return renderWithProviders(<Routes><Route path="/leagues/:leagueId/trades" element={<TradesPage />} /><Route path="/leagues/:leagueId/trades/:tradeId" element={<TradeDetailPage />} /></Routes>,
     { initialEntries: [path], enableSession: true, config, sessionOptions: { fetchImpl: fixture.fetch } });
 }
-const writes = fixture => fixture.requests.filter(r => r.method === "POST");
+const writes = fixture => fixture.requests.filter(r => r.method === "POST" && !r.pathname.endsWith("/trades/preview"));
 describe("Three-team trades", () => {
+  it("requires separate consent when the same manager controls both invited teams", async () => {
+    const fixture = createThreeTeamFixture({ sharedManager: true }), view = renderTrade(fixture);
+    const selector = await screen.findByRole("combobox", { name: "Respond as" });
+    expect(selector).toHaveValue(ids.receivingTeam);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Confirm", exact: true })).toBeEnabled());
+    await view.user.click(screen.getByRole("button", { name: "Confirm", exact: true }));
+    await screen.findByText(/You accepted. Waiting for the remaining team/);
+    expect(fixture.original.participants.map(p => p.decision)).toEqual(["accepted", "accepted", "pending"]);
+    expect(fixture.original.storageStatus).toBe("proposed");
+    await view.user.selectOptions(selector, ids.thirdTeam);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Confirm", exact: true })).toBeEnabled());
+    await view.user.click(screen.getByRole("button", { name: "Confirm", exact: true }));
+    await waitFor(() => expect(fixture.original.storageStatus).toBe("completed"));
+    expect(writes(fixture).map(r => r.body)).toEqual([{ respondingTeamId: ids.receivingTeam }, { respondingTeamId: ids.thirdTeam }]);
+    expect(writes(fixture)[0].headers.get("Idempotency-Key")).not.toBe(writes(fixture)[1].headers.get("Idempotency-Key"));
+  });
+  it("counters as the selected team when one manager controls multiple participants", async () => {
+    const fixture = createThreeTeamFixture({ sharedManager: true }), view = renderTrade(fixture);
+    await view.user.selectOptions(await screen.findByRole("combobox", { name: "Respond as" }), ids.thirdTeam);
+    await view.user.click(screen.getByRole("button", { name: "Counter Proposal" }));
+    expect(await screen.findByLabelText("Proposing team")).toHaveValue(ids.thirdTeam);
+    expect(writes(fixture)).toHaveLength(0);
+  });
+  it("refreshes draft impact after edits and blocks sending while the preview is unavailable", async () => {
+    const fixture = createThreeTeamFixture(), baseFetch = fixture.fetch;
+    let failPreview = false;
+    fixture.fetch = async (url, options) => failPreview && new URL(url).pathname.endsWith("/trades/preview")
+      ? new Response(JSON.stringify({ error: { code: "TRADE_REQUEST_FAILED", message: "Preview unavailable.", requestId: "fixture" } }), { status: 500, headers: { "content-type": "application/json" } })
+      : baseFetch(url, options);
+    const view = renderTrade(fixture, `/leagues/${ids.league}/trades?counterTradeId=${ids.trade}`);
+    const preview = await screen.findByRole("region", { name: "Draft impact preview" });
+    expect(within(preview).getAllByText("Current cap")).toHaveLength(3);
+    expect(within(preview).getAllByText("Projected cap")).toHaveLength(3);
+    expect(within(preview).getAllByText(/After trade:/)).toHaveLength(3);
+    failPreview = true;
+    const retained = screen.getByLabelText("Wolfy's sends asset 1 retained AAV dollars");
+    await view.user.clear(retained); await view.user.type(retained, "2.50");
+    expect(screen.queryByRole("region", { name: "Draft impact preview" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send counter proposal" })).toBeDisabled();
+    await screen.findByText(/Impact preview could not be loaded/);
+    expect(writes(fixture)).toHaveLength(0);
+    failPreview = false;
+    await view.user.click(screen.getByRole("button", { name: "Retry preview" }));
+    await screen.findByRole("region", { name: "Draft impact preview" });
+    const lastPreview = fixture.requests.filter(r => r.pathname.endsWith("/trades/preview")).at(-1);
+    expect(lastPreview.body.participants.flatMap(p => p.assets).find(a => a.type === "requested_retention").retainedAavCents).toBe(250);
+    expect(writes(fixture)).toHaveLength(0);
+  });
   it("refreshes the third team's workspace after final acceptance without a socket notification", async () => {
     const fixture = createThreeTeamFixture({ secondAccepted: true }), originalFetch = fixture.fetch;
     fixture.fetch = async (url, options) => {
@@ -99,6 +147,7 @@ describe("Three-team trades", () => {
     expect(screen.getByLabelText("Wolfy's sends asset 2 destination")).toHaveValue(ids.thirdTeam);
     expect(writes(fixture)).toHaveLength(0);
     await view.user.selectOptions(screen.getByLabelText("Wolfy's sends asset 2 destination"), ids.receivingTeam);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Send counter proposal" })).toBeEnabled());
     fixture.failNext = true;
     await view.user.click(screen.getByRole("button", { name: "Send counter proposal" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("could not be completed");
@@ -119,6 +168,10 @@ describe("Three-team trades", () => {
       await view.user.selectOptions(screen.getByLabelText(`${name} sends asset 1 type`), "future_considerations");
       await view.user.type(screen.getByLabelText(`${name} sends asset 1 notes`), "A conditional pick");
     }
+    await screen.findByRole("region", { name: "Draft impact preview" });
+    expect(screen.getAllByText("Projected cap")).toHaveLength(3);
+    expect(writes(fixture)).toHaveLength(0);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Send proposal" })).toBeEnabled());
     await view.user.click(screen.getByRole("button", { name: "Send proposal" }));
     await waitFor(() => expect(writes(fixture)).toHaveLength(1));
     expect(writes(fixture)[0].body.participants).toHaveLength(3);

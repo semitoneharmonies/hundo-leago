@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import {
   validateAcceptancePreview,
+  validateDraftTradePreview,
   validateActivityPage,
   validateAuctionDetail,
   validateAuctionList,
@@ -129,9 +130,15 @@ export async function createTrade(httpClient, leagueId, input, idempotencyKey) {
   })).data;
 }
 
-export async function previewTradeAcceptance(httpClient, leagueId, tradeId) {
+export async function previewDraftTrade(httpClient, leagueId, input, signal) {
+  return (await httpClient.request(`/api/v1/leagues/${part(leagueId)}/trades/preview`, {
+    method: "POST", body: input, signal, authenticated: true, dataKind: "object", validateData: validateDraftTradePreview,
+  })).data;
+}
+
+export async function previewTradeAcceptance(httpClient, leagueId, tradeId, respondingTeamId) {
   return (await httpClient.request(
-    `/api/v1/leagues/${part(leagueId)}/trades/${part(tradeId)}/acceptance-preview`,
+    `/api/v1/leagues/${part(leagueId)}/trades/${part(tradeId)}/acceptance-preview${respondingTeamId ? `?respondingTeamId=${part(respondingTeamId)}` : ""}`,
     { authenticated: true, dataKind: "object", validateData: validateAcceptancePreview }
   )).data;
 }
@@ -143,21 +150,21 @@ export async function counterTrade(httpClient, leagueId, tradeId, input, idempot
   )).data;
 }
 
-async function emptyTradeCommand(httpClient, leagueId, tradeId, action, idempotencyKey) {
+async function emptyTradeCommand(httpClient, leagueId, tradeId, action, idempotencyKey, respondingTeamId) {
   return (await httpClient.request(
     `/api/v1/leagues/${part(leagueId)}/trades/${part(tradeId)}/${action}`,
-    { method: "POST", body: {}, authenticated: true, idempotencyKey, dataKind: "object" }
+    { method: "POST", body: respondingTeamId ? { respondingTeamId } : {}, authenticated: true, idempotencyKey, dataKind: "object" }
   )).data;
 }
 
-export const acceptTrade = (client, leagueId, tradeId, key) =>
-  emptyTradeCommand(client, leagueId, tradeId, "accept", key);
-export const acknowledgeTrade = (client, leagueId, tradeId, key) =>
-  emptyTradeCommand(client, leagueId, tradeId, "acknowledge", key);
+export const acceptTrade = (client, leagueId, tradeId, key, teamId) =>
+  emptyTradeCommand(client, leagueId, tradeId, "accept", key, teamId);
+export const acknowledgeTrade = (client, leagueId, tradeId, key, teamId) =>
+  emptyTradeCommand(client, leagueId, tradeId, "acknowledge", key, teamId);
 export const approveTrade = (client, leagueId, tradeId, key) =>
   emptyTradeCommand(client, leagueId, tradeId, "approve", key);
-export const declineTrade = (client, leagueId, tradeId, key) =>
-  emptyTradeCommand(client, leagueId, tradeId, "decline", key);
+export const declineTrade = (client, leagueId, tradeId, key, teamId) =>
+  emptyTradeCommand(client, leagueId, tradeId, "decline", key, teamId);
 export const cancelTrade = (client, leagueId, tradeId, key) =>
   emptyTradeCommand(client, leagueId, tradeId, "cancel", key);
 

@@ -20,7 +20,9 @@ test("third team counters a declined trade or clears it with OK", async ({ page 
   await expect(page.getByLabel("Proposing team", { exact: true })).toHaveValue("11111111-1111-4111-8111-000000000001");
   await expect(page.getByLabel("Wolfy's sends asset 1 retained AAV dollars", { exact: true })).toHaveValue("1.25");
   await page.getByLabel("Wolfy's sends asset 2 destination", { exact: true }).selectOption("00000000-0000-4000-8000-000000000003");
-  expect(await page.evaluate(() => window.threeTeamFixture.requests.filter(r => r.method === "POST").length)).toBe(0);
+  await expect(page.getByRole("region", { name: "Draft impact preview" })).toBeVisible();
+  await expect(page.getByText("Projected cap", { exact: true })).toHaveCount(3);
+  expect(await page.evaluate(() => window.threeTeamFixture.requests.filter(r => r.method === "POST" && !r.pathname.endsWith('/trades/preview')).length)).toBe(0);
   await page.screenshot({ path: test.info().outputPath("three-team-counter-editor.png"), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.evaluate(() => { window.threeTeamFixture.failNext = true; });
@@ -36,4 +38,18 @@ test("third team counters a declined trade or clears it with OK", async ({ page 
   await expect(page.getByRole("link", { name: /Wolfy's ↔ Benning/ })).toHaveCount(0);
   await page.getByLabel("Status", { exact: true }).selectOption("all");
   await expect(page.getByRole("link", { name: /Wolfy's ↔ Benning/ })).toBeVisible();
+});
+
+test("one manager responds independently for two invited teams", async ({ page }) => {
+  await page.goto("/e2e/fixtures/three-team-trade.html?shared=1", { waitUntil: "domcontentloaded" });
+  const selector = page.getByRole("combobox", { name: "Respond as" });
+  await expect(selector).toBeVisible();
+  await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect(page.getByText(/You accepted. Waiting for the remaining team/)).toBeVisible();
+  expect(await page.evaluate(() => window.threeTeamFixture.original.storageStatus)).toBe("proposed");
+  await selector.selectOption("11111111-1111-4111-8111-000000000001");
+  await page.screenshot({ path: test.info().outputPath("shared-manager-response.png"), fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.threeTeamFixture.original.storageStatus)).toBe("completed");
 });

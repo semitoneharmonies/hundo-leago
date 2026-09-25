@@ -232,6 +232,20 @@ export function validateAcceptancePreview(data) {
   return true;
 }
 
+export function validateDraftTradePreview(data) {
+  contract(data?.code === "TRADE_PROPOSAL_PREVIEWED", "The draft-preview code is invalid.");
+  id(data.leagueId, "The draft-preview league is invalid.");
+  validateAcceptancePreview({ ...data, code: "TRADE_ACCEPTANCE_PREVIEWED", assets: [] });
+  for (const team of data.teams) {
+    contract(Boolean(team.before), "The draft-preview current totals are missing.");
+    for (const counts of [team.before.rosterCounts, team.rosterCounts]) {
+      object(counts, "The draft-preview roster counts are missing.");
+      for (const key of ["activeForwards", "activeDefence", "bench", "injuredReserve", "prospects"]) integer(counts[key], "The draft-preview roster count is invalid.");
+    }
+  }
+  return true;
+}
+
 export function validateReversalPreview(data) {
   contract(data?.code === "TRADE_REVERSAL_PREVIEWED", "The reversal-preview code is invalid.");
   object(data.preview, "The reversal preview is invalid.");

@@ -1,11 +1,11 @@
 import { buildTradeAsset, centsToDollarInput } from "./transactionContracts.js";
 
-export function counterProposalDraft(proposal, { leagueId, tradeId, managedTeamIds }) {
+export function counterProposalDraft(proposal, { leagueId, tradeId, managedTeamIds, respondingTeamId }) {
   const multi = proposal?.participants?.length === 3;
-  const counterTeamId = multi ? proposal.participants.find(p => managedTeamIds.includes(p.teamId))?.teamId : proposal?.receivingTeam?.id;
+  const counterTeamId = multi ? respondingTeamId || proposal.participants.find(p => managedTeamIds.includes(p.teamId) && p.teamId !== proposal.proposingTeam.id)?.teamId : proposal?.receivingTeam?.id;
   if (proposal?.id !== tradeId || proposal.leagueId !== leagueId ||
       !(multi ? ["proposed", "declined"] : ["proposed"]).includes(proposal.storageStatus) ||
-      !managedTeamIds.includes(counterTeamId) || (multi && proposal.storageStatus === "proposed" && counterTeamId === proposal.proposingTeam.id)) {
+      !managedTeamIds.includes(counterTeamId) || (multi && (!proposal.participants.some(p => p.teamId === counterTeamId) || (proposal.storageStatus === "proposed" && counterTeamId === proposal.proposingTeam.id)))) {
     throw new Error("Only the receiving team's manager can counter a pending offer.");
   }
   const sides = new Map(multi ? [counterTeamId, ...proposal.participants.map(p => p.teamId).filter(id => id !== counterTeamId)].map(id => [id, []]) : [
