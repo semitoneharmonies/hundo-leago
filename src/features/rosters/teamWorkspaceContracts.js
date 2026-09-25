@@ -33,6 +33,29 @@ function validateChoice(choice, message) {
   );
 }
 
+function validateCapOutlook(outlook) {
+  if (outlook === undefined || outlook === null) return;
+  object(outlook, "The cap outlook is invalid.");
+  contract(Array.isArray(outlook.seasons) && outlook.seasons.length === 3, "The cap outlook seasons are invalid.");
+  for (const [index, season] of outlook.seasons.entries()) {
+    object(season, "A cap outlook season is invalid.");
+    contract(typeof season.key === "string" && /^\d{8}$/.test(season.key) && typeof season.label === "string" && season.label.length > 0 && season.offset === index && typeof season.complete === "boolean", "A cap outlook season is invalid.");
+    for (const field of ["limitCents", "usageCents", "forwardCents", "defenceCents", "retainedSalaryCents", "buyoutPenaltyCents", "benchCents", "injuredReserveCents", "prospectCents"]) {
+      integer(season[field], `The cap outlook ${field} is invalid.`);
+    }
+    integer(season.spaceCents, "The projected cap space is invalid.", { signed: true });
+  }
+  contract(new Set(outlook.seasons.map((season) => season.key)).size === 3, "The cap outlook seasons are duplicated.");
+  contract(Array.isArray(outlook.rows), "The cap outlook rows are invalid.");
+  for (const row of outlook.rows) {
+    object(row, "A cap outlook row is invalid.");
+    contract(ID.test(row.id || "") && ID.test(row.playerId || "") && (row.ownershipId === null || ID.test(row.ownershipId || "")) && typeof row.name === "string" && row.name.length > 0, "A cap outlook player is invalid.");
+    contract(["Forwards", "Defence", "Retained salary", "Buyouts", "Bench", "Injured Reserve", "Prospect"].includes(row.category), "A cap outlook category is invalid.");
+    contract(Array.isArray(row.amountsCents) && row.amountsCents.length === 3, "A cap outlook schedule is invalid.");
+    for (const cents of row.amountsCents) if (cents !== null) integer(cents, "A cap outlook amount is invalid.");
+  }
+}
+
 export function validateTeamWorkspace(data) {
   object(data, "The team workspace is invalid.");
   contract(
@@ -89,6 +112,7 @@ export function validateTeamWorkspace(data) {
     integer(data.cap[field], `The cap field ${field} is invalid.`);
   }
   integer(data.cap.spaceCents, "The cap space is invalid.", { signed: true });
+  validateCapOutlook(data.capOutlook);
   if (data.legality !== undefined) {
     object(data.legality, "The roster legality is invalid.");
     contract(

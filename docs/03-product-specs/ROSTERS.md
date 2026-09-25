@@ -804,6 +804,27 @@ Commissioner controls must be visibly distinguished from ordinary manager contro
 
 Frontend visibility is not authorization.
 
+### Cap outlook (2026-09-25)
+
+The team roster offers Table, Hockey lines, and Cap outlook views. Cap outlook
+shows the current league season and the following two seasons as columns, using
+saved contract, retention, and buyout schedules. Player amounts show the team's
+net salary after salary retained by other teams. Active forwards, active defence,
+retained salary, and buyouts have separate subtotals, followed by total cap used,
+the salary cap, and cap space. Bench, injured-reserve, and prospect commitments
+appear separately and remain cap-exempt under the existing rules.
+
+Future columns assume today's roster assignments and salary-cap limit, and
+exclude future signings and roster changes. Expired commitments show a dash;
+historical saved penalties are not recalculated. Incomplete cap evidence must
+not appear as verified available cap space.
+
+Authorized managers and commissioners may move players between Active and Bench
+from this view using the existing versioned roster-move command, validation,
+illegal-roster confirmation, and authority checks. After a successful move, the
+view stays selected and reloads the authoritative season totals. Merely viewing
+the outlook never changes stored state.
+
 ---
 
 # Part 11 — Activity and Corrections

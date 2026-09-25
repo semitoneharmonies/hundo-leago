@@ -1650,6 +1650,23 @@ Active F/D ownership set with ownership versions and an `If-Match`-equivalent
 body version. It stores presentation order separately and never changes roster
 category, slot, contract, cap, matchup lock, or ownership authority.
 
+The authenticated workspace additionally exposes `capOutlook` (2026-09-25):
+`seasons` contains three columns with `key`, `label`, `offset`, `complete`,
+`limitCents`, `usageCents`, `spaceCents`, `forwardCents`, `defenceCents`,
+`retainedSalaryCents`, `buyoutPenaltyCents`, `benchCents`, `injuredReserveCents`,
+and `prospectCents`. `rows` contains `id`, nullable `ownershipId`, `playerId`,
+`name`, `category`, and three `amountsCents` values (null when no commitment
+exists). Categories are `Forwards`, `Defence`, `Retained salary`, `Buyouts`,
+`Bench`, `Injured Reserve`, and `Prospect`. Saved year records and current
+responsibility determine amounts; the shared backend cap policy determines
+totals with current roster categories and cap limit held constant. Incoming
+retention is deducted from the matching contract-year salary; outgoing
+retention and buyouts remain separate obligations. No year rollover, season
+creation, or state mutation occurs. `capOutlook: null` means the projection is
+unavailable. Clients accept older responses without this additive field and
+display an unavailable state instead of inventing future totals. The public
+roster contract is unchanged.
+
 Commissioner previews use `POST` because they accept an exact proposed command,
 but they run inside a rolled-back transaction and remain byte-for-byte
 read-only. Apply commands require `Idempotency-Key`; retrying the same request

@@ -28,6 +28,7 @@ import {
   TeamMark,
 } from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
+import { CapOutlook } from "./CapOutlook.jsx";
 import { ApiError } from "../../shared/api/ApiError.js";
 import { leagueDateTime } from "../../shared/hundoFormat.js";
 import {
@@ -1811,6 +1812,14 @@ export function TeamRosterPage({
         >
           <Rows3 aria-hidden="true" /> Hockey lines
         </button>
+        <button
+          type="button"
+          className={view === "cap" ? "is-active" : ""}
+          aria-pressed={view === "cap"}
+          onClick={() => setView("cap")}
+        >
+          <CircleDollarSign aria-hidden="true" /> Cap outlook
+        </button>
       </div>
       {(mutation.isError || actionMutation.isError) && (
         <ErrorBlock
@@ -1833,7 +1842,9 @@ export function TeamRosterPage({
         </p>
       )}
 
-      {view === "lines" ? (
+      {view === "cap" ? (
+        <CapOutlook workspace={workspace} pending={actionMutation.isPending || mutation.isPending} onAction={runRosterAction} />
+      ) : view === "lines" ? (
         <>
           <HockeyLines
             activePlayers={activePlayers}
