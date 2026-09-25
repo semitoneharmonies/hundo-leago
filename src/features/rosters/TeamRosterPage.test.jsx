@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
+import { ApiError } from "../../shared/api/ApiError.js";
 import { renderWithProviders } from "../../test/render.jsx";
 import { SCORING_CATEGORIES, EXPANDED_SCORING_VERSION } from "../../shared/scoringCategories.js";
 import { TeamRosterPage } from "./TeamRosterPage.jsx";
@@ -25,6 +26,33 @@ const contractId = "88888888-8888-4888-8888-888888888888";
 const pickId = "99999999-9999-4999-8999-999999999999";
 const laterPickId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const managerTeamId = "abababab-abab-4aba-8aba-abababababab";
+
+it.each([
+  ["lock with expiry", new ApiError({ status: 409, code: "BUYOUT_LOCK_ACTIVE",
+    message: "Old backend wording", details: { buyoutLockExpiresAtMs: Date.parse("2026-09-22T01:25:13.364Z") } }),
+    "This player cannot be bought out during the 14-day window after signing.", /Sep 21, 2026.*6:25.*p\.m\..*PDT/],
+  ["lock from older backend", new ApiError({ status: 409, code: "BUYOUT_LOCK_ACTIVE", message: "Old backend wording" }),
+    "This player cannot be bought out during the 14-day window after signing.", /eligible for buyout once 14 days have passed/],
+  ["stale contract", new ApiError({ status: 409, code: "ROSTER_ACTION_CONFLICT", message: "The roster changed before this action could be completed." }),
+    "The roster changed before this action could be completed.", /Refresh the roster/],
+  ["unexpected failure", new Error("Private database detail"),
+    "The roster action could not be completed.", /Refresh the roster/],
+])("explains a rejected buyout: %s", async (_name, error, message, recovery) => {
+  const data = workspace();
+  const confirm = vi.spyOn(globalThis, "confirm").mockReturnValue(true);
+  const httpClient = { request: vi.fn().mockRejectedValue(error), resourceUrl: reference => reference };
+  try {
+    renderWithProviders(<TeamRosterPage workspace={data} teams={[data.team]} onTeamChange={() => {}} httpClient={httpClient} />);
+    await screen.getByRole("button", { name: "Buy out Active Player" }).click();
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(message);
+    expect(alert).toHaveTextContent(recovery);
+    expect(alert).toHaveTextContent("The roster remains unchanged.");
+    expect(alert).not.toHaveTextContent("Private database detail");
+    expect(screen.getByRole("rowheader", { name: "Active Player" })).toBeInTheDocument();
+    expect(httpClient.request).toHaveBeenCalledTimes(1);
+  } finally { confirm.mockRestore(); }
+});
 
 it("renders expanded roster stats, including a negative FP total, and explains the categories", () => {
   const data = workspace();

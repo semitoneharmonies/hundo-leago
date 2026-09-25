@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Link,
   Navigate,
+  useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
@@ -40,6 +41,7 @@ import {
   auctionsQuery,
   cancelTrade,
   createTrade,
+  counterTrade,
   declineTrade,
   previewTradeAcceptance,
   previewTradeReversal,
@@ -52,6 +54,7 @@ import {
 } from "./transactionQueries.js";
 import { TradeBlockPanel } from "./TradeBlockPanel.jsx";
 import { projectDraftTradeCap } from "./tradeCapPreview.js";
+import { counterProposalDraft } from "./counterProposal.js";
 
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
 const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" };
@@ -807,7 +810,7 @@ function assetChoices(asset, workspace) {
     case "buyout_obligation":
       return workspace.tradeAssets.buyouts;
     case "future_considerations":
-      return [];
+      return workspace.tradeAssets.futureConsiderations;
     default:
       return [];
   }
@@ -846,7 +849,7 @@ function AssetEditor({
           >
             {ASSET_TYPES.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
           </select>
-          {asset.type === "future_considerations" ? (
+          {asset.type === "future_considerations" && asset.mode !== "existing" ? (
             <input
               aria-label={`${label} asset ${index + 1} notes`}
               style={input}
@@ -869,6 +872,9 @@ function AssetEditor({
               }
             >
               <option value="">Choose an item</option>
+              {asset.reference && !pending && !assetChoices(asset, workspace).some(({ id }) => id === asset.reference) && (
+                <option value={asset.reference} disabled>Previously offered item is unavailable — choose another</option>
+              )}
               {assetChoices(asset, workspace).map((choice) => (
                 <option key={choice.id} value={choice.id}>
                   {choice.label}
@@ -918,8 +924,10 @@ function AssetEditor({
   );
 }
 
-function NewTradeForm({ context, leagueId }) {
+function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeId = null }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const submission = useRef(null);
   const [searchParams] = useSearchParams();
   const requestedAssetDirection = searchParams.get("assetDirection");
   const requestedAssetType = searchParams.get("assetType");
@@ -943,12 +951,12 @@ function NewTradeForm({ context, leagueId }) {
   const prefillRequestedAsset =
     requestedAssetDirection === "requested" && Boolean(requestedAssetId);
   const [proposingTeamId, setProposingTeamId] = useState(
-    requestedProposingTeamId
+    initialProposal?.proposingTeamId ?? requestedProposingTeamId
   );
   const [receivingTeamId, setReceivingTeamId] = useState(
-    prefillRequestedAsset ? requestedSourceTeamId : ""
+    initialProposal?.receivingTeamId ?? (prefillRequestedAsset ? requestedSourceTeamId : "")
   );
-  const [proposingAssets, setProposingAssets] = useState([
+  const [proposingAssets, setProposingAssets] = useState(initialProposal?.proposingAssets ?? [
     prefillRequestedAsset
       ? { type: "player", reference: "" }
       : {
@@ -956,7 +964,7 @@ function NewTradeForm({ context, leagueId }) {
           reference: initialAssetReference,
         },
   ]);
-  const [receivingAssets, setReceivingAssets] = useState([
+  const [receivingAssets, setReceivingAssets] = useState(initialProposal?.receivingAssets ?? [
     prefillRequestedAsset
       ? {
           type: initialAssetType,
@@ -1004,8 +1012,19 @@ function NewTradeForm({ context, leagueId }) {
     receivingWorkspace: receivingWorkspace.data,
   });
   const mutation = useMutation({
-    mutationFn: (body) => createTrade(context.session.httpClient, leagueId, body, key("trade-proposal")),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) }),
+    mutationFn: ({ body, idempotencyKey }) => counterTradeId
+      ? counterTrade(context.session.httpClient, leagueId, counterTradeId, body, idempotencyKey)
+      : createTrade(context.session.httpClient, leagueId, body, idempotencyKey),
+    onSuccess: (result) => {
+      if (counterTradeId) {
+        navigate(routePaths.trade(leagueId, result.proposal.id));
+        void queryClient.invalidateQueries({ queryKey: transactionKeys.trade(leagueId, counterTradeId) });
+        void queryClient.invalidateQueries({ queryKey: ["league", leagueId, "activity"] });
+      } else {
+        submission.current = null;
+      }
+      return queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) });
+    },
   });
   if (context.teams.isPending) return <p>Loading trade teams…</p>;
   if (context.managerControlledTeams.length === 0) return <p>You do not currently control a team that can propose a trade.</p>;
@@ -1049,7 +1068,16 @@ function NewTradeForm({ context, leagueId }) {
   }
   function submit(event) {
     event.preventDefault();
+    if (mutation.isPending) return;
     try {
+      if (counterTradeId) {
+        for (const [assets, workspace] of [[proposingAssets, proposerWorkspace.data], [receivingAssets, receivingWorkspace.data]]) {
+          if (assets.some(asset => !(asset.type === "future_considerations" && asset.mode === "new") &&
+              !assetChoices(asset, workspace).some(({ id }) => id === asset.reference))) {
+            throw new Error("An offered item is no longer available. Choose a replacement or remove it before sending.");
+          }
+        }
+      }
       const body = {
         proposingTeamId: proposer,
         receivingTeamId: receiving,
@@ -1057,7 +1085,11 @@ function NewTradeForm({ context, leagueId }) {
         receivingAssets: buildSide(receivingAssets),
       };
       setClientError(null);
-      mutation.mutate(body);
+      const fingerprint = JSON.stringify(body);
+      if (submission.current?.fingerprint !== fingerprint) {
+        submission.current = { fingerprint, idempotencyKey: key(counterTradeId ? "trade-counter" : "trade-proposal") };
+      }
+      mutation.mutate({ body, idempotencyKey: submission.current.idempotencyKey });
     } catch (error) {
       setClientError(error);
     }
@@ -1065,8 +1097,9 @@ function NewTradeForm({ context, leagueId }) {
   return (
     <form className="hl-surface hl-feature-form" style={card} onSubmit={submit}>
       <h2>New trade proposal</h2>
+      {counterTradeId && <p>Counter proposal: edit the offer below. Sending it will decline the original offer.</p>}
       <div style={row}>
-        <label>Proposing team<br /><select style={input} value={proposer} onChange={(e) => {
+        <label>Proposing team<br /><select style={input} value={proposer} disabled={Boolean(counterTradeId)} onChange={(e) => {
           setProposingTeamId(e.target.value);
           setReceivingTeamId("");
           setProposingAssets([{ type: "player", reference: "" }]);
@@ -1074,7 +1107,7 @@ function NewTradeForm({ context, leagueId }) {
         }}>
           {context.managerControlledTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
         </select></label>
-        <label>Receiving team<br /><select style={input} value={receiving} onChange={(e) => {
+        <label>Receiving team<br /><select style={input} value={receiving} disabled={Boolean(counterTradeId)} onChange={(e) => {
           setReceivingTeamId(e.target.value);
           setReceivingAssets([{ type: "player", reference: "" }]);
         }}>
@@ -1125,14 +1158,35 @@ function NewTradeForm({ context, leagueId }) {
           },
         ]}
       />
-      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>Send proposal</button>
+      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>{counterTradeId ? "Send counter proposal" : "Send proposal"}</button>
+      {counterTradeId && <Link className="hl-button hl-button--quiet" to={routePaths.trade(leagueId, counterTradeId)}>Back to original offer</Link>}
       <ErrorMessage error={clientError || proposerWorkspace.error || receivingWorkspace.error || mutation.error} />
     </form>
   );
 }
 
+function CounterTradeForm({ context, leagueId, tradeId }) {
+  const original = useQuery({
+    ...tradeQuery(context.session.httpClient, leagueId, tradeId),
+    enabled: context.session.status === "authenticated" && Boolean(context.league),
+  });
+  if (original.isPending || context.teams.isPending) return <LoadingBlock>Loading the original offer…</LoadingBlock>;
+  if (original.isError) return <ErrorMessage error={original.error} />;
+  let initialProposal;
+  try {
+    initialProposal = counterProposalDraft(original.data, {
+      leagueId, tradeId, managedTeamIds: context.managerControlledTeams.map(({ id }) => id),
+    });
+  } catch (error) {
+    return <p role="alert">{error.message}</p>;
+  }
+  return <NewTradeForm key={`${context.session.user.id}:${leagueId}:${tradeId}`} context={context} leagueId={leagueId} initialProposal={initialProposal} counterTradeId={tradeId} />;
+}
+
 export function TradesPage() {
   const { leagueId } = useParams();
+  const [searchParams] = useSearchParams();
+  const counterTradeId = searchParams.get("counterTradeId");
   const context = useLeagueContext(leagueId);
   const [status, setStatus] = useState("pending");
   const trades = useQuery({
@@ -1156,7 +1210,9 @@ export function TradesPage() {
   );
   return (
     <LeaguePageState context={context} title="Trades">
-      <NewTradeForm context={context} leagueId={leagueId} />
+      {counterTradeId
+        ? <CounterTradeForm key={`${leagueId}:${counterTradeId}`} context={context} leagueId={leagueId} tradeId={counterTradeId} />
+        : <NewTradeForm key={`${context.session.user?.id}:${leagueId}`} context={context} leagueId={leagueId} />}
       <TradeBlockPanel
         currentUserId={context.session.user?.id}
         enabled={context.session.status === "authenticated" && Boolean(context.league?.currentSeason) && !context.teams.isPending}
@@ -1394,6 +1450,7 @@ function tradeHistorySummary(event, proposal) {
 
 export function TradeDetailPage() {
   const { leagueId, tradeId } = useParams();
+  const navigate = useNavigate();
   const context = useLeagueContext(leagueId);
   const queryClient = useQueryClient();
   const trade = useQuery({
@@ -1538,6 +1595,7 @@ export function TradeDetailPage() {
           <div className="hl-button-row">
             <button className="hl-button hl-button--primary" disabled={command.isPending || !acceptancePreview || acceptanceQuery.isFetching || acceptanceQuery.isError} onClick={() => command.mutate({ action: "accept" })}>Confirm</button>
             <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => command.mutate({ action: "decline" })}>Decline</button>
+            <button className="hl-button hl-button--quiet" disabled={command.isPending} onClick={() => navigate(`${routePaths.leagueTrades(leagueId)}?counterTradeId=${encodeURIComponent(tradeId)}`)}>Counter Proposal</button>
           </div>
           <ErrorMessage error={acceptanceQuery.error || command.error} />
           {acceptanceQuery.isError && <button type="button" className="hl-button hl-button--quiet" onClick={() => acceptanceQuery.refetch()}>Retry preview</button>}

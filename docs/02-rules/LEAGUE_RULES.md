@@ -219,7 +219,7 @@ They must not be hard-coded as permanent limits for every possible league.
 | Team-wide total contract-year limit | `None` | Approved 2026-07-18 |
 | Contract extensions | `Not permitted` | Approved 2026-07-18 |
 | Fantasy ELC | `$3 total over 3 years; $1 AAV` | Approved 2026-07-18 |
-| Free-agent signing buyout lock | `14 days for auction and direct automatic FAD signings` | Amended 2026-07-27 |
+| Free-agent signing buyout lock | `No waiting period for existing or future FAD rapid-auction signings in every league; 14 days for other auctions and direct automatic FAD signings` | Amended 2026-09-24 |
 | Trade-proposal lifetime | `7 days` | Approved 2026-07-18 |
 | Auction rollover | `Sunday at 4:00 PM Pacific` | Approved 2026-07-18 |
 | New-auction opening | `Monday at 12:00 AM Pacific` | Approved 2026-07-18 |
@@ -254,7 +254,7 @@ Contract values, bids, average annual values, retained salary, buyout penalties,
 * Entered AAV must be an exact `$0.25` increment and at least `$1.00`.
 * Total contract value is calculated exactly as AAV multiplied by contract years.
 * Historical contracts retain their original approved total and AAV precision.
-* Retained salary and buyout penalties are calculated from average annual value and rounded to the nearest hundredth.
+* Retained salary is calculated from average annual value and rounded to the nearest hundredth. New buyout penalties are 25% of full AAV, rounded up to the next $0.25 increment.
 * Stored and displayed cap amounts must not contain more than two decimal places.
 
 Examples:
@@ -822,18 +822,20 @@ The Trade and Contract specifications must define how chained retention records 
 The standard buyout formula is:
 
 ```text
-annual buyout penalty = 25% of player AAV, rounded to the nearest hundredth
+annual buyout penalty = 25% of full player AAV, rounded up to the next $0.25 increment
 ```
 
-The annual buyout penalty applies in each remaining contract year.
+The annual buyout penalty applies in each remaining contract year. Graem clarified this rounding rule on 2026-09-19: a $3.75 AAV creates a $1.00 annual penalty. Existing persisted buyout obligations retain their recorded amounts; this correction does not reprice historical obligations.
 
 An existing buyout-penalty obligation may be traded as a whole. Its annual amount, remaining schedule, underlying buyout reference, and history do not change. The receiving team becomes responsible for the cap charge.
 
 The free-agent signing restriction is:
 
 ```text
-A player signed through an auction or direct automatic FAD allocation cannot
-be bought out for 14 days.
+Existing and future Free Agent Draft rapid-auction signings in every league
+can be bought out immediately, with normal buyout penalties. This includes
+restricted, open and fallback rapid auctions. Other auction signings and
+direct automatic FAD allocations retain a 14-day buyout waiting period.
 ```
 
 The buyout lock follows the player if the player is traded during the lock period.
@@ -1602,10 +1604,11 @@ FAD-related amendments on 2026-07-27, 2026-07-28, 2026-07-29, and
 ## Buyouts
 
 - [x] Buyout eliminates the contract and releases the player to free agency.
-- [x] Annual buyout penalty is `25% of AAV`, rounded to the nearest hundredth.
+- [x] Annual buyout penalty is `25% of full AAV`, rounded up to the next `$0.25` increment.
 - [x] The annual penalty applies in each remaining contract year.
 - [x] There is no penalty decay during the remaining contract term.
-- [x] Auction and direct automatic FAD signings have a `14-day` buyout lock.
+- [x] Existing and future FAD rapid-auction signings have no buyout waiting period; normal penalties apply.
+- [x] Other auction and direct automatic FAD signings have a `14-day` buyout lock.
 - [x] The buyout lock follows the player after a trade.
 - [x] An existing buyout-penalty obligation may be traded as a whole without changing its amount or remaining schedule.
 

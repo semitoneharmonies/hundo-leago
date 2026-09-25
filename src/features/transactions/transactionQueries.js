@@ -136,6 +136,13 @@ export async function previewTradeAcceptance(httpClient, leagueId, tradeId) {
   )).data;
 }
 
+export async function counterTrade(httpClient, leagueId, tradeId, input, idempotencyKey) {
+  return (await httpClient.request(
+    `/api/v1/leagues/${part(leagueId)}/trades/${part(tradeId)}/counter`,
+    { method: "POST", body: input, authenticated: true, idempotencyKey, dataKind: "object" }
+  )).data;
+}
+
 async function emptyTradeCommand(httpClient, leagueId, tradeId, action, idempotencyKey) {
   return (await httpClient.request(
     `/api/v1/leagues/${part(leagueId)}/trades/${part(tradeId)}/${action}`,

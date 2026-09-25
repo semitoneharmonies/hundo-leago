@@ -213,12 +213,15 @@ function LeagueRulesDropdown({ onClose }) {
             </li>
             <li>Retention is limited to 50% of a contract's original AAV cumulatively, with three retention slots per team. Review retained obligations in the cap preview.</li>
             <li>
-              The standard annual buyout penalty is 25% of AAV for each
-              remaining contract year.
+              The annual buyout penalty is 25% of full AAV, rounded up to the
+              next $0.25, for each remaining contract year. A $3.75 AAV creates
+              a $1.00 annual penalty.
             </li>
             <li>
-              Auction signings have a 14-day buyout lock that follows the
-              player if traded.
+              Free Agent Draft rapid-auction signings can be bought out immediately,
+              including existing signings. Normal penalties apply. Other auction
+              signings and direct Candidate Card awards retain a 14-day lock.
+              These rules follow the contract after a trade.
             </li>
           </ul>
         </RuleSection>

@@ -1711,6 +1711,14 @@ Buyout requests require `confirmed: true`, `expectedContractVersion`, and
 ownership, provider injury status, available IR capacity, contract state,
 buyout lock, and pending-trade conflicts before writing.
 
+For an active free-agent signing lock, the buyout endpoint returns HTTP `409`
+with code `BUYOUT_LOCK_ACTIVE` and additive error details
+`{ buyoutLockExpiresAtMs: <persisted expiry timestamp> }`. The roster displays
+the lock reason and expiry rather than the generic request-failed fallback.
+The rejection leaves roster, contract, penalties, trades, and history unchanged.
+New buyouts charge 25% of full AAV rounded up to the next $0.25 per remaining
+year. Historical persisted obligations keep their recorded amounts.
+
 The target buyout transaction cancels every pending proposal involving the
 player, including a signed player still rostered as `Prospect` whose immutable
 trade snapshot uses `prospect_right`. The current staging command misses that
@@ -1910,6 +1918,7 @@ auction handoff behind the same contract boundary.
 |---|---|---|
 | `GET /api/v1/leagues/:leagueId/trades` | League member | List proposals involving authorized teams plus allowed league views |
 | `POST /api/v1/leagues/:leagueId/trades` | Authorized proposing team manager | Create a proposal with typed assets |
+| `POST /api/v1/leagues/:leagueId/trades/:tradeId/counter` | Current receiving-team manager of the original pending offer | Atomically create the edited reversed-role proposal and decline the original; no asset transfers |
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId` | Authorized participant or commissioner safe view | Read a proposal |
 | `GET /api/v1/leagues/:leagueId/trades/:tradeId/acceptance-preview` | Authorized receiving team manager | Revalidate the current proposal and project acceptance effects without writes |
 | `POST /api/v1/leagues/:leagueId/trades/:tradeId/accept` | Authorized receiving team manager | Revalidate and either complete atomically or persist the acceptance snapshot that projects Awaiting Commissioner Approval when Future Considerations are present |
@@ -1948,10 +1957,18 @@ proposal, missing receiver acceptance, terminal state, stale asset, or expired
 deadline fails without moving any asset. Commissioner authority alone grants no
 proposal, receiver-response, or cancellation write.
 
-No counter endpoint or atomic counter service exists in M7-26. A receiver may
-reject and later create an independent reversed-role proposal only when they
-hold proposing-team manager authority; documentation and clients must not
-present that sequence as atomic countering.
+Approved 2026-09-24, implemented in the coordinated counter-proposal release: `counter` accepts
+the same typed body as proposal creation and requires `Idempotency-Key`. Its
+proposing and receiving teams must exactly reverse the original offer. It
+requires the same league and season, current receiving-manager authority, a
+pending original that is not awaiting commissioner approval, open trading,
+and valid current assets. One transaction creates the new proposal, its normal
+history and notification, and the original rejection. Any failure rolls back
+all effects. HTTP 201 returns `TRADE_COUNTER_PROPOSAL_CREATED` (or
+`TRADE_COUNTER_PROPOSAL_REPLAYED`), the normal creation `proposal`, and
+`originalProposal: { id, status: "Rejected", storageStatus: "declined" }`.
+Idempotency is scoped to actor, league, original offer, and key; changed payloads
+conflict. Counter editor loading uses only the existing read endpoints.
 
 For every transferred player or prospect right, that transaction closes the
 source ownership tenure, creates a distinct destination ownership at version

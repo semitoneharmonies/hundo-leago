@@ -28,6 +28,8 @@ import {
   TeamMark,
 } from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
+import { ApiError } from "../../shared/api/ApiError.js";
+import { leagueDateTime } from "../../shared/hundoFormat.js";
 import {
   buyOutRosterContract,
   declineProspectFantasyElc,
@@ -1513,8 +1515,14 @@ export function TeamRosterPage({
         queryKey: teamWorkspaceKeys.detail(league.id, team.id),
       });
     },
-    onError: () => {
-      setSaveMessage("The roster action could not be completed.");
+    onError: (error, { type }) => {
+      setSaveMessage(
+        type === "buyout" && error?.code === "BUYOUT_LOCK_ACTIVE"
+          ? "This player cannot be bought out during the 14-day window after signing."
+          : error instanceof ApiError && error.status >= 400 && error.status < 500
+            ? error.message
+            : "The roster action could not be completed."
+      );
     },
   });
 
@@ -1809,7 +1817,11 @@ export function TeamRosterPage({
           error={mutation.error || actionMutation.error}
           fallback={saveMessage}
           impact="The roster remains unchanged."
-          recovery="Refresh the roster, review the player’s current status, and try again."
+          recovery={actionMutation.variables?.type === "buyout" && actionMutation.error?.code === "BUYOUT_LOCK_ACTIVE"
+            ? Number.isSafeInteger(actionMutation.error.details?.buyoutLockExpiresAtMs)
+              ? `You can buy out this player after ${leagueDateTime(actionMutation.error.details.buyoutLockExpiresAtMs, "America/Vancouver")}.`
+              : "Players become eligible for buyout once 14 days have passed since signing."
+            : "Refresh the roster, review the player’s current status, and try again."}
         />
       )}
       {saveMessage && !mutation.isError && !actionMutation.isError && (
