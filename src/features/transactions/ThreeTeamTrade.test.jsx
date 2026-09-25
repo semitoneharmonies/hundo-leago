@@ -7,6 +7,7 @@ import { TradeDetailPage, TradesPage } from "./TransactionPages.jsx";
 import { counterProposalDraft } from "./counterProposal.js";
 import { buildThreeTeamProposal } from "./threeTeamProposal.js";
 import { validateTradeDetail } from "./transactionContracts.js";
+import { teamWorkspaceKeys } from "../rosters/teamWorkspaceQueries.js";
 import { applyRealtimeInvalidation, parseRealtimeEnvelope, REALTIME_RELATED_ID_KEYS } from "../../shared/realtime/realtimeInvalidation.js";
 
 vi.mock("socket.io-client", () => ({ io: () => ({ onAny() {}, offAny() {}, disconnect() {} }) }));
@@ -17,6 +18,23 @@ function renderTrade(fixture, path = `/leagues/${ids.league}/trades/${ids.trade}
 }
 const writes = fixture => fixture.requests.filter(r => r.method === "POST");
 describe("Three-team trades", () => {
+  it("refreshes the third team's workspace after final acceptance without a socket notification", async () => {
+    const fixture = createThreeTeamFixture({ secondAccepted: true }), originalFetch = fixture.fetch;
+    fixture.fetch = async (url, options) => {
+      const response = await originalFetch(url, options);
+      if (!new URL(url).pathname.endsWith(`/teams/${ids.thirdTeam}/roster`)) return response;
+      const body = await response.json();
+      body.data.team.version = fixture.original.storageStatus === "completed" ? 2 : 1;
+      return new Response(JSON.stringify(body), { status: response.status, headers: response.headers });
+    };
+    const view = renderTrade(fixture), workspaceKey = teamWorkspaceKeys.detail(ids.league, ids.thirdTeam);
+    const confirm = await screen.findByRole("button", { name: "Confirm", exact: true });
+    await waitFor(() => expect(view.queryClient.getQueryData(workspaceKey)?.team.version).toBe(1));
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await view.user.click(confirm);
+    await waitFor(() => expect(fixture.original.storageStatus).toBe("completed"));
+    await waitFor(() => expect(view.queryClient.getQueryData(workspaceKey)?.team.version).toBe(2));
+  });
   it("refreshes team C's open page when team B accepts or declines", async () => {
     const fixture = createThreeTeamFixture(), view = renderTrade(fixture);
     await screen.findByRole("list", { name: "Team responses" });

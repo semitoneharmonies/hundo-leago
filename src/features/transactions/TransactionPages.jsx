@@ -1516,8 +1516,7 @@ export function TradeDetailPage() {
       queryClient.invalidateQueries({ queryKey: transactionKeys.trade(leagueId, tradeId) }),
       queryClient.invalidateQueries({ queryKey: ["notifications"] }),
       queryClient.invalidateQueries({ queryKey: ["league", leagueId, "activity"] }),
-      queryClient.invalidateQueries({ queryKey: teamWorkspaceKeys.detail(leagueId, proposal.proposingTeam.id), exact: true }),
-      queryClient.invalidateQueries({ queryKey: teamWorkspaceKeys.detail(leagueId, proposal.receivingTeam.id), exact: true }),
+      ...tradeTeams(proposal).map(team => queryClient.invalidateQueries({ queryKey: teamWorkspaceKeys.detail(leagueId, team.id), exact: true })),
     ]);
   };
   const previewAcceptance = useMutation({ mutationFn: () => previewTradeAcceptance(context.session.httpClient, leagueId, tradeId), onSuccess: setAcceptancePreview });
