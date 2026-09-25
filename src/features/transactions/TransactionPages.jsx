@@ -181,6 +181,32 @@ const ACTIVITY_FILTERS = Object.freeze([
   ["other", "Other events"],
 ]);
 
+function isAuctionAward(item) {
+  return item.type === "auction_signing_completed" ||
+    (item.type === "free_agent_draft_player_awarded" &&
+      item.related?.type === "auction_resolution");
+}
+
+function auctionBidSummary(item) {
+  if (!isAuctionAward(item)) return null;
+  const metadata = item.metadata || {};
+  const winner = metadata.winner;
+  const aav = winner?.submittedAavCents ?? metadata.submittedWinningAavCents;
+  const term = winner?.submittedTermYears ?? metadata.submittedWinningTermYears;
+  const total = winner?.submittedTotalValueCents ?? metadata.submittedWinningTotalValueCents;
+  if (![aav, term, total].every(value => Number.isSafeInteger(value) && value > 0)) {
+    return null;
+  }
+  const bid = `Winning bid: ${money(aav)} AAV × ${term} ${term === 1 ? "year" : "years"} (${money(total)} total).`;
+  const finalAav = winner?.finalAavCents ?? metadata.finalAavCents;
+  const finalTotal = winner?.finalTotalValueCents ?? metadata.finalTotalValueCents;
+  if ([finalAav, finalTotal].every(value => Number.isSafeInteger(value) && value > 0) &&
+      (finalAav !== aav || finalTotal !== total)) {
+    return `${bid} Final contract: ${money(finalAav)} AAV (${money(finalTotal)} total).`;
+  }
+  return bid;
+}
+
 function activityCategory(type) {
   const value = String(type || "").toLowerCase();
   if (value.includes("trade")) return "trade";
@@ -217,9 +243,13 @@ function activityTitle(item, teamNames) {
     metadata.player?.name ||
     metadata.player?.fullName ||
     metadata.playerName ||
+    metadata.playerDisplayName ||
     null;
   const itemTeamName =
     item.team?.name || namedTeam(teamNames, item.teamId, null);
+  if (isAuctionAward(item) && playerName && itemTeamName) {
+    return `${itemTeamName} won ${playerName} at auction.`;
+  }
   if (
     category !== "commissioner" &&
     [
@@ -315,7 +345,8 @@ function activityTradeReceipts(item, teamNames) {
 }
 
 function ActivityEntry({ item, teamNames }) {
-  const category = activityCategory(item.type);
+  const category = isAuctionAward(item) ? "auction" : activityCategory(item.type);
+  const bidSummary = auctionBidSummary(item);
   const receipts = activityTradeReceipts(item, teamNames);
   const teamName = item.team?.name || namedTeam(teamNames, item.teamId, null);
   const playerName = item.player?.name || null;
@@ -338,6 +369,7 @@ function ActivityEntry({ item, teamNames }) {
         {subject && category !== "trade" && (
           <span className="hl-activity-subject">{subject}</span>
         )}
+        {bidSummary && <p className="hl-activity-change">{bidSummary}</p>}
         {change && <p className="hl-activity-change">{change}</p>}
         {item.reason && <p className="hl-activity-reason">{item.reason}</p>}
         {receipts.length > 0 && (
