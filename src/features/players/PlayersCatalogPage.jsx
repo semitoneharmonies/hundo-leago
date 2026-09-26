@@ -501,7 +501,7 @@ export function PlayersCatalogPage() {
       />
       <Surface
         as="section"
-        className="hl-player-search"
+        className={`hl-player-search ${contractFilterStyles.panel}`}
         aria-label="Player filters"
       >
         <form
@@ -510,37 +510,40 @@ export function PlayersCatalogPage() {
             setQuery(searchInput.trim());
             setAutocompleteDismissed(true);
           }}
-          className="hl-filter-bar hl-player-filters"
+          className={contractFilterStyles.catalogFilters}
         >
-          <div className="hl-field hl-player-autocomplete">
+          <div className={`hl-field hl-player-autocomplete ${contractFilterStyles.search}`}>
             <label htmlFor="player-name-search">Search by player name</label>
-            <input
-              ref={searchInputRef}
-              id="player-name-search"
-              type="search"
-              role="combobox"
-              value={searchInput}
-              onChange={(event) => {
-                setSearchInput(event.target.value);
-                setAutocompleteDismissed(false);
-              }}
-              onFocus={() => setAutocompleteDismissed(false)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape" && showAutocomplete) {
-                  event.preventDefault();
-                  setAutocompleteDismissed(true);
-                } else if (event.key === "ArrowDown" && showAutocomplete) {
-                  event.preventDefault();
-                  suggestionListRef.current
-                    ?.querySelector('[role="option"]')
-                    ?.focus();
-                }
-              }}
-              autoComplete="off"
-              aria-autocomplete="list"
-              aria-controls="player-name-suggestions"
-              aria-expanded={showAutocomplete}
-            />
+            <div className={`hl-field ${contractFilterStyles.searchControls}`}>
+              <input
+                ref={searchInputRef}
+                id="player-name-search"
+                type="search"
+                role="combobox"
+                value={searchInput}
+                onChange={(event) => {
+                  setSearchInput(event.target.value);
+                  setAutocompleteDismissed(false);
+                }}
+                onFocus={() => setAutocompleteDismissed(false)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && showAutocomplete) {
+                    event.preventDefault();
+                    setAutocompleteDismissed(true);
+                  } else if (event.key === "ArrowDown" && showAutocomplete) {
+                    event.preventDefault();
+                    suggestionListRef.current
+                      ?.querySelector('[role="option"]')
+                      ?.focus();
+                  }
+                }}
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-controls="player-name-suggestions"
+                aria-expanded={showAutocomplete}
+              />
+              <button className="hl-button hl-button--primary" type="submit">Search</button>
+            </div>
             {showAutocomplete && (
               <ul
                 ref={suggestionListRef}
@@ -629,11 +632,6 @@ export function PlayersCatalogPage() {
               <option value="50">50+</option>
             </select>
           </label>
-          <button className="hl-button hl-button--primary" type="submit">
-            Search
-          </button>
-        </form>
-        <div className={contractFilterStyles.filters}>
           <label className="hl-field">
             Contract length (remaining)
             <select value={remainingYears} onChange={(event) => setRemainingYears(event.target.value)}>
@@ -652,10 +650,9 @@ export function PlayersCatalogPage() {
             </select>
           </label>
           <AavRangeFilter range={aavRange} onChange={setAavRange} valid={aavRangeValid} />
-        </div>
+        </form>
         <p>
-          Unavailable provider records are hidden. Total fantasy points is the
-          default sort.
+          Default sort: total fantasy points.
         </p>
       </Surface>
 
