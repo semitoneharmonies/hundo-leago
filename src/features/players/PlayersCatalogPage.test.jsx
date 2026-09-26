@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -172,7 +172,88 @@ function player({
   };
 }
 
+function createContractFilterTestFixture() {
+  const requests = [];
+  const ownership = (category = "Active", kind = "Rostered") => ({
+    kind, category, team: { id: teamA, name: "Alpha Team" },
+  });
+  const contract = (aavCents, remainingYears) => ({
+    aavCents, remainingYears, originalTermYears: 3, originalTotalValueCents: aavCents * 3,
+  });
+  const rows = [
+    player({ id: freeAgentId, name: "Free Agent", gamesPlayed: 50, fantasyPointsHundredths: 9000 }),
+    player({ id: ownedPlayerId, name: "Lower Boundary", gamesPlayed: 50, fantasyPointsHundredths: 8000, ownership: ownership(), activeContract: contract(200, 1) }),
+    player({ id: unavailableId, name: "Upper Boundary", gamesPlayed: 50, fantasyPointsHundredths: 7000, ownership: ownership(), activeContract: contract(600, 2) }),
+    player({ id: seasonId, name: "ELC Prospect", gamesPlayed: 5, fantasyPointsHundredths: 500, ownership: ownership("Prospect"), activeContract: contract(100, 3) }),
+    player({ id: prospectId, name: "Unsigned Prospect", gamesPlayed: 0, fantasyPointsHundredths: 0, ownership: ownership("Prospect", "Prospect Right") }),
+  ];
+  const fetchImpl = async (url, options = {}) => {
+    requests.push({ url: String(url), method: options.method || "GET" });
+    const { pathname, searchParams: params } = new URL(url);
+    if (pathname === "/api/v1/session") return envelope(session());
+    if (pathname === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [league()] });
+    if (pathname.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [team(teamA, "Alpha Team")] });
+    if (pathname.endsWith("/auctions")) return envelope([], { actions: { startTeams: [] }, page: { nextCursor: null, hasMore: false } });
+    if (!pathname.endsWith("/players")) throw new Error(`Unexpected fixture request: ${pathname}`);
+    const matches = rows.filter(({ fullName, league: { ownership: owned, activeContract: signed }, id }) =>
+      (!params.get("query") || fullName.toLowerCase().includes(params.get("query").toLowerCase())) &&
+      (!params.get("teamId") || owned?.team.id === params.get("teamId")) &&
+      (params.get("ownership") !== "signed" || signed) &&
+      (params.get("ownership") !== "free" || !owned) &&
+      (params.get("ownership") !== "prospects" || owned?.category === "Prospect") &&
+      (!params.has("minimumAavCents") || (signed && signed.aavCents >= Number(params.get("minimumAavCents")))) &&
+      (!params.has("maximumAavCents") || (signed && signed.aavCents <= Number(params.get("maximumAavCents")))) &&
+      (!params.has("remainingYears") || signed?.remainingYears === Number(params.get("remainingYears"))) &&
+      (!params.has("contractType") || (signed && (params.get("contractType") === "fantasy_elc" ? id === seasonId : id !== seasonId)))
+    );
+    return envelope(matches, { page: { nextCursor: null, hasMore: false } });
+  };
+  return { fetchImpl, requests };
+}
+
 describe("league player catalog", () => {
+  it("combines and resets signed, AAV, remaining-year, prospect and ELC filters with read-only requests", async () => {
+    const fixture = createContractFilterTestFixture();
+    const view = renderWithProviders(
+      <Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>,
+      { initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl: fixture.fetchImpl } }
+    );
+    await screen.findByRole("rowheader", { name: "Free Agent" });
+    const assignment = screen.getByRole("combobox", { name: "League assignment" });
+    const years = screen.getByRole("combobox", { name: "Contract length (remaining)" });
+    const type = screen.getByRole("combobox", { name: "Contract type" });
+    const range = screen.getByRole("checkbox", { name: "Filter by AAV" });
+    await view.user.selectOptions(assignment, "signed");
+    await screen.findByRole("rowheader", { name: "ELC Prospect" });
+    expect(screen.queryByRole("rowheader", { name: "Unsigned Prospect" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "Free Agent" })).not.toBeInTheDocument();
+    await view.user.click(range);
+    await screen.findByRole("rowheader", { name: "Upper Boundary" });
+    expect(screen.getByRole("rowheader", { name: "Lower Boundary" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("rowheader", { name: "ELC Prospect" })).not.toBeInTheDocument());
+    await view.user.selectOptions(years, "1");
+    await waitFor(() => expect(screen.queryByRole("rowheader", { name: "Upper Boundary" })).not.toBeInTheDocument());
+    await screen.findByRole("rowheader", { name: "Lower Boundary" });
+    fireEvent.change(screen.getByRole("slider", { name: "Minimum AAV slider" }), { target: { value: "3" } });
+    await screen.findByText("No players match these filters");
+    const minimum = screen.getByRole("spinbutton", { name: "Minimum AAV ($)" });
+    fireEvent.change(minimum, { target: { value: "7" } });
+    expect(await screen.findByRole("alert")).toHaveTextContent("minimum no higher than the maximum");
+    fireEvent.change(minimum, { target: { value: "2" } });
+    await screen.findByRole("rowheader", { name: "Lower Boundary" });
+    await view.user.click(range);
+    await view.user.selectOptions(years, "all");
+    await view.user.selectOptions(assignment, "prospects");
+    await screen.findByRole("rowheader", { name: "Unsigned Prospect" });
+    await view.user.selectOptions(type, "fantasy_elc");
+    await waitFor(() => expect(screen.queryByRole("rowheader", { name: "Unsigned Prospect" })).not.toBeInTheDocument());
+    await screen.findByRole("rowheader", { name: "ELC Prospect" });
+    await view.user.selectOptions(type, "all");
+    await view.user.selectOptions(assignment, "all");
+    await screen.findByRole("rowheader", { name: "Free Agent" });
+    expect(fixture.requests.every(({ method }) => method === "GET")).toBe(true);
+  });
+
   it("accepts and shows the complete expanded breakdown with negative fantasy points", async () => {
     const entry = player({ id: freeAgentId, name: "Expanded Player", gamesPlayed: 1, fantasyPointsHundredths: -50 });
     Object.assign(entry.statistics, { goals: 0, assists: 0, nhlPoints: 0, scoringRuleVersion: EXPANDED_SCORING_VERSION,

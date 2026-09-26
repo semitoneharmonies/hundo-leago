@@ -52,6 +52,10 @@ export const playerKeys = Object.freeze({
     nhlTeam,
     ownership,
     minimumGames,
+    minimumAavCents,
+    maximumAavCents,
+    remainingYears,
+    contractType,
   }) => [
     "league",
     leagueId,
@@ -66,6 +70,10 @@ export const playerKeys = Object.freeze({
     nhlTeam,
     ownership,
     minimumGames,
+    minimumAavCents,
+    maximumAavCents,
+    remainingYears,
+    contractType,
   ],
   leagueDetail: (leagueId, playerId) => [
     "league",
@@ -212,6 +220,10 @@ export function leaguePlayerInfiniteQuery(
     nhlTeam = null,
     ownership = "all",
     minimumGames = 0,
+    minimumAavCents = null,
+    maximumAavCents = null,
+    remainingYears = null,
+    contractType = "all",
   } = {}
 ) {
   return infiniteQueryOptions({
@@ -226,6 +238,10 @@ export function leaguePlayerInfiniteQuery(
       nhlTeam,
       ownership,
       minimumGames,
+      minimumAavCents,
+      maximumAavCents,
+      remainingYears,
+      contractType,
     }),
     initialPageParam: null,
     queryFn: async ({ pageParam, signal }) => {
@@ -238,6 +254,10 @@ export function leaguePlayerInfiniteQuery(
         ...(position ? { position } : {}),
         ...(nhlTeam ? { nhlTeam } : {}),
         ...(ownership !== "all" ? { ownership } : {}),
+        ...(minimumAavCents !== null ? { minimumAavCents: String(minimumAavCents) } : {}),
+        ...(maximumAavCents !== null ? { maximumAavCents: String(maximumAavCents) } : {}),
+        ...(remainingYears !== null ? { remainingYears: String(remainingYears) } : {}),
+        ...(contractType !== "all" ? { contractType } : {}),
         ...(minimumGames > 0
           ? { minimumGames: String(minimumGames) }
           : {}),

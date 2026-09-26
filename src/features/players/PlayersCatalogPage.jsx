@@ -22,6 +22,8 @@ import {
 import { auctionListQuery } from "../auctions/auctionQueries.js";
 import { capabilityMessage } from "../auctions/auctionUi.js";
 import { useSession } from "../session/sessionContext.js";
+import { AavRangeFilter } from "./AavRangeFilter.jsx";
+import contractFilterStyles from "./AavRangeFilter.module.css";
 import {
   leaguePlayerInfiniteQuery,
   leaguePlayerSearchQuery,
@@ -196,6 +198,20 @@ export function PlayersCatalogPage() {
   const [nhlTeam, setNhlTeam] = useState("all");
   const [ownership, setOwnership] = useState("all");
   const [minimumGames, setMinimumGames] = useState("0");
+  const [remainingYears, setRemainingYears] = useState("all");
+  const [contractType, setContractType] = useState("all");
+  const [aavRange, setAavRange] = useState({ enabled: false, minimum: "2", maximum: "6" });
+  const minimumAavCents = Math.round(Number(aavRange.minimum) * 100);
+  const maximumAavCents = Math.round(Number(aavRange.maximum) * 100);
+  const aavRangeValid = [aavRange.minimum, aavRange.maximum].every(
+    (value) => /^\d+(\.\d{1,2})?$/.test(value) && Number.isSafeInteger(Math.round(Number(value) * 100))
+  ) && minimumAavCents <= maximumAavCents;
+  const contractFilters = useDeferredValue(useMemo(() => ({
+    remainingYears: remainingYears === "all" ? null : Number(remainingYears),
+    contractType,
+    minimumAavCents: aavRange.enabled && aavRangeValid ? minimumAavCents : null,
+    maximumAavCents: aavRange.enabled && aavRangeValid ? maximumAavCents : null,
+  }), [remainingYears, contractType, aavRange.enabled, aavRangeValid, minimumAavCents, maximumAavCents]));
   const [autocompleteDismissed, setAutocompleteDismissed] = useState(false);
   const [sort, setSort] = useState({
     key: "fantasyPoints",
@@ -208,7 +224,7 @@ export function PlayersCatalogPage() {
   const selectedTeamId = ownership.startsWith("team:")
     ? ownership.slice(5)
     : null;
-  const serverOwnership = ["free", "prospects"].includes(ownership)
+  const serverOwnership = ["free", "prospects", "signed"].includes(ownership)
     ? ownership
     : "all";
   const players = useInfiniteQuery({
@@ -222,8 +238,9 @@ export function PlayersCatalogPage() {
       nhlTeam: nhlTeam === "all" ? null : nhlTeam,
       ownership: serverOwnership,
       minimumGames: Number(minimumGames),
+      ...contractFilters,
     }),
-    enabled: session.status === "authenticated" && Boolean(league),
+    enabled: session.status === "authenticated" && Boolean(league) && (!aavRange.enabled || aavRangeValid),
   });
   const autocomplete = useQuery({
     ...leaguePlayerSearchQuery(session.httpClient, leagueId, {
@@ -350,6 +367,7 @@ export function PlayersCatalogPage() {
             player.provider?.nhlTeamAbbreviation === nhlTeam) &&
           (ownership === "all" ||
             (ownership === "free" && !player.league.ownership) ||
+            (ownership === "signed" && Boolean(player.league.activeContract)) ||
             (ownership === "favourites" && comparedIds.has(player.id)) ||
             (ownership === "prospects" &&
               (player.league.ownership?.category === "Prospect" ||
@@ -587,6 +605,7 @@ export function PlayersCatalogPage() {
             >
               <option value="all">All Players</option>
               <option value="free">Free Agents</option>
+              <option value="signed">Signed players</option>
               <option value="favourites">
                 Favourites ({comparedIds.size})
               </option>
@@ -595,7 +614,7 @@ export function PlayersCatalogPage() {
                   {team.name}
                 </option>
               ))}
-              <option value="prospects">Prospects</option>
+              <option value="prospects">Owned prospects</option>
             </select>
           </label>
           <label className="hl-field">
@@ -614,13 +633,35 @@ export function PlayersCatalogPage() {
             Search
           </button>
         </form>
+        <div className={contractFilterStyles.filters}>
+          <label className="hl-field">
+            Contract length (remaining)
+            <select value={remainingYears} onChange={(event) => setRemainingYears(event.target.value)}>
+              <option value="all">Any length</option>
+              <option value="1">1 year</option>
+              <option value="2">2 years</option>
+              <option value="3">3 years</option>
+            </select>
+          </label>
+          <label className="hl-field">
+            Contract type
+            <select value={contractType} onChange={(event) => setContractType(event.target.value)}>
+              <option value="all">All contract types</option>
+              <option value="normal">Standard contracts</option>
+              <option value="fantasy_elc">ELC contracts</option>
+            </select>
+          </label>
+          <AavRangeFilter range={aavRange} onChange={setAavRange} valid={aavRangeValid} />
+        </div>
         <p>
           Unavailable provider records are hidden. Total fantasy points is the
           default sort.
         </p>
       </Surface>
 
-      {players.isPending ? (
+      {aavRange.enabled && !aavRangeValid ? (
+        <Surface><EmptyBlock>Check the AAV range to see matching players.</EmptyBlock></Surface>
+      ) : players.isPending ? (
         <Surface>
           <LoadingBlock>Loading players…</LoadingBlock>
         </Surface>
