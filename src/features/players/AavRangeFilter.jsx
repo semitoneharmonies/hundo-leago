@@ -42,7 +42,7 @@ export function AavRangeFilter({ range, onChange, valid }) {
             aria-describedby="player-aav-help"
             min="0"
             max={sliderMaximum}
-            step="0.01"
+            step="0.25"
             value={sliderMinimum}
             onChange={(event) => change("minimum", String(Math.min(Number(event.target.value), sliderUpper)))}
           />
@@ -54,48 +54,18 @@ export function AavRangeFilter({ range, onChange, valid }) {
             aria-describedby="player-aav-help"
             min="0"
             max={sliderMaximum}
-            step="0.01"
+            step="0.25"
             value={sliderUpper}
             onChange={(event) => change("maximum", String(Math.max(Number(event.target.value), sliderMinimum)))}
           />
         </div>
       </div>
-      <div className={styles.bounds}>
-        <div>
-          <label className="hl-field">
-            Minimum AAV ($)
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={range.minimum}
-              onChange={(event) => change("minimum", event.target.value)}
-              aria-invalid={range.enabled && !valid}
-              aria-describedby="player-aav-help"
-            />
-          </label>
-        </div>
-        <div>
-          <label className="hl-field">
-            Maximum AAV ($)
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={range.maximum}
-              onChange={(event) => change("maximum", event.target.value)}
-              aria-invalid={range.enabled && !valid}
-              aria-describedby="player-aav-help"
-            />
-          </label>
-        </div>
-      </div>
       <p id="player-aav-help" role={range.enabled && !valid ? "alert" : undefined}>
         {range.enabled && !valid
-          ? "Enter valid dollar amounts with a minimum no higher than the maximum."
+          ? "Choose a minimum no higher than the maximum."
           : range.enabled
             ? "Signed contracts only. Both limits included."
-            : "Any AAV. Drag either handle or enter amounts to filter."}
+            : "Any AAV. Drag either handle to filter in $0.25 steps."}
       </p>
     </fieldset>
   );
