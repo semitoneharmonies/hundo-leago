@@ -1,5 +1,43 @@
 # Hundo Leago — Trades
 
+## Approved review before submission — 2026-09-25
+
+Two-team and three-team builders, including counter proposals, end with
+`Preview trade`. This opens the sending/receiving comparison with authoritative
+cap and roster impact. `Edit trade` returns to the preserved draft. Only
+`Submit trade` or `Submit counter proposal` sends the offer. Previewing does
+not create a proposal, notify recipients, move assets or decline the original
+offer being countered. Failed or mismatched previews block submission until
+a valid preview is available. A failed send preserves the draft for retry.
+
+Current participating managers can inspect cap impact on a pending saved
+offer, including its proposer and invitees who already accepted. This does
+not grant further acceptance authority or change the privacy rule below.
+
+## Approved trade fog of war — 2026-09-25
+
+Before execution, only current managers of participating teams may see the
+offered assets and detailed proposal history. Other active league members see
+the participating teams and basic proposal status, with no assets, terms,
+retention, obligations, cap/roster preview, response details or private audit
+metadata. This applies to two- and three-team trades, direct links, proposal
+lists and League Activity, including existing saved offers.
+
+Commissioners and inherited platform administrators have the same restriction.
+The sole review exception is an accepted trade containing Future Considerations
+that is awaiting commissioner approval. Its assets become visible to the
+authorized commissioner for review before completion, but remain private from
+other uninvolved league members.
+
+Only execution makes the full trade and normal completion announcement visible
+to the league. Rejection, cancellation, expiry, automatic cancellation and
+countering do not publish the unexecuted offer. An executed counter does not
+publish its declined original. Once executed, a trade remains public to league
+members if later reversed or marked for correction. Durable records are
+preserved; the backend filters read responses using current viewer authority.
+
+This amendment supersedes broader inspection language below.
+
 ## Approved inaugural trading amendment — 2026-09-07
 
 Grae explicitly approved allowing trading in the approved inaugural setup without an Entry Draft. An opened Free Agent Draft with the persisted `no_draft_inaugural` setup path establishes the trading opening for that same league and season. An unapproved or unopened setup does not establish an opening. The existing Entry Draft path remains valid, and league deadlines, current-season checks, permissions, ownership, retention, asset validation and Future Considerations approval requirements remain unchanged.
@@ -75,7 +113,7 @@ This document does not define:
 * exact database tables;
 * exact API routes or payloads;
 * email, push, or alternate notification channels planned for future updates;
-* multi-team trades unless later approved;
+* trades involving more than three teams;
 * the detailed fulfillment workflow for future-considerations obligations.
 
 ---
@@ -140,7 +178,7 @@ The frontend may preview a trade but may not independently transfer an asset or 
 
 ## League Isolation
 
-Every proposal belongs to one league and exactly two teams in that league.
+Every proposal belongs to one league and either two or three teams in that league.
 
 Every asset, contract, retention record, draft pick, and prospect right must belong to the same league.
 
@@ -179,7 +217,8 @@ the teams reversed and every supported offered asset and retention amount
 preloaded for editing. Opening or leaving the editor changes no saved state.
 Sending the counter creates a new proposal to the original sender and declines
 the original in one transaction. A failed submission does neither. The
-original assets and history remain preserved. This release implements the coordinated frontend and backend workflow.
+original assets and history remain preserved. Implementation and verification
+are local until separately published.
 
 Acceptance requires current authority for the receiving team.
 
@@ -189,7 +228,7 @@ Acceptance requires current authority for the receiving team.
 
 A commissioner may:
 
-* safely inspect proposals without receiving manager execution authority;
+* inspect only team identities on unexecuted proposals unless separately a participating manager;
 * approve a Future-Considerations proposal already accepted into `Awaiting
   Commissioner Approval`;
 * reverse or correct a completed trade through the approved recovery workflow.
@@ -205,7 +244,7 @@ Commissioner actions must identify the commissioner and the teams for which the 
 
 ## Authenticated League Member
 
-Every authenticated active member of a league may view that league’s pending, rejected, cancelled, expired, automatically cancelled, and completed trade information under the approved permissions.
+Every authenticated active member may see the teams and basic status of pending, rejected, cancelled, expired and automatically cancelled proposals. Detailed assets remain subject to the fog-of-war rule above. Executed trade details are visible to the league.
 
 Membership in one league grants no visibility into another league.
 
@@ -267,11 +306,21 @@ Terminal proposals never become pending again.
 
 ---
 
-## Two-Team Limit
+## Two- and Three-Team Proposals
 
-The initial Season 2 workflow supports exactly two teams per proposal.
+Approved by Graem on 2026-09-25: the trade screen offers two-team and three-team proposals. The three-team extension is implemented and verified locally; it has not been published.
 
-Multi-team trades are out of scope until deliberately specified.
+For a three-team proposal:
+
+* Sending records the proposing team's agreement. Both invited teams must accept before any asset moves.
+* Each asset specifies its source and destination team. A team can send assets to either or both other participants. Every participant contributes at least one primary asset; requested retention stays attached to the same outgoing contract and destination.
+* All teams see each participant's current response. If the first invited team accepts, the remaining team sees that acceptance while its own response is pending. Trade-change notifications refresh open screens.
+* Any invited team's decline rejects the whole proposal, including after that team initially accepted. No further acceptance is available. A rejected proposal remains readable.
+* A participant can counter a rejected proposal. An invited team can also counter an open proposal. The editor preserves all teams, assets, destinations and retained salary. Sending a counter closes an open original atomically; a rejected original remains rejected.
+* Every counter is a new proposal. Both other teams must agree afresh, regardless of their responses to the original.
+* Sending a counter also acknowledges the original for the countering manager, clearing that team's pending item and related unread notifications.
+* **OK** on a rejected proposal acknowledges it for the viewing team, marks that manager's related notifications read, and removes it from that team's pending view. It remains available in trade history and the all-proposals view. Other teams' acknowledgments are independent.
+* Final acceptance revalidates every asset and all three rosters in one transaction. Future Considerations still require commissioner approval after both invited teams accept. Existing timing, ownership, retention, cap-warning, cancellation and safe-reversal rules continue to apply.
 
 ---
 
@@ -939,7 +988,7 @@ side. The user must still review and explicitly submit the proposal.
 
 ## Proposal Views
 
-Authenticated league proposal views show:
+Authorized participant views, accepted Future Considerations commissioner reviews, and executed league proposal views show:
 
 * both teams and all assets;
 * contract and retention terms;
@@ -1124,7 +1173,7 @@ Tests must cover:
 
 ## Approved Trade Decisions
 
-- [x] The initial trade workflow supports exactly two teams.
+- [x] Approved 2026-09-25: trade proposals support two or three teams, with unanimous agreement and per-team responses for three-team offers.
 - [x] Proposal presentation states are `Pending`, projected `Awaiting Commissioner Approval`, `Accepted`, `Rejected`, `Cancelled`, `Expired`, `Automatically Cancelled`, `Reversed`, and `Correction Required`.
 - [x] A terminal proposal never becomes pending again.
 - [x] Cash, cap space, free agents, matchup results, and unsupported unnamed assets are not tradeable.

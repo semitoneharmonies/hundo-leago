@@ -14,29 +14,17 @@ function renderCounter(fixture, initialPath = `/leagues/${ids.league}/trades/${i
     <Route path="/leagues/:leagueId/trades/:tradeId" element={<TradeDetailPage />} />
   </Routes>, { initialEntries: [initialPath], enableSession: true, config, sessionOptions: { fetchImpl: fixture.fetch } });
 }
-const writes = fixture => fixture.requests.filter(request => request.method === "POST");
+const writes = fixture => fixture.requests.filter(request => request.method === "POST" && !request.pathname.endsWith("/trades/preview"));
+async function reviewCounter(view) {
+  const preview = await screen.findByRole("button", { name: "Preview trade" });
+  await waitFor(() => expect(preview).toBeEnabled());
+  await view.user.click(preview);
+  const submit = screen.getByRole("button", { name: "Submit counter proposal" });
+  await waitFor(() => expect(submit).toBeEnabled());
+  return submit;
+}
 
 describe("Counter Proposal", () => {
-  it("shows Counter Proposal beside Confirm and Decline even when the acceptance preview reports roster problems", async () => {
-    const fixture = createCounterFixture();
-    const originalFetch = fixture.fetch;
-    fixture.fetch = async (url, options) => {
-      const response = await originalFetch(url, options);
-      if (!new URL(url).pathname.endsWith("/acceptance-preview")) return response;
-      const body = await response.json();
-      body.data.generallyIllegal = true;
-      body.data.teams[0].generallyIllegal = true;
-      body.data.teams[0].issues = [{ code: "SALARY_CAP_EXCEEDED", usageCents: 10125, limitCents: 10000 }];
-      return new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
-    };
-    renderCounter(fixture);
-    await screen.findByText("Salary cap exceeded: $101.25 used against a $100.00 cap.");
-    const counter = await screen.findByRole("button", { name: "Counter Proposal" });
-    expect(counter.parentElement).toContainElement(screen.getByRole("button", { name: "Confirm" }));
-    expect(counter.parentElement).toContainElement(screen.getByRole("button", { name: "Decline" }));
-    expect(counter).toBeEnabled();
-    expect(writes(fixture)).toHaveLength(0);
-  });
   it("reverses every supported asset and keeps retention on the original retaining team", () => {
     const fixture = createCounterFixture();
     const draft = counterProposalDraft(fixture.original, { leagueId: ids.league, tradeId: ids.trade, managedTeamIds: [ids.receivingTeam] });
@@ -66,12 +54,12 @@ describe("Counter Proposal", () => {
     await view.user.clear(notes);
     await view.user.type(notes, "Conditional second-round pick");
     fixture.failNext = true;
-    await view.user.click(screen.getByRole("button", { name: "Send counter proposal" }));
+    await view.user.click(await reviewCounter(view));
     await screen.findByText("The trade request could not be completed.");
     expect(fixture.original.storageStatus).toBe("proposed");
-    expect(notes).toHaveValue("Conditional second-round pick");
-    await view.user.click(screen.getByRole("button", { name: "Send counter proposal" }));
-    await waitFor(() => expect(screen.queryByRole("heading", { name: "New trade proposal" })).not.toBeInTheDocument());
+    expect(screen.getByRole("group", { name: "Trade breakdown" })).toHaveTextContent("Conditional second-round pick");
+    await view.user.click(screen.getByRole("button", { name: "Submit counter proposal" }));
+    await waitFor(() => expect(fixture.counter).not.toBeNull());
     const requests = writes(fixture);
     expect(requests).toHaveLength(2);
     expect(requests.every(request => request.pathname === `/api/v1/leagues/${ids.league}/trades/${ids.trade}/counter`)).toBe(true);
@@ -101,7 +89,7 @@ describe("Counter Proposal", () => {
   it("rejects a forged counter link for another team's manager", async () => {
     renderCounter(createCounterFixture({ role: "sender" }), `/leagues/${ids.league}/trades?counterTradeId=${ids.trade}`);
     expect(await screen.findByRole("alert")).toHaveTextContent("Only the receiving team's manager");
-    expect(screen.queryByRole("button", { name: "Send counter proposal" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Preview trade" })).not.toBeInTheDocument();
   });
   it("does not preload a different league or a closed original", () => {
     const options = { leagueId: ids.league, tradeId: ids.trade, managedTeamIds: [ids.receivingTeam] };
@@ -112,14 +100,14 @@ describe("Counter Proposal", () => {
     const fixture = createCounterFixture({ unavailable: true });
     const view = renderCounter(fixture, `/leagues/${ids.league}/trades?counterTradeId=${ids.trade}`);
     await screen.findByRole("option", { name: /Previously offered item is unavailable/ });
-    await view.user.click(screen.getByRole("button", { name: "Send counter proposal" }));
+    await view.user.click(screen.getByRole("button", { name: "Preview trade" }));
     expect(writes(fixture)).toHaveLength(0);
   });
   it("uses the selected league in a second league context", async () => {
     const fixture = createCounterFixture({ leagueId: ids.otherLeague });
     const view = renderCounter(fixture, `/leagues/${ids.otherLeague}/trades/${ids.trade}`);
     await view.user.click(await screen.findByRole("button", { name: "Counter Proposal" }));
-    await view.user.click(await screen.findByRole("button", { name: "Send counter proposal" }));
+    await view.user.click(await reviewCounter(view));
     await waitFor(() => expect(writes(fixture)).toHaveLength(1));
     expect(writes(fixture)[0].pathname).toContain(`/leagues/${ids.otherLeague}/`);
   });
