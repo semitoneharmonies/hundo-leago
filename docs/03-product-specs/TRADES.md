@@ -1,5 +1,19 @@
 # Hundo Leago — Trades
 
+## Approved review before submission — 2026-09-25
+
+Two-team and three-team builders, including counter proposals, end with
+`Preview trade`. This opens the sending/receiving comparison with authoritative
+cap and roster impact. `Edit trade` returns to the preserved draft. Only
+`Submit trade` or `Submit counter proposal` sends the offer. Previewing does
+not create a proposal, notify recipients, move assets or decline the original
+offer being countered. Failed or mismatched previews block submission until
+a valid preview is available. A failed send preserves the draft for retry.
+
+Current participating managers can inspect cap impact on a pending saved
+offer, including its proposer and invitees who already accepted. This does
+not grant further acceptance authority or change the privacy rule below.
+
 ## Approved trade fog of war — 2026-09-25
 
 Before execution, only current managers of participating teams may see the

@@ -7,7 +7,7 @@ import { TradeDetailPage, TradesPage } from "./TransactionPages.jsx";
 
 vi.mock("socket.io-client", () => ({ io: () => ({ onAny() {}, offAny() {}, disconnect() {} }) }));
 const config = { appEnv: "local", apiOrigin: "http://localhost:4000", socketOrigin: "http://localhost:4000", buildId: null };
-const writes = fixture => fixture.requests.filter(request => request.method === "POST");
+const writes = fixture => fixture.requests.filter(request => request.method === "POST" && !request.pathname.endsWith("/trades/preview"));
 function CurrentPage() { return <output aria-label="Current page">{useLocation().pathname}</output>; }
 async function compose(fixture, leagueId = ids.league) {
   const view = renderWithProviders(<><CurrentPage /><Routes>
@@ -18,6 +18,9 @@ async function compose(fixture, leagueId = ids.league) {
   await view.user.selectOptions(await screen.findByLabelText("Proposing team sends asset 1"), `contract:${ids.contract}`);
   await view.user.selectOptions(screen.getByLabelText("Receiving team sends asset 1 type"), "draft_pick");
   await view.user.selectOptions(screen.getByLabelText("Receiving team sends asset 1"), ids.pick);
+  await view.user.click(screen.getByRole("button", { name: "Preview trade" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Submit trade" })).toBeEnabled());
+  expect(writes(fixture)).toHaveLength(0);
   return view;
 }
 
@@ -25,7 +28,7 @@ describe("Two-team proposal send feedback", () => {
   for (const leagueId of [ids.league, ids.otherLeague]) it(`opens the created offer immediately in league ${leagueId}`, async () => {
     const fixture = createCounterFixture({ role: "sender", leagueId });
     const view = await compose(fixture, leagueId);
-    await view.user.click(screen.getByRole("button", { name: "Send proposal" }));
+    await view.user.click(screen.getByRole("button", { name: "Submit trade" }));
     await waitFor(() => expect(screen.getByLabelText("Current page")).toHaveTextContent(`/leagues/${leagueId}/trades/${ids.counter}`));
     expect(await screen.findByRole("heading", { name: "Trade proposal", exact: true })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "New trade proposal" })).not.toBeInTheDocument();
@@ -39,8 +42,8 @@ describe("Two-team proposal send feedback", () => {
     let release;
     fixture.beforeSend = () => new Promise(resolve => { release = resolve; });
     await compose(fixture);
-    const form = screen.getByRole("button", { name: "Send proposal" }).closest("form");
-    act(() => { fireEvent.submit(form); fireEvent.submit(form); });
+    const submit = screen.getByRole("button", { name: "Submit trade" });
+    act(() => { fireEvent.click(submit); fireEvent.click(submit); });
     await waitFor(() => expect(writes(fixture)).toHaveLength(1));
     expect(screen.getByRole("button", { name: "Sending…" })).toBeDisabled();
     expect(screen.getByLabelText("Current page").textContent).toBe(`/leagues/${ids.league}/trades`);
@@ -53,12 +56,15 @@ describe("Two-team proposal send feedback", () => {
     const fixture = createCounterFixture({ role: "sender" });
     fixture.failNext = true;
     const view = await compose(fixture);
-    await view.user.click(screen.getByRole("button", { name: "Send proposal" }));
+    await view.user.click(screen.getByRole("button", { name: "Submit trade" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("The trade request could not be completed.");
     expect(screen.getByLabelText("Current page").textContent).toBe(`/leagues/${ids.league}/trades`);
+    await view.user.click(screen.getByRole("button", { name: "Edit trade" }));
     expect(screen.getByLabelText("Proposing team sends asset 1")).toHaveValue(`contract:${ids.contract}`);
     expect(screen.getByLabelText("Receiving team sends asset 1")).toHaveValue(ids.pick);
-    await view.user.click(screen.getByRole("button", { name: "Send proposal" }));
+    await view.user.click(screen.getByRole("button", { name: "Preview trade" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Submit trade" })).toBeEnabled());
+    await view.user.click(screen.getByRole("button", { name: "Submit trade" }));
     await waitFor(() => expect(screen.getByLabelText("Current page")).toHaveTextContent(`/trades/${ids.counter}`));
     expect(writes(fixture)).toHaveLength(2);
     expect(writes(fixture)[0].headers.get("Idempotency-Key")).toBe(writes(fixture)[1].headers.get("Idempotency-Key"));

@@ -18,6 +18,14 @@ function renderTrade(fixture, path = `/leagues/${ids.league}/trades/${ids.trade}
     { initialEntries: [path], enableSession: true, config, sessionOptions: { fetchImpl: fixture.fetch } });
 }
 const writes = fixture => fixture.requests.filter(r => r.method === "POST" && !r.pathname.endsWith("/trades/preview"));
+async function reviewTrade(view, counter = true) {
+  const preview = await screen.findByRole("button", { name: "Preview trade" });
+  await waitFor(() => expect(preview).toBeEnabled());
+  await view.user.click(preview);
+  const submit = screen.getByRole("button", { name: counter ? "Submit counter proposal" : "Submit trade" });
+  await waitFor(() => expect(submit).toBeEnabled());
+  return submit;
+}
 describe("Three-team trades", () => {
   it("shows all three teams' outgoing and incoming assets with the correct counterparties and grouped retention", async () => {
     const fixture = createThreeTeamFixture(); renderTrade(fixture);
@@ -49,7 +57,7 @@ describe("Three-team trades", () => {
     observeRecoveryEpoch(recoveryId);
     try {
       const fixture = createThreeTeamFixture(), view = renderTrade(fixture, `/leagues/${ids.league}/trades?counterTradeId=${ids.trade}`);
-      const send = await screen.findByRole("button", { name: "Send counter proposal" });
+      const send = await reviewTrade(view);
       await waitFor(() => expect(send).toBeEnabled());
       fixture.failNext = true;
       await view.user.click(send); await screen.findByRole("alert");
@@ -98,7 +106,7 @@ describe("Three-team trades", () => {
     const retained = screen.getByLabelText("Wolfy's sends asset 1 retained AAV dollars");
     await view.user.clear(retained); await view.user.type(retained, "2.50");
     expect(screen.queryByRole("region", { name: "Draft impact preview" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send counter proposal" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Submit counter proposal" })).not.toBeInTheDocument();
     await screen.findByText(/Impact preview could not be loaded/);
     expect(writes(fixture)).toHaveLength(0);
     failPreview = false;
@@ -189,12 +197,11 @@ describe("Three-team trades", () => {
     expect(screen.getByLabelText("Wolfy's sends asset 2 destination")).toHaveValue(ids.thirdTeam);
     expect(writes(fixture)).toHaveLength(0);
     await view.user.selectOptions(screen.getByLabelText("Wolfy's sends asset 2 destination"), ids.receivingTeam);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Send counter proposal" })).toBeEnabled());
     fixture.failNext = true;
-    await view.user.click(screen.getByRole("button", { name: "Send counter proposal" }));
+    await view.user.click(await reviewTrade(view));
     expect(await screen.findByRole("alert")).toHaveTextContent("could not be completed");
-    expect(screen.getByLabelText("Wolfy's sends asset 2 destination")).toHaveValue(ids.receivingTeam);
-    await view.user.click(screen.getByRole("button", { name: "Send counter proposal" }));
+    expect(screen.getByRole("region", { name: "Benning Did Nothing Wrong receives" })).toHaveTextContent("Drafted Prospect");
+    await view.user.click(screen.getByRole("button", { name: "Submit counter proposal" }));
     await waitFor(() => expect(fixture.counter).not.toBeNull());
     expect(writes(fixture)).toHaveLength(2);
     expect(writes(fixture)[0].headers.get("Idempotency-Key")).toBe(writes(fixture)[1].headers.get("Idempotency-Key"));
@@ -213,8 +220,7 @@ describe("Three-team trades", () => {
     await screen.findByRole("region", { name: "Draft impact preview" });
     expect(screen.getAllByText("Projected cap")).toHaveLength(3);
     expect(writes(fixture)).toHaveLength(0);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Send proposal" })).toBeEnabled());
-    await view.user.click(screen.getByRole("button", { name: "Send proposal" }));
+    await view.user.click(await reviewTrade(view, false));
     await waitFor(() => expect(writes(fixture)).toHaveLength(1));
     expect(writes(fixture)[0].body.participants).toHaveLength(3);
   });

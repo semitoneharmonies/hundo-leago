@@ -5,13 +5,14 @@ import { routePaths } from "../../app/routePaths.js";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { buildThreeTeamProposal } from "./threeTeamProposal.js";
-import { counterTrade, createTrade, previewDraftTrade, transactionKeys } from "./transactionQueries.js";
+import { counterTrade, createTrade, draftTradePreviewQuery, transactionKeys } from "./transactionQueries.js";
 
 const emptyAsset = () => ({ type: "player", reference: "", destinationTeamId: "" });
 
-export function ThreeTeamTradeForm({ context, leagueId, initialProposal, counterTradeId, AssetEditor, assetChoices, ImpactPreview }) {
-  const Editor = AssetEditor, Preview = ImpactPreview;
-  const navigate = useNavigate(), queryClient = useQueryClient(), submission = useRef(null);
+export function ThreeTeamTradeForm({ context, leagueId, initialProposal, counterTradeId, AssetEditor, assetChoices, ImpactPreview, ReviewScreen, onReviewChange }) {
+  const Editor = AssetEditor, Preview = ImpactPreview, Review = ReviewScreen;
+  const navigate = useNavigate(), queryClient = useQueryClient(), submission = useRef(null), sending = useRef(false);
+  const [reviewBody, setReviewBody] = useState(null);
   const [sides, setSides] = useState(() => initialProposal?.participants || [
     { teamId: context.managerControlledTeams[0]?.id || "", assets: [emptyAsset()] },
     { teamId: "", assets: [emptyAsset()] }, { teamId: "", assets: [emptyAsset()] },
@@ -30,15 +31,8 @@ export function ThreeTeamTradeForm({ context, leagueId, initialProposal, counter
     return () => clearTimeout(timer);
   }, [fingerprint]);
   const preview = useQuery({
-    queryKey: ["league", leagueId, "trade-draft-preview", context.session.user?.id, fingerprint],
-    queryFn: async ({ signal }) => {
-      const result = await previewDraftTrade(context.session.httpClient, leagueId, draft, signal);
-      const ids = new Set(result.teams.map(team => team.teamId));
-      if (result.leagueId !== leagueId || result.teams.length !== 3 || ids.size !== 3 || sides.some(side => !ids.has(side.teamId))) throw new Error("The impact preview does not match the selected teams.");
-      return result;
-    },
-    enabled: Boolean(fingerprint && fingerprint === settledDraft && context.league && context.session.status === "authenticated"),
-    meta: { private: true, leagueId }, retry: false,
+    ...draftTradePreviewQuery(context.session.httpClient, leagueId, context.session.user?.id, draft),
+    enabled: Boolean(!reviewBody && fingerprint && fingerprint === settledDraft && context.league && context.session.status === "authenticated"),
   });
   const mutation = useMutation({ mutationFn: ({ body, idempotencyKey }) => counterTradeId
     ? counterTrade(context.session.httpClient, leagueId, counterTradeId, body, idempotencyKey)
@@ -48,7 +42,7 @@ export function ThreeTeamTradeForm({ context, leagueId, initialProposal, counter
     if (counterTradeId) void queryClient.invalidateQueries({ queryKey: transactionKeys.trade(leagueId, counterTradeId) });
     void queryClient.invalidateQueries({ queryKey: ["league", leagueId, "activity"] });
     navigate(routePaths.trade(leagueId, result.proposal.id));
-  } });
+  }, onError: () => { sending.current = false; } });
   function updateSide(index, change) { setSides(current => current.map((side, i) => i === index ? { ...side, ...change } : side)); }
   function changeTeam(index, teamId) {
     setSides(current => current.map((side, i) => i === index ? { teamId, assets: [emptyAsset()] }
@@ -56,20 +50,29 @@ export function ThreeTeamTradeForm({ context, leagueId, initialProposal, counter
   }
   function submit(event) {
     event.preventDefault();
-    if (mutation.isPending || !preview.data || preview.isFetching || preview.isError) return;
+    if (mutation.isPending) return;
     try {
       sides.forEach((side, index) => {
         if (side.assets.some(asset => !(asset.type === "future_considerations" && asset.mode !== "existing") && !assetChoices(asset, workspaces[index].data).some(choice => choice.id === asset.reference))) throw new Error("An offered item is no longer available. Choose a replacement or remove it before sending.");
       });
-      const body = buildThreeTeamProposal(sides[0].teamId, sides), fingerprint = JSON.stringify(body);
-      if (submission.current?.fingerprint !== fingerprint) submission.current = { fingerprint, idempotencyKey: createIdempotencyKey("three-team", globalThis.crypto, "-") };
-      setError(null); mutation.mutate({ body, idempotencyKey: submission.current.idempotencyKey });
+      setError(null); setReviewBody(buildThreeTeamProposal(sides[0].teamId, sides)); onReviewChange(true);
     } catch (caught) { setError(caught); }
+  }
+  function send() {
+    if (sending.current || mutation.isPending || !reviewBody) return;
+    const fingerprint = JSON.stringify(reviewBody);
+    if (submission.current?.fingerprint !== fingerprint) submission.current = { fingerprint, idempotencyKey: createIdempotencyKey("three-team", globalThis.crypto, "-") };
+    sending.current = true;
+    mutation.mutate({ body: reviewBody, idempotencyKey: submission.current.idempotencyKey });
   }
   if (!context.managerControlledTeams.length) return <p>You do not currently control a team that can propose a trade.</p>;
   const selectedTeams = sides.map(side => context.teams.data?.find(team => team.id === side.teamId)).filter(Boolean);
   const busy = mutation.isPending || workspaces.some(workspace => workspace.isFetching);
   const failure = error || mutation.error || workspaces.find(workspace => workspace.isError)?.error;
+  if (reviewBody) return <Review context={context} leagueId={leagueId} body={reviewBody} teams={selectedTeams}
+    workspaces={workspaces.map(w => w.data)} workspacesFetching={workspaces.some(w => w.isFetching)} counterTradeId={counterTradeId}
+    pending={mutation.isPending} error={failure} onSubmit={send}
+    onEdit={() => { setReviewBody(null); mutation.reset(); onReviewChange(false); }} />;
   return <form className="hl-surface hl-feature-form" onSubmit={submit}>
     <h2>{counterTradeId ? "Three-team counter proposal" : "New three-team trade"}</h2>
     <p>Both other teams must accept before anything moves. One decline rejects the whole trade.</p>
@@ -94,7 +97,7 @@ export function ThreeTeamTradeForm({ context, leagueId, initialProposal, counter
       {fingerprint && preview.data && !preview.isError && <Preview preview={preview.data} teams={selectedTeams} />}
       {preview.isFetching && preview.data && <p role="status">Updating impact preview…</p>}
       {preview.isError && <div><p role="alert">Impact preview could not be loaded. {preview.error.message}</p><button type="button" className="hl-button hl-button--quiet" onClick={() => preview.refetch()}>Retry preview</button></div>}
-      <button className="hl-button hl-button--primary" disabled={busy || !preview.data || preview.isFetching || preview.isError || workspaces.some(workspace => workspace.isError)}>{counterTradeId ? "Send counter proposal" : "Send proposal"}</button>
+      <button className="hl-button hl-button--primary" disabled={busy || !fingerprint || workspaces.some(workspace => workspace.isError)}>Preview trade</button>
     </fieldset>
     {counterTradeId && <Link className="hl-button hl-button--quiet" to={routePaths.trade(leagueId, counterTradeId)}>Back to original offer</Link>}
     {failure && <p role="alert">{failure.message || "The proposal could not be sent. Try again."}</p>}

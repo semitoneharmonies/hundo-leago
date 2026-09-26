@@ -23,9 +23,13 @@ export function createThreeTeamFixture({ status = "proposed", secondAccepted = f
     if (pathname.includes("/trades") && (method === "POST" || pathname.endsWith("/acceptance-preview"))) {
       const body = options.body ? JSON.parse(options.body) : null;
       fixture.requests.push({ pathname, method, body, headers: options.headers });
-      if (pathname.endsWith("/trades/preview")) return envelope({ code: "TRADE_PROPOSAL_PREVIEWED", leagueId: ids.league, generallyIllegal: false, teams: previewTeams() });
+      if (pathname.endsWith("/trades/preview")) {
+        if (fixture.beforePreview) await fixture.beforePreview();
+        if (fixture.failPreviewNext) { fixture.failPreviewNext = false; return new Response(JSON.stringify({ error: { code: "TRADE_REQUEST_FAILED", message: "Impact preview could not be loaded.", requestId: "preview-fixture" } }), { status: 500, headers: { "content-type": "application/json" } }); }
+        return envelope({ code: "TRADE_PROPOSAL_PREVIEWED", leagueId, generallyIllegal: false, teams: previewTeams() });
+      }
       if (fixture.failNext) { fixture.failNext = false; return new Response(JSON.stringify({ error: { code: "TRADE_REQUEST_FAILED", message: "The trade request could not be completed.", requestId: "fixture" } }), { status: 500, headers: { "content-type": "application/json" } }); }
-      if (pathname.endsWith("/acceptance-preview")) return envelope({ code: "TRADE_ACCEPTANCE_PREVIEWED", proposal: { id: proposal.id, leagueId: ids.league, version: proposal.version }, assets: [], generallyIllegal: false,
+      if (pathname.endsWith("/acceptance-preview")) return envelope({ code: "TRADE_ACCEPTANCE_PREVIEWED", proposal: { id: proposal.id, leagueId, version: proposal.version }, assets: [], generallyIllegal: false,
         teams: fixture.teams.map(team => ({ teamId: team.id, cap: { salaryCapCents: 10000, usageCents: 625, spaceCents: 9375 }, rosterCounts: { activeForwards: 1, activeDefence: 0, bench: 0, injuredReserve: 0, prospects: 0 }, generallyIllegal: false, issues: [] })) });
       if (pathname.endsWith("/acknowledge")) { own(proposal, body).acknowledgedAtMs = 2; return envelope({ code: "TRADE_ACKNOWLEDGED" }); }
       if (pathname.endsWith("/accept")) { own(proposal, body).decision = "accepted"; own(proposal, body).respondedAtMs = 2; proposal.version++;

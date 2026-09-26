@@ -44,11 +44,20 @@ test("third team counters a declined trade or clears it with OK", async ({ page 
   await page.screenshot({ path: test.info().outputPath("three-team-counter-editor.png"), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.evaluate(() => { window.threeTeamFixture.failNext = true; });
-  await page.getByRole("button", { name: "Send counter proposal", exact: true }).click();
+  await page.getByRole("button", { name: "Preview trade", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Review trade", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Submit counter proposal", exact: true })).toBeEnabled();
+  const review = page.getByRole("group", { name: "Trade breakdown" });
+  await expect(review.getByRole("region")).toHaveCount(6);
+  await expect(page.getByText("Projected cap", { exact: true })).toHaveCount(3);
+  expect(await page.evaluate(() => window.threeTeamFixture.requests.filter(r => r.method === "POST" && !r.pathname.endsWith("/trades/preview")).length)).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath("three-team-review.png"), fullPage: true });
+  await page.getByRole("button", { name: "Submit counter proposal", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("could not be completed");
-  await expect(page.getByLabel("Wolfy's sends asset 2 destination", { exact: true })).toHaveValue("00000000-0000-4000-8000-000000000003");
-  await page.getByRole("button", { name: "Send counter proposal", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Three-team counter proposal" })).toHaveCount(0);
+  await expect(review.getByRole("region", { name: "Benning Did Nothing Wrong receives", exact: true })).toContainText("Drafted Prospect");
+  await page.getByRole("button", { name: "Submit counter proposal", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Review trade", exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => window.threeTeamFixture.counter.participants.map(p => p.decision))).toEqual(["accepted", "pending", "pending"]);
   await page.goto("/e2e/fixtures/three-team-trade.html?status=declined", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "OK", exact: true }).click();
@@ -56,6 +65,19 @@ test("third team counters a declined trade or clears it with OK", async ({ page 
   await expect(page.getByRole("link", { name: /Wolfy's ↔ Benning/ })).toHaveCount(0);
   await page.getByLabel("Status", { exact: true }).selectOption("all");
   await expect(page.getByRole("link", { name: /Wolfy's ↔ Benning/ })).toBeVisible();
+});
+
+test("proposer sees all three teams' authoritative cap impact after sending", async ({ page }) => {
+  await page.goto("/e2e/fixtures/three-team-trade.html?role=sender", { waitUntil: "domcontentloaded" });
+  const impact = page.getByRole("region", { name: "Salary cap impact" });
+  await expect(impact.getByText("$6.25", { exact: true })).toHaveCount(3);
+  await expect(impact.getByText("+$1.25", { exact: true })).toHaveCount(3);
+  await expect(impact.getByText("Unavailable", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Cancel proposal", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Confirm", exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => window.threeTeamFixture.requests.filter(r => r.method === "POST" && !r.pathname.endsWith("/trades/preview")).length)).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath("three-team-proposer-impact.png"), fullPage: true });
 });
 
 test("one manager responds independently for two invited teams", async ({ page }) => {

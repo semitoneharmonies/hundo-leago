@@ -6,7 +6,7 @@ import { createThreeTeamFixture, threeTeamIds as ids } from "../../src/test/thre
 import "../../src/styles/theme-a.css";
 
 const options = new URLSearchParams(window.location.search);
-const fixture = createThreeTeamFixture({ status: options.get("status") || "proposed", secondAccepted: options.has("accepted"), sharedManager: options.has("shared") });
+const fixture = createThreeTeamFixture({ status: options.get("status") || "proposed", secondAccepted: options.has("accepted"), sharedManager: options.has("shared"), role: options.get("role") || "receiver" });
 window.threeTeamFixture = fixture;
 window.history.replaceState(null, "", `/leagues/${ids.league}/trades/${ids.trade}`);
 createRoot(document.getElementById("root")).render(

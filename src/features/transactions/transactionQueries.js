@@ -136,6 +136,21 @@ export async function previewDraftTrade(httpClient, leagueId, input, signal) {
   })).data;
 }
 
+export function draftTradePreviewQuery(httpClient, leagueId, userId, body) {
+  return {
+    queryKey: ["league", leagueId, "trade-draft-preview", userId, body ? JSON.stringify(body) : null],
+    queryFn: async ({ signal }) => {
+      const result = await previewDraftTrade(httpClient, leagueId, body, signal);
+      const ids = body.participants?.map(p => p.teamId) || [body.proposingTeamId, body.receivingTeamId];
+      const returned = new Set(result.teams.map(team => team.teamId));
+      if (result.leagueId !== leagueId || result.teams.length !== ids.length || returned.size !== ids.length || ids.some(id => !returned.has(id))) throw new Error("The impact preview does not match the selected teams.");
+      return result;
+    },
+    enabled: Boolean(body && userId), staleTime: 0, retry: false,
+    meta: { private: true, leagueId },
+  };
+}
+
 export async function previewTradeAcceptance(httpClient, leagueId, tradeId, respondingTeamId) {
   return (await httpClient.request(
     `/api/v1/leagues/${part(leagueId)}/trades/${part(tradeId)}/acceptance-preview${respondingTeamId ? `?respondingTeamId=${part(respondingTeamId)}` : ""}`,

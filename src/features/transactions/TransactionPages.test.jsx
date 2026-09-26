@@ -134,6 +134,12 @@ function baseFetch(
       new RegExp(`^/api/v1/leagues/${leagueId}/teams/([^/]+)/roster$`)
     );
     if (workspaceMatch) return envelope(teamWorkspace(workspaceMatch[1]));
+    if (path.endsWith("/trades/preview")) {
+      const counts = { activeForwards: 1, activeDefence: 0, bench: 0, injuredReserve: 0, prospects: 0 };
+      return envelope({ code: "TRADE_PROPOSAL_PREVIEWED", leagueId, generallyIllegal: false,
+        teams: [teamA, teamB].map(teamId => ({ teamId, before: { cap: { usageCents: teamWorkspace(teamId).cap.usageCents }, rosterCounts: counts },
+          cap: { salaryCapCents: 10000, usageCents: 625, spaceCents: 9375 }, rosterCounts: counts, generallyIllegal: false, issues: [] })) });
+    }
     return extra(path, options, parsedUrl);
   });
 }
@@ -446,7 +452,7 @@ describe("M5-11 authenticated transaction pages", () => {
       if (path === `/api/v1/leagues/${leagueId}/trades`) {
         if (options.method === "POST") {
           submitted = JSON.parse(options.body);
-          return envelope({ code: "TRADE_PROPOSAL_CREATED" });
+          return envelope({ code: "TRADE_PROPOSAL_CREATED", proposal: { id: assetId } });
         }
         return envelope({ code: "TRADE_PROPOSALS_FOUND", proposals: [] });
       }
@@ -506,8 +512,10 @@ describe("M5-11 authenticated transaction pages", () => {
     expect(otherCap).toHaveTextContent("Change+$3.75");
     expect(otherCap).toHaveTextContent("Projected cap$3.75");
     await view.user.click(
-      screen.getByRole("button", { name: "Send proposal" })
+      screen.getByRole("button", { name: "Preview trade" })
     );
+    await waitFor(() => expect(screen.getByRole("button", { name: "Submit trade" })).toBeEnabled());
+    await view.user.click(screen.getByRole("button", { name: "Submit trade" }));
 
     await waitFor(() => {
       expect(submitted).toEqual({
@@ -537,7 +545,7 @@ describe("M5-11 authenticated transaction pages", () => {
       if (path === `/api/v1/leagues/${leagueId}/trades`) {
         if (options.method === "POST") {
           submitted = JSON.parse(options.body);
-          return envelope({ code: "TRADE_PROPOSAL_CREATED" });
+          return envelope({ code: "TRADE_PROPOSAL_CREATED", proposal: { id: assetId } });
         }
         return envelope({ code: "TRADE_PROPOSALS_FOUND", proposals: [] });
       }
@@ -585,8 +593,10 @@ describe("M5-11 authenticated transaction pages", () => {
       "Completes the obligation-only trade"
     );
     await view.user.click(
-      screen.getByRole("button", { name: "Send proposal" })
+      screen.getByRole("button", { name: "Preview trade" })
     );
+    await waitFor(() => expect(screen.getByRole("button", { name: "Submit trade" })).toBeEnabled());
+    await view.user.click(screen.getByRole("button", { name: "Submit trade" }));
 
     await waitFor(() => {
       expect(submitted?.proposingAssets).toEqual([

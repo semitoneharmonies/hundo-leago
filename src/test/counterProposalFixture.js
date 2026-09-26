@@ -56,6 +56,17 @@ export function createCounterFixture({ role = "receiver", leagueId = counterIds.
     if (pathname === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [{ id: leagueId, name: "Amigo Leago", status: "active", timezone: "America/Vancouver", currentSeason: null,
       membership: { id: id(61), permissionCategory: role === "commissioner" ? "commissioner" : "manager", status: "active", version: 1 }, version: 1 }] });
     const root = `/api/v1/leagues/${leagueId}`;
+    if (pathname === `${root}/trades/preview` && options.method === "POST") {
+      if (fixture.beforePreview) await fixture.beforePreview();
+      if (fixture.failPreviewNext) {
+        fixture.failPreviewNext = false;
+        return new Response(JSON.stringify({ error: { code: "TRADE_REQUEST_FAILED", message: "Impact preview could not be loaded.", requestId: "preview-fixture" } }), { status: 500, headers: { "content-type": "application/json" } });
+      }
+      const counts = { activeForwards: 1, activeDefence: 0, bench: 0, injuredReserve: 0, prospects: 0 };
+      return envelope({ code: "TRADE_PROPOSAL_PREVIEWED", leagueId, generallyIllegal: false,
+        teams: teams.map(team => ({ teamId: team.id, before: { cap: { usageCents: workspace(team.id).cap.usageCents }, rosterCounts: counts },
+          cap: { salaryCapCents: 10000, usageCents: 625, spaceCents: 9375 }, rosterCounts: counts, generallyIllegal: false, issues: [] })) });
+    }
     if (pathname === `${root}/teams`) return envelope({ code: "TEAMS_FOUND", teams });
     for (const team of teams) if (pathname === `${root}/teams/${team.id}/roster`) return envelope(workspace(team.id));
     if (pathname === `${root}/trades` && options.method === "POST") {
