@@ -8,6 +8,20 @@ import {
 const leagueId = "11111111-1111-4111-8111-111111111111";
 
 describe("league player catalog queries", () => {
+  it("keeps every contract filter in requests, subsequent pages and cache identity", async () => {
+    const request = vi.fn(async () => ({ data: [], page: { nextCursor: null, hasMore: false } }));
+    const filters = { ownership: "signed", minimumAavCents: 0, maximumAavCents: 600, remainingYears: 1, contractType: "fantasy_elc" };
+    const query = leaguePlayerInfiniteQuery({ request }, leagueId, filters);
+    await query.queryFn({ pageParam: "next-player", signal: new AbortController().signal });
+    const params = new URL(request.mock.calls[0][0], "http://localhost").searchParams;
+    for (const [name, value] of Object.entries(filters)) {
+      expect(params.get(name)).toBe(String(value));
+      expect(leaguePlayerInfiniteQuery({ request }, leagueId, { ...filters, [name]: undefined }).queryKey).not.toEqual(query.queryKey);
+    }
+    expect(params.get("cursor")).toBe("next-player");
+    expect(leaguePlayerInfiniteQuery({ request }, "another-league", filters).queryKey).not.toEqual(query.queryKey);
+  });
+
   it("loads one 100-player page at a time in fantasy-points order", async () => {
     const request = vi
       .fn()
