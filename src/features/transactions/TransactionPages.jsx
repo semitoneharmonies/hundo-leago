@@ -212,6 +212,7 @@ function namedTeam(teamNames, teamId, fallback = "A team") {
 }
 
 function activityTitle(item, teamNames) {
+  if (item.metadata?.detailsVisible === false) return item.summary;
   if (item.type === "free_agent_draft_completed") return "Free Agent Draft ended.";
   const metadata = item.metadata || {};
   const category = activityCategory(item.type);
@@ -1259,6 +1260,7 @@ export function TradesPage() {
                       ? "Awaiting your response"
                       : awaitingCommissioner
                         ? "Awaiting commissioner approval"
+                      : trade.detailsVisible === false ? "Details private until execution"
                       : "Open proposal details"}
                   </small>
                 </span>
@@ -1498,6 +1500,7 @@ export function TradeDetailPage() {
   const [reversalPreview, setReversalPreview] = useState(null);
   const commandKeys = useRef(new Map());
   const proposal = trade.data;
+  const detailsVisible = proposal?.detailsVisible !== false;
   const [selectedResponseTeam, setSelectedResponseTeam] = useState(null);
   const ownParticipants = proposal?.participants?.filter(p => context.managerControlledTeams.some(team => team.id === p.teamId)) || [];
   const ownParticipant = ownParticipants.find(p => p.teamId === selectedResponseTeam) || ownParticipants.find(p => p.teamId !== proposal.proposingTeam.id) || ownParticipants[0];
@@ -1511,7 +1514,7 @@ export function TradeDetailPage() {
     enabled:
       context.session.status === "authenticated" &&
       Boolean(context.league) &&
-      Boolean(proposal?.proposingTeam?.id),
+      Boolean(proposal?.proposingTeam?.id) && detailsVisible,
   });
   const receivingWorkspace = useQuery({
     ...teamWorkspaceQuery(
@@ -1522,10 +1525,10 @@ export function TradeDetailPage() {
     enabled:
       context.session.status === "authenticated" &&
       Boolean(context.league) &&
-      Boolean(proposal?.receivingTeam?.id),
+      Boolean(proposal?.receivingTeam?.id) && detailsVisible,
   });
   const thirdTeam = proposal?.participants?.[2];
-  const thirdWorkspace = useQuery({ ...teamWorkspaceQuery(context.session.httpClient, leagueId, thirdTeam?.teamId || "invalid"), enabled: Boolean(thirdTeam && context.league && context.session.status === "authenticated") });
+  const thirdWorkspace = useQuery({ ...teamWorkspaceQuery(context.session.httpClient, leagueId, thirdTeam?.teamId || "invalid"), enabled: Boolean(detailsVisible && thirdTeam && context.league && context.session.status === "authenticated") });
   const refresh = async () => {
     setAcceptancePreview(null);
     setReversalPreview(null);
@@ -1553,10 +1556,10 @@ export function TradeDetailPage() {
   const awaitingCommissionerApproval =
     proposal?.storageStatus === "awaiting_commissioner_approval";
   const invitedParticipant = ownParticipant && ownParticipant.teamId !== proposal.proposingTeam.id;
-  const canRespond = pending && (proposal.participants ? invitedParticipant && ownParticipant.decision === "pending" : managedIds.has(proposal.receivingTeam.id));
+  const canRespond = detailsVisible && pending && (proposal.participants ? invitedParticipant && ownParticipant.decision === "pending" : managedIds.has(proposal.receivingTeam.id));
   const canCounter = proposal?.participants ? ownParticipant && (proposal.storageStatus === "declined" || (pending && invitedParticipant)) : canRespond;
   const canAcknowledge = ownParticipant && proposal.storageStatus === "declined" && ownParticipant.acknowledgedAtMs === null;
-  const canApprove = awaitingCommissionerApproval && commissioner;
+  const canApprove = detailsVisible && awaitingCommissionerApproval && commissioner;
   const canCancel =
     (pending || awaitingCommissionerApproval) &&
     managedIds.has(proposal.proposingTeam.id);
@@ -1584,6 +1587,10 @@ export function TradeDetailPage() {
       {trade.isPending ? <Surface><LoadingBlock>Loading trade…</LoadingBlock></Surface> : trade.isError ? <ErrorMessage error={trade.error} /> : <Surface className="hl-trade-detail">
         <h2>{tradeTeams(proposal).map(team => team.name).join(" ↔ ")}</h2>
         <p><StatusBadge>{proposal.status}</StatusBadge> Created {time(proposal.createdAtMs)}.</p>
+        {!detailsVisible ? <div className="hl-trade-action" role="status">
+          <h3>Trade details are private until execution</h3>
+          <p>Only the participating teams can see the offered assets. The league will see the full trade after it is executed.</p>
+        </div> : <>
         {ownParticipants.length > 1 && <label className="hl-field">Respond as
           <select aria-label="Respond as" value={respondingTeamId} disabled={command.isPending} onChange={event => { setSelectedResponseTeam(event.target.value); command.reset(); setAcceptancePreview(null); }}>
             {ownParticipants.map(p => <option key={p.teamId} value={p.teamId}>{p.name}</option>)}
@@ -1684,6 +1691,7 @@ export function TradeDetailPage() {
             <time dateTime={new Date(event.occurredAtMs).toISOString()}>{time(event.occurredAtMs)}</time>
           </li>
         ))}</ol>
+        </>}
       </Surface>}
       <p className="hl-page-backlink"><Link to={routePaths.leagueTrades(leagueId)}>Back to trades</Link></p>
     </LeaguePageState>

@@ -1,5 +1,17 @@
 # Hundo Leago — Permissions
 
+## Approved trade privacy amendment — 2026-09-25
+
+Unexecuted trade assets and detailed history are visible only to current
+managers of participating teams. Other active league members, including
+uninvolved commissioners and inherited platform administrators, see the teams
+and basic status only. An authorized commissioner may inspect an accepted
+Future Considerations trade once it is awaiting commissioner approval.
+Execution reveals the full exchange and normal league announcement. Declined,
+cancelled, expired and superseded offers remain private. This applies to API
+detail/list reads and League Activity and supersedes broader trade inspection
+wording elsewhere in this document. See `../03-product-specs/TRADES.md`.
+
 ## Document Status
 
 `APPROVED`

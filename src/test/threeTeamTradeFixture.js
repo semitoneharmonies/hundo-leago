@@ -1,8 +1,8 @@
 import { createCounterFixture, counterIds } from "./counterProposalFixture.js";
 export const threeTeamIds = { ...counterIds, thirdTeam: "11111111-1111-4111-8111-000000000001" };
 
-export function createThreeTeamFixture({ status = "proposed", secondAccepted = false, sharedManager = false } = {}) {
-  const ids = threeTeamIds, fixture = createCounterFixture({ status }), baseFetch = fixture.fetch;
+export function createThreeTeamFixture({ status = "proposed", secondAccepted = false, sharedManager = false, role = "receiver", leagueId = threeTeamIds.league } = {}) {
+  const ids = threeTeamIds, fixture = createCounterFixture({ status, role, leagueId }), baseFetch = fixture.fetch;
   fixture.teams[0].currentManager.userId = sharedManager ? ids.receiver : "11111111-1111-4111-8111-000000000002";
   fixture.teams.push({ ...fixture.teams[0], id: ids.thirdTeam, name: "Charlie", currentManager: { ...fixture.teams[0].currentManager, userId: ids.receiver } });
   fixture.original.participants = [fixture.teams[1], fixture.teams[0], fixture.teams[2]].map((team, index) => ({

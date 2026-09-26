@@ -132,6 +132,12 @@ export function validateAuctionDetail(data) {
 
 function validateTradeSummary(trade) {
   object(trade, "The trade proposal is invalid.");
+  if (trade.detailsVisible !== undefined) contract(typeof trade.detailsVisible === "boolean", "The trade visibility is invalid.");
+  if (trade.detailsVisible === false) {
+    const allowed = new Set(['detailsVisible', 'id', 'leagueId', 'seasonId', 'proposingTeam', 'receivingTeam', 'status', 'storageStatus', 'createdAtMs', 'expiresAtMs', 'effectiveDeadlineAtMs', 'version', 'participants', 'assets', 'history']);
+    contract(Object.keys(trade).every(key => allowed.has(key)), "A private trade exposed extra details.");
+    for (const key of ['assets', 'history']) contract(trade[key] === undefined || (Array.isArray(trade[key]) && trade[key].length === 0), "A private trade exposed assets or history.");
+  }
   id(trade.id, "The trade ID is invalid.");
   id(trade.leagueId, "The trade league is invalid.");
   id(trade.seasonId, "The trade season is invalid.");
@@ -150,8 +156,12 @@ function validateTradeSummary(trade) {
       contract(!teamIds.has(participant.teamId), "The trade participants are duplicated.");
       teamIds.add(participant.teamId);
       contract(typeof participant.name === "string" && participant.name.length > 0, "A trade participant name is invalid.");
-      contract(["pending", "accepted", "declined"].includes(participant.decision), "A trade response is invalid.");
-      for (const field of ["respondedAtMs", "acknowledgedAtMs"]) contract(participant[field] === null || Number.isSafeInteger(participant[field]), "A trade response time is invalid.");
+      if (trade.detailsVisible === false) {
+        contract(Object.keys(participant).sort().join(',') === 'name,teamId', "A private trade exposed a participant response.");
+      } else {
+        contract(["pending", "accepted", "declined"].includes(participant.decision), "A trade response is invalid.");
+        for (const field of ["respondedAtMs", "acknowledgedAtMs"]) contract(participant[field] === null || Number.isSafeInteger(participant[field]), "A trade response time is invalid.");
+      }
     }
     contract(trade.participants[0].teamId === trade.proposingTeam.id && trade.participants[1].teamId === trade.receivingTeam.id, "The trade participant order is invalid.");
   }
@@ -282,6 +292,16 @@ function activityId(value, message, { nullable = false } = {}) {
 function validateActivityMetadata(metadata) {
   if (metadata === null) return;
   object(metadata, "The activity metadata is invalid.");
+  if (metadata.detailsVisible === false) {
+    contract(Object.keys(metadata).sort().join(',') === 'detailsVisible,proposalId,teams', "A private trade activity exposed extra details.");
+    id(metadata.proposalId, "The private trade activity ID is invalid.");
+    contract(Array.isArray(metadata.teams), "The private trade teams are invalid.");
+    for (const team of metadata.teams) {
+      contract(Object.keys(team).sort().join(',') === 'id,name', "A private trade activity exposed team details.");
+      id(team.id, "A private trade team ID is invalid.");
+      contract(typeof team.name === 'string', "A private trade team name is invalid.");
+    }
+  }
   if (Object.hasOwn(metadata, "correctionId")) {
     id(metadata.correctionId, "The activity correction ID is invalid.");
   }
@@ -325,7 +345,7 @@ export function validateActivityPage(data) {
     activityText(
       item.actor.authority,
       "An activity actor authority is invalid.",
-      { maximum: 100 }
+      { nullable: item.metadata?.detailsVisible === false, maximum: 100 }
     );
     if (Object.hasOwn(item.actor, "displayName")) {
       activityText(

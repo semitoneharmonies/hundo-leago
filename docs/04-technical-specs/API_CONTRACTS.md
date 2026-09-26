@@ -1,4 +1,27 @@
-# Hundo Leago - API Contracts
+# Hundo Leago — API Contracts
+
+## Approved trade privacy contract — 2026-09-25
+
+Trade list and detail projections add `detailsVisible`. When false, only
+proposal identity, league/season, team identities, basic status, creation and
+deadline times, and version are returned. Detail `assets` and `history` are
+empty arrays; three-team `participants` contain only `teamId` and `name`.
+No player, pick, contract, retention, obligation, actor, preview, response or
+audit details are returned. The UI displays a private-until-execution notice
+and requests no cap/roster or acceptance preview for that hidden proposal.
+
+League Activity applies the same current-viewer rule to stored trade events,
+including historical creation entries. Hidden entries contain only a generic
+team summary and `{ proposalId, detailsVisible: false, teams: [{ id, name }] }`
+metadata; actor, player, subject team and reason are null. Pagination and
+read-only behavior are unchanged. Socket invalidations remain metadata-only.
+
+Current participating managers retain detailed access. The only pre-execution
+commissioner exception is an accepted Future Considerations trade awaiting
+approval. A recorded execution makes the full trade public to active league
+members; rejection, cancellation, expiry or counter creation does not.
+GET authorization and no-store response headers remain mandatory. This change
+requires no migration or rewriting of existing proposals or activity records.
 
 ## September 12, 2026: draft setup and annual lock
 

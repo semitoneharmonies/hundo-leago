@@ -135,11 +135,11 @@ describe("Three-team trades", () => {
     };
     fixture.original.participants[1].decision = "accepted"; fixture.original.participants[1].respondedAtMs = 2; fixture.original.version++;
     await notify();
-    expect(within(screen.getByRole("list", { name: "Team responses" })).getByText(/Benning/).closest("li")).toHaveTextContent("Accepted");
+    await waitFor(() => expect(within(screen.getByRole("list", { name: "Team responses" })).getByText(/Benning/).closest("li")).toHaveTextContent("Accepted"));
     fixture.original.participants[1].decision = "declined"; fixture.original.storageStatus = "declined"; fixture.original.status = "Rejected"; fixture.original.version++;
     await notify();
+    await screen.findByRole("button", { name: "OK", exact: true });
     expect(screen.queryByRole("button", { name: "Confirm", exact: true })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "OK", exact: true })).toBeInTheDocument();
   });
   it("shows team B's acceptance to team C while C can still respond", async () => {
     const fixture = createThreeTeamFixture({ secondAccepted: true }); renderTrade(fixture);

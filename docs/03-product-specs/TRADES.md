@@ -1,5 +1,29 @@
 # Hundo Leago — Trades
 
+## Approved trade fog of war — 2026-09-25
+
+Before execution, only current managers of participating teams may see the
+offered assets and detailed proposal history. Other active league members see
+the participating teams and basic proposal status, with no assets, terms,
+retention, obligations, cap/roster preview, response details or private audit
+metadata. This applies to two- and three-team trades, direct links, proposal
+lists and League Activity, including existing saved offers.
+
+Commissioners and inherited platform administrators have the same restriction.
+The sole review exception is an accepted trade containing Future Considerations
+that is awaiting commissioner approval. Its assets become visible to the
+authorized commissioner for review before completion, but remain private from
+other uninvolved league members.
+
+Only execution makes the full trade and normal completion announcement visible
+to the league. Rejection, cancellation, expiry, automatic cancellation and
+countering do not publish the unexecuted offer. An executed counter does not
+publish its declined original. Once executed, a trade remains public to league
+members if later reversed or marked for correction. Durable records are
+preserved; the backend filters read responses using current viewer authority.
+
+This amendment supersedes broader inspection language below.
+
 ## Approved inaugural trading amendment — 2026-09-07
 
 Grae explicitly approved allowing trading in the approved inaugural setup without an Entry Draft. An opened Free Agent Draft with the persisted `no_draft_inaugural` setup path establishes the trading opening for that same league and season. An unapproved or unopened setup does not establish an opening. The existing Entry Draft path remains valid, and league deadlines, current-season checks, permissions, ownership, retention, asset validation and Future Considerations approval requirements remain unchanged.
@@ -190,7 +214,7 @@ Acceptance requires current authority for the receiving team.
 
 A commissioner may:
 
-* safely inspect proposals without receiving manager execution authority;
+* inspect only team identities on unexecuted proposals unless separately a participating manager;
 * approve a Future-Considerations proposal already accepted into `Awaiting
   Commissioner Approval`;
 * reverse or correct a completed trade through the approved recovery workflow.
@@ -206,7 +230,7 @@ Commissioner actions must identify the commissioner and the teams for which the 
 
 ## Authenticated League Member
 
-Every authenticated active member of a league may view that league’s pending, rejected, cancelled, expired, automatically cancelled, and completed trade information under the approved permissions.
+Every authenticated active member may see the teams and basic status of pending, rejected, cancelled, expired and automatically cancelled proposals. Detailed assets remain subject to the fog-of-war rule above. Executed trade details are visible to the league.
 
 Membership in one league grants no visibility into another league.
 
@@ -950,7 +974,7 @@ side. The user must still review and explicitly submit the proposal.
 
 ## Proposal Views
 
-Authenticated league proposal views show:
+Authorized participant views, accepted Future Considerations commissioner reviews, and executed league proposal views show:
 
 * both teams and all assets;
 * contract and retention terms;
