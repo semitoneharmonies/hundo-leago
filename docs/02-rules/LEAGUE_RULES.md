@@ -1,5 +1,23 @@
 # Hundo Leago — League Rules
 
+## Matchup first-day timing clarification - 2026-09-26
+
+Graem confirmed that roster locks and statistical baselines follow the first
+day of each saved matchup week, including opening week and weeks after breaks.
+This supersedes older descriptions that unconditionally say Monday. Amigo
+Leago and Goon Spoons Week 1 begins September 29, 2026; the saved weeks after
+Christmas and the February break begin December 26 and February 8 respectively.
+
+Teams displays the exact next saved roster-lock deadline in the league's time
+zone. The scheduling server supplies the display string so older browser time
+zone databases cannot shift it. Managers are told that only their saved active
+lineup scores for that week. Statistical baseline terminology belongs in
+commissioner/admin explanations, not the manager guide or roster notice.
+
+New schedules use 1 AM baselines and 4 PM locks on day one. Existing stored
+instants remain authoritative; this clarification does not rewrite historical
+or future saved timestamps after a time zone database update.
+
 ## Actual submitted offer pricing clarification - 2026-09-24
 
 The winner is ranked by highest AAV, then longer term, then earliest original

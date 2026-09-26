@@ -8,7 +8,7 @@ const QUICK_RULES = Object.freeze([
   ["Prospects", "Unlimited eligible slots"],
   ["Contracts", "1–3 years · no extensions"],
   ["Retention", "50% cumulative · 3 slots"],
-  ["Weekly roster lock", "Monday · 4:00 PM Pacific"],
+  ["Weekly roster lock", "Day one of each matchup week"],
 ]);
 
 function RuleSection({ title, children, open = false }) {
@@ -55,11 +55,11 @@ function LeagueRulesDropdown({ onClose }) {
           <ul>
             <li>The active roster has 12 Forwards and 6 Defence. Bench and Injured Reserve each hold up to four players; a Bench player may have at most $4 AAV. There are no goalie slots.</li>
             <li>The $100 salary cap includes active-player AAV after retention, retained-salary obligations and buyout penalties. Bench, Injured Reserve and Prospects salaries do not count against the cap.</li>
-            <li>Your active lineup locks for each matchup week on Monday at 4:00 PM Pacific. Only players in that saved lineup can score for that week. Later moves do not change earlier weeks.</li>
+            <li>Your active lineup locks on the first day of each matchup week. Most weeks start Monday; opening week and weeks after a break can start on another day. Check your roster in Teams for the exact date and time of the next lock. Only players in that saved lineup can score for that week. Later moves do not change earlier weeks.</li>
             <li>Bench, injured reserve and prospects do not score.</li>
             <li>The 2026–27 scoring table below applies to games included in each matchup period. Defence earn an extra 0.15 FP per hit and blocked shot.</li>
             <li>
-              A team with an illegal roster or cap position scores nothing until the team is legal and a new scoring baseline is recorded. Points are not awarded retroactively for the illegal period.
+              A team with an illegal roster or cap position scores nothing until it becomes legal and scoring resumes. Points are not awarded retroactively for the illegal period.
             </li>
             <li>Regular-season results are wins, losses or ties.</li>
             <li>Wins award 2 standings points; ties 1; losses 0.</li>

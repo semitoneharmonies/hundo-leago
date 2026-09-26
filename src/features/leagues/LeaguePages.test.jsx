@@ -184,6 +184,9 @@ function fetchScenario(
         "request-league"
       );
     }
+    if (path === `/api/v1/leagues/${leagueOneId}/seasons/${seasonId}/matchup-weeks`) {
+      return response({ code: "MATCHUP_WEEKS_FOUND", health: {}, weeks: [] });
+    }
     if (path === `/api/v1/leagues/${leagueOneId}/teams`) {
       return response(
         {
@@ -628,6 +631,9 @@ describe("league selection", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("rowheader", { name: "Connected Player" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Salary cap" })).toBeInTheDocument();
+    expect(await screen.findByText("No upcoming roster lock is scheduled.")).toBeInTheDocument();
+    expect(fetchImpl.mock.calls.some(([url]) => new URL(url).pathname ===
+      `/api/v1/leagues/${leagueOneId}/seasons/${seasonId}/matchup-weeks`)).toBe(true);
     expect(
       fetchImpl.mock.calls.some(
         ([url]) =>

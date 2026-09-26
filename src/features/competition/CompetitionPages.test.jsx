@@ -592,7 +592,7 @@ describe("M6-12 authenticated competition pages", () => {
         name: "Third Team vs Fourth Team",
       })
     ).toBeInTheDocument();
-    expect(screen.getByText("The week starts on Monday.")).toBeInTheDocument();
+    expect(screen.getByText("Scoring will appear once this matchup week begins.")).toBeInTheDocument();
     const scheduledCenter = document.querySelector(
       ".hl-matchup-score__center"
     );
@@ -1206,6 +1206,7 @@ describe("M6-12 authenticated competition pages", () => {
   });
 
   it("loads approved defaults for an unconfigured new season and previews without applying them", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T12:00:00Z"));
     const requests = [];
     const prefix = `/api/v1/leagues/${leagueId}/seasons/${seasonId}`;
     const fetchImpl = baseFetch((path, options) => {

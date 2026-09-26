@@ -1,5 +1,15 @@
 # Hundo Leago — Scoring Rules
 
+## Matchup first-day timing clarification - 2026-09-26
+
+Statistical baselines and roster locks are relative to the first day of the
+saved matchup week, not an unconditional Monday. This includes partial
+opening weeks and the first week after a break. New schedule generation uses
+1 AM and 4 PM league-local time respectively; previously saved instants are
+not silently recalculated. Manager UI describes the roster lock and scoring
+eligibility without exposing baseline terminology. See the corresponding
+clarification in `LEAGUE_RULES.md`.
+
 ## Approved expanded scoring — 18 September 2026
 
 Graem approved implementation and production delivery before 29 September 2026,

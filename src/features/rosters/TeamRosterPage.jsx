@@ -1321,6 +1321,7 @@ export function TeamRosterPage({
   managerName,
   onTeamChange,
   httpClient,
+  rosterLockNotice = null,
 }) {
   const queryClient = useQueryClient();
   const { cap, league, season, team } = workspace;
@@ -1746,6 +1747,8 @@ export function TeamRosterPage({
           </div>
         </div>
       </header>
+
+      {rosterLockNotice}
 
       <section className="hl-roster-cap" aria-labelledby="cap-summary-title">
         <div className="hl-section-title">

@@ -688,7 +688,7 @@ function MatchupCard({ matchup, teams = [] }) {
         <p>
           {official
             ? "Player scoring details are temporarily unavailable."
-            : "The week starts on Monday."}
+            : "Scoring will appear once this matchup week begins."}
         </p>
       ) : (
         <>

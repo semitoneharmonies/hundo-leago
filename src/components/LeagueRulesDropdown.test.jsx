@@ -44,5 +44,8 @@ describe("LeagueRulesDropdown", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/independent rules calculator/)).not.toBeInTheDocument();
     expect(screen.queryByText(/FAD/)).not.toBeInTheDocument();
+    expect(screen.getByText(/locks on the first day of each matchup week/)).toBeInTheDocument();
+    expect(screen.getByText(/Check your roster in Teams for the exact date and time/)).toBeInTheDocument();
+    expect(screen.queryByText(/baseline/i)).not.toBeInTheDocument();
   });
 });

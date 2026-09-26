@@ -13,6 +13,7 @@ import {
   TeamMark,
 } from "../../components/HundoUi.jsx";
 import { TeamRosterPage } from "../rosters/TeamRosterPage.jsx";
+import { RosterLockNotice } from "../rosters/RosterLockNotice.jsx";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
@@ -595,6 +596,8 @@ export function TeamWorkspacePage() {
           <>
             <TeamRosterPage
               workspace={rosterQuery.data}
+              rosterLockNotice={<RosterLockNotice key={`${leagueId}:${rosterQuery.data.season.id}`}
+                leagueId={leagueId} seasonId={rosterQuery.data.season.id} httpClient={session.httpClient} />}
               teams={teamsQuery.data}
               currentUserId={session.user.id}
               managerName={teamQuery.data.currentManager?.displayName ?? null}
