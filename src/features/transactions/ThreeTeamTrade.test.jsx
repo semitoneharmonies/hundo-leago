@@ -19,6 +19,31 @@ function renderTrade(fixture, path = `/leagues/${ids.league}/trades/${ids.trade}
 }
 const writes = fixture => fixture.requests.filter(r => r.method === "POST" && !r.pathname.endsWith("/trades/preview"));
 describe("Three-team trades", () => {
+  it("shows all three teams' outgoing and incoming assets with the correct counterparties and grouped retention", async () => {
+    const fixture = createThreeTeamFixture(); renderTrade(fixture);
+    const comparison = await screen.findByRole("group", { name: "Three-team trade breakdown" });
+    expect(within(comparison).getAllByRole("region")).toHaveLength(6);
+    expect(within(comparison).getAllByRole("article")).toHaveLength(12);
+    const incoming = within(comparison).getByRole("region", { name: "Benning Did Nothing Wrong receives" });
+    const contract = within(incoming).getByText("Mitch Marner").closest("article");
+    expect(contract).toHaveTextContent("From Wolfy's");
+    expect(contract).toHaveTextContent("with $1.25 retained salary");
+    expect(within(incoming).queryByText("Drafted Prospect")).not.toBeInTheDocument();
+    const thirdIncoming = within(comparison).getByRole("region", { name: "Charlie receives" });
+    expect(thirdIncoming).toHaveTextContent("Drafted Prospect");
+    expect(thirdIncoming).toHaveTextContent("From Wolfy's");
+    const proposerIncoming = within(comparison).getByRole("region", { name: "Wolfy's receives" });
+    expect(proposerIncoming).toHaveTextContent("From Charlie");
+    expect(proposerIncoming).toHaveTextContent("Bought Out Player buyout penalty");
+    expect(within(comparison).getAllByText("Contract + retention")).toHaveLength(2);
+    expect(writes(fixture)).toHaveLength(0);
+  });
+  it("makes an empty receiving package explicit", async () => {
+    const fixture = createThreeTeamFixture();
+    fixture.original.assets.find(asset => asset.type === "prospect_right").destinationTeamId = ids.receivingTeam;
+    renderTrade(fixture);
+    expect(await screen.findByRole("region", { name: "Charlie receives" })).toHaveTextContent("No assets received by this team.");
+  });
   it("binds three-team send keys to the recovery boundary and preserves them on retry", async () => {
     const recoveryId = "22222222-2222-4222-8222-222222222222";
     observeRecoveryEpoch(recoveryId);

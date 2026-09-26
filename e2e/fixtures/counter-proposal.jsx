@@ -5,9 +5,10 @@ import { TradeDetailPage, TradesPage } from "../../src/features/transactions/Tra
 import { createCounterFixture, counterIds as ids } from "../../src/test/counterProposalFixture.js";
 import "../../src/styles/theme-a.css";
 
-const fixture = createCounterFixture();
+const newProposal = new URLSearchParams(window.location.search).has("new");
+const fixture = createCounterFixture({ role: newProposal ? "sender" : "receiver" });
 window.counterFixture = fixture;
-window.history.replaceState(null, "", `/leagues/${ids.league}/trades/${ids.trade}`);
+window.history.replaceState(null, "", `/leagues/${ids.league}/trades${newProposal ? "" : `/${ids.trade}`}`);
 createRoot(document.getElementById("root")).render(
   <AppProviders Router={BrowserRouter} enableSession
     config={{ appEnv: "local", apiOrigin: "http://127.0.0.1:4199", socketOrigin: "http://127.0.0.1:4199", buildId: null }}

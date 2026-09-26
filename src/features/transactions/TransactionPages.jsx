@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -57,6 +57,7 @@ import { TradeBlockPanel } from "./TradeBlockPanel.jsx";
 import { projectDraftTradeCap } from "./tradeCapPreview.js";
 import { ThreeTeamTradeForm } from "./ThreeTeamTradeForm.jsx";
 import { counterProposalDraft } from "./counterProposal.js";
+import comparisonStyles from "./TradeTeamComparison.module.css";
 
 const card = { border: "1px solid #334155", borderRadius: 10, padding: 16, marginBottom: 14 };
 const row = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end" };
@@ -932,6 +933,7 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const submission = useRef(null);
+  const submissionPending = useRef(false);
   const [searchParams] = useSearchParams();
   const requestedAssetDirection = searchParams.get("assetDirection");
   const requestedAssetType = searchParams.get("assetType");
@@ -1020,15 +1022,14 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
       ? counterTrade(context.session.httpClient, leagueId, counterTradeId, body, idempotencyKey)
       : createTrade(context.session.httpClient, leagueId, body, idempotencyKey),
     onSuccess: (result) => {
+      navigate(routePaths.trade(leagueId, result.proposal.id));
       if (counterTradeId) {
-        navigate(routePaths.trade(leagueId, result.proposal.id));
         void queryClient.invalidateQueries({ queryKey: transactionKeys.trade(leagueId, counterTradeId) });
         void queryClient.invalidateQueries({ queryKey: ["league", leagueId, "activity"] });
-      } else {
-        submission.current = null;
       }
       return queryClient.invalidateQueries({ queryKey: transactionKeys.trades(leagueId) });
     },
+    onSettled: () => { submissionPending.current = false; },
   });
   if (context.teams.isPending) return <p>Loading trade teams…</p>;
   if (context.managerControlledTeams.length === 0) return <p>You do not currently control a team that can propose a trade.</p>;
@@ -1072,7 +1073,7 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
   }
   function submit(event) {
     event.preventDefault();
-    if (mutation.isPending) return;
+    if (submissionPending.current || mutation.isPending) return;
     try {
       if (counterTradeId) {
         for (const [assets, workspace] of [[proposingAssets, proposerWorkspace.data], [receivingAssets, receivingWorkspace.data]]) {
@@ -1093,8 +1094,10 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
       if (submission.current?.fingerprint !== fingerprint) {
         submission.current = { fingerprint, idempotencyKey: key(counterTradeId ? "trade-counter" : "trade-proposal") };
       }
+      submissionPending.current = true;
       mutation.mutate({ body, idempotencyKey: submission.current.idempotencyKey });
     } catch (error) {
+      submissionPending.current = false;
       setClientError(error);
     }
   }
@@ -1162,7 +1165,7 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
           },
         ]}
       />
-      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>{counterTradeId ? "Send counter proposal" : "Send proposal"}</button>
+      <button className="hl-button hl-button--primary" disabled={mutation.isPending || proposerWorkspace.isPending || receivingWorkspace.isPending || !receiving}>{mutation.isPending ? "Sending…" : counterTradeId ? "Send counter proposal" : "Send proposal"}</button>
       {counterTradeId && <Link className="hl-button hl-button--quiet" to={routePaths.trade(leagueId, counterTradeId)}>Back to original offer</Link>}
       <ErrorMessage error={clientError || proposerWorkspace.error || receivingWorkspace.error || mutation.error} />
     </form>
@@ -1277,7 +1280,7 @@ function tradeTeams(proposal) {
   return proposal?.participants?.map(p => ({ id: p.teamId, name: p.name })) || [proposal?.proposingTeam, proposal?.receivingTeam].filter(Boolean);
 }
 
-function AssetSummary({ asset, requestedRetention = null, destination = null }) {
+function AssetSummary({ asset, requestedRetention = null, destination = null, source = null }) {
   const snapshot = asset.snapshot;
   let title = activityWords(asset.type);
   let description = "";
@@ -1335,6 +1338,7 @@ function AssetSummary({ asset, requestedRetention = null, destination = null }) 
       </span>
       <strong>{title}</strong>
       {destination && <p>To {destination}</p>}
+      {source && <p>From {source}</p>}
       <p>{description}</p>
     </article>
   );
@@ -1374,13 +1378,13 @@ function groupRequestedRetention(assets) {
     }));
 }
 
-function TradeTeamPanel({ team, assets, teams = null }) {
+function TradeTeamPanel({ team, assets, teams = null, direction = "sends" }) {
   const groupedAssets = groupRequestedRetention(assets);
   return (
-    <section className="hl-trade-team-panel">
-      <h3>{team.name} sends</h3>
+    <section className="hl-trade-team-panel" aria-label={`${team.name} ${direction}`}>
+      <h3>{team.name} {direction}</h3>
       {assets.length === 0 ? (
-        <p>No assets from this team.</p>
+        <p>{direction === "receives" ? "No assets received by this team." : "No assets from this team."}</p>
       ) : (
         <div className="hl-trade-asset-list">
           {groupedAssets.map(({ asset, requestedRetention }) => (
@@ -1388,7 +1392,8 @@ function TradeTeamPanel({ team, assets, teams = null }) {
               key={asset.id}
               asset={asset}
               requestedRetention={requestedRetention}
-              destination={teams?.find(team => team.id === asset.destinationTeamId)?.name}
+              destination={direction === "sends" ? teams?.find(team => team.id === asset.destinationTeamId)?.name : null}
+              source={direction === "receives" ? teams?.find(team => team.id === asset.sourceTeamId)?.name : null}
             />
           ))}
         </div>
@@ -1592,9 +1597,20 @@ export function TradeDetailPage() {
             All invited teams accepted this proposal. No assets move until a commissioner reviews and approves it.
           </p>
         )}
-        <div className="hl-trade-team-grid">
-          {tradeTeams(proposal).map(team => <TradeTeamPanel key={team.id} team={team} teams={proposal.participants ? tradeTeams(proposal) : null} assets={proposal.assets.filter(asset => asset.sourceTeamId === team.id)} />)}
-        </div>
+        {proposal.participants ? (
+          <div className={comparisonStyles.comparison} role="group" aria-label="Three-team trade breakdown">
+            <p className={comparisonStyles.columnHeading}>Sending</p>
+            <p className={comparisonStyles.columnHeading}>Receiving</p>
+            {tradeTeams(proposal).map(team => <Fragment key={team.id}>
+              <TradeTeamPanel team={team} teams={tradeTeams(proposal)} assets={proposal.assets.filter(asset => asset.sourceTeamId === team.id)} />
+              <TradeTeamPanel team={team} teams={tradeTeams(proposal)} direction="receives" assets={proposal.assets.filter(asset => asset.destinationTeamId === team.id)} />
+            </Fragment>)}
+          </div>
+        ) : (
+          <div className="hl-trade-team-grid">
+            {tradeTeams(proposal).map(team => <TradeTeamPanel key={team.id} team={team} assets={proposal.assets.filter(asset => asset.sourceTeamId === team.id)} />)}
+          </div>
+        )}
         <CapImpactSummary
           description={
             acceptancePreview

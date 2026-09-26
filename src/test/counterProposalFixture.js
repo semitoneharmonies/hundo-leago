@@ -58,6 +58,19 @@ export function createCounterFixture({ role = "receiver", leagueId = counterIds.
     const root = `/api/v1/leagues/${leagueId}`;
     if (pathname === `${root}/teams`) return envelope({ code: "TEAMS_FOUND", teams });
     for (const team of teams) if (pathname === `${root}/teams/${team.id}/roster`) return envelope(workspace(team.id));
+    if (pathname === `${root}/trades` && options.method === "POST") {
+      if (fixture.beforeSend) await fixture.beforeSend();
+      if (fixture.failNext) {
+        fixture.failNext = false;
+        return new Response(JSON.stringify({ error: { code: "TRADE_REQUEST_FAILED", message: "The trade request could not be completed.", requestId: "proposal-fixture" } }), { status: 500, headers: { "content-type": "application/json" } });
+      }
+      const body = JSON.parse(options.body);
+      fixture.counter = { ...original, id: ids.counter, status: "Pending", storageStatus: "proposed",
+        proposingTeam: teams.find(team => team.id === body.proposingTeamId), receivingTeam: teams.find(team => team.id === body.receivingTeamId),
+        proposingUserId: userId, assets: original.assets.filter(asset =>
+          (asset.sourceTeamId === body.proposingTeamId ? body.proposingAssets : body.receivingAssets).some(item => item.type === asset.type)) };
+      return envelope({ code: "TRADE_PROPOSAL_CREATED", proposal: { id: ids.counter } }, 201);
+    }
     if (pathname === `${root}/trades`) return envelope({ code: "TRADE_PROPOSALS_FOUND", proposals: [original, ...(fixture.counter ? [fixture.counter] : [])] });
     if (pathname === `${root}/trades/${ids.trade}`) return envelope({ code: "TRADE_PROPOSAL_FOUND", proposal: original });
     if (pathname === `${root}/trades/${ids.counter}`) return envelope({ code: "TRADE_PROPOSAL_FOUND", proposal: fixture.counter });

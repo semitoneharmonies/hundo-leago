@@ -4,6 +4,24 @@ test("third team sees prior acceptance and can confirm", async ({ page }) => {
   await page.goto("/e2e/fixtures/three-team-trade.html?accepted=1", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("list", { name: "Team responses" })).toContainText("Benning Did Nothing Wrong: Accepted");
   await expect(page.getByRole("button", { name: "Confirm", exact: true })).toBeEnabled();
+  const comparison = page.getByRole("group", { name: "Three-team trade breakdown" });
+  await expect(comparison.getByRole("region")).toHaveCount(6);
+  const teams = ["Wolfy's", "Benning Did Nothing Wrong", "Charlie"];
+  const boxes = [];
+  for (const team of teams) {
+    const sends = await comparison.getByRole("region", { name: `${team} sends`, exact: true }).boundingBox();
+    const receives = await comparison.getByRole("region", { name: `${team} receives`, exact: true }).boundingBox();
+    if (page.viewportSize().width > 760) {
+      expect(sends.x).toBeLessThan(receives.x);
+      expect(sends.y).toBeCloseTo(receives.y, 0);
+    } else {
+      expect(sends.x).toBeCloseTo(receives.x, 0);
+      expect(sends.y + sends.height).toBeLessThanOrEqual(receives.y);
+    }
+    if (boxes.length) expect(sends.y).toBeGreaterThan(boxes.at(-1).receives.y);
+    boxes.push({ sends, receives });
+  }
+  await expect(comparison.getByRole("region", { name: "Charlie receives", exact: true })).toContainText("From Wolfy's");
   await page.screenshot({ path: test.info().outputPath("three-team-responses.png"), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
