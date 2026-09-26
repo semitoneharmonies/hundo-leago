@@ -246,6 +246,11 @@ describe("league player catalog", () => {
     );
     await screen.findByRole("rowheader", { name: "Free Agent" });
     const assignment = screen.getByRole("combobox", { name: "League assignment" });
+    const moreFilters = screen.getByText("More filters");
+    expect(moreFilters.closest("details")).not.toHaveAttribute("open");
+    await view.user.click(moreFilters);
+    expect(moreFilters.closest("details")).toHaveAttribute("open");
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
     const years = screen.getByRole("combobox", { name: "Contract length (remaining)" });
     const type = screen.getByRole("combobox", { name: "Contract type" });
     const range = screen.getByRole("checkbox", { name: "Filter by AAV" });
@@ -260,13 +265,24 @@ describe("league player catalog", () => {
     await view.user.selectOptions(years, "1");
     await waitFor(() => expect(screen.queryByRole("rowheader", { name: "Upper Boundary" })).not.toBeInTheDocument());
     await screen.findByRole("rowheader", { name: "Lower Boundary" });
-    fireEvent.change(screen.getByRole("slider", { name: "Minimum AAV slider" }), { target: { value: "3" } });
+    const minimum = screen.getByRole("slider", { name: "Minimum AAV slider" });
+    expect(minimum).toHaveAttribute("step", "0.25");
+    expect(screen.getByRole("slider", { name: "Maximum AAV slider" })).toHaveAttribute("step", "0.25");
+    fireEvent.change(minimum, { target: { value: "2.25" } });
     await screen.findByText("No players match these filters");
-    const minimum = screen.getByRole("spinbutton", { name: "Minimum AAV ($)" });
+    expect(fixture.requests.some(({ url }) => new URL(url).searchParams.get("minimumAavCents") === "225")).toBe(true);
     fireEvent.change(minimum, { target: { value: "7" } });
-    expect(await screen.findByRole("alert")).toHaveTextContent("minimum no higher than the maximum");
+    expect(minimum).toHaveValue("6");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     fireEvent.change(minimum, { target: { value: "2" } });
     await screen.findByRole("rowheader", { name: "Lower Boundary" });
+    await view.user.click(moreFilters);
+    expect(moreFilters.closest("details")).not.toHaveAttribute("open");
+    expect(moreFilters).toHaveTextContent("2 active");
+    expect(screen.getByRole("rowheader", { name: "Lower Boundary" })).toBeInTheDocument();
+    await view.user.click(moreFilters);
+    expect(minimum).toHaveValue("2");
+    expect(years).toHaveValue("1");
     await view.user.click(range);
     await view.user.selectOptions(years, "all");
     await view.user.selectOptions(assignment, "prospects");
@@ -429,6 +445,7 @@ describe("league player catalog", () => {
       "FPG",
       "Actions",
     ]);
+    await view.user.click(screen.getByText("More filters"));
     const nhlTeamFilter = screen.getByRole("combobox", { name: "NHL team" });
     expect(within(nhlTeamFilter).getAllByRole("option")).toHaveLength(33);
     expect(

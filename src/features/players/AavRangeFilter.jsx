@@ -4,6 +4,8 @@ export function AavRangeFilter({ range, onChange, valid }) {
   const sliderMaximum = Math.max(20, Math.ceil(Number(range.maximum) || 0));
   const minimum = Number(range.minimum) || 0;
   const maximum = Number(range.maximum) || 0;
+  const sliderMinimum = Math.max(0, Math.min(minimum, sliderMaximum));
+  const sliderUpper = Math.max(sliderMinimum, Math.min(maximum, sliderMaximum));
 
   function change(bound, value) {
     onChange({ ...range, enabled: true, [bound]: value });
@@ -12,70 +14,58 @@ export function AavRangeFilter({ range, onChange, valid }) {
   return (
     <fieldset className={styles.range}>
       <legend>AAV range</legend>
-      <label className={styles.toggle}>
-        <input
-          type="checkbox"
-          checked={range.enabled}
-          onChange={(event) => onChange({ ...range, enabled: event.target.checked })}
-        />
-        Filter by AAV
-      </label>
-      <div className={styles.bounds}>
-        <div>
-          <label className="hl-field">
-            Minimum AAV ($)
+      <div className={styles.sliderField}>
+        <div className={styles.rangeHeader}>
+          <label className={styles.toggle}>
             <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={range.minimum}
-              onChange={(event) => change("minimum", event.target.value)}
-              aria-invalid={range.enabled && !valid}
-              aria-describedby="player-aav-help"
+              type="checkbox"
+              checked={range.enabled}
+              onChange={(event) => onChange({ ...range, enabled: event.target.checked })}
             />
+            Filter by AAV
           </label>
+          <div className={styles.summary}>
+            <span>{valid ? `(between $${minimum.toFixed(2)} and $${maximum.toFixed(2)})` : "Choose a valid range"}</span>
+          </div>
+        </div>
+        <div
+          className={styles.slider}
+          style={{ "--aav-minimum": `${sliderMinimum / sliderMaximum * 100}%`, "--aav-maximum": `${sliderUpper / sliderMaximum * 100}%` }}
+        >
+          <div className={styles.track} aria-hidden="true"><div className={styles.selection} /></div>
           <input
+            className={sliderMinimum === sliderMaximum ? styles.frontHandle : undefined}
             type="range"
             aria-label="Minimum AAV slider"
             aria-valuetext={`$${minimum.toFixed(2)}`}
+            aria-valuemax={sliderUpper}
+            aria-describedby="player-aav-help"
             min="0"
             max={sliderMaximum}
-            step="0.01"
-            value={minimum}
-            onChange={(event) => change("minimum", String(Math.min(Number(event.target.value), maximum)))}
+            step="0.25"
+            value={sliderMinimum}
+            onChange={(event) => change("minimum", String(Math.min(Number(event.target.value), sliderUpper)))}
           />
-        </div>
-        <div>
-          <label className="hl-field">
-            Maximum AAV ($)
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={range.maximum}
-              onChange={(event) => change("maximum", event.target.value)}
-              aria-invalid={range.enabled && !valid}
-              aria-describedby="player-aav-help"
-            />
-          </label>
           <input
             type="range"
             aria-label="Maximum AAV slider"
             aria-valuetext={`$${maximum.toFixed(2)}`}
+            aria-valuemin={sliderMinimum}
+            aria-describedby="player-aav-help"
             min="0"
             max={sliderMaximum}
-            step="0.01"
-            value={maximum}
-            onChange={(event) => change("maximum", String(Math.max(Number(event.target.value), minimum)))}
+            step="0.25"
+            value={sliderUpper}
+            onChange={(event) => change("maximum", String(Math.max(Number(event.target.value), sliderMinimum)))}
           />
         </div>
       </div>
       <p id="player-aav-help" role={range.enabled && !valid ? "alert" : undefined}>
         {range.enabled && !valid
-          ? "Enter valid dollar amounts with a minimum no higher than the maximum."
+          ? "Choose a minimum no higher than the maximum."
           : range.enabled
-            ? `Signed contracts from $${minimum.toFixed(2)} to $${maximum.toFixed(2)}, including both amounts.`
-            : "Any AAV. Enter exact amounts or drag the sliders to filter."}
+            ? "Signed contracts only. Both limits included."
+            : "Any AAV. Drag either handle to filter in $0.25 steps."}
       </p>
     </fieldset>
   );

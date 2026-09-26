@@ -201,6 +201,10 @@ export function PlayersCatalogPage() {
   const [remainingYears, setRemainingYears] = useState("all");
   const [contractType, setContractType] = useState("all");
   const [aavRange, setAavRange] = useState({ enabled: false, minimum: "2", maximum: "6" });
+  const activeAdditionalFilters = [
+    remainingYears !== "all", contractType !== "all",
+    minimumGames !== "0", nhlTeam !== "all", aavRange.enabled,
+  ].filter(Boolean).length;
   const minimumAavCents = Math.round(Number(aavRange.minimum) * 100);
   const maximumAavCents = Math.round(Number(aavRange.maximum) * 100);
   const aavRangeValid = [aavRange.minimum, aavRange.maximum].every(
@@ -502,7 +506,7 @@ export function PlayersCatalogPage() {
       />
       <Surface
         as="section"
-        className="hl-player-search"
+        className={`hl-player-search ${contractFilterStyles.panel}`}
         aria-label="Player filters"
       >
         <form
@@ -511,37 +515,40 @@ export function PlayersCatalogPage() {
             setQuery(searchInput.trim());
             setAutocompleteDismissed(true);
           }}
-          className="hl-filter-bar hl-player-filters"
+          className={contractFilterStyles.catalogFilters}
         >
-          <div className="hl-field hl-player-autocomplete">
+          <div className={`hl-field hl-player-autocomplete ${contractFilterStyles.search}`}>
             <label htmlFor="player-name-search">Search by player name</label>
-            <input
-              ref={searchInputRef}
-              id="player-name-search"
-              type="search"
-              role="combobox"
-              value={searchInput}
-              onChange={(event) => {
-                setSearchInput(event.target.value);
-                setAutocompleteDismissed(false);
-              }}
-              onFocus={() => setAutocompleteDismissed(false)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape" && showAutocomplete) {
-                  event.preventDefault();
-                  setAutocompleteDismissed(true);
-                } else if (event.key === "ArrowDown" && showAutocomplete) {
-                  event.preventDefault();
-                  suggestionListRef.current
-                    ?.querySelector('[role="option"]')
-                    ?.focus();
-                }
-              }}
-              autoComplete="off"
-              aria-autocomplete="list"
-              aria-controls="player-name-suggestions"
-              aria-expanded={showAutocomplete}
-            />
+            <div className={`hl-field ${contractFilterStyles.searchControls}`}>
+              <input
+                ref={searchInputRef}
+                id="player-name-search"
+                type="search"
+                role="combobox"
+                value={searchInput}
+                onChange={(event) => {
+                  setSearchInput(event.target.value);
+                  setAutocompleteDismissed(false);
+                }}
+                onFocus={() => setAutocompleteDismissed(false)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && showAutocomplete) {
+                    event.preventDefault();
+                    setAutocompleteDismissed(true);
+                  } else if (event.key === "ArrowDown" && showAutocomplete) {
+                    event.preventDefault();
+                    suggestionListRef.current
+                      ?.querySelector('[role="option"]')
+                      ?.focus();
+                  }
+                }}
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-controls="player-name-suggestions"
+                aria-expanded={showAutocomplete}
+              />
+              <button className="hl-button hl-button--primary" type="submit">Search</button>
+            </div>
             {showAutocomplete && (
               <ul
                 ref={suggestionListRef}
@@ -574,31 +581,6 @@ export function PlayersCatalogPage() {
             )}
           </div>
           <label className="hl-field">
-            Position
-            <select
-              value={position}
-              onChange={(event) => setPosition(event.target.value)}
-            >
-              <option value="all">All positions</option>
-              <option value="F">Forwards</option>
-              <option value="D">Defence</option>
-            </select>
-          </label>
-          <label className="hl-field">
-            NHL team
-            <select
-              value={nhlTeam}
-              onChange={(event) => setNhlTeam(event.target.value)}
-            >
-              <option value="all">All NHL teams</option>
-              {NHL_TEAM_OPTIONS.map(([abbreviation, name]) => (
-                <option value={abbreviation} key={abbreviation}>
-                  {name} ({abbreviation})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="hl-field">
             League assignment
             <select
               value={ownership}
@@ -619,45 +601,69 @@ export function PlayersCatalogPage() {
             </select>
           </label>
           <label className="hl-field">
-            Minimum games
+            Position
             <select
-              value={minimumGames}
-              onChange={(event) => setMinimumGames(event.target.value)}
+              value={position}
+              onChange={(event) => setPosition(event.target.value)}
             >
-              <option value="0">Any</option>
-              <option value="10">10+</option>
-              <option value="25">25+</option>
-              <option value="50">50+</option>
+              <option value="all">All positions</option>
+              <option value="F">Forwards</option>
+              <option value="D">Defence</option>
             </select>
           </label>
-          <button className="hl-button hl-button--primary" type="submit">
-            Search
-          </button>
+          <details className={contractFilterStyles.moreFilters}>
+            <summary>
+              More filters
+              {activeAdditionalFilters > 0 && <span> ({activeAdditionalFilters} active)</span>}
+            </summary>
+            <div className={contractFilterStyles.expandedFilters}>
+              <label className="hl-field">
+                Contract length (remaining)
+                <select value={remainingYears} onChange={(event) => setRemainingYears(event.target.value)}>
+                  <option value="all">Any length</option>
+                  <option value="1">1 year</option>
+                  <option value="2">2 years</option>
+                  <option value="3">3 years</option>
+                </select>
+              </label>
+              <label className="hl-field">
+                Contract type
+                <select value={contractType} onChange={(event) => setContractType(event.target.value)}>
+                  <option value="all">All contract types</option>
+                  <option value="normal">Standard contracts</option>
+                  <option value="fantasy_elc">ELC contracts</option>
+                </select>
+              </label>
+              <label className="hl-field">
+                Minimum games
+                <select
+                  value={minimumGames}
+                  onChange={(event) => setMinimumGames(event.target.value)}
+                >
+                  <option value="0">Any</option>
+                  <option value="10">10+</option>
+                  <option value="25">25+</option>
+                  <option value="50">50+</option>
+                </select>
+              </label>
+              <label className="hl-field">
+                NHL team
+                <select
+                  value={nhlTeam}
+                  onChange={(event) => setNhlTeam(event.target.value)}
+                >
+                  <option value="all">All NHL teams</option>
+                  {NHL_TEAM_OPTIONS.map(([abbreviation, name]) => (
+                    <option value={abbreviation} key={abbreviation}>
+                      {name} ({abbreviation})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <AavRangeFilter range={aavRange} onChange={setAavRange} valid={aavRangeValid} />
+            </div>
+          </details>
         </form>
-        <div className={contractFilterStyles.filters}>
-          <label className="hl-field">
-            Contract length (remaining)
-            <select value={remainingYears} onChange={(event) => setRemainingYears(event.target.value)}>
-              <option value="all">Any length</option>
-              <option value="1">1 year</option>
-              <option value="2">2 years</option>
-              <option value="3">3 years</option>
-            </select>
-          </label>
-          <label className="hl-field">
-            Contract type
-            <select value={contractType} onChange={(event) => setContractType(event.target.value)}>
-              <option value="all">All contract types</option>
-              <option value="normal">Standard contracts</option>
-              <option value="fantasy_elc">ELC contracts</option>
-            </select>
-          </label>
-          <AavRangeFilter range={aavRange} onChange={setAavRange} valid={aavRangeValid} />
-        </div>
-        <p>
-          Unavailable provider records are hidden. Total fantasy points is the
-          default sort.
-        </p>
       </Surface>
 
       {aavRange.enabled && !aavRangeValid ? (
