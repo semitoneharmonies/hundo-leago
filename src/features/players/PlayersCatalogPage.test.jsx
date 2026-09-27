@@ -212,6 +212,37 @@ function createContractFilterTestFixture() {
 }
 
 describe("league player catalog", () => {
+  it.each([
+    ["LAK", "LA"], ["MTL", "MON"], ["NJD", "NJ"], ["NSH", "NAS"],
+    ["SJS", "SJ"], ["TBL", "TB"], ["VGK", "VEG"], ["WSH", "WAS"],
+  ])("keeps both %s and %s players visible when filtering by NHL team", async (canonical, alternate) => {
+    const fixture = createContractFilterTestFixture();
+    const rows = [canonical, alternate, "VAN"].map((code, index) => {
+      const row = player({ id: [freeAgentId, ownedPlayerId, prospectId][index],
+        name: `${code} Player`, gamesPlayed: 20, fantasyPointsHundredths: 2000 });
+      row.provider.nhlTeamAbbreviation = code;
+      return row;
+    });
+    const fetchImpl = vi.fn(async (url, options) => new URL(url).pathname.endsWith("/players")
+      ? envelope(rows, { page: { nextCursor: null, hasMore: false } })
+      : fixture.fetchImpl(url, options));
+    const view = renderWithProviders(
+      <Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>,
+      { initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl } }
+    );
+    await screen.findByRole("rowheader", { name: "VAN Player" });
+    await view.user.click(screen.getByText("More filters"));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "NHL team" }), canonical);
+    await waitFor(() => {
+      expect(screen.getByRole("rowheader", { name: `${canonical} Player` })).toBeVisible();
+      expect(screen.getByRole("rowheader", { name: `${alternate} Player` })).toBeVisible();
+      expect(screen.queryByRole("rowheader", { name: "VAN Player" })).not.toBeInTheDocument();
+    });
+    expect(fetchImpl.mock.calls.some(([url]) => new URL(url).searchParams.get("nhlTeam") === canonical)).toBe(true);
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "NHL team" }), "all");
+    await screen.findByRole("rowheader", { name: "VAN Player" });
+  });
+
   it("combines and resets signed, AAV, remaining-year, prospect and ELC filters with read-only requests", async () => {
     const fixture = createContractFilterTestFixture();
     const view = renderWithProviders(

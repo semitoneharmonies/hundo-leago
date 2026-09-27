@@ -1,4 +1,5 @@
 import { injuryNameProps } from '../../shared/playerInjury.js';
+import { canonicalNhlTeam } from '../../shared/nhlTeams.js';
 import { PlayerName } from './PlayerName.jsx';
 import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -370,7 +371,7 @@ export function PlayersCatalogPage() {
             player.fullName.toLowerCase().includes(normalizedQuery)) &&
           (position === "all" || displayPosition(player) === position) &&
           (nhlTeam === "all" ||
-            player.provider?.nhlTeamAbbreviation === nhlTeam) &&
+            canonicalNhlTeam(player.provider?.nhlTeamAbbreviation) === nhlTeam) &&
           (ownership === "all" ||
             (ownership === "free" && !player.league.ownership) ||
             (ownership === "signed" && Boolean(player.league.activeContract)) ||
