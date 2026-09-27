@@ -1,3 +1,5 @@
+import { rosterLegalityMessages } from './rosterLegalityMessages.js';
+import { injuryNameProps } from '../../shared/playerInjury.js';
 import { createElement, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,7 +12,6 @@ import {
   HeartPulse,
   List,
   Megaphone,
-  Rows3,
   ShieldCheck,
   Trash2,
   XCircle,
@@ -29,6 +30,7 @@ import {
 } from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import { CapOutlook } from "./CapOutlook.jsx";
+import { PlayerName } from '../players/PlayerName.jsx';
 import { ApiError } from "../../shared/api/ApiError.js";
 import { leagueDateTime } from "../../shared/hundoFormat.js";
 import {
@@ -219,7 +221,7 @@ function RosterActions({
             <button
               key={type}
               type="button"
-              className="hl-roster-action"
+              className={`hl-roster-action ${type.endsWith("ir") && player.injury?.status === "injured" ? "is-injury-action" : ""}`}
               disabled={
                 pending ||
                 (type === "prospect-sign-ir" &&
@@ -272,7 +274,7 @@ function RosterActions({
             <button
               key={type}
               type="button"
-              className="hl-roster-action"
+              className={`hl-roster-action ${type.endsWith("ir") && player.injury?.status === "injured" ? "is-injury-action" : ""}`}
               disabled={
                 pending ||
                 (type === "ir" && !player.injuredReserveEligible)
@@ -321,7 +323,7 @@ function RosterActions({
           </button>
           <button
             type="button"
-            className="hl-roster-action"
+            className={`hl-roster-action ${player.injury?.status === "injured" ? "is-injury-action" : ""}`}
             disabled={pending || irDisabled}
             onClick={() => onAction("ir", player)}
             aria-label={`Move ${player.name} to injured reserve`}
@@ -456,7 +458,9 @@ function CategoryTable({
   leagueId,
   requestingTeamId = null,
   viewedTeamId,
+  rosterLockNotice = null,
   sort,
+  httpClient,
   onSort,
 }) {
   const forwards = players.filter(
@@ -498,7 +502,7 @@ function CategoryTable({
       }}
     >
       <div className="hl-roster-category__heading">
-        <h2 id={headingId}>{category.title}</h2>
+        <div className="hl-roster-category-title"><h2 id={headingId}>{category.title}</h2>{rosterLockNotice}</div>
         <span>{capacity}</span>
       </div>
       {players.length === 0 ? (
@@ -563,6 +567,7 @@ function CategoryTable({
                 <tr
                   key={player.ownershipId}
                   className={[
+                    player.onTradeBlock ? "is-on-trade-block" : "",
                     draggingId === player.ownershipId ? "is-dragging" : "",
                     dragTargetId === player.ownershipId
                       ? "is-drop-target"
@@ -684,7 +689,7 @@ function CategoryTable({
                     />
                   </td>
                   <th className="hl-player-col-name" scope="row">
-                    {player.name}
+                    <PlayerName {...injuryNameProps(player)} playerId={player.playerId} leagueId={leagueId} httpClient={httpClient} className={`hl-roster-player-name ${injuryNameProps(player).className || ""}`}>{player.name}</PlayerName>
                   </th>
                   <td className="hl-player-col-aav is-mono">
                     {money(player.contract?.aavCents ?? null)}
@@ -754,12 +759,6 @@ function CategoryTable({
   );
 }
 
-function chunk(values, size, count) {
-  return Array.from({ length: count }, (_, index) =>
-    values.slice(index * size, index * size + size)
-  );
-}
-
 function lineSlots(players, position) {
   const peers = players.filter(({ normalizedPosition }) => normalizedPosition === position);
   const slots = Array(Math.max(position === "F" ? 12 : 6, peers.length)).fill(null);
@@ -780,383 +779,6 @@ function orderPayload(players, position) {
   const slots = lineSlots(players, position);
   while (slots.at(-1) === null) slots.pop();
   return slots.map((player) => player ? { id: player.ownershipId, version: player.ownershipVersion } : null);
-}
-
-function LinePlayer({
-  player,
-  emptySlotId,
-  canManage,
-  category = "Active",
-  muted = false,
-  actions = null,
-  team,
-  tradeRequestPath,
-  draggingId,
-  dragTargetId,
-  onDragStart,
-  onDragTarget,
-  onDragEnd,
-  onCategoryDrop,
-  onMove,
-}) {
-  if (!player) {
-    return <div className="hl-line-player is-empty" data-line-slot={emptySlotId} data-roster-order-id={canManage ? emptySlotId : undefined} data-roster-category={category}
-      onDragOver={(event) => { if (canManage && emptySlotId) event.preventDefault(); }}
-      onDrop={(event) => {
-        if (!canManage || !emptySlotId) return;
-        event.preventDefault();
-        onCategoryDrop(event.dataTransfer.getData?.("text/plain") || draggingId, category, emptySlotId);
-      }}>Open slot</div>;
-  }
-  return (
-    <div
-      className={teamColourClass(
-        [
-          "hl-line-player hl-line-player--team",
-          muted ? "hl-line-player--bench" : "",
-          draggingId === player.ownershipId ? "is-dragging" : "",
-          dragTargetId === player.ownershipId ? "is-drop-target" : "",
-        ]
-          .filter(Boolean)
-          .join(" "),
-        team
-      )}
-      style={teamColourStyle(team)}
-      data-roster-order-id={canManage ? player.ownershipId : undefined}
-      data-roster-category={category}
-      onDragOver={(event) => {
-        if (canManage) {
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
-        }
-      }}
-      onDrop={(event) => {
-        if (!canManage) return;
-        event.preventDefault();
-        event.stopPropagation();
-        const sourceId =
-          (typeof event.dataTransfer.getData === "function"
-            ? event.dataTransfer.getData("text/plain")
-            : "") || draggingId;
-        onCategoryDrop(sourceId, category, player.ownershipId);
-      }}
-    >
-      {canManage && (
-        <button
-          type="button"
-          className="hl-line-player__drag-handle"
-          aria-label={
-            category === "Active"
-              ? `Drag ${player.name} to reorder`
-              : `Drag ${player.name} between Bench and Active`
-          }
-          title={
-            category === "Active"
-              ? `Drag ${player.name} to reorder`
-              : `Drag ${player.name} between Bench and Active`
-          }
-          draggable
-          onDragStart={(event) => {
-            event.dataTransfer.effectAllowed = "move";
-            event.dataTransfer.setData("text/plain", player.ownershipId);
-            onDragStart(player.ownershipId);
-          }}
-          onDragEnd={onDragEnd}
-          onPointerDown={(event) =>
-            beginPointerDrag(event, player.ownershipId, onDragStart)
-          }
-          onPointerMove={(event) => {
-            if (draggingId !== player.ownershipId) return;
-            onDragTarget(pointerDropTargetId(event));
-          }}
-          onPointerUp={(event) => {
-            const targetId = pointerDropTargetId(event) || dragTargetId;
-            const targetCategory =
-              pointerDropTargetCategory(event) || category;
-            endPointerCapture(event);
-            onCategoryDrop(
-              player.ownershipId,
-              targetCategory,
-              targetId
-            );
-          }}
-          onPointerCancel={(event) => {
-            endPointerCapture(event);
-            onDragEnd();
-          }}
-          onKeyDown={(event) => {
-            if (category !== "Active") return;
-            if (event.key === "ArrowUp") {
-              event.preventDefault();
-              onMove(player.ownershipId, -1);
-            } else if (event.key === "ArrowDown") {
-              event.preventDefault();
-              onMove(player.ownershipId, 1);
-            }
-          }}
-        >
-          <GripVertical aria-hidden="true" />
-          <span className="hl-visually-hidden">
-            {category === "Active"
-              ? "Use the up and down arrow keys to change order."
-              : "Drag this player onto the active lineup to move them."}
-          </span>
-        </button>
-      )}
-      <span>
-        <strong>{player.name}</strong>
-        <small>
-          {money(player.contract?.aavCents ?? null)} ·{" "}
-          {player.statistics
-            ? `${(player.statistics.fantasyPointsHundredths / 100).toFixed(2)} FP`
-            : "No stats"}
-        </small>
-      </span>
-      {tradeRequestPath && (
-        <Link
-          className="hl-line-player__trade-request"
-          to={tradeRequestPath}
-          aria-label={`Request ${player.name} in a trade`}
-          title={`Request ${player.name} in a trade`}
-        >
-          <ArrowLeftRight aria-hidden="true" />
-        </Link>
-      )}
-      {actions && (
-        <div className="hl-line-player__actions">{actions}</div>
-      )}
-    </div>
-  );
-}
-
-function HockeyLines({
-  activePlayers,
-  canManage,
-  leagueId,
-  requestingTeamId,
-  team,
-  draggingId,
-  dragTargetId,
-  onDragStart,
-  onDragTarget,
-  onDragEnd,
-  onCategoryDrop,
-  onMove,
-}) {
-  const forwards = lineSlots(activePlayers, "F");
-  const defence = lineSlots(activePlayers, "D");
-  return (
-    <section
-      className="hl-hockey-lines"
-      aria-labelledby="hockey-lines-title"
-      data-roster-category="Active"
-      onDragOver={(event) => {
-        if (!canManage) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-      }}
-      onDrop={(event) => {
-        if (!canManage || event.defaultPrevented) return;
-        event.preventDefault();
-        const sourceId =
-          (typeof event.dataTransfer.getData === "function"
-            ? event.dataTransfer.getData("text/plain")
-            : "") || draggingId;
-        onCategoryDrop(sourceId, "Active", null);
-      }}
-    >
-      <div className="hl-roster-category__heading">
-        <div>
-          <p className="hl-eyebrow">Line arrangement</p>
-          <h2 id="hockey-lines-title">Hockey lines</h2>
-        </div>
-        <span>
-          {canManage
-            ? "Drag players to set the lines. A focused handle also accepts Up and Down arrow keys."
-            : "Viewing the manager’s saved order."}
-        </span>
-      </div>
-      <div className="hl-lines-section">
-        <h3>Forwards</h3>
-        {chunk(forwards, 3, 4).map((line, lineIndex) => (
-          <div className="hl-hockey-line" key={`forward-${lineIndex}`}>
-            <strong>Line {lineIndex + 1}</strong>
-            <div>
-              {Array.from({ length: 3 }, (_, slotIndex) => {
-                const player = line[slotIndex] || null;
-                const absoluteIndex = lineIndex * 3 + slotIndex;
-                return (
-                  <LinePlayer
-                    key={player?.ownershipId || `f-open-${absoluteIndex}`}
-                    emptySlotId={`slot:F:${absoluteIndex}`}
-                    player={player}
-                    canManage={canManage}
-                    team={team}
-                    tradeRequestPath={
-                      player && requestingTeamId
-                        ? routePaths.leagueTradeForRequestedAsset(
-                            leagueId,
-                            requestingTeamId,
-                            team.id,
-                            player.contract ? "contract" : "prospect_right",
-                            player.contract?.id || player.playerId
-                          )
-                        : null
-                    }
-                    draggingId={draggingId}
-                    dragTargetId={dragTargetId}
-                    onDragStart={onDragStart}
-                    onDragTarget={onDragTarget}
-                    onDragEnd={onDragEnd}
-                    onCategoryDrop={onCategoryDrop}
-                    onMove={onMove}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="hl-lines-section">
-        <h3>Defence</h3>
-        {chunk(defence, 2, 3).map((pair, pairIndex) => (
-          <div className="hl-hockey-line" key={`defence-${pairIndex}`}>
-            <strong>Pair {pairIndex + 1}</strong>
-            <div>
-              {Array.from({ length: 2 }, (_, slotIndex) => {
-                const player = pair[slotIndex] || null;
-                const absoluteIndex = pairIndex * 2 + slotIndex;
-                return (
-                  <LinePlayer
-                    key={player?.ownershipId || `d-open-${absoluteIndex}`}
-                    emptySlotId={`slot:D:${absoluteIndex}`}
-                    player={player}
-                    canManage={canManage}
-                    team={team}
-                    tradeRequestPath={
-                      player && requestingTeamId
-                        ? routePaths.leagueTradeForRequestedAsset(
-                            leagueId,
-                            requestingTeamId,
-                            team.id,
-                            player.contract ? "contract" : "prospect_right",
-                            player.contract?.id || player.playerId
-                          )
-                        : null
-                    }
-                    draggingId={draggingId}
-                    dragTargetId={dragTargetId}
-                    onDragStart={onDragStart}
-                    onDragTarget={onDragTarget}
-                    onDragEnd={onDragEnd}
-                    onCategoryDrop={onCategoryDrop}
-                    onMove={onMove}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function BenchStrip({
-  players,
-  canManage,
-  actionPending,
-  orderPending,
-  canRequestTrade,
-  leagueId,
-  requestingTeamId,
-  team,
-  draggingId,
-  dragTargetId,
-  onDragStart,
-  onDragTarget,
-  onDragEnd,
-  onCategoryDrop,
-  onMove,
-  onAction,
-}) {
-  const displayedPlayers = orderedPlayers(players);
-  const dragEnabled = canManage && !actionPending && !orderPending;
-  return (
-    <section
-      className="hl-surface hl-bench-strip"
-      aria-labelledby="roster-bench-cards"
-      data-roster-category="Bench"
-      onDragOver={(event) => {
-        if (!dragEnabled) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-      }}
-      onDrop={(event) => {
-        if (!dragEnabled || event.defaultPrevented) return;
-        event.preventDefault();
-        const sourceId =
-          (typeof event.dataTransfer.getData === "function"
-            ? event.dataTransfer.getData("text/plain")
-            : "") || draggingId;
-        onCategoryDrop(sourceId, "Bench", null, displayedPlayers);
-      }}
-    >
-      <div className="hl-roster-category__heading">
-        <h2 id="roster-bench-cards">Bench</h2>
-        <span>
-          {players.length}/4 used · {Math.max(0, 4 - players.length)} available
-        </span>
-      </div>
-      {players.length === 0 ? (
-        <p className="hl-roster-category__empty">
-          No players occupy this category.
-        </p>
-      ) : (
-        <div className="hl-bench-strip__cards">
-          {displayedPlayers.map((player) => (
-            <LinePlayer
-              key={player.ownershipId}
-              player={player}
-              canManage={dragEnabled}
-              category="Bench"
-              muted
-              team={team}
-              tradeRequestPath={
-                canRequestTrade
-                  ? routePaths.leagueTradeForRequestedAsset(
-                      leagueId,
-                      requestingTeamId,
-                      team.id,
-                      player.contract ? "contract" : "prospect_right",
-                      player.contract?.id || player.playerId
-                    )
-                  : null
-              }
-              draggingId={draggingId}
-              dragTargetId={dragTargetId}
-              onDragStart={onDragStart}
-              onDragTarget={onDragTarget}
-              onDragEnd={onDragEnd}
-              onCategoryDrop={onCategoryDrop}
-              onMove={onMove}
-              actions={
-                canManage ? (
-                  <RosterActions
-                    leagueId={leagueId}
-                    teamId={team.id}
-                    player={player}
-                    pending={actionPending}
-                    onAction={onAction}
-                  />
-                ) : null
-              }
-            />
-          ))}
-        </div>
-      )}
-    </section>
-  );
 }
 
 function DraftPicks({
@@ -1318,13 +940,12 @@ export function TeamRosterPage({
   workspace,
   teams,
   currentUserId = null,
-  managerName,
   onTeamChange,
   httpClient,
   rosterLockNotice = null,
 }) {
   const queryClient = useQueryClient();
-  const { cap, league, season, team } = workspace;
+  const { cap, league, team } = workspace;
   const legality = workspace.legality ?? { legal: true, reasons: [] };
   const [view, setView] = useState("table");
   const [activePlayers, setActivePlayers] = useState(() =>
@@ -1378,13 +999,13 @@ export function TeamRosterPage({
         defenceOwnerships: orderPayload(nextPlayers, "D"),
       }),
     onSuccess: async () => {
-      setSaveMessage("Line order saved.");
+      setSaveMessage("Roster order saved.");
       await queryClient.invalidateQueries({
         queryKey: teamWorkspaceKeys.detail(league.id, team.id),
       });
     },
     onError: () => {
-      setSaveMessage("The line order could not be saved.");
+      setSaveMessage("The roster order could not be saved.");
     },
   });
 
@@ -1609,7 +1230,7 @@ export function TeamRosterPage({
     setRosterSort({ key: "lineup", direction: "asc" });
     setDraggingId(null);
     setDragTargetId(null);
-    setSaveMessage("Saving line order…");
+    setSaveMessage("Saving roster order…");
     mutation.mutate(next);
   }
 
@@ -1688,7 +1309,6 @@ export function TeamRosterPage({
   const overCap = cap.spaceCents < 0;
   const statCards = useMemo(
     () => [
-      ["Usage", money(cap.usageCents), "All current cap charges"],
       ["Space", money(cap.spaceCents), overCap ? "Over cap" : "Available"],
       ["Active salary", money(cap.activePlayerCents), "Net active AAV"],
       [
@@ -1721,11 +1341,7 @@ export function TeamRosterPage({
             className="hl-team-logo"
           />
           <div>
-            <p className="hl-eyebrow">
-              {league.name} · {season.label}
-            </p>
             <label className="hl-team-switcher">
-              <span>Viewing team</span>
               <select
                 value={team.id}
                 onChange={(event) => onTeamChange(event.target.value)}
@@ -1739,16 +1355,9 @@ export function TeamRosterPage({
               </select>
             </label>
             <h1 id="team-title">{team.name}</h1>
-            <p>
-              {managerName
-                ? `Manager: ${managerName}`
-                : "No manager is currently assigned."}
-            </p>
           </div>
         </div>
       </header>
-
-      {rosterLockNotice}
 
       <section className="hl-roster-cap" aria-labelledby="cap-summary-title">
         <div className="hl-section-title">
@@ -1764,20 +1373,14 @@ export function TeamRosterPage({
             </div>
           ))}
         </div>
-        <p className={`hl-cap-note${overCap ? " is-warning" : ""}`}>
-          Cap status: <strong>{overCap ? "Over cap" : "Within cap"}</strong>.
-          Usage is active-player AAV plus retained salary and buyout penalties.
-        </p>
       </section>
 
       {!legality.legal && (
         <div className="hl-roster-illegal" role="alert">
           <strong>Illegal roster</strong>
-          <span>
-            {legality.reasons.length} roster issue
-            {legality.reasons.length === 1 ? "" : "s"} must be fixed
-            before this roster is legal.
-          </span>
+          <ul className="hl-roster-issues">
+            {rosterLegalityMessages(workspace).map(message => <li key={message}>{message}</li>)}
+          </ul>
         </div>
       )}
 
@@ -1806,14 +1409,6 @@ export function TeamRosterPage({
           onClick={() => setView("table")}
         >
           <List aria-hidden="true" /> Table
-        </button>
-        <button
-          type="button"
-          className={view === "lines" ? "is-active" : ""}
-          aria-pressed={view === "lines"}
-          onClick={() => setView("lines")}
-        >
-          <Rows3 aria-hidden="true" /> Hockey lines
         </button>
         <button
           type="button"
@@ -1846,82 +1441,15 @@ export function TeamRosterPage({
       )}
 
       {view === "cap" ? (
-        <CapOutlook workspace={workspace} pending={actionMutation.isPending || mutation.isPending} onAction={runRosterAction} />
-      ) : view === "lines" ? (
-        <>
-          <HockeyLines
-            activePlayers={activePlayers}
-            canManage={workspace.canManage && !mutation.isPending}
-            leagueId={league.id}
-            requestingTeamId={requestingTeam?.id || null}
-            team={team}
-            draggingId={draggingId}
-            dragTargetId={dragTargetId}
-            onDragStart={setDraggingId}
-            onDragTarget={setDragTargetId}
-            onDragEnd={endDrag}
-            onCategoryDrop={handleRosterDrop}
-            onMove={move}
-          />
-          <BenchStrip
-            players={workspace.players.filter(
-              ({ rosterCategory }) => rosterCategory === "Bench"
-            )}
-            canManage={workspace.canManage}
-            actionPending={actionMutation.isPending}
-            orderPending={mutation.isPending}
-            canRequestTrade={canRequestTrade}
-            leagueId={league.id}
-            requestingTeamId={requestingTeam?.id || null}
-            team={team}
-            draggingId={draggingId}
-            dragTargetId={dragTargetId}
-            onDragStart={setDraggingId}
-            onDragTarget={setDragTargetId}
-            onDragEnd={endDrag}
-            onCategoryDrop={handleRosterDrop}
-            onMove={move}
-            onAction={runRosterAction}
-          />
-          <div className="hl-roster-categories">
-            {CATEGORY_DETAILS.filter(
-              ({ key }) => !["Active", "Bench"].includes(key)
-            ).map(
-              (category) => (
-                <CategoryTable
-                  key={category.key}
-                  category={category}
-                  players={workspace.players.filter(
-                    ({ rosterCategory }) => rosterCategory === category.key
-                  )}
-                  sort={rosterSort}
-                  onSort={changeRosterSort}
-                  canManage={workspace.canManage}
-                  draggingId={draggingId}
-                  dragTargetId={dragTargetId}
-                  onDragStart={setDraggingId}
-                  onDragTarget={setDragTargetId}
-                  onDragEnd={endDrag}
-                  onCategoryDrop={handleRosterDrop}
-                  onMove={move}
-                  leagueId={league.id}
-                  onAction={runRosterAction}
-                  actionPending={actionMutation.isPending}
-                  canRequestTrade={canRequestTrade}
-                  prospectDecisionAllowed={managesViewedTeam}
-                  requestingTeamId={requestingTeam?.id || null}
-                  viewedTeamId={team.id}
-                />
-              )
-            )}
-          </div>
-        </>
+        <CapOutlook workspace={workspace} httpClient={httpClient} pending={actionMutation.isPending || mutation.isPending} onAction={runRosterAction} />
       ) : (
         <div className="hl-roster-categories">
           {CATEGORY_DETAILS.map((category) => (
             <CategoryTable
               key={category.key}
               category={category}
+              httpClient={httpClient}
+              rosterLockNotice={category.key === "Active" ? rosterLockNotice : null}
               players={
                 category.key === "Active"
                   ? activePlayers

@@ -1860,6 +1860,17 @@ textarea {
   max-width: 700px;
 }
 
+/* Desktop workspaces use the screen width; compact forms keep their cap. */
+@media (min-width: 1024px) {
+  :root {
+    --hl-content-width: 100%;
+  }
+
+  .hl-page {
+    width: calc(100% - 36px);
+  }
+}
+
 .hl-page-heading {
   display: flex;
   align-items: end;
@@ -2331,6 +2342,16 @@ textarea {
   gap: 9px;
 }
 
+.hl-roster-cap .hl-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .hl-roster-cap .hl-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .hl-stat-card {
   display: grid;
   gap: 6px;
@@ -2379,10 +2400,11 @@ textarea {
   font-size: 1.14rem;
 }
 
-.hl-roster-category__heading span {
+.hl-roster-category__heading > span {
   color: var(--hl-muted-foreground);
   font-family: var(--hl-font-mono);
-  font-size: 0.58rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-align: right;
 }
 
@@ -5210,7 +5232,7 @@ textarea {
 
 .hl-roster-illegal {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid rgb(248 113 113 / 72%);
@@ -5228,6 +5250,13 @@ textarea {
 
 .hl-roster-illegal span {
   font-size: 0.64rem;
+}
+
+.hl-roster-issues { margin: 0; padding-left: 1.1rem; font-size: .8rem; line-height: 1.6; }
+.hl-roster-category-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: .3rem 1.25rem; }
+.hl-roster-category-title h2 { margin: 0; }
+@media (max-width: 660px) {
+  .hl-roster-illegal { flex-direction: column; gap: .35rem; }
 }
 
 .hl-authority-notice {
@@ -6294,6 +6323,7 @@ textarea {
 .hl-player-row-table.hl-expanded-player-table,
 .hl-player-row-table.hl-roster-table.hl-expanded-player-table {
   min-width: 1080px;
+  table-layout: auto;
 }
 
 .hl-expanded-player-table .hl-player-col-name {
@@ -6620,7 +6650,18 @@ textarea {
   }
 }
 
-/* Keep all desktop statistics visible. Mobile retains a scrollable table. */
+/* Size the full scoring table from its content; scroll instead of overlapping. */
+.hl-player-row-table.hl-expanded-player-table {
+  table-layout: auto;
+}
+
+.hl-player-row-table.hl-expanded-player-table thead th {
+  padding: 8px;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+}
+
+/* Keep desktop statistics compact within the scrollable table. */
 @media (min-width: 1024px) {
   .hl-player-row-table.hl-expanded-player-table,
   .hl-player-row-table.hl-roster-table.hl-expanded-player-table {
@@ -6642,22 +6683,26 @@ textarea {
   .hl-player-row-table.hl-expanded-player-table .hl-player-col-nhl { width: 30px; }
   .hl-player-row-table.hl-expanded-player-table .hl-player-col-stat { width: auto; }
   .hl-player-row-table.hl-expanded-player-table .hl-player-col-stat:nth-last-child(-n+3) { width: 48px; }
-  .hl-player-row-table.hl-expanded-player-table .hl-player-col-actions { width: 60px; min-width: 0; }
-  .hl-player-row-table.hl-roster-table.hl-expanded-player-table .hl-player-col-actions { width: 150px; }
+  /* Reserve room for one expanded label without moving or covering statistics. */
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-actions { width: 190px; min-width: 190px; }
+  .hl-player-row-table.hl-roster-table.hl-expanded-player-table .hl-player-col-actions { width: 324px; min-width: 324px; }
 
   .hl-expanded-player-table :is(.hl-player-actions, .hl-roster-actions, .hl-roster-actions-group) { gap: 3px; }
   .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) {
-    width: 24px;
+    width: auto;
     min-width: 24px;
     max-width: 24px;
     height: 24px;
     min-height: 24px;
     padding: 4px;
-    gap: 0;
+    gap: 6px;
     flex-shrink: 0;
   }
-  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) svg { width: 14px; height: 14px; }
-  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) span { display: none; }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) svg { width: 14px; min-width: 14px; height: 14px; }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action):is(:hover, :focus-visible) {
+    max-width: 180px;
+  }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) span { display: inline; }
   .hl-expanded-player-table .hl-position-tag { min-width: 24px; padding: 3px; font-size: 0.5625rem; }
   .hl-expanded-player-table .hl-roster-order-controls .hl-roster-drag-handle { width: 26px; min-width: 26px; }
   .hl-expanded-player-table .hl-player-row-action { padding: 4px 6px; }
@@ -6776,4 +6821,292 @@ textarea {
   .hl-matchup-player__position { grid-column: 1 / -1; }
   .hl-matchup-player__heading > strong { font-size: 0.65rem; white-space: normal; overflow-wrap: anywhere; }
   .hl-matchup-player .hl-matchup-player-fp { font-size: 0.7rem; }
+}
+.hl-roster-table tr.is-on-trade-block > .hl-player-col-name {
+  color: #dcc57e;
+}
+
+@supports (background-clip: text) {
+  .hl-roster-table tr.is-on-trade-block .hl-roster-player-name:not(.hl-injured-player-name) {
+    background: linear-gradient(110deg, #eadba7, #c9ad60);
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+@media (forced-colors: active) {
+  .hl-roster-table tr.is-on-trade-block .hl-roster-player-name:not(.hl-injured-player-name) {
+    background: none;
+    color: CanvasText;
+  }
+}
+
+.hl-roster-table tr.is-on-trade-block .hl-roster-action.is-request {
+  color: #facc15;
+  border-color: rgb(250 204 21 / 55%);
+  background: rgb(250 204 21 / 12%);
+}
+
+.hl-roster-table tr.is-on-trade-block .hl-roster-action.is-request:hover,
+.hl-roster-table tr.is-on-trade-block .hl-roster-action.is-request:focus-visible {
+  border-color: #facc15;
+  background: rgb(250 204 21 / 22%);
+}
+
+/* Injury-only names are red; combined injury and trade-block names blend both colours. */
+.hl-injured-player-name,
+.hl-roster-table .hl-roster-player-name.hl-injured-player-name,
+.hl-player-col-name a.hl-injured-player-name {
+  color: #ee999e;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.hl-roster-action.is-injury-action {
+  color: #ee999e;
+  border-color: rgba(238, 153, 158, .42);
+  background: rgba(222, 88, 103, .10);
+}
+@supports (background-clip: text) {
+  .hl-injured-player-name.is-injury-trade-block,
+  .hl-roster-table .hl-roster-player-name.hl-injured-player-name.is-injury-trade-block {
+    background: linear-gradient(90deg, #dcc57e 0%, #dcc57e 42%, #ee999e 58%, #ee999e 100%);
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}
+@media (forced-colors: active) {
+  .hl-injured-player-name.is-injury-trade-block,
+  .hl-roster-table .hl-roster-player-name.hl-injured-player-name.is-injury-trade-block {
+    background: none;
+    color: CanvasText;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+.hl-roster-action.is-injury-action:hover,
+.hl-roster-action.is-injury-action:focus-visible { background: rgba(222, 88, 103, .19); }
+.hl-injury-roster-reason { display: block; margin-top: .3rem; }
+.hl-injury-admin { margin-top: 1.5rem; }
+
+/* Player names keep their roster status colour while opening a shared card. */
+a.hl-player-card-trigger { color: inherit; text-decoration: none; cursor: pointer; }
+a.hl-player-card-trigger:hover { text-decoration: underline; text-underline-offset: 3px; }
+a.hl-player-card-trigger:focus-visible { outline: 2px solid #d5b66f; outline-offset: 3px; border-radius: 2px; }
+.hl-injury-source-note, .hl-injury-player-list small { color: var(--hl-text-muted, #a5b1c5); font-size: .85rem; }
+.hl-injury-search { margin: 1.2rem 0; }
+.hl-injury-search input { min-width: 0; flex: 1; }
+.hl-injury-search .hl-button-row { flex-wrap: wrap; }
+.hl-injury-player-list { list-style: none; padding: 0; max-height: 330px; overflow-y: auto; }
+.hl-injury-player-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 0; border-bottom: 1px solid rgba(160, 180, 210, .12); }
+.hl-injury-player-list small { display: block; margin-top: .25rem; }
+.hl-injury-decision { display: grid; gap: .65rem; padding: 1.2rem; margin: 1rem 0; border: 1px solid rgba(160, 180, 210, .2); border-radius: 12px; }
+.hl-injury-decision textarea { min-height: 80px; resize: vertical; }
+.hl-injury-history { padding-left: 1.2rem; font-size: .85rem; }
+.hl-injury-history p { margin-top: .3rem; }
+@media (forced-colors: active) { .hl-injured-player-name { color: CanvasText; } }
+
+.hl-injury-admin input, .hl-injury-admin select, .hl-injury-admin textarea {
+  box-sizing: border-box; width: 100%; color: var(--hl-foreground, #e5edf9);
+  background: rgba(5, 13, 27, .65); border: 1px solid rgba(160, 180, 210, .25);
+  border-radius: 8px; padding: .65rem .75rem; font: inherit; font-size: .875rem;
+}
+.hl-injury-admin input:focus-visible, .hl-injury-admin select:focus-visible, .hl-injury-admin textarea:focus-visible {
+  outline: 2px solid var(--hl-primary, #fa8b32); outline-offset: 2px;
+}
+.hl-injury-admin label { display: block; font-size: .85rem; margin-bottom: .35rem; }
+
+/* Readable desktop player rows use the expanded workspace width. */
+@media (min-width: 1024px) {
+  .hl-player-row-table,
+  .hl-player-row-table.hl-expanded-player-table,
+  .hl-player-row-table.hl-roster-table.hl-expanded-player-table {
+    font-size: clamp(0.75rem, 0.85vw, 0.875rem);
+  }
+
+  .hl-player-row-table :is(th, td),
+  .hl-player-row-table.hl-expanded-player-table :is(th, td) {
+    padding: 10px 4px;
+    font-size: inherit;
+  }
+
+  .hl-player-row-table tbody .hl-player-col-name {
+    font-size: clamp(0.875rem, 1vw, 1rem);
+  }
+
+  .hl-player-row-table .hl-player-col-name,
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-name {
+    width: 200px;
+    min-width: 200px;
+  }
+
+  .hl-player-row-table .hl-player-col-actions,
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-actions {
+    width: 260px;
+    min-width: 260px;
+  }
+
+  .hl-player-row-table.hl-roster-table .hl-player-col-actions,
+  .hl-player-row-table.hl-roster-table.hl-expanded-player-table .hl-player-col-actions {
+    width: 400px;
+    min-width: 400px;
+  }
+
+  .hl-player-row-table :is(.hl-player-action, .hl-roster-action) {
+    min-width: 32px;
+    max-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 6px;
+  }
+
+  .hl-player-row-table :is(.hl-player-action, .hl-roster-action) svg {
+    width: 18px;
+    min-width: 18px;
+    height: 18px;
+  }
+
+  .hl-player-row-table :is(.hl-player-action, .hl-roster-action) span {
+    font-size: 0.75rem;
+  }
+
+  .hl-player-row-table :is(.hl-player-action, .hl-roster-action):is(:hover, :focus-visible) {
+    max-width: 220px;
+  }
+
+  .hl-player-row-table :is(.hl-player-action, .hl-roster-action):is(:hover, :focus-visible) span {
+    max-width: 180px;
+  }
+
+  .hl-player-row-table .hl-position-tag {
+    min-width: 28px;
+    padding: 5px;
+    font-size: 0.75rem;
+  }
+
+  .hl-player-row-table .hl-player-row-action {
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Give the full-width desktop workspace more vertical breathing room. */
+@media (min-width: 1024px) {
+  .hl-app-header__bar {
+    min-height: 72px;
+    padding-block: 14px;
+  }
+
+  .hl-page-heading {
+    min-height: 112px;
+    align-items: center;
+    padding-block: 12px;
+    margin-bottom: 28px;
+  }
+
+  .hl-panel-heading {
+    min-height: 80px;
+    padding-block: 20px;
+  }
+
+  .hl-roster-category__heading {
+    min-height: 72px;
+    align-items: center;
+    padding-block: 18px;
+  }
+}
+
+/* Group dashboard summaries without changing their data or actions. */
+.hl-dashboard__transactions,
+.hl-dashboard__community {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .hl-dashboard__transactions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hl-dashboard__transactions > .hl-trade-block { grid-column: 1 / -1; }
+}
+
+@media (min-width: 1024px) {
+  .hl-brand { gap: 12px; }
+  .hl-brand__mark { width: 38px; height: 38px; font-size: 1.05rem; }
+  .hl-brand__name { font-size: 1.5rem; }
+  .hl-menu-trigger, .hl-signin-link { font-size: 1rem; }
+  .hl-menu-trigger > svg:first-child,
+  .hl-notification-link > svg { width: 22px; height: 22px; }
+  .hl-app-header__location span { font-size: 0.75rem; }
+  .hl-app-header__location strong { font-size: 0.95rem; }
+  .hl-account-trigger__avatar { width: 38px; height: 38px; flex-basis: 38px; font-size: 1rem; }
+  .hl-account-trigger__identity strong { font-size: 0.9rem; }
+  .hl-account-trigger__identity small { font-size: 0.75rem; }
+  .hl-quote-ticker { font-size: 0.8rem; }
+  .hl-quote-ticker__author { font-size: 0.75rem; }
+
+  .hl-main-menu {
+    --hl-menu-width: min(380px, calc(100vw - 24px));
+    --hl-menu-available-height: min(840px, calc(100dvh - 96px));
+  }
+  .hl-menu-link { min-height: 60px; padding: 11px 12px; grid-template-columns: 26px minmax(0, 1fr); }
+  .hl-menu-link--button { grid-template-columns: 26px minmax(0, 1fr) auto; }
+  .hl-menu-link__icon { width: 21px; height: 21px; }
+  .hl-menu-link strong { font-size: 0.95rem; line-height: 1.3; }
+  .hl-menu-link small { font-size: 0.78rem; line-height: 1.4; white-space: normal; }
+  .hl-main-menu__heading span { font-size: 0.7rem; }
+  .hl-main-menu__heading strong { font-size: 1.3rem; }
+  .hl-account-menu { width: min(350px, calc(100vw - 24px)); }
+  .hl-account-menu > a, .hl-account-menu__signout { min-height: 48px; font-size: 0.9rem; padding: 12px; }
+  .hl-account-menu__identity strong { font-size: 0.95rem; }
+  .hl-account-menu__identity small { font-size: 0.8rem; }
+
+  .hl-data-table.hl-standings-table { width: 100%; font-size: 1rem; border-spacing: 0 12px; }
+  .hl-standings-table tbody :is(th, td) { height: 72px; padding: 16px 12px; font-size: 1rem; }
+  .hl-standings-table thead th { padding: 14px 12px; font-size: 0.8rem; }
+  .hl-standings-table tbody th:nth-child(2),
+  .hl-standings-table tbody td:nth-child(2) { font-size: 1.1rem; }
+
+  .hl-dashboard__hero { grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); }
+  .hl-dashboard__community { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .hl-competition-toolbar { min-height: 124px; padding: 22px; align-items: center; flex-wrap: wrap; }
+  .hl-competition-toolbar .hl-field { width: min(360px, 100%); font-size: 0.95rem; gap: 10px; }
+  .hl-competition-toolbar .hl-field select { min-height: 48px; padding: 12px; font-size: 0.95rem; }
+  .hl-competition-toolbar > [role] { font-size: 0.85rem; padding: 12px; }
+  .hl-matchup-selector { min-height: 124px; }
+  .hl-matchup-selector > header { max-width: 400px; gap: 10px; padding: 22px; }
+  .hl-matchup-selector > header h2 { font-size: 1.4rem; line-height: 1.3; }
+  .hl-matchup-selector > header .hl-eyebrow { font-size: 0.78rem; }
+  .hl-matchup-selector > header > p:not(.hl-eyebrow) { font-size: 0.8rem; }
+  .hl-matchup-selector .hl-status-badge { font-size: 0.75rem; padding: 5px 8px; }
+  .hl-matchup-selector nav { gap: 12px; padding: 14px; }
+  .hl-matchup-selector nav > button { flex-basis: 300px; min-height: 78px; padding: 14px; font-size: 0.85rem; line-height: 1.4; }
+  .hl-matchup-selector nav > button small { font-size: 0.75rem; }
+  .hl-matchup-selector__empty, .hl-matchup-byes { font-size: 0.85rem; }
+
+  .hl-rules-menu { width: min(620px, calc(100vw - var(--hl-menu-width) - 40px)); }
+  .hl-rules-panel__authority { font-size: 0.75rem; line-height: 1.6; }
+  .hl-rules-quick dt, .hl-rules-quick dd { font-size: 0.78rem; line-height: 1.5; }
+  .hl-rules-section summary { padding-block: 14px; font-size: 0.85rem; }
+  .hl-rules-section ul { font-size: 0.8rem; line-height: 1.65; gap: 10px; }
+  .hl-rules-menu .hl-scoring-rules-table { font-size: 0.8rem; }
+  .hl-rules-menu .hl-scoring-rules-table :is(th, td) { font-size: 0.8rem; padding: 8px; }
+}
+
+@media (min-width: 1440px) {
+  .hl-dashboard__transactions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hl-dashboard__transactions > .hl-trade-block { grid-column: auto; }
+}
+
+/* Keep wide trade-block content inside its dashboard card. */
+.hl-dashboard__transactions > .hl-trade-block { position: relative; }
+.hl-dashboard__transactions .hl-trade-block__table { table-layout: auto; }
+
+@media (min-width: 1024px) {
+  .hl-quote-ticker__item { font-size: 0.8rem; }
+  .hl-dashboard__transactions .hl-trade-block__heading { min-height: 80px; padding-block: 20px; }
 }

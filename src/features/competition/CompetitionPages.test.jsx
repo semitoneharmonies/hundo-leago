@@ -570,7 +570,7 @@ describe("M6-12 authenticated competition pages", () => {
     expect(
       awayScore.style.getPropertyValue("--team-pattern-image")
     ).not.toContain("#cc3300");
-    expect(within(homePlayerCard).getByText("Connor Example")).toBeInTheDocument();
+    expect(within(homePlayerCard).getByRole('link', { name: 'Connor Example' })).toHaveAttribute('aria-haspopup', 'dialog');
     expect(screen.getByText("Jamie Missing — data unavailable")).toBeInTheDocument();
     expect(screen.getAllByText("Empty F slot 2")).toHaveLength(2);
     expect(
@@ -1206,6 +1206,7 @@ describe("M6-12 authenticated competition pages", () => {
   });
 
   it("loads approved defaults for an unconfigured new season and previews without applying them", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T00:00:00Z"));
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T12:00:00Z"));
     const requests = [];
     const prefix = `/api/v1/leagues/${leagueId}/seasons/${seasonId}`;

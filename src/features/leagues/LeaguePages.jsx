@@ -18,6 +18,7 @@ import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
 import { TeamCreationPanel } from "./TeamCreationPanel.jsx";
+import { PlayerInjuryAdminPanel } from '../injuries/PlayerInjuryAdminPanel.jsx';
 import { StatisticsRefreshPanel } from "./StatisticsRefreshPanel.jsx";
 import {
   adminUsersQuery,
@@ -393,6 +394,7 @@ export function LeagueSelectionPage() {
                   leagues={leaguesQuery.data || []}
                   usersQuery={adminUsers}
                 />
+                <PlayerInjuryAdminPanel key={`injuries-${session.user.id}`} httpClient={session.httpClient} />
                 <StatisticsRefreshPanel key={session.user.id} httpClient={session.httpClient} />
               </>
             )}

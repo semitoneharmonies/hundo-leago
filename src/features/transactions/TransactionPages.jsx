@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { PlayerName } from '../players/PlayerName.jsx';
 import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 import {
   EmptyBlock,
@@ -373,7 +374,7 @@ function ActivityEntry({ item, teamNames }) {
           </time>
         </span>
         {subject && category !== "trade" && (
-          <span className="hl-activity-subject">{subject}</span>
+          <span className="hl-activity-subject">{playerName && <PlayerName playerId={item.player?.id || item.playerId}>{playerName}</PlayerName>}{playerName && teamName ? ' · ' : ''}{teamName}</span>
         )}
         {bidSummary && <p className="hl-activity-change">{bidSummary}</p>}
         {change && <p className="hl-activity-change">{change}</p>}
@@ -794,7 +795,7 @@ export function AuctionsPage() {
         auctions.isError ? <ErrorMessage error={auctions.error} /> :
         auctions.data.length === 0 ? <Surface><EmptyBlock title="No active auctions" /></Surface> : <div className="hl-card-grid">{auctions.data.map((auction) => (
           <article className="hl-surface hl-transaction-card" key={auction.id} style={card}>
-            <h2>{auction.player.fullName} <small>({auction.player.positionGroup})</small></h2>
+            <h2><PlayerName leagueId={leagueId} playerId={auction.player.id}>{auction.player.fullName}</PlayerName> <small>({auction.player.positionGroup})</small></h2>
             <p>Closes {time(auction.bidClosesAtMs)} · {auction.participantCount} participating team(s)</p>
             <p>Participants: {auction.participants.map(({ teamName }) => teamName).join(", ")}</p>
             {auction.ownBid ? (
@@ -928,7 +929,7 @@ function AssetEditor({
             );
             return buyout ? (
               <p className="hl-inline-copy">
-                <strong>{buyout.playerName}</strong> buyout ·{" "}
+                <strong><PlayerName playerId={buyout.playerId}>{buyout.playerName}</PlayerName></strong> buyout ·{" "}
                 {money(buyout.annualPenaltyCents)} AAV ·{" "}
                 {buyout.remainingYears} season
                 {buyout.remainingYears === 1 ? "" : "s"} remaining. The entire
@@ -1391,7 +1392,7 @@ function AssetSummary({ asset, requestedRetention = null, destination = null, so
           ? "Contract + retention"
           : activityWords(asset.type)}
       </span>
-      <strong>{title}</strong>
+      <strong><PlayerName playerId={snapshot.player?.id}>{title}</PlayerName></strong>
       {destination && <p>To {destination}</p>}
       {source && <p>From {source}</p>}
       <p>{description}</p>

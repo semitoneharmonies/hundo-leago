@@ -44,8 +44,7 @@ describe("cap outlook", () => {
     ]);
     await user.click(screen.getByRole("button", { name: "Table", exact: true }));
     expect(screen.getByRole("region", { name: "Active roster table" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Hockey lines" }));
-    expect(screen.getByRole("button", { name: "Hockey lines" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Table" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("preserves failed moves and uses the existing illegal-roster confirmation", async () => {

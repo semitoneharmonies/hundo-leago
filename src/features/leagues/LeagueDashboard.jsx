@@ -14,6 +14,7 @@ import {
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { PlayerName } from '../players/PlayerName.jsx';
 import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import {
@@ -1043,9 +1044,9 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                     />
                   </td>
                   <th className="hl-player-col-name" scope="row">
-                    <Link to={routePaths.player(leagueId, player.id)}>
+                    <PlayerName leagueId={leagueId} playerId={player.id}>
                       {player.name}
-                    </Link>
+                    </PlayerName>
                     {player.dataStatus === "missing" && (
                       <small>Data unavailable</small>
                     )}
@@ -1074,12 +1075,12 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                     {player.fantasyPointsPerGame}
                   </td>
                   <td className="hl-player-col-actions">
-                    <Link
+                    <PlayerName
                       className="hl-player-row-action"
-                      to={routePaths.player(leagueId, player.id)}
+                      leagueId={leagueId} playerId={player.id}
                     >
                       View
-                    </Link>
+                    </PlayerName>
                   </td>
                 </tr>
               ))}
@@ -1128,7 +1129,7 @@ function AuctionsPanel({ leagueId, auctions, pending, error }) {
                 <div>
                   <PositionTag position={auction.player.positionGroup} />
                   <span>
-                    <strong>{auction.player.fullName}</strong>
+                    <strong><PlayerName leagueId={leagueId} playerId={auction.player.playerId || auction.player.id}>{auction.player.fullName}</PlayerName></strong>
                     <small>{relativeTime(closesAt)}</small>
                   </span>
                 </div>
@@ -1525,76 +1526,57 @@ export function LeagueDashboard({ league, teams, session }) {
         )}
       </div>
 
-      {commissioner ? (
-        <div className="hl-dashboard__commissioner-content">
-          <AuctionsPanel
-            leagueId={leagueId}
-            auctions={auctionItems}
-            pending={enabled && auctions.isPending}
-            error={auctions.error}
-          />
-          <TradesPanel
-            leagueId={leagueId}
-            trades={trades.data || []}
-            pending={enabled && trades.isPending}
-            error={trades.error}
-          />
-          <CommissionerMembersPanel
-            league={league}
-            teams={teams}
-            session={session}
-          />
-        </div>
-      ) : (
-        <div className="hl-dashboard__content">
-          <RosterSnapshot
-            leagueId={leagueId}
-            managedTeam={managedTeam}
-            roster={roster.data}
-            matchup={matchup.data}
-          />
-          <aside
-            className="hl-dashboard__aside"
-            aria-label="Items needing attention"
-          >
-            <AuctionsPanel
-              leagueId={leagueId}
-              auctions={auctionItems}
-              pending={enabled && auctions.isPending}
-              error={auctions.error}
-            />
-            <TradesPanel
-              leagueId={leagueId}
-              trades={trades.data || []}
-              pending={enabled && trades.isPending}
-              error={trades.error}
-              managedTeamId={managedTeam?.id || null}
-            />
-          </aside>
-        </div>
+      {!commissioner && (
+        <RosterSnapshot
+          leagueId={leagueId}
+          managedTeam={managedTeam}
+          roster={roster.data}
+          matchup={matchup.data}
+        />
       )}
 
-      <TradeBlockPanel
-        currentUserId={session.user?.id}
-        enabled={enabled}
-        httpClient={session.httpClient}
-        leagueId={leagueId}
-        showTradesLink
-        teams={teams}
-      />
+      <section className="hl-dashboard__transactions" aria-label="Transactions and trade block">
+        <AuctionsPanel
+          leagueId={leagueId}
+          auctions={auctionItems}
+          pending={enabled && auctions.isPending}
+          error={auctions.error}
+        />
+        <TradesPanel
+          leagueId={leagueId}
+          trades={trades.data || []}
+          pending={enabled && trades.isPending}
+          error={trades.error}
+          managedTeamId={managedTeam?.id || null}
+        />
+        <TradeBlockPanel
+          currentUserId={session.user?.id}
+          enabled={enabled}
+          httpClient={session.httpClient}
+          leagueId={leagueId}
+          showTradesLink
+          teams={teams}
+        />
+      </section>
 
-      <ActivityPanel
-        leagueId={leagueId}
-        activity={activity.data?.activity || []}
-        pending={enabled && activity.isPending}
-        error={activity.error}
-      />
-      <TeamsPanel
-        leagueId={leagueId}
-        teams={teams}
-        currentUserId={commissioner ? null : session.user.id}
-        httpClient={session.httpClient}
-      />
+      {commissioner && (
+        <CommissionerMembersPanel league={league} teams={teams} session={session} />
+      )}
+
+      <div className="hl-dashboard__community">
+        <ActivityPanel
+          leagueId={leagueId}
+          activity={activity.data?.activity || []}
+          pending={enabled && activity.isPending}
+          error={activity.error}
+        />
+        <TeamsPanel
+          leagueId={leagueId}
+          teams={teams}
+          currentUserId={commissioner ? null : session.user.id}
+          httpClient={session.httpClient}
+        />
+      </div>
     </div>
   );
 }

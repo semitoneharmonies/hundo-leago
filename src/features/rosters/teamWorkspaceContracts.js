@@ -1,3 +1,4 @@
+import { validatePlayerInjury } from '../../shared/playerInjury.js';
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 
 import { validateExpandedScoring } from "../../shared/scoringCategories.js";
@@ -78,6 +79,7 @@ export function validateTeamWorkspace(data) {
     object(player, "A roster player is invalid.");
     contract(ID.test(player.ownershipId || ""), "A roster ownership ID is invalid.");
     contract(ID.test(player.playerId || ""), "A roster player ID is invalid.");
+    validatePlayerInjury(player.injury);
     validateExpandedScoring(player.statistics, player.normalizedPosition);
     integer(player.ownershipVersion, "A roster ownership version is invalid.");
     contract(typeof player.name === "string" && player.name.length > 0, "A roster player name is invalid.");

@@ -631,7 +631,7 @@ describe("league selection", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("rowheader", { name: "Connected Player" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Salary cap" })).toBeInTheDocument();
-    expect(await screen.findByText("No upcoming roster lock is scheduled.")).toBeInTheDocument();
+    expect(await screen.findByText("Next roster lock: not scheduled")).toBeInTheDocument();
     expect(fetchImpl.mock.calls.some(([url]) => new URL(url).pathname ===
       `/api/v1/leagues/${leagueOneId}/seasons/${seasonId}/matchup-weeks`)).toBe(true);
     expect(

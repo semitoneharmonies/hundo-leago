@@ -20,6 +20,7 @@ import {
   publishedCandidateCardsQuery,
 } from "./freeAgentDraftQueries.js";
 import styles from "./FreeAgentDraftPage.module.css";
+import { PlayerName } from '../players/PlayerName.jsx';
 
 function money(cents) {
   if (!Number.isSafeInteger(cents)) return "Not available";
@@ -95,7 +96,7 @@ function SelectedTeamResults({
             return (
               <li key={result.player.playerId}>
                 <div>
-                  <strong>{result.player.fullName}</strong>
+                  <strong><PlayerName leagueId={leagueId} playerId={result.player.playerId} httpClient={httpClient}>{result.player.fullName}</PlayerName></strong>
                   {result.offer !== null && (
                     <span>
                       {money(result.offer.aavCents)} AAV · {result.offer.termYears}{" "}

@@ -19,6 +19,7 @@ import {
 } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { PlayerName } from '../players/PlayerName.jsx';
 import { FAD_SEASON_CLOSED_MESSAGE, fadCommissionerWindowClosed } from "../freeAgentDraft/fadCommissionerWindow.js";
 import {
   EmptyBlock,
@@ -815,11 +816,7 @@ function AuctionCard({ auction, context, focused, leagueId, timeZone }) {
         <div>
           <p className="hl-eyebrow">{actionRequired ? "Action required" : sourceLabel(auction)}</p>
           <h2 id={`auction-title-${auction.auctionId}`}>
-            {restricted ? auction.player.fullName : (
-              <Link to={routePaths.auctionDetail(leagueId, auction.auctionId)}>
-                {auction.player.fullName}
-              </Link>
-            )}
+            <PlayerName leagueId={leagueId} playerId={auction.player.playerId}>{auction.player.fullName}</PlayerName>
           </h2>
           <span>{auction.player.positionGroup}</span>
         </div>
@@ -1755,7 +1752,7 @@ function AuctionDetailContent({ auction, context, leagueId }) {
     <>
       <PageHeading
         eyebrow={`${context.league.name} · ${sourceLabel(auction)}`}
-        title={auction.player.fullName}
+        title={<PlayerName leagueId={leagueId} playerId={auction.player.playerId}>{auction.player.fullName}</PlayerName>}
         description={`${auction.player.positionGroup} · ${statusLabel(auction.status)} sealed auction`}
         id="auction-page-title"
         actions={

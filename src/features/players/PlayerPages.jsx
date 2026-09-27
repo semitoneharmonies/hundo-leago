@@ -1,3 +1,5 @@
+import { injuryNameProps } from '../../shared/playerInjury.js';
+import { PlayerName } from './PlayerName.jsx';
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useParams } from "react-router-dom";
@@ -239,9 +241,9 @@ export function LegacyPlayersPage() {
               {players.data.players.map((player) => (
                 <tr key={player.id}>
                   <th scope="row">
-                    <Link to={routePaths.player(leagueId, player.id)}>
-                      {player.fullName}
-                    </Link>
+                    <PlayerName {...injuryNameProps(player)} leagueId={leagueId} playerId={player.id}>
+                        {player.fullName}
+                      </PlayerName>
                   </th>
                   <td>{displayPosition(player)}</td>
                   <td>{player.provider?.nhlTeamAbbreviation || "—"}</td>
@@ -322,7 +324,7 @@ export function PlayerDetailPage() {
         <Surface className="hl-player-profile">
           <div className="hl-player-profile__heading">
             <span className="hl-position-tag">{displayPosition(player.data)}</span>
-            <h2>{player.data.fullName}</h2>
+            <h2 {...injuryNameProps(player.data)}>{player.data.fullName}</h2>
             <StatusBadge tone={player.data.status === "active" ? "success" : "neutral"}>
               {player.data.status === "active" ? "Active" : "Historical"}
             </StatusBadge>

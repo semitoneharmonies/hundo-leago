@@ -8,7 +8,8 @@ const sessionHarness = vi.hoisted(() => ({
   request: vi.fn(),
 }));
 
-vi.mock("../session/sessionContext.js", () => ({
+vi.mock("../session/sessionContext.js", async (importOriginal) => ({
+  ...await importOriginal(),
   useSession: () => ({
     status: "authenticated",
     user: {
@@ -956,7 +957,7 @@ describe("FAD-16 auction pages", () => {
     expect(
       screen.queryByText(/convenience catalog filter|America\/Vancouver/i)
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Ada Player" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ada Player" })).toHaveAttribute('aria-haspopup', 'dialog');
 
     await view.user.selectOptions(screen.getByLabelText("Team"), IDS.teamTwo);
     expect(screen.getByRole("button", { name: "Nominate player" })).toBeDisabled();

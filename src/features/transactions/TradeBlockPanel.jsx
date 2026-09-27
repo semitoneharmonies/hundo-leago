@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeftRight } from "lucide-react";
 
 import { routePaths } from "../../app/routePaths.js";
+import { PlayerName } from '../players/PlayerName.jsx';
 import {
   ErrorBlock,
   LoadingBlock,
@@ -120,9 +121,9 @@ export function TradeBlockPanel({
                       />
                     </td>
                     <th className="hl-player-col-name" scope="row">
-                      <Link to={routePaths.player(leagueId, player.playerId)}>
+                      <PlayerName leagueId={leagueId} playerId={player.playerId} httpClient={httpClient}>
                         {player.name}
-                      </Link>
+                      </PlayerName>
                     </th>
                     <td className="hl-trade-block__team">
                       <span className="hl-trade-block__team-identity">

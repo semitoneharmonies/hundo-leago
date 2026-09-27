@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { PlayerName } from '../players/PlayerName.jsx';
 import { validateCommissionerAssignment } from "./notificationContracts.js";
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 import { TeamManagerAssignmentActions } from "./TeamManagerAssignmentActions.jsx";
@@ -190,7 +191,7 @@ function CompletedAuctionNotification({ notification, notificationMessage, times
     {expanded && (auction.isPending ? <LoadingBlock>Loading auction result…</LoadingBlock>
       : auction.isError ? <ErrorBlock error={auction.error} fallback="This auction result is no longer available to your account." recovery="Check your league membership or ask the commissioner." />
       : result ? <div className="hl-notification-auction-summary">
-        <strong>{auction.data.player.fullName}</strong>
+        <strong><PlayerName leagueId={leagueId} playerId={auction.data.player.playerId}>{auction.data.player.fullName}</PlayerName></strong>
         {result.winningTeam ? <dl>
           <div><dt>Winning team</dt><dd>{result.winningTeam.name || result.winningTeam.displayName}</dd></div>
           <div><dt>Final contract total</dt><dd>{money(result.finalContractValueCents)}</dd></div>

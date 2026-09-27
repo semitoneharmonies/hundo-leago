@@ -357,7 +357,9 @@ describe("authoritative team roster page", () => {
     expect(
       screen.getByRole("heading", { name: "Target Owls" })
     ).toBeInTheDocument();
-    expect(screen.getByText("Manager: League Manager")).toBeInTheDocument();
+    expect(screen.queryByText("Manager: League Manager")).not.toBeInTheDocument();
+    expect(screen.queryByText("Viewing team")).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Choose a team roster" })).toBeInTheDocument();
     for (const heading of [
       "Active roster",
       "Bench",
@@ -448,38 +450,11 @@ describe("authoritative team roster page", () => {
     ).toEqual(["R1", "R2", "R3", "R4"]);
     expect(draftPickRegion.querySelectorAll("img")).toHaveLength(2);
 
-    await view.user.click(
-      screen.getByRole("button", { name: /Hockey lines/ })
-    );
-    expect(
-      screen.getByRole("heading", { name: "Hockey lines" })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: "Drag Active Player to reorder",
-      })
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Move Active Player later" })
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("Active Player").closest(".hl-line-player")).toHaveClass(
-      "hl-line-player--team"
-    );
-    const benchRegion = screen.getByRole("region", { name: "Bench" });
-    expect(
-      within(benchRegion).queryByRole("region", { name: "Bench table" })
-    ).not.toBeInTheDocument();
-    expect(
-      within(benchRegion).getByText("Bench Player").closest(".hl-line-player")
-    ).toHaveClass("hl-line-player--bench");
-    expect(
-      within(benchRegion).getByRole("button", {
-        name: "Move to active Bench Player",
-      })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("region", { name: "Prospects table" })
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Hockey lines/ })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("group", { name: "Roster view" })).getAllByRole("button").map(button => button.textContent.trim())).toEqual(["Table", "Cap outlook"]);
+    expect(screen.getByRole("button", { name: "Drag Active Player to reorder" })).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Bench table" })).getByText("Bench Player")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Prospects table" })).toBeInTheDocument();
   });
 
   it("distinguishes commissioner roster actions from manager actions", () => {
@@ -565,7 +540,7 @@ describe("authoritative team roster page", () => {
         version: 1,
       },
     };
-    const view = renderWithProviders(
+    renderWithProviders(
       <TeamRosterPage
         workspace={data}
         teams={[data.team, managerTeam]}
@@ -597,9 +572,6 @@ describe("authoritative team roster page", () => {
       }).getAttribute("href")
     ).toContain("assetType=draft_pick");
 
-    await view.user.click(
-      screen.getByRole("button", { name: /Hockey lines/ })
-    );
     expect(
       screen.getByRole("link", {
         name: "Request Active Player in a trade",
@@ -977,7 +949,7 @@ describe("authoritative team roster page", () => {
         return { data: { orderVersion: 1 } };
       }),
     };
-    const view = renderWithProviders(
+    renderWithProviders(
       <TeamRosterPage
         workspace={data}
         teams={[data.team]}
@@ -987,13 +959,10 @@ describe("authoritative team roster page", () => {
       />
     );
 
-    await view.user.click(
-      screen.getByRole("button", { name: /Hockey lines/ })
-    );
     const source = screen.getByRole("button", {
       name: "Drag Active Player to reorder",
     });
-    const target = screen.getByText("Second Forward").closest(".hl-line-player");
+    const target = screen.getByText("Second Forward").closest("tr");
     const restorePointerTarget = mockPointerTarget(target);
     fireEvent.pointerDown(source, {
       pointerId: 1,
@@ -1024,10 +993,10 @@ describe("authoritative team roster page", () => {
         activeOwnershipId,
       ]);
     });
-    expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
+    expect(await screen.findByText("Roster order saved.")).toBeInTheDocument();
   });
 
-  it.each([4, 5])("swaps Suzuki with the exact target slot %i without shifting other columns", async (targetIndex) => {
+  it.each([4, 5])("swaps Suzuki with the target row %i without shifting other players", async (targetIndex) => {
     const data = workspace();
     data.orderVersion = 1;
     const names = ["Left Wing One", "Nick Suzuki", "Right Wing One", "Left Wing Two", "Rupe Hintz", "Right Wing Two"];
@@ -1045,9 +1014,8 @@ describe("authoritative team roster page", () => {
       <TeamRosterPage workspace={data} teams={[data.team]} managerName="League Manager"
         onTeamChange={() => {}} httpClient={httpClient} />
     );
-    await view.user.click(screen.getByRole("button", { name: /Hockey lines/ }));
     const source = screen.getByRole("button", { name: "Drag Nick Suzuki to reorder" });
-    const target = screen.getByText(names[targetIndex]).closest(".hl-line-player");
+    const target = screen.getByText(names[targetIndex]).closest("tr");
     const restorePointerTarget = mockPointerTarget(target);
     fireEvent.pointerDown(source, { pointerId: 1, pointerType: "mouse", button: 0, clientX: 10, clientY: 10 });
     fireEvent.pointerMove(source, { pointerId: 1, pointerType: "mouse", buttons: 1, clientX: 40, clientY: 40 });
@@ -1057,27 +1025,11 @@ describe("authoritative team roster page", () => {
     [expected[1], expected[targetIndex]] = [expected[targetIndex], expected[1]];
     await waitFor(() => expect(httpClient.request).toHaveBeenCalledTimes(1));
     expect(httpClient.request.mock.calls[0][1].body.forwardOwnerships.map(({ id }) => id)).toEqual(expected);
-    expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
-    const rendered = [...view.container.querySelectorAll(".hl-hockey-line .hl-line-player strong")].map((node) => node.textContent);
+    expect(await screen.findByText("Roster order saved.")).toBeInTheDocument();
+    const rendered = [...view.container.querySelectorAll('[data-roster-category="Active"] .hl-roster-player-name')].map((node) => node.textContent);
     const expectedNames = [...names];
     [expectedNames[1], expectedNames[targetIndex]] = [expectedNames[targetIndex], expectedNames[1]];
     expect(rendered).toEqual(expectedNames);
-  });
-
-  it("preserves empty slots when moving a forward to another line", async () => {
-    const data = workspace();
-    const httpClient = { request: vi.fn(async () => ({ data: { orderVersion: 2 } })) };
-    const view = renderWithProviders(<TeamRosterPage workspace={data} teams={[data.team]} managerName="League Manager" onTeamChange={() => {}} httpClient={httpClient} />);
-    await view.user.click(screen.getByRole("button", { name: /Hockey lines/ }));
-    const target = view.container.querySelector('[data-line-slot="slot:F:4"]');
-    fireEvent.drop(target, { dataTransfer: { getData: () => activeOwnershipId } });
-    await waitFor(() => expect(httpClient.request).toHaveBeenCalledTimes(1));
-    expect(httpClient.request.mock.calls[0][1].body.forwardOwnerships).toEqual([
-      null, null, null, null, { id: activeOwnershipId, version: data.players[0].ownershipVersion },
-    ]);
-    const slots = view.container.querySelectorAll(".hl-hockey-line .hl-line-player");
-    expect(slots[0]).toHaveTextContent("Open slot");
-    expect(slots[4]).toHaveTextContent(data.players[0].name);
   });
 
   it("moves a Bench player to Active by drag and drop", async () => {
@@ -1209,7 +1161,7 @@ describe("authoritative team roster page", () => {
         secondActiveOwnershipId,
       ]);
     });
-    expect(await screen.findByText("Line order saved.")).toBeInTheDocument();
+    expect(await screen.findByText("Roster order saved.")).toBeInTheDocument();
 
     const pointerSource = within(activeRoster).getByRole("button", {
       name: "Drag Active Player to reorder",

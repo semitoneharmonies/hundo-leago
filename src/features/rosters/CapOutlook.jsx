@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { PositionTag, TableScroll } from "../../components/HundoUi.jsx";
 import { teamColourStyle } from "../../shared/teamIdentity.js";
 import styles from "./CapOutlook.module.css";
+import { PlayerName } from '../players/PlayerName.jsx';
 
 const GROUPS = [
   ["Forwards", "Forwards", "forwardCents"],
@@ -18,7 +19,7 @@ function money(cents) {
   return `${cents < 0 ? "−" : ""}$${(Math.abs(cents) / 100).toFixed(2)}`;
 }
 
-export function CapOutlook({ workspace, pending, onAction }) {
+export function CapOutlook({ workspace, pending, onAction, httpClient }) {
   const { capOutlook, players, canManage } = workspace;
   if (!capOutlook) {
     return <section className="hl-surface"><h2>Cap outlook</h2><p>Season-by-season cap information is not available yet.</p></section>;
@@ -48,7 +49,7 @@ export function CapOutlook({ workspace, pending, onAction }) {
           <th scope="row">
             <div className={styles.player}>
               <div>
-                <span className={styles.name}>{player && <PositionTag position={player.normalizedPosition} />}{row.name}</span>
+                <span className={styles.name}>{player && <PositionTag position={player.normalizedPosition} />}<PlayerName leagueId={workspace.league.id} playerId={row.playerId || player?.playerId} httpClient={httpClient}>{row.name}</PlayerName></span>
                 {player && !player.contract && <small>Unsigned</small>}
                 {player?.contract?.retainedAavCents > 0 && <small>After salary retained by another team</small>}
               </div>
