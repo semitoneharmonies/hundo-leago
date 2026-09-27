@@ -11,6 +11,7 @@ import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { SCORING_CATEGORIES, scoringWeight } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
+import { PlayerName } from '../players/PlayerName.jsx';
 import { calendarInputValue, calendarTimestamp } from "../../shared/leagueCalendar.js";
 import {
   EmptyBlock,
@@ -600,7 +601,7 @@ function MatchupStatHeaders({ scoring }) {
   );
 }
 
-function MatchupPlayer({ team, slot, expanded }) {
+function MatchupPlayer({ team, slot, expanded, leagueId }) {
   const { player, positionGroup, slotNumber } = slot;
   const available = player?.dataStatus === "available";
   const gamesPlayed = playerStat(player, "gamesPlayedDelta");
@@ -612,7 +613,7 @@ function MatchupPlayer({ team, slot, expanded }) {
     <article className="hl-matchup-player" aria-label={`${team.name}: ${name}`}>
       <div className="hl-matchup-player__heading">
         <span className="hl-matchup-player__position">{positionGroup}{slotNumber}</span>
-        <strong title={name}>{name}</strong>
+        <strong title={name}><PlayerName leagueId={leagueId} playerId={player?.playerId}>{name}</PlayerName></strong>
         <span className={`hl-matchup-player-fp${available && player.scoreHundredths < 0 ? " is-negative" : ""}`}>
           {playerStat(player, "scoreHundredths")} <small>FP</small>
         </span>
@@ -709,8 +710,8 @@ function MatchupCard({ matchup, teams = [] }) {
           <ol className="hl-matchup-player-pairs" aria-label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}>
             {homeSlots.map((homeSlot, index) => (
               <li className="hl-matchup-player-pair" key={`${homeSlot.positionGroup}-${homeSlot.slotNumber}`}>
-                <MatchupPlayer team={homeTeam} slot={homeSlot} expanded={Boolean(scoring.home.scoringRuleVersion)} />
-                <MatchupPlayer team={awayTeam} slot={awaySlots[index]} expanded={Boolean(scoring.away.scoringRuleVersion)} />
+                <MatchupPlayer leagueId={matchup.leagueId} team={homeTeam} slot={homeSlot} expanded={Boolean(scoring.home.scoringRuleVersion)} />
+                <MatchupPlayer leagueId={matchup.leagueId} team={awayTeam} slot={awaySlots[index]} expanded={Boolean(scoring.away.scoringRuleVersion)} />
               </li>
             ))}
           </ol>

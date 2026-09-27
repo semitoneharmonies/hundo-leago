@@ -9,6 +9,7 @@ import { SessionProvider } from "../features/session/SessionProvider.jsx";
 import { createQueryClient } from "../shared/query/queryClient.js";
 import { RealtimeProvider } from "../shared/realtime/RealtimeProvider.jsx";
 import { StartupConfigurationPage } from "./StartupConfigurationPage.jsx";
+import { PlayerCardProvider } from '../features/players/PlayerCardProvider.jsx';
 
 const DEFAULT_REALTIME_INVALIDATION_MAPPERS = Object.freeze([
   freeAgentDraftInvalidationActions,
@@ -59,13 +60,13 @@ export function AppProviders(props) {
               invalidationMappers={realtimeInvalidationMappers}
             >
               <ActionTokenProvider initialToken={props.initialActionToken}>
-                {children}
+                <PlayerCardProvider httpClient={props.playerCardHttpClient}>{children}</PlayerCardProvider>
               </ActionTokenProvider>
             </RealtimeProvider>
           </SessionProvider>
         ) : (
           <ActionTokenProvider initialToken={props.initialActionToken}>
-            {children}
+            <PlayerCardProvider httpClient={props.playerCardHttpClient}>{children}</PlayerCardProvider>
           </ActionTokenProvider>
         )}
       </QueryClientProvider>

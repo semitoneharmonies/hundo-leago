@@ -1,0 +1,72 @@
+.dialog { position: fixed; inset: auto; margin: 0; width: min(380px, calc(100vw - 24px)); max-width: none; max-height: min(680px, 82dvh); padding: 3px; border: 1px solid #60a5fa80; border-radius: 16px; background: linear-gradient(145deg, #60a5fa80, var(--hl-panel) 28%, var(--hl-primary) 72%, var(--hl-accent)); color: var(--hl-foreground); overflow: auto; overscroll-behavior: contain; box-shadow: 0 25px 90px #000b, 0 0 28px #2563eb24; scrollbar-width: thin; scrollbar-color: #334155 var(--hl-panel); }
+.dialog::backdrop { background: #020710a6; backdrop-filter: blur(2px); }
+.card { position: relative; border: 1px solid #60a5fa26; border-radius: 12px; background: var(--hl-card); overflow: hidden; font-family: var(--hl-font-body); }
+.card::after { content: ''; display: block; width: 52px; height: 3px; margin: 0 auto; background: var(--hl-accent); box-shadow: 0 0 16px #f9731666; }
+.brand { position: sticky; top: -3px; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; background: var(--hl-panel); border-bottom: 1px solid var(--hl-border); }
+.brand button { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--hl-border); color: var(--hl-muted-foreground); background: var(--hl-card); cursor: pointer; }
+.brand button:hover { color: var(--hl-foreground); background: var(--hl-muted); }
+.brand button:focus-visible, .dialog a:focus-visible, .dialog summary:focus-visible, .message button:focus-visible { outline: 2px solid var(--hl-accent); outline-offset: 3px; }
+.jersey { isolation: isolate; position: relative; display: grid; place-items: center; height: 98px; margin: 8px 10px 0; overflow: hidden; border: 1px solid #ffffff1a; border-radius: 7px; background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--team-primary) 70%, #ffffff 8%), transparent 75%), var(--hl-panel); }
+.jersey::before { content: ''; position: absolute; z-index: -1; width: 140%; height: 42px; transform: rotate(-20deg); background: var(--team-primary); border-top: 6px solid var(--team-accent); border-bottom: 2px solid #ffffffb3; box-shadow: 0 6px 0 var(--team-primary), 0 8px 0 var(--team-accent); opacity: .7; }
+.jersey::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(125deg, #ffffff12, transparent 38%, #ffffff06 48%, transparent 58%), repeating-linear-gradient(90deg, #ffffff03 0 1px, transparent 1px 4px); }
+.jerseyNumber { font-family: var(--hl-font-display); font-size: 90px; font-weight: 900; font-style: italic; letter-spacing: .025em; line-height: 1; padding-right: 6px; color: var(--team-accent); -webkit-text-stroke: 4px var(--team-primary); paint-order: stroke fill; filter: drop-shadow(1px 0 0 #e2e8f0) drop-shadow(-1px 0 0 #e2e8f0) drop-shadow(0 1px 0 #e2e8f0) drop-shadow(0 -1px 0 #e2e8f0) drop-shadow(0 5px 8px #0009); }
+.jerseyTeam, .jerseyCaption { position: absolute; z-index: 1; color: #e2e8f0; background: #070d1ce0; font-family: var(--hl-font-mono); font-size: 10px; letter-spacing: .12em; line-height: 1.3; }
+.jerseyTeam { top: 10px; left: 11px; padding: 4px 6px; border: 1px solid #ffffff24; border-radius: 3px; font-weight: 700; }
+.jerseyCaption { bottom: 8px; right: 10px; padding: 3px 5px; font-size: 7px; text-transform: uppercase; }
+.identity { display: flex; align-items: center; padding: 10px 14px 8px; }
+.identity p { margin: 0 0 3px; font-size: 9px; text-transform: uppercase; letter-spacing: .15em; font-weight: 700; color: var(--hl-muted-foreground); }
+.identity h2 { font-family: var(--hl-font-display); font-size: 28px; font-weight: 800; line-height: 1.05; letter-spacing: -.01em; margin: 0; padding: 0; border: 0; color: var(--hl-foreground); overflow-wrap: anywhere; }
+.owner { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 10px 8px; padding: 7px 10px; border: 1px solid var(--hl-border); border-radius: 6px; background: var(--hl-panel); }
+.owner[data-team='true']::before { content: ''; position: absolute; inset: 0; z-index: -1; background-color: var(--team-primary); background-image: var(--team-pattern-image); background-repeat: var(--team-pattern-repeat); background-size: var(--team-pattern-size); background-position: center; mask-image: linear-gradient(90deg, transparent, #0003 35%, #000b 100%); }
+.owner strong { min-width: 0; font-family: var(--hl-font-display); font-size: 21px; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; text-shadow: 0 1px 4px var(--hl-background); }
+.owner > span { flex-shrink: 0; padding: 3px 5px; border-radius: 3px; background: #091121eb; font-size: 9px; font-weight: 500; color: var(--hl-foreground); text-align: right; }
+.stats { display: grid; grid-template-columns: 1fr 1fr 1.5fr .7fr; margin: 0 10px 8px; padding: 8px 0; border: 1px solid var(--hl-border); border-radius: 7px; background: var(--hl-panel); }
+.stats > div { text-align: center; padding: 0 4px; border-right: 1px solid var(--hl-border); }
+.stats > div:last-child { border: 0; }
+.stats span { display: block; text-transform: uppercase; font-size: 8px; letter-spacing: .055em; font-weight: 600; color: var(--hl-muted-foreground); margin-bottom: 3px; }
+.stats strong { font-family: var(--hl-font-display); font-size: 25px; line-height: 1.1; color: var(--hl-foreground); }
+.stats .fantasy strong { color: #fb923c; }
+.unavailable { margin: 0 10px 8px; font-size: 9px; color: var(--hl-muted-foreground); }
+.health { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--hl-panel); margin: 0 10px 8px; padding: 6px; border: 1px solid var(--hl-border); border-radius: 6px; color: var(--hl-muted-foreground); font-size: 11px; }
+.health > span { text-transform: uppercase; font-size: 9px; letter-spacing: .08em; }
+.health strong { color: var(--hl-foreground); }
+.health[data-status='healthy'] strong { color: #6ee7b7; }
+.health[data-status='injured'] strong { color: #f87171; }
+.health small { font-size: 9px; }
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 10px 8px; }
+.panels section { border: 1px solid var(--hl-border); border-radius: 7px; padding: 9px; background: var(--hl-panel); }
+.panels h3, .history h3 { margin: 0 0 7px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--hl-muted-foreground); }
+.panels strong { display: block; font-family: var(--hl-font-mono); font-size: 21px; font-weight: 600; line-height: 1.1; letter-spacing: -.035em; }
+.panels strong small { display: block; font-family: var(--hl-font-body); margin-top: 3px; font-size: 10px; letter-spacing: 0; font-weight: 500; color: var(--hl-muted-foreground); }
+.panels p { margin: 5px 0 0; font-size: 10px; line-height: 1.35; }
+.history { margin: 0 10px 10px; border: 1px solid var(--hl-border); border-radius: 7px; padding: 9px 9px 2px; background: var(--hl-panel); }
+.history > ol { list-style: none; margin: 0; padding: 0; }
+.history > ol > li { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: start; gap: 8px; padding: 8px 0; border-top: 1px solid var(--hl-border); }
+.history time { display: block; color: var(--hl-muted-foreground); font-family: var(--hl-font-mono); font-size: 9px; line-height: 1.5; padding-top: 2px; }
+.history details[open] { grid-column: 1 / -1; }
+.history summary { cursor: pointer; display: flex; align-items: flex-start; gap: 7px; font-size: 12px; font-weight: 600; list-style: none; }
+.history summary::-webkit-details-marker { display: none; }
+.history summary > span:nth-child(2) { flex: 1; min-width: 0; }
+.history summary small { display: block; margin-top: 3px; line-height: 1.35; font-weight: 500; font-size: 10px; overflow-wrap: anywhere; }
+.expand { font-size: 9px; color: #93c5fd; white-space: nowrap; padding-top: 2px; }
+.expand::after { content: ' +'; }
+details[open] .expand::after { content: ' −'; }
+.signing strong, .signing span, .signing small { display: block; font-size: 12px; }
+.signing span { font-size: 11px; margin-top: 3px; }
+.signing small { font-size: 10px; margin-top: 3px; color: var(--hl-muted-foreground); }
+.history p { font-size: 11px; line-height: 1.5; }
+.deal { margin-top: 12px; padding: 0 10px; background: var(--hl-card); border: 1px solid var(--hl-border); border-radius: 6px; }
+.deal section { padding: 10px 0; }
+.deal section + section { border-top: 1px solid var(--hl-border); }
+.deal h4 { margin: 0 0 9px; font-size: 10px; line-height: 1.5; color: #93c5fd; }
+.deal ul { margin: 0; padding: 0; list-style: none; }
+.deal li + li { margin-top: 8px; }
+.deal strong, .deal span { display: block; font-size: 11px; line-height: 1.5; }
+.deal h4 span { display: inline; }
+.deal li > span { font-size: 10px; color: var(--hl-muted-foreground); }
+.message { padding: 22px 18px; min-height: 140px; }
+.message h2 { font-family: var(--hl-font-display); font-size: 26px; color: var(--hl-foreground); }
+.message p { font-size: 13px; }
+.message button { color: #fff; background: var(--hl-primary); border: 0; border-radius: 6px; padding: 9px 15px; cursor: pointer; }
+@media (prefers-reduced-transparency: reduce) { .dialog::backdrop { backdrop-filter: none; } }
+@media (forced-colors: active) { .jerseyNumber { -webkit-text-stroke: 0; filter: none; color: CanvasText; } }

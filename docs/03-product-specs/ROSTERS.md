@@ -293,7 +293,11 @@ An eligible player on injured reserve:
 
 A player unavailable because of injury or illness is eligible for injured reserve.
 
-The initial release does not automatically import or enforce NHL player-status data for injured-reserve eligibility. That integration, automatic eligibility rechecks, and automatic warnings are assigned to a future update.
+The September 27, 2026 approved local update adds a global administrator injury register. An administrator can mark a player injured, confirmed healthy, or not confirmed for all leagues, with a required reason and a versioned audit history. Commissioners do not gain global injury-edit authority.
+
+Confirmed injured players are IR eligible and display a subtle red name plus a red Move to IR action. Players who are both injured and on the trade block display a left-to-right gold-to-red name gradient in the roster table. Recovery restores the normal name treatment (including gold if still on the trade block). A confirmed healthy player remaining on IR makes the current roster illegal, with the player named in the warning; the player is never moved automatically. Unknown status does not count as confirmed healthy and preserves the existing placement fallback.
+
+Future matchup legality checks include confirmed healthy players on IR. Existing locked matchup snapshots are unchanged. This update is a local candidate, not a production release. It supersedes the earlier deferred eligibility/warning boundary in this document. Automated imports remain disabled and have no exposed activation route until a free source has verified reuse permission and adequate reliability. Missing reports and failed refreshes must never establish recovery.
 
 Managers make the initial manual placement decision, and commissioners may explicitly override eligibility when source information is missing or wrong.
 
@@ -804,6 +808,27 @@ Commissioner controls must be visibly distinguished from ordinary manager contro
 
 Frontend visibility is not authorization.
 
+### Cap outlook (2026-09-25)
+
+The team roster offers Table and Cap outlook views. Hockey lines was removed at the user's request on September 27, 2026 because the cosmetic arrangement was confusing managers. Cap outlook
+shows the current league season and the following two seasons as columns, using
+saved contract, retention, and buyout schedules. Player amounts show the team's
+net salary after salary retained by other teams. Active forwards, active defence,
+retained salary, and buyouts have separate subtotals, followed by total cap used,
+the salary cap, and cap space. Bench, injured-reserve, and prospect commitments
+appear separately and remain cap-exempt under the existing rules.
+
+Future columns assume today's roster assignments and salary-cap limit, and
+exclude future signings and roster changes. Expired commitments show a dash;
+historical saved penalties are not recalculated. Incomplete cap evidence must
+not appear as verified available cap space.
+
+Authorized managers and commissioners may move players between Active and Bench
+from this view using the existing versioned roster-move command, validation,
+illegal-roster confirmation, and authority checks. After a successful move, the
+view stays selected and reloads the authoritative season totals. Merely viewing
+the outlook never changes stored state.
+
 ---
 
 # Part 11 — Activity and Corrections
@@ -850,14 +875,10 @@ The page must clearly show:
 * every known legality reason;
 * current manager or commissioner controls.
 
-The table and hockey-lines views expose stable-ID trade shortcuts. Managers
+The roster table exposes stable-ID trade shortcuts. Managers
 may offer assets from their own team or request a player or draft pick while
 viewing another team; each shortcut opens the proposal builder with the asset
 on the correct side.
-
-The hockey-lines player cards use the viewed team's selected two- or
-three-colour identity template, fading to the standard dark-blue background
-beneath the player identity for reliable readability.
 
 Owned draft picks are displayed as a four-year by four-round matrix. Each pick
 shows the original owner's logo when available, or a team-colour identity mark

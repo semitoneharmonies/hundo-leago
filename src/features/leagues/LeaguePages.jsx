@@ -13,10 +13,12 @@ import {
   TeamMark,
 } from "../../components/HundoUi.jsx";
 import { TeamRosterPage } from "../rosters/TeamRosterPage.jsx";
+import { RosterLockNotice } from "../rosters/RosterLockNotice.jsx";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
 import { TeamCreationPanel } from "./TeamCreationPanel.jsx";
+import { PlayerInjuryAdminPanel } from '../injuries/PlayerInjuryAdminPanel.jsx';
 import { StatisticsRefreshPanel } from "./StatisticsRefreshPanel.jsx";
 import { LeagueDeletionPanel } from "./LeagueDeletionPanel.jsx";
 import {
@@ -404,6 +406,7 @@ export function LeagueSelectionPage() {
                   leagues={leaguesQuery.data || []}
                   usersQuery={adminUsers}
                 />
+                <PlayerInjuryAdminPanel key={`injuries-${session.user.id}`} httpClient={session.httpClient} />
                 <StatisticsRefreshPanel key={session.user.id} httpClient={session.httpClient} />
               </>
             )}
@@ -607,6 +610,8 @@ export function TeamWorkspacePage() {
           <>
             <TeamRosterPage
               workspace={rosterQuery.data}
+              rosterLockNotice={<RosterLockNotice key={`${leagueId}:${rosterQuery.data.season.id}`}
+                leagueId={leagueId} seasonId={rosterQuery.data.season.id} httpClient={session.httpClient} />}
               teams={teamsQuery.data}
               currentUserId={session.user.id}
               managerName={teamQuery.data.currentManager?.displayName ?? null}

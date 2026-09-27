@@ -2331,6 +2331,16 @@ textarea {
   gap: 9px;
 }
 
+.hl-roster-cap .hl-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .hl-roster-cap .hl-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .hl-stat-card {
   display: grid;
   gap: 6px;
@@ -2379,10 +2389,11 @@ textarea {
   font-size: 1.14rem;
 }
 
-.hl-roster-category__heading span {
+.hl-roster-category__heading > span {
   color: var(--hl-muted-foreground);
   font-family: var(--hl-font-mono);
-  font-size: 0.58rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-align: right;
 }
 
@@ -5210,7 +5221,7 @@ textarea {
 
 .hl-roster-illegal {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid rgb(248 113 113 / 72%);
@@ -5228,6 +5239,13 @@ textarea {
 
 .hl-roster-illegal span {
   font-size: 0.64rem;
+}
+
+.hl-roster-issues { margin: 0; padding-left: 1.1rem; font-size: .8rem; line-height: 1.6; }
+.hl-roster-category-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: .3rem 1.25rem; }
+.hl-roster-category-title h2 { margin: 0; }
+@media (max-width: 660px) {
+  .hl-roster-illegal { flex-direction: column; gap: .35rem; }
 }
 
 .hl-authority-notice {
@@ -6294,6 +6312,7 @@ textarea {
 .hl-player-row-table.hl-expanded-player-table,
 .hl-player-row-table.hl-roster-table.hl-expanded-player-table {
   min-width: 1080px;
+  table-layout: auto;
 }
 
 .hl-expanded-player-table .hl-player-col-name {
@@ -6653,22 +6672,26 @@ textarea {
   .hl-player-row-table.hl-expanded-player-table .hl-player-col-nhl { width: 30px; }
   .hl-player-row-table.hl-expanded-player-table .hl-player-col-stat { width: auto; }
   .hl-player-row-table.hl-expanded-player-table .hl-player-col-stat:nth-last-child(-n+3) { width: 48px; }
-  .hl-player-row-table.hl-expanded-player-table .hl-player-col-actions { width: 60px; min-width: 0; }
-  .hl-player-row-table.hl-roster-table.hl-expanded-player-table .hl-player-col-actions { width: 150px; }
+  /* Reserve room for one expanded label without moving or covering statistics. */
+  .hl-player-row-table.hl-expanded-player-table .hl-player-col-actions { width: 190px; min-width: 190px; }
+  .hl-player-row-table.hl-roster-table.hl-expanded-player-table .hl-player-col-actions { width: 324px; min-width: 324px; }
 
   .hl-expanded-player-table :is(.hl-player-actions, .hl-roster-actions, .hl-roster-actions-group) { gap: 3px; }
   .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) {
-    width: 24px;
+    width: auto;
     min-width: 24px;
     max-width: 24px;
     height: 24px;
     min-height: 24px;
     padding: 4px;
-    gap: 0;
+    gap: 6px;
     flex-shrink: 0;
   }
-  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) svg { width: 14px; height: 14px; }
-  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) span { display: none; }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) svg { width: 14px; min-width: 14px; height: 14px; }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action):is(:hover, :focus-visible) {
+    max-width: 180px;
+  }
+  .hl-expanded-player-table :is(.hl-player-action, .hl-roster-action) span { display: inline; }
   .hl-expanded-player-table .hl-position-tag { min-width: 24px; padding: 3px; font-size: 0.5625rem; }
   .hl-expanded-player-table .hl-roster-order-controls .hl-roster-drag-handle { width: 26px; min-width: 26px; }
   .hl-expanded-player-table .hl-player-row-action { padding: 4px 6px; }
@@ -6788,3 +6811,95 @@ textarea {
   .hl-matchup-player__heading > strong { font-size: 0.65rem; white-space: normal; overflow-wrap: anywhere; }
   .hl-matchup-player .hl-matchup-player-fp { font-size: 0.7rem; }
 }
+.hl-roster-table tr.is-on-trade-block > .hl-player-col-name {
+  color: #dcc57e;
+}
+
+@supports (background-clip: text) {
+  .hl-roster-table tr.is-on-trade-block .hl-roster-player-name:not(.hl-injured-player-name) {
+    background: linear-gradient(110deg, #eadba7, #c9ad60);
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+@media (forced-colors: active) {
+  .hl-roster-table tr.is-on-trade-block .hl-roster-player-name:not(.hl-injured-player-name) {
+    background: none;
+    color: CanvasText;
+  }
+}
+
+.hl-roster-table tr.is-on-trade-block .hl-roster-action.is-request {
+  color: #facc15;
+  border-color: rgb(250 204 21 / 55%);
+  background: rgb(250 204 21 / 12%);
+}
+
+.hl-roster-table tr.is-on-trade-block .hl-roster-action.is-request:hover,
+.hl-roster-table tr.is-on-trade-block .hl-roster-action.is-request:focus-visible {
+  border-color: #facc15;
+  background: rgb(250 204 21 / 22%);
+}
+
+/* Injury-only names are red; combined injury and trade-block names blend both colours. */
+.hl-injured-player-name,
+.hl-roster-table .hl-roster-player-name.hl-injured-player-name,
+.hl-player-col-name a.hl-injured-player-name {
+  color: #ee999e;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.hl-roster-action.is-injury-action {
+  color: #ee999e;
+  border-color: rgba(238, 153, 158, .42);
+  background: rgba(222, 88, 103, .10);
+}
+@supports (background-clip: text) {
+  .hl-injured-player-name.is-injury-trade-block,
+  .hl-roster-table .hl-roster-player-name.hl-injured-player-name.is-injury-trade-block {
+    background: linear-gradient(90deg, #dcc57e 0%, #dcc57e 42%, #ee999e 58%, #ee999e 100%);
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+}
+@media (forced-colors: active) {
+  .hl-injured-player-name.is-injury-trade-block,
+  .hl-roster-table .hl-roster-player-name.hl-injured-player-name.is-injury-trade-block {
+    background: none;
+    color: CanvasText;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+.hl-roster-action.is-injury-action:hover,
+.hl-roster-action.is-injury-action:focus-visible { background: rgba(222, 88, 103, .19); }
+.hl-injury-roster-reason { display: block; margin-top: .3rem; }
+.hl-injury-admin { margin-top: 1.5rem; }
+
+/* Player names keep their roster status colour while opening a shared card. */
+a.hl-player-card-trigger { color: inherit; text-decoration: none; cursor: pointer; }
+a.hl-player-card-trigger:hover { text-decoration: underline; text-underline-offset: 3px; }
+a.hl-player-card-trigger:focus-visible { outline: 2px solid #d5b66f; outline-offset: 3px; border-radius: 2px; }
+.hl-injury-source-note, .hl-injury-player-list small { color: var(--hl-text-muted, #a5b1c5); font-size: .85rem; }
+.hl-injury-search { margin: 1.2rem 0; }
+.hl-injury-search input { min-width: 0; flex: 1; }
+.hl-injury-search .hl-button-row { flex-wrap: wrap; }
+.hl-injury-player-list { list-style: none; padding: 0; max-height: 330px; overflow-y: auto; }
+.hl-injury-player-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 0; border-bottom: 1px solid rgba(160, 180, 210, .12); }
+.hl-injury-player-list small { display: block; margin-top: .25rem; }
+.hl-injury-decision { display: grid; gap: .65rem; padding: 1.2rem; margin: 1rem 0; border: 1px solid rgba(160, 180, 210, .2); border-radius: 12px; }
+.hl-injury-decision textarea { min-height: 80px; resize: vertical; }
+.hl-injury-history { padding-left: 1.2rem; font-size: .85rem; }
+.hl-injury-history p { margin-top: .3rem; }
+@media (forced-colors: active) { .hl-injured-player-name { color: CanvasText; } }
+
+.hl-injury-admin input, .hl-injury-admin select, .hl-injury-admin textarea {
+  box-sizing: border-box; width: 100%; color: var(--hl-foreground, #e5edf9);
+  background: rgba(5, 13, 27, .65); border: 1px solid rgba(160, 180, 210, .25);
+  border-radius: 8px; padding: .65rem .75rem; font: inherit; font-size: .875rem;
+}
+.hl-injury-admin input:focus-visible, .hl-injury-admin select:focus-visible, .hl-injury-admin textarea:focus-visible {
+  outline: 2px solid var(--hl-primary, #fa8b32); outline-offset: 2px;
+}
+.hl-injury-admin label { display: block; font-size: .85rem; margin-bottom: .35rem; }

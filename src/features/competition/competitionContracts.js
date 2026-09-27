@@ -140,6 +140,10 @@ export function validateWeek(week) {
     "sequence", "startsAtMs", "baselineAtMs", "locksAtMs", "endsAtMs", "rollsOverAtMs", "version",
   ]) integer(week[field], `The matchup-week ${field} is invalid.`);
   contract(typeof week.status === "string" && week.status.length > 0, "The week status is invalid.");
+  if (week.locksAtDisplay !== undefined) {
+    contract(typeof week.locksAtDisplay === "string" && week.locksAtDisplay.trim().length > 0,
+      "The roster-lock display time is invalid.");
+  }
   contract(Array.isArray(week.matchups), "The week matchups are invalid.");
   for (const matchup of week.matchups) validateMatchup(matchup);
   contract(Array.isArray(week.byes), "The week byes are invalid.");

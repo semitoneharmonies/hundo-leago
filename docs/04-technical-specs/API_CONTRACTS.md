@@ -3914,3 +3914,17 @@ docs/07-testing/TESTING_STRATEGY.md
 docs/07-testing/BACKEND_ENDPOINT_CHECKLIST.md
 docs/08-operations/BACKUP_AND_RESTORE.md
 ```
+
+## Global player injury administration — local candidate, September 27, 2026
+
+- GET /api/v1/admin/injuries?search=NAME is administrator-only and read-only. It returns up to 100 matching players, or reviewed statuses when search is empty, plus recent decision history. Search is limited to 100 characters. Responses expose no lease tokens.
+- POST /api/v1/admin/injuries/decide requires an authenticated platform administrator, allowed origin, JSON and valid CSRF token. The body contains exactly playerId, status (injured/healthy/unknown), expectedVersion (0 for an unreviewed player), and reason (3–500 characters after trimming; raw maximum 500). Stale versions return 409; commissioner and manager global writes return 403.
+- Decisions atomically update the global injury record and audit event. They do not change ownership, contracts, salaries, lineup slots, or existing matchup snapshots. Schema 65 adds four injury tables and preserves existing tables.
+- Player summaries/details and team workspace players gain an additive injury object: status, source (admin/espn/null), observedAtMs, needsReview and stale. Older responses without injury remain accepted by the frontend during coordinated release. Healthy IR rows add HEALTHY_PLAYER_ON_IR with playerId to workspace legality reasons.
+- No injury provider is composed into the target runtime. No import, source-settings or mapping route is exposed. The experimental source adapter is not an approved data source, and provider research is not activation authority.
+
+## Player hockey cards — local candidate, September 27, 2026
+
+`GET /api/v1/leagues/:leagueId/players/:playerId/card` is a read-only, session-authenticated, active-league-member endpoint with `no-store` responses. It combines key player statistics, health, current league contract, FP/G per net cap dollar, recorded signing provenance and all executed trade assets. It excludes private proposals, Candidate offers, bids and negotiation history. No schema change or write endpoint. Existing player list/detail contracts remain unchanged. The response and presentation contract are documented in [Player hockey cards](../03-product-specs/PLAYER_CARDS.md).
+
+The card also contains nullable `appearance: { jerseyNumber, nhlTeam }`. This optional, bounded, cached NHL lookup runs after authorization, uses a saved provider ID, and performs no persistent writes. A missing or failed lookup omits decoration without hiding saved player details. The team's abbreviation and jersey number come from the same verified profile.

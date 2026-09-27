@@ -1,3 +1,5 @@
+import { injuryNameProps } from '../../shared/playerInjury.js';
+import { PlayerName } from './PlayerName.jsx';
 import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Gavel } from "lucide-react";
@@ -731,9 +733,9 @@ export function PlayersCatalogPage() {
                       />
                     </td>
                     <th className="hl-player-col-name" scope="row">
-                      <Link to={routePaths.player(leagueId, player.id)}>
+                      <PlayerName {...injuryNameProps(player)} leagueId={leagueId} playerId={player.id} httpClient={session.httpClient}>
                         {player.fullName}
-                      </Link>
+                      </PlayerName>
                     </th>
                     <td className="hl-player-col-aav is-mono">
                       {playerAavLabel(player)}

@@ -1,3 +1,4 @@
+import { validatePlayerInjury } from '../../shared/playerInjury.js';
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 
 import { validateExpandedScoring } from "../../shared/scoringCategories.js";
@@ -125,6 +126,7 @@ function validateStatistics(statistics, position) {
 }
 
 export function validatePlayerSummary(player) {
+  validatePlayerInjury(player.injury);
   exactKeys(
     player,
     [
@@ -132,6 +134,7 @@ export function validatePlayerSummary(player) {
       "firstName",
       "lastName",
       "fullName",
+      ...(player.injury === undefined ? [] : ["injury"]),
       "birthDate",
       "status",
       "provider",
@@ -258,6 +261,7 @@ export function validateLeaguePlayerSummary(player, expectedLeagueId) {
       "firstName",
       "lastName",
       "fullName",
+      ...(player.injury === undefined ? [] : ["injury"]),
       "birthDate",
       "status",
       "provider",
@@ -319,6 +323,7 @@ export function validatePlayerDetail(player) {
       "firstName",
       "lastName",
       "fullName",
+      ...(player.injury === undefined ? [] : ["injury"]),
       "birthDate",
       "status",
       "provider",
@@ -342,6 +347,7 @@ export function validateLeaguePlayerDetail(player, expectedLeagueId) {
       "firstName",
       "lastName",
       "fullName",
+      ...(player.injury === undefined ? [] : ["injury"]),
       "birthDate",
       "status",
       "provider",

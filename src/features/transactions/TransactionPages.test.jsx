@@ -1098,7 +1098,8 @@ describe("M5-11 authenticated transaction pages", () => {
     ).closest("li");
     const audit = within(entry);
 
-    expect(audit.getByText(/Current Player Name · Managed Team/)).toBeInTheDocument();
+    expect(entry.querySelector('.hl-activity-subject')).toHaveTextContent('Current Player Name · Managed Team');
+    expect(audit.getByRole('link', { name: 'Current Player Name' })).toHaveAttribute('aria-haspopup', 'dialog');
     expect(audit.getByText(/By Commissioner Casey/)).toBeInTheDocument();
     expect(audit.queryByText("Technical record")).not.toBeInTheDocument();
     expect(audit.queryByText("Authority")).not.toBeInTheDocument();
