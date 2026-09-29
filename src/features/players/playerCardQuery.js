@@ -5,6 +5,7 @@ export function validatePlayerCard(card, leagueId, playerId) {
   const timestamp = n => Number.isSafeInteger(n) && n >= 0 && n <= 8_640_000_000_000_000;
   if (!card || card.leagueId !== leagueId || card.playerId !== playerId || typeof card.name !== 'string' ||
     !card.value || !Array.isArray(card.history?.signings) || !Array.isArray(card.history?.trades) ||
+    (card.history.buyouts !== undefined && !Array.isArray(card.history.buyouts)) ||
     [card.value.fantasyPointsPerGame, card.value.perCapDollar].some(n => n !== null && !validNumber(n))) {
     throw new ResponseContractError('The player card is invalid or belongs to another league.');
   }
@@ -27,6 +28,13 @@ export function validatePlayerCard(card, leagueId, playerId) {
   for (const signing of card.history.signings) {
     if (!signing.id || !timestamp(signing.atMs) || typeof signing.method !== 'string' ||
       (signing.team !== null && typeof signing.team?.name !== 'string')) throw new ResponseContractError('The signing history is invalid.');
+  }
+  for (const buyout of card.history.buyouts ?? []) {
+    if (!buyout || typeof buyout.id !== 'string' || !buyout.id || !timestamp(buyout.atMs) ||
+      !['active', 'completed', 'cancelled'].includes(buyout.status) ||
+      typeof buyout.team?.id !== 'string' || !buyout.team.id || typeof buyout.team.name !== 'string') {
+      throw new ResponseContractError('The buyout history is invalid.');
+    }
   }
   for (const trade of card.history.trades) {
     if (!trade.id || !timestamp(trade.atMs) || !Array.isArray(trade.teams) || !Array.isArray(trade.assets) ||

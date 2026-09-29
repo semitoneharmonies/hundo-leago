@@ -52,19 +52,20 @@ function TradeDetails({ trade, leagueId, httpClient }) {
 
 function History({ card, httpClient }) {
   const entries = [...card.history.signings.map(item => ({ ...item, kind: 'signing' })),
+    ...(card.history.buyouts ?? []).map(item => ({ ...item, kind: 'buyout' })),
     ...card.history.trades.map(item => ({ ...item, kind: 'trade' }))].sort((a, b) => b.atMs - a.atMs || a.id.localeCompare(b.id));
   return <section className={styles.history} aria-labelledby="player-card-history">
     <h3 id="player-card-history">Hundo history</h3>
-    {!entries.length ? <p>No signing or trade history has been recorded in this league.</p> :
+    {!entries.length ? <p>No player history has been recorded in this league.</p> :
       <ol>{entries.map(entry => <li key={`${entry.kind}:${entry.id}`}>
         <time dateTime={new Date(entry.atMs).toISOString()}>{date(entry.atMs)}</time>
         {entry.kind === 'trade' ? <details>
           <summary><ArrowLeftRight size={15} aria-hidden="true" /><span>Trade{entry.status === 'reversed' ? ' · reversed' : entry.status === 'correction_required' ? ' · under review' : ''}<small>{entry.teams.map(t => t.name).join(' ↔ ')}</small></span><span className={styles.expand}>Full deal</span></summary>
           <TradeDetails trade={entry} leagueId={card.leagueId} httpClient={httpClient} />
         </details> : <div className={styles.signing}>
-          <strong>{entry.method}{entry.status === 'cancelled' ? ' · cancelled' : ''}</strong>
+          <strong>{entry.kind === 'buyout' ? 'Bought out' : entry.method}{entry.status === 'cancelled' ? ' · cancelled' : ''}</strong>
           <span>{entry.team?.name || 'Signing team not recorded'}</span>
-          {entry.aavCents !== null && <small>{money(entry.aavCents)} AAV · {entry.termYears ?? '—'} year(s)</small>}
+          {entry.kind === 'signing' && entry.aavCents !== null && <small>{money(entry.aavCents)} AAV · {entry.termYears ?? '—'} year(s)</small>}
         </div>}
       </li>)}</ol>}
   </section>;
