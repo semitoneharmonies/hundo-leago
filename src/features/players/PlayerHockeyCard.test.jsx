@@ -84,12 +84,56 @@ describe('player hockey card', () => {
     const data = createPlayerCardFixture(fixture, fixture.players.at(-1));
     const { user } = setup({ request: async () => ({ data: { ...data, playerId: fixture.players[0].playerId, name: fixture.players[0].name } }) });
     await user.click(screen.getByRole('link', { name: 'Connor McDavid' }));
-    expect(await screen.findByText('No signing or trade history has been recorded in this league.')).toBeVisible();
+    expect(await screen.findByText('No player history has been recorded in this league.')).toBeVisible();
     expect(screen.getByText('Unconfirmed')).toBeVisible();
     expect(screen.getByText('Season statistics unavailable')).toBeVisible();
     expect(screen.queryByText('Healthy')).not.toBeInTheDocument();
     expect(screen.queryByText(/Infinity|NaN/)).not.toBeInTheDocument();
     expect(within(screen.getByRole('dialog')).queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('places a buyout between the trade and later re-signing, with its original team and date', async () => {
+    const data = createPlayerCardFixture(createCapOutlookFixture());
+    data.history.buyouts = [{ id: 'buyout', atMs: Date.parse('2026-03-01T22:00:00Z'), status: 'active',
+      team: { id: 'former-team', name: 'Former Club' } }];
+    data.history.signings.push({ ...data.history.signings[0], id: 'new-signing', atMs: Date.parse('2026-09-01T22:00:00Z'),
+      method: 'Auction', team: data.ownership.team });
+    const { user } = setup({ request: async () => ({ data }) });
+    await user.click(screen.getByRole('link', { name: data.name }));
+    const history = await screen.findByRole('region', { name: 'Hundo history' });
+    const rows = [...history.querySelector('ol').children];
+    expect(rows).toHaveLength(4);
+    expect(rows[0]).toHaveTextContent('Auction');
+    expect(rows[1]).toHaveTextContent('Bought out');
+    expect(rows[1]).toHaveTextContent('Former Club');
+    expect(rows[1].querySelector('time')).toHaveAttribute('datetime', '2026-03-01T22:00:00.000Z');
+    expect(rows[1]).not.toHaveTextContent(/AAV|year\(s\)/);
+    expect(rows[2]).toHaveTextContent('Trade');
+    expect(rows[3]).toHaveTextContent('Candidate Card');
+  });
+
+  it.each([['completed', 'Bought out'], ['cancelled', 'Bought out · cancelled']])(
+    'shows a %s buyout for an unsigned player with no other history', async (status, label) => {
+      const data = createPlayerCardFixture(createCapOutlookFixture());
+      data.ownership = null; data.contract = null;
+      data.history = { signings: [], trades: [], buyouts: [{ id: 'buyout', atMs: 1000, status,
+        team: { id: 'former-team', name: 'Former Club' } }] };
+      const { user } = setup({ request: async () => ({ data }) });
+      await user.click(screen.getByRole('link', { name: data.name }));
+      expect(await screen.findByText(label)).toBeVisible();
+      expect(screen.getByText('Former Club')).toBeVisible();
+      expect(screen.getByText('Free agent')).toBeVisible();
+      expect(screen.queryByText(/No player history/)).not.toBeInTheDocument();
+    });
+
+  it('rejects malformed buyout history while supporting cards from the previous API', () => {
+    const data = createPlayerCardFixture(createCapOutlookFixture());
+    expect(validatePlayerCard(data, data.leagueId, data.playerId)).toBe(true);
+    const entry = { id: 'buyout', atMs: 1000, status: 'active', team: { id: 'team', name: 'Former Club' } };
+    for (const buyouts of [null, {}, [null], [{ ...entry, atMs: -1 }], [{ ...entry, status: 'pending' }],
+      [{ ...entry, team: null }], [{ ...entry, id: null }]]) {
+      expect(() => validatePlayerCard({ ...data, history: { ...data.history, buyouts } }, data.leagueId, data.playerId)).toThrow(/invalid/);
+    }
   });
 
   it('keys reads by both league and player and rejects mismatched responses', async () => {
@@ -101,7 +145,7 @@ describe('player hockey card', () => {
     await screen.findByText('Candidate Card');
     await user.click(screen.getByRole('button', { name: 'Close player card' }));
     await user.click(screen.getByRole('link', { name: 'League B player' }));
-    await screen.findByText('No signing or trade history has been recorded in this league.');
+    await screen.findByText('No player history has been recorded in this league.');
     expect(screen.queryByText('Candidate Card')).not.toBeInTheDocument();
     expect(() => validatePlayerCard(a, b.leagueId, a.playerId)).toThrow(/another league/);
     expect(() => validatePlayerCard({ ...a, appearance: { jerseyNumber: 97, nhlTeam: 'TOR' } }, a.leagueId, a.playerId)).toThrow(/jersey/);
