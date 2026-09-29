@@ -3307,14 +3307,14 @@ textarea {
 }
 
 .hl-activity-timeline strong {
-  font-size: 0.67rem;
+  font-size: 1rem;
   line-height: 1.45;
 }
 
 .hl-activity-timeline small {
   color: var(--hl-muted-foreground);
   font-family: var(--hl-font-mono);
-  font-size: 0.54rem;
+  font-size: 0.875rem;
 }
 
 .hl-visually-hidden {
@@ -3722,6 +3722,7 @@ textarea {
   border: 1px solid var(--hl-border);
   border-radius: var(--hl-radius-md);
   background: var(--hl-panel);
+  overflow-wrap: anywhere;
 }
 
 .hl-activity-timeline > .hl-activity-entry--trade {
@@ -3735,8 +3736,12 @@ textarea {
 }
 
 .hl-activity-timeline > .hl-activity-entry--buyout {
-  border-color: color-mix(in srgb, #a855f7 48%, var(--hl-border));
-  background: color-mix(in srgb, #a855f7 10%, var(--hl-panel));
+  border-color: color-mix(in srgb, #fb7185 55%, var(--hl-border));
+  background: color-mix(in srgb, #fb7185 12%, var(--hl-panel));
+}
+
+.hl-activity-timeline > .hl-activity-entry--buyout > span {
+  background: #fb7185;
 }
 
 .hl-activity-timeline > .hl-activity-entry--commissioner {
@@ -3764,20 +3769,26 @@ textarea {
 .hl-activity-filter h2 {
   margin: 0;
   font-family: var(--hl-font-body);
-  font-size: 0.7rem;
+  font-size: 1rem;
   line-height: 1.4;
+}
+
+.hl-activity-filter .hl-field,
+.hl-activity-filter .hl-field > select {
+  font-size: 1rem;
 }
 
 .hl-activity-context,
 .hl-activity-subject {
   color: var(--hl-muted-foreground);
-  font-size: 0.58rem;
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
 .hl-activity-context .hl-activity-time {
   display: inline;
   margin: 0;
+  font-size: inherit;
 }
 
 .hl-activity-subject {
@@ -3789,7 +3800,7 @@ textarea {
 .hl-activity-reason {
   margin: 2px 0 0;
   color: var(--hl-muted-foreground);
-  font-size: 0.6rem;
+  font-size: 0.9375rem;
   line-height: 1.5;
 }
 
@@ -3802,7 +3813,7 @@ textarea {
   gap: 5px;
   margin-top: 5px;
   color: var(--hl-muted-foreground);
-  font-size: 0.6rem;
+  font-size: 0.9375rem;
 }
 
 .hl-activity-assets > span {

@@ -217,7 +217,7 @@ function activityCategory(type) {
   const value = String(type || "").toLowerCase();
   if (value.includes("trade")) return "trade";
   if (value.includes("auction")) return "auction";
-  if (value.includes("buyout")) return "buyout";
+  if (value.includes("buyout") || value === "contract_bought_out") return "buyout";
   if (value.includes("commissioner") || value.includes("correction")) {
     return "commissioner";
   }

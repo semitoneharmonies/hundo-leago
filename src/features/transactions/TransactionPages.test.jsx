@@ -1135,6 +1135,29 @@ describe("M5-11 authenticated transaction pages", () => {
     }
   });
 
+  it("gives saved contract buyouts their buyout styling and readable title", async () => {
+    const fetchImpl = baseFetch((path) => {
+      if (path === `/api/v1/leagues/${leagueId}/activity`) return envelope({
+        code: "LEAGUE_ACTIVITY_FOUND", activity: [{
+          id: assetId, leagueId, seasonId, type: "contract_bought_out",
+          summary: "Contract bought out.", actor: { userId: actorUserId, authority: "manager" },
+          teamId: teamA, playerId: playerSearchId,
+          team: { id: teamA, name: "Managed Team" },
+          player: { id: playerSearchId, name: "Bought Out Player" },
+          related: { type: "buyout_obligation", id: correctionId },
+          reason: null, metadata: {}, occurredAtMs: 1,
+        }], page: { limit: 25, nextCursor: null },
+      });
+      throw new Error(`Unexpected ${path}`);
+    });
+    const { user } = renderPage(`/leagues/${leagueId}/activity`, "/leagues/:leagueId/activity", <ActivityPage />, fetchImpl);
+    const entry = (await screen.findByText("Managed Team bought out Bought Out Player.")).closest("li");
+    expect(entry).toHaveClass("hl-activity-entry--buyout");
+    expect(entry).not.toHaveClass("hl-activity-entry--other");
+    await user.selectOptions(screen.getByLabelText("Event type"), "buyout");
+    await waitFor(() => expect(fetchImpl.mock.calls.some(([url]) => new URL(url).searchParams.get("category") === "buyout")).toBe(true));
+  });
+
   it("shows the player, winning team, and winning bid for FAD and ordinary auction results", async () => {
     const common = {
       leagueId, seasonId, actor: { userId: null, authority: "system" },
