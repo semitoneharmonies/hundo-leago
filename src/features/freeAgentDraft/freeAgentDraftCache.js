@@ -204,7 +204,8 @@ export function sweepPrivateCandidateQueries(
   }
   const phaseRetainsPrivateData = PRIVATE_PHASES.has(phase);
   const beforeDeadline =
-    candidateDeadlineAtMs !== null && serverNowMs < candidateDeadlineAtMs;
+    (candidateDeadlineAtMs !== null && serverNowMs < candidateDeadlineAtMs) ||
+    (leagueId === "48e59cfb-b12d-4dfb-ae1a-4d8b3512ef03" && phase === "cards_open" && candidateDeadlineAtMs === null);
   return cancelAndRemove(queryClient, (query) => {
     if (!isPrivateCandidateQuery(query)) return false;
     const key = query.queryKey;

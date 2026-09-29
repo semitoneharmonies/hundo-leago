@@ -1,3 +1,4 @@
+import { GoonDraftTimingSettings } from "./GoonDraftTimingSettings.jsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -142,7 +143,7 @@ function OverviewHero({
       <div className={styles.deadlineRow}>
       <p className={styles.deadlineLine}>
         <strong>Candidate card deadline:</strong>{" "}
-        {shortLeagueDateTime(
+        {overview.candidateDeadlineAtMs === null ? "Not scheduled" : shortLeagueDateTime(
           overview.candidateDeadlineAtMs,
           overview.timeZone,
           true
@@ -214,6 +215,9 @@ function FreeAgentDraftPreparationContent({
         headingId={embedded ? "free-agent-draft-title" : "fad-page-title"}
         headingLevel={embedded ? "h2" : "h1"}
       />
+      {leagueId === "48e59cfb-b12d-4dfb-ae1a-4d8b3512ef03" && overview.capabilities.viewRecovery.allowed && (
+        <GoonDraftTimingSettings leagueId={leagueId} fadId={fadId} />
+      )}
       <Surface
         className={styles.panel}
         aria-labelledby="managed-candidate-cards-title"
@@ -304,7 +308,7 @@ function FreeAgentDraftResultsExperience({
     ...freeAgentDraftNavigationQuery(context.session.httpClient, leagueId),
     enabled: context.session.status === "authenticated" && Boolean(context.league),
   });
-  const drafts = navigation.data?.availableDrafts || [{ fadId, year: new Intl.DateTimeFormat("en", { year: "numeric", timeZone: overview.timeZone }).format(overview.candidateDeadlineAtMs) }];
+  const drafts = navigation.data?.availableDrafts || [{ fadId, year: new Intl.DateTimeFormat("en", { year: "numeric", timeZone: overview.timeZone }).format(overview.candidateDeadlineAtMs ?? overview.openedAtMs) }];
   return (
     <>
       <OverviewHero
@@ -788,6 +792,7 @@ export function CandidateCardPage() {
   const cachedDeadlineReached =
     overview.data !== undefined &&
     estimatedServerNowMs !== null &&
+    overview.data.candidateDeadlineAtMs !== null &&
     estimatedServerNowMs >= overview.data.candidateDeadlineAtMs;
   const measuredDeadlineReached =
     deadlineReached || cachedDeadlineReached;
@@ -877,7 +882,7 @@ export function CandidateCardPage() {
   ]);
 
   useEffect(() => {
-    if (!overview.data || !authorization) return undefined;
+    if (!overview.data || !authorization || overview.data.candidateDeadlineAtMs === null) return undefined;
     const remaining =
       overview.data.candidateDeadlineAtMs -
       (overview.data.serverNowMs +

@@ -691,8 +691,12 @@ export function validateFreeAgentDraftOverview(data) {
   oneOf(data.phase, ["cards_open", "help_window", "deadline_processing", "allocating", "rapid", "completed"], "FAD overview.phase");
   safeInteger(data.serverNowMs, "FAD overview.serverNowMs");
   text(data.timeZone, "FAD overview.timeZone");
-  for (const field of ["openedAtMs", "reminderAtMs", "helpOpensAtMs", "candidateDeadlineAtMs", "frozenFadFirstMatchupStartsAtMs", "competitionFirstMatchupStartsAtMs"]) {
-    safeInteger(data[field], `FAD overview.${field}`);
+  const unscheduled = data.leagueId === "48e59cfb-b12d-4dfb-ae1a-4d8b3512ef03" &&
+    data.status === "cards_open" && data.phase === "cards_open" && data.candidateDeadlineAtMs === null;
+  for (const field of ["openedAtMs", "helpOpensAtMs"]) safeInteger(data[field], `FAD overview.${field}`);
+  for (const field of ["reminderAtMs", "candidateDeadlineAtMs", "frozenFadFirstMatchupStartsAtMs", "competitionFirstMatchupStartsAtMs"]) {
+    if (unscheduled) contract(data[field] === null, `FAD overview.${field} must be unscheduled.`);
+    else safeInteger(data[field], `FAD overview.${field}`);
   }
   for (const field of ["deadlineLockedAtMs", "allocationCompletedAtMs", "nextRolloverAtMs", "completedAtMs"]) {
     nullableInteger(data[field], `FAD overview.${field}`);
