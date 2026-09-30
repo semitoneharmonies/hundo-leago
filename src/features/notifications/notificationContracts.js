@@ -668,6 +668,38 @@ export function validateNotifications(data) {
       contract(typeof notification.messageData.leagueName === "string" && notification.messageData.leagueName.trim() !== "",
         "A commissioner assignment league name is invalid.");
     }
+    if (["league_announcement", "league_reminder"].includes(notification.type)) {
+      contract(stableId(notification.messageData.communicationId) &&
+        notification.messageData.leagueId === notification.leagueId && stableId(notification.leagueId) &&
+        typeof notification.messageData.title === "string" && notification.messageData.title.trim().length > 0 &&
+        notification.messageData.title.length <= 120 &&
+        typeof notification.messageData.message === "string" && notification.messageData.message.trim().length > 0 &&
+        notification.messageData.message.length <= 3000, "The league message notification is invalid.");
+    }
+    if (notification.type === "league_fad_deadline_changed") {
+      contract(stableId(notification.messageData.fadId) && stableId(notification.leagueId) &&
+        notification.messageData.leagueId === notification.leagueId &&
+        typeof notification.messageData.message === "string" && notification.messageData.message.trim().length > 0 &&
+        notification.messageData.message.length <= 500, "The deadline notification is invalid.");
+    }
+    if (['league_help_updated', 'league_calendar_changed', 'league_auction_schedule_changed', 'league_scoring_changed', 'league_picks_repaired', 'league_correction_reversed', 'league_preseason_reset', 'league_pause_changed'].includes(notification.type)) {
+      contract(stableId(notification.leagueId) && notification.messageData.leagueId === notification.leagueId &&
+        typeof notification.messageData.message === 'string' && notification.messageData.message.trim().length > 0 &&
+        notification.messageData.message.length <= 500, 'The calendar notification is invalid.');
+    }
+    if (notification.type === 'league_trade_deadline_changed') {
+      contract(stableId(notification.leagueId) && notification.messageData.leagueId === notification.leagueId &&
+        Number.isSafeInteger(notification.messageData.tradeDeadlineAtMs) && notification.messageData.tradeDeadlineAtMs >= 0 &&
+        typeof notification.messageData.message === 'string' && notification.messageData.message.trim().length > 0 &&
+        notification.messageData.message.length <= 500, 'The trade deadline notification is invalid.');
+    }
+    if (notification.type === 'league_auction_timing_changed') {
+      contract(stableId(notification.leagueId) && stableId(notification.messageData.auctionId) &&
+        notification.messageData.leagueId === notification.leagueId &&
+        Number.isSafeInteger(notification.messageData.closesAtMs) && notification.messageData.closesAtMs >= 0 &&
+        typeof notification.messageData.message === 'string' && notification.messageData.message.trim().length > 0 &&
+        notification.messageData.message.length <= 500, 'The auction timing notification is invalid.');
+    }
     if (notification.type === "trade_proposal_received") {
       for (const [field, description] of [
         ["tradeId", "trade"],

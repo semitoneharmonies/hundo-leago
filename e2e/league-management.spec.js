@@ -1,0 +1,21 @@
+import {test,expect} from '@playwright/test';
+test.use({baseURL:process.env.HL_COMMUNICATION_PREVIEW_ORIGIN||'http://127.0.0.1:5189'});
+test('commissioner checks readiness, searches access history and downloads an explicit readonly export',async({page},testInfo)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/e2e/fixtures/league-management.html');
+ expect(await page.evaluate(()=>window.managementRequests)).toEqual([]);
+ await page.getByText('League readiness, change history and export').click();
+ await expect(page.getByText('1 teams without an active manager')).toBeVisible();
+ await expect(page.getByText(/Roster preparation before competition/)).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('management-readiness.png'),fullPage:true});
+ await page.getByRole('button',{name:'Change history'}).click();
+ await expect(page.getByText('Selected auction bid explicitly reviewed')).toBeVisible();
+ await page.getByLabel('Search changes').fill('Taylor');await page.getByRole('button',{name:'Search history'}).click();
+ await page.getByRole('button',{name:'Export league data'}).click();
+ expect(await page.evaluate(()=>window.managementRequests.some(r=>r.url.endsWith('/export')))).toBe(false);
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Download league export'}).click();
+ const download=await downloadPromise;expect(download.suggestedFilename()).toMatch(/^hundo-league-.*\.json$/);
+ await download.saveAs(testInfo.outputPath('synthetic-league-export.json'));
+ expect(await page.evaluate(()=>window.managementRequests.every(r=>r.method==='GET'&&r.url.includes('/management/')))).toBe(true);
+ expect(errors).toEqual([]);
+});

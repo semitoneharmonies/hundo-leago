@@ -629,6 +629,12 @@ describe("FAD frontend response contracts", () => {
     expect(validateFreeAgentDraftReadiness(readiness)).toBe(true);
     expect(validateFreeAgentDraftReadinessRetry(retry)).toBe(true);
     expect(validateFreeAgentDraftOverview(overview)).toBe(true);
+    const unscheduled = { ...overview, leagueId: "48e59cfb-b12d-4dfb-ae1a-4d8b3512ef03",
+      reminderAtMs: null, candidateDeadlineAtMs: null,
+      frozenFadFirstMatchupStartsAtMs: null, competitionFirstMatchupStartsAtMs: null };
+    expect(validateFreeAgentDraftOverview(unscheduled)).toBe(true);
+    expect(() => validateFreeAgentDraftOverview({ ...unscheduled, leagueId: "bbfb5b17-0080-465f-a2cd-ac3d2c946e83" })).toThrow();
+    expect(() => validateFreeAgentDraftOverview({ ...unscheduled, competitionFirstMatchupStartsAtMs: 10 })).toThrow();
   });
 
   it("accepts exact private, preview, mutation, help, eligible, and published projections", () => {

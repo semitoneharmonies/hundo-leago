@@ -35,7 +35,7 @@ function integer(value, { minimum = Number.MIN_SAFE_INTEGER, maximum = Number.MA
 function validateStatistics(value, position) {
   if (value === null) return;
   const expanded = validateExpandedScoring(value, position);
-  exactKeys(value, ["gamesPlayed", "goals", "assists", "nhlPoints", "fantasyPointsHundredths", ...(expanded ? ["scoringRuleVersion", "scoringStats"] : [])], "The player statistics are invalid.");
+  exactKeys(value, ["gamesPlayed", "goals", "assists", "nhlPoints", "fantasyPointsHundredths", ...(expanded ? ["scoringRuleVersion", "scoringStats"] : []), ...(expanded && value.scoringWeights ? ["scoringWeights"] : [])], "The player statistics are invalid.");
   for (const field of ["gamesPlayed", "goals", "assists", "nhlPoints", "fantasyPointsHundredths"]) {
     contract(integer(value[field], { minimum: expanded && field === "fantasyPointsHundredths" ? Number.MIN_SAFE_INTEGER : 0 }), `The player ${field} value is invalid.`);
   }

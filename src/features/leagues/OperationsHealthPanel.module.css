@@ -1,0 +1,5 @@
+.panel { padding: clamp(1rem, 3vw, 1.5rem); margin-block: 1rem; }
+.details { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 1rem; }
+.details > div { padding: .8rem; border: 1px solid rgb(148 163 184 / 20%); border-radius: .5rem; }
+.details dt { color: var(--hl-muted-foreground, #a9bbd1); font-size: .85rem; }
+.details dd { margin: .35rem 0 0; font-weight: 650; overflow-wrap: anywhere; }

@@ -1,5 +1,55 @@
 # Hundo Leago — Auctions
 
+## Deliberate commissioner private review - 2026-09-29
+
+This update supersedes earlier statements forbidding all administrative bid
+reveals. Ordinary auction reads and administrative write responses omit competing
+bid identities and eligible-team lists. Cancellation never requires a reveal.
+Current commissioners/admins can deliberately reveal an auction's bidding teams
+for a correction, with a reason, and separately reveal one bid's current value
+and term. Every reveal is audited without copying private values into the audit.
+Reveals expire from the interface after five minutes and clear on hide, successful
+edit or authorization-boundary remount. They grant no access to Candidate Cards
+and do not change subsequent read responses. Existing manager-authorized card
+help remains the separate mechanism for card corrections.
+
+This is verified locally; staging and production publication remain pending.
+
+## Individual in-season closing-time controls - 2026-09-29
+
+The local commissioner controls package now lets a current commissioner or
+platform administrator preview and confirm a different future closing time for
+an open ordinary in-season auction. The control is available from that auction's
+page. Display both dates in the league timezone and explicitly identify a shorter
+or longer bidding window. Require a reason, record immutable change history and
+notify league members in-app.
+
+The timing control never loads bids, bidder identities or offers. Existing bids,
+their original submission times, cooldowns and edit limits remain intact. Both
+bidding and the normal resolution worker follow the saved revised closing time.
+Other auctions keep their times. This does not change the recurring league rule
+for newly started auctions.
+
+The old deadline must not have passed, resolution must not have started, and
+the new deadline must precede playoffs and season end. Completed/expired auctions
+require separate recovery, and FAD auctions require a coordinated round change.
+Those actions, recurring in-season timing and nomination cutoffs remain pending.
+See [Auction timing controls](../04-technical-specs/AUCTION_TIMING_CONTROLS.md).
+This is local verification, not a production release.
+
+## Configurable FAD nomination cutoff - 2026-09-29
+
+The local commissioner controls package now supports a per-FAD gap in whole
+minutes before auction round closing. Default 60; allowed range 0 through 10080.
+Only unused scheduled rounds and future extensions adopt a confirmed change.
+Existing auction/queued-nomination rounds retain their accepted cutoff evidence.
+The preview identifies retained rounds and any immediate window change without
+loading offers. Private queuing and extension behavior continue at the saved
+cutoff. Recurring in-season timing and active FAD closing-time edits remain
+pending; individual open in-season clocks are covered above. See [FAD rules](FREE_AGENT_DRAFT.md) and the
+[controls work plan](../06-work-plans/COMMISSIONER_CONTROLS_2026-09-29.md).
+This clarification describes local implementation, not a production release.
+
 ## Actual submitted offer pricing clarification - 2026-09-24
 
 The winner is ranked by highest AAV, then longer term, then earliest original

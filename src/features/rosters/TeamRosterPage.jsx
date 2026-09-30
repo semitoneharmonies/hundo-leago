@@ -511,7 +511,7 @@ function CategoryTable({
         </p>
       ) : (
         <>
-        <ScoringStatGuide />
+        <ScoringStatGuide weights={players.find(p=>p.statistics?.scoringWeights)?.statistics.scoringWeights} />
         <TableScroll label={`${category.title} table`}>
           <table className="hl-data-table hl-player-row-table hl-roster-table hl-expanded-player-table">
             <thead>
@@ -548,7 +548,7 @@ function CategoryTable({
                     }
                     className="hl-player-col-stat hl-roster-stat"
                     key={sortKey}
-                    title={scoringDescription(sortKey)}
+                    title={scoringDescription(sortKey, players.find(p=>p.statistics?.scoringWeights)?.statistics.scoringWeights)}
                     scope="col"
                   >
                     <RosterSortHeading

@@ -92,7 +92,7 @@ function validateStatistics(statistics, position) {
       "nhlPoints",
       "fantasyPointsHundredths",
       "sourceUpdatedAtMs",
-      ...(expanded ? ["scoringRuleVersion", "scoringStats"] : []),
+      ...(expanded ? ["scoringRuleVersion", "scoringStats"] : []), ...(expanded && statistics.scoringWeights ? ["scoringWeights"] : []),
     ],
     "The player statistics are invalid."
   );

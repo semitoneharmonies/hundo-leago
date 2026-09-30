@@ -1,0 +1,16 @@
+import {render,screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {it,expect,vi} from 'vitest';
+import {PlayerCatalogueControls} from './PlayerCatalogueControls.jsx';
+const preview={nhlId:'8479999',action:'refresh',previewHash:'a'.repeat(64),before:{name:'Casey Skater',status:'active',sources:[{provider:'nhl',position:'F',team:'VAN'}]},after:{name:'Casey Skater',status:'active',position:'F',team:'SEA',birthDate:'1998-02-03'},ownedInLeagues:2,openDrafts:1,preserved:['Player identity','League ownerships and contracts'],notice:'Existing eligibility checks may be queued.'};
+function setup(handler){const request=vi.fn(async(url,options)=>{const data=await handler(url,options);if(options.validateData(data)!==true)throw Error('Invalid');return {data};});render(<PlayerCatalogueControls httpClient={{request}}/>);return {request,user:userEvent.setup()};}
+it('loads only on request and previews before confirmation',async()=>{
+ const {request,user}=setup((url,o)=>url.endsWith('/apply')?{operationId:o.body.operationId,playerId:'player',revalidationOccurrenceCount:1}:preview);
+ expect(request).not.toHaveBeenCalled();await user.click(screen.getByText('Player catalogue'));await user.type(screen.getByLabelText('NHL player ID'),'8479999');await user.click(screen.getByRole('button',{name:'Preview player'}));
+ await screen.findByText('Refresh Casey Skater');expect(request.mock.calls).toHaveLength(1);expect(screen.getByRole('button',{name:'Confirm catalogue change'})).toBeDisabled();await user.type(screen.getByLabelText('Reason'),'Correct team');await user.click(screen.getByRole('button',{name:'Confirm catalogue change'}));await screen.findByText(/Player catalogue saved/);expect(request.mock.calls[1][1].body).toMatchObject({nhlId:'8479999',previewHash:preview.previewHash,reason:'Correct team'});
+});
+it('retains the exact operation after an uncertain save and locks its reason',async()=>{
+ let calls=0;const {request,user}=setup((url,o)=>{if(url.endsWith('/apply')){if(++calls===1)throw Error('network');return {operationId:o.body.operationId,playerId:'player',revalidationOccurrenceCount:0};}return preview;});
+ await user.click(screen.getByText('Player catalogue'));await user.type(screen.getByLabelText('NHL player ID'),'8479999');await user.click(screen.getByRole('button',{name:'Preview player'}));await user.type(await screen.findByLabelText('Reason'),'Correct team');await user.click(screen.getByRole('button',{name:'Confirm catalogue change'}));await screen.findByRole('alert');expect(screen.getByLabelText('Reason')).toBeDisabled();await user.click(screen.getByRole('button',{name:'Confirm catalogue change'}));await screen.findByText(/Player catalogue saved/);expect(request.mock.calls[2][1].body).toEqual(request.mock.calls[1][1].body);
+});
+it('rejects a wrong-player preview and does not offer confirmation',async()=>{const {user}=setup(()=>({...preview,nhlId:'other'}));await user.click(screen.getByText('Player catalogue'));await user.type(screen.getByLabelText('NHL player ID'),'8479999');await user.click(screen.getByRole('button',{name:'Preview player'}));await screen.findByRole('alert');expect(screen.queryByRole('button',{name:'Confirm catalogue change'})).not.toBeInTheDocument();});

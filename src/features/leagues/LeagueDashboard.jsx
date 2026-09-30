@@ -14,6 +14,8 @@ import {
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { LeagueHelpPanel } from './LeagueHelpPanel.jsx';
+import { LeagueCommunications } from "../commissioner/LeagueCommunications.jsx";
 import { PlayerName } from '../players/PlayerName.jsx';
 import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
@@ -932,6 +934,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
           assists: player.assistDelta,
           points: player.pointDelta,
           scoringStats: player.dataStatus === "missing" ? null : player.scoringStats,
+          scoringWeights: player.scoringWeights,
           fantasyPoints,
           fantasyPointsPerGame: fantasyPointsPerGame(
             fantasyPoints,
@@ -956,6 +959,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
           assists: player.seasonStatistics?.assists ?? null,
           points: player.seasonStatistics?.nhlPoints ?? null,
           scoringStats: player.seasonStatistics?.scoringStats ?? null,
+          scoringWeights: player.seasonStatistics?.scoringWeights,
           fantasyPoints:
             player.seasonStatistics?.fantasyPointsHundredths ?? null,
           fantasyPointsPerGame: fantasyPointsPerGame(
@@ -1005,7 +1009,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
         </EmptyBlock>
       ) : (
         <>
-        <ScoringStatGuide />
+        <ScoringStatGuide weights={players.find(p=>p.scoringWeights)?.scoringWeights} />
         <TableScroll label="Dashboard roster">
           <table className="hl-data-table hl-player-row-table hl-dashboard-player-table hl-expanded-player-table">
             <thead>
@@ -1022,7 +1026,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                 <th className="hl-player-col-stat" scope="col">A</th>
                 <th className="hl-player-col-stat" scope="col">P</th>
                 {SCORING_CATEGORIES.map(({ key, abbreviation }) => (
-                  <th className="hl-player-col-stat" scope="col" key={key} title={scoringDescription(key)}>{abbreviation}</th>
+                  <th className="hl-player-col-stat" scope="col" key={key} title={scoringDescription(key, players.find(p=>p.scoringWeights)?.scoringWeights)}>{abbreviation}</th>
                 ))}
                 <th className="hl-player-col-stat" scope="col">FP</th>
                 <th className="hl-player-col-stat" scope="col">FPG</th>
@@ -1481,6 +1485,14 @@ export function LeagueDashboard({ league, teams, session }) {
           </>
         }
       />
+
+      <LeagueHelpPanel key={'help-'+leagueId} leagueId={leagueId} />
+      <LeagueCommunications key={leagueId} leagueId={leagueId} canManage={commissioner} />
+
+      {league.status === 'frozen' && <div className="hl-inline-notice" role="status">
+        <AlertTriangle aria-hidden="true" /><div><strong>League competition is paused</strong>
+          <span>Manager transactions are paused. Saved deadlines remain unchanged; the commissioner will review processing before resuming.</span></div>
+      </div>}
 
       {!seasonId && (
         <div className="hl-inline-notice" role="status">

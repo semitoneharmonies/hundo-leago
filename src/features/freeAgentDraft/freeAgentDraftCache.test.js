@@ -58,6 +58,18 @@ function privateQuery(client, { teamId = IDS.team, assignmentId = IDS.assignment
 }
 
 describe("FAD private cache policy", () => {
+  it("retains authorized Goon cards without a deadline and preserves other-league expiry", async () => {
+    for (const leagueId of ["48e59cfb-b12d-4dfb-ae1a-4d8b3512ef03", "bbfb5b17-0080-465f-a2cd-ac3d2c946e83"]) {
+      const client = new QueryClient();
+      const query = build(client, privateCandidateCardQuery({ request() {} }, leagueId, IDS.fad, IDS.team, authorization(IDS.assignment)));
+      await sweepPrivateCandidateQueries(client, { leagueId, fadId: IDS.fad, phase: "cards_open", serverNowMs: 2000,
+        candidateDeadlineAtMs: null, authorizationEvidence: [authorization(IDS.assignment).authorizationEvidence] });
+      expect(Boolean(client.getQueryCache().find({ queryKey: query.queryKey }))).toBe(leagueId.startsWith("48e59"));
+      await sweepPrivateCandidateQueries(client, { leagueId, fadId: IDS.fad, phase: "cards_open", serverNowMs: 2000,
+        candidateDeadlineAtMs: null, authorizationEvidence: [] });
+      expect(client.getQueryCache().find({ queryKey: query.queryKey })).toBeUndefined();
+    }
+  });
   it("recognizes actual Query instances and their exact metadata", () => {
     const client = new QueryClient();
     const card = privateQuery(client);

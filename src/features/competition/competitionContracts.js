@@ -1,6 +1,6 @@
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
 
-import { validateExpandedScoring } from "../../shared/scoringCategories.js";
+import { validateExpandedScoring, validateScoringWeights } from "../../shared/scoringCategories.js";
 
 const ID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 
@@ -88,7 +88,14 @@ function validateTeamScore(teamScore, side, expectedTeamId) {
     Array.isArray(teamScore.players),
     `The ${side} player scores are invalid.`
   );
-  for (const player of teamScore.players) validatePlayerScore(player, side);
+  if (teamScore.scoringWeights) validateScoringWeights(teamScore.scoringWeights);
+  for (const player of teamScore.players) {
+    validatePlayerScore(player, side);
+    if (player.scoringWeights || teamScore.scoringWeights) contract(
+      player.scoringRuleVersion === teamScore.scoringRuleVersion &&
+      JSON.stringify(player.scoringWeights) === JSON.stringify(teamScore.scoringWeights),
+      'The matchup uses inconsistent scoring values.');
+  }
   contract(
     new Set(teamScore.players.map((player) => player.playerId)).size ===
       teamScore.players.length,

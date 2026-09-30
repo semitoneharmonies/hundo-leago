@@ -8,7 +8,6 @@ const SHA256_HEX = /^[0-9a-f]{64}$/;
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 const MAX_TIMESTAMP_MS = 8_640_000_000_000_000;
 const MAX_UINT32 = 0xffff_ffff;
-const CREATION_CUTOFF_LEAD_MS = 3_600_000;
 
 export const AUCTION_SOURCE_KINDS = Object.freeze([
   "ordinary_weekly",
@@ -458,7 +457,7 @@ function auctionContext(value, location) {
     stableId(value.fadRolloverId, `${location}.fadRolloverId`);
     const target = timestamp(value.targetRolloverAtMs, `${location}.targetRolloverAtMs`);
     const cutoff = timestamp(value.creationCutoffAtMs, `${location}.creationCutoffAtMs`);
-    contract(cutoff === target - CREATION_CUTOFF_LEAD_MS, `${location} cutoff is inconsistent.`);
+    contract(cutoff <= target, `${location} cutoff is inconsistent.`);
     const originAllowed = restricted
       ? value.fadOrigin === "candidate_tie_restricted"
       : [
@@ -725,7 +724,7 @@ function startTeam(value, location) {
       stableId(value.fadRolloverId, `${location}.fadRolloverId`);
       const target = timestamp(value.targetRolloverAtMs, `${location}.targetRolloverAtMs`);
       const cutoff = timestamp(value.creationCutoffAtMs, `${location}.creationCutoffAtMs`);
-      contract(cutoff === target - CREATION_CUTOFF_LEAD_MS, `${location} cutoff is inconsistent.`);
+      contract(cutoff <= target, `${location} cutoff is inconsistent.`);
     }
   }
 }

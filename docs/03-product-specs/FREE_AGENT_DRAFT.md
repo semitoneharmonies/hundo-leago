@@ -1,4 +1,64 @@
-# Hundo Leago — Free Agent Draft
+# Hundo Leago - Free Agent Draft
+
+## Soft Candidate Card deadline clarification - 2026-09-29
+
+The Candidate Card deadline is a target. At that time the worker automatically
+processes cards only when every participating card is complete and valid.
+Otherwise it records a hold and managers retain access to their own open cards.
+For safety, incomplete and invalid cards hold processing as well as empty cards.
+Finishing the last card after a hold does not release that hold by itself.
+
+A current commissioner or administrator can review team names and readiness,
+enter a reason, and explicitly authorize processing of the valid saved offers.
+This preview does not reveal players, amounts, contract terms or other private
+card contents. Confirmation uses current authority, a fresh preview and a
+repeat-safe command. Processing locks cards using the existing allocation rules.
+Existing completed results are preserved.
+
+This changes the older hard-deadline editing and automatic-lock rules below.
+Existing commissioner help grants retain their explicit expiry and scope; a
+hold does not extend permission to see another manager's private card.
+While cards remain open, a commissioner/admin may preview and confirm a future
+target and revised planned round dates. This clears the hold and resumes the
+automatic completeness check at the new target. Saved cards and original help
+expiry remain intact. Rounds must remain ordered and finish by Week 1.
+During rapid FAD, commissioners/admins can change eligible initial rounds,
+including an already-open round with only direct manager-started open auctions.
+The affected auction closes, resolution jobs, round closes, following openings
+and configured cutoffs move together. Preview shows the affected auction count
+without requesting bidders or offers. Original bids, acceptance receipts, draw
+commitments and locked card records are preserved; managers receive a notice.
+A protected following round also protects the preceding close, because that
+close defines the next opening. Queued nominations, restricted/fallback auctions,
+completed results, overdue processing and extension rounds remain protected.
+Support for those auction/queue paths, extension rounds and round counts remains pending in
+the [controls work plan](../06-work-plans/COMMISSIONER_CONTROLS_2026-09-29.md).
+The current local slice requires at least an hour before the first auction
+rollover for a manual proceed; late holds require a coordinated timing change.
+This clarification and its local checks do not claim a production release.
+
+## Configurable nomination cutoff clarification - 2026-09-29
+
+Commissioners/admins can preview and confirm a cutoff gap in whole minutes
+(0 through 10080) while cards are open or the FAD is in its rapid phase. The
+default remains 60 minutes. A round's cutoff is its closing time minus the gap,
+bounded by its opening. Zero permits nominations up to, but not at, closing.
+At the cutoff, the existing private queue/extension rules apply.
+
+This local slice changes only unused scheduled rounds and the gap for future
+extensions. Any round already referenced by an auction or queued nomination
+keeps its cutoff, even if that record later completes. Completed rounds retain
+their history. The preview lists those retained rounds and flags immediate
+opening/closing of nominations. No card, player, bidder or offer data is loaded.
+Confirmed changes record the actor/reason and send a generic in-app notice.
+
+Open-card date rescheduling retains the configured gap. New queued-nomination,
+fallback and recovery extensions use it too. Original readiness receipts and
+accepted auction/queue clocks remain unchanged. Creation-form gap settings,
+ordinary in-season auction timing, active auction closing-time edits and changes
+to already-used round cutoffs remain in the work plan. This supersedes fixed
+one-hour language below only for rounds changed through this control; it does
+not claim deployment.
 
 ## Actual submitted offer pricing clarification - 2026-09-24
 

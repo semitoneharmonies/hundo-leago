@@ -1,4 +1,4 @@
-import { SCORING_CATEGORIES, scoringWeight } from "../shared/scoringCategories.js";
+import {LeagueScoringReference,ScoringValuesTable} from "./LeagueScoringReference.jsx";
 
 const QUICK_RULES = Object.freeze([
   ["Salary cap", "$100"],
@@ -20,7 +20,7 @@ function RuleSection({ title, children, open = false }) {
   );
 }
 
-function LeagueRulesDropdown({ onClose }) {
+function LeagueRulesDropdown({ onClose, leagueId, httpClient }) {
   return (
     <section
       className="hl-rules-panel"
@@ -57,7 +57,7 @@ function LeagueRulesDropdown({ onClose }) {
             <li>The $100 salary cap includes active-player AAV after retention, retained-salary obligations and buyout penalties. Bench, Injured Reserve and Prospects salaries do not count against the cap.</li>
             <li>Your active lineup locks on the first day of each matchup week. Most weeks start Monday; opening week and weeks after a break can start on another day. Check your roster in Teams for the exact date and time of the next lock. Only players in that saved lineup can score for that week. Later moves do not change earlier weeks.</li>
             <li>Bench, injured reserve and prospects do not score.</li>
-            <li>The 2026–27 scoring table below applies to games included in each matchup period. Defence earn an extra 0.15 FP per hit and blocked shot.</li>
+            <li>The scoring table below shows category values for forwards and defence. Commissioners can schedule league scoring changes by matchup week.</li>
             <li>
               A team with an illegal roster or cap position scores nothing until it becomes legal and scoring resumes. Points are not awarded retroactively for the illegal period.
             </li>
@@ -67,16 +67,10 @@ function LeagueRulesDropdown({ onClose }) {
         </RuleSection>
 
         <RuleSection title="2026–27 fantasy scoring" open>
-          <table className="hl-data-table hl-scoring-rules-table">
-            <caption>Fantasy points per recorded stat</caption>
-            <thead><tr><th scope="col">Stat</th><th scope="col">Forward</th><th scope="col">Defence</th></tr></thead>
-            <tbody>{SCORING_CATEGORIES.map(category => (
-              <tr key={category.key}><th scope="row">{category.label}</th><td>{(scoringWeight(category, "F") / 100).toFixed(2)}</td><td>{(scoringWeight(category, "D") / 100).toFixed(2)}</td></tr>
-            ))}</tbody>
-          </table>
+          {leagueId && httpClient ? <LeagueScoringReference key={leagueId} leagueId={leagueId} httpClient={httpClient}/> : <ScoringValuesTable/>}
           <p>Goal points, the shot on goal and the game-winning bonus add together. Deductions can make a player or team total negative.</p>
           <p>Penalties count NHL-recorded infractions, not minutes. A double minor, major or misconduct counts once each; coincidental penalties count individually. Bench penalties and serving another player’s penalty do not count. A drawn penalty counts only when the NHL identifies the player who drew it.</p>
-          <p>Empty-net goals use the NHL’s recorded strength. A successful penalty shot earns 3.00 goal points. Shootouts earn no points.</p>
+          <p>Empty-net goals use the NHL’s recorded strength. A successful penalty shot uses the even-strength goal value. Shootouts earn no points.</p>
           <p>Late or corrected regular-season stats update earlier weeks, results and standings using the original locked lineup. Previous result versions remain recorded. Earlier seasons retain their original scoring rules.</p>
         </RuleSection>
 

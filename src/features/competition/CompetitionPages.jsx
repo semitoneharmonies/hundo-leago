@@ -30,6 +30,18 @@ import {
 } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { CommissionerFadPanel } from "../freeAgentDraft/CommissionerFadPanel.jsx";
+import { TradeDeadlineControls } from '../commissioner/TradeDeadlineControls.jsx';
+import { LeagueCalendarControls } from '../commissioner/LeagueCalendarControls.jsx';
+import { LeagueAuctionScheduleControls } from '../commissioner/LeagueAuctionScheduleControls.jsx';
+import { LeagueScoringControls } from '../commissioner/LeagueScoringControls.jsx';
+import { SeasonRolloverPreview } from '../commissioner/SeasonRolloverPreview.jsx';
+import { LeagueRecoveryPanel } from '../commissioner/LeagueRecoveryPanel.jsx';
+import { GuidedLeagueResetControls } from '../commissioner/GuidedLeagueResetControls.jsx';
+import { CorrectionReversalControls } from '../commissioner/CorrectionReversalControls.jsx';
+import { LeagueHelpPanel } from '../leagues/LeagueHelpPanel.jsx';
+import { LeaguePauseControls } from '../commissioner/LeaguePauseControls.jsx';
+import { LeaguePickRepairControls } from '../commissioner/LeaguePickRepairControls.jsx';
+import { LeagueManagementPanel } from '../commissioner/LeagueManagementPanel.jsx';
 import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
@@ -626,7 +638,7 @@ function MatchupPlayer({ team, slot, expanded, leagueId }) {
         </li>
         {categories.map(category => {
           const count = available ? (expanded ? player.scoringStats?.[category.key] : player[category.key]) : null;
-          const weight = expanded ? scoringWeight(category, positionGroup) : null;
+          const weight = expanded ? scoringWeight(category, positionGroup, player?.scoringWeights) : null;
           const description = count == null ? `${category.label}: stat unavailable`
             : expanded ? `${category.label}: ${count} × ${(weight / 100).toFixed(2)} = ${(count * weight / 100).toFixed(2)} FP`
               : `${category.label}: ${count}`;
@@ -705,7 +717,7 @@ function MatchupCard({ matchup, teams = [] }) {
               no fantasy points were awarded.
             </p>
           ) : null}
-          {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide />}
+          {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide weights={scoring.home.scoringWeights || scoring.away.scoringWeights} />}
           <MatchupStatHeaders scoring={scoring} />
           <ol className="hl-matchup-player-pairs" aria-label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}>
             {homeSlots.map((homeSlot, index) => (
@@ -1162,6 +1174,7 @@ function PreviewAction({
             </details>}
             {title === "Schedule generation" && preview.draftTiming && <section aria-label="Free Agent Draft timetable">
               <p>Candidate Card deadline: {previewTimestamp(preview.draftTiming.candidateDeadlineAtMs, timeZone)} ({timeZone})</p>
+              <p>New-auction cutoff: {preview.draftTiming.auctionCreationCutoffMinutes ?? 60} minutes before rollover.</p>
               <details open><summary>{preview.draftTiming.rolloverTimesAtMs.length} rapid-auction rounds</summary>
                 <ol>{preview.draftTiming.rolloverTimesAtMs.map((time, index) => <li key={index}>Round {index + 1}: {previewTimestamp(time, timeZone)}</li>)}</ol>
               </details>
@@ -1231,12 +1244,14 @@ export function CommissionerCompetitionPage() {
   const rolloverValues = seasonEdits.rollovers ?? suggestedRollovers(candidateDeadlineAtMs, calendarDates.firstWeekStartsAtMs).map((time) => calendarInputValue(time, timeZone));
   const rolloverTimesAtMs = rolloverValues.map((value) => calendarTimestamp(value, timeZone));
   const timingIssue = draftTimingIssue(candidateDeadlineAtMs, rolloverTimesAtMs, calendarDates.firstWeekStartsAtMs, nowMs);
-  const calendar = { ...calendarDates, draftTiming: { candidateDeadlineAtMs, rolloverTimesAtMs } };
+  const auctionCreationCutoffMinutes=Number(seasonEdits.auctionCreationCutoffMinutes ?? 60);
+  const cutoffReady=String(seasonEdits.auctionCreationCutoffMinutes ?? 60).trim()!==''&&Number.isSafeInteger(auctionCreationCutoffMinutes)&&auctionCreationCutoffMinutes>=0&&auctionCreationCutoffMinutes<=10080;
+  const calendar = { ...calendarDates, draftTiming: { candidateDeadlineAtMs, rolloverTimesAtMs, auctionCreationCutoffMinutes } };
   const calendarKey = JSON.stringify(calendar);
   const schedulePreview = schedulePreviewState?.seasonId === seasonId && schedulePreviewState.calendarKey === calendarKey
     ? schedulePreviewState.preview : null;
   const setSchedulePreview = (preview, previewCalendarKey) => setSchedulePreviewState(preview ? { seasonId, calendarKey: previewCalendarKey, preview } : null);
-  const calendarReady = Object.values(calendarDates).every(Number.isSafeInteger) && timingIssue === null;
+  const calendarReady = Object.values(calendarDates).every(Number.isSafeInteger) && timingIssue === null && cutoffReady;
   function changeCalendarField(key, value) {
     setCalendarEdits((current) => ({ ...current, [seasonId]: {
       ...current[seasonId],
@@ -1306,10 +1321,22 @@ export function CommissionerCompetitionPage() {
             <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
             <Link className="hl-button hl-button--secondary" to={routePaths.leagueCommissionerRoster(leagueId)}>Manage rosters</Link>
           </Surface>
+          <TradeDeadlineControls key={leagueId} leagueId={leagueId} />
+          <LeagueCalendarControls key={'calendar-' + leagueId} leagueId={leagueId} />
+          <SeasonRolloverPreview key={'season-preview-'+leagueId} leagueId={leagueId} />
+          <LeagueRecoveryPanel key={'recovery-'+leagueId} leagueId={leagueId} seasonId={seasonId} />
+          <CorrectionReversalControls key={'reversals-'+leagueId} leagueId={leagueId} />
+          <LeagueHelpPanel key={'help-'+leagueId} leagueId={leagueId} />
+          <LeaguePauseControls key={'pause-' + leagueId} leagueId={leagueId} />
+          <GuidedLeagueResetControls key={'reset-'+leagueId} leagueId={leagueId} />
+          <LeaguePickRepairControls key={'picks-' + leagueId} leagueId={leagueId} />
+          <LeagueManagementPanel key={'management-' + leagueId} leagueId={leagueId} />
+          <LeagueAuctionScheduleControls key={'auction-schedule-' + leagueId} leagueId={leagueId} />
+          <LeagueScoringControls key={'scoring-' + leagueId} leagueId={leagueId} />
           {availableWeeks.length > 0 ? (
             <Surface className="hl-competition-setup-card">
               <h2>Schedule generation</h2>
-              <p>This season already has a schedule. Use Edit matchup week below to review a week.</p>
+              <p>This season already has a schedule. Use League calendar above to change dates, or Advance matchup week below to process a due status transition.</p>
               <Link className="hl-button hl-button--secondary" to={routePaths.leagueMatchups(leagueId)}>View schedule</Link>
             </Surface>
           ) : (
@@ -1344,6 +1371,8 @@ export function CommissionerCompetitionPage() {
             </fieldset>
             <fieldset className="hl-competition-setup-card" disabled={scheduleMutation.isPending || setup.mutation.isPending}>
               <legend>Rapid-auction rollovers</legend>
+              <label className="hl-field">Minutes before rollover to stop starting auctions<input required type="number" min="0" max="10080" step="1" value={seasonEdits.auctionCreationCutoffMinutes ?? 60} onChange={e=>changeCalendarField("auctionCreationCutoffMinutes",e.target.value)}/></label>
+              <p>Use 0 to allow new auctions until rollover. Nominations received after the cutoff queue for the next round. You can adjust this gap later in FAD controls.</p>
               <p>Start with one rollover every 24 hours, then adjust any date or time. Extra rounds fit into the final day. Every rollover must follow the previous round and finish by Week 1.</p>
               <label className="hl-field">Total rapid-auction rounds
                 <input type="number" min="1" max={MAX_ROLLOVERS} step="1" value={seasonEdits.roundCount ?? rolloverValues.length} onChange={(event) => {
@@ -1362,7 +1391,7 @@ export function CommissionerCompetitionPage() {
                 <input type="datetime-local" value={value} onChange={(event) => changeCalendarField("rollovers", rolloverValues.map((time, position) => position === index ? event.target.value : time))} />
               </label>)}</div>
             </fieldset>
-            {!calendarReady && <p role="status">{timingIssue || "Complete every date in the season calendar."}</p>}
+            {!calendarReady && <p role="status">{timingIssue || (!cutoffReady ? "Choose a whole-minute auction cutoff gap from 0 to 10080." : "Complete every date in the season calendar.")}</p>}
             {setup.loading && <LoadingBlock>Loading league setup…</LoadingBlock>}
             {setup.error && <ErrorBlock error={setup.error} fallback="League setup could not be loaded." />}
             {setup.needsPreparation && !setup.loading && !setup.error && <>
@@ -1372,7 +1401,7 @@ export function CommissionerCompetitionPage() {
               {setupReview && <section aria-label="League setup review">
                 <h3>Review league setup</h3>
                 <dl>{[["Season trade deadline", tradeDeadlineAtMs], ["Candidate Card deadline", candidateDeadlineAtMs], ...calendarFields.map(([key, label]) => [label, calendarDates[key]])].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{previewTimestamp(value, timeZone)}</dd></div>)}</dl>
-                <p>{Number.isSafeInteger(savedTradeDeadline) ? "Keep the saved trade deadline and prepare" : "Save this trade deadline and prepare"} {setup.managedTeamCount} teams for the inaugural draft? The trade deadline is fixed once saved. Next, review the schedule preview before confirming the draft timetable.</p>
+                <p>{Number.isSafeInteger(savedTradeDeadline) ? "Keep the saved trade deadline and prepare" : "Save this trade deadline and prepare"} {setup.managedTeamCount} teams for the inaugural draft? You can adjust the saved trade deadline later in commissioner controls. Next, review the schedule preview before confirming the draft timetable.</p>
                 <div className="hl-button-row">
                   <button type="button" className="hl-button hl-button--primary" disabled={!calendarReady || !setupReady || setup.mutation.isPending} onClick={prepareAndPreview}>{setup.mutation.isPending ? "Preparing…" : Number.isSafeInteger(savedTradeDeadline) ? "Prepare league and preview schedule" : "Save trade deadline and prepare league"}</button>
                   <button type="button" className="hl-button hl-button--quiet" disabled={setup.mutation.isPending} onClick={() => setSetupReview(false)}>Back to dates</button>
@@ -1382,7 +1411,7 @@ export function CommissionerCompetitionPage() {
             {setup.mutation.error && <ErrorBlock error={setup.mutation.error} fallback="League preparation could not be completed. Review the saved trade deadline and try again." />}
           </PreviewAction>
           )}
-          <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview} timeZone={timeZone}
+          <PreviewAction title="Advance matchup week" mutation={weekMutation} preview={weekPreview} timeZone={timeZone}
             previewDisabled={!selectedWeekId || weeks.isPending || weeks.isError}
             confirmDisabled={!selectedWeekId}
             onPreview={() => weekMutation.mutate({ confirmed: false })}
@@ -1412,7 +1441,7 @@ export function CommissionerCompetitionPage() {
               </label>
             ) : null}
           </PreviewAction>
-          <details className="hl-surface hl-seasonal-tools" open={searchParams.has("fadId") || searchParams.has("recoveryId")}>
+          <details id="fad-recovery" className="hl-surface hl-seasonal-tools" open={searchParams.has("fadId") || searchParams.has("recoveryId") || searchParams.get("tools")==="fad"}>
             <summary>Seasonal tools · Free Agent Draft</summary>
             <CommissionerFadPanel leagueId={leagueId} seasonId={seasonId} timeZone={context.league?.timezone} />
           </details>

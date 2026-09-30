@@ -1,0 +1,19 @@
+.section { margin-block: 1rem; padding: clamp(.85rem, 2vw, 1.5rem); }
+.notice { border-inline-start: 3px solid var(--hl-accent, #6ee7b7); padding: .8rem 1rem; margin-block: .75rem; overflow-wrap: anywhere; }
+.notice h3 { margin: 0 0 .4rem; }
+.message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.meta { font-size: .85rem; opacity: .8; }
+.editor { display: grid; gap: .85rem; margin-top: 1rem; }
+.editor label { display: grid; gap: .35rem; }
+.editor input, .editor select, .editor textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: .65rem; color: inherit; background: var(--hl-surface, #15202d); border: 1px solid #607184; border-radius: .4rem; font: inherit; }
+.editor textarea { min-height: 7rem; resize: vertical; }
+.editor .check { display: flex; align-items: center; gap: .65rem; }
+.check input { width: auto; }
+.actions { display: flex; gap: .7rem; flex-wrap: wrap; }
+.preview { border: 1px solid #607184; border-radius: .5rem; padding: 1rem; overflow-wrap: anywhere; }
+.recipients { max-height: 12rem; overflow: auto; }
+.cards { display: grid; gap: .5rem; padding: 0; list-style: none; }
+.cards li { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid #607184; padding: .5rem 0; }
+.history { margin-top: 1.5rem; }
+.section summary { cursor: pointer; font-weight: 600; padding-block: .5rem; }
+@media (min-width: 700px) { .editor { max-width: 760px; } }

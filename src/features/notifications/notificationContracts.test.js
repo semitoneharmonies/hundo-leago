@@ -192,6 +192,45 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+it('validates trade deadline notices without accepting cross-league dates',()=>{
+  const data={leagueId:ids.leagueId,tradeDeadlineAtMs:1_800_000_000_000,message:'The trade deadline changed.'};
+  expect(validateNotifications(page('league_trade_deadline_changed',data))).toBe(true);
+  for(const bad of [{...data,leagueId:ids.teamId},{...data,tradeDeadlineAtMs:'tomorrow'},{...data,message:''}]){
+    expect(()=>validateNotifications(page('league_trade_deadline_changed',bad))).toThrow();
+  }
+});
+it('validates auction timing notices and their league and auction destination',()=>{
+  const data={leagueId:ids.leagueId,auctionId:ids.notificationId,closesAtMs:1_800_000_000_000,message:'Auction closing time changed.'};
+  expect(validateNotifications(page('league_auction_timing_changed',data))).toBe(true);
+  for(const bad of [{...data,leagueId:ids.teamId},{...data,auctionId:'bad'},{...data,closesAtMs:'tomorrow'},{...data,message:''}]){
+    expect(()=>validateNotifications(page('league_auction_timing_changed',bad))).toThrow();
+  }
+});
+
+describe("League communication notification contracts", () => {
+  it("validates deadline notices without private card contents", () => {
+    const data = { message: "Candidate Card processing is on hold.", leagueId: ids.leagueId, fadId: ids.notificationId };
+    expect(validateNotifications(page("league_fad_deadline_changed", data))).toBe(true);
+    for (const invalid of [{ ...data, fadId: "invalid" }, { ...data, leagueId: ids.playerId }, { ...data, message: "" }]) {
+      expect(() => validateNotifications(page("league_fad_deadline_changed", invalid))).toThrow();
+    }
+  });
+  for (const type of ["league_announcement", "league_reminder"]) {
+    it(`validates bounded ${type} content and its league identity`, () => {
+      const message = { title: "Draft deadline", message: "Please finish your card.",
+        leagueId: ids.leagueId, communicationId: ids.notificationId };
+      expect(validateNotifications(page(type, message))).toBe(true);
+      for (const invalid of [
+        { ...message, leagueId: ids.playerId },
+        { ...message, communicationId: "invalid" },
+        { ...message, title: " " },
+        { ...message, title: "a".repeat(121) },
+        { ...message, message: "a".repeat(3001) },
+      ]) expect(() => validateNotifications(page(type, invalid))).toThrow();
+    });
+  }
+});
+
 describe("FAD notification response contracts", () => {
   it("accepts all 13 exact backend message and destination projections", () => {
     const values = samples();

@@ -1419,3 +1419,19 @@ docs/04-technical-specs/API_CONTRACTS.md
 docs/07-testing/TESTING_STRATEGY.md
 docs/10-decisions/DECISION_LOG.md
 ```
+
+## League-configurable values — approved 29 September 2026
+
+Commissioner/admin may edit all expanded-scoring category values, including
+separate forward/defence weights and the game-winning goal bonus, for their league.
+The default tables above remain the initial values. New values are versioned for
+an effective matchup week; an unfinished current week can be selected explicitly.
+Live points then use that week's complete eligible statistics and original lineup.
+Completed results are preserved and require explicit result correction.
+
+The editor previews old/new weights and can compare current or historical scores
+without changing recorded results. Later NHL corrections retain the rules for the
+original matchup. League season totals and rankings use current league values;
+the global catalogue keeps default values. League members can view the actual
+weights for each week in the rules menu. Changes are audited and announced in-app.
+Implementation contract: ../04-technical-specs/LEAGUE_SCORING_CONTROLS.md.

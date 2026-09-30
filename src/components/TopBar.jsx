@@ -379,7 +379,7 @@ function TopBar({ freezeBanner }) {
                 </div>
                 {rulesOpen && (
                   <div className="hl-rules-menu" id="league-rules-panel">
-                    <LeagueRulesDropdown onClose={() => setRulesOpen(false)} />
+                    <LeagueRulesDropdown key={leagueId || 'global'} leagueId={leagueId} httpClient={session.httpClient} onClose={() => setRulesOpen(false)} />
                   </div>
                 )}
               </nav>
