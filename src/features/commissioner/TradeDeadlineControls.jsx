@@ -11,7 +11,7 @@ const timestamp = value => Number.isSafeInteger(value) && value >= 0 && value <=
 const nullableTime = value => value === null || timestamp(value);
 const validZone = value => { try { return typeof value === 'string' && Boolean(new Intl.DateTimeFormat('en', { timeZone: value })); } catch { return false; } };
 
-export function TradeDeadlineControls({ leagueId }) {
+export function TradeDeadlineControls({ leagueId, renderCalendar, embedded=false }) {
   const session = useSession();
   const queryClient = useQueryClient();
   const [editor, setEditor] = useState(null);
@@ -47,7 +47,13 @@ export function TradeDeadlineControls({ leagueId }) {
   const busy = review.isPending || apply.isPending;
   const display = (time, zone = state.data?.timeZone) => time === null ? 'Not set' : new Intl.DateTimeFormat(undefined, { timeZone: zone, dateStyle: 'medium', timeStyle: 'long' }).format(time);
   function edit(change) { setEditor(value => ({ ...value, ...change })); setPreview(null); setReceipt(''); review.reset(); apply.reset(); }
-  return <Surface as="section" className={styles.section} aria-label="Trade deadline controls">
+  const Container=embedded ? 'div' : Surface;
+  return <Container as={embedded ? undefined : "section"} className={styles.section} aria-label="Trade deadline controls">
+    {renderCalendar?.({disabled:busy || !state.data?.canEdit, editing:!!editor, atMs:editor ? calendarTimestamp(editor.date,editor.timeZone) : state.data?.tradeDeadlineAtMs, onSelectDay:day=>{
+      if(!state.data?.canEdit||busy)return;
+      const zone=state.data.timeZone, previous=editor?.date||calendarInputValue(state.data.tradeDeadlineAtMs,zone);
+      setEditor({date:day+'T'+(previous.slice(11)||'16:00'),timeZone:zone,reason:editor?.reason||''});setPreview(null);setReceipt('');review.reset();apply.reset();
+    }})}
     <h2>Trade deadline</h2>
     <p>Change the trade deadline during setup or the season. Choose a future time; extending a passed deadline permits new proposals once the league’s other trading requirements are met.</p>
     {state.isPending && <LoadingBlock>Checking the trade deadline…</LoadingBlock>}
@@ -86,5 +92,5 @@ export function TradeDeadlineControls({ leagueId }) {
       {apply.error && <ErrorBlock error={apply.error} fallback="The deadline could not be confirmed. Retry, or review again if the league changed." />}
     </section>}
     {receipt && <p role="status">{receipt}</p>}
-  </Surface>;
+  </Container>;
 }

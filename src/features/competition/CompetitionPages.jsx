@@ -32,7 +32,6 @@ import {
 } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { CommissionerFadPanel } from "../freeAgentDraft/CommissionerFadPanel.jsx";
-import { TradeDeadlineControls } from '../commissioner/TradeDeadlineControls.jsx';
 import { LeagueCalendarControls } from '../commissioner/LeagueCalendarControls.jsx';
 import { LeagueAuctionScheduleControls } from '../commissioner/LeagueAuctionScheduleControls.jsx';
 import { LeagueScoringControls } from '../commissioner/LeagueScoringControls.jsx';
@@ -223,7 +222,7 @@ function useCompetitionContext(leagueId) {
   return { session, leagues, league, seasonId: league?.currentSeason?.id || null };
 }
 
-function CompetitionGate({ context, title, children }) {
+function CompetitionGate({ context, title, children, className="" }) {
   if (context.session.status === "unauthenticated") {
     return <Navigate to={routePaths.home} replace state={{ reason: "sign-in" }} />;
   }
@@ -238,7 +237,7 @@ function CompetitionGate({ context, title, children }) {
     return <main className="hl-page"><PageHeading eyebrow={context.league.name} title={title} /><Surface><EmptyBlock title="No active season is configured for this league." /></Surface></main>;
   }
   return (
-    <main className="hl-page hl-page--wide hl-competition-page">
+    <main className={"hl-page hl-page--wide hl-competition-page "+className}>
       <PageHeading
         eyebrow={context.league.name}
         title={title}
@@ -1317,13 +1316,13 @@ export function CommissionerCompetitionPage() {
     } catch { setSetupReview(false); }
   }
   return (
-    <CompetitionGate context={context} title={pageTitle}>
+    <CompetitionGate context={context} title={pageTitle} className={section==='calendar'?'hl-commissioner-calendar-page':''}>
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
           <nav className="hl-commissioner-section-nav" aria-label="Commissioner sections"><Link to={routePaths.leagueCommissioner(leagueId)}>All commissioner tools</Link></nav>
           {section==='overview' && <div className="hl-commissioner-grid">{commissionerSections.map(([key,label,description])=><Link className="hl-surface hl-commissioner-tile" key={key} to={commissionerSectionPath(leagueId,key)}><h2>{label}</h2><p>{description}</p></Link>)}</div>}
           {section!=='overview' && !commissionerSections.some(([key])=>key===section) && <p role="alert">This commissioner tool was not found. Choose a tool from the menu.</p>}
-          {section==='calendar' && <><LeagueCalendarControls key={'calendar-'+leagueId} leagueId={leagueId}/><TradeDeadlineControls key={leagueId} leagueId={leagueId}/></>}
+          {section==='calendar' && <LeagueCalendarControls key={'calendar-'+leagueId} leagueId={leagueId}/>}
           {section==='season' && <><SeasonRolloverPreview key={'season-preview-'+leagueId} leagueId={leagueId}/><GuidedLeagueResetControls key={'reset-'+leagueId} leagueId={leagueId}/></>}
           {section==='recovery' && <><LeagueRecoveryPanel key={'recovery-'+leagueId} leagueId={leagueId} seasonId={seasonId}/><LeaguePickRepairControls key={'picks-'+leagueId} leagueId={leagueId}/><CorrectionReversalControls key={'reversals-'+leagueId} leagueId={leagueId}/></>}
           {section==='help' && <LeagueHelpPanel key={'help-'+leagueId} leagueId={leagueId} commissionerView/>}

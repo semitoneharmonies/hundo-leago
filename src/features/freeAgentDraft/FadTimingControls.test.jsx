@@ -10,7 +10,7 @@ const status={leagueId,fadId,deadlineAtMs:Date.parse('2026-10-01T16:00:00Z'),wee
   rolloverTimesAtMs:[Date.parse('2026-10-03T16:00:00Z'),Date.parse('2026-10-04T16:00:00Z')]};
 status.canEditDeadline=true;status.canEditActiveAuctions=false;
 status.roundDates=[1,2].map(sequence=>({sequence,canEdit:true,blockedReason:null}));
-function setup({data=status,failFirst=false}={}) {
+function setup({data=status,failFirst=false,props={}}={}) {
   let attempts=0;
   const request=vi.fn(async(url,options={})=>{
     let result=data;
@@ -19,7 +19,7 @@ function setup({data=status,failFirst=false}={}) {
     options.validateData?.(result);return{data:result};
   });
   render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}})}>
-    <SessionContext.Provider value={{status:'authenticated',httpClient:{request}}}><FadTimingControls leagueId={leagueId} fadId={fadId}/></SessionContext.Provider>
+    <SessionContext.Provider value={{status:'authenticated',httpClient:{request}}}><FadTimingControls leagueId={leagueId} fadId={fadId} {...props}/></SessionContext.Provider>
   </QueryClientProvider>);
   return{request,user:userEvent.setup()};
 }
@@ -31,6 +31,21 @@ async function review(user) {
   await screen.findByRole('region',{name:'Draft timing preview'});
 }
 describe('FAD timing controls',()=>{
+ it('uses the league time zone for calendar-selected dates and keeps untouched instants exact',async()=>{
+  const data={...status,deadlineAtMs:status.deadlineAtMs+123,rolloverTimesAtMs:status.rolloverTimesAtMs.map(t=>t+456)};
+  const {request,user}=setup({data,props:{timeZone:'America/Vancouver',calendarField:'1',renderCalendar:({onSelectDay,disabled})=><button disabled={disabled} onClick={()=>onSelectDay('2026-10-05')}>Select calendar day</button>}});
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Select calendar day'})).toBeEnabled());await user.click(screen.getByRole('button',{name:'Select calendar day'}));
+  expect(screen.getByLabelText('Round 2 closes')).toHaveValue('2026-10-05T09:00');
+  expect(request.mock.calls.some(([,o])=>o.method==='POST')).toBe(false);
+  fireEvent.change(screen.getByLabelText('Reason for changing dates'),{target:{value:'Move the second round'}});
+  await user.click(screen.getByRole('button',{name:'Review date changes'}));await screen.findByRole('region',{name:'Draft timing preview'});
+  const body=request.mock.calls.find(([url])=>url.endsWith('/preview'))[1].body;
+  expect(body.deadlineAtMs).toBe(data.deadlineAtMs);expect(body.rolloverTimesAtMs[0]).toBe(data.rolloverTimesAtMs[0]);expect(body.rolloverTimesAtMs[1]).toBe(Date.parse('2026-10-05T16:00:00Z'));
+ });
+ it('disables date selection for protected draft targets',async()=>{
+  setup({data:{...status,canEditDeadline:false},props:{renderCalendar:({disabled})=><button disabled={disabled}>Select calendar day</button>}});
+  await screen.findByText(/Candidate Card target:/);expect(screen.getByRole('button',{name:'Select calendar day'})).toBeDisabled();
+ });
   it('reviews the number of affected active auctions without requesting bid contents',async()=>{
     const {user,request}=setup({data:{...status,held:false,canEditDeadline:false,canEditActiveAuctions:true}});
     await user.click(await screen.findByRole('button',{name:'Edit round dates'}));

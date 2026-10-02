@@ -10,6 +10,7 @@ const state={leagueId,seasonId:'synthetic-season',timeZone:'America/Vancouver',s
  fantasyPlayoffsStartAtMs:at('2027-03-15T07:00:00Z'),fantasyPlayoffsEndAtMs:at('2027-04-12T07:00:00Z')},
  weeks:[{id:'11111111-1111-4111-8111-111111111112',startsAtMs:at('2026-10-19T07:00:00Z'),baselineAtMs:at('2026-10-19T07:00:00Z'),
  locksAtMs:at('2026-10-19T19:00:00Z'),endsAtMs:at('2026-10-26T07:00:00Z'),rollsOverAtMs:at('2026-10-26T07:00:00Z')}],
+ events:[{id:'trade-deadline',kind:'trade',label:'Trade deadline',atMs:at('2027-02-15T00:00:00Z')}],
  weekStatus:[{id:'11111111-1111-4111-8111-111111111112',sequence:2,status:'scheduled'}],history:[]};
 window.calendarRequests=[];
 const auctionMode=new URLSearchParams(location.search).has('auctions');
@@ -44,7 +45,7 @@ const httpClient={async request(url,options){
 }};
 createRoot(document.getElementById('root')).render(<QueryClientProvider client={new QueryClient()}>
  <SessionContext.Provider value={{status:'authenticated',httpClient}}>
-  <main style={{maxWidth:1000,margin:'24px auto',padding:16}}><h1>Synthetic commissioner calendar</h1>
+  <main style={{maxWidth:1450,margin:'24px auto',padding:16}}><h1>Synthetic commissioner calendar</h1>
    {auctionMode?<LeagueAuctionScheduleControls leagueId={leagueId}/>:<LeagueCalendarControls leagueId={leagueId}/>}</main>
  </SessionContext.Provider>
 </QueryClientProvider>);

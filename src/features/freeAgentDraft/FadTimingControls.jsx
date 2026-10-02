@@ -5,14 +5,16 @@ import { createIdempotencyKey } from '../../shared/api/idempotency.js';
 import { ResponseContractError } from '../../shared/api/responseContracts.js';
 import { useSession } from '../session/sessionContext.js';
 import styles from '../commissioner/LeagueCommunications.module.css';
+import {calendarInputValue,calendarTimestamp} from '../../shared/leagueCalendar.js';
 
-function localInput(time) {
-  const date = new Date(time);
-  return new Date(time - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
-}
-const display = time => new Date(time).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-
-export function FadTimingControls({ leagueId, fadId }) {
+export function FadTimingControls({ leagueId, fadId, timeZone=Intl.DateTimeFormat().resolvedOptions().timeZone, renderCalendar, calendarField='deadline', embedded=false }) {
+  const localInput=time=>calendarInputValue(time,timeZone)+':'+String(new Date(time).getUTCSeconds()).padStart(2,'0');
+  const display=time=>new Intl.DateTimeFormat(undefined,{timeZone,dateStyle:'medium',timeStyle:'short'}).format(time);
+  const enteredTime=(value,original)=>{
+    if(value===localInput(original))return original;
+    const minute=calendarTimestamp(value.slice(0,16),timeZone),seconds=value.length===19?Number(value.slice(17)):0;
+    return minute!==null&&Number.isInteger(seconds)&&seconds>=0&&seconds<60?minute+seconds*1000:null;
+  };
   const session = useSession();
   const queryClient = useQueryClient();
   const [editor, setEditor] = useState(null);
@@ -48,7 +50,7 @@ export function FadTimingControls({ leagueId, fadId }) {
     queryFn: ({ signal }) => request('', { signal }), enabled: session.status === 'authenticated',
     meta: { private: true, leagueId }, retry: false, refetchInterval: 10_000 });
   const review = useMutation({ mutationFn: () => request('/preview', { method: 'POST', body: {
-    deadlineAtMs: new Date(editor.deadline).getTime(), rolloverTimesAtMs: editor.rounds.map(t => new Date(t).getTime()), reason: editor.reason } }, 'preview'),
+    deadlineAtMs: enteredTime(editor.deadline,editor.original.deadlineAtMs), rolloverTimesAtMs: editor.rounds.map((t,i) => enteredTime(t,editor.original.rolloverTimesAtMs[i])), reason: editor.reason } }, 'preview'),
     onSuccess: data => setPreview({ ...data, key: createIdempotencyKey('fad-timing') }) });
   const apply = useMutation({ mutationFn: saved => request('/apply', { method: 'POST', idempotencyKey: saved.key,
     body: { ...saved.proposed, previewHash: saved.previewHash, confirmed: true } }, 'accepted'),
@@ -62,7 +64,18 @@ export function FadTimingControls({ leagueId, fadId }) {
   function edit(change) {
     setEditor(current => ({ ...current, ...change })); setPreview(null); setReceipt(''); review.reset(); apply.reset();
   }
-  return <Surface as="section" className={styles.section} aria-label="Edit draft timing">
+  const Container=embedded ? 'div' : Surface;
+  return <Container as={embedded ? undefined : "section"} className={styles.section} aria-label="Edit draft timing">
+    {renderCalendar?.({disabled:busy || !state.data?.canReschedule || (calendarField==='deadline' ? !state.data?.canEditDeadline : !state.data?.roundDates[Number(calendarField)]?.canEdit),editing:!!editor,
+      dates:editor ? {deadlineAtMs:enteredTime(editor.deadline,editor.original.deadlineAtMs),rolloverTimesAtMs:editor.rounds.map((value,i)=>enteredTime(value,editor.original.rolloverTimesAtMs[i]))} : state.data,
+      onSelectDay:day=>{
+        if(busy||!state.data?.canReschedule||(calendarField==='deadline'?!state.data.canEditDeadline:!state.data.roundDates[Number(calendarField)]?.canEdit))return;
+        const next=editor||{deadline:localInput(state.data.deadlineAtMs),rounds:state.data.rolloverTimesAtMs.map(localInput),reason:'',original:state.data};
+        const value=calendarField==='deadline'?next.deadline:next.rounds[Number(calendarField)];
+        const date=day+'T'+value.slice(11);
+        setEditor(calendarField==='deadline'?{...next,deadline:date}:{...next,rounds:next.rounds.map((time,i)=>i===Number(calendarField)?date:time)});
+        setPreview(null);setReceipt('');review.reset();apply.reset();
+      }})}
     <h2>Draft timing</h2>
     {state.isPending && <LoadingBlock>Checking the schedule…</LoadingBlock>}
     {state.error && <ErrorBlock error={state.error} fallback="The draft schedule is unavailable." />}
@@ -71,10 +84,10 @@ export function FadTimingControls({ leagueId, fadId }) {
       <p>All rounds must finish by Week 1: {display(state.data.weekOneAtMs)}.</p>
       {state.data.blockedReason && <p>{state.data.blockedReason}</p>}
       {state.data.canReschedule && !editor && <button type="button" className="hl-button hl-button--secondary"
-        onClick={() => { setEditor({ deadline: localInput(state.data.deadlineAtMs), rounds: state.data.rolloverTimesAtMs.map(localInput), reason: '' }); setReceipt(''); }}>
+        onClick={() => { setEditor({ deadline: localInput(state.data.deadlineAtMs), rounds: state.data.rolloverTimesAtMs.map(localInput), reason: '', original:state.data }); setReceipt(''); }}>
         {state.data.canEditDeadline ? 'Edit target and round dates' : state.data.canEditActiveAuctions ? 'Edit round dates' : 'Edit future round dates'}</button>}
       {editor && state.data.canReschedule && <form className={styles.editor} onSubmit={event => { event.preventDefault(); setPreview(null); apply.reset(); review.mutate(); }}>
-        <p>Dates use your local time zone ({Intl.DateTimeFormat().resolvedOptions().timeZone}). {state.data.canEditDeadline
+        <p>Dates use {timeZone}. {state.data.canEditDeadline
           ? 'Leave time for new nominations before the configured first-round cutoff.'
           : state.data.canEditActiveAuctions
             ? 'You can change eligible rounds and their open manager-started auctions together. Queued nominations, restricted auctions and completed results remain protected.'
@@ -114,5 +127,5 @@ export function FadTimingControls({ leagueId, fadId }) {
       {apply.error && <ErrorBlock error={apply.error} fallback="Dates could not be confirmed. Retry, or review again if the schedule changed." />}
     </section>}
     {receipt && <p role="status">{receipt}</p>}
-  </Surface>;
+  </Container>;
 }

@@ -39,9 +39,10 @@ test('commissioner reviews coordinated calendar dates without private reads or a
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/e2e/fixtures/league-calendar.html');
  await page.getByRole('button',{name:'Edit league calendar'}).click();
+ await page.getByText('Advanced dates and times',{exact:true}).click();
  await page.getByText('Week 2 · scheduled',{exact:true}).click();
  await page.getByLabel('Roster lock — week 2').fill('2026-10-19T13:00');
- await page.getByLabel('Playoffs end').fill('2027-04-11T00:00');
+ await page.getByLabel('Playoffs end',{exact:true}).fill('2027-04-11T00:00');
  await page.getByLabel('Reason for calendar changes').fill('League agreed to revised dates');
  await page.getByRole('button',{name:'Review calendar changes'}).click();
  await expect(page.getByRole('region',{name:'Calendar change preview'})).toContainText('1 pending operations');
@@ -52,4 +53,19 @@ test('commissioner reviews coordinated calendar dates without private reads or a
  expect(await page.evaluate(()=>window.calendarRequests.map(r=>r.method))).toEqual(['GET','POST']);
  expect(await page.evaluate(()=>window.calendarRequests.every(r=>r.url.endsWith('/calendar/season')||r.url.endsWith('/calendar/season/preview')))).toBe(true);
  expect(errors).toEqual([]);
+});
+
+test('full-year calendar highlights events and lets a commissioner select a matchup range',async({page},testInfo)=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/e2e/fixtures/league-calendar.html');
+ const calendar=page.getByRole('region',{name:'Interactive season calendar'});
+ await expect(calendar.locator('h4')).toHaveCount(12);
+ await page.getByLabel('Calendar action').selectOption('week:11111111-1111-4111-8111-111111111112');
+ await page.getByRole('button',{name:/^November 1, 2026/}).click();await page.getByRole('button',{name:/^November 7, 2026/}).click();
+ await expect(page.getByLabel('First matchup day')).toHaveValue('2026-11-01');await expect(page.getByLabel('Last matchup day')).toHaveValue('2026-11-07');
+ expect(await page.evaluate(()=>window.calendarRequests.map(r=>r.method))).toEqual(['GET']);
+ await page.getByLabel('Reason for calendar changes').fill('A later matchup week');await page.getByRole('button',{name:'Review calendar changes'}).click();
+ await expect(page.getByRole('region',{name:'Calendar change preview'})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.screenshot({path:testInfo.outputPath('interactive-calendar.png'),fullPage:true});expect(errors).toEqual([]);
 });

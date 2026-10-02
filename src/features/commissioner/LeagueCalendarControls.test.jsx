@@ -14,6 +14,7 @@ const status={leagueId,seasonId:'season',timeZone:'America/Vancouver',serverNowM
 function setup({data=status,failFirst=false,malformed=false}={}){
  let attempts=0;const request=vi.fn(async(url,options={})=>{
   let result=data;
+  if(url.endsWith('/calendar/trade-deadline'))result={leagueId,timeZone:data.timeZone,tradeDeadlineAtMs:at('2027-02-15T00:00:00Z'),serverNowMs:data.serverNowMs,canEdit:true,blockedReason:null,history:[]};
   if(url.endsWith('/preview'))result={...data,proposed:options.body,previewHash:'a'.repeat(64),seasonFields:[],pendingJobs:1,reopensAuctions:false,closesAuctions:false,
    changes:[{id:'week',sequence:2,fields:['locksAtMs'],before:data.weeks[0],after:options.body.weeks[0]}]};
   if(malformed&&url.endsWith('/preview'))result.pendingJobs=-1;
@@ -31,6 +32,35 @@ async function review(user){
  await user.click(screen.getByRole('button',{name:'Review calendar changes'}));
 }
 describe('League calendar controls',()=>{
+ it('shows all twelve months and prepares inclusive matchup dates without writing',async()=>{
+  const {request,user}=setup();await screen.findByRole('button',{name:'Edit league calendar'});
+  expect(screen.getByRole('region',{name:'July 2026'})).toBeVisible();expect(screen.getByRole('region',{name:'June 2027'})).toBeVisible();
+  await user.selectOptions(screen.getByLabelText('Calendar action'),'week:week');
+  await user.click(screen.getByRole('button',{name:/^November 1, 2026/}));
+  expect(screen.getByText('Now click the last day of this matchup.')).toBeVisible();
+  await user.click(screen.getByRole('button',{name:/^November 7, 2026/}));
+  expect(screen.getByLabelText('First matchup day')).toHaveValue('2026-11-01');expect(screen.getByLabelText('Last matchup day')).toHaveValue('2026-11-07');
+  expect(screen.getByLabelText('Roster lock time')).toHaveValue('12:00');
+  expect(request.mock.calls.some(([,o])=>o.method==='POST')).toBe(false);
+  fireEvent.change(screen.getByLabelText('Reason for calendar changes'),{target:{value:'Adjust matchup dates'}});
+  await user.click(screen.getByRole('button',{name:'Review calendar changes'}));
+  await screen.findByRole('region',{name:'Calendar change preview'});
+  const body=request.mock.calls.find(([url])=>url.endsWith('/preview'))[1].body;
+  expect(body.weeks[0]).toMatchObject({startsAtMs:at('2026-11-01T07:00:00Z'),baselineAtMs:at('2026-11-01T07:00:00Z'),locksAtMs:at('2026-11-01T20:00:00Z'),endsAtMs:at('2026-11-08T08:00:00Z'),rollsOverAtMs:at('2026-11-08T08:00:00Z')});
+  expect(request.mock.calls.some(([url])=>url.endsWith('/apply'))).toBe(false);
+ });
+ it('edits a trade deadline from the same calendar while preserving its local time',async()=>{
+  const {request,user}=setup();await screen.findByRole('button',{name:'Edit league calendar'});
+  await user.selectOptions(screen.getByLabelText('Calendar action'),'trade');await screen.findByRole('button',{name:'Edit trade deadline'});
+  await user.click(screen.getByRole('button',{name:/^February 16, 2027/}));
+  expect(screen.getByLabelText('New trade deadline (America/Vancouver)')).toHaveValue('2027-02-16T16:00');
+  expect(screen.getByLabelText('Calendar action')).toBeDisabled();
+  expect(request.mock.calls.some(([,o])=>o.method==='POST')).toBe(false);
+ });
+ it('highlights draft deadlines without including card contents',async()=>{
+  setup({data:{...status,events:[{id:'target',kind:'draft',label:'Candidate Card target',atMs:at('2026-10-05T23:00:00Z'),fadId:'draft',field:'deadline'}]}});
+  expect(await screen.findByRole('button',{name:/October 5, 2026; Candidate Card target/})).toBeVisible();
+ });
  it('explains draft-bound calendar protection before allowing an edit',async()=>{
   setup({data:{...status,blockedReason:'Use draft timing until the draft completes.'}});
   expect(await screen.findByRole('button',{name:'Edit league calendar'})).toBeDisabled();

@@ -1,0 +1,46 @@
+.calendar { color:var(--hl-text,#edf2f9); }
+.surface { margin-block:0; padding:1rem; }
+.intro { margin:0 0 .75rem; font-size:.8rem; color:#aabbd0; }
+:global(.hl-commissioner-calendar-page) { grid-template-columns:1fr auto; gap:.65rem; margin-top:14px; }
+:global(.hl-commissioner-calendar-page) > * { grid-column:1 / -1; }
+:global(.hl-commissioner-calendar-page) > :global(.hl-page-heading) { grid-column:1; min-height:0; padding:0; }
+:global(.hl-commissioner-calendar-page) :global(.hl-page-heading) h1 { font-size:1.65rem; }
+:global(.hl-commissioner-calendar-page) :global(.hl-page-heading) :global(.hl-eyebrow) { display:none; }
+:global(.hl-commissioner-calendar-page) > :global(.hl-commissioner-section-nav) { grid-column:2; grid-row:1; margin:0; align-self:center; font-size:.85rem; }
+.header,.navigation,.legend,.toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:.6rem 1rem; }
+.header { justify-content:space-between; margin-bottom:.75rem; }
+.header h3 { margin:0; font-size:1.15rem; }
+.header span { font-size:.78rem; color:var(--hl-muted-foreground,#9eacc0); }
+.navigation label,.toolbar label { display:flex; align-items:center; gap:.5rem; font-size:.85rem; }
+.navigation button,.navigation select,.toolbar select,.toolbar input,.toolbar button { background:#142034; color:inherit; border:1px solid #44536a; border-radius:5px; padding:.35rem .55rem; font:inherit; }
+.navigation button { min-width:32px; cursor:pointer; }
+.legend { font-size:.75rem; margin-bottom:.7rem; }
+.legend span { display:flex; align-items:center; gap:.35rem; }
+.legend i,.markers i { display:inline-block; width:7px; height:7px; border-radius:50%; }
+.matchup { background:#4e9bca; }.playoffs { background:#b989e9; }.trade { background:#ff9f43; }.draft { background:#56d1b0; }.auction { background:#ffdf7b; }.season { background:#e2e8f0; }
+.toolbar { padding:.7rem; border:1px solid #364862; border-radius:7px; margin-bottom:.7rem; background:#0e1929; }
+.toolbar p { margin:0; font-size:.8rem; flex:1 1 250px; }
+.months { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.7rem; }
+.month { min-width:0; border:1px solid #293b54; border-radius:8px; padding:.5rem; background:#0b1627; }
+.month h4 { margin:0 0 .3rem; font-size:.85rem; }
+.weekdays,.days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:2px; }
+.weekdays { color:#93a4bc; font-size:.62rem; text-align:center; margin-bottom:3px; }
+.days { grid-auto-rows:22px; min-height:142px; }
+.day { position:relative; display:flex; align-items:center; justify-content:center; gap:2px; min-width:0; padding:0; border:1px solid transparent; border-radius:3px; color:#d5dfed; background:#132139; font-size:.7rem; cursor:pointer; }
+.day small { color:#bdeaff; font-size:.49rem; }
+.day:hover { border-color:#eaf1fb; background:#35475f; }
+.day:focus-visible { outline:2px solid #ff9f43; outline-offset:1px; z-index:1; }
+.weekOdd { background:#16465f; }.weekEven { background:#20395e; }.playoffDay { background:#4c326b; }
+.selected { border:2px solid #f7ac63; }.range { background:#735126; border-color:#f7ac63; }.today > span:first-child { text-decoration:underline; text-underline-offset:3px; font-weight:900; }
+.markers { position:absolute; bottom:0; right:1px; display:flex; gap:1px; }.markers i { width:4px; height:4px; }
+.selection { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:.7rem; padding:.65rem; background:#122238; border-radius:6px; font-size:.82rem; }
+.selection span { color:#b7c8dd; }
+.editor { max-width:none; display:grid; gap:.8rem; margin-top:1rem; }
+.selectedFields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem; }
+.editor fieldset { min-width:0; border:1px solid #354965; border-radius:7px; }
+.editor label { display:grid; gap:.35rem; font-size:.85rem; }
+.editor input,.editor select { min-width:0; width:100%; box-sizing:border-box; padding:.6rem; background:#132034; color:inherit; border:1px solid #52667f; border-radius:5px; }
+.hint { font-size:.8rem; color:#aabbd0; }
+@media(min-width:1200px) { .months { grid-template-columns:repeat(6,minmax(0,1fr)); } }
+@media(max-width:900px) { .months { grid-template-columns:repeat(3,minmax(0,1fr)); } .selectedFields { grid-template-columns:1fr 1fr; } }
+@media(max-width:600px) { .months { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; } .selectedFields { grid-template-columns:1fr; } .navigation { gap:.35rem; } .days { grid-auto-rows:28px; min-height:178px; } }
