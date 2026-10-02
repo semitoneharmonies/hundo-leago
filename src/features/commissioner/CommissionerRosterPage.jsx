@@ -972,61 +972,18 @@ function ContractCorrectionPanel({
   );
 }
 
-function TeamCapSummary({ teams }) {
-  const overCapCount = teams.filter(({ cap }) => cap.overCap).length;
-  return (
-    <details className={styles.disclosure}>
-      <summary>
-        <span>
-          <strong>Team cap position</strong>
-          <small>
-            {teams.length} teams ·{" "}
-            {overCapCount === 0
-              ? "all currently within cap"
-              : `${overCapCount} currently over cap`}
-          </small>
-        </span>
-        <span aria-hidden="true">View details</span>
-      </summary>
-      <Surface className={styles.disclosurePanel}>
-        <PanelHeading
-          eyebrow="Cap impact"
-          title="Team cap position"
-          description="Current active-roster cap totals before a correction."
-        />
-        <div className={styles.tableScroll}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th scope="col">Team</th>
-                <th scope="col">Usage</th>
-                <th scope="col">Limit</th>
-                <th scope="col">Space</th>
-                <th scope="col">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {teams.map((team) => (
-                <tr key={team.id}>
-                  <td>{team.name}</td>
-                  <td>{money(team.cap.capUsageCents)}</td>
-                  <td>{money(team.cap.capLimitCents)}</td>
-                  <td>{money(team.cap.capSpaceCents)}</td>
-                  <td>
-                    <StatusBadge
-                      tone={team.cap.overCap ? "danger" : "success"}
-                    >
-                      {team.cap.overCap ? "Over cap" : "Within cap"}
-                    </StatusBadge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Surface>
-    </details>
-  );
+function TeamCapSummary({teams,leagueId}) {
+  const [opened,setOpened]=useState(false); const {httpClient}=useSession();
+  const report=useQuery({queryKey:['league',leagueId,'management','readiness'],enabled:opened,retry:false,
+    queryFn:async({signal})=>{const {data}=await httpClient.request('/api/v1/leagues/'+encodeURIComponent(leagueId)+'/management/readiness',{authenticated:true,signal,dataKind:'object'});if(data?.leagueId!==leagueId||!Array.isArray(data.teams))throw Error('Roster summary unavailable');return data;}});
+  const reasonLabels={HEALTHY_PLAYER_ON_IR:'Player on IR is no longer eligible',SALARY_CAP_EXCEEDED:'Over salary cap',ACTIVE_FORWARD_LIMIT_EXCEEDED:'Too many active forwards',ACTIVE_DEFENCE_LIMIT_EXCEEDED:'Too many active defence',ACTIVE_TOTAL_LIMIT_EXCEEDED:'Too many active players',BENCH_LIMIT_EXCEEDED:'Bench limit exceeded',INJURED_RESERVE_LIMIT_EXCEEDED:'IR limit exceeded',ACTIVE_FORWARD_SLOTS_INCOMPLETE:'Forward slots to fill before competition',ACTIVE_DEFENCE_SLOTS_INCOMPLETE:'Defence slots to fill before competition',ACTIVE_CONTRACT_MISSING:'Missing player contract',SALARY_CAP_CALCULATION_INCOMPLETE:'Incomplete cap records'};
+  return <details className={styles.disclosure} onToggle={e=>setOpened(e.currentTarget.open)}><summary><span><strong>Team cap and roster legality</strong><small>{teams.length} teams · Cap, roster limits and IR eligibility</small></span><span aria-hidden="true">View details</span></summary>
+  <Surface className={styles.disclosurePanel}>{report.isPending&&<LoadingBlock>Checking team rosters…</LoadingBlock>}{report.error&&<ErrorBlock error={report.error}/>}
+  <div className={styles.tableScroll}><table className={styles.table}><thead><tr><th>Team</th><th>Cap usage / limit</th><th>Active F / D</th><th>Active total</th><th>Bench / IR</th><th>All players</th><th>Status</th></tr></thead><tbody>{teams.map(team=>{
+    const roster=report.data?.teams.find(t=>t.id===team.id)?.roster,counts=roster?.counts,limits=roster?.limits;
+    const count=key=>counts&&limits?counts[key]+' / '+(limits[key]??'No limit'):'—';
+    return <tr key={team.id}><th>{team.name}</th><td>{money(team.cap.capUsageCents)} / {money(team.cap.capLimitCents)}<br/>Space: {money(team.cap.capSpaceCents)}</td><td>{count('activeForwards')} F<br/>{count('activeDefence')} D</td><td>{count('active')}</td><td>{count('bench')} Bench<br/>{count('injuredReserve')} IR</td><td>{counts?counts.active+counts.bench+counts.injuredReserve+counts.prospects:'—'}{counts&&<small> · {counts.prospects} prospects</small>}</td><td>{!roster?'Checking…':roster.legal?'Within limits':<ul>{roster.reasonCodes.map(code=><li key={code}>{reasonLabels[code]||code.toLowerCase().replaceAll('_',' ')}</li>)}</ul>}</td></tr>;
+  })}</tbody></table></div></Surface></details>;
 }
 
 const OPERATIONS = Object.freeze([
@@ -1205,7 +1162,7 @@ function CommissionerWorkspace({
         selectedOperation={selectedOperation}
         onSelect={setSelectedOperation}
       />
-      <TeamCapSummary teams={workspace.teams} />
+      <TeamCapSummary teams={workspace.teams} leagueId={leagueId} />
       <div className={styles.operations}>
         <AddPlayerPanel
           workspace={workspace}

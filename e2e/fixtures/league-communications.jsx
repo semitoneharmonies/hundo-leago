@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionContext } from "../../src/features/session/sessionContext.js";
-import { LeagueCommunications } from "../../src/features/commissioner/LeagueCommunications.jsx";
+import { LeagueCommunications, CandidateCardProgress } from "../../src/features/commissioner/LeagueCommunications.jsx";
 import { FadDeadlineControls } from "../../src/features/freeAgentDraft/FadDeadlineControls.jsx";
 import { FadTimingControls } from "../../src/features/freeAgentDraft/FadTimingControls.jsx";
 import { FadAuctionCutoffControls } from "../../src/features/freeAgentDraft/FadAuctionCutoffControls.jsx";
@@ -99,6 +99,7 @@ createRoot(document.getElementById("root")).render(
         <p>Local preview · sample data · <a href="?">Commissioner</a> · <a href="?manager">Manager</a></p>
         <h1>League dashboard</h1>
         <LeagueCommunications leagueId={leagueId} canManage={canManage} />
+        {canManage&&<CandidateCardProgress leagueId={leagueId}/>}
         {canManage && <FadDeadlineControls leagueId={leagueId} fadId={id(3)} />}
         {canManage && <FadTimingControls leagueId={leagueId} fadId={id(3)} />}
         {canManage && <FadAuctionCutoffControls leagueId={leagueId} fadId={id(3)} />}

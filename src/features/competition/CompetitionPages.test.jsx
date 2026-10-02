@@ -1096,7 +1096,7 @@ describe("M6-12 authenticated competition pages", () => {
 
   it("requires commissioner authority before rendering any recovery controls", async () => {
     const fetchImpl = baseFetch((path) => { throw new Error(`Unexpected request: ${path}`); });
-    renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    renderPage(`/leagues/${leagueId}/commissioner/calendar`, "/leagues/:leagueId/commissioner/:section", <CommissionerCompetitionPage />, fetchImpl);
     expect(await screen.findByRole("alert")).toHaveTextContent("Current commissioner authority is required.");
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
@@ -1114,8 +1114,8 @@ describe("M6-12 authenticated competition pages", () => {
       [noSeasonLeague]
     );
     renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );
@@ -1154,8 +1154,8 @@ describe("M6-12 authenticated competition pages", () => {
       ]
     );
     renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );
@@ -1208,8 +1208,8 @@ describe("M6-12 authenticated competition pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
     const view = renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );
@@ -1239,7 +1239,7 @@ describe("M6-12 authenticated competition pages", () => {
       if (path === `${prefix}/matchup-schedules`) { requests.push(JSON.parse(options.body)); return envelope({ code: "MATCHUP_SCHEDULE_PREVIEWED", preview: { seasonId, expectedSeasonVersion: 1, participantCount: 2, weekCount: 22, matchupCount: 22, byeCount: 0, weeks: [{ sequence: 1, startsAtMs: Date.parse("2026-09-29T07:00:00Z"), endsAtMs: Date.parse("2026-10-05T07:00:00Z") }] } }); }
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
-    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    const view = renderPage(`/leagues/${leagueId}/commissioner/calendar`, "/leagues/:leagueId/commissioner/:section", <CommissionerCompetitionPage />, fetchImpl);
     await waitFor(() => expect(screen.getByLabelText("Week 1 starts")).toHaveValue("2026-09-29T00:00"));
     expect(screen.getByLabelText("NHL regular season ends")).toHaveValue("2027-04-11T00:00");
     expect(requests).toHaveLength(0);
@@ -1295,8 +1295,8 @@ describe("M6-12 authenticated competition pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
     const view = renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );
@@ -1343,7 +1343,7 @@ describe("M6-12 authenticated competition pages", () => {
       } }), { status: 400, headers: { "Content-Type": "application/json" } });
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
-    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    const view = renderPage(`/leagues/${leagueId}/commissioner/calendar`, "/leagues/:leagueId/commissioner/:section", <CommissionerCompetitionPage />, fetchImpl);
     await fillScheduleCalendar();
     await view.user.click(await screen.findByRole("button", { name: "Preview schedule generation" }));
     const alert = await screen.findByRole("alert");
@@ -1364,7 +1364,7 @@ describe("M6-12 authenticated competition pages", () => {
       }
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
-    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    const view = renderPage(`/leagues/${leagueId}/commissioner/calendar`, "/leagues/:leagueId/commissioner/:section", <CommissionerCompetitionPage />, fetchImpl);
     await fillScheduleCalendar();
     fireEvent.change(screen.getByLabelText("Candidate Card deadline"), { target: { value: "2026-10-03T12:00" } });
     fireEvent.change(screen.getByLabelText("Total rapid-auction rounds"), { target: { value: "5" } });
@@ -1409,8 +1409,8 @@ describe("M6-12 authenticated competition pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
     const view = renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );

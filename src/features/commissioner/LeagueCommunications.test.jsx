@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 import { SessionContext } from "../session/sessionContext.js";
-import { LeagueCommunications } from "./LeagueCommunications.jsx";
+import { LeagueCommunications, CandidateCardProgress } from "./LeagueCommunications.jsx";
 import { communicationRequest } from "./leagueCommunicationApi.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
@@ -34,7 +34,7 @@ function setup({ canManage = true, messages = [], failFirstSend = false } = {}) 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const user = userEvent.setup();
   const view = render(<QueryClientProvider client={queryClient}><SessionContext.Provider value={{ status: "authenticated", httpClient: client }}>
-    <LeagueCommunications leagueId={leagueId} canManage={canManage} />
+    <LeagueCommunications leagueId={leagueId} canManage={canManage} />{canManage&&<CandidateCardProgress leagueId={leagueId}/>}
   </SessionContext.Provider></QueryClientProvider>);
   return { client, user, ...view };
 }
@@ -51,6 +51,18 @@ async function fillAndPreview(user) {
 }
 
 describe("League communication controls", () => {
+  it('sends a standard unfinished-card reminder directly and safely retries an uncertain send',async()=>{
+    const {user,client}=setup({failFirstSend:true});
+    await user.click(await screen.findByRole('button',{name:'Remind managers with unfinished cards'}));
+    await screen.findByRole('alert');
+    await user.click(screen.getByRole('button',{name:'Retry reminder'}));
+    await screen.findByText('Reminder delivered to 1 manager.');
+    const writes=client.request.mock.calls.filter(([url,o])=>o.method==='POST'&&!url.endsWith('/preview'));
+    expect(writes).toHaveLength(2);expect(writes[0][1].idempotencyKey).toBe(writes[1][1].idempotencyKey);
+    expect(writes[0][1].body).toEqual(writes[1][1].body);
+    expect(writes[0][1].body.message.audience).toBe('unfinished_cards');
+    expect(client.request.mock.calls.every(([url])=>!url.includes('candidate-cards')&&!url.includes('/bids'))).toBe(true);
+  });
   it("shows announcements to a manager without loading commissioner data or writes", async () => {
     const { client } = setup({ canManage: false, messages: [{ ...notice, body: "<script>private()</script>" }] });
     expect(await screen.findByText("New schedule")).toBeInTheDocument();

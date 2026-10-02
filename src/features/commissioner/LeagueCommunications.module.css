@@ -17,3 +17,19 @@
 .history { margin-top: 1.5rem; }
 .section summary { cursor: pointer; font-weight: 600; padding-block: .5rem; }
 @media (min-width: 700px) { .editor { max-width: 760px; } }
+
+.compactEditor { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; gap: .7rem 1.25rem; }
+.compactEditor h3, .wide { grid-column: 1 / -1; }
+.compactEditor textarea { min-height: 5rem; }
+.filterBar { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-block: 1rem; }
+.filterBar label { display: grid; gap: .3rem; flex: 1 1 220px; }
+.filterBar input, .filterBar select { min-width: 0; padding: .6rem; background: var(--hl-surface, #15202d); color: inherit; border: 1px solid #607184; border-radius: .4rem; }
+.historyGrid, .summaryGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem 1.25rem; padding: 0; list-style: none; }
+.historyGrid .notice { margin: 0; }
+.comparisonGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.comparisonGrid section { min-width: 0; }
+.summaryGrid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.cards > li { align-items: start; }
+.cards p { margin-block: .25rem; }
+.pinned { font-size: .75rem; border: 1px solid currentColor; border-radius: .3rem; padding: .1rem .35rem; margin-right: .5rem; }
+@media(max-width:700px) { .compactEditor,.historyGrid,.comparisonGrid { grid-template-columns: minmax(0,1fr); } .summaryGrid { grid-template-columns: repeat(2,minmax(0,1fr)); } }

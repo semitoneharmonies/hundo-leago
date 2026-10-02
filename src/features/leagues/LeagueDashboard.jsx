@@ -14,7 +14,6 @@ import {
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
-import { LeagueHelpPanel } from './LeagueHelpPanel.jsx';
 import { LeagueCommunications } from "../commissioner/LeagueCommunications.jsx";
 import { PlayerName } from '../players/PlayerName.jsx';
 import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
@@ -1486,7 +1485,6 @@ export function LeagueDashboard({ league, teams, session }) {
         }
       />
 
-      <LeagueHelpPanel key={'help-'+leagueId} leagueId={leagueId} />
       <LeagueCommunications key={leagueId} leagueId={leagueId} canManage={commissioner} />
 
       {league.status === 'frozen' && <div className="hl-inline-notice" role="status">

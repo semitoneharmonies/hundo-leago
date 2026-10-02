@@ -12,9 +12,9 @@ const validRequest=r=>r&&uuid(r.id)&&uuid(r.teamId)&&typeof r.teamName==='string
  ['general','auction','roster','trade'].includes(r.kind)&&['open','resolved','withdrawn'].includes(r.status)&&Number.isInteger(r.version)&&r.version>0&&
  typeof r.targetLabel==='string'&&(r.kind==='general'?r.targetId===null:uuid(r.targetId))&&typeof r.requesterName==='string';
 function recordPath(leagueId,r){if(r.kind==='auction')return routePaths.auctionDetail(leagueId,r.targetId);if(r.kind==='trade')return routePaths.trade(leagueId,r.targetId);if(r.kind==='roster')return routePaths.teamRoster(leagueId,r.teamId);return null;}
-export function LeagueHelpPanel({leagueId}){
+export function LeagueHelpPanel({leagueId,commissionerView=false,menuMode=false}){
  const session=useSession(),client=useQueryClient(),retry=useRef(null);
- const [opened,setOpened]=useState(()=>globalThis.location?.hash==='#league-help'),[filter,setFilter]=useState('open'),[cursor,setCursor]=useState(null),[selected,setSelected]=useState(null);
+ const [opened,setOpened]=useState(()=>menuMode||globalThis.location?.hash==='#league-help'),[filter,setFilter]=useState('open'),[cursor,setCursor]=useState(null),[selected,setSelected]=useState(null);
  const [teamId,setTeam]=useState(''),[kind,setKind]=useState('general'),[targetId,setTarget]=useState(''),[subject,setSubject]=useState(''),[message,setMessage]=useState('');
  const [action,setAction]=useState('reply'),[reply,setReply]=useState(''),[receipt,setReceipt]=useState('');
  const base='/api/v1/leagues/'+encodeURIComponent(leagueId)+'/help',prefix=['league',leagueId,'help'];
@@ -38,10 +38,19 @@ export function LeagueHelpPanel({leagueId}){
   if(!command.suffix){setSubject('');setMessage('');setSelected(data.id);}else setReply('');setAction('reply');await client.invalidateQueries({queryKey:prefix});}});
  function choose(id){setSelected(id);setReply('');setAction('reply');setReceipt('');save.reset();}
  const current=detail.data&&!detail.isError?detail.data:null,busy=save.isPending;
- return <Surface as="section" id="league-help" className={styles.section} aria-label="Private league help"><details open={opened} onToggle={e=>setOpened(e.currentTarget.open)}><summary>Private league help</summary>
+ const requestForm=queue.data&&!queue.isError&&queue.data.teams.length>0&&<details open={menuMode||undefined}><summary>Ask the commissioner for help</summary><form className={styles.editor+(menuMode?' '+styles.compactEditor:'')} onSubmit={e=>{e.preventDefault();save.mutate({suffix:'',body:{teamId,kind,targetId:kind==='general'?null:targetId,subject,message}});}}>
+     <label>Your team<select required disabled={busy} value={teamId} onChange={e=>{setTeam(e.target.value);setTarget('');}}><option value="">Choose your team</option>{queue.data.teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+     <label>Help category<select disabled={busy} value={kind} onChange={e=>{setKind(e.target.value);setTarget('');}}><option value="general">General league help</option><option value="auction">Auction</option><option value="roster">Roster player</option><option value="trade">Trade</option></select></label>
+     {kind!=='general'&&<>{targets.error&&<ErrorBlock error={targets.error} fallback="Your records could not be loaded."/>}<label>Affected record<select required disabled={busy||targets.isFetching} value={targetId} onChange={e=>setTarget(e.target.value)}><option value="">Choose a record</option>{!targets.isError&&targets.data?.targets.map(t=><option key={t.id} value={t.id}>{t.label} · {t.status}</option>)}</select></label><small>Shows your current roster or up to 200 recent auctions and trades involving your team. Use general help for an older issue.</small></>}
+     <label className={styles.wide}>Subject<input required minLength={3} maxLength={120} disabled={busy} value={subject} onChange={e=>setSubject(e.target.value)}/></label>
+     <label className={styles.wide}>What needs attention?<textarea required minLength={3} maxLength={2000} disabled={busy} value={message} onChange={e=>setMessage(e.target.value)}/></label>
+     <button type="submit" className="hl-button hl-button--primary" disabled={busy||!teamId||kind!=='general'&&(!targetId||targets.isError)||subject.trim().length<3||message.trim().length<3}>Send private help request</button>
+    </form></details>;
+ return <Surface as="section" id="league-help" className={styles.section} aria-label={commissionerView?'Manager help requests':'Help'}><details open={opened} onToggle={e=>setOpened(e.currentTarget.open)}><summary>{commissionerView?'Manager help requests':'Help'}</summary>
   {opened&&<>
-   <p>Ask for help with your team or a specific record. Requests and replies are visible to you and current league commissioners or administrators. Other managers cannot read them.</p>
-   <p>Linking a record does not reveal private bids or grant access to Candidate Cards. Avoid copying hidden offers into your message. For Candidate Card help, use the explicit help button on your card.</p>
+   <p>Requests are private to you and the league commissioner or administrator.</p>
+   <p>Use your Candidate Card’s help button for private card questions.</p>
+   {menuMode&&requestForm}
    <div className={styles.actions}><label>Show requests <select value={filter} disabled={busy} onChange={e=>{setFilter(e.target.value);setCursor(null);choose(null);}}><option value="open">Open</option><option value="closed">Closed</option><option value="all">All</option></select></label>
     <button type="button" className="hl-button hl-button--quiet" disabled={busy||queue.isFetching} onClick={()=>{queue.refetch();if(selected)detail.refetch();}}>Refresh help queue</button></div>
    {queue.isPending&&<LoadingBlock>Loading private help…</LoadingBlock>}{queue.error&&<ErrorBlock error={queue.error} fallback="Help requests could not be loaded."/>}
@@ -51,14 +60,7 @@ export function LeagueHelpPanel({leagueId}){
     <ul className={styles.cards}>{queue.data.requests.map(r=><li key={r.id}><span>{r.teamName} · {r.status}</span><button type="button" className="hl-button hl-button--quiet" disabled={busy} onClick={()=>choose(r.id)}>{r.subject}</button></li>)}</ul>
     <div className={styles.actions}>{cursor&&<button type="button" className="hl-button hl-button--quiet" disabled={busy} onClick={()=>setCursor(null)}>First page</button>}{queue.data.nextCursor&&<button type="button" className="hl-button hl-button--quiet" disabled={busy} onClick={()=>setCursor(queue.data.nextCursor)}>Older requests</button>}</div>
     {queue.data.cardHelp.length>0&&<section aria-label="Candidate Card help requests"><h3>Candidate Card help</h3><p>These managers used the existing card help grant. Opening a card explicitly reveals it only when your current permission allows it.</p><ul>{queue.data.cardHelp.map(h=><li key={h.id}>{h.teamName}: {h.message||'Help requested'} · {h.available?<Link to={routePaths.freeAgentDraftCard(leagueId,h.fadId,h.teamId)}>Open requested card</Link>:'Help window closed'}</li>)}</ul></section>}
-    {queue.data.teams.length>0&&<details><summary>Ask the commissioner for help</summary><form className={styles.editor} onSubmit={e=>{e.preventDefault();save.mutate({suffix:'',body:{teamId,kind,targetId:kind==='general'?null:targetId,subject,message}});}}>
-     <label>Your team<select required disabled={busy} value={teamId} onChange={e=>{setTeam(e.target.value);setTarget('');}}><option value="">Choose your team</option>{queue.data.teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
-     <label>Help category<select disabled={busy} value={kind} onChange={e=>{setKind(e.target.value);setTarget('');}}><option value="general">General league help</option><option value="auction">Auction</option><option value="roster">Roster player</option><option value="trade">Trade</option></select></label>
-     {kind!=='general'&&<>{targets.error&&<ErrorBlock error={targets.error} fallback="Your records could not be loaded."/>}<label>Affected record<select required disabled={busy||targets.isFetching} value={targetId} onChange={e=>setTarget(e.target.value)}><option value="">Choose a record</option>{!targets.isError&&targets.data?.targets.map(t=><option key={t.id} value={t.id}>{t.label} · {t.status}</option>)}</select></label><small>Shows your current roster or up to 200 recent auctions and trades involving your team. Use general help for an older issue.</small></>}
-     <label>Subject<input required minLength={3} maxLength={120} disabled={busy} value={subject} onChange={e=>setSubject(e.target.value)}/></label>
-     <label>What needs attention?<textarea required minLength={3} maxLength={2000} disabled={busy} value={message} onChange={e=>setMessage(e.target.value)}/></label>
-     <button type="submit" className="hl-button hl-button--primary" disabled={busy||!teamId||kind!=='general'&&(!targetId||targets.isError)||subject.trim().length<3||message.trim().length<3}>Send private help request</button>
-    </form></details>}
+    {!menuMode&&requestForm}
    </>}
    {selected&&detail.isPending&&<LoadingBlock>Loading request…</LoadingBlock>}{selected&&detail.error&&<ErrorBlock error={detail.error} fallback="This request is no longer available."/>}
    {selected&&current&&<section className={styles.preview} aria-label="Selected help request"><h3>{current.request.subject}</h3><p>{current.request.requesterName} · {current.request.teamName} · {current.request.status}</p><p className={styles.message}>{current.request.message}</p>

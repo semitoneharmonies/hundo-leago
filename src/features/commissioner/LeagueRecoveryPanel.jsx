@@ -1,3 +1,4 @@
+import {OperationStatus} from './OperationStatus.jsx';
 import {useState} from 'react';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
 import {Link} from 'react-router-dom';
@@ -8,7 +9,6 @@ import {ResponseContractError} from '../../shared/api/responseContracts.js';
 import {standingsRebuildCommand} from '../competition/competitionQueries.js';
 import {useSession} from '../session/sessionContext.js';
 import styles from './LeagueCommunications.module.css';
-function jobLabel(kind){if(kind.startsWith('free_agent_draft')||kind.startsWith('fad:'))return 'Free Agent Draft';if(kind.startsWith('matchup:'))return 'Matchup processing';if(kind.includes('rollover'))return 'Season rollover';return 'League operation';}
 export function LeagueRecoveryPanel({leagueId,seasonId}){
  const session=useSession(),client=useQueryClient();const [opened,setOpened]=useState(false),[preview,setPreview]=useState(null),[reason,setReason]=useState(''),[receipt,setReceipt]=useState('');
  function validate(data){if(data?.leagueId!==leagueId||!Array.isArray(data.operations)||!Array.isArray(data.drafts)||!Array.isArray(data.weeks)||!Array.isArray(data.trades)||!Number.isInteger(data.operationCount)||!Number.isInteger(data.tradeCount))throw new ResponseContractError('Recovery status could not be verified.');return true;}
@@ -27,7 +27,7 @@ export function LeagueRecoveryPanel({leagueId,seasonId}){
   {status.isPending&&<LoadingBlock>Checking league operations…</LoadingBlock>}{status.error&&<ErrorBlock error={status.error} fallback="Recovery status could not be loaded."/>}
   {info&&<>
    <h3>Operations needing attention</h3><p>{info.operationCount} failed or interrupted operations. {info.operationCount>info.operations.length?'Showing the first '+info.operations.length+'.':''}</p>
-   {!!info.operations.length&&<ul>{info.operations.map(j=><li key={j.id}>{jobLabel(j.kind)} · {j.status} · {j.attempts} attempts{j.nextAttemptAtMs?' · next scheduled attempt '+new Date(j.nextAttemptAtMs).toLocaleString():''}</li>)}</ul>}
+   {!!info.operations.length&&<ul className={styles.cards}>{info.operations.map(j=><OperationStatus key={j.id} job={j} checkedAtMs={info.checkedAtMs} leagueId={leagueId}/>)}</ul>}
    <p>Failed jobs may retry automatically. FAD actions below retry an eligible step using its saved occurrence. Running or expired leases are never cleared by this panel.</p>
    <div className={styles.preview}><h3>Free Agent Draft</h3><p>Opening checks, Candidate Card processing, allocations, restricted and fallback auctions, rollover and completion use the existing FAD recovery controls.</p>
     <ul>{info.drafts.map(d=><li key={d.id}><Link to={routePaths.leagueCommissioner(leagueId)+'?fadId='+encodeURIComponent(d.id)+'#fad-recovery'}>Review {d.status.replaceAll('_',' ')} draft</Link></li>)}</ul>

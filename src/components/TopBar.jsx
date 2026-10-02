@@ -1,3 +1,5 @@
+import {LeagueHelpPanel} from '../features/leagues/LeagueHelpPanel.jsx';
+import { commissionerSections, commissionerSectionPath } from '../features/commissioner/commissionerSections.js';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -20,7 +22,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { routePaths } from "../app/routePaths.js";
 import { readLeaguePreference } from "../features/leagues/leaguePreference.js";
@@ -62,7 +64,7 @@ function pageLabel(pathname) {
   if (/\/standings$/.test(pathname)) return "Standings";
   if (/\/activity$/.test(pathname)) return "League activity";
   if (/\/commissioner\/rosters$/.test(pathname)) return "Roster operations";
-  if (/\/commissioner$/.test(pathname)) return "Commissioner tools";
+  if (/\/commissioner(?:\/|$)/.test(pathname)) return commissionerSections.find(([key])=>pathname.endsWith('/'+key))?.[1] || 'Commissioner tools';
   if (/\/teams$/.test(pathname)) return "Teams";
   if (/^\/leagues\/[^/]+$/.test(pathname)) return "Dashboard";
   return "Hundo Leago";
@@ -118,8 +120,11 @@ function MenuLink({ icon, label, description, to, active, onSelect }) {
 function TopBar({ freezeBanner }) {
   const session = useSession();
   const location = useLocation();
+  const navigate=useNavigate();
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [commissionerOpen,setCommissionerOpen]=useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [helpOpen,setHelpOpen]=useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutWarning, setSignOutWarning] = useState("");
@@ -208,8 +213,13 @@ function TopBar({ freezeBanner }) {
     leagueId,
   ]);
 
+  const linkedHelp=Boolean(leagueId&&location.hash==='#league-help');
+  const helpVisible=helpOpen||linkedHelp;
+  function closeHelp(){setHelpOpen(false);if(linkedHelp)navigate(location.pathname+location.search,{replace:true});}
   function closeMenus() {
+    closeHelp();
     setMenuOpen(false);
+    setCommissionerOpen(false);
     setRulesOpen(false);
     setAccountOpen(false);
   }
@@ -232,6 +242,9 @@ function TopBar({ freezeBanner }) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setMenuOpen(false);
         setRulesOpen(false);
+        setCommissionerOpen(false);
+        setHelpOpen(false);
+        if(location.hash==='#league-help')navigate(location.pathname+location.search,{replace:true});
       }
       if (accountRef.current && !accountRef.current.contains(event.target)) {
         setAccountOpen(false);
@@ -239,11 +252,13 @@ function TopBar({ freezeBanner }) {
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
+  }, [location.hash,location.pathname,location.search,navigate]);
 
   useEffect(() => {
     const onEscape = (event) => {
       if (event.key !== "Escape") return;
+      if (helpOpen || location.hash==='#league-help') { event.preventDefault(); setHelpOpen(false);if(location.hash==='#league-help')navigate(location.pathname+location.search,{replace:true});menuButtonRef.current?.focus();return; }
+      if (commissionerOpen) { event.preventDefault(); setCommissionerOpen(false); menuButtonRef.current?.focus(); return; }
       if (rulesOpen) {
         event.preventDefault();
         setRulesOpen(false);
@@ -260,10 +275,14 @@ function TopBar({ freezeBanner }) {
     };
     document.addEventListener("keydown", onEscape);
     return () => document.removeEventListener("keydown", onEscape);
-  }, [accountOpen, menuOpen, rulesOpen]);
+  }, [accountOpen, menuOpen, rulesOpen, commissionerOpen, helpOpen, location.hash, location.pathname, location.search, navigate]);
 
   useEffect(() => {
-    closeMenus();
+    setMenuOpen(false);
+    setRulesOpen(false);
+    setCommissionerOpen(false);
+    setHelpOpen(false);
+    setAccountOpen(false);
   }, [location.pathname]);
 
   return (
@@ -276,10 +295,12 @@ function TopBar({ freezeBanner }) {
               type="button"
               className="hl-icon-button hl-menu-trigger"
               aria-label="Menu"
-              aria-expanded={menuOpen}
+              aria-expanded={menuOpen || linkedHelp}
               aria-controls="main-navigation-menu"
               onClick={() => {
-                setMenuOpen((open) => !open);
+                closeHelp();
+                setMenuOpen(!(menuOpen || linkedHelp));
+                setCommissionerOpen(false);
                 setRulesOpen(false);
                 setAccountOpen(false);
               }}
@@ -292,10 +313,10 @@ function TopBar({ freezeBanner }) {
               />
             </button>
 
-            {menuOpen && (
+            {(menuOpen || linkedHelp) && (
               <nav
                 id="main-navigation-menu"
-                className={`hl-main-menu${rulesOpen ? " is-rules-open" : ""}`}
+                className={`hl-main-menu${rulesOpen || commissionerOpen || helpVisible ? " is-rules-open" : ""}`}
                 aria-label="Main navigation"
               >
                 <div className="hl-main-menu__heading">
@@ -313,7 +334,9 @@ function TopBar({ freezeBanner }) {
                         active={location.pathname === routePaths.leagues}
                         onSelect={closeMenus}
                       />
-                      {leagueLinks.map(([label, to, Icon, prefixActive, description]) => (
+                      {leagueLinks.filter(([label])=>label!=="Roster operations").map(([label, to, Icon, prefixActive, description]) => label === "Commissioner tools" ? (
+                        <button key={label} type="button" className="hl-menu-link hl-menu-link--button" aria-expanded={commissionerOpen} aria-controls="commissioner-menu-panel" onClick={()=>{closeHelp();setCommissionerOpen(v=>!v);setRulesOpen(false);}}><Shield className="hl-menu-link__icon" aria-hidden="true"/><span><strong>Commissioner tools</strong><small>Calendar, scoring and administration</small></span><ChevronRight aria-hidden="true"/></button>
+                      ) : (
                         <MenuLink
                           key={label}
                           icon={Icon}
@@ -365,7 +388,7 @@ function TopBar({ freezeBanner }) {
                     className="hl-menu-link hl-menu-link--button"
                     aria-expanded={rulesOpen}
                     aria-controls="league-rules-panel"
-                    onClick={() => setRulesOpen((open) => !open)}
+                    onClick={() => {closeHelp();setRulesOpen((open) => !open);setCommissionerOpen(false);}}
                   >
                     <BookOpen className="hl-menu-link__icon" aria-hidden="true" />
                     <span>
@@ -377,6 +400,9 @@ function TopBar({ freezeBanner }) {
                     />
                   </button>
                 </div>
+                {session.status==='authenticated'&&leagueId&&<div className="hl-main-menu__footer"><button type="button" className="hl-menu-link hl-menu-link--button" aria-expanded={helpVisible} aria-controls="league-help-menu" onClick={()=>{if(helpVisible)closeHelp();else setHelpOpen(true);setRulesOpen(false);setCommissionerOpen(false);}}><BookOpen className="hl-menu-link__icon" aria-hidden="true"/><span><strong>Help</strong></span><ChevronRight aria-hidden="true"/></button></div>}
+                {helpVisible&&leagueId&&<div className="hl-rules-menu hl-help-menu" id="league-help-menu"><button type="button" className="hl-button hl-button--quiet" onClick={closeHelp}>Close help</button><LeagueHelpPanel key={leagueId} leagueId={leagueId} menuMode/></div>}
+                {commissionerOpen && leagueId && hasCommissionerAuthority(currentLeague?.membership) && <div className="hl-rules-menu hl-commissioner-menu" id="commissioner-menu-panel"><h2>Commissioner tools</h2><Link onClick={closeMenus} to={routePaths.leagueCommissioner(leagueId)}>All tools</Link>{commissionerSections.map(([key,label])=><Link className="hl-menu-link" onClick={closeMenus} key={key} to={commissionerSectionPath(leagueId,key)}>{label}</Link>)}</div>}
                 {rulesOpen && (
                   <div className="hl-rules-menu" id="league-rules-panel">
                     <LeagueRulesDropdown key={leagueId || 'global'} leagueId={leagueId} httpClient={session.httpClient} onClose={() => setRulesOpen(false)} />

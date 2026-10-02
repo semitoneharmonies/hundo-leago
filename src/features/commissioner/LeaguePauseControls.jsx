@@ -31,7 +31,7 @@ export function LeaguePauseControls({leagueId}) {
       {state.isPending&&<LoadingBlock>Checking pause status…</LoadingBlock>}{state.error&&<ErrorBlock error={state.error} fallback="Pause controls could not be loaded."/>}
       {state.data&&!state.isError&&<>
         <p>League is {state.data.paused?'paused':'not paused'}.</p>{state.data.reason&&<p>Pause reason: {state.data.reason}</p>}
-        {state.data.paused&&!state.data.canResume?<p>This pause requires its original recovery workflow before resuming.</p>:state.data.busyJobs>0?<p>{state.data.busyJobs} operations are still in progress. Let them finish or use the supported recovery controls before pausing.</p>:
+        {state.data.paused&&!state.data.canResume?<p>This pause requires its original recovery workflow before resuming.</p>:state.data.busyJobs>0?<p>{state.data.interruptedJobs>0?state.data.interruptedJobs+' operations have expired processing leases and need recovery review. Pausing remains blocked until they are resolved.':state.data.busyJobs+' operations are still in progress. Let them finish before pausing.'} <a href={'/leagues/'+encodeURIComponent(leagueId)+'/commissioner/recovery'}>Review recovery</a></p>:
           <form className={styles.editor} onSubmit={e=>{e.preventDefault();setPreview(null);apply.reset();review.mutate();}}>
             <label>Reason for {state.data.paused?'resuming':'pausing'}<input required minLength={3} maxLength={500} disabled={busy} value={reason} onChange={e=>{setReason(e.target.value);setPreview(null);review.reset();apply.reset();setReceipt('');}}/></label>
             <button type="submit" className="hl-button hl-button--secondary" disabled={busy||reason.trim().length<3}>{state.data.paused?'Review resume':'Review pause'}</button>

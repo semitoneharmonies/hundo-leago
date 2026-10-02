@@ -1,3 +1,5 @@
+import { commissionerSections, commissionerSectionPath } from '../commissioner/commissionerSections.js';
+import { LeagueCommunications, CandidateCardProgress } from '../commissioner/LeagueCommunications.jsx';
 import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
 import { sampleCompletedMatchup } from "./sampleCompletedMatchup.js";
 import { createOperationId } from "../../shared/api/idempotency.js";
@@ -1213,8 +1215,10 @@ function previewTimestamp(value, timeZone = "America/Vancouver") {
 
 export function CommissionerCompetitionPage() {
   const nowMs = useCurrentTime();
-  const { leagueId } = useParams();
+  const { leagueId, section: routeSection } = useParams();
   const [searchParams] = useSearchParams();
+  const section=routeSection || (searchParams.has('fadId') || searchParams.has('recoveryId') || searchParams.get('tools')==='fad' ? 'fad' : 'overview');
+  const pageTitle=commissionerSections.find(([key])=>key===section)?.[1] || 'Commissioner tools';
   const context = useCompetitionContext(leagueId);
   const queryClient = useQueryClient();
   const [schedulePreviewState, setSchedulePreviewState] = useState(null);
@@ -1313,26 +1317,22 @@ export function CommissionerCompetitionPage() {
     } catch { setSetupReview(false); }
   }
   return (
-    <CompetitionGate context={context} title="Commissioner competition tools">
+    <CompetitionGate context={context} title={pageTitle}>
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
-          <Surface className="hl-competition-setup-card">
-            <h2>Roster corrections</h2>
-            <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
-            <Link className="hl-button hl-button--secondary" to={routePaths.leagueCommissionerRoster(leagueId)}>Manage rosters</Link>
-          </Surface>
-          <TradeDeadlineControls key={leagueId} leagueId={leagueId} />
-          <LeagueCalendarControls key={'calendar-' + leagueId} leagueId={leagueId} />
-          <SeasonRolloverPreview key={'season-preview-'+leagueId} leagueId={leagueId} />
-          <LeagueRecoveryPanel key={'recovery-'+leagueId} leagueId={leagueId} seasonId={seasonId} />
-          <CorrectionReversalControls key={'reversals-'+leagueId} leagueId={leagueId} />
-          <LeagueHelpPanel key={'help-'+leagueId} leagueId={leagueId} />
-          <LeaguePauseControls key={'pause-' + leagueId} leagueId={leagueId} />
-          <GuidedLeagueResetControls key={'reset-'+leagueId} leagueId={leagueId} />
-          <LeaguePickRepairControls key={'picks-' + leagueId} leagueId={leagueId} />
-          <LeagueManagementPanel key={'management-' + leagueId} leagueId={leagueId} />
-          <LeagueAuctionScheduleControls key={'auction-schedule-' + leagueId} leagueId={leagueId} />
-          <LeagueScoringControls key={'scoring-' + leagueId} leagueId={leagueId} />
+          <nav className="hl-commissioner-section-nav" aria-label="Commissioner sections"><Link to={routePaths.leagueCommissioner(leagueId)}>All commissioner tools</Link></nav>
+          {section==='overview' && <div className="hl-commissioner-grid">{commissionerSections.map(([key,label,description])=><Link className="hl-surface hl-commissioner-tile" key={key} to={commissionerSectionPath(leagueId,key)}><h2>{label}</h2><p>{description}</p></Link>)}</div>}
+          {section!=='overview' && !commissionerSections.some(([key])=>key===section) && <p role="alert">This commissioner tool was not found. Choose a tool from the menu.</p>}
+          {section==='calendar' && <><LeagueCalendarControls key={'calendar-'+leagueId} leagueId={leagueId}/><TradeDeadlineControls key={leagueId} leagueId={leagueId}/></>}
+          {section==='season' && <><SeasonRolloverPreview key={'season-preview-'+leagueId} leagueId={leagueId}/><GuidedLeagueResetControls key={'reset-'+leagueId} leagueId={leagueId}/></>}
+          {section==='recovery' && <><LeagueRecoveryPanel key={'recovery-'+leagueId} leagueId={leagueId} seasonId={seasonId}/><LeaguePickRepairControls key={'picks-'+leagueId} leagueId={leagueId}/><CorrectionReversalControls key={'reversals-'+leagueId} leagueId={leagueId}/></>}
+          {section==='help' && <LeagueHelpPanel key={'help-'+leagueId} leagueId={leagueId} commissionerView/>}
+          {section==='pause' && <LeaguePauseControls key={'pause-'+leagueId} leagueId={leagueId}/>}
+          {['readiness','history','export'].includes(section) && <LeagueManagementPanel key={'management-'+leagueId+'-'+section} leagueId={leagueId} initialSection={section} standalone/>}
+          {section==='auctions' && <LeagueAuctionScheduleControls key={'auction-schedule-'+leagueId} leagueId={leagueId}/>}
+          {section==='scoring' && <LeagueScoringControls key={'scoring-'+leagueId} leagueId={leagueId}/>}
+          {section==='communications' && <LeagueCommunications leagueId={leagueId} canManage initiallyExpanded/>}
+          {section==='calendar' && <>
           {availableWeeks.length > 0 ? (
             <Surface className="hl-competition-setup-card">
               <h2>Schedule generation</h2>
@@ -1441,10 +1441,11 @@ export function CommissionerCompetitionPage() {
               </label>
             ) : null}
           </PreviewAction>
-          <details id="fad-recovery" className="hl-surface hl-seasonal-tools" open={searchParams.has("fadId") || searchParams.has("recoveryId") || searchParams.get("tools")==="fad"}>
+          </>}
+          {section==='fad' && <><CandidateCardProgress leagueId={leagueId}/><details id="fad-recovery" className="hl-surface hl-seasonal-tools" open>
             <summary>Seasonal tools · Free Agent Draft</summary>
             <CommissionerFadPanel leagueId={leagueId} seasonId={seasonId} timeZone={context.league?.timezone} />
-          </details>
+          </details></>}
         </>
       )}
       <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>

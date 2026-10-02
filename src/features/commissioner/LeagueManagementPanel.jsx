@@ -1,3 +1,5 @@
+import {OperationStatus} from './OperationStatus.jsx';
+import {commissionerSectionPath} from './commissionerSections.js';
 import {useState} from 'react';
 import {useMutation,useQuery} from '@tanstack/react-query';
 import {Link} from 'react-router-dom';
@@ -31,8 +33,8 @@ function values(value,prefix='') {
     return values(item,label);
   }).slice(0,80);
 }
-export function LeagueManagementPanel({leagueId}) {
-  const session=useSession(),[opened,setOpened]=useState(false),[section,setSection]=useState('readiness'),[search,setSearch]=useState(''),[filter,setFilter]=useState({q:'',kind:'all',cursor:null}),[downloaded,setDownloaded]=useState(false);
+export function LeagueManagementPanel({leagueId,initialSection='readiness',standalone=false}) {
+  const session=useSession(),[opened,setOpened]=useState(standalone),[section,setSection]=useState(initialSection),[search,setSearch]=useState(''),[filter,setFilter]=useState({q:'',kind:'all',cursor:null}),[downloaded,setDownloaded]=useState(false);
   const base='/api/v1/leagues/'+encodeURIComponent(leagueId)+'/management/';
   async function request(kind,query='',signal) {
     const result=await session.httpClient.request(base+kind+query,{authenticated:true,dataKind:'object',signal,validateData:data=>validate(data,leagueId,kind)});
@@ -47,45 +49,45 @@ export function LeagueManagementPanel({leagueId}) {
     document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);setDownloaded(true);
   }});
   const info=readiness.data;
-  return <Surface as="section" className={styles.section} aria-label="League management reports"><details onToggle={e=>setOpened(e.currentTarget.open)}>
-    <summary>League readiness, change history and export</summary>
-    {opened&&session.status==='authenticated'&&<><div className={styles.actions}>{[['readiness','League readiness'],['history','Change history'],['export','Export league data']].map(([key,label])=><button key={key} type="button" className={'hl-button '+(section===key?'hl-button--primary':'hl-button--secondary')} aria-pressed={section===key} onClick={()=>setSection(key)}>{label}</button>)}</div>
+  return <Surface as="section" className={styles.section} aria-label="League management reports"><details open={opened} onToggle={e=>setOpened(e.currentTarget.open)}>
+    <summary>{standalone?({readiness:'League readiness',history:'Change history',export:'Export data (JSON)'})[section]:'League readiness, change history and export'}</summary>
+    {opened&&session.status==='authenticated'&&<>{!standalone&&<div className={styles.actions}>{[['readiness','League readiness'],['history','Change history'],['export','Export league data']].map(([key,label])=><button key={key} type="button" className={'hl-button '+(section===key?'hl-button--primary':'hl-button--secondary')} aria-pressed={section===key} onClick={()=>setSection(key)}>{label}</button>)}</div>}
       {section==='readiness'&&<div>
-        <h3>League readiness</h3><p>Check participation, lineup preparation, dates and operations before the next league event.</p>
+        <h3>League readiness</h3><p>Read-only check of teams, dates and scheduled operations. Refresh to check again.</p>
         {readiness.isPending&&<LoadingBlock>Checking league readiness…</LoadingBlock>}
         {readiness.error&&<ErrorBlock error={readiness.error} fallback="The readiness check could not be completed."/>}
         {info&&!readiness.isError&&<>
           <p>Checked {new Date(info.checkedAtMs).toLocaleString()}.</p>
-          <ul><li>{info.summary.missingManagers} teams without an active manager</li><li>{info.summary.unfinishedCards} unfinished Candidate Cards</li>
+          <ul className={styles.summaryGrid}><li>{info.summary.missingManagers} teams without an active manager</li><li>{info.summary.unfinishedCards} unfinished Candidate Cards</li>
             <li>{info.summary.illegalRosters} rosters needing attention for competition</li><li>{info.summary.missingPicks} missing draft picks</li>
             <li>{info.summary.calendarIssues} calendar items to review</li><li>{info.summary.operations} failed or interrupted operations</li></ul>
           {!info.teams.length&&<p>No active teams are configured. <Link to={routePaths.leagueTeams(leagueId)}>Manage teams</Link></p>}
-          <ul className={styles.cards}>{info.teams.map(t=><li key={t.id}><div><strong>{t.name}</strong><p>{t.managerName||'No active manager'}{t.cardStatus?' · Candidate Card: '+t.cardStatus.replace('_',' '):''}</p>
+          <ul className={styles.cards}>{info.teams.filter(t=>!t.managerName||(t.cardStatus&&t.cardStatus!=='complete')||(t.roster&&!t.roster.legal)).map(t=><li key={t.id}><div><strong>{t.name}</strong><p>{t.managerName||'No active manager'}{t.cardStatus?' · Candidate Card: '+t.cardStatus.replace('_',' '):''}</p>
             {t.roster&&!t.roster.legal&&<p>{t.roster.requiredNow?'Roster attention needed':'Roster preparation before competition'}: {t.roster.reasonCodes.map(c=>rosterLabels[c]||'Review roster limits and assignments').join('; ')}.</p>}
             {!t.roster&&<p>Roster checks await an available season and roster.</p>}</div><Link to={routePaths.leagueCommissionerRoster(leagueId)}>Review roster</Link></li>)}</ul>
-          {info.calendarIssues.length>0&&<><h4>Calendar</h4><ul>{info.calendarIssues.map(c=><li key={c}>{calendarLabels[c]||'Review league calendar'}</li>)}</ul><p>Use the calendar and FAD controls on this page.</p></>}
+          {info.calendarIssues.length>0&&<><h4>Calendar</h4><ul>{info.calendarIssues.map(c=><li key={c}>{calendarLabels[c]||'Review league calendar'}</li>)}</ul><Link to={commissionerSectionPath(leagueId,'calendar')}>Review league calendar</Link></>}
           {info.missingPicks.length>0&&<><h4>Missing draft picks</h4><ul>{info.missingPicks.map(p=><li key={p.draftId+p.teamId+p.round}>{p.teamName} · Round {p.round}</li>)}</ul><Link to={routePaths.leagueDrafts(leagueId)}>Review entry draft</Link></>}
-          {info.operations.length>0&&<><h4>Operations to review</h4><p>Use the supported FAD or matchup recovery controls. This check does not retry operations.</p><ul>{info.operations.map(j=><li key={j.id}>{j.jobName.startsWith('free_agent')?'Free Agent Draft':j.jobName.startsWith('matchup')?'Matchup processing':'League operation'} — {j.status}, {j.attempts} attempts.</li>)}</ul></>}
+          {info.operations.length>0&&<><h4>Operations to review</h4><p>Use the supported FAD or matchup recovery controls. This check does not retry operations.</p><ul className={styles.cards}>{info.operations.map(j=><OperationStatus key={j.id} job={j} checkedAtMs={info.checkedAtMs} leagueId={leagueId}/>)}</ul></>}
           {info.summary.operations>info.operations.length&&<p>Showing the first {info.operations.length} of {info.summary.operations} operations needing review.</p>}
           <div className={styles.actions}><button type="button" className="hl-button hl-button--secondary" disabled={readiness.isFetching} onClick={()=>readiness.refetch()}>Refresh readiness check</button></div>
         </>}
       </div>}
-      {section==='history'&&<div><h3>Administrative change history</h3><p>Search by commissioner, reason, change or record identifier. Private reviews show access events without revealing the contents.</p>
-        <form className={styles.editor} onSubmit={e=>{e.preventDefault();setFilter(old=>({...old,q:search,cursor:null}));}}>
+      {section==='history'&&<div><h3>Administrative change history</h3><p>Search changes by person, reason or category. Private contents stay hidden.</p>
+        <form className={styles.filterBar} onSubmit={e=>{e.preventDefault();setFilter(old=>({...old,q:search,cursor:null}));}}>
           <label>Search changes<input maxLength={120} value={search} onChange={e=>setSearch(e.target.value)}/></label>
           <label>Change category<select value={filter.kind} onChange={e=>setFilter(old=>({...old,kind:e.target.value,cursor:null}))}>{categories.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
           <button type="submit" className="hl-button hl-button--secondary">Search history</button>
         </form>
         {history.isPending&&<LoadingBlock>Loading change history…</LoadingBlock>}{history.error&&<ErrorBlock error={history.error} fallback="Change history could not be loaded."/>}
-        {history.data&&!history.isError&&<>{!history.data.changes.length&&<p>No matching changes.</p>}<ol>{history.data.changes.map(c=><li key={c.id} className={styles.notice}>
+        {history.data&&!history.isError&&<>{!history.data.changes.length&&<p>No matching changes.</p>}<ol className={styles.historyGrid}>{history.data.changes.map(c=><li key={c.id} className={styles.notice}>
           <strong>{c.summary}</strong><p>{new Date(c.at).toLocaleString()} · {c.actorName}</p>{c.reason&&<p>Reason: {c.reason}</p>}
-          {(c.before||c.after)&&<details><summary>Before and after</summary><h4>Before</h4><ul>{values(c.before).map(([label,value],i)=><li key={i}>{label}: {value}</li>)}</ul><h4>After</h4><ul>{values(c.after).map(([label,value],i)=><li key={i}>{label}: {value}</li>)}</ul></details>}
+          {(c.before||c.after)&&<details><summary>Before and after</summary><div className={styles.comparisonGrid}><section><h4>Before</h4><ul>{values(c.before).map(([label,value],i)=><li key={i}>{label}: {value}</li>)}</ul></section><section><h4>After</h4><ul>{values(c.after).map(([label,value],i)=><li key={i}>{label}: {value}</li>)}</ul></section></div></details>}
         </li>)}</ol><div className={styles.actions}>{filter.cursor&&<button type="button" className="hl-button hl-button--secondary" onClick={()=>setFilter(old=>({...old,cursor:null}))}>Newest changes</button>}
           {history.data.page.hasMore&&<button type="button" className="hl-button hl-button--secondary" onClick={()=>setFilter(old=>({...old,cursor:history.data.page.nextCursor}))}>Older changes</button>}</div></>}
       </div>}
-      {section==='export'&&<div><h3>Export current-season league data</h3><p>Download league and team details, current roster contracts, draft picks and recorded matchup results as JSON.</p>
+      {section==='export'&&<div><h3>Export current-season league data</h3><p>Download current teams, rosters, contracts, picks and results as JSON for technical analysis or reference. This is a data file, not a formatted report.</p>
         <p>Candidate Cards, private bids, trade proposals, account contact details and private administrative notes are excluded. This is a reference export; restoring league state uses the separate recovery workflow.</p>
-        <button type="button" className="hl-button hl-button--secondary" disabled={download.isPending} onClick={()=>{setDownloaded(false);download.mutate();}}>Download league export</button>
+        <button type="button" className="hl-button hl-button--secondary" disabled={download.isPending} onClick={()=>{setDownloaded(false);download.mutate();}}>Export data (JSON)</button>
         {download.error&&<ErrorBlock error={download.error} fallback="The export could not be downloaded."/>}{downloaded&&<p role="status">League export downloaded.</p>}
       </div>}
     </>}

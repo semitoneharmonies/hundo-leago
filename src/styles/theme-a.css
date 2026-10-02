@@ -7121,3 +7121,23 @@ a.hl-player-card-trigger:focus-visible { outline: 2px solid #d5b66f; outline-off
   .hl-quote-ticker__item { font-size: 0.8rem; }
   .hl-dashboard__transactions .hl-trade-block__heading { min-height: 80px; padding-block: 20px; }
 }
+
+/* Focused commissioner tools share one responsive navigation and layout. */
+.hl-commissioner-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:1rem; }
+.hl-commissioner-tile { display:block; padding:1.1rem 1.3rem; text-decoration:none; color:inherit; }
+.hl-commissioner-tile h2 { margin:0 0 .35rem; font-size:1.05rem; }
+.hl-commissioner-tile p { margin:0; opacity:.8; }
+.hl-commissioner-tile:hover { border-color:var(--hl-accent); }
+.hl-commissioner-section-nav { margin-bottom:1rem; }
+.hl-commissioner-menu { background:var(--hl-surface,#15202d); padding:.8rem; overflow-y:auto; max-height:calc(100dvh - 100px); }
+.hl-commissioner-menu h2 { margin:.2rem .6rem; font-size:1rem; }
+.hl-commissioner-menu .hl-menu-link { display:block; min-height:0; padding:.55rem .65rem; }
+.hl-commissioner-menu > a { color:inherit; }
+
+.hl-help-menu { background:var(--hl-surface,#15202d); padding:.6rem; max-height:calc(100dvh - 110px); overflow:auto; overscroll-behavior:contain; }
+.hl-help-menu section { margin:0; }
+.hl-help-menu input,.hl-help-menu select,.hl-help-menu textarea { min-width:0; max-width:100%; }
+@media(max-width:700px) { .hl-main-menu:has(.hl-help-menu) { --hl-menu-width:120px; } .hl-help-menu { position:fixed; left:12px; right:12px; top:76px; width:auto; max-height:calc(100dvh - 92px); z-index:2; } }
+
+.hl-help-menu > button { position:sticky; top:0; z-index:3; background:var(--hl-surface,#15202d); margin-bottom:.4rem; }
+.hl-help-menu .hl-surface { padding:1rem; }

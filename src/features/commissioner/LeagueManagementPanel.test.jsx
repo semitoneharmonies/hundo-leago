@@ -47,7 +47,7 @@ describe('Commissioner management reports',()=>{
   try {
    const {user,request}=setup();await user.click(screen.getByText('League readiness, change history and export'));
    await user.click(screen.getByRole('button',{name:'Export league data'}));expect(request.mock.calls.some(([url])=>url.endsWith('/export'))).toBe(false);
-   await user.click(screen.getByRole('button',{name:'Download league export'}));
+   await user.click(screen.getByRole('button',{name:'Export data (JSON)'}));
    expect(await screen.findByRole('status')).toHaveTextContent('League export downloaded.');expect(click).toHaveBeenCalledOnce();
    expect(request.mock.calls.every(([,options])=>options.method===undefined)).toBe(true);
    await waitFor(()=>expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fixture'),{timeout:2000});
@@ -60,7 +60,7 @@ describe('Commissioner management reports',()=>{
  });
  it('rejects an export that contains a private extra field',async()=>{
   const {user}=setup({badExport:true});await user.click(screen.getByText('League readiness, change history and export'));
-  await user.click(screen.getByRole('button',{name:'Export league data'}));await user.click(screen.getByRole('button',{name:'Download league export'}));
+  await user.click(screen.getByRole('button',{name:'Export league data'}));await user.click(screen.getByRole('button',{name:'Export data (JSON)'}));
   expect(await screen.findByRole('alert')).toHaveTextContent('The export could not be downloaded.');
  });
 });

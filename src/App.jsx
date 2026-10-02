@@ -1869,6 +1869,7 @@ return (
         <Route path="/leagues/:leagueId/matchups" element={<LeagueMatchupsPage />} />
         <Route path="/leagues/:leagueId/standings" element={<LeagueStandingsPage />} />
         <Route path="/leagues/:leagueId/commissioner" element={<CommissionerCompetitionPage />} />
+        <Route path="/leagues/:leagueId/commissioner/:section" element={<CommissionerCompetitionPage />} />
         <Route
           path="/leagues/:leagueId/commissioner/rosters"
           element={<CommissionerRosterPage />}

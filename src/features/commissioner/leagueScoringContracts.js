@@ -10,7 +10,7 @@ export function validateLeagueScoring(data,leagueId,kind='state') {
       typeof data.current?.version==='string'&&Array.isArray(data.weeks)&&Array.isArray(data.rules);
     validateScoringWeights(data.current?.weights);validateScoringWeights(data.defaults);
     valid&&=data.weeks.every(w=>id(w.id)&&integer(w.sequence)&&w.sequence>0&&typeof w.status==='string'&&integer(w.startsAtMs)&&integer(w.endsAtMs)&&typeof w.editable==='boolean');
-    valid&&=data.rules.every(r=>id(r.id)&&integer(r.revision)&&integer(r.effectiveWeekSequence)&&integer(r.createdAtMs)&&validateScoringWeights(r.weights));
+    valid&&=data.rules.every(r=>id(r.id)&&integer(r.revision)&&integer(r.effectiveWeekSequence)&&integer(r.createdAtMs)&&validateScoringWeights(r.weights)&&(!r.beforeWeights||validateScoringWeights(r.beforeWeights)));
   }
   if(kind==='preview') {
     valid&&=data.proposed&&integer(data.proposed.effectiveWeekSequence)&&typeof data.proposed.reason==='string'&&validateScoringWeights(data.proposed.weights)&&

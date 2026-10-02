@@ -71,8 +71,8 @@ function setup({ pending = false, hasDeadline = false, failStart = false } = {})
     throw new Error(`Unexpected request: ${path}`);
   });
   return { requests, allowStart: () => { rejectStart = false; }, ...renderWithProviders(
-    <Routes><Route path="/leagues/:leagueId/commissioner" element={<CommissionerCompetitionPage />} /></Routes>,
-    { initialEntries: [`/leagues/${leagueId}/commissioner`], enableSession: true, config, sessionOptions: { fetchImpl } }) };
+    <Routes><Route path="/leagues/:leagueId/commissioner/:section" element={<CommissionerCompetitionPage />} /></Routes>,
+    { initialEntries: [`/leagues/${leagueId}/commissioner/calendar`], enableSession: true, config, sessionOptions: { fetchImpl } }) };
 }
 
 async function enterDates() {

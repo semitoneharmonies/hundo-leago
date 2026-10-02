@@ -10,6 +10,12 @@ const leagueId='11111111-1111-4111-8111-111111111111',seasonId='22222222-2222-42
 const defaults=Object.fromEntries(['F','D'].map(p=>[p,Object.fromEntries(SCORING_CATEGORIES.map(c=>[c.key,scoringWeight(c,p)]))]));
 const state={leagueId,seasonId,current:{version:'expanded-2026-v1',weights:defaults},defaults,currentWeekSequence:1,serverNowMs:100,
  weeks:[{id:weekId,sequence:2,status:'scheduled',startsAtMs:200,endsAtMs:300,editable:true}],rules:[]};
+it('describes the exact prior and new scoring values in history',async()=>{
+ const weights=structuredClone(defaults);weights.F.hits=5;
+ setup({data:{...state,rules:[{id:ruleId,revision:1,effectiveWeekSequence:2,weights,beforeWeights:defaults,createdAtMs:50,actorName:'Taylor',reason:'League vote'}]}});
+ expect(await screen.findByText(/Hits \(Forward\):.*→ 0.05 FP/)).toBeInTheDocument();
+ expect(screen.queryByText(/Hits \(Defence\)/)).not.toBeInTheDocument();
+});
 function setup({data=state,failFirst=false,malformed=false,reference=false}={}) {
  let attempts=0;const request=vi.fn(async(url,options={})=>{
    let result=data;

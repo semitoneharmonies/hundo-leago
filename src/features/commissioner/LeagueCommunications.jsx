@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ErrorBlock, LoadingBlock, Surface } from "../../components/HundoUi.jsx";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
@@ -12,7 +12,7 @@ function displayTime(value) { return new Date(value).toLocaleString(); }
 
 function Message({ message }) {
   return <article className={styles.notice}>
-    <h3>{message.pinned && <span aria-label="Pinned">📌 </span>}{message.title}</h3>
+    <h3>{message.pinned && <span className={styles.pinned}>Pinned</span>}{message.title}</h3>
     <p className={styles.message}>{message.body}</p>
     <p className={styles.meta}>{message.authorName || "League administration"} · {displayTime(message.createdAtMs)}
       {message.expiresAtMs !== null && <> · Expires {displayTime(message.expiresAtMs)}</>}</p>
@@ -27,9 +27,6 @@ function CommunicationControls({ leagueId, client }) {
   const [receipt, setReceipt] = useState("");
   const [archiveTarget, setArchiveTarget] = useState(null);
   const history = useQuery(communicationsQuery(client, leagueId, true));
-  const progress = useQuery({ queryKey: [...communicationsKey(leagueId), "cards"],
-    queryFn: ({ signal }) => communicationRequest(client, leagueId, "/card-progress", { signal }, "cards"),
-    meta: { private: true, leagueId }, refetchInterval: 30_000, retry: false });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: communicationsKey(leagueId) });
   const review = useMutation({
     mutationFn: message => communicationRequest(client, leagueId, "/preview", { method: "POST", body: message }, "preview"),
@@ -62,17 +59,7 @@ function CommunicationControls({ leagueId, client }) {
     setExpiry("");
   }
   return <div>
-    <h3>Candidate Card progress</h3>
-    <p>Completion status only. Player selections and offers remain private.</p>
-    {progress.isPending && <LoadingBlock>Loading card progress…</LoadingBlock>}
-    {progress.error && <ErrorBlock error={progress.error} fallback="Card progress is unavailable." />}
-    {progress.data && (progress.data.total === 0 ? <p>No open Candidate Cards for this season.</p> : <>
-      <p><strong>{progress.data.complete} of {progress.data.total} complete</strong> · {progress.data.empty} empty</p>
-      <ul className={styles.cards}>{progress.data.cards.map(card => <li key={card.teamId}>
-        <span><strong>{card.teamName}</strong> — {card.displayName || "Manager unassigned"}</span><span>{labels[card.status]}</span>
-      </li>)}</ul>
-    </>)}
-    <form className={styles.editor} onSubmit={event => { event.preventDefault(); setPreview(null); send.reset(); review.mutate(draft); }}>
+    <form className={styles.editor+" "+styles.compactEditor} onSubmit={event => { event.preventDefault(); setPreview(null); send.reset(); review.mutate(draft); }}>
       <h3>Announcements and reminders</h3>
       <label>Message type<select value={draft.kind} disabled={busy} onChange={event => switchKind(event.target.value)}>
         <option value="announcement">League announcement</option><option value="reminder">Targeted reminder</option>
@@ -82,14 +69,14 @@ function CommunicationControls({ leagueId, client }) {
         <option value="pending_invitations">People with pending league invitations</option><option value="members">All active league members</option>
       </select></label>}
       <label>Title<input required maxLength={120} value={draft.title} disabled={busy} onChange={event => change({ title: event.target.value })} /></label>
-      <label>Message<textarea required maxLength={3000} value={draft.body} disabled={busy} onChange={event => change({ body: event.target.value })} /></label>
+      <label className={styles.wide}>Message<textarea required maxLength={3000} value={draft.body} disabled={busy} onChange={event => change({ body: event.target.value })} /></label>
       {draft.kind === "announcement" && <>
         <label className={styles.check}><input type="checkbox" checked={draft.pinned} disabled={busy} onChange={event => change({ pinned: event.target.checked })} />Pin to the league dashboard</label>
         <label className={styles.check}><input type="checkbox" checked={draft.notify} disabled={busy} onChange={event => change({ notify: event.target.checked })} />Also notify league members</label>
         <label>Optional expiry ({Intl.DateTimeFormat().resolvedOptions().timeZone})<input type="datetime-local" value={expiry} disabled={busy}
           onChange={event => { setExpiry(event.target.value); change({ expiresAtMs: event.target.value ? new Date(event.target.value).getTime() : null }); }} /></label>
       </>}
-      <p>Notifications appear inside Hundo Leago. Review the message and recipients before confirming.</p>
+      <p className={styles.wide}>Delivery: in-app notifications.</p>
       <div className={styles.actions}><button className="hl-button hl-button--secondary" type="submit" disabled={busy || !draft.title.trim() || !draft.body.trim()}>
         {review.isPending ? "Preparing preview…" : "Preview message"}</button></div>
       {review.error && <ErrorBlock error={review.error} fallback="The preview could not be prepared." />}
@@ -124,9 +111,9 @@ function CommunicationControls({ leagueId, client }) {
   </div>;
 }
 
-export function LeagueCommunications({ leagueId, canManage = false }) {
+export function LeagueCommunications({ leagueId, canManage = false, initiallyExpanded = false }) {
   const session = useSession();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
   const announcements = useQuery({ ...communicationsQuery(session.httpClient, leagueId), enabled: session.status === "authenticated" });
   if (!canManage && announcements.isSuccess && !announcements.data.messages.length) return null;
   return <Surface className={styles.section} as="section" aria-label="League announcements">
@@ -135,8 +122,32 @@ export function LeagueCommunications({ leagueId, canManage = false }) {
     {announcements.isPending && <LoadingBlock>Loading announcements…</LoadingBlock>}
     {announcements.error && <ErrorBlock error={announcements.error} fallback="League announcements are unavailable." />}
     {canManage && announcements.data?.messages.length === 0 && <p>No current announcements.</p>}
-    {canManage && <details onToggle={event => setExpanded(event.currentTarget.open)}><summary>Manage announcements and reminders</summary>
+    {canManage && <details open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}><summary>Manage announcements and reminders</summary>
       {expanded && <CommunicationControls key={leagueId} leagueId={leagueId} client={session.httpClient} />}
     </details>}
   </Surface>;
+}
+
+export function CandidateCardProgress({leagueId}) {
+ const session=useSession(),client=useQueryClient(),attempt=useRef(null),busyRef=useRef(false);
+ const [receipt,setReceipt]=useState('');
+ const progress=useQuery({queryKey:[...communicationsKey(leagueId),'cards'],queryFn:({signal})=>communicationRequest(session.httpClient,leagueId,'/card-progress',{signal},'cards'),enabled:session.status==='authenticated',meta:{private:true,leagueId},refetchInterval:30000,retry:false});
+ const send=useMutation({mutationFn:async()=>{
+   if(busyRef.current)return null;busyRef.current=true;
+   try {
+    if(!attempt.current){const message={kind:'reminder',title:'Complete your Candidate Card',body:'Please finish and save your Candidate Card before the draft target deadline. Open Free Agent Draft to review your card.',audience:'unfinished_cards',pinned:false,expiresAtMs:null,notify:true};
+      const preview=await communicationRequest(session.httpClient,leagueId,'/preview',{method:'POST',body:message},'preview');
+      attempt.current={key:createIdempotencyKey('card-reminder'),body:{message:preview.message,previewHash:preview.previewHash}};
+    }
+    return await communicationRequest(session.httpClient,leagueId,'',{method:'POST',body:attempt.current.body,idempotencyKey:attempt.current.key},'sent');
+   } finally {busyRef.current=false;}
+ },onSuccess:async data=>{if(!data)return;setReceipt('Reminder delivered to '+data.recipientCount+' '+(data.recipientCount===1?'manager.':'managers.'));attempt.current=null;await client.invalidateQueries({queryKey:communicationsKey(leagueId)});},onError:error=>{if(error.code==='COMMUNICATION_PREVIEW_CHANGED'||error.code==='COMMUNICATION_NO_RECIPIENTS')attempt.current=null;}});
+ const data=progress.isError?null:progress.data,unfinished=data?.cards.filter(c=>c.status!=='complete')||[],recipients=new Set(unfinished.filter(c=>c.userId).map(c=>c.userId)).size;
+ return <Surface as="section" className={styles.section} aria-label="Candidate Card progress"><h2>Candidate Card progress</h2><p>Status only; selections and offers stay private.</p>
+ {progress.isPending&&<LoadingBlock>Checking Candidate Cards…</LoadingBlock>}{progress.error&&<ErrorBlock error={progress.error}/>}
+ {data&&<>{data.total===0?<p>No open Candidate Cards for this season.</p>:<><p><strong>{data.complete} of {data.total} complete</strong> · {unfinished.length} unfinished</p><ul className={styles.cards}>{data.cards.map(c=><li key={c.teamId}><span><strong>{c.teamName}</strong> · {c.displayName||'Manager unassigned'}</span><span>{labels[c.status]}</span></li>)}</ul>
+ <button type="button" className="hl-button hl-button--secondary" disabled={send.isPending||(!recipients&&!attempt.current)} onClick={()=>{setReceipt('');send.mutate();}}>{send.isPending?'Sending…':attempt.current?'Retry reminder':'Remind managers with unfinished cards'}</button>
+ {!recipients&&<p>{unfinished.length?'Unfinished cards have no assigned manager to notify.':'All cards are complete. No reminder needed.'}</p>}</> }</>}
+ {send.error&&<ErrorBlock error={send.error} fallback="The reminder was not confirmed. Retry to check the same send; managers will not receive duplicate notifications."/>}{receipt&&<p role="status">{receipt}</p>}
+ </Surface>;
 }

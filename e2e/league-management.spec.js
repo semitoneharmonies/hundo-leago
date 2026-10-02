@@ -13,7 +13,7 @@ test('commissioner checks readiness, searches access history and downloads an ex
  await page.getByLabel('Search changes').fill('Taylor');await page.getByRole('button',{name:'Search history'}).click();
  await page.getByRole('button',{name:'Export league data'}).click();
  expect(await page.evaluate(()=>window.managementRequests.some(r=>r.url.endsWith('/export')))).toBe(false);
- const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Download league export'}).click();
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Export data (JSON)'}).click();
  const download=await downloadPromise;expect(download.suggestedFilename()).toMatch(/^hundo-league-.*\.json$/);
  await download.saveAs(testInfo.outputPath('synthetic-league-export.json'));
  expect(await page.evaluate(()=>window.managementRequests.every(r=>r.method==='GET'&&r.url.includes('/management/')))).toBe(true);

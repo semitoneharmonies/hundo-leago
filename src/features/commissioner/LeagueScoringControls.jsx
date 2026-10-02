@@ -43,6 +43,7 @@ export function LeagueScoringControls({leagueId}) {
         setEditor({week:String(week),comparison:'',reason:'',weights:editableWeights(planned?.weights||state.data.defaults)});setReceipt('');
       }}>Edit scoring values</button>}
       {editor&&<form className={styles.editor} onSubmit={event=>{event.preventDefault();setPreview(null);apply.reset();review.mutate();}}>
+        <p>Current matchup: Week {state.data.currentWeekSequence}. Choose a later week to schedule a change.</p>
         <label>Effective matchup week<select disabled={busy} value={editor.week} onChange={event=>edit({week:event.target.value})}>
           {state.data.weeks.length?weeks.map(w=><option key={w.id} value={w.sequence}>Week {w.sequence}{w.startsAtMs<=state.data.serverNowMs?' — already started':''}</option>):<option value="1">Week 1 — schedule pending</option>}
         </select></label>
@@ -54,7 +55,7 @@ export function LeagueScoringControls({leagueId}) {
             onChange={event=>edit({weights:{...editor.weights,[p]:{...editor.weights[p],[c.key]:event.target.value}}})}/></td>)}</tr>)}</tbody></table></TableScroll>
         <button type="button" className="hl-button hl-button--quiet" disabled={busy} onClick={()=>edit({weights:editableWeights(state.data.defaults)})}>Use default values in this draft</button>
         <label>Compare scores using<select disabled={busy} value={editor.comparison} onChange={event=>edit({comparison:event.target.value})}>
-          <option value="">The effective week</option>{state.data.weeks.map(w=><option key={w.id} value={w.id}>Week {w.sequence} — preview only</option>)}
+          <option value="">The effective week</option>{state.data.weeks.map(w=><option key={w.id} value={w.id}>Week {w.sequence}{w.sequence===state.data.currentWeekSequence?" — current week":""} — preview only</option>)}
         </select></label>
         <label>Reason for scoring change<input required minLength={3} maxLength={500} disabled={busy} value={editor.reason} onChange={event=>edit({reason:event.target.value})}/></label>
         <div className={styles.actions}><button type="submit" className="hl-button hl-button--secondary" disabled={busy||!valid}>Review scoring change</button>
@@ -76,7 +77,7 @@ export function LeagueScoringControls({leagueId}) {
           <button type="button" className="hl-button hl-button--quiet" disabled={busy} onClick={()=>{setPreview(null);apply.reset();}}>Keep current scoring values</button></div>
         {apply.error&&<ErrorBlock error={apply.error} fallback="The scoring values could not be saved."/>}
       </section>}
-      {state.data.rules.length>0&&<details><summary>Scoring change history</summary><ol>{state.data.rules.map(r=><li key={r.id}>From Week {r.effectiveWeekSequence} — {r.actorName}: {r.reason}</li>)}</ol></details>}
+      {state.data.rules.length>0&&<details><summary>Scoring change history</summary><ol>{state.data.rules.map(r=><li key={r.id}>From Week {r.effectiveWeekSequence} — {r.actorName}: {r.reason}<ul>{['F','D'].flatMap(position=>SCORING_CATEGORIES.filter(c=>r.beforeWeights && r.beforeWeights[position]?.[c.key]!==r.weights[position][c.key]).map(c=><li key={position+c.key}>{c.label} ({position==='F'?'Forward':'Defence'}): {points(r.beforeWeights[position][c.key])} → {points(r.weights[position][c.key])} FP</li>))}</ul>{!r.beforeWeights&&<span> Previous values unavailable for this record.</span>}</li>)}</ol></details>}
     </>}
     {receipt&&<p role="status">{receipt}</p>}
   </Surface>;

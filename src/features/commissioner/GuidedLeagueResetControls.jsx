@@ -13,7 +13,7 @@ export function GuidedLeagueResetControls({leagueId}){
  async function load(){await run(async()=>{const r=await httpClient.request(base,{authenticated:true,dataKind:'object',validateData:d=>{valid(d);if(!Array.isArray(d.archives)||!d.league)throw Error('Invalid state');return true;}});setState(r.data);setPreview(null);attempt.current=null;});}
  async function review(action){await run(async()=>{setSaved('');setPreview(null);setConfirmation('');attempt.current=null;const proposed={action,archiveId:action==='restore'?archiveId:null,reason:reason.trim()};const r=await httpClient.request(base+'/preview',{method:'POST',authenticated:true,dataKind:'object',body:proposed,validateData:d=>{valid(d);if(d.action!==action||!d.recoveryVerified||!Array.isArray(d.manifest?.clear)||!Array.isArray(d.manifest?.preserved)||typeof d.confirmation!=='string'||!/^[a-f0-9]{64}$/.test(d.previewHash))throw Error('Invalid review');return true;}});setPreview({...r.data,proposed});});}
  async function apply(){await run(async()=>{if(!attempt.current)attempt.current={key:createOperationId(),body:{...preview.proposed,confirmation,previewHash:preview.previewHash}};await httpClient.request(base+'/apply',{method:'POST',authenticated:true,dataKind:'object',idempotencyKey:attempt.current.key,body:attempt.current.body,validateData:d=>valid(d)&&d.recoveryVerified===true&&d.action===preview.action});setSaved(preview.action==='reset'?'League returned to setup. Choose new dates before starting again.':'League restored. Competition remains paused for review.');setPreview(null);setState(null);setConfirmation('');setReason('');attempt.current=null;await client.invalidateQueries({queryKey:['league',leagueId]});});}
- return <Surface as="section" className={styles.panel}><button className="hl-button hl-button--secondary" aria-expanded={open} onClick={()=>{setOpen(!open);if(!open&&!state)load();}}>Restart preseason setup</button>
+ return <Surface as="section" className={styles.panel}><details open={open} onToggle={e=>{setOpen(e.currentTarget.open);if(e.currentTarget.open&&!state&&!pending)load();}}><summary>Restart preseason setup</summary>
   {open&&<><p>Restart an eligible preseason league while keeping its identity, managers, team appearance and rules. Pause competition first. Played seasons and locked matchups cannot be reset here.</p>
    {state&&<><p>League: <strong>{state.league.name}</strong></p>{state.blockedReason&&<p>{state.blockedReason}</p>}
     <label>Reason for reset or restore<input value={reason} maxLength={500} disabled={pending||!!preview} onChange={e=>setReason(e.target.value)}/></label>
@@ -30,5 +30,5 @@ export function GuidedLeagueResetControls({leagueId}){
    </section>}
    <button className="hl-button hl-button--secondary" disabled={pending||!!preview} onClick={load}>Refresh reset status</button>{pending&&<p role="status">Checking reset and recovery…</p>}{saved&&<p role="status">{saved}</p>}{error&&<p role="alert">{error}</p>}
   </>}
- </Surface>;
+ </details></Surface>;
 }
