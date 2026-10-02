@@ -17,7 +17,11 @@
 .legend { font-size:.75rem; margin-bottom:.7rem; }
 .legend span { display:flex; align-items:center; gap:.35rem; }
 .legend i,.markers i { display:inline-block; width:7px; height:7px; border-radius:50%; }
-.matchup { background:#4e9bca; }.playoffs { background:#b989e9; }.trade { background:#ff9f43; }.draft { background:#56d1b0; }.auction { background:#ffdf7b; }.season { background:#e2e8f0; }
+.matchup { background:#4e9bca; }.playoffs { background:#b989e9; }.trade { background:#ff9f43; }.draft { background:#56d1b0; }.auction { background:#ffcf4a; }.auction-cutoff { background:#ff8a43; }.season { background:#e2e8f0; }
+.editTabs { display:flex; flex-wrap:wrap; gap:.35rem; flex:1 0 100%; }
+.editTabs button { cursor:pointer; padding:.3rem .55rem; font-size:.78rem; }
+.editTabs button[aria-pressed=true] { background:#244d77; border-color:#8abfff; }
+.editTabs button:disabled { opacity:.5; cursor:default; }
 .toolbar { padding:.7rem; border:1px solid #364862; border-radius:7px; margin-bottom:.7rem; background:#0e1929; }
 .toolbar p { margin:0; font-size:.8rem; flex:1 1 250px; }
 .months { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.7rem; }
@@ -30,10 +34,14 @@
 .day small { color:#bdeaff; font-size:.49rem; }
 .day:hover { border-color:#eaf1fb; background:#35475f; }
 .day:focus-visible { outline:2px solid #ff9f43; outline-offset:1px; z-index:1; }
-.weekOdd { background:#16465f; }.weekEven { background:#20395e; }.playoffDay { background:#4c326b; }
+.weekOdd { background:#164c84; }.weekEven { background:#1a6855; }
+.playoff1 { background:#67419a; }.playoff2 { background:#98395d; }.playoff3 { background:#795915; }
+.day[data-auction-close] { box-shadow:inset 0 -3px #ffcf4a; }
+.day[data-auction-cutoff] { border-top:2px dashed #ff8a43; }
+.legend i { border-radius:2px; width:9px; height:9px; }
 .selected { border:2px solid #f7ac63; }.range { background:#735126; border-color:#f7ac63; }.today > span:first-child { text-decoration:underline; text-underline-offset:3px; font-weight:900; }
-.markers { position:absolute; bottom:0; right:1px; display:flex; gap:1px; }.markers i { width:4px; height:4px; }
-.selection { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:.7rem; padding:.65rem; background:#122238; border-radius:6px; font-size:.82rem; }
+.markers { position:absolute; bottom:2px; right:1px; display:flex; gap:1px; }.markers i { width:5px; height:5px; }
+.selection { display:flex; gap:.75rem; flex-wrap:wrap; margin-bottom:.7rem; padding:.65rem; background:#122238; border-radius:6px; font-size:.82rem; }
 .selection span { color:#b7c8dd; }
 .editor { max-width:none; display:grid; gap:.8rem; margin-top:1rem; }
 .selectedFields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem; }

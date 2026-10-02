@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ErrorBlock, LoadingBlock, Surface } from '../../components/HundoUi.jsx';
 import { createIdempotencyKey } from '../../shared/api/idempotency.js';
@@ -7,6 +7,8 @@ import { calendarInputValue, calendarTimestamp } from '../../shared/leagueCalend
 import { useSession } from '../session/sessionContext.js';
 import styles from './LeagueCommunications.module.css';
 import { WeekOneShiftControls } from './WeekOneShiftControls.jsx';
+import { CalendarEditToolbar } from './CalendarEditToolbar.jsx';
+import { LeagueAuctionScheduleControls } from './LeagueAuctionScheduleControls.jsx';
 import { SeasonYearCalendar } from './SeasonYearCalendar.jsx';
 import { TradeDeadlineControls } from './TradeDeadlineControls.jsx';
 import { FadTimingControls } from '../freeAgentDraft/FadTimingControls.jsx';
@@ -25,7 +27,8 @@ const timestamp = value => Number.isSafeInteger(value) && value >= 0 && value <=
 const validDates = (row, labels, nullable = false) => row && Object.keys(labels).every(k => timestamp(row[k]) || (nullable && row[k] === null));
 
 export function LeagueCalendarControls({ leagueId }) {
- const session = useSession(), queryClient = useQueryClient();
+ const session = useSession(), queryClient = useQueryClient(),containerRef=useRef(null);
+ const openEditor=()=>requestAnimationFrame(()=>containerRef.current?.querySelector('[data-calendar-editor]')?.scrollIntoView?.({behavior:'smooth',block:'center'}));
  const [editor, setEditor] = useState(null), [preview, setPreview] = useState(null), [receipt, setReceipt] = useState('');
  const [target,setTarget]=useState('browse'), [selectedDay,setSelectedDay]=useState(null), [range,setRange]=useState(null), [selectionError,setSelectionError]=useState('');
  const base = '/api/v1/leagues/' + encodeURIComponent(leagueId) + '/calendar/season';
@@ -53,7 +56,7 @@ export function LeagueCalendarControls({ leagueId }) {
   if (data?.weekOneShift != null) valid &&= typeof data.weekOneShift.weekId === 'string' &&
    Number.isSafeInteger(data.weekOneShift.version) && data.weekOneShift.version > 0 && timestamp(data.weekOneShift.startsAtMs);
   if (data?.events != null) valid &&= Array.isArray(data.events) && data.events.length<=5000 && data.events.every(e=>
-   typeof e.id==='string' && ['trade','draft','auction'].includes(e.kind) && typeof e.label==='string' && timestamp(e.atMs) &&
+   typeof e.id==='string' && ['trade','draft','auction','auction-cutoff'].includes(e.kind) && typeof e.label==='string' && timestamp(e.atMs) &&
    (e.fadId===undefined || typeof e.fadId==='string') && (e.field===undefined || ['deadline','round'].includes(e.field)) &&
    (e.sequence===undefined || (Number.isSafeInteger(e.sequence)&&e.sequence>0)));
   if (data?.blockedReason != null) valid &&= typeof data.blockedReason === 'string';
@@ -85,9 +88,10 @@ export function LeagueCalendarControls({ leagueId }) {
    calendar:Object.fromEntries(Object.keys(seasonDateLabels).map(k=>[k,calendarInputValue(state.data.calendar[k],timeZone)])),
    weeks:state.data.weeks.map(w=>({id:w.id,...Object.fromEntries(Object.keys(weekDateLabels).map(k=>[k,calendarInputValue(w[k],timeZone)]))}))};
  }
- const external=target==='trade'||target.startsWith('draft:');
+ const dirty=!!editor&&(Object.keys(seasonDateLabels).some(k=>editor.calendar[k]!==calendarInputValue(editor.original.calendar[k],editor.timeZone))||editor.weeks.some(w=>Object.keys(weekDateLabels).some(k=>w[k]!==calendarInputValue(editor.original.weeks.find(row=>row.id===w.id)[k],editor.timeZone))));
+ const external=target==='trade'||target==='auctions'||target.startsWith('draft:');
  const savedEvents=state.data?.events||[];
- const draftEvents=savedEvents.filter(e=>e.kind==='draft'&&e.fadId&&e.field);
+ const draftEvents=savedEvents.filter(e=>e.fadId&&e.field);
  const selectedDraft=draftEvents.find(e=>'draft:'+e.id===target);
  const selectedWeekId=target.startsWith('week:')?target.slice(5):null;
  const selectedWeek=editor?.weeks.find(w=>w.id===selectedWeekId);
@@ -97,8 +101,9 @@ export function LeagueCalendarControls({ leagueId }) {
   const current=editor||initialEditor();
   const weeks=changeMatchupRange(current.weeks,state.data.weekStatus,selectedWeekId,first,last,current.timeZone);
   if(!weeks){setSelectionError('Choose a valid range with the roster lock after the start and before the end.');return;}
-  change({...current,weeks});setRange({firstDay:first,lastDay:last});
+  change({...current,weeks});setRange({firstDay:first,lastDay:last});openEditor();
  }
+ function chooseTarget(value){setTarget(value);setRange(null);setSelectionError('');if(value.startsWith('week:')||value.startsWith('season:')){if(!editor)setEditor(initialEditor());}else if(!dirty){setEditor(null);setPreview(null);review.reset();apply.reset();}}
  function selectDay(day) {
   setSelectedDay(day);
   if(busy||state.data.blockedReason||weekProtected)return;
@@ -108,22 +113,15 @@ export function LeagueCalendarControls({ leagueId }) {
    else selectRange(range.firstDay,day);
   } else if(target.startsWith('season:')) {
    const key=target.slice(7),current=editor||initialEditor();
-   change({...current,calendar:{...current.calendar,[key]:day+'T'+(current.calendar[key].slice(11)||'00:00')}});
+   change({...current,calendar:{...current.calendar,[key]:day+'T'+(current.calendar[key].slice(11)||'00:00')}});openEditor();
   }
  }
  function drawCalendar({onSelectDay=selectDay,disabled=busy,editing=!!editor,events=savedEvents}={}) {
   const proposedCalendar=editor?Object.fromEntries(Object.keys(seasonDateLabels).map(k=>[k,enteredTime(editor.calendar[k],editor.original.calendar[k])])):state.data.calendar;
   const weeks=editor?editor.weeks.map(w=>({id:w.id,...Object.fromEntries(Object.keys(weekDateLabels).map(k=>[k,enteredTime(w[k],editor.original.weeks.find(row=>row.id===w.id)[k])]))})):state.data.weeks;
   return <SeasonYearCalendar calendar={state.data.calendar} events={leagueCalendarEvents(proposedCalendar,weeks,state.data.weekStatus,events,state.data.timeZone)} timeZone={state.data.timeZone} nowMs={state.data.serverNowMs}
-   selectedDay={selectedDay} selectedRange={range} onSelectDay={(day,items)=>{setSelectedDay(day);onSelectDay(day,items);}} disabled={disabled}
-   toolbar={<><label>Calendar action<select aria-label="Calendar action" value={target} disabled={busy||(external&&editing)} onChange={event=>{setTarget(event.target.value);setRange(null);setSelectionError('');}}>
-    <option value="browse">View dates</option>
-    <optgroup label="Matchups">{state.data.weekStatus.map(w=><option key={w.id} value={'week:'+w.id} disabled={!!state.data.blockedReason||['final','cancelled'].includes(w.status)}>Week {w.sequence}{['final','cancelled'].includes(w.status)?' (protected)':''}</option>)}</optgroup>
-    <optgroup label="Season">{Object.entries(seasonDateLabels).map(([key,label])=><option key={key} value={'season:'+key} disabled={!!state.data.blockedReason}>{label}</option>)}</optgroup>
-    <option value="trade" disabled={!!editor}>Trade deadline</option>
-    {draftEvents.length>0&&<optgroup label="Free Agent Draft">{draftEvents.map(e=><option key={e.id} value={'draft:'+e.id} disabled={!!editor}>{e.label}</option>)}</optgroup>}
-   </select></label>
-   <p>{selectedWeekId ? range?.firstDay&&!range.lastDay ? 'Now click the last day of this matchup.' : 'Click the first day, then the last day of this matchup.' : target==='browse' ? 'Click a day to see its events. Choose an action to edit dates.' : 'Click a day, then adjust the time below and review.'}</p></>}/>;
+   selectedDay={selectedDay} selectedRange={range} onSelectDay={(day,items)=>{setSelectedDay(day);onSelectDay(day,items);if(external)openEditor();}} disabled={disabled}
+   toolbar={<CalendarEditToolbar target={target} onChange={chooseTarget} weekStatus={state.data.weekStatus} seasonDateLabels={seasonDateLabels} draftEvents={draftEvents} blocked={!!state.data.blockedReason} busy={busy||disabled&&editing} editing={external?editing:dirty} external={external} range={range} onOpenEditor={openEditor}/>}/>;
  }
  function externalEvents({tradeAtMs,dates}={}) {
   let events=savedEvents.map(event=>{
@@ -137,13 +135,14 @@ export function LeagueCalendarControls({ leagueId }) {
   if(Number.isSafeInteger(tradeAtMs)&&!events.some(e=>e.kind==='trade'))events=[...events,{id:'trade-deadline',kind:'trade',label:'Trade deadline',atMs:tradeAtMs}];
   return events;
  }
- return <Surface as="section" className={styles.section+' '+calendarStyles.surface} aria-label="League calendar controls">
-  <p className={calendarStyles.intro}>Select dates to edit. Changes save only after review and confirmation.</p>
+ return <Surface as="section" ref={containerRef} className={styles.section+' '+calendarStyles.surface} aria-label="League calendar controls">
+
   {state.isPending && <LoadingBlock>Loading league dates…</LoadingBlock>}
   {state.error && <ErrorBlock error={state.error} fallback="League dates could not be loaded." />}
   {available && <>
    {!state.data.calendar ? <p>Create or select a season before editing its calendar.</p> : <>
-    {target==='trade' ? <TradeDeadlineControls leagueId={leagueId} embedded renderCalendar={({atMs,...props})=>drawCalendar({...props,events:externalEvents({tradeAtMs:atMs})})}/>
+    {target==='auctions' ? <LeagueAuctionScheduleControls leagueId={leagueId} embedded renderCalendar={props=>drawCalendar(props)}/>
+     : target==='trade' ? <TradeDeadlineControls leagueId={leagueId} embedded renderCalendar={({atMs,...props})=>drawCalendar({...props,events:externalEvents({tradeAtMs:atMs})})}/>
      : selectedDraft ? <FadTimingControls key={selectedDraft.id} leagueId={leagueId} fadId={selectedDraft.fadId} embedded timeZone={state.data.timeZone}
        calendarField={selectedDraft.field==='deadline'?'deadline':String(selectedDraft.sequence-1)} renderCalendar={({dates,...props})=>drawCalendar({...props,events:externalEvents({dates})})}/>
      : drawCalendar()}
@@ -153,16 +152,17 @@ export function LeagueCalendarControls({ leagueId }) {
     {state.data.weekOneShift && <WeekOneShiftControls key={leagueId + ':' + state.data.weekOneShift.version} leagueId={leagueId} seasonId={state.data.seasonId} week={state.data.weekOneShift} timeZone={state.data.timeZone} />}
     {state.data.blockedReason && <p>{state.data.blockedReason}</p>}
     {!editor && <button type="button" disabled={!!state.data.blockedReason} className="hl-button hl-button--secondary" onClick={()=>{setReceipt('');setEditor(initialEditor());if(target==='browse'){const editable=state.data.weekStatus.find(w=>!['final','cancelled'].includes(w.status));if(editable)setTarget('week:'+editable.id);}}}>Edit league calendar</button>}
-    {editor && <form className={calendarStyles.editor} onSubmit={event => { event.preventDefault(); setPreview(null); apply.reset(); review.mutate(); }}>
+    {editor && <form data-calendar-editor className={calendarStyles.editor} onSubmit={event => { event.preventDefault(); setPreview(null); apply.reset(); review.mutate(); }}>
      <fieldset disabled={busy || !!state.data.blockedReason} style={{ minWidth: 0 }}>
-      <legend>Dates in {editor.timeZone}</legend>
+      <legend>{selectedStatus?'Week '+selectedStatus.sequence+' · ':'Dates in '}{editor.timeZone}</legend>
       {selectedWeek&&<div className={calendarStyles.selectedFields}>
        <label>First matchup day<input type="date" value={selectedWeek.startsAtMs.slice(0,10)} onChange={e=>selectRange(e.target.value,calendarDay(calendarTimestamp(selectedWeek.endsAtMs,editor.timeZone)-1,editor.timeZone))}/></label>
        <label>Last matchup day<input type="date" value={calendarDay(calendarTimestamp(selectedWeek.endsAtMs,editor.timeZone)-1,editor.timeZone)} onChange={e=>selectRange(selectedWeek.startsAtMs.slice(0,10),e.target.value)}/></label>
        <label>Roster lock time<input type="time" value={selectedWeek.locksAtMs.slice(11)} onChange={e=>change(old=>({...old,weeks:old.weeks.map(w=>w.id===selectedWeek.id?{...w,locksAtMs:w.locksAtMs.slice(0,10)+'T'+e.target.value}:w)}))}/></label>
       </div>}
       {selectedWeek&&<p className={calendarStyles.hint}>The last day is included. Rollover follows at midnight. The statistics baseline follows the week start, matching the previous week’s end when adjacent.</p>}
-      {target.startsWith('season:')&&<label>Selected date and time<input type="datetime-local" required value={editor.calendar[target.slice(7)]} onChange={e=>change(old=>({...old,calendar:{...old.calendar,[target.slice(7)]:e.target.value}}))}/></label>}
+      {target.includes('fantasyPlayoffs')&&<><div className={calendarStyles.selectedFields}>{['fantasyPlayoffsStartAtMs','fantasyPlayoffsEndAtMs'].map(key=><label key={key}>{key==='fantasyPlayoffsStartAtMs'?'Playoff start':'Playoff end'}<input type="datetime-local" required value={editor.calendar[key]} onChange={e=>change(old=>({...old,calendar:{...old.calendar,[key]:e.target.value}}))}/></label>)}</div><p className={calendarStyles.hint}>Round 1 and Round 2 each last one week. The Final runs to the saved playoff end date.</p></>}
+      {target.startsWith('season:')&&!target.includes('fantasyPlayoffs')&&<label>Selected date and time<input type="datetime-local" required value={editor.calendar[target.slice(7)]} onChange={e=>change(old=>({...old,calendar:{...old.calendar,[target.slice(7)]:e.target.value}}))}/></label>}
       <details><summary>Advanced dates and times</summary>
       <div className="hl-form-grid">{Object.entries(seasonDateLabels).map(([key, label]) => <label key={key}>{label}
        <input type="datetime-local" required value={editor.calendar[key]} onChange={event => change(old => ({ ...old, calendar: { ...old.calendar, [key]: event.target.value } }))} />

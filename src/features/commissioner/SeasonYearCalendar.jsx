@@ -2,7 +2,7 @@ import {useMemo, useState} from 'react';
 import {calendarDay, calendarMonths, seasonStartYear} from './seasonCalendarModel.js';
 import styles from './SeasonYearCalendar.module.css';
 
-const kinds = {matchup:'Matchups', playoffs:'Playoffs', trade:'Trade deadline', draft:'Draft dates', auction:'Auctions', season:'Season dates'};
+const kinds = {weekOdd:'Matchup week', weekEven:'Next week', playoff1:'Round 1',playoff2:'Round 2',playoff3:'Final',trade:'Trade deadline', draft:'Draft dates', auction:'Auction closes', 'auction-cutoff':'New-auction cutoff'};
 const dayFormatter=new Intl.DateTimeFormat('en', {dateStyle:'long', timeZone:'UTC'});
 const dayLabel = day => dayFormatter.format(new Date(day + 'T12:00:00Z'));
 
@@ -31,6 +31,7 @@ export function SeasonYearCalendar({calendar, events, timeZone, nowMs, selectedD
     </header>
     <div className={styles.legend}>{Object.entries(kinds).map(([kind,label]) => <span key={kind}><i className={styles[kind]}/>{label}</span>)}</div>
     {toolbar && <div className={styles.toolbar}>{toolbar}</div>}
+    {selectedDay && <div className={styles.selection} aria-live="polite"><strong>{dayLabel(selectedDay)}</strong><span>{selectedEvents.length ? selectedEvents.map(event => event.label).join(' · ') : 'No league event scheduled'}</span></div>}
     <div className={styles.months}>
       {months.map(month => <section className={styles.month} key={month.key} aria-label={month.label}>
         <h4>{month.label}</h4>
@@ -38,23 +39,23 @@ export function SeasonYearCalendar({calendar, events, timeZone, nowMs, selectedD
         <div className={styles.days}>
           {Array.from({length:month.blanks},(_,i) => <span key={'blank'+i}/>)}
           {month.days.map(day => {
-            const items = itemsByDay.get(day), week = items.find(e => e.kind === 'matchup');
-            const playoffs = items.some(e => e.kind === 'playoffs'), markers = items.filter(e => !['matchup','playoffs'].includes(e.kind));
+            const items = itemsByDay.get(day), week = items.filter(e => e.kind === 'matchup').sort((a,b)=>b.atMs-a.atMs)[0];
+            const playoffs = items.filter(e => e.kind === 'playoffs').sort((a,b)=>b.atMs-a.atMs)[0], markers = items.filter(e => !['matchup','playoffs'].includes(e.kind));
             const inSelection = selectedRange?.firstDay && day >= selectedRange.firstDay && day <= (selectedRange.lastDay || selectedRange.firstDay);
             const labels = items.map(e => e.label);
-            return <button type="button" key={day} disabled={disabled} data-day={day} data-week={week?.sequence} data-selected-range={inSelection || undefined}
-              className={[styles.day, week ? styles[week.sequence % 2 ? 'weekOdd' : 'weekEven'] : '', playoffs ? styles.playoffDay : '', day === selectedDay ? styles.selected : '', inSelection ? styles.range : '', day === today ? styles.today : ''].filter(Boolean).join(' ')}
+            return <button type="button" key={day} disabled={disabled} data-day={day} data-week={week?.sequence} data-playoff-round={playoffs?.sequence} data-auction-close={items.some(e=>e.kind==='auction')||undefined} data-auction-cutoff={items.some(e=>e.kind==='auction-cutoff')||undefined} data-selected-range={inSelection || undefined}
+              className={[styles.day, week ? styles[week.sequence % 2 ? 'weekOdd' : 'weekEven'] : '', playoffs ? styles['playoff'+playoffs.sequence] : '', day === selectedDay ? styles.selected : '', inSelection ? styles.range : '', day === today ? styles.today : ''].filter(Boolean).join(' ')}
               aria-label={dayLabel(day) + (labels.length ? '; ' + labels.join('; ') : '')} aria-pressed={day === selectedDay}
               title={[dayLabel(day),...labels].join('\n')} onClick={() => onSelectDay(day,items)}>
               <span>{Number(day.slice(8))}</span>
               {week && (day === week.firstDay || new Date(day+'T12:00:00Z').getUTCDay() === 1 || day.endsWith('-01')) && <small>W{week.sequence}</small>}
+              {playoffs && (day===playoffs.firstDay||new Date(day+'T12:00:00Z').getUTCDay()===1||day.endsWith('-01')) && <small>{playoffs.sequence===3?'F':'R'+playoffs.sequence}</small>}
               {markers.length > 0 && <span className={styles.markers} aria-hidden="true">{[...new Set(markers.map(e => e.kind))].slice(0,3).map(kind => <i key={kind} className={styles[kind]}/>)}</span>}
             </button>;
           })}
         </div>
       </section>)}
     </div>
-    {selectedDay && <div className={styles.selection} aria-live="polite"><strong>{dayLabel(selectedDay)}</strong><span>{selectedEvents.length ? selectedEvents.map(event => event.label).join(' · ') : 'No league event scheduled'}</span></div>}
     {children}
   </section>;
 }

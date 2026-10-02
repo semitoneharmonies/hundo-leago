@@ -32,6 +32,13 @@ async function review(user){
  await user.click(screen.getByRole('button',{name:'Review calendar changes'}));
 }
 describe('League calendar controls',()=>{
+ it('offers direct tools and opens both playoff date fields without hidden writes',async()=>{
+  const {user,request}=setup();await screen.findByRole('button',{name:'Edit league calendar'});
+  await user.click(screen.getByRole('button',{name:'Matchup weeks',exact:true}));expect(screen.getByLabelText('First matchup day')).toBeVisible();
+  await user.click(screen.getByRole('button',{name:'Playoffs',exact:true}));expect(screen.getByLabelText('Playoff start')).toBeVisible();expect(screen.getByLabelText('Playoff end')).toBeVisible();
+  expect(screen.getByRole('button',{name:'Dates & save ↓'})).toBeEnabled();
+  expect(request.mock.calls.some(([,o])=>o.method==='POST')).toBe(false);
+ });
  it('shows all twelve months and prepares inclusive matchup dates without writing',async()=>{
   const {request,user}=setup();await screen.findByRole('button',{name:'Edit league calendar'});
   expect(screen.getByRole('region',{name:'July 2026'})).toBeVisible();expect(screen.getByRole('region',{name:'June 2027'})).toBeVisible();

@@ -69,3 +69,16 @@ test('full-year calendar highlights events and lets a commissioner select a matc
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:testInfo.outputPath('interactive-calendar.png'),fullPage:true});expect(errors).toEqual([]);
 });
+
+test('calendar exposes editing tools, visible auction markers and three playoff colours',async({page},testInfo)=>{
+ await page.goto('/e2e/fixtures/league-calendar.html');
+ for(const name of ['Matchup weeks','Auction dates','Trade deadline','Playoffs'])await expect(page.getByRole('button',{name,exact:true})).toBeVisible();
+ await expect(page.locator('[data-day="2026-10-04"]')).toHaveAttribute('data-auction-close','true');await expect(page.locator('[data-day="2026-10-02"]')).toHaveAttribute('data-auction-cutoff','true');
+ const colours=await page.locator('[data-playoff-round]').evaluateAll(nodes=>[...new Set(nodes.map(n=>getComputedStyle(n).backgroundColor))]);expect(colours).toHaveLength(3);
+ await page.getByRole('button',{name:'Auction dates',exact:true}).click();await page.getByRole('button',{name:'Edit auction schedule',exact:true}).waitFor();
+ await page.locator('[data-day="2026-10-03"]').click();await expect(page.getByLabel('Closing day',{exact:true})).toHaveValue('5');
+ await expect(page.getByRole('link',{name:'Edit an existing auction'})).toHaveAttribute('href','/leagues/11111111-1111-4111-8111-111111111111/auctions');
+ expect(await page.evaluate(()=>window.calendarRequests.some(r=>r.method==='POST'))).toBe(false);
+ await page.getByLabel('Reason for auction schedule change').fill('Calendar closing-day preview');await page.getByRole('button',{name:'Review auction schedule',exact:true}).click();await expect(page.getByRole('region',{name:'Auction schedule preview'})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:testInfo.outputPath('calendar-auction-editor.png'),fullPage:true});
+});

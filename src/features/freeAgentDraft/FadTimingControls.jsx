@@ -76,7 +76,7 @@ export function FadTimingControls({ leagueId, fadId, timeZone=Intl.DateTimeForma
         setEditor(calendarField==='deadline'?{...next,deadline:date}:{...next,rounds:next.rounds.map((time,i)=>i===Number(calendarField)?date:time)});
         setPreview(null);setReceipt('');review.reset();apply.reset();
       }})}
-    <h2>Draft timing</h2>
+    <h2 data-calendar-editor={!editor||undefined}>Draft timing</h2>
     {state.isPending && <LoadingBlock>Checking the schedule…</LoadingBlock>}
     {state.error && <ErrorBlock error={state.error} fallback="The draft schedule is unavailable." />}
     {state.data && <>
@@ -86,7 +86,7 @@ export function FadTimingControls({ leagueId, fadId, timeZone=Intl.DateTimeForma
       {state.data.canReschedule && !editor && <button type="button" className="hl-button hl-button--secondary"
         onClick={() => { setEditor({ deadline: localInput(state.data.deadlineAtMs), rounds: state.data.rolloverTimesAtMs.map(localInput), reason: '', original:state.data }); setReceipt(''); }}>
         {state.data.canEditDeadline ? 'Edit target and round dates' : state.data.canEditActiveAuctions ? 'Edit round dates' : 'Edit future round dates'}</button>}
-      {editor && state.data.canReschedule && <form className={styles.editor} onSubmit={event => { event.preventDefault(); setPreview(null); apply.reset(); review.mutate(); }}>
+      {editor && state.data.canReschedule && <form data-calendar-editor className={styles.editor} onSubmit={event => { event.preventDefault(); setPreview(null); apply.reset(); review.mutate(); }}>
         <p>Dates use {timeZone}. {state.data.canEditDeadline
           ? 'Leave time for new nominations before the configured first-round cutoff.'
           : state.data.canEditActiveAuctions

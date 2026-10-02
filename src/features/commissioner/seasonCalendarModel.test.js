@@ -1,11 +1,16 @@
 import {describe,it,expect} from 'vitest';
-import {calendarMonths,changeMatchupRange,leagueCalendarEvents,seasonStartYear} from './seasonCalendarModel.js';
+import {calendarMonths,changeMatchupRange,leagueCalendarEvents,seasonStartYear,playoffCalendarEvents} from './seasonCalendarModel.js';
 import {calendarTimestamp} from '../../shared/leagueCalendar.js';
 const zone='America/Vancouver';
 const weeks=[{id:'previous',startsAtMs:'2026-10-25T00:00',endsAtMs:'2026-11-01T00:00'},
  {id:'week',startsAtMs:'2026-10-19T00:00',baselineAtMs:'2026-10-19T00:00',locksAtMs:'2026-10-19T12:00',endsAtMs:'2026-10-26T00:00',rollsOverAtMs:'2026-10-26T00:00'}];
 const statuses=[{id:'previous',sequence:1},{id:'week',sequence:2}];
 describe('year calendar date handling',()=>{
+ it('separates playoff rounds into one week, one week and the Final across DST',()=>{
+  const events=playoffCalendarEvents({fantasyPlayoffsStartAtMs:calendarTimestamp('2027-03-08T00:00',zone),fantasyPlayoffsEndAtMs:calendarTimestamp('2027-04-05T00:00',zone)},zone);
+  expect(events.map(e=>[e.sequence,e.firstDay,e.lastDay])).toEqual([[1,'2027-03-08','2027-03-14'],[2,'2027-03-15','2027-03-21'],[3,'2027-03-22','2027-04-04']]);
+  expect(events[0].endAtMs-events[0].atMs).toBe(167*3600000);
+ });
  it('includes twelve months across a hockey season and leap day',()=>{
   const months=calendarMonths(2027);expect(months).toHaveLength(12);expect(months[0].key).toBe('2027-07');expect(months[11].key).toBe('2028-06');
   expect(months.find(m=>m.key==='2028-02').days).toContain('2028-02-29');expect(calendarMonths(2027,0)[11].key).toBe('2027-12');

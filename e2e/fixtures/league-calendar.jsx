@@ -10,7 +10,7 @@ const state={leagueId,seasonId:'synthetic-season',timeZone:'America/Vancouver',s
  fantasyPlayoffsStartAtMs:at('2027-03-15T07:00:00Z'),fantasyPlayoffsEndAtMs:at('2027-04-12T07:00:00Z')},
  weeks:[{id:'11111111-1111-4111-8111-111111111112',startsAtMs:at('2026-10-19T07:00:00Z'),baselineAtMs:at('2026-10-19T07:00:00Z'),
  locksAtMs:at('2026-10-19T19:00:00Z'),endsAtMs:at('2026-10-26T07:00:00Z'),rollsOverAtMs:at('2026-10-26T07:00:00Z')}],
- events:[{id:'trade-deadline',kind:'trade',label:'Trade deadline',atMs:at('2027-02-15T00:00:00Z')}],
+ events:[{id:'weekly-close',kind:'auction',label:'Weekly auctions close',atMs:at('2026-10-04T23:00:00Z'),recurring:true},{id:'weekly-cutoff',kind:'auction-cutoff',label:'New-auction cutoff',atMs:at('2026-10-02T07:00:00Z'),recurring:true},{id:'trade-deadline',kind:'trade',label:'Trade deadline',atMs:at('2027-02-15T00:00:00Z')}],
  weekStatus:[{id:'11111111-1111-4111-8111-111111111112',sequence:2,status:'scheduled'}],history:[]};
 window.calendarRequests=[];
 const auctionMode=new URLSearchParams(location.search).has('auctions');
@@ -21,7 +21,8 @@ const auctionState={leagueId,timeZone:state.timeZone,serverNowMs:state.serverNow
  scheduledResolutionAtMs:at('2026-10-04T23:00:00Z'),nextOpensAtMs:at('2026-10-05T07:00:00Z'),canStart:true}};
 const httpClient={async request(url,options){
  window.calendarRequests.push({url,method:options.method||'GET',body:options.body});
- let data=auctionMode?auctionState:state;
+ const isAuction=auctionMode||url.includes('/calendar/auction-schedule');
+ let data=isAuction?auctionState:state;
  if(options.body?.action==='preview_shift_week_one'){
   data={code:'MATCHUP_WEEK_ONE_SHIFT_PREVIEWED',leagueId,seasonId:state.seasonId,weekId:state.weeks[0].id,expectedWeekVersion:1,
    previousFirstWeekStartsAtMs:state.weeks[0].startsAtMs,firstWeekStartsAtMs:options.body.firstWeekStartsAtMs,
@@ -30,7 +31,7 @@ const httpClient={async request(url,options){
   options.validateData(data);return {data};
  }
  if(options.method==='PATCH')throw Error('Browser fixture does not accept confirmations');
- if(auctionMode){
+ if(isAuction){
   if(url.endsWith('/preview'))data={...auctionState,proposed:options.body,previewHash:'a'.repeat(64),newWindow:{
    ...auctionState.window,newAuctionCutoffAtMs:at('2026-10-04T00:15:00Z'),bidClosesAtMs:at('2026-10-04T01:45:00Z'),
    scheduledResolutionAtMs:at('2026-10-04T01:45:00Z')},opensNow:false,closesNow:false};

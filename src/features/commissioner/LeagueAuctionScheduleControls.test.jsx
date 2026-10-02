@@ -7,7 +7,7 @@ import {LeagueAuctionScheduleControls} from './LeagueAuctionScheduleControls.jsx
 const leagueId='11111111-1111-4111-8111-111111111111',at=Date.parse;
 const status={leagueId,timeZone:'America/Vancouver',serverNowMs:at('2026-09-29T19:00:00Z'),revision:0,openAuctionCount:2,schedule:null,legacyDaily:false,history:[],
  window:{opensAtMs:at('2026-09-28T07:00:00Z'),newAuctionCutoffAtMs:at('2026-10-02T07:00:00Z'),bidClosesAtMs:at('2026-10-04T23:00:00Z'),scheduledResolutionAtMs:at('2026-10-04T23:00:00Z'),nextOpensAtMs:at('2026-10-05T07:00:00Z'),canStart:true}};
-function setup({data=status,failFirst=false,malformed=false}={}){
+function setup({data=status,failFirst=false,malformed=false,props={}}={}){
  let attempts=0;const request=vi.fn(async(url,options={})=>{
   let result=data;
   if(url.endsWith('/preview'))result={...data,proposed:options.body,previewHash:'b'.repeat(64),newWindow:data.window,opensNow:true,closesNow:false};
@@ -16,7 +16,7 @@ function setup({data=status,failFirst=false,malformed=false}={}){
   options.validateData?.(result);return {data:result};
  });
  render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}})}>
-  <SessionContext.Provider value={{status:'authenticated',httpClient:{request}}}><LeagueAuctionScheduleControls leagueId={leagueId}/></SessionContext.Provider>
+  <SessionContext.Provider value={{status:'authenticated',httpClient:{request}}}><LeagueAuctionScheduleControls leagueId={leagueId} {...props}/></SessionContext.Provider>
  </QueryClientProvider>);return {request,user:userEvent.setup()};
 }
 async function review(user){
@@ -28,6 +28,13 @@ async function review(user){
  await user.click(screen.getByRole('button',{name:'Review auction schedule'}));
 }
 describe('Recurring auction schedule controls',()=>{
+ it('chooses the weekly closing day from a calendar without saving automatically',async()=>{
+  const {user,request}=setup({props:{renderCalendar:({onSelectDay,disabled})=><button disabled={disabled} onClick={()=>onSelectDay('2026-10-03')}>Choose Saturday</button>}});
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Choose Saturday'})).toBeEnabled());await user.click(screen.getByRole('button',{name:'Choose Saturday'}));
+  expect(screen.getByLabelText('Closing day')).toHaveValue('5');expect(screen.getByLabelText('Minutes before closing to stop new auctions')).toHaveValue(3840);
+  expect(request.mock.calls.some(([,o])=>o.method==='POST')).toBe(false);
+ });
+
  it('previews day, time and gap with preserved accepted auctions and immediate-window effects',async()=>{
   const {user,request}=setup();await review(user);
   const panel=await screen.findByRole('region',{name:'Auction schedule preview'});

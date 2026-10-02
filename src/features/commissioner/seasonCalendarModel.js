@@ -28,6 +28,18 @@ export function matchupCalendarEvents(weeks, statuses, zone) {
       firstDay:calendarDay(w.startsAtMs, zone), lastDay:calendarDay(w.endsAtMs - 1, zone), atMs:w.startsAtMs, endAtMs:w.endsAtMs};
   });
 }
+// Presentation of the approved 1-week / 1-week / Final format. The saved end
+// remains authoritative when the commissioner has adjusted the playoff window.
+export function playoffCalendarEvents(calendar,zone) {
+  const start=calendar?.fantasyPlayoffsStartAtMs,end=calendar?.fantasyPlayoffsEndAtMs;
+  if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||end<=start)return [];
+  const local=calendarInputValue(start,zone),day=local.slice(0,10),time=local.slice(11);
+  const boundaries=[start,...[7,14].map(days=>calendarTimestamp(offsetDay(day,days)+'T'+time,zone)),end];
+  return ['Round 1','Round 2','Final'].flatMap((name,i)=>{
+    const from=boundaries[i],to=Math.min(boundaries[i+1],end);
+    return Number.isSafeInteger(from)&&Number.isSafeInteger(to)&&from<to?[{id:'playoff-round-'+(i+1),kind:'playoffs',label:'Playoffs · '+name,sequence:i+1,firstDay:calendarDay(from,zone),lastDay:calendarDay(to-1,zone),atMs:from,endAtMs:to}]:[];
+  });
+}
 export function leagueCalendarEvents(calendar, weeks, statuses, savedEvents, zone) {
   const events = matchupCalendarEvents(weeks, statuses, zone);
   const labels = {regularSeasonStartsAtMs:'NHL season starts', regularSeasonEndsAtMs:'NHL season ends', fantasyPlayoffsStartAtMs:'Playoffs start', fantasyPlayoffsEndAtMs:'Playoffs end'};
@@ -35,7 +47,7 @@ export function leagueCalendarEvents(calendar, weeks, statuses, savedEvents, zon
     const day = calendarDay(calendar[key],zone);
     events.push({id:key,kind:'season',label,firstDay:day,lastDay:day,atMs:calendar[key]});
   }
-  if (calendar?.fantasyPlayoffsEndAtMs > calendar?.fantasyPlayoffsStartAtMs) events.push({id:'playoffs',kind:'playoffs',label:'Playoffs',firstDay:calendarDay(calendar.fantasyPlayoffsStartAtMs,zone),lastDay:calendarDay(calendar.fantasyPlayoffsEndAtMs-1,zone)});
+  events.push(...playoffCalendarEvents(calendar,zone));
   for (const week of weeks) if (Number.isSafeInteger(week.locksAtMs)) {
     const day=calendarDay(week.locksAtMs,zone), sequence=statuses.find(w=>w.id===week.id)?.sequence;
     events.push({id:'lock:'+week.id,kind:'season',label:'Week '+sequence+' roster lock',firstDay:day,lastDay:day,atMs:week.locksAtMs});
@@ -44,7 +56,7 @@ export function leagueCalendarEvents(calendar, weeks, statuses, savedEvents, zon
     const day=calendarDay(event.atMs,zone);
     events.push({...event,firstDay:day,lastDay:day});
   }
-  return events.map(event=>Number.isSafeInteger(event.atMs)&&event.kind!=='matchup'
+  return events.map(event=>Number.isSafeInteger(event.atMs)&&!['matchup','playoffs'].includes(event.kind)
     ? {...event,label:event.label+' · '+new Intl.DateTimeFormat('en',{timeZone:zone,hour:'numeric',minute:'2-digit'}).format(event.atMs)} : event);
 }
 // Preserve league-local wall-clock times over DST. Calendar end selections are

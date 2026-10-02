@@ -54,7 +54,7 @@ export function TradeDeadlineControls({ leagueId, renderCalendar, embedded=false
       const zone=state.data.timeZone, previous=editor?.date||calendarInputValue(state.data.tradeDeadlineAtMs,zone);
       setEditor({date:day+'T'+(previous.slice(11)||'16:00'),timeZone:zone,reason:editor?.reason||''});setPreview(null);setReceipt('');review.reset();apply.reset();
     }})}
-    <h2>Trade deadline</h2>
+    <h2 data-calendar-editor={!editor||undefined}>Trade deadline</h2>
     <p>Change the trade deadline during setup or the season. Choose a future time; extending a passed deadline permits new proposals once the league’s other trading requirements are met.</p>
     {state.isPending && <LoadingBlock>Checking the trade deadline…</LoadingBlock>}
     {state.error && <ErrorBlock error={state.error} fallback="Trade deadline controls are unavailable." />}
@@ -64,7 +64,7 @@ export function TradeDeadlineControls({ leagueId, renderCalendar, embedded=false
       {state.data.canEdit && !editor && <button type="button" className="hl-button hl-button--secondary" onClick={() => {
         setEditor({ date: calendarInputValue(state.data.tradeDeadlineAtMs, state.data.timeZone), timeZone: state.data.timeZone, reason: '' }); setReceipt('');
       }}>Edit trade deadline</button>}
-      {editor && state.data.canEdit && <form className={styles.editor} onSubmit={event => { event.preventDefault(); setPreview(null); apply.reset(); review.mutate(); }}>
+      {editor && state.data.canEdit && <form data-calendar-editor className={styles.editor} onSubmit={event => { event.preventDefault(); setPreview(null); apply.reset(); review.mutate(); }}>
         <label>New trade deadline ({editor.timeZone})<input type="datetime-local" required value={editor.date} disabled={busy} onChange={event => edit({ date: event.target.value })} /></label>
         <label>Reason for changing the trade deadline<input required minLength={3} maxLength={500} value={editor.reason} disabled={busy} onChange={event => edit({ reason: event.target.value })} /></label>
         <div className={styles.actions}><button type="submit" className="hl-button hl-button--secondary"

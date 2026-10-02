@@ -12,7 +12,7 @@ const minutes=value=>/^\d{2}:\d{2}$/.test(value)?Number(value.slice(0,2))*60+Num
 const validSchedule=s=>s&&integer(s.closeWeekday)&&s.closeWeekday<=6&&integer(s.closeMinuteOfDay)&&s.closeMinuteOfDay<1440&&
  integer(s.creationCutoffMinutes)&&s.creationCutoffMinutes<s.closeWeekday*1440+s.closeMinuteOfDay;
 const validWindow=w=>w&&['opensAtMs','newAuctionCutoffAtMs','bidClosesAtMs','scheduledResolutionAtMs','nextOpensAtMs'].every(k=>integer(w[k]))&&typeof w.canStart==='boolean';
-export function LeagueAuctionScheduleControls({leagueId}){
+export function LeagueAuctionScheduleControls({leagueId,renderCalendar,embedded=false}){
  const session=useSession(),client=useQueryClient();
  const [editor,setEditor]=useState(null),[preview,setPreview]=useState(null),[receipt,setReceipt]=useState('');
  const base='/api/v1/leagues/'+encodeURIComponent(leagueId)+'/calendar/auction-schedule';
@@ -44,20 +44,27 @@ export function LeagueAuctionScheduleControls({leagueId}){
  const display=value=>new Intl.DateTimeFormat(undefined,{timeZone:state.data.timeZone,dateStyle:'medium',timeStyle:'short'}).format(value);
  const description=s=>days[s.closeWeekday]+' at '+timeText(s.closeMinuteOfDay)+', with a '+s.creationCutoffMinutes+'-minute start cutoff';
  function edit(change){setEditor(old=>({...old,...change}));setPreview(null);setReceipt('');review.reset();apply.reset();}
- return <Surface as="section" className={styles.section} aria-label="Recurring auction schedule controls">
-  <h2>In-season auction schedule</h2>
+ const Container=embedded?'div':Surface;
+ return <Container as={embedded?undefined:'section'} className={styles.section} aria-label="Recurring auction schedule controls">
+  {renderCalendar?.({disabled:busy||!available,editing:!!editor,onSelectDay:day=>{
+   if(busy||!available)return;
+   const current=state.data.schedule||{closeWeekday:6,closeMinuteOfDay:960,creationCutoffMinutes:3840};
+   const closeWeekday=(new Date(day+'T12:00:00Z').getUTCDay()+6)%7;
+   setEditor({day:String(closeWeekday),time:editor?.time||timeText(current.closeMinuteOfDay),gap:editor?.gap??String(current.creationCutoffMinutes),reason:editor?.reason||''});setReceipt('');setPreview(null);review.reset();apply.reset();
+  }})}
+  <h2 data-calendar-editor={!editor||undefined}>In-season auction schedule</h2>
   <p>Choose when newly started auctions close each week and how long before closing new auctions must stop. Each weekly window opens Monday at midnight.</p>
   {state.isPending&&<LoadingBlock>Loading auction schedule…</LoadingBlock>}
   {state.error&&<ErrorBlock error={state.error} fallback="Auction schedule controls are unavailable."/>}
   {available&&<>
    <p>Current rule: <strong>{state.data.schedule?description(state.data.schedule):state.data.legacyDaily?'Daily at 16:00, with no start cutoff gap':'Sunday at 16:00; new auctions stop Friday at midnight'}</strong> ({state.data.timeZone}).</p>
-   <p>{state.data.openAuctionCount} existing auctions keep their saved closing times. Use an auction’s timing control to adjust it.</p>
+   <p>{state.data.openAuctionCount} existing auctions keep their saved closing times. <a href={'/leagues/'+encodeURIComponent(leagueId)+'/auctions'}>Edit an existing auction</a>.</p>
    {!editor&&<button type="button" className="hl-button hl-button--secondary" onClick={()=>{
     const s=state.data.schedule||{closeWeekday:6,closeMinuteOfDay:960,creationCutoffMinutes:3840};
     setEditor({day:String(s.closeWeekday),time:timeText(s.closeMinuteOfDay),gap:String(s.creationCutoffMinutes),reason:''});setReceipt('');
    }}>Edit auction schedule</button>}
-   {editor&&<form className={styles.editor} onSubmit={event=>{event.preventDefault();setPreview(null);apply.reset();review.mutate();}}>
-    <label>Closing day<select disabled={busy} value={editor.day} onChange={event=>edit({day:event.target.value})}>{days.map((d,i)=><option key={d} value={i}>{d}</option>)}</select></label>
+   {editor&&<form data-calendar-editor className={styles.editor} onSubmit={event=>{event.preventDefault();setPreview(null);apply.reset();review.mutate();}}>
+    <label>Closing day<select aria-label="Closing day" disabled={busy} value={editor.day} onChange={event=>edit({day:event.target.value})}>{days.map((d,i)=><option key={d} value={i}>{d}</option>)}</select></label>
     <label>Closing time ({state.data.timeZone})<input type="time" required disabled={busy} value={editor.time} onChange={event=>edit({time:event.target.value})}/></label>
     <label>Minutes before closing to stop new auctions<input type="number" min="0" max="10078" step="1" required disabled={busy} value={editor.gap} onChange={event=>edit({gap:event.target.value})}/></label>
     <p>Zero allows starts until closing. Gaps use elapsed minutes. A closing time skipped by daylight saving moves forward by the clock change.</p>
@@ -81,6 +88,6 @@ export function LeagueAuctionScheduleControls({leagueId}){
    {state.data.history.length>0&&<details><summary>Recent auction schedule changes</summary><ol>{state.data.history.map(h=><li key={h.id}>{display(h.createdAtMs)} — {h.actorName}: {description(h)}. Reason: {h.reason}</li>)}</ol></details>}
   </>}
   {receipt&&<p role="status">{receipt}</p>}
- </Surface>;
+ </Container>;
 }
 
