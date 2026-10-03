@@ -1,8 +1,10 @@
 import {createRoot} from 'react-dom/client';
+import {calendarWorkspaceFixture} from './calendar-workspace-data.js';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {SessionContext} from '../../src/features/session/sessionContext.js';
 import {LeagueCalendarControls} from '../../src/features/commissioner/LeagueCalendarControls.jsx';
 import {LeagueAuctionScheduleControls} from '../../src/features/commissioner/LeagueAuctionScheduleControls.jsx';
+import {WeekOneShiftControls} from '../../src/features/commissioner/WeekOneShiftControls.jsx';
 import '../../src/styles/theme-a.css';
 const leagueId='11111111-1111-4111-8111-111111111111',at=Date.parse;
 const state={leagueId,seasonId:'synthetic-season',timeZone:'America/Vancouver',serverNowMs:at('2026-09-29T19:00:00Z'),
@@ -21,6 +23,14 @@ const auctionState={leagueId,timeZone:state.timeZone,serverNowMs:state.serverNow
  scheduledResolutionAtMs:at('2026-10-04T23:00:00Z'),nextOpensAtMs:at('2026-10-05T07:00:00Z'),canStart:true}};
 const httpClient={async request(url,options){
  window.calendarRequests.push({url,method:options.method||'GET',body:options.body});
+ if(url.includes('/calendar/workspace')){
+  const workspace=calendarWorkspaceFixture();
+  workspace.leagueId=leagueId;
+  let data=workspace;
+  if(url.endsWith('/preview'))data={leagueId:workspace.leagueId,proposed:options.body,previewHash:'a'.repeat(64),warnings:[{code:'short-week',message:'One matchup week is shorter than seven days.'}]};
+  else if(options.method==='POST')throw Error('Fixture does not accept saves');
+  options.validateData(data);return {data};
+ }
  const isAuction=auctionMode||url.includes('/calendar/auction-schedule');
  let data=isAuction?auctionState:state;
  if(options.body?.action==='preview_shift_week_one'){
@@ -47,6 +57,6 @@ const httpClient={async request(url,options){
 createRoot(document.getElementById('root')).render(<QueryClientProvider client={new QueryClient()}>
  <SessionContext.Provider value={{status:'authenticated',httpClient}}>
   <main style={{maxWidth:1450,margin:'24px auto',padding:16}}><h1>Synthetic commissioner calendar</h1>
-   {auctionMode?<LeagueAuctionScheduleControls leagueId={leagueId}/>:<LeagueCalendarControls leagueId={leagueId}/>}</main>
+   {auctionMode?<LeagueAuctionScheduleControls leagueId={leagueId}/>:shiftMode?<WeekOneShiftControls leagueId={leagueId} seasonId={state.seasonId} week={state.weekOneShift} timeZone={state.timeZone}/>:<LeagueCalendarControls leagueId={leagueId}/>}</main>
  </SessionContext.Provider>
 </QueryClientProvider>);

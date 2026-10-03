@@ -24,8 +24,18 @@ function QuoteGroup({ quotes, duplicate = false }) {
   );
 }
 
-function QuoteTicker() {
-  const quotes = useMemo(() => shuffleQuoteSequence(HOCKEY_QUOTES), []);
+const NO_SUBMISSIONS = [];
+
+function QuoteTicker({ approvedQuotes = NO_SUBMISSIONS }) {
+  const quotes = useMemo(() => {
+    const combined = [...HOCKEY_QUOTES];
+    const seen = new Set(HOCKEY_QUOTES.map((quote) => `${quote.text.trim().toLowerCase()}\n${quote.author.trim().toLowerCase()}`));
+    for (const quote of approvedQuotes) {
+      const key = `${quote.text.trim().toLowerCase()}\n${quote.author.trim().toLowerCase()}`;
+      if (!seen.has(key)) { combined.push(quote); seen.add(key); }
+    }
+    return shuffleQuoteSequence(combined);
+  }, [approvedQuotes]);
   const characterCount = quotes.reduce(
     (total, quote) => total + quote.text.length + quote.author.length,
     0

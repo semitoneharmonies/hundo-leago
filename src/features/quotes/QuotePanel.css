@@ -1,0 +1,28 @@
+.hl-quote-menu-footer { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 6px 14px; padding: 10px 16px; border-top: 1px solid var(--hl-border); }
+.hl-quote-menu-footer button { padding: 2px 0; border: 0; background: transparent; color: var(--hl-muted-foreground); font: 500 .65rem var(--hl-font-body, sans-serif); cursor: pointer; }
+.hl-quote-menu-footer button:hover { color: var(--hl-foreground); text-decoration: underline; }
+.hl-quote-menu-footer .hl-menu-contact { flex-basis: 100%; padding: 2px 0; color: var(--hl-muted-foreground); font: 500 .65rem var(--hl-font-body, sans-serif); text-decoration: none; }
+.hl-quote-menu-footer .hl-menu-contact:hover { color: var(--hl-foreground); text-decoration: underline; }
+.hl-quote-dialog { width: min(560px, calc(100vw - 28px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--hl-border); border-radius: 12px; background: #0c1628; color: var(--hl-foreground); box-shadow: var(--hl-shadow); }
+.hl-quote-dialog[open] { display: flex; flex-direction: column; }
+.hl-quote-dialog::backdrop { background: rgb(2 6 23 / 65%); }
+.hl-quote-dialog > header { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--hl-border); }
+.hl-quote-dialog h2 { margin: 0; font: 700 1.4rem var(--hl-font-display); }
+.hl-quote-dialog button { border: 1px solid #365073; border-radius: 6px; background: #14233d; color: #dce6f5; padding: 7px 10px; font: inherit; font-size: .78rem; cursor: pointer; }
+.hl-quote-dialog button:disabled { opacity: .6; cursor: wait; }
+.hl-quote-dialog > header button { display: grid; place-items: center; width: 32px; height: 32px; padding: 6px; }
+.hl-quote-dialog > header svg { width: 18px; height: 18px; }
+.hl-quote-dialog__body { padding: 16px 20px 20px; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.hl-quote-dialog p { margin: 0 0 14px; font-size: .82rem; line-height: 1.65; overflow-wrap: anywhere; }
+.hl-quote-dialog form { display: grid; gap: 12px; }
+.hl-quote-dialog label { display: grid; gap: 6px; font-size: .8rem; }
+.hl-quote-dialog input, .hl-quote-dialog textarea { width: 100%; min-width: 0; padding: 10px; border: 1px solid #365073; border-radius: 6px; background: #091121; color: var(--hl-foreground); font-family: inherit; font-size: .88rem; }
+.hl-quote-dialog textarea { resize: vertical; }
+.hl-quote-dialog small { color: #a9b9d1; font-size: .7rem; }
+.hl-quote-dialog .hl-quote-action { border-color: #3b67a2; background: #19385e; }
+.hl-quote-review-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
+.hl-quote-review-list li { padding: 14px; border: 1px solid var(--hl-border); border-radius: 8px; }
+.hl-quote-review-list blockquote { margin: 0 0 10px; }
+.hl-quote-review-list blockquote p { margin-bottom: 4px; }
+.hl-quote-review-list blockquote footer { font-size: .78rem; }
+.hl-quote-review-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }

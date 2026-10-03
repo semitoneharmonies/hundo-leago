@@ -35,7 +35,10 @@ import {
   leagueAuthorityLabel,
 } from "../shared/leagueAuthority.js";
 import LeagueRulesDropdown from "./LeagueRulesDropdown";
-import QuoteTicker from "./QuoteTicker";
+import { LeagueQuoteTicker } from "../features/quotes/LeagueQuoteTicker.jsx";
+import { QuoteMenuFooter, QuotePanel } from "../features/quotes/QuotePanel.jsx";
+import { DesktopSidebar } from "./DesktopSidebar.jsx";
+import { useDesktopLayout } from "../shared/useDesktopLayout.js";
 
 function leagueIdFromPathname(pathname) {
   const match = /^\/leagues\/([^/]+)/.exec(pathname);
@@ -121,11 +124,15 @@ function TopBar({ freezeBanner }) {
   const session = useSession();
   const location = useLocation();
   const navigate=useNavigate();
+  const desktop = useDesktopLayout();
+  const showSidebar = desktop && session.status === "authenticated";
+  const headerRef = useRef(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [commissionerOpen,setCommissionerOpen]=useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [helpOpen,setHelpOpen]=useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [quotePanel, setQuotePanel] = useState(null);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutWarning, setSignOutWarning] = useState("");
   const menuRef = useRef(null);
@@ -224,6 +231,21 @@ function TopBar({ freezeBanner }) {
     setAccountOpen(false);
   }
 
+  function isActive(label, to, prefixActive) {
+    return location.pathname === to ||
+      (prefixActive && location.pathname.startsWith(`${to}/`)) ||
+      (label === "Drafts" && location.pathname.startsWith(routePaths.leagueFreeAgentDraft(leagueId)));
+  }
+
+  useEffect(() => {
+    const header = headerRef.current;
+    const shell = header?.closest(".hl-app-shell");
+    if (!header || !shell || !globalThis.ResizeObserver) return;
+    const observer = new ResizeObserver(() => shell.style.setProperty("--hl-topbar-height", `${header.getBoundingClientRect().height}px`));
+    observer.observe(header);
+    return () => { observer.disconnect(); shell.style.removeProperty("--hl-topbar-height"); };
+  }, []);
+
   async function handleSignOut() {
     setSigningOut(true);
     setSignOutWarning("");
@@ -239,7 +261,7 @@ function TopBar({ freezeBanner }) {
 
   useEffect(() => {
     const onDocClick = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (!showSidebar && menuRef.current && !menuRef.current.contains(event.target)) {
         setMenuOpen(false);
         setRulesOpen(false);
         setCommissionerOpen(false);
@@ -252,12 +274,12 @@ function TopBar({ freezeBanner }) {
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
-  }, [location.hash,location.pathname,location.search,navigate]);
+  }, [location.hash,location.pathname,location.search,navigate,showSidebar]);
 
   useEffect(() => {
     const onEscape = (event) => {
       if (event.key !== "Escape") return;
-      if (helpOpen || location.hash==='#league-help') { event.preventDefault(); setHelpOpen(false);if(location.hash==='#league-help')navigate(location.pathname+location.search,{replace:true});menuButtonRef.current?.focus();return; }
+      if (!showSidebar && (helpOpen || location.hash==='#league-help')) { event.preventDefault(); setHelpOpen(false);if(location.hash==='#league-help')navigate(location.pathname+location.search,{replace:true});menuButtonRef.current?.focus();return; }
       if (commissionerOpen) { event.preventDefault(); setCommissionerOpen(false); menuButtonRef.current?.focus(); return; }
       if (rulesOpen) {
         event.preventDefault();
@@ -275,7 +297,7 @@ function TopBar({ freezeBanner }) {
     };
     document.addEventListener("keydown", onEscape);
     return () => document.removeEventListener("keydown", onEscape);
-  }, [accountOpen, menuOpen, rulesOpen, commissionerOpen, helpOpen, location.hash, location.pathname, location.search, navigate]);
+  }, [accountOpen, menuOpen, rulesOpen, commissionerOpen, helpOpen, location.hash, location.pathname, location.search, navigate, showSidebar]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -287,7 +309,7 @@ function TopBar({ freezeBanner }) {
 
   return (
     <>
-      <header className="hl-app-header">
+      <header ref={headerRef} className={`hl-app-header${showSidebar ? " hl-app-header--sidebar" : ""}`}>
         <div className="hl-app-header__bar">
           <div className="hl-app-header__navigation" ref={menuRef}>
             <button
@@ -313,7 +335,7 @@ function TopBar({ freezeBanner }) {
               />
             </button>
 
-            {(menuOpen || linkedHelp) && (
+            {(menuOpen || linkedHelp) && !showSidebar && (
               <nav
                 id="main-navigation-menu"
                 className={`hl-main-menu${rulesOpen || commissionerOpen || helpVisible ? " is-rules-open" : ""}`}
@@ -408,6 +430,7 @@ function TopBar({ freezeBanner }) {
                     <LeagueRulesDropdown key={leagueId || 'global'} leagueId={leagueId} httpClient={session.httpClient} onClose={() => setRulesOpen(false)} />
                   </div>
                 )}
+                <QuoteMenuFooter league={currentLeague} onOpen={(mode) => { closeMenus(); setQuotePanel(mode); }} />
               </nav>
             )}
           </div>
@@ -434,7 +457,7 @@ function TopBar({ freezeBanner }) {
               {currentLeague && <span>{currentLeague.name}</span>}
               <strong>{currentPageLabel}</strong>
             </div>
-            {session.status === "authenticated" && <QuoteTicker />}
+            {session.status === "authenticated" && <LeagueQuoteTicker key={leagueId || "global"} leagueId={leagueId} httpClient={session.httpClient} />}
           </div>
 
           <div className="hl-app-header__account" ref={accountRef}>
@@ -498,9 +521,9 @@ function TopBar({ freezeBanner }) {
                         </small>
                       </div>
                     </div>
-                    <Link to={routePaths.leagues} onClick={closeMenus}>
+                    {!showSidebar && <Link to={routePaths.leagues} onClick={closeMenus}>
                       {leagues.length > 1 ? "Switch league" : "Your league"}
-                    </Link>
+                    </Link>}
                     <Link to={routePaths.account} onClick={closeMenus}>
                       Account and team settings
                     </Link>
@@ -533,6 +556,11 @@ function TopBar({ freezeBanner }) {
           </div>
         </div>
       </header>
+      {showSidebar && <DesktopSidebar key={leagueId || "unselected"}
+        league={currentLeague} leaguesQuery={leaguesQuery} links={leagueLinks}
+        descriptions={descriptions} session={session} unreadCount={unreadCount} isActive={isActive}
+        footer={<QuoteMenuFooter league={currentLeague} onOpen={setQuotePanel} />} />}
+      {quotePanel && currentLeague && <QuotePanel key={`${leagueId}:${quotePanel}`} mode={quotePanel} league={currentLeague} session={session} onClose={() => { setQuotePanel(null); if (!showSidebar) menuButtonRef.current?.focus(); }} />}
       {freezeBanner && (
         <div className="hl-freeze-banner" role="status">
           <Shield aria-hidden="true" />

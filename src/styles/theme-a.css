@@ -7141,3 +7141,98 @@ a.hl-player-card-trigger:focus-visible { outline: 2px solid #d5b66f; outline-off
 
 .hl-help-menu > button { position:sticky; top:0; z-index:3; background:var(--hl-surface,#15202d); margin-bottom:.4rem; }
 .hl-help-menu .hl-surface { padding:1rem; }
+/* Compact dashboard: balanced rows without stretching across ultrawide screens. */
+.hl-dashboard {
+  width: 100%;
+  max-width: 1480px;
+  margin-inline: auto;
+  gap: 12px;
+}
+
+.hl-dashboard__hero,
+.hl-dashboard__transactions,
+.hl-dashboard__summary {
+  gap: 12px;
+  align-items: stretch;
+}
+
+.hl-dashboard :is(.hl-dashboard__hero, .hl-dashboard__transactions, .hl-dashboard__summary) > * {
+  min-width: 0;
+}
+
+.hl-dashboard .hl-panel-heading,
+.hl-dashboard .hl-trade-block__heading {
+  min-height: 0;
+  padding: 14px 16px;
+}
+
+.hl-dashboard .hl-dashboard-week-summary { min-height: 140px; }
+.hl-dashboard .hl-dashboard-matchup-health:empty { display: none; }
+.hl-dashboard .hl-team-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+/* Keep the document order when the rows stack on smaller screens. */
+.hl-dashboard__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hl-dashboard__transactions { grid-template-columns: minmax(0, 1fr); }
+.hl-dashboard__transactions > .hl-trade-block { grid-column: auto; }
+
+@media (min-width: 1024px) {
+  .hl-dashboard__hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr); }
+  .hl-dashboard__hero--commissioner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hl-dashboard__summary { grid-template-columns: minmax(0, 2.6fr) minmax(0, 1fr); }
+  .hl-dashboard__transactions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); }
+}
+
+/* A dozen teams fit in a compact grid beside the smaller status cards. */
+.hl-dashboard__summary .hl-team-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+}
+.hl-dashboard__summary .hl-team-grid > a {
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px;
+}
+.hl-dashboard__summary .hl-team-grid__mark { width: 28px; height: 28px; }
+@media (min-width: 1440px) {
+  .hl-dashboard__summary .hl-team-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Manager status reads across the top, above matchup and roster. */
+.hl-dashboard__team-strip { min-width: 0; }
+@media (min-width: 1024px) {
+  .hl-dashboard__team-strip > .hl-dashboard-team {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(130px, 0.7fr) minmax(210px, 1.1fr) minmax(0, 1.8fr);
+    align-items: center;
+  }
+  .hl-dashboard__team-strip .hl-panel-heading {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    border-bottom: 0;
+  }
+  .hl-dashboard__team-strip .hl-panel-heading h2 { font-size: 1.1rem; }
+  .hl-dashboard__team-strip .hl-team-record { border-bottom: 0; }
+  .hl-dashboard__team-strip .hl-team-record > div { padding-inline: 10px; }
+  .hl-dashboard__team-strip .hl-cap-summary { border-left: 1px solid var(--hl-border); }
+  .hl-dashboard__team-strip .hl-team-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 12px 16px;
+    border-left: 1px solid var(--hl-border);
+  }
+  .hl-dashboard__team-strip .hl-team-facts > div {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hl-dashboard__team-strip .hl-action-banner,
+  .hl-dashboard__team-strip .hl-state-block { grid-column: 1 / -1; }
+}
+@media (min-width: 1280px) {
+  .hl-dashboard__team-strip .hl-team-facts { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}

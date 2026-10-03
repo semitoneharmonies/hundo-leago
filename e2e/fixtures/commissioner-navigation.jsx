@@ -2,7 +2,7 @@ import {createRoot} from 'react-dom/client';
 import {MemoryRouter,Routes,Route} from 'react-router-dom';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {SessionContext} from '../../src/features/session/sessionContext.js';
-import TopBar from '../../src/components/TopBar.jsx';
+import {AppShell} from '../../src/app/AppShell.jsx';
 import {CommissionerCompetitionPage} from '../../src/features/competition/CompetitionPages.jsx';
 import '../../src/styles/theme-a.css';
 const leagueId='11111111-1111-4111-8111-111111111111',seasonId='22222222-2222-4222-8222-222222222222',teamId='33333333-3333-4333-8333-333333333333';
@@ -24,4 +24,4 @@ const httpClient={async request(url,options={}){
  return {data};
 }};
 const initial='/leagues/'+leagueId+'/commissioner';
-createRoot(document.getElementById('root')).render(<MemoryRouter initialEntries={[manager?'/leagues/'+leagueId:initial]}><QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><SessionContext.Provider value={{status:'authenticated',httpClient,user:{displayName:'Preview user'}}}><TopBar/><Routes><Route path="/leagues/:leagueId/commissioner/:section?" element={<CommissionerCompetitionPage/>}/><Route path="*" element={<main className="hl-page"><h1>Manager dashboard</h1></main>}/></Routes></SessionContext.Provider></QueryClientProvider></MemoryRouter>);
+createRoot(document.getElementById('root')).render(<MemoryRouter initialEntries={[manager?'/leagues/'+leagueId:initial]}><QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><SessionContext.Provider value={{status:'authenticated',httpClient,user:{displayName:'Preview user'}}}><AppShell><Routes><Route path="/leagues/:leagueId/commissioner/:section?" element={<CommissionerCompetitionPage/>}/><Route path="*" element={<main className="hl-page"><h1>Manager dashboard</h1></main>}/></Routes></AppShell></SessionContext.Provider></QueryClientProvider></MemoryRouter>);

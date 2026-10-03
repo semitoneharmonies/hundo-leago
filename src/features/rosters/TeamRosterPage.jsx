@@ -21,6 +21,7 @@ import { Link } from "react-router-dom";
 import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
+import { usePromotedHeader } from "../../components/navigationMotion.js";
 import {
   ErrorBlock,
   PositionTag,
@@ -946,6 +947,7 @@ export function TeamRosterPage({
 }) {
   const queryClient = useQueryClient();
   const { cap, league, team } = workspace;
+  const promotedHeader = usePromotedHeader(`team:${league.id}:${team.id}`);
   const legality = workspace.legality ?? { legal: true, reasons: [] };
   const [view, setView] = useState("table");
   const [activePlayers, setActivePlayers] = useState(() =>
@@ -1324,6 +1326,7 @@ export function TeamRosterPage({
   return (
     <div className="hl-team-roster">
       <header
+        ref={promotedHeader}
         className={teamColourClass(
           "hl-surface hl-roster-hero hl-roster-hero--striped",
           team
@@ -1359,6 +1362,7 @@ export function TeamRosterPage({
         </div>
       </header>
 
+      <div className="hl-navigation-details">
       <section className="hl-roster-cap" aria-labelledby="cap-summary-title">
         <div className="hl-section-title">
           <p className="hl-eyebrow">Team finances</p>
@@ -1492,6 +1496,7 @@ export function TeamRosterPage({
         team={team}
         teams={teams}
       />
+      </div>
     </div>
   );
 }

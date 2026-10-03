@@ -14,6 +14,7 @@ import { SCORING_CATEGORIES, scoringWeight } from "../../shared/scoringCategorie
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
 import { PlayerName } from '../players/PlayerName.jsx';
+import { usePromotedHeader } from "../../components/navigationMotion.js";
 import { calendarInputValue, calendarTimestamp } from "../../shared/leagueCalendar.js";
 import {
   EmptyBlock,
@@ -23,6 +24,7 @@ import {
   StatusBadge,
   Surface,
   TableScroll,
+  TeamMark,
 } from "../../components/HundoUi.jsx";
 import { readLeaguePreference } from "../leagues/leaguePreference.js";
 import {
@@ -313,18 +315,19 @@ export function LeagueMatchupsPage() {
     });
   };
   const queryClient = useQueryClient();
-  const [selectedSeasonId, setSelectedSeasonId] = useState(null);
-  const [selectedWeekId, setSelectedWeekId] = useState(null);
-  const [selectedMatchupId, setSelectedMatchupId] = useState(null);
+  const [selection, setSelection] = useSearchParams();
+  const selectedWeekId = selection.get("week");
+  const selectedMatchupId = selection.get("matchup");
+  const requestedSeasonId = selection.get("season");
   const seasons = useQuery({
     ...leagueSeasonsQuery(context.session.httpClient, leagueId),
     enabled:
       context.session.status === "authenticated" && Boolean(context.league),
   });
   const effectiveSeasonId =
-    selectedSeasonId &&
-    seasons.data?.some(({ id }) => id === selectedSeasonId)
-      ? selectedSeasonId
+    requestedSeasonId &&
+    seasons.data?.some(({ id }) => id === requestedSeasonId)
+      ? requestedSeasonId
       : seasons.data?.find(({ id }) => id === context.seasonId)?.id ||
         seasons.data?.[0]?.id ||
         null;
@@ -436,9 +439,7 @@ export function LeagueMatchupsPage() {
                 <select
                   value={effectiveSeasonId || ""}
                   onChange={(event) => {
-                    setSelectedSeasonId(event.target.value);
-                    setSelectedWeekId(null);
-                    setSelectedMatchupId(null);
+                    setSelection({ season: event.target.value });
                   }}
                 >
                   {seasons.data.map((season) => (
@@ -453,8 +454,7 @@ export function LeagueMatchupsPage() {
                 <select
                   value={effectiveWeekId || ""}
                   onChange={(event) => {
-                    setSelectedWeekId(event.target.value);
-                    setSelectedMatchupId(null);
+                    setSelection({ season: effectiveSeasonId, week: event.target.value });
                   }}
                   disabled={weeks.data.weeks.length === 0}
                 >
@@ -499,7 +499,7 @@ export function LeagueMatchupsPage() {
                                     type="button"
                                     aria-label={`${item.homeTeam.name} vs ${item.awayTeam.name}`}
                                     aria-pressed={item.id === effectiveMatchupId}
-                                    onClick={() => setSelectedMatchupId(item.id)}
+                                    onClick={() => setSelection({ season: effectiveSeasonId, week: effectiveWeekId, matchup: item.id })}
                                   >
                                     <span>{item.homeTeam.name}</span>
                                     <small>vs</small>
@@ -656,6 +656,8 @@ function MatchupPlayer({ team, slot, expanded, leagueId }) {
 }
 
 function MatchupCard({ matchup, teams = [] }) {
+  const promotedHeader = usePromotedHeader(`matchup:${matchup.leagueId}:${matchup.id}`);
+  const { httpClient } = useSession();
   const official = matchup.result?.currentVersion || null;
   const scoring = matchup.scoring;
   const homeScore =
@@ -670,12 +672,13 @@ function MatchupCard({ matchup, teams = [] }) {
     teams.find(({ id }) => id === matchup.awayTeam.id) || matchup.awayTeam;
   return (
     <section className="hl-surface hl-matchup-detail" aria-labelledby="matchup-detail-title">
-      <header className="hl-matchup-score">
+      <header ref={promotedHeader} className="hl-matchup-score">
         <div
           className={teamColourClass("hl-matchup-score__team", homeTeam)}
           style={teamColourStyle(homeTeam)}
         >
           <span>Home</span>
+          <TeamMark className="hl-matchup-score__mark" team={homeTeam} logoUrl={homeTeam.logoReference ? httpClient.resourceUrl(homeTeam.logoReference) : null} />
           <strong>{homeTeam.name}</strong>
           <b>{points(homeScore)} FP</b>
           <small>fantasy points</small>
@@ -691,11 +694,13 @@ function MatchupCard({ matchup, teams = [] }) {
           style={teamColourStyle(awayTeam)}
         >
           <span>Away</span>
+          <TeamMark className="hl-matchup-score__mark" team={awayTeam} logoUrl={awayTeam.logoReference ? httpClient.resourceUrl(awayTeam.logoReference) : null} />
           <strong>{awayTeam.name}</strong>
           <b>{points(awayScore)} FP</b>
           <small>fantasy points</small>
         </div>
       </header>
+      <div className="hl-navigation-details">
       <h2 className="hl-visually-hidden" id="matchup-detail-title">{homeTeam.name} vs {awayTeam.name}</h2>
       <Health health={matchup.health} />
       {!scoring ? (
@@ -731,6 +736,7 @@ function MatchupCard({ matchup, teams = [] }) {
         </>
       )}
       {matchup.result?.status === "corrected" && <p className="hl-inline-copy">Official result corrected.</p>}
+      </div>
     </section>
   );
 }
