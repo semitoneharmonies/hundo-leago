@@ -5,6 +5,7 @@ import { renderWithProviders } from "../../test/render.jsx";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
 import { EXPANDED_SCORING_VERSION, SCORING_CATEGORIES } from "../../shared/scoringCategories.js";
 import { sampleCompletedMatchup } from "../competition/sampleCompletedMatchup.js";
+import {SessionContext} from '../session/sessionContext.js';
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 const seasonId = "22222222-2222-4222-8222-222222222222";
@@ -33,6 +34,7 @@ function teamWorkspace() {
 function setup({ currentWeek = async () => ({ week: null }), matchup, hasSeason = true, hasTeam = false, leagueStatus = "setup", workspace = async () => teamWorkspace() } = {}) {
   const request = vi.fn(async (path, options = {}) => {
     if (options.method && options.method !== "GET") throw new Error("Dashboard reads must not mutate state.");
+    if (path.endsWith('/communications')) return {data:{leagueId,messages:[]}};
     if (path === `/api/v1/leagues/${leagueId}/teams/${teamId}/roster`) {
       if (options.authenticated !== true) throw new Error("The team workspace requires authentication.");
       const data = await workspace();
@@ -47,11 +49,11 @@ function setup({ currentWeek = async () => ({ week: null }), matchup, hasSeason 
     if (path.includes("/activity?")) return { data: { activity: [] } };
     throw new Error(`Unexpected dashboard request: ${path}`);
   });
-  renderWithProviders(<LeagueDashboard
+  renderWithProviders(<SessionContext.Provider value={{status:'authenticated',user:{id:'manager'},httpClient:{request}}}><LeagueDashboard
     league={{ id: leagueId, name: "Setup League", status: leagueStatus, currentSeason: hasSeason ? { id: seasonId, label: "2026" } : null, membership: { permissionCategory: "manager" } }}
     teams={hasTeam ? [{ id: teamId, name: "Preview Team", status: leagueStatus, currentManager: { userId: "manager" } }] : []}
     session={{ user: { id: "manager" }, httpClient: { request } }}
-  />, { config: { appEnv: "local", apiOrigin: "http://localhost:4000", socketOrigin: "http://localhost:4000", buildId: null } });
+  /></SessionContext.Provider>, { config: { appEnv: "local", apiOrigin: "http://localhost:4000", socketOrigin: "http://localhost:4000", buildId: null } });
   return request;
 }
 
@@ -85,7 +87,7 @@ describe("dashboard current-week loading", () => {
     expect(screen.getByText("No active season is configured")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "No current matchup week" })).toBeInTheDocument();
     expect(screen.queryByText("Loading the current matchup week…")).not.toBeInTheDocument();
-    await waitFor(() => expect(request).not.toHaveBeenCalled());
+    await waitFor(() => expect(request.mock.calls.filter(([path])=>!path.endsWith('/communications'))).toHaveLength(0));
   });
 });
 
@@ -177,6 +179,6 @@ describe("dashboard authenticated roster reads", () => {
   it("does not request the managed team's workspace before a season exists", async () => {
     const request = setup({ hasTeam: true, hasSeason: false });
     expect(screen.getByText("No active season is configured")).toBeInTheDocument();
-    await waitFor(() => expect(request).not.toHaveBeenCalled());
+    await waitFor(() => expect(request.mock.calls.filter(([path])=>!path.endsWith('/communications'))).toHaveLength(0));
   });
 });

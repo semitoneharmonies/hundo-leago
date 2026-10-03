@@ -1,5 +1,8 @@
 import { GoonDraftTimingSettings } from "./GoonDraftTimingSettings.jsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FadDeadlineControls } from "./FadDeadlineControls.jsx";
+import { FadTimingControls } from "./FadTimingControls.jsx";
+import { FadAuctionCutoffControls } from "./FadAuctionCutoffControls.jsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
@@ -142,7 +145,7 @@ function OverviewHero({
       </div>
       <div className={styles.deadlineRow}>
       <p className={styles.deadlineLine}>
-        <strong>Candidate card deadline:</strong>{" "}
+        <strong>{overview.deadlinePolicy === "soft" ? "Candidate Card target deadline:" : "Candidate card deadline:"}</strong>{" "}
         {overview.candidateDeadlineAtMs === null ? "Not scheduled" : shortLeagueDateTime(
           overview.candidateDeadlineAtMs,
           overview.timeZone,
@@ -151,6 +154,8 @@ function OverviewHero({
       </p>
       {archiveControl}
       </div>
+      {overview.deadlinePolicy === "soft" && overview.status === "cards_open" &&
+        <p>Complete, valid cards process automatically at the target time. If cards are unfinished, processing stays on hold and managers can keep editing.</p>}
     </header>
   );
 }
@@ -215,7 +220,13 @@ function FreeAgentDraftPreparationContent({
         headingId={embedded ? "free-agent-draft-title" : "fad-page-title"}
         headingLevel={embedded ? "h2" : "h1"}
       />
-      {leagueId === "48e59cfb-b12d-4dfb-ae1a-4d8b3512ef03" && overview.capabilities.viewRecovery.allowed && (
+      {overview.candidateDeadlineAtMs !== null && overview.deadlinePolicy === "soft" && overview.capabilities.viewRecovery.allowed &&
+        <FadDeadlineControls key={fadId} leagueId={leagueId} fadId={fadId} />}
+      {overview.candidateDeadlineAtMs !== null && overview.deadlinePolicy === "soft" && overview.capabilities.viewRecovery.allowed &&
+        <FadTimingControls key={`timing-${fadId}`} leagueId={leagueId} fadId={fadId} />}
+      {overview.candidateDeadlineAtMs !== null && overview.deadlinePolicy === "soft" && overview.capabilities.viewRecovery.allowed &&
+        <FadAuctionCutoffControls key={`cutoff-${fadId}`} leagueId={leagueId} fadId={fadId} />}
+      {overview.candidateDeadlineAtMs === null && leagueId === "48e59cfb-b12d-4dfb-ae1a-4d8b3512ef03" && overview.capabilities.viewRecovery.allowed && (
         <GoonDraftTimingSettings leagueId={leagueId} fadId={fadId} />
       )}
       <Surface
@@ -323,6 +334,10 @@ function FreeAgentDraftResultsExperience({
         headingId={embedded ? "free-agent-draft-title" : "fad-page-title"}
         headingLevel={embedded ? "h2" : "h1"}
       />
+      {overview.phase === "rapid" && overview.deadlinePolicy === "soft" && overview.capabilities.viewRecovery.allowed && <>
+        <FadTimingControls key={`timing-${fadId}`} leagueId={leagueId} fadId={fadId} />
+        <FadAuctionCutoffControls key={`cutoff-${fadId}`} leagueId={leagueId} fadId={fadId} />
+      </>}
       <PublishedCandidateCards
         key={`${privacyEpoch}:${leagueId}:${fadId}:cards`}
         httpClient={context.session.httpClient}
@@ -790,12 +805,13 @@ export function CandidateCardPage() {
       (overviewClientNowMs - overview.dataUpdatedAt)
     : null;
   const cachedDeadlineReached =
+    overview.data?.deadlinePolicy !== "soft" &&
     overview.data !== undefined &&
     estimatedServerNowMs !== null &&
     overview.data.candidateDeadlineAtMs !== null &&
     estimatedServerNowMs >= overview.data.candidateDeadlineAtMs;
   const measuredDeadlineReached =
-    deadlineReached || cachedDeadlineReached;
+    overview.data?.deadlinePolicy !== "soft" && (deadlineReached || cachedDeadlineReached);
 
   // Keep typed rows in this page's memory during a transient reconnect. They are
   // never exposed until the same session, assignment and card are authorized.
@@ -882,7 +898,7 @@ export function CandidateCardPage() {
   ]);
 
   useEffect(() => {
-    if (!overview.data || !authorization || overview.data.candidateDeadlineAtMs === null) return undefined;
+    if (!overview.data || !authorization || overview.data.deadlinePolicy === "soft" || overview.data.candidateDeadlineAtMs === null) return undefined;
     const remaining =
       overview.data.candidateDeadlineAtMs -
       (overview.data.serverNowMs +

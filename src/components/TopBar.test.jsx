@@ -33,6 +33,7 @@ function fetchScenario(
 ) {
   return vi.fn(async (url) => {
     const path = new URL(url).pathname;
+    if(path===`/api/v1/leagues/${leagueId}/help`)return response({leagueId,canManage:false,teams:[{id:teamId,name:'North Stars'}],requests:[],cardHelp:[],nextCursor:null});
     if (path === "/api/v1/session") {
       return response({
         csrfToken: "D".repeat(43),
@@ -143,6 +144,16 @@ async function renderTopBar(
 }
 
 describe("top bar navigation", () => {
+  it('opens the manager Help form from the bottom menu without commissioner tools',async()=>{
+    const view=await renderTopBar('manager');
+    expect(screen.queryByRole('button',{name:/Commissioner tools/})).not.toBeInTheDocument();
+    expect(view.fetchImpl.mock.calls.some(([url])=>new URL(url).pathname.endsWith('/help'))).toBe(false);
+    await view.user.click(screen.getByRole('button',{name:'Help',exact:true}));
+    expect(await screen.findByLabelText('What needs attention?')).toBeVisible();
+    expect(screen.getByLabelText('Your team')).toBeVisible();
+    await view.user.click(screen.getByRole('button',{name:'Close help'}));
+    expect(screen.queryByLabelText('What needs attention?')).not.toBeInTheDocument();
+  });
   it("keeps the logo in responsive layout flow without fixed inline sizing", async () => {
     await renderTopBar();
 
@@ -271,11 +282,10 @@ describe("top bar navigation", () => {
   });
 
   it("includes commissioner tools only for current commissioner authority", async () => {
-    await renderTopBar("commissioner");
+    const view = await renderTopBar("commissioner");
 
-    expect(
-      screen.getByRole("link", { name: "Commissioner tools" })
-    ).toHaveAttribute("href", `/leagues/${leagueId}/commissioner`);
+    await view.user.click(screen.getByRole("button", { name: /Commissioner tools/ }));
+    expect(screen.getByRole("link", { name: "All tools" })).toHaveAttribute("href", `/leagues/${leagueId}/commissioner`);
     expect(
       screen.getByRole("link", { name: "Roster operations" })
     ).toHaveAttribute(
@@ -290,9 +300,8 @@ describe("top bar navigation", () => {
       "platform_administrator"
     );
 
-    expect(
-      screen.getByRole("link", { name: "Commissioner tools" })
-    ).toHaveAttribute("href", `/leagues/${leagueId}/commissioner`);
+    await view.user.click(screen.getByRole("button", { name: /Commissioner tools/ }));
+    expect(screen.getByRole("link", { name: "All tools" })).toHaveAttribute("href", `/leagues/${leagueId}/commissioner`);
     expect(
       screen.getByRole("link", { name: "Roster operations" })
     ).toHaveAttribute(

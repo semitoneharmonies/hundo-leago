@@ -19,7 +19,10 @@ import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
 import { TeamCreationPanel } from "./TeamCreationPanel.jsx";
 import { PlayerInjuryAdminPanel } from '../injuries/PlayerInjuryAdminPanel.jsx';
+import { LeagueDeletionPanel } from "./LeagueDeletionPanel.jsx";
 import { StatisticsRefreshPanel } from "./StatisticsRefreshPanel.jsx";
+import { OperationsHealthPanel } from "./OperationsHealthPanel.jsx";
+import { PlayerCatalogueControls } from "./PlayerCatalogueControls.jsx";
 import {
   adminUsersQuery,
   assignLeagueCommissioner,
@@ -67,6 +70,7 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
   const [message, setMessage] = useState("");
   const creationIntent = useRef(null);
   const assignmentIntent = useRef(null);
+  const [deletionPending, setDeletionPending] = useState(false);
   const availableLeagues =
     createdLeague && !leagues.some(({ id }) => id === createdLeague.id)
       ? [...leagues, createdLeague]
@@ -136,7 +140,7 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
     onError: () => setMessage(""),
   });
 
-  const busy = createMutation.isPending || assignmentMutation.isPending;
+  const busy = deletionPending || createMutation.isPending || assignmentMutation.isPending;
   const recoveringAssignment = assignmentMutation.isError &&
     assignmentMutation.variables?.leagueId === selectedLeagueId &&
     assignmentMutation.variables?.userId === commissionerUserId;
@@ -279,6 +283,16 @@ function PlatformAdminLeaguePanel({ httpClient, leagues, usersQuery }) {
       {message && <p className="hl-form-message" role="status">{message}</p>}
       <AdminMutationError error={createMutation.error} creation />
       <AdminMutationError error={assignmentMutation.error} />
+      {selectedLeague && (
+        <LeagueDeletionPanel key={selectedLeague.id} httpClient={httpClient} league={selectedLeague}
+          onBusyChange={setDeletionPending}
+          onDeleted={(deletedLeague) => {
+            setCreatedLeague((current) => current?.id === deletedLeague.id ? null : current);
+            setSelectedLeagueId((current) => current === deletedLeague.id ? "" : current);
+            setCommissionerUserId("");
+            setMessage(`${deletedLeague.name} was permanently deleted.`);
+          }} />
+      )}
     </Surface>
   );
 }
@@ -395,6 +409,8 @@ export function LeagueSelectionPage() {
                   usersQuery={adminUsers}
                 />
                 <PlayerInjuryAdminPanel key={`injuries-${session.user.id}`} httpClient={session.httpClient} />
+                <OperationsHealthPanel key={`health-${session.user.id}`} httpClient={session.httpClient} />
+                <PlayerCatalogueControls key={`catalogue-${session.user.id}`} httpClient={session.httpClient} />
                 <StatisticsRefreshPanel key={session.user.id} httpClient={session.httpClient} />
               </>
             )}

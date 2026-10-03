@@ -360,20 +360,7 @@ describe("auction API boundary", () => {
     const editedAuction = {
       ...ordinaryAuction(),
       version: 2,
-      administrativeBids: [
-        {
-          bidId: IDS.bid,
-          teamId: IDS.team,
-          team: team(),
-          version: 2,
-          status: "active",
-          participantStatus: null,
-          capabilities: {
-            adminEditBid: allowed(),
-            adminRemoveBid: allowed(),
-          },
-        },
-      ],
+      administrativeBids: [],
     };
     const editClient = client({ data: editedAuction });
     const editBody = {

@@ -39,6 +39,9 @@ import {
 } from "./notificationQueries.js";
 
 function message(notification) {
+  if (["league_announcement", "league_reminder"].includes(notification.type)) {
+    return `${notification.messageData.title}: ${notification.messageData.message}`;
+  }
   if (isFreeAgentDraftNotificationType(notification.type)) {
     return getFreeAgentDraftNotificationListCopy(notification.type);
   }
@@ -56,6 +59,11 @@ function message(notification) {
 }
 
 function notificationDestination(notification) {
+  if (notification.type === 'league_auction_timing_changed') return routePaths.auctionDetail(notification.leagueId, notification.messageData.auctionId);
+  if (notification.type === 'league_help_updated') return routePaths.league(notification.leagueId)+'#league-help';
+  if (['league_trade_deadline_changed', 'league_calendar_changed', 'league_auction_schedule_changed', 'league_scoring_changed', 'league_picks_repaired', 'league_correction_reversed', 'league_preseason_reset', 'league_pause_changed'].includes(notification.type)) return routePaths.league(notification.leagueId);
+  if (notification.type === "league_fad_deadline_changed") return routePaths.freeAgentDraft(notification.leagueId, notification.messageData.fadId);
+  if (notification.type === "league_announcement") return routePaths.league(notification.leagueId);
   if (notification.type === "commissioner_assignment_proposed") return `${routePaths.leagues}?assignmentId=${encodeURIComponent(notification.messageData.assignmentId)}`;
   if (notification.type !== "trade_proposal_received") return null;
   return routePaths.tradeAcceptance(

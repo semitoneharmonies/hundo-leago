@@ -1741,6 +1741,7 @@ docs/04-technical-specs/BACKEND_REFACTOR.md
 docs/04-technical-specs/SQLITE_MIGRATION.md
 docs/04-technical-specs/FRONTEND_STRUCTURE.md
 docs/04-technical-specs/FREE_AGENT_DRAFT.md
+docs/04-technical-specs/LEAGUE_COMMUNICATIONS.md
 docs/04-technical-specs/DEPLOYMENT.md
 docs/04-technical-specs/ENVIRONMENT_SETUP.md
 ```
@@ -2111,6 +2112,20 @@ They may explain why old code exists, but they are not current instructions.
 ---
 
 # Work Plans
+
+The locally developed commissioner/admin extension approved on 29 September
+2026 is tracked in
+[Commissioner controls](06-work-plans/COMMISSIONER_CONTROLS_2026-09-29.md).
+The [staging testing handoff](06-work-plans/COMMISSIONER_CONTROLS_STAGING_QA_2026-09-30.md)
+records the candidate source, acceptance checklist and safety boundaries.
+Features include [league communications](04-technical-specs/LEAGUE_COMMUNICATIONS.md)
+and [FAD deadline holds and explicit processing](04-technical-specs/FAD_DEADLINE_CONTROLS.md).
+Editable in-season trading dates are covered by [Trade deadline controls](04-technical-specs/TRADE_DEADLINE_CONTROLS.md).
+Individual open auction closing times are covered by [Auction timing controls](04-technical-specs/AUCTION_TIMING_CONTROLS.md).
+Calendar, recovery, reset and administrator tools are covered by
+[League management controls](04-technical-specs/LEAGUE_MANAGEMENT_CONTROLS.md);
+scoring changes use [League scoring controls](04-technical-specs/LEAGUE_SCORING_CONTROLS.md).
+These records distinguish local verification from publication and live acceptance.
 
 Directory:
 

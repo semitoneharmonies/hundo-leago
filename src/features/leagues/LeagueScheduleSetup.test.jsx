@@ -71,8 +71,8 @@ function setup({ pending = false, hasDeadline = false, failStart = false } = {})
     throw new Error(`Unexpected request: ${path}`);
   });
   return { requests, allowStart: () => { rejectStart = false; }, ...renderWithProviders(
-    <Routes><Route path="/leagues/:leagueId/commissioner" element={<CommissionerCompetitionPage />} /></Routes>,
-    { initialEntries: [`/leagues/${leagueId}/commissioner`], enableSession: true, config, sessionOptions: { fetchImpl } }) };
+    <Routes><Route path="/leagues/:leagueId/commissioner/:section" element={<CommissionerCompetitionPage />} /></Routes>,
+    { initialEntries: [`/leagues/${leagueId}/commissioner/calendar`], enableSession: true, config, sessionOptions: { fetchImpl } }) };
 }
 
 async function enterDates() {
@@ -125,7 +125,7 @@ describe("combined inaugural calendar setup", () => {
     const view = setup({ failStart: true }); await enterDates();
     await view.user.click(screen.getByRole("button", { name: "Review league setup" }));
     await view.user.click(screen.getByRole("button", { name: "Save trade deadline and prepare league" }));
-    await screen.findByRole("alert");
+    await screen.findByText("League preparation could not be completed. Review the saved trade deadline and try again.");
     await waitFor(() => expect(screen.getByRole("button", { name: "Review league setup" })).toBeEnabled());
     expect(view.requests).toHaveLength(2);
     expect(screen.getByLabelText("Season trade deadline")).toBeDisabled();
@@ -151,4 +151,11 @@ describe("combined inaugural calendar setup", () => {
     expect(screen.getByLabelText("Round 5 rolls over")).toHaveValue(lastRound);
     expect(view.requests).toEqual([]);
   });
+});
+
+
+it('includes the commissioner cutoff gap in the reviewed creation timetable',async()=>{
+ const view=setup();await enterDates();fireEvent.change(screen.getByLabelText('Minutes before rollover to stop starting auctions'),{target:{value:'0'}});
+ await view.user.click(screen.getByRole('button',{name:'Review league setup'}));await view.user.click(screen.getByRole('button',{name:'Save trade deadline and prepare league'}));await screen.findByRole('region',{name:'Schedule generation preview'});
+ expect(view.requests.at(-1).body.draftTiming.auctionCreationCutoffMinutes).toBe(0);expect(screen.getByText('New-auction cutoff: 0 minutes before rollover.')).toBeInTheDocument();
 });

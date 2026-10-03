@@ -328,7 +328,7 @@ function MatchupScoreboard({
               : "Home"}
           </span>
           <strong>{homeTeam.name}</strong>
-          <b>{fantasyPoints(homeScore)} FP</b>
+          <b>{fantasyPoints(homeScore)}</b>
           <small>fantasy points</small>
         </div>
         <div className="hl-matchup-score__center">
@@ -354,7 +354,7 @@ function MatchupScoreboard({
               : "Away"}
           </span>
           <strong>{awayTeam.name}</strong>
-          <b>{fantasyPoints(awayScore)} FP</b>
+          <b>{fantasyPoints(awayScore)}</b>
           <small>fantasy points</small>
         </div>
       </div>
@@ -932,6 +932,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
           assists: player.assistDelta,
           points: player.pointDelta,
           scoringStats: player.dataStatus === "missing" ? null : player.scoringStats,
+          scoringWeights: player.scoringWeights,
           fantasyPoints,
           fantasyPointsPerGame: fantasyPointsPerGame(
             fantasyPoints,
@@ -956,6 +957,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
           assists: player.seasonStatistics?.assists ?? null,
           points: player.seasonStatistics?.nhlPoints ?? null,
           scoringStats: player.seasonStatistics?.scoringStats ?? null,
+          scoringWeights: player.seasonStatistics?.scoringWeights,
           fantasyPoints:
             player.seasonStatistics?.fantasyPointsHundredths ?? null,
           fantasyPointsPerGame: fantasyPointsPerGame(
@@ -1005,7 +1007,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
         </EmptyBlock>
       ) : (
         <>
-        <ScoringStatGuide />
+        <ScoringStatGuide weights={players.find(p=>p.scoringWeights)?.scoringWeights} />
         <TableScroll label="Dashboard roster">
           <table className="hl-data-table hl-player-row-table hl-dashboard-player-table hl-expanded-player-table">
             <thead>
@@ -1022,7 +1024,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                 <th className="hl-player-col-stat" scope="col">A</th>
                 <th className="hl-player-col-stat" scope="col">P</th>
                 {SCORING_CATEGORIES.map(({ key, abbreviation }) => (
-                  <th className="hl-player-col-stat" scope="col" key={key} title={scoringDescription(key)}>{abbreviation}</th>
+                  <th className="hl-player-col-stat" scope="col" key={key} title={scoringDescription(key, players.find(p=>p.scoringWeights)?.scoringWeights)}>{abbreviation}</th>
                 ))}
                 <th className="hl-player-col-stat" scope="col">FP</th>
                 <th className="hl-player-col-stat" scope="col">FPG</th>
@@ -1482,6 +1484,11 @@ export function LeagueDashboard({ league, teams, session }) {
         }
       />
 
+      {league.status === 'frozen' && <div className="hl-inline-notice" role="status">
+        <AlertTriangle aria-hidden="true" /><div><strong>League competition is paused</strong>
+          <span>Manager transactions are paused. Saved deadlines remain unchanged; the commissioner will review processing before resuming.</span></div>
+      </div>}
+
       {!seasonId && (
         <div className="hl-inline-notice" role="status">
           <CalendarDays aria-hidden="true" />
@@ -1495,7 +1502,20 @@ export function LeagueDashboard({ league, teams, session }) {
         </div>
       )}
 
-      <div className="hl-dashboard__hero">
+      {!commissioner && (
+        <div className="hl-dashboard__team-strip">
+          <TeamStatus
+            leagueId={leagueId}
+            managedTeam={managedTeam}
+            roster={roster.data}
+            standingsRow={standingsRow}
+            pending={enabled && (roster.isPending || standings.isPending)}
+            error={roster.error || standings.error}
+          />
+        </div>
+      )}
+
+      <div className={`hl-dashboard__hero${commissioner ? " hl-dashboard__hero--commissioner" : ""}`}>
         <MatchupScoreboard
           leagueId={leagueId}
           teams={teams}
@@ -1515,33 +1535,31 @@ export function LeagueDashboard({ league, teams, session }) {
             trades={trades.data || []}
           />
         ) : (
-          <TeamStatus
-            leagueId={leagueId}
-            managedTeam={managedTeam}
-            roster={roster.data}
-            standingsRow={standingsRow}
-            pending={enabled && (roster.isPending || standings.isPending)}
-            error={roster.error || standings.error}
-          />
-        )}
-      </div>
-
-      {!commissioner && (
         <RosterSnapshot
           leagueId={leagueId}
           managedTeam={managedTeam}
           roster={roster.data}
           matchup={matchup.data}
         />
-      )}
+        )}
+      </div>
 
-      <section className="hl-dashboard__transactions" aria-label="Transactions and trade block">
+      <section className="hl-dashboard__summary" aria-label="Team and auction overview">
+        <TeamsPanel
+          leagueId={leagueId}
+          teams={teams}
+          currentUserId={commissioner ? null : session.user.id}
+          httpClient={session.httpClient}
+        />
         <AuctionsPanel
           leagueId={leagueId}
           auctions={auctionItems}
           pending={enabled && auctions.isPending}
           error={auctions.error}
         />
+      </section>
+
+      <section className="hl-dashboard__transactions" aria-label="Trades, trade block and history">
         <TradesPanel
           leagueId={leagueId}
           trades={trades.data || []}
@@ -1557,26 +1575,17 @@ export function LeagueDashboard({ league, teams, session }) {
           showTradesLink
           teams={teams}
         />
-      </section>
-
-      {commissioner && (
-        <CommissionerMembersPanel league={league} teams={teams} session={session} />
-      )}
-
-      <div className="hl-dashboard__community">
         <ActivityPanel
           leagueId={leagueId}
           activity={activity.data?.activity || []}
           pending={enabled && activity.isPending}
           error={activity.error}
         />
-        <TeamsPanel
-          leagueId={leagueId}
-          teams={teams}
-          currentUserId={commissioner ? null : session.user.id}
-          httpClient={session.httpClient}
-        />
-      </div>
+      </section>
+
+      {commissioner && (
+        <CommissionerMembersPanel league={league} teams={teams} session={session} />
+      )}
     </div>
   );
 }

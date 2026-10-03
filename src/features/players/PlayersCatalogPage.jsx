@@ -131,6 +131,7 @@ function SortHeading({ activeSort, label, sortKey, onSort }) {
 }
 
 function SortableColumnHeading({
+  scoringWeights,
   activeSort,
   className,
   label,
@@ -140,7 +141,7 @@ function SortableColumnHeading({
   return (
     <th
       className={className}
-      title={scoringDescription(sortKey)}
+      title={scoringDescription(sortKey, scoringWeights)}
       scope="col"
       aria-sort={
         activeSort.key === sortKey
@@ -685,7 +686,7 @@ export function PlayersCatalogPage() {
         </Surface>
       ) : (
         <Surface className="hl-feature-section">
-          <ScoringStatGuide />
+          <ScoringStatGuide weights={loadedPlayers.find(p=>p.statistics?.scoringWeights)?.statistics.scoringWeights} />
           <TableScroll label="Player catalog">
             <table className="hl-data-table hl-player-row-table hl-player-table hl-expanded-player-table">
               <thead>
@@ -707,6 +708,7 @@ export function PlayersCatalogPage() {
                     ["FPG", "fantasyPointsPerGame"],
                   ].map(([label, sortKey]) => (
                     <SortableColumnHeading
+                      scoringWeights={loadedPlayers.find(p=>p.statistics?.scoringWeights)?.statistics.scoringWeights}
                       activeSort={sort}
                       className="hl-player-col-stat"
                       key={sortKey}

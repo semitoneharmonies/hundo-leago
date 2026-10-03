@@ -1,3 +1,5 @@
+import { commissionerSections, commissionerSectionPath } from '../commissioner/commissionerSections.js';
+import { LeagueCommunications, CandidateCardProgress } from '../commissioner/LeagueCommunications.jsx';
 import { seasonCalendarDefaults } from "./seasonCalendarDefaults.js";
 import { sampleCompletedMatchup } from "./sampleCompletedMatchup.js";
 import { createOperationId } from "../../shared/api/idempotency.js";
@@ -12,6 +14,7 @@ import { SCORING_CATEGORIES, scoringWeight } from "../../shared/scoringCategorie
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
 import { PlayerName } from '../players/PlayerName.jsx';
+import { usePromotedHeader } from "../../components/navigationMotion.js";
 import { calendarInputValue, calendarTimestamp } from "../../shared/leagueCalendar.js";
 import {
   EmptyBlock,
@@ -21,6 +24,7 @@ import {
   StatusBadge,
   Surface,
   TableScroll,
+  TeamMark,
 } from "../../components/HundoUi.jsx";
 import { readLeaguePreference } from "../leagues/leaguePreference.js";
 import {
@@ -30,6 +34,17 @@ import {
 } from "../leagues/leagueQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { CommissionerFadPanel } from "../freeAgentDraft/CommissionerFadPanel.jsx";
+import { LeagueCalendarControls } from '../commissioner/LeagueCalendarControls.jsx';
+import { LeagueAuctionScheduleControls } from '../commissioner/LeagueAuctionScheduleControls.jsx';
+import { LeagueScoringControls } from '../commissioner/LeagueScoringControls.jsx';
+import { SeasonRolloverPreview } from '../commissioner/SeasonRolloverPreview.jsx';
+import { LeagueRecoveryPanel } from '../commissioner/LeagueRecoveryPanel.jsx';
+import { GuidedLeagueResetControls } from '../commissioner/GuidedLeagueResetControls.jsx';
+import { CorrectionReversalControls } from '../commissioner/CorrectionReversalControls.jsx';
+import { LeagueHelpPanel } from '../leagues/LeagueHelpPanel.jsx';
+import { LeaguePauseControls } from '../commissioner/LeaguePauseControls.jsx';
+import { LeaguePickRepairControls } from '../commissioner/LeaguePickRepairControls.jsx';
+import { LeagueManagementPanel } from '../commissioner/LeagueManagementPanel.jsx';
 import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
@@ -209,7 +224,7 @@ function useCompetitionContext(leagueId) {
   return { session, leagues, league, seasonId: league?.currentSeason?.id || null };
 }
 
-function CompetitionGate({ context, title, children }) {
+function CompetitionGate({ context, title, children, className="" }) {
   if (context.session.status === "unauthenticated") {
     return <Navigate to={routePaths.home} replace state={{ reason: "sign-in" }} />;
   }
@@ -224,7 +239,7 @@ function CompetitionGate({ context, title, children }) {
     return <main className="hl-page"><PageHeading eyebrow={context.league.name} title={title} /><Surface><EmptyBlock title="No active season is configured for this league." /></Surface></main>;
   }
   return (
-    <main className="hl-page hl-page--wide hl-competition-page">
+    <main className={"hl-page hl-page--wide hl-competition-page "+className}>
       <PageHeading
         eyebrow={context.league.name}
         title={title}
@@ -300,18 +315,19 @@ export function LeagueMatchupsPage() {
     });
   };
   const queryClient = useQueryClient();
-  const [selectedSeasonId, setSelectedSeasonId] = useState(null);
-  const [selectedWeekId, setSelectedWeekId] = useState(null);
-  const [selectedMatchupId, setSelectedMatchupId] = useState(null);
+  const [selection, setSelection] = useSearchParams();
+  const selectedWeekId = selection.get("week");
+  const selectedMatchupId = selection.get("matchup");
+  const requestedSeasonId = selection.get("season");
   const seasons = useQuery({
     ...leagueSeasonsQuery(context.session.httpClient, leagueId),
     enabled:
       context.session.status === "authenticated" && Boolean(context.league),
   });
   const effectiveSeasonId =
-    selectedSeasonId &&
-    seasons.data?.some(({ id }) => id === selectedSeasonId)
-      ? selectedSeasonId
+    requestedSeasonId &&
+    seasons.data?.some(({ id }) => id === requestedSeasonId)
+      ? requestedSeasonId
       : seasons.data?.find(({ id }) => id === context.seasonId)?.id ||
         seasons.data?.[0]?.id ||
         null;
@@ -417,15 +433,13 @@ export function LeagueMatchupsPage() {
         : current.isError ? <ErrorMessage error={current.error} />
           : (
             <>
-              <Surface className="hl-competition-toolbar">
+              <Surface className="hl-competition-toolbar hl-matchup-page-controls">
               <label className="hl-field">
                 Season{" "}
                 <select
                   value={effectiveSeasonId || ""}
                   onChange={(event) => {
-                    setSelectedSeasonId(event.target.value);
-                    setSelectedWeekId(null);
-                    setSelectedMatchupId(null);
+                    setSelection({ season: event.target.value });
                   }}
                 >
                   {seasons.data.map((season) => (
@@ -440,8 +454,7 @@ export function LeagueMatchupsPage() {
                 <select
                   value={effectiveWeekId || ""}
                   onChange={(event) => {
-                    setSelectedWeekId(event.target.value);
-                    setSelectedMatchupId(null);
+                    setSelection({ season: effectiveSeasonId, week: event.target.value });
                   }}
                   disabled={weeks.data.weeks.length === 0}
                 >
@@ -486,7 +499,7 @@ export function LeagueMatchupsPage() {
                                     type="button"
                                     aria-label={`${item.homeTeam.name} vs ${item.awayTeam.name}`}
                                     aria-pressed={item.id === effectiveMatchupId}
-                                    onClick={() => setSelectedMatchupId(item.id)}
+                                    onClick={() => setSelection({ season: effectiveSeasonId, week: effectiveWeekId, matchup: item.id })}
                                   >
                                     <span>{item.homeTeam.name}</span>
                                     <small>vs</small>
@@ -626,7 +639,7 @@ function MatchupPlayer({ team, slot, expanded, leagueId }) {
         </li>
         {categories.map(category => {
           const count = available ? (expanded ? player.scoringStats?.[category.key] : player[category.key]) : null;
-          const weight = expanded ? scoringWeight(category, positionGroup) : null;
+          const weight = expanded ? scoringWeight(category, positionGroup, player?.scoringWeights) : null;
           const description = count == null ? `${category.label}: stat unavailable`
             : expanded ? `${category.label}: ${count} × ${(weight / 100).toFixed(2)} = ${(count * weight / 100).toFixed(2)} FP`
               : `${category.label}: ${count}`;
@@ -643,6 +656,8 @@ function MatchupPlayer({ team, slot, expanded, leagueId }) {
 }
 
 function MatchupCard({ matchup, teams = [] }) {
+  const promotedHeader = usePromotedHeader(`matchup:${matchup.leagueId}:${matchup.id}`);
+  const { httpClient } = useSession();
   const official = matchup.result?.currentVersion || null;
   const scoring = matchup.scoring;
   const homeScore =
@@ -657,14 +672,15 @@ function MatchupCard({ matchup, teams = [] }) {
     teams.find(({ id }) => id === matchup.awayTeam.id) || matchup.awayTeam;
   return (
     <section className="hl-surface hl-matchup-detail" aria-labelledby="matchup-detail-title">
-      <header className="hl-matchup-score">
+      <header ref={promotedHeader} className="hl-matchup-score">
         <div
           className={teamColourClass("hl-matchup-score__team", homeTeam)}
           style={teamColourStyle(homeTeam)}
         >
           <span>Home</span>
+          <TeamMark className="hl-matchup-score__mark" team={homeTeam} logoUrl={homeTeam.logoReference ? httpClient.resourceUrl(homeTeam.logoReference) : null} />
           <strong>{homeTeam.name}</strong>
-          <b>{points(homeScore)} FP</b>
+          <b>{points(homeScore)}</b>
           <small>fantasy points</small>
         </div>
         <div className="hl-matchup-score__center">
@@ -678,11 +694,13 @@ function MatchupCard({ matchup, teams = [] }) {
           style={teamColourStyle(awayTeam)}
         >
           <span>Away</span>
+          <TeamMark className="hl-matchup-score__mark" team={awayTeam} logoUrl={awayTeam.logoReference ? httpClient.resourceUrl(awayTeam.logoReference) : null} />
           <strong>{awayTeam.name}</strong>
-          <b>{points(awayScore)} FP</b>
+          <b>{points(awayScore)}</b>
           <small>fantasy points</small>
         </div>
       </header>
+      <div className="hl-navigation-details">
       <h2 className="hl-visually-hidden" id="matchup-detail-title">{homeTeam.name} vs {awayTeam.name}</h2>
       <Health health={matchup.health} />
       {!scoring ? (
@@ -705,7 +723,7 @@ function MatchupCard({ matchup, teams = [] }) {
               no fantasy points were awarded.
             </p>
           ) : null}
-          {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide />}
+          {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide weights={scoring.home.scoringWeights || scoring.away.scoringWeights} />}
           <MatchupStatHeaders scoring={scoring} />
           <ol className="hl-matchup-player-pairs" aria-label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}>
             {homeSlots.map((homeSlot, index) => (
@@ -718,6 +736,7 @@ function MatchupCard({ matchup, teams = [] }) {
         </>
       )}
       {matchup.result?.status === "corrected" && <p className="hl-inline-copy">Official result corrected.</p>}
+      </div>
     </section>
   );
 }
@@ -1162,6 +1181,7 @@ function PreviewAction({
             </details>}
             {title === "Schedule generation" && preview.draftTiming && <section aria-label="Free Agent Draft timetable">
               <p>Candidate Card deadline: {previewTimestamp(preview.draftTiming.candidateDeadlineAtMs, timeZone)} ({timeZone})</p>
+              <p>New-auction cutoff: {preview.draftTiming.auctionCreationCutoffMinutes ?? 60} minutes before rollover.</p>
               <details open><summary>{preview.draftTiming.rolloverTimesAtMs.length} rapid-auction rounds</summary>
                 <ol>{preview.draftTiming.rolloverTimesAtMs.map((time, index) => <li key={index}>Round {index + 1}: {previewTimestamp(time, timeZone)}</li>)}</ol>
               </details>
@@ -1200,8 +1220,10 @@ function previewTimestamp(value, timeZone = "America/Vancouver") {
 
 export function CommissionerCompetitionPage() {
   const nowMs = useCurrentTime();
-  const { leagueId } = useParams();
+  const { leagueId, section: routeSection } = useParams();
   const [searchParams] = useSearchParams();
+  const section=routeSection || (searchParams.has('fadId') || searchParams.has('recoveryId') || searchParams.get('tools')==='fad' ? 'fad' : 'overview');
+  const pageTitle=commissionerSections.find(([key])=>key===section)?.[1] || 'Commissioner tools';
   const context = useCompetitionContext(leagueId);
   const queryClient = useQueryClient();
   const [schedulePreviewState, setSchedulePreviewState] = useState(null);
@@ -1231,12 +1253,14 @@ export function CommissionerCompetitionPage() {
   const rolloverValues = seasonEdits.rollovers ?? suggestedRollovers(candidateDeadlineAtMs, calendarDates.firstWeekStartsAtMs).map((time) => calendarInputValue(time, timeZone));
   const rolloverTimesAtMs = rolloverValues.map((value) => calendarTimestamp(value, timeZone));
   const timingIssue = draftTimingIssue(candidateDeadlineAtMs, rolloverTimesAtMs, calendarDates.firstWeekStartsAtMs, nowMs);
-  const calendar = { ...calendarDates, draftTiming: { candidateDeadlineAtMs, rolloverTimesAtMs } };
+  const auctionCreationCutoffMinutes=Number(seasonEdits.auctionCreationCutoffMinutes ?? 60);
+  const cutoffReady=String(seasonEdits.auctionCreationCutoffMinutes ?? 60).trim()!==''&&Number.isSafeInteger(auctionCreationCutoffMinutes)&&auctionCreationCutoffMinutes>=0&&auctionCreationCutoffMinutes<=10080;
+  const calendar = { ...calendarDates, draftTiming: { candidateDeadlineAtMs, rolloverTimesAtMs, auctionCreationCutoffMinutes } };
   const calendarKey = JSON.stringify(calendar);
   const schedulePreview = schedulePreviewState?.seasonId === seasonId && schedulePreviewState.calendarKey === calendarKey
     ? schedulePreviewState.preview : null;
   const setSchedulePreview = (preview, previewCalendarKey) => setSchedulePreviewState(preview ? { seasonId, calendarKey: previewCalendarKey, preview } : null);
-  const calendarReady = Object.values(calendarDates).every(Number.isSafeInteger) && timingIssue === null;
+  const calendarReady = Object.values(calendarDates).every(Number.isSafeInteger) && timingIssue === null && cutoffReady;
   function changeCalendarField(key, value) {
     setCalendarEdits((current) => ({ ...current, [seasonId]: {
       ...current[seasonId],
@@ -1298,18 +1322,26 @@ export function CommissionerCompetitionPage() {
     } catch { setSetupReview(false); }
   }
   return (
-    <CompetitionGate context={context} title="Commissioner competition tools">
+    <CompetitionGate context={context} title={pageTitle} className={section==='calendar'?'hl-commissioner-calendar-page':''}>
       {!commissioner ? <p role="alert">Current commissioner authority is required.</p> : (
         <>
-          <Surface className="hl-competition-setup-card">
-            <h2>Roster corrections</h2>
-            <p>Add or remove a player, correct a contract, or move a player between roster categories.</p>
-            <Link className="hl-button hl-button--secondary" to={routePaths.leagueCommissionerRoster(leagueId)}>Manage rosters</Link>
-          </Surface>
+          <nav className="hl-commissioner-section-nav" aria-label="Commissioner sections"><Link to={routePaths.leagueCommissioner(leagueId)}>All commissioner tools</Link></nav>
+          {section==='overview' && <div className="hl-commissioner-grid">{commissionerSections.map(([key,label,description])=><Link className="hl-surface hl-commissioner-tile" key={key} to={commissionerSectionPath(leagueId,key)}><h2>{label}</h2><p>{description}</p></Link>)}</div>}
+          {section!=='overview' && !commissionerSections.some(([key])=>key===section) && <p role="alert">This commissioner tool was not found. Choose a tool from the menu.</p>}
+          {section==='calendar' && <LeagueCalendarControls key={'calendar-'+leagueId} leagueId={leagueId}/>}
+          {section==='season' && <><SeasonRolloverPreview key={'season-preview-'+leagueId} leagueId={leagueId}/><GuidedLeagueResetControls key={'reset-'+leagueId} leagueId={leagueId}/></>}
+          {section==='recovery' && <><LeagueRecoveryPanel key={'recovery-'+leagueId} leagueId={leagueId} seasonId={seasonId}/><LeaguePickRepairControls key={'picks-'+leagueId} leagueId={leagueId}/><CorrectionReversalControls key={'reversals-'+leagueId} leagueId={leagueId}/></>}
+          {section==='help' && <LeagueHelpPanel key={'help-'+leagueId} leagueId={leagueId} commissionerView/>}
+          {section==='pause' && <LeaguePauseControls key={'pause-'+leagueId} leagueId={leagueId}/>}
+          {['readiness','history','export'].includes(section) && <LeagueManagementPanel key={'management-'+leagueId+'-'+section} leagueId={leagueId} initialSection={section} standalone/>}
+          {section==='auctions' && <LeagueAuctionScheduleControls key={'auction-schedule-'+leagueId} leagueId={leagueId}/>}
+          {section==='scoring' && <LeagueScoringControls key={'scoring-'+leagueId} leagueId={leagueId}/>}
+          {section==='communications' && <LeagueCommunications leagueId={leagueId} canManage initiallyExpanded/>}
+          {section==='calendar' && <>
           {availableWeeks.length > 0 ? (
             <Surface className="hl-competition-setup-card">
               <h2>Schedule generation</h2>
-              <p>This season already has a schedule. Use Edit matchup week below to review a week.</p>
+              <p>This season already has a schedule. Use League calendar above to change dates, or Advance matchup week below to process a due status transition.</p>
               <Link className="hl-button hl-button--secondary" to={routePaths.leagueMatchups(leagueId)}>View schedule</Link>
             </Surface>
           ) : (
@@ -1344,6 +1376,8 @@ export function CommissionerCompetitionPage() {
             </fieldset>
             <fieldset className="hl-competition-setup-card" disabled={scheduleMutation.isPending || setup.mutation.isPending}>
               <legend>Rapid-auction rollovers</legend>
+              <label className="hl-field">Minutes before rollover to stop starting auctions<input required type="number" min="0" max="10080" step="1" value={seasonEdits.auctionCreationCutoffMinutes ?? 60} onChange={e=>changeCalendarField("auctionCreationCutoffMinutes",e.target.value)}/></label>
+              <p>Use 0 to allow new auctions until rollover. Nominations received after the cutoff queue for the next round. You can adjust this gap later in FAD controls.</p>
               <p>Start with one rollover every 24 hours, then adjust any date or time. Extra rounds fit into the final day. Every rollover must follow the previous round and finish by Week 1.</p>
               <label className="hl-field">Total rapid-auction rounds
                 <input type="number" min="1" max={MAX_ROLLOVERS} step="1" value={seasonEdits.roundCount ?? rolloverValues.length} onChange={(event) => {
@@ -1362,7 +1396,7 @@ export function CommissionerCompetitionPage() {
                 <input type="datetime-local" value={value} onChange={(event) => changeCalendarField("rollovers", rolloverValues.map((time, position) => position === index ? event.target.value : time))} />
               </label>)}</div>
             </fieldset>
-            {!calendarReady && <p role="status">{timingIssue || "Complete every date in the season calendar."}</p>}
+            {!calendarReady && <p role="status">{timingIssue || (!cutoffReady ? "Choose a whole-minute auction cutoff gap from 0 to 10080." : "Complete every date in the season calendar.")}</p>}
             {setup.loading && <LoadingBlock>Loading league setup…</LoadingBlock>}
             {setup.error && <ErrorBlock error={setup.error} fallback="League setup could not be loaded." />}
             {setup.needsPreparation && !setup.loading && !setup.error && <>
@@ -1372,7 +1406,7 @@ export function CommissionerCompetitionPage() {
               {setupReview && <section aria-label="League setup review">
                 <h3>Review league setup</h3>
                 <dl>{[["Season trade deadline", tradeDeadlineAtMs], ["Candidate Card deadline", candidateDeadlineAtMs], ...calendarFields.map(([key, label]) => [label, calendarDates[key]])].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{previewTimestamp(value, timeZone)}</dd></div>)}</dl>
-                <p>{Number.isSafeInteger(savedTradeDeadline) ? "Keep the saved trade deadline and prepare" : "Save this trade deadline and prepare"} {setup.managedTeamCount} teams for the inaugural draft? The trade deadline is fixed once saved. Next, review the schedule preview before confirming the draft timetable.</p>
+                <p>{Number.isSafeInteger(savedTradeDeadline) ? "Keep the saved trade deadline and prepare" : "Save this trade deadline and prepare"} {setup.managedTeamCount} teams for the inaugural draft? You can adjust the saved trade deadline later in commissioner controls. Next, review the schedule preview before confirming the draft timetable.</p>
                 <div className="hl-button-row">
                   <button type="button" className="hl-button hl-button--primary" disabled={!calendarReady || !setupReady || setup.mutation.isPending} onClick={prepareAndPreview}>{setup.mutation.isPending ? "Preparing…" : Number.isSafeInteger(savedTradeDeadline) ? "Prepare league and preview schedule" : "Save trade deadline and prepare league"}</button>
                   <button type="button" className="hl-button hl-button--quiet" disabled={setup.mutation.isPending} onClick={() => setSetupReview(false)}>Back to dates</button>
@@ -1382,7 +1416,7 @@ export function CommissionerCompetitionPage() {
             {setup.mutation.error && <ErrorBlock error={setup.mutation.error} fallback="League preparation could not be completed. Review the saved trade deadline and try again." />}
           </PreviewAction>
           )}
-          <PreviewAction title="Edit matchup week" mutation={weekMutation} preview={weekPreview} timeZone={timeZone}
+          <PreviewAction title="Advance matchup week" mutation={weekMutation} preview={weekPreview} timeZone={timeZone}
             previewDisabled={!selectedWeekId || weeks.isPending || weeks.isError}
             confirmDisabled={!selectedWeekId}
             onPreview={() => weekMutation.mutate({ confirmed: false })}
@@ -1412,10 +1446,11 @@ export function CommissionerCompetitionPage() {
               </label>
             ) : null}
           </PreviewAction>
-          <details className="hl-surface hl-seasonal-tools" open={searchParams.has("fadId") || searchParams.has("recoveryId")}>
+          </>}
+          {section==='fad' && <><CandidateCardProgress leagueId={leagueId}/><details id="fad-recovery" className="hl-surface hl-seasonal-tools" open>
             <summary>Seasonal tools · Free Agent Draft</summary>
             <CommissionerFadPanel leagueId={leagueId} seasonId={seasonId} timeZone={context.league?.timezone} />
-          </details>
+          </details></>}
         </>
       )}
       <p className="hl-page-backlink"><Link to={routePaths.league(leagueId)}>Back to dashboard</Link></p>

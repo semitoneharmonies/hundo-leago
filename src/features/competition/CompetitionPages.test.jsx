@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("socket.io-client", () => ({
   io: () => ({ onAny() {}, offAny() {}, disconnect() {} }),
@@ -335,6 +335,29 @@ function baseFetch(
       return envelope({ code: "LEAGUES_FOUND", leagues: visibleLeagues });
     }
     if (path === `/api/v1/leagues/${leagueId}/settings`) return envelope({ code: "LEAGUE_SETTINGS_FOUND", settings: { leagueId, tradeDeadlineAtMs: Date.parse("2027-03-01T08:00:00Z"), version: 1 } });
+    if (path === `/api/v1/leagues/${leagueId}/scoring`) {
+      const weights=Object.fromEntries(['F','D'].map(p=>[p,Object.fromEntries(SCORING_CATEGORIES.map(c=>[c.key,c.hundredths+(p==='D'&&['hits','blockedShots'].includes(c.key)?15:0)]))]));
+      return envelope({leagueId,seasonId,current:{version:'expanded-2026-v1',weights},defaults:weights,currentWeekSequence:1,serverNowMs:10,weeks:[],rules:[]});
+    }
+    if (path === `/api/v1/leagues/${leagueId}/calendar/auction-schedule`) return envelope({ leagueId, timeZone: 'America/Vancouver',
+      serverNowMs: Date.parse('2026-09-29T12:00:00Z'), revision: 0, openAuctionCount: 0, schedule: null, legacyDaily: false,
+      window: { opensAtMs: 1, newAuctionCutoffAtMs: 2, bidClosesAtMs: 3, scheduledResolutionAtMs: 3, nextOpensAtMs: 4, canStart: true }, history: [] });
+    if (path === `/api/v1/leagues/${leagueId}/calendar/season`) return envelope({ leagueId, seasonId, timeZone: 'America/Vancouver',
+      serverNowMs: Date.parse('2026-09-29T12:00:00Z'), calendar: null, weeks: [], weekStatus: [], history: [] });
+    if (path === `/api/v1/leagues/${leagueId}/calendar/workspace`) return envelope({ leagueId, seasonId, timeZone: 'America/Vancouver',
+      serverNowMs: Date.now(), expectedVersion: 'a'.repeat(64), calendar: null, weeks: [], weekStatus: [],
+      events: [], breaks: [], drafts: [], auctions: [], schedule: {}, trade: {} });
+    if (path === `/api/v1/leagues/${leagueId}/calendar/trade-deadline`) return envelope({ leagueId, seasonId, timeZone: 'America/Vancouver',
+      tradeDeadlineAtMs: Date.parse('2027-03-01T08:00:00Z'), serverNowMs: Date.parse('2026-09-01T12:00:00Z'), canEdit: true, blockedReason: null, history: [] });
+    if (path === `/api/v1/leagues/${leagueId}/free-agent-drafts/readiness`) return envelope({
+      leagueId, seasonId, operationId: null, operationVersion: null, status: "not_triggered",
+      triggerKind: null, entryDraftId: null, exemptionId: null, serverNowMs: Date.now(),
+      timeZone: "America/Vancouver", observedSeasonVersion: null, firstMatchupWeekBefore: null,
+      firstMatchupWeekAfter: null, candidateDeadlineAtMs: null, reminderAtMs: null, helpOpensAtMs: null,
+      initialRollovers: [], priorSeasonRollover: null, participatingTeamCount: 0, teamProjections: [],
+      blockers: [], warnings: [], resultFadId: null,
+      retryReadiness: { allowed: false, reasonCode: "RECOVERY_NOT_AVAILABLE" },
+    });
     return extra(path, options);
   });
 }
@@ -354,6 +377,9 @@ async function fillScheduleCalendar() {
 }
 
 describe("M6-12 authenticated competition pages", () => {
+  beforeEach(() => {
+    vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T12:00:00Z"));
+  });
   it.each(["local", "staging", "production"])("limits the read-only sample to review environments (%s)", async (appEnv) => {
     const fetchImpl = baseFetch((path) => {
       if (path.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [] });
@@ -539,7 +565,7 @@ describe("M6-12 authenticated competition pages", () => {
       within(screen.getByRole("combobox", { name: "Week" }))
         .getAllByRole("option")
     ).toHaveLength(2);
-    expect(screen.getByText("2.25 FP", { exact: false })).toBeInTheDocument();
+    expect(document.querySelector(".hl-matchup-score__team b")).toHaveTextContent(/^2\.25$/);
     const scoringList = screen.getByRole("list", { name: "Home Team versus Away Team player scoring" });
     expect(within(scoringList).getAllByRole("article")).toHaveLength(36);
     const homePlayerCard = within(scoringList).getByRole("article", { name: "Home Team: Connor Example" });
@@ -1073,7 +1099,7 @@ describe("M6-12 authenticated competition pages", () => {
 
   it("requires commissioner authority before rendering any recovery controls", async () => {
     const fetchImpl = baseFetch((path) => { throw new Error(`Unexpected request: ${path}`); });
-    renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    renderPage(`/leagues/${leagueId}/commissioner/calendar`, "/leagues/:leagueId/commissioner/:section", <CommissionerCompetitionPage />, fetchImpl);
     expect(await screen.findByRole("alert")).toHaveTextContent("Current commissioner authority is required.");
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
@@ -1091,8 +1117,8 @@ describe("M6-12 authenticated competition pages", () => {
       [noSeasonLeague]
     );
     renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );
@@ -1131,8 +1157,8 @@ describe("M6-12 authenticated competition pages", () => {
       ]
     );
     renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );
@@ -1185,8 +1211,8 @@ describe("M6-12 authenticated competition pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
     const view = renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );
@@ -1196,11 +1222,11 @@ describe("M6-12 authenticated competition pages", () => {
     expect(within(weekSelector).getByRole("option", { name: /Week 2:/ })).toHaveValue(futureWeekId);
     await view.user.selectOptions(weekSelector, futureWeekId);
     await view.user.click(screen.getByRole("button", {
-      name: "Preview edit matchup week",
+      name: "Preview advance matchup week",
     }));
 
     expect(await screen.findByRole("region", {
-      name: "Edit matchup week preview",
+      name: "Advance matchup week preview",
     })).toHaveTextContent("Scheduled");
     expect(requests).toEqual([{ body: { confirmed: false }, method: "PATCH" }]);
   });
@@ -1216,7 +1242,7 @@ describe("M6-12 authenticated competition pages", () => {
       if (path === `${prefix}/matchup-schedules`) { requests.push(JSON.parse(options.body)); return envelope({ code: "MATCHUP_SCHEDULE_PREVIEWED", preview: { seasonId, expectedSeasonVersion: 1, participantCount: 2, weekCount: 22, matchupCount: 22, byeCount: 0, weeks: [{ sequence: 1, startsAtMs: Date.parse("2026-09-29T07:00:00Z"), endsAtMs: Date.parse("2026-10-05T07:00:00Z") }] } }); }
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
-    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    const view = renderPage(`/leagues/${leagueId}/commissioner/calendar`, "/leagues/:leagueId/commissioner/:section", <CommissionerCompetitionPage />, fetchImpl);
     await waitFor(() => expect(screen.getByLabelText("Week 1 starts")).toHaveValue("2026-09-29T00:00"));
     expect(screen.getByLabelText("NHL regular season ends")).toHaveValue("2027-04-11T00:00");
     expect(requests).toHaveLength(0);
@@ -1224,6 +1250,7 @@ describe("M6-12 authenticated competition pages", () => {
     await screen.findByText("Review every matchup week");
     expect(requests).toEqual([{ confirmed: false, nhlRegularSeasonStartsAtMs: Date.parse("2026-09-29T07:00:00Z"), nhlRegularSeasonEndsAtMs: Date.parse("2027-04-11T07:00:00Z"), fantasyPlayoffsStartAtMs: Date.parse("2027-03-15T07:00:00Z"), fantasyPlayoffsEndAtMs: Date.parse("2027-04-11T07:00:00Z"), firstWeekStartsAtMs: Date.parse("2026-09-29T07:00:00Z"), draftTiming: {
       candidateDeadlineAtMs: Date.parse("2026-09-22T07:00:00Z"),
+      auctionCreationCutoffMinutes: 60,
       rolloverTimesAtMs: Array.from({ length: 7 }, (_, i) => Date.parse("2026-09-23T07:00:00Z") + i * 86400000),
     } }]);
     expect(screen.getByLabelText("Candidate Card deadline")).toHaveValue("2026-09-22T00:00");
@@ -1271,8 +1298,8 @@ describe("M6-12 authenticated competition pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
     const view = renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );
@@ -1297,7 +1324,8 @@ describe("M6-12 authenticated competition pages", () => {
       firstWeekStartsAtMs: Date.parse("2026-10-05T07:00:00Z"),
       draftTiming: {
         candidateDeadlineAtMs: Date.parse("2026-09-28T07:00:00Z"),
-        rolloverTimesAtMs: Array.from({ length: 7 }, (_, i) => Date.parse("2026-09-29T07:00:00Z") + i * 86400000),
+        auctionCreationCutoffMinutes: 60,
+      rolloverTimesAtMs: Array.from({ length: 7 }, (_, i) => Date.parse("2026-09-29T07:00:00Z") + i * 86400000),
       },
     };
     expect(requests.map(({ body }) => body)).toEqual([{ ...expectedCalendar, confirmed: false }, { ...expectedCalendar, confirmed: true }]);
@@ -1318,7 +1346,7 @@ describe("M6-12 authenticated competition pages", () => {
       } }), { status: 400, headers: { "Content-Type": "application/json" } });
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
-    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    const view = renderPage(`/leagues/${leagueId}/commissioner/calendar`, "/leagues/:leagueId/commissioner/:section", <CommissionerCompetitionPage />, fetchImpl);
     await fillScheduleCalendar();
     await view.user.click(await screen.findByRole("button", { name: "Preview schedule generation" }));
     const alert = await screen.findByRole("alert");
@@ -1339,7 +1367,7 @@ describe("M6-12 authenticated competition pages", () => {
       }
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
-    const view = renderPage(`/leagues/${leagueId}/commissioner`, "/leagues/:leagueId/commissioner", <CommissionerCompetitionPage />, fetchImpl);
+    const view = renderPage(`/leagues/${leagueId}/commissioner/calendar`, "/leagues/:leagueId/commissioner/:section", <CommissionerCompetitionPage />, fetchImpl);
     await fillScheduleCalendar();
     fireEvent.change(screen.getByLabelText("Candidate Card deadline"), { target: { value: "2026-10-03T12:00" } });
     fireEvent.change(screen.getByLabelText("Total rapid-auction rounds"), { target: { value: "5" } });
@@ -1384,8 +1412,8 @@ describe("M6-12 authenticated competition pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     }, "commissioner");
     const view = renderPage(
-      `/leagues/${leagueId}/commissioner`,
-      "/leagues/:leagueId/commissioner",
+      `/leagues/${leagueId}/commissioner/calendar`,
+      "/leagues/:leagueId/commissioner/:section",
       <CommissionerCompetitionPage />,
       fetchImpl
     );

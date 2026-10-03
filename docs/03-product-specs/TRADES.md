@@ -1,5 +1,26 @@
 # Hundo Leago — Trades
 
+## Commissioner calendar controls — local implementation, 2026-09-29
+
+League creation supplies the initial trade deadline. Commissioners and platform
+administrators with current league access can change it during setup or an
+active season from the commissioner competition page. Review the old and new
+time in the league timezone, counts of affected pending proposals, a reason,
+and any reopening before confirmation. Proposal contents stay private.
+
+The current slice accepts a new future deadline, including extending an already
+passed deadline to permit new proposals when other trading prerequisites are met.
+Still-open offers follow the revised deadline, capped by their original seven-day
+expiry. Offers that have already reached their effective expiry never revive,
+including those the expiry worker has not yet marked expired. Completed trades,
+accepted responses and trade assets remain intact. Members receive an in-app
+notice and the change is recorded in immutable history.
+
+This supersedes setup-only deadline editing for this control. Immediate closure,
+backdated corrections and broader calendar controls remain pending parts of the
+approved package. The implementation and verification are local, not released.
+See [Trade deadline controls](../04-technical-specs/TRADE_DEADLINE_CONTROLS.md).
+
 ## Approved review before submission — 2026-09-25
 
 Two-team and three-team builders, including counter proposals, end with

@@ -672,6 +672,7 @@ export function validateFreeAgentDraftOverview(data) {
       "helpOpensAtMs",
       "candidateDeadlineAtMs",
       "deadlineLockedAtMs",
+      ...(Object.hasOwn(data, "deadlinePolicy") ? ["deadlinePolicy"] : []),
       "allocationCompletedAtMs",
       "nextRolloverAtMs",
       "frozenFadFirstMatchupStartsAtMs",
@@ -688,6 +689,7 @@ export function validateFreeAgentDraftOverview(data) {
   for (const field of ["leagueId", "seasonId", "fadId"]) stableId(data[field], `FAD overview.${field}`);
   safeInteger(data.version, "FAD overview.version", { positive: true });
   oneOf(data.status, ["cards_open", "deadline_locked", "allocating", "rapid", "completed"], "FAD overview.status");
+  if (Object.hasOwn(data, "deadlinePolicy")) contract(data.deadlinePolicy === "soft", "FAD deadline policy is invalid.");
   oneOf(data.phase, ["cards_open", "help_window", "deadline_processing", "allocating", "rapid", "completed"], "FAD overview.phase");
   safeInteger(data.serverNowMs, "FAD overview.serverNowMs");
   text(data.timeZone, "FAD overview.timeZone");

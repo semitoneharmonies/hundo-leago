@@ -1205,8 +1205,8 @@ textarea {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: clamp(42px, 6vw, 86px);
-  padding-right: clamp(42px, 6vw, 86px);
+  gap: clamp(96px, 10vw, 180px);
+  padding-right: clamp(96px, 10vw, 180px);
 }
 
 .hl-quote-ticker__item {
@@ -1220,8 +1220,9 @@ textarea {
 }
 
 .hl-quote-ticker__text {
-  font-style: italic;
-  letter-spacing: 0.015em;
+  font-family: var(--hl-font-body);
+  font-style: normal;
+  letter-spacing: 0.06em;
 }
 
 .hl-quote-ticker__author {
@@ -5915,6 +5916,24 @@ textarea {
   overflow: hidden;
 }
 
+.hl-dashboard-matchup-score {
+  grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr);
+}
+
+.hl-dashboard-matchup-score > .hl-matchup-score__team {
+  container-type: inline-size;
+  padding-inline: 8px;
+}
+
+.hl-dashboard-matchup-score > .hl-matchup-score__center {
+  padding-inline: 2px;
+}
+
+.hl-dashboard-matchup-score .hl-matchup-score__team > b {
+  font-size: clamp(1rem, 23cqw, 3rem);
+  white-space: nowrap;
+}
+
 .hl-dashboard-matchup--spotlight .hl-dashboard-matchup-score {
   height: 210px;
   min-height: 210px;
@@ -6648,8 +6667,8 @@ textarea {
 
 .hl-dashboard-matchup--spotlight .hl-dashboard-matchup-health { min-height: calc(3em + 21px); margin-bottom: 0; }
 
-/* Expanded scoring needs the dashboard's full row, with attention cards below. */
-.hl-dashboard-roster,
+/* Expanded scoring scrolls within its panel beside the matchup. */
+.hl-dashboard-roster { min-width: 0; }
 .hl-dashboard__content > .hl-dashboard__aside {
   grid-column: 1 / -1;
   min-width: 0;
@@ -7119,5 +7138,126 @@ a.hl-player-card-trigger:focus-visible { outline: 2px solid #d5b66f; outline-off
 
 @media (min-width: 1024px) {
   .hl-quote-ticker__item { font-size: 0.8rem; }
-  .hl-dashboard__transactions .hl-trade-block__heading { min-height: 80px; padding-block: 20px; }
+}
+
+/* Focused commissioner tools share one responsive navigation and layout. */
+.hl-commissioner-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:1rem; }
+.hl-commissioner-tile { display:block; padding:1.1rem 1.3rem; text-decoration:none; color:inherit; }
+.hl-commissioner-tile h2 { margin:0 0 .35rem; font-size:1.05rem; }
+.hl-commissioner-tile p { margin:0; opacity:.8; }
+.hl-commissioner-tile:hover { border-color:var(--hl-accent); }
+.hl-commissioner-section-nav { margin-bottom:1rem; }
+.hl-commissioner-menu { background:var(--hl-surface,#15202d); padding:.8rem; overflow-y:auto; max-height:calc(100dvh - 100px); }
+.hl-commissioner-menu h2 { margin:.2rem .6rem; font-size:1rem; }
+.hl-commissioner-menu .hl-menu-link { display:block; min-height:0; padding:.55rem .65rem; }
+.hl-commissioner-menu > a { color:inherit; }
+
+.hl-help-menu { background:var(--hl-surface,#15202d); padding:.6rem; max-height:calc(100dvh - 110px); overflow:auto; overscroll-behavior:contain; }
+.hl-help-menu section { margin:0; }
+.hl-help-menu input,.hl-help-menu select,.hl-help-menu textarea { min-width:0; max-width:100%; }
+@media(max-width:700px) { .hl-main-menu:has(.hl-help-menu) { --hl-menu-width:120px; } .hl-help-menu { position:fixed; left:12px; right:12px; top:76px; width:auto; max-height:calc(100dvh - 92px); z-index:2; } }
+
+.hl-help-menu > button { position:sticky; top:0; z-index:3; background:var(--hl-surface,#15202d); margin-bottom:.4rem; }
+.hl-help-menu .hl-surface { padding:1rem; }
+/* Compact dashboard uses the available space beside the sidebar. */
+.hl-dashboard {
+  width: 100%;
+  max-width: none;
+  margin-inline: auto;
+  gap: 12px;
+}
+
+.hl-dashboard__hero,
+.hl-dashboard__transactions,
+.hl-dashboard__summary {
+  gap: 12px;
+  align-items: stretch;
+}
+
+.hl-dashboard :is(.hl-dashboard__hero, .hl-dashboard__transactions, .hl-dashboard__summary) > * {
+  min-width: 0;
+}
+
+.hl-dashboard .hl-panel-heading,
+.hl-dashboard .hl-trade-block__heading {
+  min-height: 0;
+  padding: 14px 16px;
+}
+
+.hl-dashboard .hl-trade-block { display: flex; flex-direction: column; }
+.hl-dashboard .hl-trade-block__heading { flex: 0 0 72px; box-sizing: border-box; }
+.hl-dashboard .hl-trade-block__heading h2 { font-family: var(--hl-font-display); }
+
+.hl-dashboard .hl-dashboard-week-summary { min-height: 140px; }
+.hl-dashboard .hl-dashboard-matchup-health:empty { display: none; }
+.hl-dashboard .hl-team-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+/* Keep the document order when the rows stack on smaller screens. */
+.hl-dashboard__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hl-dashboard__transactions { grid-template-columns: minmax(0, 1fr); }
+.hl-dashboard__transactions > .hl-trade-block { grid-column: auto; }
+
+@media (min-width: 1024px) {
+  .hl-dashboard__hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr); }
+  .hl-dashboard__hero--commissioner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hl-dashboard__summary { grid-template-columns: minmax(0, 2.6fr) minmax(0, 1fr); }
+  .hl-dashboard__transactions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); }
+}
+
+/* A dozen teams fit in a compact grid beside the smaller status cards. */
+.hl-dashboard__summary .hl-team-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
+  grid-auto-rows: 1fr;
+}
+.hl-dashboard__summary .hl-team-grid > a {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  min-height: 64px;
+  gap: 8px;
+  padding: 8px;
+}
+.hl-dashboard__summary .hl-team-grid .hl-status-badge { grid-column: 3; grid-row: 1; white-space: nowrap; }
+.hl-dashboard__summary .hl-team-grid__mark { width: 28px; height: 28px; }
+@media (min-width: 1440px) {
+  .hl-dashboard__summary .hl-team-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Manager status reads across the top, above matchup and roster. */
+.hl-dashboard__team-strip { min-width: 0; }
+@media (min-width: 1024px) {
+  .hl-dashboard__team-strip > .hl-dashboard-team {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(130px, 0.7fr) minmax(210px, 1.1fr) minmax(0, 1.8fr);
+    align-items: center;
+  }
+  .hl-dashboard__team-strip .hl-panel-heading {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    border-bottom: 0;
+  }
+  .hl-dashboard__team-strip .hl-panel-heading h2 { font-size: 1.1rem; }
+  .hl-dashboard__team-strip .hl-team-record { border-bottom: 0; }
+  .hl-dashboard__team-strip .hl-team-record > div { padding-inline: 10px; }
+  .hl-dashboard__team-strip .hl-cap-summary { border-left: 1px solid var(--hl-border); }
+  .hl-dashboard__team-strip .hl-team-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 12px 16px;
+    border-left: 1px solid var(--hl-border);
+  }
+  .hl-dashboard__team-strip .hl-team-facts > div {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hl-dashboard__team-strip .hl-action-banner,
+  .hl-dashboard__team-strip .hl-state-block { grid-column: 1 / -1; }
+}
+@media (min-width: 1280px) {
+  .hl-dashboard__team-strip .hl-team-facts { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }

@@ -486,6 +486,27 @@ function LocationProbe() {
   );
 }
 
+function enablePrivateReviewFixture() {
+  const original=sessionHarness.request.getMockImplementation();
+  sessionHarness.request.mockImplementation(async(path,options={})=>{
+    if(path.endsWith('/administration/reveal')) {
+      const {data:auction}=await original(path.replace('/administration/reveal',''));
+      return {data:{leagueId:auction.leagueId,auctionId:auction.auctionId,revealId:IDS.intent,auction,
+        terms:options.body.bidId?{bidId:options.body.bidId,version:1,totalValueCents:1200,termYears:2}:null,expiresAtMs:Date.now()+300000}};
+    }
+    const result=await original(path,options);
+    return result.data?.auctionId && Array.isArray(result.data.administrativeBids)
+      ? {...result,data:{...result.data,administrativeBids:[],capabilities:{...result.data.capabilities,adminResolve:denied('PHASE_CLOSED')}}}:result;
+  });
+}
+async function revealBidRecords(user) {
+  const reason=await screen.findByLabelText('Reason for private bid review');
+  await user.clear(reason);await user.type(reason,'Review a manager requested correction');
+  await user.click(screen.getByRole('button',{name:'Reveal bidding teams for an edit'}));
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Reveal bidding teams for an edit'})).toBeEnabled());
+  await screen.findByRole('button',{name:/Replace active sealed bid for Administrative Competitor/i});
+}
+
 beforeEach(() => {
   vi.stubGlobal("crypto", {
     randomUUID: vi.fn(() => IDS.intent),
@@ -1262,12 +1283,14 @@ describe("FAD-16 auction pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     });
 
+    enablePrivateReviewFixture();
     const view = renderPage(
       `/leagues/${IDS.league}/auctions/${IDS.auction}`,
       "/leagues/:leagueId/auctions/:auctionId",
       <AuctionDetailPage />,
       { onPrivacyBoundary: vi.fn() }
     );
+    await revealBidRecords(view.user);
     const replace = await screen.findByRole("button", {
       name: /replace active sealed bid for Administrative Competitor/i,
     });
@@ -1285,6 +1308,8 @@ describe("FAD-16 auction pages", () => {
     await view.user.click(screen.getByRole("button", {
       name: "Finish auction reauthorization",
     }));
+    expect(screen.queryByRole('heading',{name:'Administrative Competitor'})).not.toBeInTheDocument();
+    await revealBidRecords(view.user);
     const remountedReplace = await screen.findByRole("button", {
       name: /replace active sealed bid for Administrative Competitor/i,
     });
@@ -1299,6 +1324,7 @@ describe("FAD-16 auction pages", () => {
     await view.user.click(screen.getByRole("button", {
       name: "Finish auction reauthorization",
     }));
+    await revealBidRecords(view.user);
     await view.user.click(await screen.findByRole("button", {
       name: /replace active sealed bid for Administrative Competitor/i,
     }));
@@ -1348,8 +1374,8 @@ describe("FAD-16 auction pages", () => {
     expect(screen.getAllByText("Not eligible")).toHaveLength(2);
     expect(screen.getByText("Minimum offer")).toBeInTheDocument();
     expect(screen.getByText(/not an eligible participant/i)).toBeInTheDocument();
-    expect(screen.getByText("Administrative Competitor")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /replace active sealed bid for Administrative Competitor/i })).toBeInTheDocument();
+    expect(screen.queryByText("Administrative Competitor")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /replace active sealed bid for Administrative Competitor/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/Administrative Competitor.*\$99\.99/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /withdraw/i })).not.toBeInTheDocument();
 
@@ -1433,11 +1459,13 @@ describe("FAD-16 auction pages", () => {
       throw new Error(`Unexpected request: ${path}`);
     });
 
+    enablePrivateReviewFixture();
     const view = renderPage(
       `/leagues/${IDS.league}/auctions/${IDS.auction}`,
       "/leagues/:leagueId/auctions/:auctionId",
       <AuctionDetailPage />
     );
+    await revealBidRecords(view.user);
     const replaceTrigger = await screen.findByRole("button", {
       name: /replace active sealed bid for Administrative Competitor/i,
     });
@@ -1460,6 +1488,7 @@ describe("FAD-16 auction pages", () => {
     expect(retryValue).toHaveValue(5);
     expect(editRequests.map(({ version }) => version)).toEqual([1]);
 
+    await revealBidRecords(view.user);
     await view.user.click(screen.getByRole("button", { name: "Replace sealed bid" }));
     expect(await screen.findByText(/sealed bid replacement was accepted/i)).toBeInTheDocument();
     expect(editRequests.map(({ version }) => version)).toEqual([1, 2]);
@@ -1472,6 +1501,7 @@ describe("FAD-16 auction pages", () => {
       idempotencyKey: `auction-admin-edit:${IDS.intent}`,
     });
 
+    await revealBidRecords(view.user);
     await view.user.click(screen.getByRole("button", {
       name: /remove active sealed bid for Administrative Competitor/i,
     }));

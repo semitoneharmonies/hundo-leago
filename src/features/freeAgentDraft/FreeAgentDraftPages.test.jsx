@@ -702,6 +702,39 @@ describe("league Drafts area", () => {
     ).toBe(false);
   });
 
+  for (const allowed of [true, false]) it(`shows rapid timing controls only with commissioner authority (${allowed})`, async () => {
+    const requests=[];
+    const fetchImpl=baseFetch(parsed=>{
+      requests.push(parsed.pathname);
+      if(parsed.pathname.endsWith('/free-agent-drafts/navigation'))return envelope(completedNavigation());
+      if(parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) {
+        const value=completedOverview();
+        return envelope({...value,phase:'rapid',status:'rapid',deadlinePolicy:'soft',completedAtMs:null,
+          capabilities:{...value.capabilities,viewRecovery:{allowed,reasonCode:allowed?null:'NOT_AUTHORIZED'}}});
+      }
+      if(parsed.pathname.endsWith('/deadline-control/timing'))return envelope({leagueId,fadId,deadlineAtMs:1000000,
+        weekOneAtMs:9000000,serverNowMs:2000000,held:false,canReschedule:true,canEditDeadline:false,canEditActiveAuctions:true,blockedReason:null,
+        reminderAlreadySent:true,rolloverTimesAtMs:[3000000,6000000],
+        roundDates:[{sequence:1,canEdit:false,blockedReason:'This round has already opened.'},{sequence:2,canEdit:true,blockedReason:null}]});
+      if(parsed.pathname.endsWith('/deadline-control/auction-cutoff'))return envelope({leagueId,fadId,gapMinutes:60,
+        canEdit:true,blockedReason:null,serverNowMs:2000000,rounds:[]});
+      if(parsed.pathname.endsWith('/candidate-cards'))return collectionEnvelope([publishedSummary()]);
+      if(parsed.pathname.endsWith('/results'))return collectionEnvelope(publishedResultsCard().results);
+      if(parsed.pathname.endsWith(`/leagues/${leagueId}/teams`))return envelope(teamsFound());
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderDraftsRoute(fetchImpl,routePaths.leagueFreeAgentDrafts(leagueId));
+    expect(await screen.findByRole('heading',{name:'Team results'})).toBeInTheDocument();
+    if(allowed) {
+      expect(await screen.findByRole('button',{name:'Edit round dates'})).toBeInTheDocument();
+      expect(await screen.findByRole('button',{name:'Edit cutoff gap'})).toBeInTheDocument();
+    } else {
+      expect(screen.queryByRole('heading',{name:'Draft timing'})).not.toBeInTheDocument();
+      expect(requests.some(url=>url.includes('/deadline-control/'))).toBe(false);
+    }
+    expect(requests.some(url=>url.endsWith('/private')||url.includes('/bids'))).toBe(false);
+  });
+
   it("keeps the legacy allocation URL on the same selected-team experience", async () => {
     const requests = [];
     const fetchImpl = baseFetch((parsed) => {
@@ -1111,6 +1144,22 @@ describe("FAD-15 Candidate Card frontend", () => {
     expect(
       requests.some((path) => path.endsWith(`/candidate-cards/${teamId}/private`))
     ).toBe(false);
+  });
+
+  it("keeps the manager's own card editable after a soft target deadline", async () => {
+    const fetchImpl = baseFetch(parsed => {
+      if (parsed.pathname.endsWith("/free-agent-drafts/navigation")) return envelope(navigation({ rosterLinks: [descriptor()] }));
+      if (parsed.pathname.endsWith(`/free-agent-drafts/${fadId}`)) return envelope({
+        ...overview({ serverNowMs: 1_000_000, candidateDeadlineAtMs: 999_000 }), deadlinePolicy: "soft", phase: "help_window",
+      });
+      if (parsed.pathname.endsWith(`/candidate-cards/${teamId}/private`)) return envelope(candidateCard({ privatePlayerName: "My saved player" }));
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    renderRoute({ fetchImpl });
+    expect(await screen.findByText("My saved player")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "F02 AAV" })).toBeEnabled();
+    expect(screen.queryByText(/measured deadline has passed/i)).not.toBeInTheDocument();
+    expect(fetchImpl.mock.calls.some(([url]) => String(url).includes("deadline-control"))).toBe(false);
   });
 
   it("hides a help-authorized card at its measured grant expiry without relying on a socket event", async () => {

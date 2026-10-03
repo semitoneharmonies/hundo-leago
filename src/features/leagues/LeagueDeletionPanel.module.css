@@ -1,0 +1,55 @@
+.panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hl-border);
+  min-width: 0;
+}
+
+.panel h3,
+.panel p {
+  margin: 0;
+}
+
+.panel p {
+  line-height: 1.6;
+  font-size: 0.85rem;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+.panel .confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+  font-size: 0.8rem;
+}
+
+.panel .confirmation input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--hl-accent);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .actions > button {
+    width: 100%;
+  }
+}

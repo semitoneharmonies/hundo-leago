@@ -1,0 +1,27 @@
+import {createRoot} from 'react-dom/client';
+import {MemoryRouter,Routes,Route} from 'react-router-dom';
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
+import {SessionContext} from '../../src/features/session/sessionContext.js';
+import {AppShell} from '../../src/app/AppShell.jsx';
+import {CommissionerCompetitionPage} from '../../src/features/competition/CompetitionPages.jsx';
+import '../../src/styles/theme-a.css';
+const leagueId='11111111-1111-4111-8111-111111111111',seasonId='22222222-2222-4222-8222-222222222222',teamId='33333333-3333-4333-8333-333333333333';
+const manager=new URLSearchParams(location.search).has('manager');
+window.navigationRequests=[];
+const league={id:leagueId,name:'Alpha preview league',status:'active',timezone:'America/Vancouver',version:1,currentSeason:{id:seasonId,label:'2026-27',status:'active',version:1},membership:{id:'fixture-membership',effectiveAuthority:manager?'manager':'commissioner',permissionCategory:manager?'manager':'commissioner',status:'active',version:1}};
+const httpClient={async request(url,options={}){
+ window.navigationRequests.push({url,method:options.method||'GET'});
+ if(options.method&&options.method!=='GET')throw Error('This preview never writes.');
+ let data;
+ if(url==='/api/v1/leagues')data={leagues:[league]};
+ else if(url.includes('/notifications'))data={notifications:[],page:{nextCursor:null}};
+ else if(url.endsWith('/navigation'))data={serverNowMs:Date.now(),timeZone:'America/Vancouver',fadId:null,seasonId:null,phase:'inactive',showMainNavigation:false,candidateDeadlineAtMs:null,nextRolloverAtMs:null,frozenFadFirstMatchupStartsAtMs:null,competitionFirstMatchupStartsAtMs:null,managedCards:[],urgencyCode:'NONE'};
+ else if(url.includes('/help?'))data={leagueId,canManage:!manager,teams:[{id:teamId,name:'North Stars'}],requests:[],cardHelp:[],nextCursor:null};
+ else if(url.endsWith('/seasons'))data={seasons:[]};
+ else if(url.includes('/weeks'))data={weeks:[],matchupWeeks:[]};
+ else if(url.endsWith('/management/readiness'))data={leagueId,checkedAtMs:Date.now(),teams:[],drafts:[],calendarIssues:[],missingPicks:[],operations:[],summary:{teams:8,missingManagers:0,unfinishedCards:0,illegalRosters:0,missingPicks:0,calendarIssues:0,operations:0}};
+ else throw Error('Unexpected fixture request: '+url);
+ return {data};
+}};
+const initial='/leagues/'+leagueId+'/commissioner';
+createRoot(document.getElementById('root')).render(<MemoryRouter initialEntries={[manager?'/leagues/'+leagueId:initial]}><QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><SessionContext.Provider value={{status:'authenticated',httpClient,user:{displayName:'Preview user'}}}><AppShell><Routes><Route path="/leagues/:leagueId/commissioner/:section?" element={<CommissionerCompetitionPage/>}/><Route path="*" element={<main className="hl-page"><h1>Manager dashboard</h1></main>}/></Routes></AppShell></SessionContext.Provider></QueryClientProvider></MemoryRouter>);

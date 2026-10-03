@@ -379,13 +379,10 @@ export async function editAuctionBidAsCommissioner(
   );
   same(response.data.leagueId, leagueId, "Auction administration league");
   same(response.data.auctionId, auctionId, "Auction administration auction");
-  const editedBid = response.data.administrativeBids.find(
-    (bid) => bid.bidId === bidId
-  );
-  if (!editedBid) {
-    throw new ResponseContractError("Edited auction bid is missing from the response.");
+  // The server acknowledges the scoped command without revealing any bidders.
+  if (response.data.administrativeBids.length !== 0) {
+    throw new ResponseContractError("Private bid records require an explicit review.");
   }
-  same(editedBid.teamId, input.teamId, "Auction administration team");
   return response.data;
 }
 

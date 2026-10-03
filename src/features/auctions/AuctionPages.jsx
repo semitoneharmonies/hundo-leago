@@ -1,3 +1,5 @@
+import { AuctionTimingControls } from './AuctionTimingControls.jsx';
+import { useAuctionPrivateReview } from './useAuctionPrivateReview.js';
 import {
   useEffect,
   useId,
@@ -1260,8 +1262,10 @@ function bidStatusLabel(status) {
   }[status] || status;
 }
 
-function CommissionerAdministrationPanel({ auction, context, leagueId }) {
+export function CommissionerAdministrationPanel({ auction, context, leagueId }) {
   const queryClient = useQueryClient();
+  const privateReview=useAuctionPrivateReview({auction,context,leagueId});
+  const administrativeBids=privateReview.review?.auction.administrativeBids || [];
   const [editor, setEditor] = useState(null);
   const [aav, setAav] = useState("");
   const [term, setTerm] = useState("1");
@@ -1275,14 +1279,14 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
   const returnFocusRef = useRef(null);
   const activeRef = useRef(true);
   const selectedBid = editor?.bidId
-    ? auction.administrativeBids.find((bid) => bid.bidId === editor.bidId) || null
+    ? administrativeBids.find((bid) => bid.bidId === editor.bidId) || null
     : null;
   const signalsAdministrativeScope = (capability) =>
     capability.allowed || capability.reasonCode !== "NOT_AUTHORIZED";
   const hasServerScope =
     signalsAdministrativeScope(auction.capabilities.adminCancel) ||
     signalsAdministrativeScope(auction.capabilities.adminResolve) ||
-    auction.administrativeBids.some(
+    administrativeBids.some(
       (bid) =>
         signalsAdministrativeScope(bid.capabilities.adminEditBid) ||
         signalsAdministrativeScope(bid.capabilities.adminRemoveBid)
@@ -1330,6 +1334,7 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
       setConflictMessage(null);
       setConfirmed(false);
       setEditor(null);
+      privateReview.hide();
       if (variables.kind === "edit") {
         setReceipt("The sealed bid replacement was accepted and the auction was refreshed.");
       } else if (variables.kind === "remove") {
@@ -1495,9 +1500,18 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
       </div>
       {fadCommissionerWindowClosed(auction.capabilities.adminCancel.reasonCode) && <p role="status">{FAD_SEASON_CLOSED_MESSAGE}</p>}
       <p>
-        These controls identify bids by their server-provided record and team.
-        Competing values and terms remain sealed, including while replacing or removing a bid.
+        Cancel an auction without opening private bids. To correct a bid, deliberately reveal the bidding teams first.
+        Values stay hidden unless you explicitly reveal one bid. Each reveal records your name, time and reason.
       </p>
+      <div className={styles.formGrid}><label>Reason for private bid review<input value={privateReview.reason} minLength={10} maxLength={500}
+        onChange={event=>{privateReview.setReason(event.target.value);setConflictMessage(null);mutation.reset();}} disabled={privateReview.busy}/></label>
+      </div>
+      <div className={styles.actions}>
+        <button type="button" className="hl-button hl-button--secondary" disabled={privateReview.busy||privateReview.reason.trim().length<10}
+          onClick={()=>privateReview.reveal(null)}>Reveal bidding teams for an edit</button>
+        {privateReview.review && <button type="button" className="hl-button hl-button--quiet" onClick={privateReview.hide}>Hide private bids</button>}
+      </div>
+      {privateReview.error && <ErrorBlock error={privateReview.error} fallback="Private bids could not be opened."/>}
       <FormFeedback
         error={shownError}
         fallback="The commissioner auction action could not be completed."
@@ -1505,9 +1519,9 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
         message={receipt}
         focusKey={shownError || receipt}
       />
-      {auction.administrativeBids.length > 0 && (
+      {administrativeBids.length > 0 && (
         <div className={styles.adminBidGrid} aria-label="Commissioner sealed bid records">
-          {auction.administrativeBids.map((bid) => {
+          {administrativeBids.map((bid) => {
             const canEdit = bid.capabilities.adminEditBid.allowed;
             const canRemove = bid.capabilities.adminRemoveBid.allowed;
             return (
@@ -1515,6 +1529,10 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
                 <div>
                   <h3>{teamName(bid.team)}</h3>
                   <p>{bidStatusLabel(bid.status)} sealed bid</p>
+                  {privateReview.review?.terms?.bidId===bid.bidId
+                    ? <p>Revealed contract: {money(privateReview.review.terms.totalValueCents)} total over {privateReview.review.terms.termYears} years.</p>
+                    : <button type="button" className="hl-button hl-button--quiet" disabled={privateReview.busy||privateReview.reason.trim().length<10}
+                      onClick={()=>privateReview.reveal(bid.bidId)}>Reveal this bid’s value and term</button>}
                 </div>
                 {(canEdit || canRemove) ? (
                   <div className={styles.actions}>
@@ -1624,7 +1642,7 @@ function CommissionerAdministrationPanel({ auction, context, leagueId }) {
               />
             </div>
             <div className={styles.actions}>
-              <button className="hl-button hl-button--primary">
+              <button className="hl-button hl-button--primary" disabled={privateReview.busy}>
                 {mutation.isPending ? "Replacing…" : "Replace sealed bid"}
               </button>
               <button className="hl-button hl-button--quiet" type="button" onClick={closeEditor}>
@@ -1823,6 +1841,8 @@ function AuctionDetailContent({ auction, context, leagueId }) {
         context={context}
         leagueId={leagueId}
       />
+      {auction.sourceKind === "ordinary_weekly" && hasCommissionerAuthority(context.league.membership) &&
+        <AuctionTimingControls key={auction.auctionId} leagueId={leagueId} auctionId={auction.auctionId} />}
       <TerminalResult auction={auction} timeZone={timeZone} />
       <DrawEvidence auction={auction} />
       <p className="hl-page-backlink">
