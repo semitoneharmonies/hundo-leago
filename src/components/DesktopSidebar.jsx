@@ -2,12 +2,12 @@ import { LeagueHelpPanel } from "../features/leagues/LeagueHelpPanel.jsx";
 import { commissionerSections, commissionerSectionPath } from "../features/commissioner/commissionerSections.js";
 import { createElement, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, BookOpen, ChevronDown, ChevronRight, Users, X } from "lucide-react";
+import { Bell, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Users, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { routePaths } from "../app/routePaths.js";
-import { leagueTeamsQuery } from "../features/leagues/leagueQueries.js";
+import { leagueSeasonsQuery, leagueTeamsQuery } from "../features/leagues/leagueQueries.js";
 import { writeLeaguePreference } from "../features/leagues/leaguePreference.js";
-import { currentMatchupWeekQuery, matchupWeekQuery } from "../features/competition/competitionQueries.js";
+import { currentMatchupWeekQuery, matchupWeekQuery, matchupWeeksQuery } from "../features/competition/competitionQueries.js";
 import { leagueAuthorityLabel } from "../shared/leagueAuthority.js";
 import { teamColourClass, teamColourStyle } from "../shared/teamIdentity.js";
 import { TeamMark } from "./HundoUi.jsx";
@@ -80,17 +80,30 @@ function MatchupMenu({ league, session, onSelect }) {
   const motion = useNavigationMotion();
   const inMatchups = location.pathname === routePaths.leagueMatchups(league.id);
   const params = new URLSearchParams(inMatchups ? location.search : "");
-  const seasonId = params.get("season") || league.currentSeason?.id;
-  const weekId = params.get("week");
+  const [selection, setSelection] = useState({ season: params.get("season"), week: params.get("week") });
+  const seasons = useQuery(leagueSeasonsQuery(session.httpClient, league.id));
+  const seasonId = seasons.data?.find(({ id }) => id === selection.season)?.id
+    || seasons.data?.find(({ id }) => id === league.currentSeason?.id)?.id || seasons.data?.[0]?.id;
   const current = useQuery({ ...currentMatchupWeekQuery(session.httpClient, league.id, seasonId), enabled: Boolean(seasonId) });
+  const weeks = useQuery({ ...matchupWeeksQuery(session.httpClient, league.id, seasonId), enabled: Boolean(seasonId) });
+  const orderedWeeks = [...(weeks.data?.weeks || [])].sort((a, b) => a.sequence - b.sequence);
+  const weekId = orderedWeeks.find(({ id }) => id === selection.week)?.id
+    || orderedWeeks.find(({ id }) => id === current.data?.week?.id)?.id || orderedWeeks[0]?.id;
   const selected = useQuery({ ...matchupWeekQuery(session.httpClient, league.id, seasonId, weekId), enabled: Boolean(seasonId && weekId) });
   const teams = useQuery(leagueTeamsQuery(session.httpClient, league.id));
-  const query = weekId ? selected : current;
-  const week = weekId ? selected.data : current.data?.week;
+  const query = [seasons, weeks, current].find((item) => item.isError || item.isPending) || selected;
+  const week = selected.data;
+  const weekIndex = orderedWeeks.findIndex(({ id }) => id === weekId);
+  const changeWeek = (offset) => setSelection({ season: seasonId, week: orderedWeeks[weekIndex + offset].id });
   const teamIdentity = (team) => teams.data?.find(({ id }) => id === team.id) || team;
-  if (!seasonId) return <p className="hl-sidebar-state">No active season yet.</p>;
+  if (seasons.isSuccess && !seasonId) return <p className="hl-sidebar-state">No seasons yet.</p>;
   return <>
-    <QueryState query={query} empty="No current matchup week.">
+    {seasonId && <label className="hl-sidebar-season">Season
+      <select value={seasonId} onChange={(event) => setSelection({ season: event.target.value, week: null })}>
+        {seasons.data.map((season) => <option key={season.id} value={season.id}>{season.label}</option>)}
+      </select>
+    </label>}
+    {weeks.isSuccess && orderedWeeks.length === 0 ? <p className="hl-sidebar-state">No matchup schedule has been generated yet.</p> : <QueryState query={query} empty="No matchup week.">
       {week && <>
         <p className="hl-sidebar-week">Week {week.sequence}</p>
         <ul className="hl-sidebar-cards">
@@ -114,8 +127,12 @@ function MatchupMenu({ league, session, onSelect }) {
         {week.matchups.length === 0 && <p className="hl-sidebar-state">No pairings this week.</p>}
         {week.byes.map((bye) => <p className="hl-sidebar-state" key={bye.id}>{bye.team.name} has a bye.</p>)}
       </>}
-    </QueryState>
-    <Link className="hl-sidebar-all" to={routePaths.leagueMatchups(league.id)} onClick={onSelect}>All weeks and seasons</Link>
+    </QueryState>}
+    {orderedWeeks.length > 0 && <nav className="hl-sidebar-week-navigation" aria-label="Matchup weeks">
+      <button type="button" aria-label="Previous week" disabled={weekIndex <= 0 || selected.isFetching} onClick={() => changeWeek(-1)}><ChevronLeft aria-hidden="true" /></button>
+      <span role="status">Week {orderedWeeks[weekIndex]?.sequence}</span>
+      <button type="button" aria-label="Next week" disabled={weekIndex < 0 || weekIndex >= orderedWeeks.length - 1 || selected.isFetching} onClick={() => changeWeek(1)}><ChevronRight aria-hidden="true" /></button>
+    </nav>}
   </>;
 }
 
@@ -150,7 +167,7 @@ export function DesktopSidebar({ league, leaguesQuery, links, descriptions, sess
       closeSubmenu();
     }
   }}>
-    <div className="hl-sidebar-heading"><span>League workspace</span><strong>{league?.name || "Your leagues"}</strong></div>
+    <div className="hl-sidebar-heading"><strong>{league?.name || "Your leagues"}</strong></div>
     <nav className="hl-sidebar-navigation" aria-label="Main navigation">
       {disclosure("Switch league", Users, null,
         <><QueryState query={leaguesQuery} empty="No active league memberships.">
@@ -162,7 +179,7 @@ export function DesktopSidebar({ league, leaguesQuery, links, descriptions, sess
       {links.filter(([label]) => label !== "Roster operations").map(([label, to, Icon, prefixActive, description]) => {
         if (label === "Commissioner tools") return disclosure(label, Icon, null, <><Link className="hl-sidebar-all" to={to} onClick={closeSubmenu}>All tools</Link>{commissionerSections.map(([key, title]) => <Link className="hl-sidebar-link" key={key} to={commissionerSectionPath(league.id, key)} onClick={closeSubmenu}>{title}</Link>)}</>, true);
         if (label === "Teams") return disclosure(label, Icon, null, <TeamMenu league={league} session={session} onSelect={closeSubmenu} />, true);
-        if (label === "Matchups") return disclosure(label, Icon, null, <MatchupMenu league={league} session={session} onSelect={closeSubmenu} />, true);
+        if (label === "Matchups") return disclosure(label, Icon, null, <MatchupMenu key={`${league.id}:${location.search}`} league={league} session={session} onSelect={closeSubmenu} />, true);
         return <Link key={label} to={to} className="hl-sidebar-link" aria-label={label}
           aria-current={isActive(label, to, prefixActive) ? "page" : undefined} title={description || descriptions[label]}
           onClick={() => { setSubmenu(null); setRulesOpen(false); }}>

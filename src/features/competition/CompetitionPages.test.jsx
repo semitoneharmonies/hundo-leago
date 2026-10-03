@@ -562,7 +562,7 @@ describe("M6-12 authenticated competition pages", () => {
       within(screen.getByRole("combobox", { name: "Week" }))
         .getAllByRole("option")
     ).toHaveLength(2);
-    expect(screen.getByText("2.25 FP", { exact: false })).toBeInTheDocument();
+    expect(document.querySelector(".hl-matchup-score__team b")).toHaveTextContent(/^2\.25$/);
     const scoringList = screen.getByRole("list", { name: "Home Team versus Away Team player scoring" });
     expect(within(scoringList).getAllByRole("article")).toHaveLength(36);
     const homePlayerCard = within(scoringList).getByRole("article", { name: "Home Team: Connor Example" });

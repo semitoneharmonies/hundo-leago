@@ -433,7 +433,7 @@ export function LeagueMatchupsPage() {
         : current.isError ? <ErrorMessage error={current.error} />
           : (
             <>
-              <Surface className="hl-competition-toolbar">
+              <Surface className="hl-competition-toolbar hl-matchup-page-controls">
               <label className="hl-field">
                 Season{" "}
                 <select
@@ -680,7 +680,7 @@ function MatchupCard({ matchup, teams = [] }) {
           <span>Home</span>
           <TeamMark className="hl-matchup-score__mark" team={homeTeam} logoUrl={homeTeam.logoReference ? httpClient.resourceUrl(homeTeam.logoReference) : null} />
           <strong>{homeTeam.name}</strong>
-          <b>{points(homeScore)} FP</b>
+          <b>{points(homeScore)}</b>
           <small>fantasy points</small>
         </div>
         <div className="hl-matchup-score__center">
@@ -696,7 +696,7 @@ function MatchupCard({ matchup, teams = [] }) {
           <span>Away</span>
           <TeamMark className="hl-matchup-score__mark" team={awayTeam} logoUrl={awayTeam.logoReference ? httpClient.resourceUrl(awayTeam.logoReference) : null} />
           <strong>{awayTeam.name}</strong>
-          <b>{points(awayScore)} FP</b>
+          <b>{points(awayScore)}</b>
           <small>fantasy points</small>
         </div>
       </header>

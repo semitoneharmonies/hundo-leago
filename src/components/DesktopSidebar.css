@@ -15,7 +15,6 @@
   .hl-app-header--sidebar .hl-app-header__navigation { display: none; }
   .hl-desktop-sidebar { position: fixed; display: flex; flex-direction: column; inset: var(--hl-topbar-height) auto 0 0; z-index: 3000; width: var(--hl-sidebar-width); background: #091121; border-right: 1px solid var(--hl-border); box-shadow: 8px 0 32px rgb(0 0 0 / 12%); }
   .hl-sidebar-heading { flex: 0 0 auto; display: grid; gap: 6px; padding: 18px 18px 14px; border-bottom: 1px solid var(--hl-border); }
-  .hl-sidebar-heading > span { color: var(--hl-muted-foreground); text-transform: uppercase; letter-spacing: .12em; font-size: .62rem; }
   .hl-sidebar-heading > strong { font-family: var(--hl-font-display); font-size: 1.25rem; overflow-wrap: anywhere; }
   .hl-sidebar-navigation { flex: 1 1 auto; min-height: 120px; padding: 10px; overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
   .hl-sidebar-link { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; min-height: 42px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--hl-foreground) !important; padding: 9px 10px; text-align: left; text-decoration: none; cursor: pointer; font-family: inherit; }
@@ -46,6 +45,13 @@
   .hl-sidebar-matchup .hl-team-mark { width: 28px; height: 28px; flex-basis: 28px; }
   .hl-sidebar-matchup__vs { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); padding: 3px; border-radius: 50%; background: #091121; color: #ffc699; font: 600 .6rem var(--hl-font-mono); }
   .hl-sidebar-week { font: 600 .65rem var(--hl-font-mono); color: var(--hl-muted-foreground); padding: 6px 8px; margin: 0 0 4px; }
+  .hl-sidebar-season { display: grid; gap: 6px; margin-bottom: 12px; font-size: .72rem; }
+  .hl-sidebar-season select { width: 100%; min-width: 0; }
+  .hl-sidebar-week-navigation { position: sticky; bottom: -12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding-block: 12px; background: #0c1628; border-top: 1px solid var(--hl-border); }
+  .hl-sidebar-week-navigation span { font: 600 .75rem var(--hl-font-body); }
+  .hl-sidebar-week-navigation button { display: grid; place-items: center; width: 40px; height: 40px; padding: 8px; border: 1px solid var(--hl-border); border-radius: 6px; color: var(--hl-foreground); background: #14233d; cursor: pointer; }
+  .hl-sidebar-week-navigation button:disabled { opacity: .4; cursor: default; }
+  .hl-sidebar-week-navigation button:hover:not(:disabled) { background: #233553; }
   .hl-sidebar-all { display: block; padding: 10px 8px; font-size: .72rem; }
   .hl-sidebar-count { border-radius: 12px; background: #233d65; padding: 2px 6px; font-size: .65rem; }
   .hl-sidebar-rules, .hl-sidebar-flyout { position: fixed; top: calc(var(--hl-topbar-height) + 12px); left: calc(var(--hl-sidebar-width) + 12px); width: min(600px, calc(100vw - var(--hl-sidebar-width) - 30px)); max-height: calc(100dvh - var(--hl-topbar-height) - 24px); overflow-y: auto; border: 1px solid var(--hl-border); border-radius: 12px; background: #0c1628; box-shadow: var(--hl-shadow); }
@@ -63,11 +69,13 @@
   .hl-app-shell:has(.hl-desktop-sidebar) .hl-roster-hero .hl-team-logo { width: 72px; height: 72px; flex-basis: 72px; }
   .hl-app-shell:has(.hl-desktop-sidebar) .hl-roster-hero[data-navigation-animating], .hl-app-shell:has(.hl-desktop-sidebar) .hl-matchup-score[data-navigation-animating] { z-index: 4500; }
   .hl-app-shell:has(.hl-desktop-sidebar) .hl-matchup-workspace { grid-template-columns: minmax(0, 1fr); }
-  .hl-app-shell:has(.hl-desktop-sidebar) .hl-matchup-sidebar { display: none; }
+  .hl-app-shell:has(.hl-desktop-sidebar) :is(.hl-matchup-selector, .hl-matchup-page-controls) { display: none; }
   .hl-app-shell:has(.hl-desktop-sidebar) .hl-matchup-score { position: sticky; top: var(--hl-topbar-height); z-index: 2000; background: #091121; box-shadow: 0 10px 24px rgb(0 0 0 / 25%); }
   .hl-app-shell:has(.hl-desktop-sidebar) .hl-matchup-detail { overflow: visible; }
   .hl-app-shell:has(.hl-desktop-sidebar) .hl-matchup-score__mark { position: absolute; display: grid; left: 12px; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border: 1px solid rgb(255 255 255 / 55%); border-radius: 50%; }
-  .hl-app-shell:has(.hl-desktop-sidebar) .hl-dashboard__hero, .hl-app-shell:has(.hl-desktop-sidebar) .hl-dashboard__community { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+  .hl-app-shell:has(.hl-desktop-sidebar) .hl-dashboard__hero { grid-template-columns: minmax(250px, .8fr) minmax(0, 2.2fr); }
+  .hl-app-shell:has(.hl-desktop-sidebar) .hl-dashboard__hero--commissioner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hl-app-shell:has(.hl-desktop-sidebar) .hl-dashboard__community { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
 }
 
 .hl-sidebar-announcements { flex: 0 1 auto; min-height: 130px; max-height: 35dvh; overflow-y: auto; padding: 16px; border-top: 1px solid var(--hl-border); background: #0c1628; scrollbar-width: thin; }

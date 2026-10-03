@@ -14,7 +14,6 @@ import {
 import { Link } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
-import { LeagueCommunications } from "../commissioner/LeagueCommunications.jsx";
 import { PlayerName } from '../players/PlayerName.jsx';
 import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
@@ -329,7 +328,7 @@ function MatchupScoreboard({
               : "Home"}
           </span>
           <strong>{homeTeam.name}</strong>
-          <b>{fantasyPoints(homeScore)} FP</b>
+          <b>{fantasyPoints(homeScore)}</b>
           <small>fantasy points</small>
         </div>
         <div className="hl-matchup-score__center">
@@ -355,7 +354,7 @@ function MatchupScoreboard({
               : "Away"}
           </span>
           <strong>{awayTeam.name}</strong>
-          <b>{fantasyPoints(awayScore)} FP</b>
+          <b>{fantasyPoints(awayScore)}</b>
           <small>fantasy points</small>
         </div>
       </div>
@@ -1484,8 +1483,6 @@ export function LeagueDashboard({ league, teams, session }) {
           </>
         }
       />
-
-      <LeagueCommunications key={leagueId} leagueId={leagueId} canManage={commissioner} />
 
       {league.status === 'frozen' && <div className="hl-inline-notice" role="status">
         <AlertTriangle aria-hidden="true" /><div><strong>League competition is paused</strong>

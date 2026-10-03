@@ -21,6 +21,85 @@ async function expectNoOverflow(page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 }
 
+test("matchup submenu browses weeks and seasons while mobile keeps its page controls", async ({ page }) => {
+  await openPreview(page);
+  if (page.viewportSize().width < 1024) {
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
+    await page.getByRole("link", { name: "Matchups", exact: true }).click();
+    await expect(page.getByRole("combobox", { name: "Week", exact: true })).toBeVisible();
+    await page.getByRole("combobox", { name: "Week", exact: true }).selectOption({ index: 1 });
+    await expect(page.locator(".hl-matchup-selector h2")).toContainText("Week 2");
+  } else {
+    const toggle = page.getByRole("button", { name: "Matchups", exact: true });
+    await toggle.click();
+    const menu = page.getByRole("dialog", { name: "Matchups", exact: true });
+    const previous = menu.getByRole("button", { name: "Previous week" });
+    const next = menu.getByRole("button", { name: "Next week" });
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeEnabled();
+    await next.click();
+    await expect(menu.locator(".hl-sidebar-week")).toHaveText("Week 2");
+    await expect(previous).toBeEnabled();
+    await next.click();
+    await expect(menu.locator(".hl-sidebar-week")).toHaveText("Week 3");
+    await expect(next).toBeDisabled();
+    await previous.click();
+    await expect(menu.locator(".hl-sidebar-week")).toHaveText("Week 2");
+    await menu.getByRole("link", { name: "Own Goal Hatty vs Coastal Wolves" }).click();
+    await expect(page.locator(".hl-matchup-selector")).toBeHidden();
+    await expect(page.locator(".hl-matchup-page-controls")).toBeHidden();
+    await page.reload();
+    await toggle.click();
+    await expect(menu.locator(".hl-sidebar-week")).toHaveText("Week 2");
+    await menu.getByRole("combobox", { name: "Season" }).selectOption({ label: "2025–26" });
+    await expect(menu.getByText("No matchup schedule has been generated yet.")).toBeVisible();
+    await menu.getByRole("combobox", { name: "Season" }).selectOption({ label: "2026–27" });
+    await expect(menu.locator(".hl-sidebar-week")).toHaveText("Week 1");
+    await page.keyboard.press("Escape");
+  }
+  await expect(page.locator(".hl-matchup-score__team b").first()).toHaveText("7.25");
+  await expect(page.locator(".hl-matchup-score__team small").first()).toHaveText("fantasy points");
+  expect(await page.evaluate(() => window.navigationFixture.requests.every((item) => item.method === "GET"))).toBe(true);
+  await expectNoOverflow(page);
+});
+
+test("dashboard fills the available width with aligned panels and equal team tiles", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await openPreview(page, "?dashboard");
+  await page.evaluate(() => { window.location.hash = `/leagues/${window.navigationFixture.leagues[0].id}`; });
+  await expect(page.locator(".hl-dashboard-roster tbody tr").first()).toBeVisible();
+  await expect(page.locator(".hl-trade-block tbody tr").first()).toBeAttached();
+  await expect(page.locator(".hl-dashboard [role=alert]")).toHaveCount(0);
+  await expect(page.locator(".hl-dashboard").getByRole("heading", { name: "League announcements" })).toHaveCount(0);
+  await expect(page.getByText("League workspace", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".hl-dashboard-matchup-score b").first()).toHaveText("7.25");
+  const widths = page.viewportSize().width >= 1024 ? [1024, 1440, 1920, 2560] : [page.viewportSize().width];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expectNoOverflow(page);
+    const dashboard = await page.locator(".hl-dashboard").boundingBox();
+    const matchup = await page.locator(".hl-dashboard__hero > .hl-dashboard-matchup").boundingBox();
+    const roster = await page.locator(".hl-dashboard-roster").boundingBox();
+    if (width >= 1024) {
+      const sidebar = await page.locator(".hl-desktop-sidebar").boundingBox();
+      expect(Math.abs(dashboard.x - (sidebar.x + sidebar.width + 18))).toBeLessThan(2);
+      expect(Math.abs(dashboard.x + dashboard.width - (width - 18))).toBeLessThan(2);
+      expect(Math.abs(matchup.y - roster.y)).toBeLessThan(2);
+      expect(roster.x).toBeGreaterThan(matchup.x + matchup.width);
+    } else expect(roster.y).toBeGreaterThan(matchup.y);
+    const heights = await page.locator(".hl-dashboard__summary .hl-team-grid > a").evaluateAll((items) => items.map((item) => item.getBoundingClientRect().height));
+    expect(Math.max(...heights) - Math.min(...heights)).toBeLessThan(1);
+    const badge = await page.locator(".hl-dashboard__summary .hl-status-badge").boundingBox();
+    const ownTile = await page.locator(".hl-dashboard__summary .hl-team-grid > a").filter({ hasText: "Your team" }).boundingBox();
+    expect(Math.abs((badge.y + badge.height / 2) - (ownTile.y + ownTile.height / 2))).toBeLessThan(2);
+    expect((await page.locator(".hl-trade-block__heading").boundingBox()).height).toBe(72);
+    await page.screenshot({ path: `.hundo.local/layout-review/dashboard-${width}.png`, fullPage: true });
+  }
+  expect(errors).toEqual([]);
+  expect(await page.evaluate(() => window.navigationFixture.requests.every((item) => item.method === "GET"))).toBe(true);
+});
+
 test("desktop sidebar promotes team cards, keeps headers below the bar, and isolates leagues", async ({ page }) => {
   test.skip(page.viewportSize().width < 1024, "Desktop layout only");
   const errors = [];

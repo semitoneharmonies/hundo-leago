@@ -22,6 +22,15 @@ export function createDesktopNavigationFixture({ commissioner = false, administr
     startsAtMs: 1791172800000, baselineAtMs: 1791172800000, locksAtMs: 1791241200000, endsAtMs: 1791777600000, rollsOverAtMs: 1791781200000, version: 1, status: "live", byes: [],
     matchups: [0, 1, 2].map((index) => ({ id: id(850 + group * 10 + index), leagueId: league.id, seasonId: league.currentSeason.id, weekId: id(800 + group), homeTeam: teams[group * 6 + index * 2], awayTeam: teams[group * 6 + index * 2 + 1], status: "live", version: 1 })),
   }));
+  for (const original of [...weeks]) {
+    for (let offset = 1; offset <= 2; offset += 1) {
+      const weekId = id(1100 + weeks.length);
+      weeks.push({ ...original, id: weekId, sequence: offset + 1, weekKey: `2026-W0${offset + 1}`, status: "scheduled",
+        startsAtMs: original.startsAtMs + offset * 604800000, endsAtMs: original.endsAtMs + offset * 604800000,
+        baselineAtMs: original.baselineAtMs + offset * 604800000, locksAtMs: original.locksAtMs + offset * 604800000, rollsOverAtMs: original.rollsOverAtMs + offset * 604800000,
+        matchups: original.matchups.map((matchup, index) => ({ ...matchup, id: id(1200 + weeks.length * 10 + index), weekId, status: "scheduled" })) });
+    }
+  }
   const announcements = leagues.map((league, index) => ({ id: id(950 + index), leagueId: league.id, body: index ? "Welcome to the Pacific league." : "Welcome to the season!\nRemember to set your lineup before Monday’s lock.", authorName: "League Commissioner", createdAtMs: Date.now() - 3600000 }));
   const fixture = {
     quotes: [], failQuoteSubmit: false, failQuoteReview: false,
@@ -34,7 +43,8 @@ export function createDesktopNavigationFixture({ commissioner = false, administr
       const leagueId = parts[4];
       const league = leagues.find((item) => item.id === leagueId);
       const selectedTeam = teams.find((team) => team.id === parts[6] && team.leagueId === leagueId);
-      const week = weeks.find((item) => item.leagueId === leagueId);
+      const seasonWeeks = weeks.filter((item) => item.leagueId === leagueId && item.seasonId === parts[6]);
+      const week = seasonWeeks.find((item) => item.id === parts[8]) || seasonWeeks[0] || null;
       let data;
       if (path === "/api/v1/leagues") data = { code: "LEAGUES_FOUND", leagues };
       else if (url.pathname === "/api/v1/notifications") data = { code: "NOTIFICATIONS_FOUND", notifications: [], page: { limit: 25, nextCursor: null } };
@@ -74,11 +84,15 @@ export function createDesktopNavigationFixture({ commissioner = false, administr
       } else if (url.pathname.endsWith("/teams")) {
         if (fixture.failTeams) throw new Error("Teams unavailable");
         data = { code: "TEAMS_FOUND", teams: teams.filter((team) => team.leagueId === leagueId) };
-      } else if (selectedTeam && url.pathname.endsWith("/roster")) data = { ...roster.workspace(), team: selectedTeam, league, season: league.currentSeason, canManage: selectedTeam.currentManager.userId === id(3) };
+      } else if (selectedTeam && url.pathname.endsWith("/roster")) data = { ...roster.workspace(), players: roster.workspace().players.map((player, index) => ({ ...player, onTradeBlock: index === 0 })), team: selectedTeam, league, season: league.currentSeason, canManage: selectedTeam.currentManager.userId === id(3) };
       else if (selectedTeam) data = { code: "TEAM_FOUND", team: selectedTeam };
-      else if (url.pathname.endsWith("/seasons")) data = { code: "LEAGUE_SEASONS_FOUND", leagueId, seasons: [league.currentSeason] };
+      else if (url.pathname.endsWith("/seasons")) data = { code: "LEAGUE_SEASONS_FOUND", leagueId, seasons: [league.currentSeason, { ...league.currentSeason, id: id(1500), label: "2025–26", status: "completed" }] };
       else if (url.pathname.endsWith("/matchup-weeks/current")) data = { code: "CURRENT_MATCHUP_WEEK_FOUND", week, health: {} };
-      else if (url.pathname.endsWith("/matchup-weeks")) data = { code: "MATCHUP_WEEKS_FOUND", weeks: [week], health: {} };
+      else if (url.pathname.endsWith("/matchup-weeks")) data = { code: "MATCHUP_WEEKS_FOUND", weeks: seasonWeeks, health: {} };
+      else if (url.pathname.endsWith("/standings")) data = { code: "MATCHUP_STANDINGS_FOUND", health: {}, finalizedResultCount: 0, sourceResultVersion: 0, results: [], rows: [] };
+      else if (url.pathname.endsWith("/trades")) data = { code: "TRADE_PROPOSALS_FOUND", proposals: [] };
+      else if (url.pathname.endsWith("/activity")) data = { code: "LEAGUE_ACTIVITY_FOUND", activity: [], page: { limit: 25, nextCursor: null } };
+      else if (url.pathname.endsWith("/auctions")) { options.validateData?.([]); return { data: [], actions: { startTeams: [] }, page: { hasMore: false, nextCursor: null } }; }
       else if (url.pathname.includes("/matchups/")) {
         const item = week.matchups.find((matchup) => matchup.id === parts.at(-1));
         const score = (team, index) => ({ teamId: team.id, legal: true, scoreHundredths: index ? 500 : 725, players: [{ playerId: id(30 + index), fullName: index ? "Cale Makar" : "Connor McDavid", positionGroup: index ? "D" : "F", slotNumber: 1, gamesPlayedDelta: 3, goalDelta: 1, assistDelta: 3, pointDelta: 4, scoreHundredths: index ? 500 : 725, dataStatus: "available" }] });

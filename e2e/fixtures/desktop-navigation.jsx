@@ -5,6 +5,7 @@ import { HashRouter, Route, Routes, useParams } from "react-router-dom";
 import { AppShell } from "../../src/app/AppShell.jsx";
 import { SessionContext } from "../../src/features/session/sessionContext.js";
 import { TeamWorkspacePage } from "../../src/features/leagues/LeaguePages.jsx";
+import { LeagueDashboard } from "../../src/features/leagues/LeagueDashboard.jsx";
 import { LeagueMatchupsPage } from "../../src/features/competition/CompetitionPages.jsx";
 import { createDesktopNavigationFixture } from "../../src/test/desktopNavigationFixture.js";
 import "../../src/App.css";
@@ -18,6 +19,7 @@ if (!window.location.hash) window.location.hash = `/leagues/${fixture.leagues[0]
 
 export function Dashboard() {
   const { leagueId } = useParams();
+  if (new URLSearchParams(window.location.search).has("dashboard")) return <main className="hl-page hl-page--wide"><LeagueDashboard league={fixture.leagues.find((league) => league.id === leagueId)} teams={fixture.teams.filter((team) => team.leagueId === leagueId)} session={fixture.session} /></main>;
   return <main className="hl-page hl-page--wide"><h1>{fixture.leagues.find((league) => league.id === leagueId)?.name || "Account"}</h1><p>Local preview with sample data. Choose Teams or Matchups in the navigation.</p></main>;
 }
 
