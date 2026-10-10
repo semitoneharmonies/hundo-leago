@@ -31,7 +31,7 @@ export function MatchupCard({ leagueId, seasonId, week, matchup, teams, httpClie
             <strong>{team.name}</strong>
           </span>
           <span className="hl-week-matchup__score" aria-label={`${team.name}: ${detail.isPending ? "loading score" : `${fantasyPoints(score)} fantasy points`}`}>
-            <b>{detail.isPending ? "…" : fantasyPoints(score)}</b><small>{sidebar ? "FP" : "fantasy points"}</small>
+            <b>{detail.isPending ? "…" : fantasyPoints(score)}</b><small>FP</small>
           </span>
         </div>;
       })}

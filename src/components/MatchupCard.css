@@ -1,26 +1,36 @@
-.hl-dashboard-matchups { display: grid; gap: 14px; padding: 0 14px 14px; margin: 0; list-style: none; }
+.hl-dashboard-matchups { display: grid; gap: 6px; padding: 0 10px 10px; margin: 0; list-style: none; }
 .hl-week-matchup { min-width: 0; }
 .hl-week-matchup__link { display: grid; gap: 3px; overflow: hidden; border: 1px solid #72819a; border-radius: 8px; background: #a6b2c7; text-decoration: none; box-shadow: 0 3px 10px rgb(0 0 0 / 25%); }
 .hl-week-matchup__link:hover, .hl-week-matchup__link:focus-visible { outline: 2px solid var(--hl-accent); outline-offset: 2px; }
 .hl-week-matchup__team { position: relative; isolation: isolate; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 10px; background-color: var(--team-primary); background-image: var(--team-pattern-image); background-repeat: var(--team-pattern-repeat); background-size: var(--team-pattern-size); }
-.hl-week-matchup__team::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgb(2 6 23 / 65%), rgb(2 6 23 / 35%) 55%, rgb(2 6 23 / 80%)); }
+.hl-week-matchup__team::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: rgb(2 6 23 / 76%); }
+.hl-week-matchup__team > * { position: relative; z-index: 1; }
 .hl-week-matchup__team .hl-team-mark { width: 28px; height: 28px; flex: 0 0 28px; border: 1px solid rgb(255 255 255 / 55%); }
 .hl-week-matchup__name { min-width: 0; display: grid; gap: 3px; }
-.hl-week-matchup__name strong { color: #fff; font-size: .78rem; line-height: 1.35; overflow-wrap: anywhere; }
+.hl-week-matchup__name strong { color: #fff; font-size: .78rem; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; text-shadow: 0 1px 3px #020617; }
 .hl-week-matchup__name small { color: #ffc699; font-size: .58rem; text-transform: uppercase; }
-.hl-week-matchup__score { display: flex; flex: 0 0 auto; align-items: baseline; gap: 4px; margin-left: auto; color: #fff; white-space: nowrap; font-family: var(--hl-font-mono); font-variant-numeric: tabular-nums; }
-.hl-week-matchup__score b { font-size: .95rem; }
+.hl-week-matchup__score { display: flex; flex: 0 0 auto; align-items: baseline; gap: 4px; margin-left: auto; color: var(--hl-accent); white-space: nowrap; font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px #020617; }
+.hl-week-matchup__score b { color: var(--hl-accent); font-family: var(--hl-font-display); font-size: 1.45rem; font-weight: 700; line-height: 1; }
 .hl-week-matchup__score small { font-size: .55rem; color: #e2e8f0; }
 .hl-week-matchup__notice { margin: 6px 2px 0; font-size: .7rem; color: var(--hl-muted-foreground); }
 .hl-week-matchup__notice button { border: 0; padding: 0; background: transparent; color: #9bbbff; font: inherit; cursor: pointer; text-decoration: underline; }
-.hl-week-matchup__link--scoreboard { grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); gap: 0; background: #091121; border-color: var(--hl-border); }
-.hl-week-matchup__link--scoreboard .hl-week-matchup__team { grid-row: 1; flex-direction: column; justify-content: center; gap: 6px; min-width: 0; min-height: 112px; padding: 12px 6px; text-align: center; container-type: inline-size; }
+.hl-week-matchup__link--scoreboard { grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr); gap: 0; background: #091121; border-color: var(--hl-border); }
+.hl-week-matchup__link--scoreboard .hl-week-matchup__team { grid-row: 1; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; min-height: 64px; padding: 4px 6px; text-align: center; container-type: inline-size; }
 .hl-week-matchup__link--scoreboard .hl-week-matchup__team:nth-child(2) { grid-column: 3; }
-.hl-week-matchup__link--scoreboard .hl-week-matchup__team::before { background: rgb(2 6 23 / 35%); }
-.hl-week-matchup__link--scoreboard .hl-week-matchup__name strong { font-family: var(--hl-font-display); font-size: clamp(.9rem, 11cqw, 1.3rem); }
-.hl-week-matchup__link--scoreboard .hl-week-matchup__name small { color: #b5bdcd; font-size: .52rem; }
-.hl-week-matchup__link--scoreboard .hl-week-matchup__score { flex-direction: column; align-items: center; gap: 0; margin: 0; }
-.hl-week-matchup__link--scoreboard .hl-week-matchup__score b { color: var(--hl-accent); font-family: var(--hl-font-display); font-size: clamp(1rem, 23cqw, 2.6rem); line-height: 1.1; }
+.hl-week-matchup__link--scoreboard .hl-week-matchup__name { gap: 1px; }
+.hl-week-matchup__link--scoreboard .hl-week-matchup__name strong { font-size: clamp(.7rem, 8cqw, .85rem); line-height: 1.15; }
+.hl-week-matchup__link--scoreboard .hl-week-matchup__name small { color: #e2e8f0; font-size: .5rem; line-height: 1; }
+.hl-week-matchup__link--scoreboard .hl-week-matchup__score { align-items: baseline; gap: 3px; margin: 0; }
+.hl-week-matchup__link--scoreboard .hl-week-matchup__score b { font-size: clamp(1.3rem, 19cqw, 1.9rem); }
 .hl-week-matchup__link--scoreboard .hl-week-matchup__score small { font-size: .5rem; text-transform: uppercase; }
-.hl-week-matchup__versus { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--hl-muted-foreground); font: .55rem var(--hl-font-mono); }
+.hl-week-matchup__versus { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--hl-muted-foreground); font: .55rem var(--hl-font-mono); }
 .hl-week-matchup__versus .hl-status-badge { padding: 2px 3px; font-size: .48rem; }
+
+/* The roster sets the desktop row height; additional pairings scroll inside it. */
+@media (min-width: 1024px) {
+  .hl-dashboard__hero:has(> .hl-dashboard-roster) > .hl-dashboard-matchup { contain: size; display: flex; flex-direction: column; min-height: 220px; }
+  .hl-dashboard__hero:has(> .hl-dashboard-roster) > .hl-dashboard-matchup > .hl-panel-heading { flex: 0 0 auto; }
+  .hl-dashboard__hero:has(> .hl-dashboard-roster) .hl-dashboard-matchups { flex: 1; min-height: 0; overflow-y: auto; grid-auto-rows: minmax(min-content, 1fr); }
+  .hl-dashboard__hero:has(> .hl-dashboard-roster) .hl-week-matchup { height: 100%; display: flex; flex-direction: column; }
+  .hl-dashboard__hero:has(> .hl-dashboard-roster) .hl-week-matchup__link--scoreboard { flex: 1; }
+}
