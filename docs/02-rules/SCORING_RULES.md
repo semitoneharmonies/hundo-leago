@@ -385,10 +385,9 @@ Loss: 0 standings points
 
 The current backend sorts regular-season standings by:
 
-1. standings points, descending;
-2. fantasy-point differential, descending;
-3. fantasy points for, descending;
-4. team name, ascending.
+1. total matchup wins, descending;
+2. total fantasy points earned in finalized matchups (PF), descending;
+3. team name, ascending.
 
 The current frontend calculates standings percentage as:
 
@@ -903,12 +902,11 @@ Displayed fantasy-point values and percentage are rounded to the nearest hundred
 
 The approved order is:
 
-1. standings points, descending;
-2. fantasy-point differential, descending;
-3. fantasy points for, descending;
-4. team name, ascending as a deterministic display fallback.
+1. total matchup wins, descending;
+2. total fantasy points earned in finalized matchups (PF), descending;
+3. team name, ascending as a deterministic display fallback.
 
-Team name is not a competitive tiebreaker. Teams still equal after fantasy-point differential and fantasy points for remain tied and use team name only for deterministic display order.
+Team name is not a competitive tiebreaker. Teams still equal on wins and fantasy points for remain tied and use team name only for deterministic display order.
 
 ---
 
@@ -1359,9 +1357,8 @@ Approved League Rules are included as checked items so their authority remains v
 - [x] A loss awards `0` standings points.
 - [x] `PCT = PTS ÷ (GP × 2)`, with zero when GP is zero.
 - [x] Standings display `GP`, `W`, `L`, `T`, `PTS`, `PCT`, `PF`, `PA`, and `DIFF`.
-- [x] The first standings sort is standings points, descending.
-- [x] The second competitive tiebreak is fantasy-point differential, descending.
-- [x] The third competitive tiebreak is fantasy points for, descending.
+- [x] The first standings sort is total wins, descending (amended 2026-10-09).
+- [x] Equal wins are decided by total fantasy points for, descending; differential is not a tiebreaker.
 - [x] Teams still equal after every competitive tiebreak remain tied and use team name only for deterministic display order.
 - [x] Standings are rebuilt from finalized results and remain read-only for normal managers.
 

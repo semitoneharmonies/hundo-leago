@@ -77,7 +77,7 @@ function LeagueRulesDropdown({ onClose, leagueId, httpClient }) {
         <RuleSection title="Matchups and standings">
           <p>Historical matchup weeks show the saved players and points for that week. Bench players at lock do not score, even if moved to Active later.</p>
           <p>Standings update from recorded matchup results. GP = wins + losses + ties. PTS = 2 × wins + ties. PCT = PTS ÷ (2 × GP), or zero before any games. PF is points for, PA is points against, and DIFF = PF − PA. Byes do not count as games.</p>
-          <p>Official order uses standings points, then point differential, then points for. Teams still equal share a rank. Click a statistical heading to sort the view; sorting never changes official standings. Commissioners correct source matchup results instead of editing standings rows.</p>
+          <p>Official order uses total wins, then total fantasy points earned in finalized matchups (PF). Teams equal on both share a rank. Click a statistical heading to sort the view; sorting never changes official standings. Commissioners correct source matchup results instead of editing standings rows.</p>
         </RuleSection>
 
         <RuleSection title="Contracts and roster moves">

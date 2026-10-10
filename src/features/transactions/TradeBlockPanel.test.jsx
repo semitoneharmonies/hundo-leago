@@ -23,7 +23,7 @@ function workspace(players) {
   };
 }
 
-function renderPanel(players, { currentUserId = null, currentManager = null } = {}) {
+function renderPanel(players, { currentUserId = null, currentManager = null, showTeamLogos = true } = {}) {
   const queryClient = createQueryClient();
   queryClient.setQueryData(
     teamWorkspaceKeys.detail(leagueId, teamId),
@@ -35,6 +35,7 @@ function renderPanel(players, { currentUserId = null, currentManager = null } = 
       leagueId={leagueId}
       teams={[{ id: teamId, currentManager }]}
       currentUserId={currentUserId}
+      showTeamLogos={showTeamLogos}
     />,
     { queryClient, initialEntries: [`/leagues/${leagueId}/trades`] }
   );
@@ -62,7 +63,7 @@ describe("league trade block", () => {
     expect(Object.fromEntries(destination.searchParams)).toEqual({ assetDirection: "requested", assetType: "contract", assetId: contractId, sourceTeamId: teamId, proposingTeamId: managedTeamId });
   });
 
-  it("shows current team and player data for blocked players", async () => {
+  it.each([true, false])("shows current team/player data with team logos set to %s", async (showTeamLogos) => {
     renderPanel([
       {
         ownershipId,
@@ -90,7 +91,7 @@ describe("league trade block", () => {
         rosterCategory: "Bench",
         onTradeBlock: false,
       },
-    ]);
+    ], { showTeamLogos });
 
     expect(await screen.findByRole("heading", { name: "Trade block" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Current Player Name/ })).toHaveAttribute(
@@ -104,6 +105,7 @@ describe("league trade block", () => {
       .getByRole("link", { name: "Current Player Name" })
       .closest("tr");
     expect(within(playerRow).getByText("Current Team Name")).toBeInTheDocument();
+    expect(playerRow.querySelector('.hl-trade-block__team-mark') !== null).toBe(showTeamLogos);
     expect(within(playerRow).getByLabelText("F position, Active")).toBeInTheDocument();
     expect(within(playerRow).getByText("$5.00")).toBeInTheDocument();
     expect(within(playerRow).getByText("24")).toBeInTheDocument();

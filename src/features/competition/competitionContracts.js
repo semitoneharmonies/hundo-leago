@@ -52,6 +52,9 @@ function validatePlayerScore(player, side) {
       player.slotNumber <= (player.positionGroup === "F" ? 12 : 6),
     `A ${side} player slot is invalid.`
   );
+  contract(player.nhlTeamAbbreviation == null ||
+    (typeof player.nhlTeamAbbreviation === "string" && /^[A-Z]{2,4}$/.test(player.nhlTeamAbbreviation)),
+    "The player's NHL team is invalid.");
   validateExpandedScoring(player, player.positionGroup, "scoreHundredths");
   for (const field of [
     "gamesPlayedDelta",

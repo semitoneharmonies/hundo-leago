@@ -2540,9 +2540,14 @@ When available, it contains:
 * `mode`: `live` or `final`;
 * `home` and `away`: the stable `teamId`, locked-roster `legal` flag,
   `scoreHundredths`, and player rows;
-* each player row: stable `playerId`, `fullName`, `positionGroup`,
+* each player row: stable `playerId`, `fullName`, `nhlTeamAbbreviation`, `positionGroup`,
   `slotNumber`, matchup-period `gamesPlayedDelta`, `goalDelta`,
   `assistDelta`, `pointDelta`, `scoreHundredths`, and `dataStatus`.
+
+`nhlTeamAbbreviation` is the current catalogue team from an unended player source
+record, or `null` when unavailable. It is display metadata, not a historical
+snapshot field or scoring input. Selection follows the roster's source ordering.
+Older responses without this additive field remain supported by the frontend.
 
 `pointDelta` equals `goalDelta + assistDelta`. A missing provider row uses
 `dataStatus: "missing"` so clients can distinguish unavailable data from an

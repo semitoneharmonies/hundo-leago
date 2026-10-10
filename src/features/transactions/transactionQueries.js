@@ -18,12 +18,13 @@ export const transactionKeys = Object.freeze({
   auction: (leagueId, auctionId) => ["league", leagueId, "auction", auctionId],
   trades: (leagueId) => ["league", leagueId, "trades"],
   trade: (leagueId, tradeId) => ["league", leagueId, "trade", tradeId],
-  activity: (leagueId, category = "all", cursor = null) => [
+  activity: (leagueId, category = "all", cursor = null, limit = 25) => [
     "league",
     leagueId,
     "activity",
     category,
     cursor,
+    ...(limit === 25 ? [] : [{ limit }]),
   ],
 });
 
@@ -93,12 +94,13 @@ export function activityQuery(
   httpClient,
   leagueId,
   cursor = null,
-  category = "all"
+  category = "all",
+  limit = 25
 ) {
-  const query = new URLSearchParams({ limit: "25", category });
+  const query = new URLSearchParams({ limit: String(limit), category });
   if (cursor) query.set("cursor", cursor);
   return queryOptions({
-    queryKey: transactionKeys.activity(leagueId, category, cursor),
+    queryKey: transactionKeys.activity(leagueId, category, cursor, limit),
     queryFn: async ({ signal }) => {
       const response = await httpClient.request(
         `/api/v1/leagues/${part(leagueId)}/activity?${query}`,

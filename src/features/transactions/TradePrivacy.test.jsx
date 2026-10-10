@@ -48,7 +48,7 @@ describe('Trade fog of war', () => {
   });
   it('renders the redacted activity feed with team names and no assets', async () => {
     const fixture = createTradePrivacyFixture(); render(fixture, true);
-    await screen.findByText(/Trade involving .*Wolfy's/);
+    await screen.findByText(/Wolfy's sent a trade proposal to /);
     expect(screen.queryByText(/Mitch Marner/)).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });

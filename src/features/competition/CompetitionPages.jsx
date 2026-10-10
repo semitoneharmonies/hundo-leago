@@ -614,7 +614,7 @@ function MatchupStatHeaders({ scoring }) {
   );
 }
 
-function MatchupPlayer({ team, slot, expanded, leagueId }) {
+function MatchupPlayer({ team, slot, expanded, leagueId, side }) {
   const { player, positionGroup, slotNumber } = slot;
   const available = player?.dataStatus === "available";
   const gamesPlayed = playerStat(player, "gamesPlayedDelta");
@@ -623,14 +623,17 @@ function MatchupPlayer({ team, slot, expanded, leagueId }) {
     : `Empty ${positionGroup} slot ${slotNumber}`;
   const categories = expanded ? SCORING_CATEGORIES : LEGACY_MATCHUP_CATEGORIES;
   return (
-    <article className="hl-matchup-player" aria-label={`${team.name}: ${name}`}>
+    <article className={`hl-matchup-player hl-matchup-player--${side} is-${positionGroup === "D" ? "defence" : "forward"}`} aria-label={`${team.name}: ${name}`}>
       <div className="hl-matchup-player__heading">
-        <span className="hl-matchup-player__position">{positionGroup}{slotNumber}</span>
         <strong title={name}><PlayerName leagueId={leagueId} playerId={player?.playerId}>{name}</PlayerName></strong>
-        <span className={`hl-matchup-player-fp${available && player.scoreHundredths < 0 ? " is-negative" : ""}`}>
-          {playerStat(player, "scoreHundredths")} <small>FP</small>
+        <span className="hl-matchup-player__identity">
+          {player && <span title="NHL team">{player.nhlTeamAbbreviation || "—"}</span>}
+          <span className="hl-matchup-player__position" title={positionGroup === "D" ? "Defence" : "Forward"}>{positionGroup}</span>
         </span>
       </div>
+      <span className="hl-matchup-player-fp">
+        {playerStat(player, "scoreHundredths")} <small>FP</small>
+      </span>
       <ul className="hl-matchup-player__stats hl-matchup-stats-grid" aria-label="Player statistics"
         style={{ "--matchup-stat-count": categories.length + 1 }}>
         <li className={`hl-matchup-stat${gamesPlayed === 0 ? " is-zero" : ""}`} title="Games played in this matchup"
@@ -655,8 +658,22 @@ function MatchupPlayer({ team, slot, expanded, leagueId }) {
   );
 }
 
-function MatchupCard({ matchup, teams = [] }) {
+export function MatchupCard({ matchup, teams = [] }) {
   const promotedHeader = usePromotedHeader(`matchup:${matchup.leagueId}:${matchup.id}`);
+  useEffect(() => {
+    const header = promotedHeader.current;
+    if (!header || typeof ResizeObserver === "undefined") return;
+    const appHeader = document.querySelector(".hl-app-header");
+    const measure = () => {
+      header.parentElement.style.setProperty("--matchup-banner-height", `${header.offsetHeight}px`);
+      header.parentElement.style.setProperty("--matchup-app-header-height", `${appHeader?.offsetHeight || 0}px`);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    if (appHeader) observer.observe(appHeader);
+    measure();
+    return () => observer.disconnect();
+  }, [promotedHeader]);
   const { httpClient } = useSession();
   const official = matchup.result?.currentVersion || null;
   const scoring = matchup.scoring;
@@ -728,8 +745,8 @@ function MatchupCard({ matchup, teams = [] }) {
           <ol className="hl-matchup-player-pairs" aria-label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}>
             {homeSlots.map((homeSlot, index) => (
               <li className="hl-matchup-player-pair" key={`${homeSlot.positionGroup}-${homeSlot.slotNumber}`}>
-                <MatchupPlayer leagueId={matchup.leagueId} team={homeTeam} slot={homeSlot} expanded={Boolean(scoring.home.scoringRuleVersion)} />
-                <MatchupPlayer leagueId={matchup.leagueId} team={awayTeam} slot={awaySlots[index]} expanded={Boolean(scoring.away.scoringRuleVersion)} />
+                <MatchupPlayer side="home" leagueId={matchup.leagueId} team={homeTeam} slot={homeSlot} expanded={Boolean(scoring.home.scoringRuleVersion)} />
+                <MatchupPlayer side="away" leagueId={matchup.leagueId} team={awayTeam} slot={awaySlots[index]} expanded={Boolean(scoring.away.scoringRuleVersion)} />
               </li>
             ))}
           </ol>
@@ -893,7 +910,7 @@ export function LeagueStandingsPage() {
                 </TableScroll>
                 </Surface>
               )}
-              <p className="hl-standings-note">Scores updated weekly.</p>
+              <p className="hl-standings-note">Ranked by wins, then total matchup FP (PF). Scores updated weekly.</p>
               {commissioner && standings.data.results.length > 0 ? (
                 <Surface className="hl-standings-results">
                   <header>

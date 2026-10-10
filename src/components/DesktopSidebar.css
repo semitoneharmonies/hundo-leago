@@ -45,8 +45,10 @@
   .hl-sidebar-matchup .hl-team-mark { width: 28px; height: 28px; flex-basis: 28px; }
   .hl-sidebar-matchup__vs { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); padding: 3px; border-radius: 50%; background: #091121; color: #ffc699; font: 600 .6rem var(--hl-font-mono); }
   .hl-sidebar-week { font: 600 .65rem var(--hl-font-mono); color: var(--hl-muted-foreground); padding: 6px 8px; margin: 0 0 4px; }
-  .hl-sidebar-season { display: grid; gap: 6px; margin-bottom: 12px; font-size: .72rem; }
-  .hl-sidebar-season select { width: 100%; min-width: 0; }
+  .hl-sidebar-season { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 12px 0 0; font-size: .65rem; color: var(--hl-muted-foreground); }
+  .hl-desktop-sidebar .hl-sidebar-season select { width: auto; max-width: 150px; min-width: 0; min-height: 28px; padding: 3px 24px 3px 8px; font-size: .68rem; }
+  .hl-sidebar-matchups { gap: 16px; }
+  .hl-sidebar-matchups .hl-sidebar-matchup { gap: 3px; border-color: #72819a; }
   .hl-sidebar-week-navigation { position: sticky; bottom: -12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding-block: 12px; background: #0c1628; border-top: 1px solid var(--hl-border); }
   .hl-sidebar-week-navigation span { font: 600 .75rem var(--hl-font-body); }
   .hl-sidebar-week-navigation button { display: grid; place-items: center; width: 40px; height: 40px; padding: 8px; border: 1px solid var(--hl-border); border-radius: 6px; color: var(--hl-foreground); background: #14233d; cursor: pointer; }

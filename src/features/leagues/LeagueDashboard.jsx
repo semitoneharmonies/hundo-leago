@@ -1,4 +1,8 @@
-import { useEffect, useState } from "react";
+import { MatchupCard } from "../../components/MatchupCard.jsx";
+import "./LeagueDashboard.css";
+import { RosterActions } from "../rosters/RosterActions.jsx";
+import { useRosterActions } from "../rosters/useRosterActions.js";
+import { useState } from "react";
 import {
   useInfiniteQuery,
   useMutation,
@@ -42,13 +46,11 @@ import {
 } from "../../shared/teamIdentity.js";
 import {
   currentMatchupWeekQuery,
-  matchupQuery,
   standingsQuery,
 } from "../competition/competitionQueries.js";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { TradeBlockPanel } from "../transactions/TradeBlockPanel.jsx";
 import {
-  activityQuery,
   tradesQuery,
 } from "../transactions/transactionQueries.js";
 import { auctionListQuery } from "../auctions/auctionQueries.js";
@@ -63,6 +65,7 @@ import {
   removeTeamManagerAssignment,
 } from "./leagueQueries.js";
 import { AccountSearch } from "./AccountSearch.jsx";
+import { dashboardActivityQuery } from "./dashboardQueries.js";
 import { bidderCountLabel } from "./dashboardLabels.js";
 import { createIntentKey } from "../accounts/accountApi.js";
 import {
@@ -70,22 +73,6 @@ import {
   effectiveLeagueAuthority,
   hasCommissionerAuthority,
 } from "../../shared/leagueAuthority.js";
-
-function scoreFor(matchup, side) {
-  const official = matchup?.result?.currentVersion;
-  const scoring = matchup?.scoring;
-  return (
-    official?.[`${side}ScoreHundredths`] ??
-    scoring?.[side]?.scoreHundredths ??
-    null
-  );
-}
-
-function findTeamSide(matchup, teamId) {
-  if (matchup?.homeTeam.id === teamId) return "home";
-  if (matchup?.awayTeam.id === teamId) return "away";
-  return null;
-}
 
 function countRoster(players) {
   return (players || []).reduce(
@@ -120,258 +107,25 @@ function dashboardSeasonLabel(currentSeason) {
     : undefined;
 }
 
-function matchupStatusLabel(status) {
-  return {
-    scheduled: "Scheduled",
-    live: "Live",
-    final: "Final",
-    completed: "Final",
-  }[status] || "Status unavailable";
-}
-
-function MatchupScoreboard({
-  leagueId,
-  teams,
-  week,
-  matchupSummary,
-  matchup,
-  managedTeam,
-  commissionerView = false,
-  isPending,
-  error,
-}) {
-  if (isPending && !week) {
-    return (
-      <Surface className="hl-dashboard-matchup">
-        <LoadingBlock>Loading the current matchup week…</LoadingBlock>
-      </Surface>
-    );
-  }
-  if (error && !week) {
-    return (
-      <Surface className="hl-dashboard-matchup">
-        <ErrorBlock
-          error={error}
-          fallback="The current matchup week could not be loaded."
-        />
-      </Surface>
-    );
-  }
-  if (!week) {
-    return (
-      <Surface
-        className="hl-dashboard-matchup"
-        aria-labelledby="dashboard-matchup-title"
-      >
-        <PanelHeading
-          eyebrow="Current competition"
-          title="No current matchup week"
-          id="dashboard-matchup-title"
-          action={
-            <TextLink to={routePaths.leagueMatchups(leagueId)}>
-              Matchups
-            </TextLink>
-          }
-        />
-        <EmptyBlock title="No matchup is active">
-          The schedule page will show upcoming or completed weeks when
-          available.
-        </EmptyBlock>
-      </Surface>
-    );
-  }
-  if (!managedTeam && !matchupSummary) {
-    return (
-      <Surface
-        className="hl-dashboard-matchup"
-        aria-labelledby="dashboard-matchup-title"
-      >
-        <PanelHeading
-          eyebrow="Current competition"
-          title={`Week ${week.sequence}`}
-          description={`${dateRange(week.startsAtMs, week.endsAtMs)} · ${
-            week.status
-          }`}
-          id="dashboard-matchup-title"
-          action={
-            <TextLink to={routePaths.leagueMatchups(leagueId)}>
-              View matchups
-            </TextLink>
-          }
-        />
-        <div className="hl-dashboard-week-summary">
-          <CalendarDays aria-hidden="true" />
-          <div>
-            <strong>{week.matchups.length} scheduled matchups</strong>
-            <span>
-              {week.byes.length
-                ? `${week.byes.length} team bye`
-                : "No team byes"}
-            </span>
-          </div>
-        </div>
-      </Surface>
-    );
-  }
-  const bye = managedTeam
-    ? week.byes.find(({ team }) => team.id === managedTeam.id)
-    : null;
-  if (!matchupSummary && bye) {
-    return (
-      <Surface
-        className="hl-dashboard-matchup"
-        aria-labelledby="dashboard-matchup-title"
-      >
-        <PanelHeading
-          eyebrow="Your current week"
-          title={`${managedTeam.name} has a bye`}
-          description={`${dateRange(
-            week.startsAtMs,
-            week.endsAtMs
-          )} · Week ${week.sequence}`}
-          id="dashboard-matchup-title"
-          action={
-            <TextLink to={routePaths.leagueMatchups(leagueId)}>
-              League matchups
-            </TextLink>
-          }
-        />
-        <EmptyBlock title="No head-to-head opponent this week">
-          Your league’s other scheduled matchups remain available.
-        </EmptyBlock>
-      </Surface>
-    );
-  }
-  if (!matchupSummary) {
-    return (
-      <Surface
-        className="hl-dashboard-matchup"
-        aria-labelledby="dashboard-matchup-title"
-      >
-        <PanelHeading
-          eyebrow="Your current week"
-          title="No pairing is available"
-          id="dashboard-matchup-title"
-          action={
-            <TextLink to={routePaths.leagueMatchups(leagueId)}>
-              Matchups
-            </TextLink>
-          }
-        />
-        <EmptyBlock title="No matchup found">
-          The current week does not contain a pairing or bye for your managed
-          team.
-        </EmptyBlock>
-      </Surface>
-    );
-  }
-  if (isPending) {
-    return (
-      <Surface className="hl-dashboard-matchup">
-        <LoadingBlock>Loading your current matchup…</LoadingBlock>
-      </Surface>
-    );
-  }
-  if (error) {
-    return (
-      <Surface className="hl-dashboard-matchup">
-        <ErrorBlock
-          error={error}
-          fallback="The current matchup could not be loaded."
-        />
-      </Surface>
-    );
-  }
-  const homeScore = scoreFor(matchup, "home");
-  const awayScore = scoreFor(matchup, "away");
-  const homeTeam =
-    teams.find(({ id }) => id === matchup.homeTeam.id) || matchup.homeTeam;
-  const awayTeam =
-    teams.find(({ id }) => id === matchup.awayTeam.id) || matchup.awayTeam;
-  const matchupStatus =
-    matchup.scoring?.mode === "live"
-      ? "Live"
-      : matchupStatusLabel(matchup.status);
-  return (
-    <Surface
-      className={`hl-dashboard-matchup${
-        commissionerView ? " hl-dashboard-matchup--spotlight" : ""
-      }`}
-      aria-labelledby="dashboard-matchup-title"
-      aria-live={commissionerView ? "polite" : undefined}
-    >
-      <PanelHeading
-        eyebrow={
-          commissionerView ? "League matchup spotlight" : "Your current matchup"
-        }
-        title={`Week ${week.sequence}`}
-        description={`${dateRange(week.startsAtMs, week.endsAtMs)} · ${
-          matchupStatusLabel(matchup.status)
-        }`}
-        id="dashboard-matchup-title"
-        action={
-          <TextLink to={routePaths.leagueMatchups(leagueId)}>
-            Full matchup
-          </TextLink>
-        }
-      />
-      <div key={matchup.id} className="hl-matchup-score hl-dashboard-matchup-score">
-        <div
-          className={teamColourClass("hl-matchup-score__team", homeTeam)}
-          style={teamColourStyle(homeTeam)}
-        >
-          <span>
-            {managedTeam
-              ? homeTeam.id === managedTeam.id
-                ? "Your team"
-                : "Opponent"
-              : "Home"}
-          </span>
-          <strong>{homeTeam.name}</strong>
-          <b>{fantasyPoints(homeScore)}</b>
-          <small>fantasy points</small>
-        </div>
-        <div className="hl-matchup-score__center">
-          <StatusBadge
-            tone={matchup.scoring?.mode === "live" ? "live" : "neutral"}
-          >
-            {matchupStatus}
-          </StatusBadge>
-          <span>VS</span>
-        </div>
-        <div
-          className={teamColourClass(
-            "hl-matchup-score__team",
-            awayTeam
-          )}
-          style={teamColourStyle(awayTeam)}
-        >
-          <span>
-            {managedTeam
-              ? awayTeam.id === managedTeam.id
-                ? "Your team"
-                : "Opponent"
-              : "Away"}
-          </span>
-          <strong>{awayTeam.name}</strong>
-          <b>{fantasyPoints(awayScore)}</b>
-          <small>fantasy points</small>
-        </div>
-      </div>
-      {commissionerView ? (
-        <p className="hl-inline-warning hl-dashboard-matchup-health" role="status">
-          {matchup.health?.scoring?.status && matchup.health.scoring.status !== "fresh"
-            ? "Scores may be delayed because the latest statistics are not current." : ""}
-        </p>
-      ) : matchup.health?.scoring?.status &&
-        matchup.health.scoring.status !== "fresh" && (
-          <p className="hl-inline-warning" role="status">
-            Scores may be delayed because the latest statistics are not
-            current.
-          </p>
-        )}
-    </Surface>
-  );
+function MatchupScoreboard({ leagueId, seasonId, teams, week, managedTeam, httpClient, isPending, error }) {
+  return <Surface className="hl-dashboard-matchup" aria-labelledby="dashboard-matchup-title">
+    <PanelHeading eyebrow="League matchups" title={week ? `Week ${week.sequence}` : isPending || error ? "Current competition" : "No current matchup week"}
+      description={week ? dateRange(week.startsAtMs, week.endsAtMs) : undefined}
+      id="dashboard-matchup-title" action={<TextLink to={routePaths.leagueMatchups(leagueId)}>All matchups</TextLink>} />
+    {isPending ? <LoadingBlock>Loading the current matchup week…</LoadingBlock>
+      : error ? <ErrorBlock error={error} fallback="The current matchup week could not be loaded." />
+      : !week ? <EmptyBlock title="No matchup is active">The schedule page will show upcoming or completed weeks when available.</EmptyBlock>
+      : <>
+        <ul className="hl-dashboard-matchups">
+          {week.matchups.map((matchup) => <li key={matchup.id}>
+            <MatchupCard leagueId={leagueId} seasonId={seasonId} week={week} matchup={matchup}
+              teams={teams} httpClient={httpClient} managedTeamId={managedTeam?.id} />
+          </li>)}
+        </ul>
+        {week.matchups.length === 0 && <EmptyBlock title="No pairings this week" />}
+        {week.byes.map((bye) => <p className="hl-inline-notice" key={bye.id}>{bye.team.name} has a bye.</p>)}
+      </>}
+  </Surface>;
 }
 
 function TeamStatus({
@@ -906,44 +660,12 @@ export function CommissionerMembersPanel({ league, teams, session }) {
   );
 }
 
-function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
-  const side = managedTeam ? findTeamSide(matchup, managedTeam.id) : null;
-  const scoringPlayers = side ? matchup?.scoring?.[side]?.players || [] : [];
-  const rosterPlayers = roster?.players || [];
-  const rosterPlayersById = new Map(
-    rosterPlayers.map((player) => [player.playerReference, player])
-  );
-  const players = scoringPlayers.length
-    ? scoringPlayers.map((player) => {
-        const rosterPlayer = rosterPlayersById.get(player.playerId);
-        const fantasyPoints =
-          player.dataStatus === "missing" ? null : player.scoreHundredths;
-        return {
-          id: player.playerId,
-          name: player.fullName,
-          position: player.positionGroup,
-          category: rosterPlayer?.rosterCategory || "Active",
-          aavCents: rosterPlayer?.aavCents ?? null,
-          years: rosterPlayer?.remainingContractYears ?? null,
-          age: rosterPlayer?.age ?? null,
-          nhlTeam: rosterPlayer?.nhlTeamAbbreviation ?? null,
-          gamesPlayed: player.gamesPlayedDelta,
-          goals: player.goalDelta,
-          assists: player.assistDelta,
-          points: player.pointDelta,
-          scoringStats: player.dataStatus === "missing" ? null : player.scoringStats,
-          scoringWeights: player.scoringWeights,
-          fantasyPoints,
-          fantasyPointsPerGame: fantasyPointsPerGame(
-            fantasyPoints,
-            player.gamesPlayedDelta
-          ),
-          dataStatus: player.dataStatus,
-        };
-      })
-    : rosterPlayers
-        .filter((player) => player.rosterCategory === "Active")
+function RosterSnapshot({ leagueId, managedTeam, roster, httpClient, pending, error }) {
+  const [saveMessage, setSaveMessage] = useState("");
+  const { actionMutation, runRosterAction } = useRosterActions({ httpClient, leagueId, teamId: managedTeam?.id, setSaveMessage });
+  const players = (roster?.players || [])
         .map((player) => ({
+          rosterPlayer: player,
           id: player.playerReference,
           name: player.name,
           position: player.normalizedPosition,
@@ -965,7 +687,11 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
             player.seasonStatistics?.gamesPlayed
           ),
           dataStatus: player.seasonStatistics ? "available" : "missing",
-        }));
+        })).sort((a, b) => {
+          if (a.fantasyPoints === null) return b.fantasyPoints === null ? a.name.localeCompare(b.name) : 1;
+          if (b.fantasyPoints === null) return -1;
+          return b.fantasyPoints - a.fantasyPoints || a.name.localeCompare(b.name);
+        });
 
   return (
     <Surface
@@ -981,11 +707,7 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
         style={managedTeam ? teamColourStyle(managedTeam) : undefined}
       >
         <PanelHeading
-          eyebrow={
-            scoringPlayers.length
-              ? "Matchup-period statistics"
-              : "Season statistics"
-          }
+          eyebrow="Season statistics · Top 10 by total FP"
           title={managedTeam ? `${managedTeam.name} roster` : "Managed roster"}
           id="dashboard-roster-title"
           action={
@@ -1001,12 +723,16 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
         <EmptyBlock title="No managed team">
           Roster details are available from the Teams page.
         </EmptyBlock>
-      ) : players.length === 0 ? (
-        <EmptyBlock title="No active players available">
+      ) : pending ? <LoadingBlock>Loading your roster…</LoadingBlock>
+        : error ? <ErrorBlock error={error} fallback="The roster could not be loaded." />
+        : players.length === 0 ? (
+        <EmptyBlock title="No players available">
           Roster or scoring data has not been published yet.
         </EmptyBlock>
       ) : (
         <>
+        {actionMutation.isError && <ErrorBlock error={actionMutation.error} fallback="The roster action could not be completed." />}
+        {saveMessage && <p className="hl-form-message" role="status">{saveMessage}</p>}
         <ScoringStatGuide weights={players.find(p=>p.scoringWeights)?.scoringWeights} />
         <TableScroll label="Dashboard roster">
           <table className="hl-data-table hl-player-row-table hl-dashboard-player-table hl-expanded-player-table">
@@ -1076,13 +802,10 @@ function RosterSnapshot({ leagueId, managedTeam, roster, matchup }) {
                   <td className="hl-player-col-stat">
                     {player.fantasyPointsPerGame}
                   </td>
-                  <td className="hl-player-col-actions">
-                    <PlayerName
-                      className="hl-player-row-action"
-                      leagueId={leagueId} playerId={player.id}
-                    >
-                      View
-                    </PlayerName>
+                  <td className="hl-player-col-actions hl-roster-actions-cell">
+                    {roster.canManage && <RosterActions leagueId={leagueId} teamId={managedTeam.id}
+                      player={player.rosterPlayer} pending={actionMutation.isPending}
+                      onAction={runRosterAction} prospectDecisionAllowed />}
                   </td>
                 </tr>
               ))}
@@ -1314,6 +1037,7 @@ function dashboardRoster(workspace) {
     throw new Error("The team cap projection is incomplete.");
   }
   return {
+    canManage: workspace.canManage,
     cap: {
       capUsageCents: workspace.cap.usageCents,
       capLimitCents: workspace.cap.limitCents,
@@ -1332,7 +1056,6 @@ function dashboardRoster(workspace) {
 }
 
 export function LeagueDashboard({ league, teams, session }) {
-  const queryClient = useQueryClient();
   const leagueId = league.id;
   const seasonId = league.currentSeason?.id || null;
   const commissioner = hasCommissionerAuthority(league.membership);
@@ -1345,7 +1068,6 @@ export function LeagueDashboard({ league, teams, session }) {
         ({ currentManager }) => currentManager?.userId === session.user.id
       ) || null;
   const enabled = Boolean(seasonId);
-  const [matchupSpotlightIndex, setMatchupSpotlightIndex] = useState(0);
 
   const currentWeek = useQuery({
     ...currentMatchupWeekQuery(
@@ -1357,61 +1079,6 @@ export function LeagueDashboard({ league, teams, session }) {
     refetchInterval: 60_000,
   });
   const week = currentWeek.data?.week || null;
-  useEffect(() => {
-    if (!commissioner || !week || week.matchups.length <= 1) return undefined;
-    const nextIndex =
-      (matchupSpotlightIndex + 1) % week.matchups.length;
-    const nextMatchup = week.matchups[nextIndex];
-    void queryClient.prefetchQuery(
-      matchupQuery(
-        session.httpClient,
-        leagueId,
-        seasonId,
-        week.id,
-        nextMatchup.id
-      )
-    );
-    const timer = globalThis.setTimeout(
-      () => setMatchupSpotlightIndex(nextIndex),
-      5_000
-    );
-    return () => globalThis.clearTimeout(timer);
-  }, [
-    commissioner,
-    leagueId,
-    matchupSpotlightIndex,
-    queryClient,
-    seasonId,
-    session.httpClient,
-    week,
-  ]);
-  const matchupSummary =
-    week
-      ? commissioner
-        ? week.matchups[matchupSpotlightIndex % week.matchups.length] || null
-        : managedTeam
-          ? week.matchups.find(
-              ({ homeTeam, awayTeam }) =>
-                homeTeam.id === managedTeam.id ||
-                awayTeam.id === managedTeam.id
-            ) || null
-          : null
-      : null;
-  const matchupEnabled = enabled && Boolean(week && matchupSummary);
-  const matchup = useQuery({
-    ...matchupQuery(
-      session.httpClient,
-      leagueId,
-      seasonId || "pending",
-      week?.id || "pending",
-      matchupSummary?.id || "pending"
-    ),
-    enabled: matchupEnabled,
-    placeholderData: commissioner ? (previous, previousQuery) =>
-      previousQuery?.queryKey[1] === leagueId && previousQuery?.queryKey[3] === seasonId &&
-      previousQuery?.queryKey[5] === week?.id ? previous : undefined : undefined,
-    refetchInterval: 5 * 60_000,
-  });
   const standings = useQuery({
     ...standingsQuery(session.httpClient, leagueId, seasonId || "pending"),
     enabled,
@@ -1439,7 +1106,7 @@ export function LeagueDashboard({ league, teams, session }) {
     enabled,
   });
   const activity = useQuery({
-    ...activityQuery(session.httpClient, leagueId),
+    ...dashboardActivityQuery(session.httpClient, leagueId),
     enabled,
   });
   const standingsRow = managedTeam
@@ -1516,17 +1183,9 @@ export function LeagueDashboard({ league, teams, session }) {
       )}
 
       <div className={`hl-dashboard__hero${commissioner ? " hl-dashboard__hero--commissioner" : ""}`}>
-        <MatchupScoreboard
-          leagueId={leagueId}
-          teams={teams}
-          week={week}
-          matchupSummary={matchupSummary}
-          matchup={matchup.data}
-          managedTeam={managedTeam}
-          commissionerView={commissioner}
-          isPending={enabled && (currentWeek.isPending || (matchupEnabled && matchup.isPending))}
-          error={currentWeek.error || matchup.error}
-        />
+        <MatchupScoreboard leagueId={leagueId} seasonId={seasonId} teams={teams} week={week}
+          managedTeam={managedTeam} httpClient={session.httpClient}
+          isPending={enabled && currentWeek.isPending} error={currentWeek.error} />
         {commissioner ? (
           <CommissionerLeaguePanel
             leagueId={leagueId}
@@ -1539,7 +1198,9 @@ export function LeagueDashboard({ league, teams, session }) {
           leagueId={leagueId}
           managedTeam={managedTeam}
           roster={roster.data}
-          matchup={matchup.data}
+          httpClient={session.httpClient}
+          pending={enabled && Boolean(managedTeam) && roster.isPending}
+          error={roster.error}
         />
         )}
       </div>
@@ -1573,6 +1234,7 @@ export function LeagueDashboard({ league, teams, session }) {
           httpClient={session.httpClient}
           leagueId={leagueId}
           showTradesLink
+          showTeamLogos={false}
           teams={teams}
         />
         <ActivityPanel

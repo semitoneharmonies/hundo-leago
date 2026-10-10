@@ -40,6 +40,7 @@ export function TradeBlockPanel({
   teams,
   enabled = true,
   showTradesLink = false,
+  showTeamLogos = true,
   currentUserId = null,
 }) {
   const managedTeams = teams.filter((team) => team.currentManager?.userId === currentUserId && currentUserId);
@@ -127,7 +128,7 @@ export function TradeBlockPanel({
                     </th>
                     <td className="hl-trade-block__team">
                       <span className="hl-trade-block__team-identity">
-                        <TeamMark
+                        {showTeamLogos && <TeamMark
                           team={team}
                           logoUrl={
                             team.logoReference
@@ -135,7 +136,7 @@ export function TradeBlockPanel({
                               : null
                           }
                           className="hl-trade-block__team-mark"
-                        />
+                        />}
                         <span>{team.name}</span>
                       </span>
                     </td>

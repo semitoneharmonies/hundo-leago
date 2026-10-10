@@ -599,7 +599,7 @@ Team and player fantasy points display to the nearest hundredth.
 
 The authenticated matchup view shows only values accumulated during that matchup period:
 
-* name and position group;
+* name, current NHL team abbreviation, and locked position group (`F` or `D`);
 * weekly goals and assists;
 * weekly NHL points, calculated as goals plus assists;
 * weekly FP;
@@ -608,6 +608,16 @@ The authenticated matchup view shows only values accumulated during that matchup
 Every player displays `0` goals, assists, points, and FP at baseline. Season-to-date player totals belong on the Roster page and are not displayed as matchup values.
 
 Empty snapshot slots remain visible as empty and contribute zero.
+
+Player rows show the NHL team and position alongside the name, above counting
+stats, without numbered slot badges. A thick bar at each team's outside edge
+uses the same forward/defence background colours as the roster position pills.
+Larger, bold orange FP sits at the inside edge of each team column. Desktop stat
+headings stay aligned with the counting stats and stick below the matchup banner
+while scrolling. Narrow screens retain a label beside each counting stat.
+
+The NHL label reflects the current catalogue team, including on completed weeks;
+it does not alter the locked lineup or historical scoring. Unknown teams show a dash.
 
 ---
 

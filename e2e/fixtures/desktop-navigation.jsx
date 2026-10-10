@@ -11,7 +11,7 @@ import { createDesktopNavigationFixture } from "../../src/test/desktopNavigation
 import "../../src/App.css";
 import "../../src/styles/theme-a.css";
 
-const fixture = createDesktopNavigationFixture({ commissioner: new URLSearchParams(window.location.search).has("commissioner"), administrator: new URLSearchParams(window.location.search).has("administrator") });
+const fixture = createDesktopNavigationFixture({ commissioner: new URLSearchParams(window.location.search).has("commissioner"), administrator: new URLSearchParams(window.location.search).has("administrator"), leaders: new URLSearchParams(window.location.search).has("dashboard") });
 window.navigationFixture = fixture;
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
 window.navigationQueryClient = queryClient;

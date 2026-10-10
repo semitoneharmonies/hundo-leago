@@ -235,13 +235,14 @@ PCT, PF, PA, and DIFF display to the nearest hundredth.
 
 ## Approved Competitive Order
 
-1. standings points, descending;
-2. fantasy-point differential, descending;
-3. fantasy points for, descending.
+Graem amended the order on 2026-10-09: wins first, with total matchup FP deciding equal-win ties.
+
+1. total matchup wins, descending;
+2. total fantasy points earned in finalized matchups (PF), descending.
 
 Teams still equal remain competitively tied. Team name ascending is only a deterministic display fallback.
 
-PCT, wins, head-to-head results, and points against are not additional competitive tiebreakers.
+Standings points, PCT, differential, head-to-head results, and points against are not competitive tiebreakers.
 
 ---
 
@@ -694,7 +695,7 @@ Tests must cover:
 - [x] Rank and Team are included before the approved statistical columns.
 - [x] GP, W, L, T, and PTS display as whole numbers.
 - [x] PCT, PF, PA, and DIFF display to the nearest hundredth.
-- [x] PCT, wins, head-to-head, and PA are not additional competitive tiebreakers.
+- [x] Official order uses wins, then total matchup PF. PTS, PCT, DIFF, head-to-head, and PA do not break ties.
 - [x] Competitively tied teams receive the same competition rank using `1, 2, 2, 4`.
 - [x] Team-name fallback never assigns different official ranks to competitively tied teams.
 - [x] Gold, silver, and bronze treatment follows official ranks 1, 2, and 3.

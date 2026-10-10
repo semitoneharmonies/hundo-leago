@@ -19,7 +19,7 @@ export function createTradePrivacyFixture({ three = true, role = 'observer', lea
       return new Response(JSON.stringify({ data: { code: 'LEAGUE_ACTIVITY_FOUND', page: { limit: 25, nextCursor: null }, activity: [{
         id: counterIds.counter, leagueId, seasonId: counterIds.season, type: 'trade_proposal_created', actor: { userId: null, authority: null, displayName: null },
         teamId: null, playerId: null, team: null, player: null, related: { type: 'trade', id: counterIds.trade }, reason: null, occurredAtMs: 1,
-        summary: `Trade involving ${fixture.teams.map(team => team.name).join(' ↔ ')}. Details are private until execution.`,
+        summary: `${fixture.original.proposingTeam.name} sent a trade proposal to ${fixture.teams.filter(team => team.id !== fixture.original.proposingTeam.id).map(team => team.name).join(' and ')}.`,
         metadata: { proposalId: counterIds.trade, detailsVisible: false, teams: fixture.teams.map(({ id, name }) => ({ id, name })) },
       }] }, meta: { requestId: 'fog-fixture' } }), { headers: { 'content-type': 'application/json' } });
     }

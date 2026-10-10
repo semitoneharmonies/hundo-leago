@@ -27,6 +27,7 @@ function sampleTeam(side, offset) {
     const assistDelta = scoringStats.primaryAssists + scoringStats.secondaryAssists;
     return {
       playerId: `sample-${side}-${index + 1}`, fullName, positionGroup,
+      nhlTeamAbbreviation: ["BOS", "UTA", "VAN", "COL", "TOR", "EDM"][n % 6],
       slotNumber: index < 12 ? index + 1 : index - 11,
       gamesPlayedDelta: 2 + n % 3, goalDelta, assistDelta, pointDelta: goalDelta + assistDelta,
       scoringRuleVersion: EXPANDED_SCORING_VERSION, scoringStats, dataStatus: "available",

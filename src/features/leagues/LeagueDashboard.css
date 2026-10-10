@@ -1,0 +1,6 @@
+.hl-dashboard-player-table .hl-roster-actions { flex-wrap: wrap; justify-content: flex-end; gap: 3px; }
+.hl-dashboard-player-table .hl-roster-action { flex-shrink: 0; }
+@media (min-width: 1280px) {
+  .hl-dashboard-player-table .hl-player-col-actions { position: sticky; right: 0; z-index: 2; width: 190px; min-width: 190px; background: #0c1628; box-shadow: -5px 0 8px rgb(0 0 0 / 16%); }
+  .hl-dashboard-player-table thead .hl-player-col-actions { z-index: 3; background: #121e30; }
+}

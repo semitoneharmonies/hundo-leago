@@ -1,0 +1,18 @@
+.jersey { isolation: isolate; position: relative; display: grid; place-items: center; height: 98px; margin: 8px 10px 0; overflow: hidden; border: 1px solid #ffffff1a; border-radius: 7px; background: var(--team-primary); }
+.jersey::before { content: ''; position: absolute; z-index: -1; inset: auto 0 0; height: 8px; background: var(--team-stripe); border-block: 2px solid var(--team-accent); }
+.number { display: block; height: 84px; max-width: 55%; overflow: visible; }
+.number use { stroke-linejoin: round; paint-order: stroke fill; }
+.outer { fill: var(--team-accent); stroke: var(--team-number-outer); stroke-width: 9; }
+.outline { fill: var(--team-accent); stroke: var(--team-number-outline); stroke-width: 5; }
+.fill { fill: var(--team-accent); stroke: none; }
+.detail { fill: var(--team-primary); stroke: none; }
+.fallback { font-family: var(--hl-font-display); font-size: 82px; font-weight: 900; line-height: 1; color: var(--team-accent); }
+.team, .caption { position: absolute; z-index: 1; color: #ffffff; background: #070d1c; font-family: var(--hl-font-mono); font-size: 10px; letter-spacing: .12em; line-height: 1.3; }
+.team { top: 10px; left: 11px; padding: 4px 6px; border: 1px solid #ffffff24; border-radius: 3px; font-weight: 700; }
+.caption { bottom: 8px; right: 10px; padding: 3px 5px; font-size: 7px; text-transform: uppercase; }
+@media (forced-colors: active) {
+  .jersey { background: Canvas; }
+  .jersey::before, .outer, .outline, .detail { display: none; }
+  .fill { fill: CanvasText; }
+  .fallback, .team, .caption { color: CanvasText; background: Canvas; }
+}

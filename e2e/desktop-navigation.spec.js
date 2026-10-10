@@ -33,6 +33,15 @@ test("matchup submenu browses weeks and seasons while mobile keeps its page cont
     const toggle = page.getByRole("button", { name: "Matchups", exact: true });
     await toggle.click();
     const menu = page.getByRole("dialog", { name: "Matchups", exact: true });
+    await expect(menu.locator(".hl-week-matchup__score b").first()).toHaveText("7.25");
+    await expect(menu.locator(".hl-week-matchup__score b").nth(1)).toHaveText("5.00");
+    const seasonBox = await menu.getByRole("combobox", { name: "Season" }).boundingBox();
+    const cardsBox = await menu.locator(".hl-sidebar-matchups").boundingBox();
+    expect(seasonBox.y).toBeGreaterThan(cardsBox.y + cardsBox.height);
+    expect(seasonBox.height).toBeLessThan(36);
+    expect(await menu.locator(".hl-sidebar-matchups").evaluate((element) => parseFloat(getComputedStyle(element).rowGap))).toBeGreaterThanOrEqual(14);
+    expect(await menu.locator(".hl-sidebar-matchup").first().evaluate((element) => parseFloat(getComputedStyle(element).rowGap))).toBeGreaterThanOrEqual(3);
+    await page.screenshot({ path: `.hundo.local/layout-review/matchup-submenu-${test.info().project.name}.png` });
     const previous = menu.getByRole("button", { name: "Previous week" });
     const next = menu.getByRole("button", { name: "Next week" });
     await expect(previous).toBeDisabled();
@@ -69,20 +78,30 @@ test("dashboard fills the available width with aligned panels and equal team til
   await openPreview(page, "?dashboard");
   await page.evaluate(() => { window.location.hash = `/leagues/${window.navigationFixture.leagues[0].id}`; });
   await expect(page.locator(".hl-dashboard-roster tbody tr").first()).toBeVisible();
+  await expect(page.locator(".hl-dashboard-matchups > li")).toHaveCount(3);
+  await expect(page.locator(".hl-dashboard-roster tbody tr").first()).toContainText("Nick Suzuki");
+  await expect(page.locator(".hl-dashboard-roster tbody tr").nth(1)).toContainText("Mark Stone");
+  await expect(page.locator(".hl-dashboard-roster").getByRole("button", { name: "Move to active Nick Suzuki" })).toBeAttached();
+  await expect(page.locator(".hl-dashboard-roster").getByRole("button", { name: "Buy out Mark Stone" })).toBeAttached();
+  await expect(page.locator(".hl-dashboard-roster").getByText("View", { exact: true })).toHaveCount(0);
   await expect(page.locator(".hl-trade-block tbody tr").first()).toBeAttached();
   await expect(page.locator(".hl-dashboard [role=alert]")).toHaveCount(0);
   await expect(page.locator(".hl-dashboard").getByRole("heading", { name: "League announcements" })).toHaveCount(0);
   await expect(page.getByText("League workspace", { exact: true })).toHaveCount(0);
-  await expect(page.locator(".hl-dashboard-matchup-score b").first()).toHaveText("7.25");
+  await expect(page.locator(".hl-dashboard-matchups .hl-week-matchup__score b").first()).toHaveText("7.25");
   const widths = page.viewportSize().width >= 1024 ? [1024, 1440, 1920, 2560] : [page.viewportSize().width];
   for (const width of widths) {
     await page.setViewportSize({ width, height: 1000 });
     await expectNoOverflow(page);
-    const scoreFits = await page.locator(".hl-dashboard-matchup-score .hl-matchup-score__team > b").evaluateAll((items) => items.every((item) => {
+    if (width >= 1280) {
+      await expect(page.locator(".hl-dashboard-roster").getByRole("button", { name: "Buy out Nick Suzuki" })).toBeInViewport();
+      await expect(page.locator(".hl-dashboard-roster").getByRole("button", { name: "Move to active Nick Suzuki" })).toBeInViewport();
+    }
+    const scoreFits = await page.locator(".hl-dashboard-matchups .hl-week-matchup__score b").evaluateAll((items) => items.every((item) => {
       const original = item.textContent;
       item.textContent = "999.99";
       const score = item.getBoundingClientRect();
-      const team = item.parentElement.getBoundingClientRect();
+      const team = item.closest(".hl-week-matchup__team").getBoundingClientRect();
       item.textContent = original;
       return score.left >= team.left && score.right <= team.right;
     }));

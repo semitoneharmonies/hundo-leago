@@ -1,3 +1,4 @@
+import { MatchupCard } from "./MatchupCard.jsx";
 import { LeagueHelpPanel } from "../features/leagues/LeagueHelpPanel.jsx";
 import { commissionerSections, commissionerSectionPath } from "../features/commissioner/commissionerSections.js";
 import { createElement, useEffect, useRef, useState } from "react";
@@ -95,34 +96,21 @@ function MatchupMenu({ league, session, onSelect }) {
   const week = selected.data;
   const weekIndex = orderedWeeks.findIndex(({ id }) => id === weekId);
   const changeWeek = (offset) => setSelection({ season: seasonId, week: orderedWeeks[weekIndex + offset].id });
-  const teamIdentity = (team) => teams.data?.find(({ id }) => id === team.id) || team;
   if (seasons.isSuccess && !seasonId) return <p className="hl-sidebar-state">No seasons yet.</p>;
   return <>
-    {seasonId && <label className="hl-sidebar-season">Season
-      <select value={seasonId} onChange={(event) => setSelection({ season: event.target.value, week: null })}>
-        {seasons.data.map((season) => <option key={season.id} value={season.id}>{season.label}</option>)}
-      </select>
-    </label>}
     {weeks.isSuccess && orderedWeeks.length === 0 ? <p className="hl-sidebar-state">No matchup schedule has been generated yet.</p> : <QueryState query={query} empty="No matchup week.">
       {week && <>
         <p className="hl-sidebar-week">Week {week.sequence}</p>
-        <ul className="hl-sidebar-cards">
-          {week.matchups.map((matchup) => {
-            const to = `${routePaths.leagueMatchups(league.id)}?${new URLSearchParams({ season: seasonId, week: week.id, matchup: matchup.id })}`;
-            return <li key={matchup.id}><Link to={to} className="hl-sidebar-matchup"
-              aria-label={`${matchup.homeTeam.name} vs ${matchup.awayTeam.name}`}
-              aria-current={inMatchups && params.get("matchup") === matchup.id ? "page" : undefined}
-              onClick={(event) => {
+        <ul className="hl-sidebar-cards hl-sidebar-matchups">
+          {week.matchups.map((matchup) => <li key={matchup.id}>
+            <MatchupCard leagueId={league.id} seasonId={seasonId} week={week} matchup={matchup}
+              teams={teams.data} httpClient={session.httpClient} sidebar
+              current={inMatchups && params.get("matchup") === matchup.id}
+              onSelect={(event, to) => {
                 motion?.select(event, to, `matchup:${league.id}:${matchup.id}`);
                 if (event.defaultPrevented) onSelect();
-              }}>
-              {[matchup.homeTeam, matchup.awayTeam].map((team, index) => <div key={team.id} className={teamColourClass("hl-sidebar-team")} style={teamColourStyle(teamIdentity(team))}>
-                <TeamIdentity team={teamIdentity(team)} httpClient={session.httpClient} />
-                <span className="hl-visually-hidden">{index === 0 ? "Home" : "Away"}</span>
-              </div>)}
-              <span className="hl-sidebar-matchup__vs" aria-hidden="true">vs</span>
-            </Link></li>;
-          })}
+              }} />
+          </li>)}
         </ul>
         {week.matchups.length === 0 && <p className="hl-sidebar-state">No pairings this week.</p>}
         {week.byes.map((bye) => <p className="hl-sidebar-state" key={bye.id}>{bye.team.name} has a bye.</p>)}
@@ -133,6 +121,11 @@ function MatchupMenu({ league, session, onSelect }) {
       <span role="status">Week {orderedWeeks[weekIndex]?.sequence}</span>
       <button type="button" aria-label="Next week" disabled={weekIndex < 0 || weekIndex >= orderedWeeks.length - 1 || selected.isFetching} onClick={() => changeWeek(1)}><ChevronRight aria-hidden="true" /></button>
     </nav>}
+    {seasonId && <label className="hl-sidebar-season">Season
+      <select value={seasonId} onChange={(event) => setSelection({ season: event.target.value, week: null })}>
+        {seasons.data.map((season) => <option key={season.id} value={season.id}>{season.label}</option>)}
+      </select>
+    </label>}
   </>;
 }
 

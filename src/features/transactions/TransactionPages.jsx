@@ -197,20 +197,16 @@ function auctionBidSummary(item) {
   if (!isAuctionAward(item)) return null;
   const metadata = item.metadata || {};
   const winner = metadata.winner;
-  const aav = winner?.submittedAavCents ?? metadata.submittedWinningAavCents;
-  const term = winner?.submittedTermYears ?? metadata.submittedWinningTermYears;
-  const total = winner?.submittedTotalValueCents ?? metadata.submittedWinningTotalValueCents;
-  if (![aav, term, total].every(value => Number.isSafeInteger(value) && value > 0)) {
+  const aav = winner?.finalAavCents ?? metadata.finalAavCents;
+  const total = winner?.finalTotalValueCents ?? metadata.finalTotalValueCents;
+  if (![aav, total].every(value => Number.isSafeInteger(value) && value > 0)) {
     return null;
   }
-  const bid = `Winning bid: ${money(aav)} AAV × ${term} ${term === 1 ? "year" : "years"} (${money(total)} total).`;
-  const finalAav = winner?.finalAavCents ?? metadata.finalAavCents;
-  const finalTotal = winner?.finalTotalValueCents ?? metadata.finalTotalValueCents;
-  if ([finalAav, finalTotal].every(value => Number.isSafeInteger(value) && value > 0) &&
-      (finalAav !== aav || finalTotal !== total)) {
-    return `${bid} Final contract: ${money(finalAav)} AAV (${money(finalTotal)} total).`;
-  }
-  return bid;
+  const term = winner?.finalTermYears ?? metadata.finalTermYears ?? total / aav;
+  const duration = Number.isSafeInteger(term) && term > 0
+    ? ` × ${term} ${term === 1 ? "year" : "years"}`
+    : "";
+  return `Contract awarded: ${money(aav)} AAV${duration} (${money(total)} total).`;
 }
 
 function activityCategory(type) {

@@ -1,8 +1,11 @@
 import { createCapOutlookFixture, capOutlookId as id } from "./capOutlookFixture.js";
 
 // Synthetic data only. The browser fixture never connects to a league server.
-export function createDesktopNavigationFixture({ commissioner = false, administrator = false } = {}) {
+export function createDesktopNavigationFixture({ commissioner = false, administrator = false, leaders = false } = {}) {
   const roster = createCapOutlookFixture();
+  if (leaders) roster.players.forEach((player, index) => {
+    player.statistics = { gamesPlayed: 3, goals: 1, assists: 2, nhlPoints: 3, fantasyPointsHundredths: [2300, 1500, 900, 1800, 3200, 2800, 500, 0][index] };
+  });
   const role = administrator ? "platform_administrator" : commissioner ? "commissioner" : "manager";
   const season = { id: id(4), label: "2026–27", status: "active", version: 1, nhlSeasonKey: "20262027", regularSeasonStartsAtMs: 1791172800000, regularSeasonEndsAtMs: 1806501600000, fantasyPlayoffsStartAtMs: null, fantasyPlayoffsEndAtMs: null };
   const leagues = [

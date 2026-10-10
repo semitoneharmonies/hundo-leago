@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftRight, HeartPulse, X } from 'lucide-react';
 import { PlayerName } from './PlayerName.jsx';
 import { playerCardQuery } from './playerCardQuery.js';
-import { nhlTeamColours } from './nhlTeamColours.js';
+import { PlayerJersey } from './PlayerJersey.jsx';
 import { teamColourStyle } from '../../shared/teamIdentity.js';
 import styles from './PlayerHockeyCard.module.css';
 
@@ -78,12 +78,7 @@ function CardContent({ card, httpClient }) {
   const exempt = card.ownership && card.ownership.category !== 'Active';
   const team = card.ownership?.team;
   return <>
-    {card.appearance && <div className={styles.jersey} style={nhlTeamColours(card.appearance.nhlTeam)}
-      role="img" aria-label={`${card.appearance.nhlTeam} jersey number ${card.appearance.jerseyNumber}`}>
-      <span className={styles.jerseyTeam} aria-hidden="true">{card.appearance.nhlTeam}</span>
-      <span className={styles.jerseyNumber} aria-hidden="true">{card.appearance.jerseyNumber}</span>
-      <span className={styles.jerseyCaption} aria-hidden="true">Player collection</span>
-    </div>}
+    {card.appearance && <PlayerJersey team={card.appearance.nhlTeam} number={card.appearance.jerseyNumber} />}
     <div className={styles.identity}>
       <div><p>{card.nhlTeam || 'Player collection'}{card.position ? ` / ${card.position}` : ''}</p><h2 id="player-card-name">{card.name}</h2></div>
     </div>

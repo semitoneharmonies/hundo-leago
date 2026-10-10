@@ -420,7 +420,7 @@ describe("M6-12 authenticated competition pages", () => {
   it("shows labelled scoring stats for each team's player, including signed points and defence weights", async () => {
     const stats = Object.fromEntries(SCORING_CATEGORIES.map(({ key }) => [key, 0]));
     const home = { ...playerScore({ playerId: homePlayerId, fullName: "Defence Example", positionGroup: "D", slotNumber: 1, scoreHundredths: 85 }),
-      gamesPlayedDelta: 1, scoringRuleVersion: EXPANDED_SCORING_VERSION, scoringStats: { ...stats, hits: 2, blockedShots: 1, penaltiesTaken: 1 } };
+      nhlTeamAbbreviation: "VAN", gamesPlayedDelta: 1, scoringRuleVersion: EXPANDED_SCORING_VERSION, scoringStats: { ...stats, hits: 2, blockedShots: 1, penaltiesTaken: 1 } };
     const away = { ...playerScore({ playerId: awayPlayerId, fullName: "Forward Example", scoreHundredths: -50 }),
       gamesPlayedDelta: 1, scoringRuleVersion: EXPANDED_SCORING_VERSION, scoringStats: { ...stats, giveaways: 1, penaltiesTaken: 2 } };
     const detail = matchupDetail(matchupSummary(), { homePlayers: [home], awayPlayers: [away] });
@@ -439,11 +439,16 @@ describe("M6-12 authenticated competition pages", () => {
     });
     renderPage(`/leagues/${leagueId}/matchups`, "/leagues/:leagueId/matchups", <LeagueMatchupsPage />, fetchImpl);
     const homePlayer = await screen.findByRole("article", { name: "Home Team: Defence Example" });
+    expect(within(homePlayer).getByTitle("NHL team")).toHaveTextContent("VAN");
+    expect(within(homePlayer).getByTitle("Defence")).toHaveTextContent(/^D$/);
+    expect(within(homePlayer).queryByText("D1")).not.toBeInTheDocument();
     for (const { abbreviation } of SCORING_CATEGORIES) expect(within(homePlayer).getByText(abbreviation)).toBeInTheDocument();
     expect(within(homePlayer).getByTitle("Hits: 2 × 0.35 = 0.70 FP")).toHaveTextContent("2 HIT");
     expect(within(homePlayer).getByTitle("Even-strength goals: 0 × 3.00 = 0.00 FP")).toHaveTextContent("0 EVG");
     expect(within(homePlayer).getByText("0.85")).toBeInTheDocument();
     const awayPlayer = screen.getByRole("article", { name: "Away Team: Forward Example" });
+    expect(within(awayPlayer).getByTitle("NHL team")).toHaveTextContent("—");
+    expect(within(awayPlayer).getByTitle("Forward")).toHaveTextContent(/^F$/);
     expect(within(awayPlayer).getByText("-0.50")).toBeInTheDocument();
     const empty = screen.getByRole("article", { name: "Home Team: Empty F slot 1" });
     expect(within(empty).getByTitle("Hits: stat unavailable")).toHaveTextContent("— HIT");
@@ -909,7 +914,7 @@ describe("M6-12 authenticated competition pages", () => {
     expect(row).toHaveTextContent("100.00%");
     expect(row).toHaveTextContent("7.25");
     expect(row).toHaveTextContent("1.25");
-    expect(screen.getByText("Scores updated weekly.")).toBeInTheDocument();
+    expect(screen.getByText("Ranked by wins, then total matchup FP (PF). Scores updated weekly.")).toBeInTheDocument();
     expect(screen.queryByText("Official W-L-T league table from finalized results.")).not.toBeInTheDocument();
   });
 
@@ -928,7 +933,7 @@ describe("M6-12 authenticated competition pages", () => {
     });
     renderPage(`/leagues/${leagueId}/standings`, "/leagues/:leagueId/standings", <LeagueStandingsPage />, fetchImpl);
     expect(await screen.findByText("No teams are registered for this season.")).toBeInTheDocument();
-    expect(screen.getByText("Scores updated weekly.")).toBeInTheDocument();
+    expect(screen.getByText("Ranked by wins, then total matchup FP (PF). Scores updated weekly.")).toBeInTheDocument();
   });
 
   it("lets a commissioner preview a recognizable result correction and confirms the standings update", async () => {

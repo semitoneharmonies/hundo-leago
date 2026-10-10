@@ -17,6 +17,7 @@ import { RosterLockNotice } from "../rosters/RosterLockNotice.jsx";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
+import { prefetchDashboardQueries } from "./dashboardQueries.js";
 import { TeamCreationPanel } from "./TeamCreationPanel.jsx";
 import { PlayerInjuryAdminPanel } from '../injuries/PlayerInjuryAdminPanel.jsx';
 import { LeagueDeletionPanel } from "./LeagueDeletionPanel.jsx";
@@ -424,6 +425,7 @@ export function LeagueSelectionPage() {
 
 export function LeagueOverviewPage() {
   const { leagueId } = useParams();
+  const queryClient = useQueryClient();
   const session = useSession();
   const leaguesQuery = useVisibleLeagues();
   useAuthorizationCleanup(leaguesQuery.data);
@@ -440,6 +442,12 @@ export function LeagueOverviewPage() {
   useEffect(() => {
     if (authorized) writeLeaguePreference(authorized.id);
   }, [authorized]);
+
+  useEffect(() => {
+    if (session.status === "authenticated" && authorized) {
+      void prefetchDashboardQueries(queryClient, session.httpClient, authorized);
+    }
+  }, [authorized, queryClient, session.httpClient, session.status]);
 
   return (
     <SessionGate>

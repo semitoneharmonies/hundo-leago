@@ -1,0 +1,878 @@
+{
+  "checkedOn": "2026-10-09",
+  "colourPolicy": "Use the supplied site published HEX values, even where its RGB or PMS conversion differs. PMS is provenance for print, not a browser colour space. Utah PMS values are unverified.",
+  "numberReference": "https://www.puckmarks.net/nhlnumbersfonts",
+  "teams": {
+    "ANA": {
+      "name": "Anaheim Ducks",
+      "colourSource": "https://teamcolorcodes.com/anaheim-ducks-color-codes/",
+      "colours": [
+        {
+          "name": "ORANGE",
+          "hex": "#F47A38",
+          "pantone": "PMS 1655 C"
+        },
+        {
+          "name": "METALLIC GOLD",
+          "hex": "#B9975B",
+          "pantone": "PMS 465 C"
+        },
+        {
+          "name": "SILVER",
+          "hex": "#C1C6C8",
+          "pantone": "PMS 428 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": "PMS Black 6 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_a512711b2835452c8cc4f98036364d3c~mv2.jpg",
+      "numberSourceSha256": "eaf34164db1aa4eca71af6ba3ffc851bec208a287c0edc1dbaab71991d31763d",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "ARI": {
+      "name": "Arizona Coyotes",
+      "colourSource": "https://teamcolorcodes.com/arizona-coyotes-color-codes/",
+      "colours": [
+        {
+          "name": "BRICK RED",
+          "hex": "#8C2633",
+          "pantone": "PMS 202 C"
+        },
+        {
+          "name": "DESERT SAND",
+          "hex": "#E2D6B5",
+          "pantone": "PMS 468 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#111111",
+          "pantone": "Black C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_5e08255ab90945d59cf36113394e56c7~mv2.jpg",
+      "numberSourceSha256": "59e1d7437ee5121034777604f7678ade8def76642b27f099491605a7c81eed78",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "BOS": {
+      "name": "Boston Bruins",
+      "colourSource": "https://teamcolorcodes.com/boston-bruins-color-codes/",
+      "colours": [
+        {
+          "name": "GOLD",
+          "hex": "#FFB81C",
+          "pantone": "PMS 1235 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": "PMS Black 6 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_f8cbd3d3fcf547029776929c4aac87c0~mv2.jpg",
+      "numberSourceSha256": "edf724ae2b10955781dfd8d9fcf9c304d5b9da7cebb91b73418f90706c4864b6",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "BUF": {
+      "name": "Buffalo Sabres",
+      "colourSource": "https://teamcolorcodes.com/buffalo-sabres-color-codes/",
+      "colours": [
+        {
+          "name": "Royal Blue",
+          "hex": "#003087",
+          "pantone": "PMS 287 C"
+        },
+        {
+          "name": "Gold",
+          "hex": "#FFB81C",
+          "pantone": "PMS 1235 C"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_bfa8d6bb0d2f44f1aefc899144514ab1~mv2.jpg",
+      "numberSourceSha256": "d346035df5a761672f3f3aec77b022384870969ebeeaef357063018a26489fb1",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "CGY": {
+      "name": "Calgary Flames",
+      "colourSource": "https://teamcolorcodes.com/calgary-flames-color-codes/",
+      "colours": [
+        {
+          "name": "Red",
+          "hex": "#D2001C",
+          "pantone": "PMS 485 C"
+        },
+        {
+          "name": "Yellow",
+          "hex": "#FAAF19",
+          "pantone": "PMS 1235 C"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_362c9c8886ae4dc094821a3e3ab23fea~mv2.jpg",
+      "numberSourceSha256": "2947dfd87f6f23f5cc32e5ae9498f0cdb21b499c4f80438e154ccabd8635bd5b",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "CAR": {
+      "name": "Carolina Hurricanes",
+      "colourSource": "https://teamcolorcodes.com/carolina-hurricanes-color-codes/",
+      "colours": [
+        {
+          "name": "Red",
+          "hex": "#CE1126",
+          "pantone": "PMS 186 C"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF",
+          "pantone": null
+        },
+        {
+          "name": "Gray",
+          "hex": "#A4A9AD",
+          "pantone": "PMS 429 C"
+        },
+        {
+          "name": "Black",
+          "hex": "#000000",
+          "pantone": "PMS Black 6 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_05a0919842924935b81c4a71d1b89822~mv2.jpg",
+      "numberSourceSha256": "6eb883dce2b019966638c23b46f79170412a098334d447b0c5250b8faa767a82",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "CHI": {
+      "name": "Chicago Blackhawks",
+      "colourSource": "https://teamcolorcodes.com/chicago-blackhawks-color-codes/",
+      "colours": [
+        {
+          "name": "RED",
+          "hex": "#CF0A2C",
+          "pantone": "PMS 186 C"
+        },
+        {
+          "name": "ORANGE",
+          "hex": "#FF671B",
+          "pantone": "PMS 165 C"
+        },
+        {
+          "name": "Green",
+          "hex": "#00833E",
+          "pantone": "PMS 348 C"
+        },
+        {
+          "name": "YELLOW",
+          "hex": "#FFD100",
+          "pantone": "109 C"
+        },
+        {
+          "name": "TAN",
+          "hex": "#D18A00",
+          "pantone": "PMS 131 C"
+        },
+        {
+          "name": "BLUE",
+          "hex": "#001970",
+          "pantone": "PMS 2747"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": null
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_6b893a7a22784d8abcb9b7fdeec0711c~mv2.jpg",
+      "numberSourceSha256": "494c4bffa83a91cd1a8ee45ea7a44e7372fa2afd337877e2837ffcfe24b00a8e",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "COL": {
+      "name": "Colorado Avalanche",
+      "colourSource": "https://teamcolorcodes.com/colorado-avalanche-color-codes/",
+      "colours": [
+        {
+          "name": "Burgundy",
+          "hex": "#6F263D",
+          "pantone": "PMS 209 C"
+        },
+        {
+          "name": "Blue",
+          "hex": "#236192",
+          "pantone": "PMS 647 C"
+        },
+        {
+          "name": "SILVER",
+          "hex": "#A2AAAD",
+          "pantone": "PMS 429 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": "PMS Black 6 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_83095541e79842f383c6b48aa8b0a83f~mv2.jpg",
+      "numberSourceSha256": "7926323218920d9fe459366aec9a804ad7089b4ccdf3760a941ccc5cc34d0fed",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "CBJ": {
+      "name": "Columbus Blue Jackets",
+      "colourSource": "https://teamcolorcodes.com/columbus-blue-jackets-color-codes/",
+      "colours": [
+        {
+          "name": "Union Blue",
+          "hex": "#002654",
+          "pantone": "282"
+        },
+        {
+          "name": "Goal Red",
+          "hex": "#CE1126",
+          "pantone": "186 C"
+        },
+        {
+          "name": "Capital Silver",
+          "hex": "#A4A9AD",
+          "pantone": "429 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_31ba7ba4a3854b9483222e7744742c0a~mv2.jpg",
+      "numberSourceSha256": "f6cd962595935220f604af6f9b918f326acb628c6ed7cee7be731d408948626c",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "DAL": {
+      "name": "Dallas Stars",
+      "colourSource": "https://teamcolorcodes.com/dallas-stars-color-codes/",
+      "colours": [
+        {
+          "name": "VICTORY GREEN",
+          "hex": "#006847",
+          "pantone": "PMS 3425 C"
+        },
+        {
+          "name": "SILVER",
+          "hex": "#8F8F8C",
+          "pantone": "PMS 429 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#111111",
+          "pantone": "PMS Process Black C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_98a4b3efd76f44c5a65d55e9a32ac1e4~mv2.jpg",
+      "numberSourceSha256": "7c7746b23ee808458f488ceb82ff4367b5c12a4ca1e15189c2ab343a4290683e",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "DET": {
+      "name": "Detroit Red Wings",
+      "colourSource": "https://teamcolorcodes.com/detroit-red-wings-color-codes/",
+      "colours": [
+        {
+          "name": "RED",
+          "hex": "#CE1126",
+          "pantone": "186 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_70c9ac7a03664a0da1921dc64a1a5378~mv2.jpg",
+      "numberSourceSha256": "2e80e423c3b3bcf8d9bdbf7c0851680887322345c1b1abe93e03306ff1df8fe5",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "EDM": {
+      "name": "Edmonton Oilers",
+      "colourSource": "https://teamcolorcodes.com/edmonton-oilers-color-codes/",
+      "colours": [
+        {
+          "name": "Blue",
+          "hex": "#041E42",
+          "pantone": "PMS 282 C"
+        },
+        {
+          "name": "ORANGE",
+          "hex": "#FF4C00",
+          "pantone": "PMS 1655 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_067e5c669eaf447f9ccc796e5000f4ad~mv2.jpg",
+      "numberSourceSha256": "a500ffba0031ec4f3d393c825d65235d3d0f70f576d0f1baa381c9001e452ec7",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "FLA": {
+      "name": "Florida Panthers",
+      "colourSource": "https://teamcolorcodes.com/florida-panthers-color-codes/",
+      "colours": [
+        {
+          "name": "Navy",
+          "hex": "#041E42",
+          "pantone": "282"
+        },
+        {
+          "name": "RED",
+          "hex": "#C8102E",
+          "pantone": "186 C"
+        },
+        {
+          "name": "TAN",
+          "hex": "#B9975B",
+          "pantone": "465 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_1cca95c0c17f4ec18448d5d70501f7fc~mv2.jpg",
+      "numberSourceSha256": "4870db62efae75487d3963856595c0f5eed47469a00d988f215b90c4cf13ae5d",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "LAK": {
+      "name": "Los Angeles Kings",
+      "colourSource": "https://teamcolorcodes.com/los-angeles-kings-color-codes/",
+      "colours": [
+        {
+          "name": "BLACK",
+          "hex": "#111111",
+          "pantone": "Black C"
+        },
+        {
+          "name": "SILVER",
+          "hex": "#A2AAAD",
+          "pantone": "429 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_8a31d120a86a464ea9703d8fa00df609~mv2.jpg",
+      "numberSourceSha256": "ea823c57565a1d293236f78bfbbad866e977968ef66bdfbc355c564fc4b8e40b",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "MIN": {
+      "name": "Minnesota Wild",
+      "colourSource": "https://teamcolorcodes.com/minnesota-wild-color-codes/",
+      "colours": [
+        {
+          "name": "Iron Range Red",
+          "hex": "#A6192E",
+          "pantone": "PMS 187 C"
+        },
+        {
+          "name": "Forest Green",
+          "hex": "#154734",
+          "pantone": "PMS 3435 C"
+        },
+        {
+          "name": "Gold",
+          "hex": "#EAAA00",
+          "pantone": "PMS 124 C"
+        },
+        {
+          "name": "Minnesota Wheat",
+          "hex": "#DDCBA4",
+          "pantone": "PMS 468 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_6a774ed6d5594a3fab8e5b5a97610004~mv2.jpg",
+      "numberSourceSha256": "cc1bbe204c4158641e64ab9980c932677da5d9876e9132c725b3d18c2e140d09",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "MTL": {
+      "name": "Montreal Canadiens",
+      "colourSource": "https://teamcolorcodes.com/montreal-canadiens-color-codes/",
+      "colours": [
+        {
+          "name": "Red",
+          "hex": "#AF1E2D",
+          "pantone": "PMS 187 C"
+        },
+        {
+          "name": "Blue",
+          "hex": "#192168",
+          "pantone": "PMS 2758 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_17cb5bc215064f9b8704e2c48a5659e6~mv2.jpg",
+      "numberSourceSha256": "0447c94e209fa8f7367a9edb45aff0b4f60c3b9eb13b393673dbfcb27ab869f5",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "NSH": {
+      "name": "Nashville Predators",
+      "colourSource": "https://teamcolorcodes.com/nashville-predators-color-codes/",
+      "colours": [
+        {
+          "name": "Gold",
+          "hex": "#FFB81C",
+          "pantone": "PMS 1235 C"
+        },
+        {
+          "name": "Navy Blue",
+          "hex": "#041E42",
+          "pantone": "282"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_dd43de37753a4432a664f493db05a6dd~mv2.jpg",
+      "numberSourceSha256": "b399591f5271e4137a53fa2d1f22945c3f5ba8cec51fc219ddb5d5acc16dac04",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "NJD": {
+      "name": "New Jersey Devils",
+      "colourSource": "https://teamcolorcodes.com/new-jersey-devils-color-codes/",
+      "colours": [
+        {
+          "name": "RED",
+          "hex": "#CE1126",
+          "pantone": "PMS 186 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": "PMS Black 6 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_0d5d9b5d9f5d49a494c67876040da3d5~mv2.jpg",
+      "numberSourceSha256": "f89a359c455601ccb5ffe9991b8983850c1dadf74bf3ebc2f6c63c90bc610790",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "NYI": {
+      "name": "New York Islanders",
+      "colourSource": "https://teamcolorcodes.com/new-york-islanders-color-codes/",
+      "colours": [
+        {
+          "name": "Blue",
+          "hex": "#00539B",
+          "pantone": "PMS 287"
+        },
+        {
+          "name": "ORANGE",
+          "hex": "#F47D30",
+          "pantone": "PMS 1655"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_5fa854d4858c455e862b4a14b2cbde7f~mv2.jpg",
+      "numberSourceSha256": "809af09e04751b390a87be7528ed8d4d52fd024ec3c51973ef3678efed616435",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "NYR": {
+      "name": "New York Rangers",
+      "colourSource": "https://teamcolorcodes.com/new-york-rangers-color-codes/",
+      "colours": [
+        {
+          "name": "BLUE",
+          "hex": "#0038A8",
+          "pantone": "PMS 286 C"
+        },
+        {
+          "name": "RED",
+          "hex": "#CE1126",
+          "pantone": "186 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_dfbd397cd391411ba6401dcbe13c2e47~mv2.jpg",
+      "numberSourceSha256": "9caf9170c707d600d34d41b6289cbcd8c2f18d6f8b98dfa173258180ef01af90",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "OTT": {
+      "name": "Ottawa Senators",
+      "colourSource": "https://teamcolorcodes.com/ottawa-senators-color-codes/",
+      "colours": [
+        {
+          "name": "Black",
+          "hex": "#000000",
+          "pantone": "PMS Black 6 C"
+        },
+        {
+          "name": "Red",
+          "hex": "#DA1A32",
+          "pantone": "PMS 186 C"
+        },
+        {
+          "name": "Gold",
+          "hex": "#B79257",
+          "pantone": "PMS 465 C"
+        },
+        {
+          "name": "White",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_43321c3d25664fa1adb09f1f45b735f2~mv2.jpg",
+      "numberSourceSha256": "b559e5333ffd7953fae005c298ae05da24eac26e6332c520041e03aa10273881",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "PHI": {
+      "name": "Philadelphia Flyers",
+      "colourSource": "https://teamcolorcodes.com/philadelphia-flyers-color-codes/",
+      "colours": [
+        {
+          "name": "Flyers ORANGE",
+          "hex": "#F74902",
+          "pantone": "PMS 172 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": null
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_5714155f89ac4e658ca87fd1f34b0778~mv2.jpg",
+      "numberSourceSha256": "d78b7209be04518a807367dfcf5d4eb0d6a95690404a814bcc5bcc7feba15950",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "PIT": {
+      "name": "Pittsburgh Penguins",
+      "colourSource": "https://teamcolorcodes.com/pittsburgh-penguins-color-codes/",
+      "colours": [
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": "Black C"
+        },
+        {
+          "name": "GOLD",
+          "hex": "#CFC493",
+          "pantone": "4535 C"
+        },
+        {
+          "name": "YELLOW",
+          "hex": "#FCB514",
+          "pantone": "1235 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_e83c1d1112894233b6b723b3f5f759de~mv2.jpg",
+      "numberSourceSha256": "19895a833da60dd1af0b1bf11726a1f271e4ecd1210d3786bf3f7b14f9449ee2",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "SJS": {
+      "name": "San Jose Sharks",
+      "colourSource": "https://teamcolorcodes.com/san-jose-sharks-color-codes/",
+      "colours": [
+        {
+          "name": "TEAL",
+          "hex": "#006D75",
+          "pantone": "PMS 3155 C"
+        },
+        {
+          "name": "ORANGE",
+          "hex": "#EA7200",
+          "pantone": "PMS 152 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": "PMS Black 6 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_3f99a4a569e6439f9f8b0116db50feb8~mv2.jpg",
+      "numberSourceSha256": "63aa2d4bf345cfcc324ffa8d149f6ee35f1d73ae013fe035cafb98f8d98a2ae8",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "SEA": {
+      "name": "Seattle Kraken",
+      "colourSource": "https://teamcolorcodes.com/seattle-kraken-colors/",
+      "colours": [
+        {
+          "name": "Deep Sea Blue",
+          "hex": "#001628",
+          "pantone": "PMS 296 C"
+        },
+        {
+          "name": "Ice Blue",
+          "hex": "#99D9D9",
+          "pantone": "PMS 324 C"
+        },
+        {
+          "name": "Boundless Blue",
+          "hex": "#355464",
+          "pantone": "PMS 2215 C"
+        },
+        {
+          "name": "Shadow Blue",
+          "hex": "#68A2B9",
+          "pantone": "PMS 549 C"
+        },
+        {
+          "name": "Red Alert",
+          "hex": "#E9072B",
+          "pantone": "PMS 185 C"
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_32bd073160704d52a9669fb41a56b48c~mv2.jpg",
+      "numberSourceSha256": "8ab85931bcfdc2bfcc371517b380f3c016886a515fc3639be67c39f3acda7496",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "STL": {
+      "name": "St. Louis Blues",
+      "colourSource": "https://teamcolorcodes.com/st-louis-blues-color-codes/",
+      "colours": [
+        {
+          "name": "Blue",
+          "hex": "#002F87",
+          "pantone": "PMS 287 C"
+        },
+        {
+          "name": "YELLOW",
+          "hex": "#FCB514",
+          "pantone": "PMS 1235 C"
+        },
+        {
+          "name": "NAVY BLUE",
+          "hex": "#041E42",
+          "pantone": "PMS 282 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_a06d9dbe2b1e492594b8f62335a7fc03~mv2.jpg",
+      "numberSourceSha256": "ee96c0915e6397a94cf5024ca17e5c24631cfad5825b2af616eb7a07b9f8749a",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "TBL": {
+      "name": "Tampa Bay Lightning",
+      "colourSource": "https://teamcolorcodes.com/tampa-bay-lightning-color-codes/",
+      "colours": [
+        {
+          "name": "BLUE",
+          "hex": "#002868",
+          "pantone": "PMS 281 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_dd774048295e482bbed50645fbec98f9~mv2.jpg",
+      "numberSourceSha256": "8db1443be926f6de1e6046db6ef2b6dfcfafd48316f5319ac10332b62f8226bc",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "TOR": {
+      "name": "Toronto Maple Leafs",
+      "colourSource": "https://teamcolorcodes.com/toronto-maple-leafs-color-codes/",
+      "colours": [
+        {
+          "name": "BLUE",
+          "hex": "#00205B",
+          "pantone": "PMS 281 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_3b36cc83c2624cd18b2bd63a131dbe43~mv2.jpg",
+      "numberSourceSha256": "b3d0ed09d5d8f5ec171b773b91f642583e42c93c38e4f57ceedc1fa4580da867",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "VAN": {
+      "name": "Vancouver Canucks",
+      "colourSource": "https://teamcolorcodes.com/vancouver-canucks-color-codes/",
+      "colours": [
+        {
+          "name": "BLUE",
+          "hex": "#00205B",
+          "pantone": "PMS 281 C"
+        },
+        {
+          "name": "Green",
+          "hex": "#00843D",
+          "pantone": "PMS 348 C"
+        },
+        {
+          "name": "Dark Blue",
+          "hex": "#041C2C",
+          "pantone": "PMS 296 C"
+        },
+        {
+          "name": "GRAY",
+          "hex": "#99999A",
+          "pantone": "PMS Cool Gray 7"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_2cb1f1a2325145fbb6ad5ac693853fa0~mv2.jpg",
+      "numberSourceSha256": "cb3e97a93f30d13508a142289e8a64ad396ce6b2e574be53fddc07404f9acbe3",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "VGK": {
+      "name": "Vegas Golden Knights",
+      "colourSource": "https://teamcolorcodes.com/vegas-golden-knights-colors/",
+      "colours": [
+        {
+          "name": "Gold",
+          "hex": "#B4975A",
+          "pantone": "465 C"
+        },
+        {
+          "name": "Steel Gray",
+          "hex": "#333F42",
+          "pantone": "PMS 432"
+        },
+        {
+          "name": "RED",
+          "hex": "#C8102E",
+          "pantone": "186 C"
+        },
+        {
+          "name": "BLACK",
+          "hex": "#000000",
+          "pantone": null
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_50978d0cd86941f4b820687f17683a68~mv2.jpg",
+      "numberSourceSha256": "d3170dd96c9a1572d7a4db7ec6e4dc657c1e39e158a81a8f039fefd8fa451142",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "WSH": {
+      "name": "Washington Capitals",
+      "colourSource": "https://teamcolorcodes.com/washington-capitals-color-codes/",
+      "colours": [
+        {
+          "name": "Navy",
+          "hex": "#041E42",
+          "pantone": "282 C"
+        },
+        {
+          "name": "RED",
+          "hex": "#C8102E",
+          "pantone": "186 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_8a2ebe6d987c4d70941b43b7727cfc27~mv2.jpg",
+      "numberSourceSha256": "d5235e9663478f36ebdb5cf1feb298e277fe9912c404ebbef24d84cf7fd0efcd",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "WPG": {
+      "name": "Winnipeg Jets",
+      "colourSource": "https://teamcolorcodes.com/winnipeg-jets-color-codes/",
+      "colours": [
+        {
+          "name": "Navy",
+          "hex": "#041E42",
+          "pantone": "282"
+        },
+        {
+          "name": "Blue",
+          "hex": "#004C97",
+          "pantone": "2945 C"
+        },
+        {
+          "name": "Red",
+          "hex": "#AC162C",
+          "pantone": "PMS 187 C"
+        },
+        {
+          "name": "Maroon",
+          "hex": "#7B303E",
+          "pantone": "195 C"
+        },
+        {
+          "name": "DARK GRAY",
+          "hex": "#55565A",
+          "pantone": "Cool Gray 11 C"
+        },
+        {
+          "name": "SILVER",
+          "hex": "#8E9090",
+          "pantone": "429 C"
+        },
+        {
+          "name": "WHITE",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numberSource": "https://static.wixstatic.com/media/3d7fb3_5e3ff7c41f7645a496a168738f3fd57b~mv2.jpg",
+      "numberSourceSha256": "7dd37d2609ab2996d7ecef577b6a2fe5754fa8f3a41cdb3f3a0a296ff9fe3eb7",
+      "numerals": "SVG contours of the Puck Marks home-number reference, digits 0-9; display colours are applied separately."
+    },
+    "UTA": {
+      "name": "Utah Mammoth",
+      "colourSource": "https://assets.nhle.com/logos/nhl/svg/UTA_light.svg",
+      "colours": [
+        {
+          "name": "Rock Black",
+          "hex": "#010101",
+          "pantone": null
+        },
+        {
+          "name": "Mountain Blue",
+          "hex": "#6CACE4",
+          "pantone": null
+        },
+        {
+          "name": "Salt White",
+          "hex": "#FFFFFF",
+          "pantone": null
+        }
+      ],
+      "numerals": "BOS: user-requested Boston Bruins numeral shapes in Utah colours, superseding the original Arizona fallback. The actual Utah font is custom Mammoth Sans; no verified usable digit set found.",
+      "fontSource": "https://www.nhl.com/utah/news/utah-s-nhl-franchise-officially-named-the-utah-mammoth-release-5-7-25"
+    }
+  }
+}
