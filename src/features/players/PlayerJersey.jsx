@@ -1,19 +1,21 @@
 import { canonicalNhlTeam } from '../../shared/nhlTeams.js';
 import { nhlTeamColours } from './nhlTeamColours.js';
+import { nhlTeamPattern } from './nhlTeamPatterns.js';
 import glyphWidths from './nhlNumberWidths.json';
 import styles from './PlayerJersey.module.css';
 
-export function PlayerJersey({ team, number }) {
+export function PlayerJersey({ team, number, pattern }) {
   if (!Number.isInteger(number) || number < 1 || number > 99) return null;
   const canonicalTeam = canonicalNhlTeam(team);
+  const artwork = pattern ?? nhlTeamPattern(canonicalTeam);
   // User-approved temporary fallback. Utah retains its own colours.
   const numeralTeam = canonicalTeam === 'UTA' ? 'BOS' : canonicalTeam;
   const widths = glyphWidths[numeralTeam];
   const digits = String(number).split('');
   const gap = 9, margin = 7;
   const width = widths ? digits.reduce((sum, digit) => sum + widths[digit], margin * 2) + (digits.length - 1) * gap : 100;
-  return <div className={styles.jersey} style={nhlTeamColours(canonicalTeam)}
-    role="img" aria-label={`${team} jersey number ${number}`} data-numeral-team={widths ? numeralTeam : 'fallback'}>
+  return <div className={`${styles.jersey} ${styles[artwork] || ''}`} style={nhlTeamColours(canonicalTeam)}
+    role="img" aria-label={`${team} jersey number ${number}`} data-pattern={artwork} data-numeral-team={widths ? numeralTeam : 'fallback'}>
     <span className={styles.team} aria-hidden="true">{team}</span>
     {widths ? <svg className={styles.number} viewBox={`0 0 ${width} 114`} aria-hidden="true" focusable="false">
       {digits.map((digit, index) => {

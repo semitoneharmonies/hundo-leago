@@ -6,12 +6,17 @@ import { createOperationId } from "../../shared/api/idempotency.js";
 import { candidateDeadlineForWeekOne, suggestedRollovers, draftTimingIssue, MAX_ROLLOVERS } from "./fadScheduleTiming.js";
 import { useLeagueDraftSetup } from "../leagues/useLeagueDraftSetup.js";
 import { useCurrentTime } from "../../shared/useCurrentTime.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 
 import { SCORING_CATEGORIES, scoringWeight } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
+import { MatchupGameProgress } from "./MatchupGameProgress.jsx";
+import { matchupGameProgressQuery } from "./matchupGameProgressQueries.js";
+import { MatchupScheduleDetails } from "./MatchupScheduleDetails.jsx";
+import { scheduleDay } from "./matchupSchedulePresentation.js";
+import { MatchupTodayDot } from "./MatchupTodayDot.jsx";
 import { routePaths } from "../../app/routePaths.js";
 import { PlayerName } from '../players/PlayerName.jsx';
 import { usePromotedHeader } from "../../components/navigationMotion.js";
@@ -544,7 +549,7 @@ export function LeagueMatchupsPage() {
                                     <p role="status">Refreshing matchup score…</p>
                                   ) : null}
                                 </div>
-                                <MatchupCard
+                                <ConnectedMatchupCard
                                   matchup={matchup.data}
                                   teams={teams.data || []}
                                 />
@@ -614,14 +619,16 @@ function MatchupStatHeaders({ scoring }) {
   );
 }
 
-function MatchupPlayer({ team, slot, expanded, leagueId, side }) {
+function MatchupPlayer({ team, slot, expanded, leagueId, side, compact, scheduleDetails }) {
   const { player, positionGroup, slotNumber } = slot;
   const available = player?.dataStatus === "available";
   const gamesPlayed = playerStat(player, "gamesPlayedDelta");
   const name = player
     ? player.fullName + (available ? "" : " — data unavailable")
     : `Empty ${positionGroup} slot ${slotNumber}`;
-  const categories = expanded ? SCORING_CATEGORIES : LEGACY_MATCHUP_CATEGORIES;
+  const categories = compact ? [] : expanded ? SCORING_CATEGORIES : LEGACY_MATCHUP_CATEGORIES;
+  const todayGames = scheduleDetails?.games.filter(game => game.playerId === player?.playerId
+    && scheduleDay(game.startsAtMs, scheduleDetails.timeZone) === scheduleDay(scheduleDetails.asOfMs, scheduleDetails.timeZone)) || [];
   return (
     <article className={`hl-matchup-player hl-matchup-player--${side} is-${positionGroup === "D" ? "defence" : "forward"}`} aria-label={`${team.name}: ${name}`}>
       <div className="hl-matchup-player__heading">
@@ -630,6 +637,7 @@ function MatchupPlayer({ team, slot, expanded, leagueId, side }) {
           {player && <span title="NHL team">{player.nhlTeamAbbreviation || "—"}</span>}
           <span className="hl-matchup-player__position" title={positionGroup === "D" ? "Defence" : "Forward"}>{positionGroup}</span>
         </span>
+        {todayGames.length > 0 && <MatchupTodayDot games={todayGames} timeZone={scheduleDetails.timeZone} playerName={player.fullName} />}
       </div>
       <span className="hl-matchup-player-fp">
         {playerStat(player, "scoreHundredths")} <small>FP</small>
@@ -658,7 +666,25 @@ function MatchupPlayer({ team, slot, expanded, leagueId, side }) {
   );
 }
 
-export function MatchupCard({ matchup, teams = [] }) {
+export function ConnectedMatchupCard(props) {
+  const { httpClient } = useSession();
+  const progress = useQuery({ ...matchupGameProgressQuery(httpClient, props.matchup),
+    enabled: Boolean(props.matchup.scoring?.home.scoringRuleVersion || props.matchup.scoring?.away.scoringRuleVersion),
+  });
+  const scheduleDetails = progress.isError ? undefined : {
+    home: progress.data?.home.details,
+    away: progress.data?.away.details,
+  };
+  return <MatchupCard {...props} scheduleDetails={scheduleDetails} />;
+}
+
+export function MatchupCard({ matchup, teams = [], scheduleDetails, initialPlayerView = 'full' }) {
+  const [playerView, setPlayerView] = useState(initialPlayerView);
+  const [scheduleSide, setScheduleSide] = useState(null);
+  const schedulePanelId = useId();
+  const scheduleTrigger = useRef(null);
+  const compact = playerView === 'compact';
+  const closeSchedule = () => { setScheduleSide(null); scheduleTrigger.current?.focus(); };
   const promotedHeader = usePromotedHeader(`matchup:${matchup.leagueId}:${matchup.id}`);
   useEffect(() => {
     const header = promotedHeader.current;
@@ -688,7 +714,7 @@ export function MatchupCard({ matchup, teams = [] }) {
   const awayTeam =
     teams.find(({ id }) => id === matchup.awayTeam.id) || matchup.awayTeam;
   return (
-    <section className="hl-surface hl-matchup-detail" aria-labelledby="matchup-detail-title">
+    <section className={`hl-surface hl-matchup-detail${compact ? ' is-compact' : ''}`} aria-labelledby="matchup-detail-title">
       <header ref={promotedHeader} className="hl-matchup-score">
         <div
           className={teamColourClass("hl-matchup-score__team", homeTeam)}
@@ -740,13 +766,23 @@ export function MatchupCard({ matchup, teams = [] }) {
               no fantasy points were awarded.
             </p>
           ) : null}
-          {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide weights={scoring.home.scoringWeights || scoring.away.scoringWeights} />}
-          <MatchupStatHeaders scoring={scoring} />
+          {(scoring.home.scoringRuleVersion || scoring.away.scoringRuleVersion) && <ScoringStatGuide
+            weights={scoring.home.scoringWeights || scoring.away.scoringWeights}
+            summaryControl={<button type="button" role="switch" className="hl-matchup-view-switch" aria-label="Full statistics" aria-checked={!compact}
+              onClick={event => { event.preventDefault(); event.stopPropagation(); setPlayerView(compact ? 'full' : 'compact'); }}>
+              <span>Compact</span><span>Full stats</span>
+            </button>}
+            summaryAside={matchup.leagueId && matchup.seasonId && matchup.weekId
+              ? <MatchupGameProgress matchup={matchup} httpClient={httpClient} selectedSide={scheduleSide} panelId={schedulePanelId} scheduleDetails={scheduleDetails}
+                  onSelectSide={scheduleDetails ? (side, trigger) => { scheduleTrigger.current = trigger; setScheduleSide(value => value === side ? null : side); } : undefined} /> : null} />}
+          {scheduleDetails?.[scheduleSide] && <MatchupScheduleDetails id={schedulePanelId}
+            details={scheduleDetails[scheduleSide]} side={scheduleSide} team={scheduleSide === 'home' ? homeTeam : awayTeam} onClose={closeSchedule} />}
+          {!compact && <MatchupStatHeaders scoring={scoring} />}
           <ol className="hl-matchup-player-pairs" aria-label={`${homeTeam.name} versus ${awayTeam.name} player scoring`}>
             {homeSlots.map((homeSlot, index) => (
               <li className="hl-matchup-player-pair" key={`${homeSlot.positionGroup}-${homeSlot.slotNumber}`}>
-                <MatchupPlayer side="home" leagueId={matchup.leagueId} team={homeTeam} slot={homeSlot} expanded={Boolean(scoring.home.scoringRuleVersion)} />
-                <MatchupPlayer side="away" leagueId={matchup.leagueId} team={awayTeam} slot={awaySlots[index]} expanded={Boolean(scoring.away.scoringRuleVersion)} />
+                <MatchupPlayer side="home" leagueId={matchup.leagueId} team={homeTeam} slot={homeSlot} expanded={Boolean(scoring.home.scoringRuleVersion)} compact={compact} scheduleDetails={scheduleDetails?.home} />
+                <MatchupPlayer side="away" leagueId={matchup.leagueId} team={awayTeam} slot={awaySlots[index]} expanded={Boolean(scoring.away.scoringRuleVersion)} compact={compact} scheduleDetails={scheduleDetails?.away} />
               </li>
             ))}
           </ol>

@@ -1,0 +1,38 @@
+.hl-scoring-stat-guide:has(.hl-matchup-game-progress, .hl-matchup-view-switch) { container-type: inline-size; }
+.hl-scoring-stat-guide:has(.hl-matchup-game-progress, .hl-matchup-view-switch) > summary {
+  display: grid;
+  align-items: center;
+  row-gap: 6px;
+}
+.hl-scoring-stat-guide:has(.hl-matchup-game-progress, .hl-matchup-view-switch) > summary::-webkit-details-marker { display: none; }
+.hl-scoring-stat-guide:has(.hl-matchup-game-progress, .hl-matchup-view-switch) > summary > span:first-child {
+  grid-area: 1 / 1;
+  justify-self: start;
+}
+.hl-scoring-stat-guide:has(.hl-matchup-game-progress, .hl-matchup-view-switch) > summary > span:first-child::before { content: "▸ "; }
+.hl-scoring-stat-guide[open]:has(.hl-matchup-game-progress, .hl-matchup-view-switch) > summary > span:first-child::before { content: "▾ "; }
+.hl-matchup-game-progress {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  font-size: .75rem;
+  font-weight: 400;
+  line-height: 1.5;
+  pointer-events: none;
+}
+.hl-matchup-game-progress__team { display: flex; justify-content: center; gap: 6px; }
+.hl-matchup-game-progress__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border: 1px solid var(--hl-border);
+  border-radius: 999px;
+  background: var(--hl-muted);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.hl-matchup-game-progress__pill strong { color: var(--hl-foreground); font-weight: 600; font-variant-numeric: tabular-nums; }
+@container (max-width: 680px) {
+  .hl-matchup-game-progress { grid-row: 2; }
+}

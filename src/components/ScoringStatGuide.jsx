@@ -1,9 +1,9 @@
 import { SCORING_CATEGORIES, scoringDescription } from "../shared/scoringCategories.js";
 
-export function ScoringStatGuide({weights} = {}) {
+export function ScoringStatGuide({weights, summaryAside, summaryControl} = {}) {
   return (
     <details className="hl-scoring-stat-guide">
-      <summary>Scoring stat key</summary>
+      <summary><span>Scoring stat key</span>{summaryAside}{summaryControl}</summary>
       <dl>{SCORING_CATEGORIES.map(({ key, abbreviation }) => (
         <div key={key}><dt>{abbreviation}</dt><dd>{scoringDescription(key, weights)}</dd></div>
       ))}</dl>
