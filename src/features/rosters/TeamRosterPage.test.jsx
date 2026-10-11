@@ -451,7 +451,7 @@ describe("authoritative team roster page", () => {
     expect(draftPickRegion.querySelectorAll("img")).toHaveLength(2);
 
     expect(screen.queryByRole("button", { name: /Hockey lines/ })).not.toBeInTheDocument();
-    expect(within(screen.getByRole("group", { name: "Roster view" })).getAllByRole("button").map(button => button.textContent.trim())).toEqual(["Table", "Cap outlook"]);
+    expect(within(screen.getByRole("group", { name: "Roster view" })).getAllByRole("button").map(button => button.textContent.trim())).toEqual(["Table", "Cap outlook", "Schedule"]);
     expect(screen.getByRole("button", { name: "Drag Active Player to reorder" })).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "Bench table" })).getByText("Bench Player")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Prospects table" })).toBeInTheDocument();

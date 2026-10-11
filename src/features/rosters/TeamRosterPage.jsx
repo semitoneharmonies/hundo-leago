@@ -8,6 +8,7 @@ import {
   ArrowDown,
   ArrowLeftRight,
   ArrowUp,
+  CalendarDays,
   CircleDollarSign,
   GripVertical,
   List,
@@ -28,6 +29,7 @@ import {
 } from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import { CapOutlook } from "./CapOutlook.jsx";
+import { RosterSchedule } from "./RosterSchedule.jsx";
 import { PlayerName } from '../players/PlayerName.jsx';
 import { leagueDateTime } from "../../shared/hundoFormat.js";
 import {
@@ -1008,6 +1010,7 @@ export function TeamRosterPage({
         >
           <CircleDollarSign aria-hidden="true" /> Cap outlook
         </button>
+        <button type="button" className={view === "schedule" ? "is-active" : ""} aria-pressed={view === "schedule"} onClick={() => setView("schedule")}><CalendarDays aria-hidden="true" /> Schedule</button>
       </div>
       {(mutation.isError || actionMutation.isError) && (
         <ErrorBlock
@@ -1030,7 +1033,9 @@ export function TeamRosterPage({
         </p>
       )}
 
-      {view === "cap" ? (
+      {view === "schedule" ? (
+        <RosterSchedule key={`${league.id}:${workspace.season.id}:${team.id}`} workspace={workspace} httpClient={httpClient} />
+      ) : view === "cap" ? (
         <CapOutlook workspace={workspace} httpClient={httpClient} pending={actionMutation.isPending || mutation.isPending} onAction={runRosterAction} />
       ) : (
         <div className="hl-roster-categories">
