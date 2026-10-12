@@ -9,6 +9,7 @@ import {
   ArrowLeftRight,
   ArrowUp,
   CalendarDays,
+  ChevronDown,
   CircleDollarSign,
   GripVertical,
   List,
@@ -20,11 +21,11 @@ import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCate
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
 import { usePromotedHeader } from "../../components/navigationMotion.js";
+import { RosterTableScroll } from "../../components/RosterTableScroll.jsx";
 import {
   ErrorBlock,
   PositionTag,
   StatusBadge,
-  TableScroll,
   TeamMark,
 } from "../../components/HundoUi.jsx";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
@@ -276,7 +277,7 @@ function CategoryTable({
       ) : (
         <>
         <ScoringStatGuide weights={players.find(p=>p.statistics?.scoringWeights)?.statistics.scoringWeights} />
-        <TableScroll label={`${category.title} table`}>
+        <RosterTableScroll label={`${category.title} table`}>
           <table className="hl-data-table hl-player-row-table hl-roster-table hl-expanded-player-table">
             <thead>
               <tr>
@@ -472,7 +473,7 @@ function CategoryTable({
                     {SCORING_CATEGORIES.map(({ key, label }) => (
                       <td className="hl-player-col-stat hl-roster-stat" key={key} title={label}>{player.statistics?.scoringStats?.[key] ?? "—"}</td>
                     ))}
-                  <td className="hl-player-col-stat hl-roster-stat">
+                  <td className="hl-player-col-stat hl-roster-stat hl-roster-fantasy-points">
                     {player.statistics
                       ? (
                           player.statistics.fantasyPointsHundredths / 100
@@ -516,7 +517,7 @@ function CategoryTable({
               ))}
             </tbody>
           </table>
-        </TableScroll>
+        </RosterTableScroll>
         </>
       )}
     </section>
@@ -932,7 +933,8 @@ export function TeamRosterPage({
             className="hl-team-logo"
           />
           <div>
-            <label className="hl-team-switcher">
+            <div className="hl-team-title-switcher">
+              <h1 id="team-title">{team.name}<ChevronDown aria-hidden="true" /></h1>
               <select
                 value={team.id}
                 onChange={(event) => onTeamChange(event.target.value)}
@@ -944,8 +946,7 @@ export function TeamRosterPage({
                   </option>
                 ))}
               </select>
-            </label>
-            <h1 id="team-title">{team.name}</h1>
+            </div>
           </div>
         </div>
       </header>

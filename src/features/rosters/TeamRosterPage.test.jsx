@@ -301,6 +301,24 @@ describe("public roster response contract", () => {
 });
 
 describe("authoritative team roster page", () => {
+  it("uses the bold team title as the accessible roster selector", async () => {
+    const data = workspace();
+    const onTeamChange = vi.fn();
+    const view = renderWithProviders(<TeamRosterPage workspace={data}
+      teams={[data.team, { ...data.team, id: managerTeamId, name: "Other Team" }]}
+      managerName="League Manager" onTeamChange={onTeamChange}
+      httpClient={{ request: vi.fn(), resourceUrl: (value) => value }} />);
+    const heading = screen.getByRole("heading", { name: data.team.name, level: 1 });
+    const selector = screen.getByRole("combobox", { name: "Choose a team roster" });
+    expect(heading.parentElement).toBe(selector.parentElement);
+    expect(screen.queryByText("Viewing team")).not.toBeInTheDocument();
+    expect(heading.closest("header")).not.toHaveTextContent("League Manager");
+    expect(heading.closest("header")).not.toHaveTextContent(data.league.name);
+    await view.user.selectOptions(selector, managerTeamId);
+    expect(onTeamChange).toHaveBeenCalledWith(managerTeamId);
+  });
+
+
   it("keeps Candidate Card workflows and results out of the team roster", () => {
     const data = workspace();
     const httpClient = {

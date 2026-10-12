@@ -1098,8 +1098,9 @@ describe("M5-11 authenticated transaction pages", () => {
     ).closest("li");
     const audit = within(entry);
 
-    expect(entry.querySelector('.hl-activity-subject')).toHaveTextContent('Current Player Name · Managed Team');
-    expect(audit.getByRole('link', { name: 'Current Player Name' })).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(entry).toHaveTextContent("Commissioner corrected Current Player Name’s roster assignment. · Managed Team");
+    expect(audit.getByRole("link", { name: "Commissioner corrected Current Player Name’s roster assignment." })).toHaveAttribute("aria-haspopup", "dialog");
+    expect(entry.querySelector("details")).not.toHaveAttribute("open");
     expect(audit.getByText(/By Commissioner Casey/)).toBeInTheDocument();
     expect(audit.queryByText("Technical record")).not.toBeInTheDocument();
     expect(audit.queryByText("Authority")).not.toBeInTheDocument();
@@ -1158,47 +1159,6 @@ describe("M5-11 authenticated transaction pages", () => {
     await waitFor(() => expect(fetchImpl.mock.calls.some(([url]) => new URL(url).searchParams.get("category") === "buyout")).toBe(true));
   });
 
-  it("shows the player, winning team, and awarded contract for FAD and ordinary auction results", async () => {
-    const common = {
-      leagueId, seasonId, actor: { userId: null, authority: "system" },
-      teamId: teamA, playerId: playerSearchId,
-      team: { id: teamA, name: "Managed Team" },
-      player: { id: playerSearchId, name: "Auction Winner" },
-      related: { type: "auction_resolution", id: auctionId },
-      reason: null, occurredAtMs: 1,
-    };
-    const fetchImpl = baseFetch((path) => {
-      if (path === `/api/v1/leagues/${leagueId}/activity`) return envelope({
-        code: "LEAGUE_ACTIVITY_FOUND", activity: [
-          { ...common, id: assetId, type: "free_agent_draft_player_awarded",
-            summary: "Auction Winner signed through Free Agent Draft auction.",
-            metadata: { winner: { submittedAavCents: 375, submittedTermYears: 2,
-              submittedTotalValueCents: 750, finalAavCents: 375, finalTotalValueCents: 750 },
-              rankedBids: [{ privateDiagnostic: "hidden bid diagnostic" }] } },
-          { ...common, id: correctionId, type: "auction_signing_completed",
-            player: { id: playerSearchId, name: "Weekly Winner" },
-            summary: "Weekly Winner signed through auction.",
-            metadata: { submittedWinningAavCents: 500, submittedWinningTermYears: 1,
-              submittedWinningTotalValueCents: 500, finalAavCents: 425, finalTotalValueCents: 425 } },
-          { ...common, id: actorMembershipId, type: "free_agent_draft_player_awarded",
-            related: { type: "free_agent_draft", id: auctionId },
-            summary: "Direct allocation.", metadata: { winner: { submittedAavCents: 999,
-              submittedTermYears: 1, submittedTotalValueCents: 999 } } },
-        ], page: { limit: 25, nextCursor: null },
-      });
-      throw new Error(`Unexpected ${path}`);
-    });
-    renderPage(`/leagues/${leagueId}/activity`, "/leagues/:leagueId/activity", <ActivityPage />, fetchImpl);
-    const fad = (await screen.findByText("Managed Team won Auction Winner at auction.")).closest("li");
-    expect(fad).toHaveClass("hl-activity-entry--auction");
-    expect(fad).toHaveTextContent("Contract awarded: $3.75 AAV × 2 years ($7.50 total).");
-    expect(fad).not.toHaveTextContent("Final contract:");
-    expect(fad).not.toHaveTextContent("hidden bid diagnostic");
-    const weekly = screen.getByText("Managed Team won Weekly Winner at auction.").closest("li");
-    expect(weekly).toHaveTextContent("Contract awarded: $4.25 AAV × 1 year ($4.25 total).");
-    expect(weekly).not.toHaveTextContent("$5.00");
-    expect(screen.getByText("Direct allocation.").closest("li")).not.toHaveTextContent("Winning bid:");
-  });
 
   it("summarizes trade participants and moved assets, then filters by event type", async () => {
     const fetchImpl = baseFetch((path, _options, parsedUrl) => {
@@ -1359,19 +1319,22 @@ describe("M5-11 authenticated transaction pages", () => {
       throw new Error(`Unexpected ${path}`);
     });
     renderPage(`/leagues/${leagueId}/activity`, "/leagues/:leagueId/activity", <ActivityPage />, fetchImpl);
-    const fad = (await screen.findByText("Managed Team won Auction Winner at auction.")).closest("li");
+    const fad = (await screen.findByText("Managed Team won Auction Winner in auction for $6.25 AAV × 1 year.")).closest("li");
     expect(fad).toHaveClass("hl-activity-entry--auction");
-    expect(fad).toHaveTextContent("Contract awarded: $6.25 AAV × 1 year ($6.25 total).");
+    expect(fad.querySelector("details")).toBeNull();
     expect(fad).not.toHaveTextContent("$10.50");
     expect(fad).not.toHaveTextContent("hidden bid diagnostic");
-    const weekly = screen.getByText("Managed Team won Weekly Winner at auction.").closest("li");
-    expect(weekly).toHaveTextContent("Contract awarded: $4.25 AAV × 2 years ($8.50 total).");
+    const weekly = screen.getByText("Managed Team won Weekly Winner in auction for $4.25 AAV × 2 years.").closest("li");
+    expect(weekly.querySelector("details")).toBeNull();
+    expect(weekly).not.toHaveTextContent("$8.50");
     expect(weekly).not.toHaveTextContent("$5.00");
-    const legacy = screen.getByText("Managed Team won Legacy Winner at auction.").closest("li");
+    const legacy = screen.getByText("Managed Team won Legacy Winner in auction.").closest("li");
+    expect(legacy.querySelector("details")).toBeNull();
     expect(legacy).not.toHaveTextContent("$12.00");
     expect(legacy).not.toHaveTextContent("Contract awarded:");
     expect(screen.queryByText(/Winning bid:/)).not.toBeInTheDocument();
-    expect(screen.getByText("Direct allocation.").closest("li")).not.toHaveTextContent("Contract awarded:");
+    expect(screen.getByText(/^Direct allocation\./).closest("li")).not.toHaveTextContent("Contract awarded:");
   });
+
 
 });

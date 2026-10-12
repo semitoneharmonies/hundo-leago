@@ -194,6 +194,8 @@ function createContractFilterTestFixture() {
     if (pathname === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [league()] });
     if (pathname.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [team(teamA, "Alpha Team")] });
     if (pathname.endsWith("/auctions")) return envelope([], { actions: { startTeams: [] }, page: { nextCursor: null, hasMore: false } });
+    const detail = rows.find((row) => pathname.endsWith(`/players/${row.id}`));
+    if (detail) return envelope({ ...detail, externalIds: [] });
     if (!pathname.endsWith("/players")) throw new Error(`Unexpected fixture request: ${pathname}`);
     const matches = rows.filter(({ fullName, league: { ownership: owned, activeContract: signed }, id }) =>
       (!params.get("query") || fullName.toLowerCase().includes(params.get("query").toLowerCase())) &&
@@ -268,6 +270,28 @@ describe("league player catalog", () => {
     );
   });
 
+
+  it("keeps contract filters authoritative when showing favourites", async () => {
+    const fixture = createContractFilterTestFixture();
+    const view = renderWithProviders(
+      <Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>,
+      { initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl: fixture.fetchImpl } }
+    );
+    await view.user.click(await screen.findByRole("button", { name: "Add Lower Boundary to favourites" }));
+    await view.user.click(screen.getByRole("button", { name: "Add ELC Prospect to favourites" }));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "League assignment" }), "favourites");
+    expect(screen.getByText("Showing 2 of 2 favourites.")).toBeInTheDocument();
+    await view.user.click(screen.getByText("More filters"));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "Contract type" }), "fantasy_elc");
+    await waitFor(() => expect(screen.getByText("Showing 1 of 2 favourites.")).toBeInTheDocument());
+    expect(screen.getByRole("rowheader", { name: "ELC Prospect" })).toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "Lower Boundary" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Load next 100 players" })).not.toBeInTheDocument();
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "Contract type" }), "normal");
+    expect(await screen.findByRole("rowheader", { name: "Lower Boundary" })).toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "ELC Prospect" })).not.toBeInTheDocument();
+    expect(fixture.requests.every(({ method }) => method === "GET")).toBe(true);
+  });
 
   it("combines and resets signed, AAV, remaining-year, prospect and ELC filters with read-only requests", async () => {
     const fixture = createContractFilterTestFixture();
@@ -406,6 +430,8 @@ describe("league player catalog", () => {
           teams: [team(teamA, "Alpha Team"), team(teamB, "Beta Team")],
         });
       }
+      const favourite = players.find((candidate) => path === `/api/v1/leagues/${leagueId}/players/${candidate.id}`);
+      if (favourite) return envelope({ ...favourite, externalIds: [] });
       if (path === `/api/v1/leagues/${leagueId}/players`) {
         const teamId = parsed.searchParams.get("teamId");
         const selectedPlayers = teamId
@@ -460,7 +486,7 @@ describe("league player catalog", () => {
         .getAllByRole("columnheader")
         .map(({ textContent }) => textContent.replace(/[ ↑↓]/g, ""))
     ).toEqual([
-      "Order",
+      "Team",
       "Pos",
       "Player",
       "AAV/FA",
@@ -571,6 +597,7 @@ describe("league player catalog", () => {
     expect(
       within(table).queryByRole("rowheader", { name: "Owned Player" })
     ).not.toBeInTheDocument();
+    await waitFor(() => expect(fetchImpl.mock.calls.some(([url]) => new URL(url).pathname.endsWith(`/players/${freeAgentId}`))).toBe(true));
 
     await view.user.selectOptions(assignmentFilter, `team:${teamB}`);
     expect(
@@ -608,6 +635,9 @@ describe("league player catalog", () => {
           code: "TEAMS_FOUND",
           teams: [team(teamA, "Alpha Team")],
         });
+      }
+      if (pathname === `/api/v1/leagues/${leagueId}/players/${ownedPlayerId}`) {
+        return envelope({ ...player({ id: ownedPlayerId, name: "Second Page Player", gamesPlayed: 8, fantasyPointsHundredths: 1500 }), externalIds: [] });
       }
       if (pathname === `/api/v1/leagues/${leagueId}/players`) {
         playerPageRequests += 1;
@@ -685,5 +715,16 @@ describe("league player catalog", () => {
     expect(
       screen.queryByRole("button", { name: "Load next 100 players" })
     ).not.toBeInTheDocument();
+    await view.user.click(screen.getByRole("button", { name: "Add Second Page Player to favourites" }));
+    // Evict the catalogue pages: favourites must have their own data source.
+    view.queryClient.removeQueries({ queryKey: ["league", leagueId, "players", "infinite"] });
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "League assignment" }), "favourites");
+    expect(await screen.findByRole("rowheader", { name: "Second Page Player" })).toBeInTheDocument();
+    expect(screen.queryByRole("rowheader", { name: "First Page Player" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Load next 100 players" })).not.toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 1 favourites.")).toBeInTheDocument();
+    await waitFor(() => expect(fetchImpl.mock.calls.some(([url]) => String(url).endsWith(`/players/${ownedPlayerId}`))).toBe(true));
+    await view.user.click(screen.getByRole("button", { name: "Remove Second Page Player from favourites" }));
+    expect(screen.getByText("Showing 0 of 0 favourites.")).toBeInTheDocument();
   });
 });

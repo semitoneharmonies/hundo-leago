@@ -193,20 +193,19 @@ function isAuctionAward(item) {
       item.related?.type === "auction_resolution");
 }
 
-function auctionBidSummary(item) {
+function auctionContractSummary(item) {
   if (!isAuctionAward(item)) return null;
   const metadata = item.metadata || {};
   const winner = metadata.winner;
   const aav = winner?.finalAavCents ?? metadata.finalAavCents;
   const total = winner?.finalTotalValueCents ?? metadata.finalTotalValueCents;
-  if (![aav, total].every(value => Number.isSafeInteger(value) && value > 0)) {
+  if (!Number.isSafeInteger(aav) || aav <= 0) {
     return null;
   }
-  const term = winner?.finalTermYears ?? metadata.finalTermYears ?? total / aav;
-  const duration = Number.isSafeInteger(term) && term > 0
-    ? ` × ${term} ${term === 1 ? "year" : "years"}`
-    : "";
-  return `Contract awarded: ${money(aav)} AAV${duration} (${money(total)} total).`;
+  const term = winner?.finalTermYears ?? metadata.finalTermYears ??
+    (Number.isSafeInteger(total) && total > 0 ? total / aav : null);
+  if (!Number.isSafeInteger(term) || term <= 0) return null;
+  return `${money(aav)} AAV × ${term} ${term === 1 ? "year" : "years"}`;
 }
 
 function activityCategory(type) {
@@ -251,7 +250,8 @@ function activityTitle(item, teamNames) {
   const itemTeamName =
     item.team?.name || namedTeam(teamNames, item.teamId, null);
   if (isAuctionAward(item) && playerName && itemTeamName) {
-    return `${itemTeamName} won ${playerName} at auction.`;
+    const contract = auctionContractSummary(item);
+    return `${itemTeamName} won ${playerName} in auction${contract ? ` for ${contract}` : ""}.`;
   }
   if (
     category !== "commissioner" &&
@@ -349,19 +349,21 @@ function activityTradeReceipts(item, teamNames) {
 
 function ActivityEntry({ item, teamNames }) {
   const category = isAuctionAward(item) ? "auction" : activityCategory(item.type);
-  const bidSummary = auctionBidSummary(item);
   const receipts = activityTradeReceipts(item, teamNames);
   const teamName = item.team?.name || namedTeam(teamNames, item.teamId, null);
   const playerName = item.player?.name || null;
   const change = activityChangeSummary(item.metadata);
-  const subject = [playerName, teamName].filter(Boolean).join(" · ");
+  const title = activityTitle(item, teamNames);
+  const subject = [playerName, teamName].filter((name) => name && !title.includes(name)).join(" · ");
+  const hasDetails = category !== "buyout" && !isAuctionAward(item) && (change || item.reason || receipts.length > 0);
   return (
     <li className={`hl-activity-entry hl-activity-entry--${category}`}>
       <span aria-hidden="true" />
-      <div>
-        <strong>{activityTitle(item, teamNames)}</strong>
+      <div className="hl-activity-line">
+        <strong>{playerName && (item.player?.id || item.playerId)
+          ? <PlayerName playerId={item.player?.id || item.playerId}>{title}</PlayerName>
+          : title}{subject && category !== "trade" ? ` · ${subject}` : ""}</strong>
         <span className="hl-activity-context">
-          {activitySource(item)} <span aria-hidden="true">·</span>{" "}
           <time
             className="hl-activity-time"
             dateTime={new Date(item.occurredAtMs).toISOString()}
@@ -369,10 +371,9 @@ function ActivityEntry({ item, teamNames }) {
             {time(item.occurredAtMs)}
           </time>
         </span>
-        {subject && category !== "trade" && (
-          <span className="hl-activity-subject">{playerName && <PlayerName playerId={item.player?.id || item.playerId}>{playerName}</PlayerName>}{playerName && teamName ? ' · ' : ''}{teamName}</span>
-        )}
-        {bidSummary && <p className="hl-activity-change">{bidSummary}</p>}
+        {hasDetails && <details className="hl-activity-details">
+          <summary>Details</summary>
+          {category === "commissioner" && <span className="hl-activity-context">{activitySource(item)}</span>}
         {change && <p className="hl-activity-change">{change}</p>}
         {item.reason && <p className="hl-activity-reason">{item.reason}</p>}
         {receipts.length > 0 && (
@@ -384,6 +385,7 @@ function ActivityEntry({ item, teamNames }) {
             ))}
           </div>
         )}
+        </details>}
       </div>
     </li>
   );

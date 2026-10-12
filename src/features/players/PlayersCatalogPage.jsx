@@ -1,14 +1,15 @@
 import { injuryNameProps } from '../../shared/playerInjury.js';
 import { canonicalNhlTeam } from '../../shared/nhlTeams.js';
 import { PlayerName } from './PlayerName.jsx';
-import { useDeferredValue, useMemo, useRef, useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { Gavel } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
 
 import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { routePaths } from "../../app/routePaths.js";
+import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
   EmptyBlock,
   ErrorBlock,
@@ -29,6 +30,7 @@ import { AavRangeFilter } from "./AavRangeFilter.jsx";
 import contractFilterStyles from "./AavRangeFilter.module.css";
 import {
   leaguePlayerInfiniteQuery,
+  leaguePlayerDetailQuery,
   leaguePlayerSearchQuery,
 } from "./playerQueries.js";
 
@@ -225,7 +227,21 @@ export function PlayersCatalogPage() {
     key: "fantasyPoints",
     direction: "desc",
   });
-  const [comparedIds, setComparedIds] = useState(() => new Set());
+  const [favouriteSelections, setFavouriteSelections] = useState(() => new Map());
+  const favouriteScope = `${session.user?.id || ""}:${leagueId}`;
+  const favourites = useMemo(() => favouriteSelections.get(favouriteScope) || new Map(), [favouriteSelections, favouriteScope]);
+  const comparedIds = useMemo(() => new Set(favourites.keys()), [favourites]);
+  const viewingFavourites = ownership === "favourites";
+  // Contract type is deliberately absent from the player read projection.
+  // Let the existing server filter decide membership when that filter is used.
+  const serverFilteredFavourites = viewingFavourites && contractType !== "all";
+  const favouriteQueries = useQueries({
+    queries: [...favourites.values()].map((player) => ({
+      ...leaguePlayerDetailQuery(session.httpClient, leagueId, player.id),
+      placeholderData: player,
+      enabled: viewingFavourites && session.status === "authenticated" && Boolean(league),
+    })),
+  });
   const searchInputRef = useRef(null);
   const suggestionListRef = useRef(null);
   const deferredSearchInput = useDeferredValue(searchInput.trim());
@@ -248,8 +264,14 @@ export function PlayersCatalogPage() {
       minimumGames: Number(minimumGames),
       ...contractFilters,
     }),
-    enabled: session.status === "authenticated" && Boolean(league) && (!aavRange.enabled || aavRangeValid),
+    enabled: (!viewingFavourites || serverFilteredFavourites) && session.status === "authenticated" && Boolean(league) && (!aavRange.enabled || aavRangeValid),
   });
+  const { hasNextPage, isFetching, isError, fetchNextPage } = players;
+  useEffect(() => {
+    if (serverFilteredFavourites && hasNextPage && !isFetching && !isError) {
+      void fetchNextPage();
+    }
+  }, [serverFilteredFavourites, hasNextPage, isFetching, isError, fetchNextPage]);
   const autocomplete = useQuery({
     ...leaguePlayerSearchQuery(session.httpClient, leagueId, {
       query: deferredSearchInput,
@@ -365,7 +387,7 @@ export function PlayersCatalogPage() {
           return player.statistics?.scoringStats?.[key] ?? Number.NEGATIVE_INFINITY;
       }
     };
-    return availablePlayers
+    return (viewingFavourites && !serverFilteredFavourites ? favouriteQueries.map((result) => result.data).filter(Boolean) : availablePlayers)
       .filter(
         (player) =>
           (!normalizedQuery ||
@@ -382,7 +404,14 @@ export function PlayersCatalogPage() {
                 player.league.ownership?.kind === "Prospect Right")) ||
             (ownership.startsWith("team:") &&
               player.league.ownership?.team.id === ownership.slice(5))) &&
-          (player.statistics?.gamesPlayed ?? 0) >= minimum
+          (player.statistics?.gamesPlayed ?? 0) >= minimum &&
+          (!viewingFavourites || (
+            player.status === "active" && player.provider?.active !== false &&
+            (remainingYears === "all" || player.league.activeContract?.remainingYears === Number(remainingYears)) &&
+            (!aavRange.enabled || (player.league.activeContract &&
+              player.league.activeContract.aavCents >= minimumAavCents &&
+              player.league.activeContract.aavCents <= maximumAavCents))
+          ))
       )
       .sort((left, right) => {
         const leftValue = value(left, sort.key);
@@ -406,6 +435,8 @@ export function PlayersCatalogPage() {
     position,
     query,
     sort,
+    viewingFavourites, serverFilteredFavourites, favouriteQueries, remainingYears,
+    aavRange.enabled, minimumAavCents, maximumAavCents,
   ]);
   const autocompletePlayers = useMemo(() => {
     const needle = searchInput.trim().toLowerCase();
@@ -470,11 +501,13 @@ export function PlayersCatalogPage() {
     );
   }
 
-  function toggleCompare(playerId) {
-    setComparedIds((current) => {
-      const next = new Set(current);
-      if (next.has(playerId)) next.delete(playerId);
-      else next.add(playerId);
+  function toggleCompare(player) {
+    setFavouriteSelections((current) => {
+      const next = new Map(current);
+      const selected = new Map(next.get(favouriteScope));
+      if (selected.has(player.id)) selected.delete(player.id);
+      else selected.set(player.id, player);
+      next.set(favouriteScope, selected);
       return next;
     });
   }
@@ -672,13 +705,13 @@ export function PlayersCatalogPage() {
 
       {aavRange.enabled && !aavRangeValid ? (
         <Surface><EmptyBlock>Check the AAV range to see matching players.</EmptyBlock></Surface>
-      ) : players.isPending ? (
+      ) : ((!viewingFavourites && players.isPending) || (serverFilteredFavourites && (players.isPending || players.hasNextPage) && !players.isError)) ? (
         <Surface>
           <LoadingBlock>Loading players…</LoadingBlock>
         </Surface>
-      ) : players.isError ? (
+      ) : (viewingFavourites && !serverFilteredFavourites ? favouriteQueries.some((result) => result.isError) : players.isError) ? (
         <Surface className="hl-state-surface">
-          <ErrorMessage error={players.error} />
+          <ErrorMessage error={viewingFavourites && !serverFilteredFavourites ? favouriteQueries.find((result) => result.isError)?.error : players.error} />
         </Surface>
       ) : visiblePlayers.length === 0 ? (
         <Surface>
@@ -691,7 +724,7 @@ export function PlayersCatalogPage() {
             <table className="hl-data-table hl-player-row-table hl-player-table hl-expanded-player-table">
               <thead>
                 <tr>
-                  <th className="hl-player-col-order" scope="col">Order</th>
+                  <th className="hl-player-col-order" scope="col">Team</th>
                   <SortableColumnHeading className="hl-player-col-position" activeSort={sort} label="Pos" sortKey="position" onSort={changeSort} />
                   <SortableColumnHeading className="hl-player-col-name" activeSort={sort} label="Player" sortKey="player" onSort={changeSort} />
                   <SortableColumnHeading className="hl-player-col-aav" activeSort={sort} label="AAV / FA" sortKey="contract" onSort={changeSort} />
@@ -724,9 +757,17 @@ export function PlayersCatalogPage() {
                 {visiblePlayers.map((player) => (
                   <tr key={player.id}>
                     <td className="hl-player-col-order">
-                      <span className="hl-player-row-placeholder" aria-hidden="true">
-                        —
-                      </span>
+                      {player.league.ownership ? (
+                        <Link
+                          to={routePaths.teamRoster(leagueId, player.league.ownership.team.id)}
+                          className={teamColourClass("hl-player-team-badge")}
+                          style={teamColourStyle(leagueTeams.find((team) => team.id === player.league.ownership.team.id) || player.league.ownership.team)}
+                          aria-label={player.league.ownership.team.name}
+                          title={player.league.ownership.team.name}
+                        >
+                          {player.league.ownership.team.name.replace(/\bown\s*goal\b/gi, "Own Goal").split(/\s+/).filter(Boolean).map((word) => word[0]).join("").toUpperCase()}
+                        </Link>
+                      ) : <span className="hl-player-row-placeholder" aria-hidden="true">—</span>}
                     </td>
                     <td className="hl-player-col-position">
                       <PositionTag
@@ -790,7 +831,7 @@ export function PlayersCatalogPage() {
                               ? "Remove from"
                               : "Add to"
                           } favourites`}
-                          onClick={() => toggleCompare(player.id)}
+                          onClick={() => toggleCompare(player)}
                         >
                           <HockeyStickIcon />
                           <span>Favourites</span>
@@ -829,7 +870,9 @@ export function PlayersCatalogPage() {
         </Surface>
       )}
 
-      {!players.isPending && !players.isError && (
+      {viewingFavourites ? (
+        <p className="hl-player-pagination" aria-live="polite">Showing {visiblePlayers.length} of {comparedIds.size} favourites.</p>
+      ) : !players.isPending && !players.isError && (
         <div className="hl-player-pagination" aria-live="polite">
           <p>
             Showing {visiblePlayers.length} of {availablePlayers.length} loaded
