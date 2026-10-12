@@ -33,6 +33,7 @@ function tradeAssetQuery({
 
 export const routePaths = Object.freeze({
   home: "/",
+  install: "/install",
   verifyEmail: "/verify-email",
   setupAccount: "/setup-account",
   resetPassword: "/reset-password",

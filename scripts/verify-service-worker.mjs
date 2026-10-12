@@ -1,0 +1,14 @@
+import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const handlers={},shown=[],opened=[];
+const self={location:{origin:'https://example.test'},addEventListener:(key,handler)=>{handlers[key]=handler;},registration:{showNotification:async(...args)=>shown.push(args)},clients:{openWindow:async url=>opened.push(url)}};
+vm.runInNewContext(await readFile(new URL('../public/sw.js',import.meta.url),'utf8'),{self,URL});
+let pending;
+handlers.push({data:{json:()=>({title:'x'.repeat(200),body:'y'.repeat(200),url:'https://evil.example',tag:'safe'})},waitUntil:promise=>{pending=promise;}}); await pending;
+assert.equal(shown[0][0].length,64); assert.equal(shown[0][1].body.length,48); assert.equal(shown[0][1].data.url,'/notifications');
+handlers.notificationclick({notification:{close(){},data:{url:'https://evil.example'}},waitUntil(){throw Error('external URL opened');}});
+handlers.notificationclick({notification:{close(){},data:{url:'/leagues/123/trades/456'}},waitUntil:promise=>{pending=promise;}}); await pending;
+assert.deepEqual(opened,['https://example.test/leagues/123/trades/456']);
+for(const request of [{url:'https://example.test/api/private',method:'GET',mode:'navigate'},{url:'https://api.example.test/private',method:'GET',mode:'navigate'},{url:'https://example.test/trade',method:'POST',mode:'navigate'}]) handlers.fetch({request,respondWith(){throw Error('Private request intercepted');}});
+console.log('Service worker: bounded push copy, safe links, API and write bypass verified.');

@@ -3,6 +3,7 @@ import { commissionerSections, commissionerSectionPath } from '../features/commi
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Download,
   Activity,
   ArrowLeftRight,
   BarChart3,
@@ -51,6 +52,7 @@ function leagueIdFromPathname(pathname) {
 }
 
 function pageLabel(pathname) {
+  if (pathname === routePaths.install) return "Install Hundo Leago";
   if (pathname === "/") return "Account access";
   if (pathname === routePaths.leagues) return "Your leagues";
   if (pathname === routePaths.notifications) return "Notifications";
@@ -393,6 +395,7 @@ function TopBar({ freezeBanner }) {
                       />
                     </>
                   )}
+                  <MenuLink icon={Download} label="Install Hundo Leago" description="iPhone and Android instructions" to={routePaths.install} active={location.pathname === routePaths.install} onSelect={closeMenus} />
                   {session.status !== "authenticated" && (
                     <MenuLink
                       icon={UserRound}

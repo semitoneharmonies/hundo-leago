@@ -6,7 +6,7 @@ import { useSession } from "../session/sessionContext.js";
 import { communicationRequest, communicationsKey, communicationsQuery } from "./leagueCommunicationApi.js";
 import styles from "./LeagueCommunications.module.css";
 
-const INITIAL = { kind: "announcement", title: "", body: "", audience: "members", pinned: false, expiresAtMs: null, notify: true };
+const INITIAL = { kind: "announcement", title: "", body: "", audience: "members", pinned: false, expiresAtMs: null, notify: true, pushNotify: false };
 const labels = { complete: "Complete", incomplete: "Incomplete", empty: "Empty" };
 function displayTime(value) { return new Date(value).toLocaleString(); }
 
@@ -20,6 +20,7 @@ function Message({ message }) {
 }
 
 function CommunicationControls({ leagueId, client }) {
+  const session = useSession();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(INITIAL);
   const [expiry, setExpiry] = useState("");
@@ -27,9 +28,16 @@ function CommunicationControls({ leagueId, client }) {
   const [receipt, setReceipt] = useState("");
   const [archiveTarget, setArchiveTarget] = useState(null);
   const history = useQuery(communicationsQuery(client, leagueId, true));
+  const push = useQuery({ queryKey: ["push-settings", session.user?.id],
+    queryFn: async () => (await client.request("/api/v1/push/settings", { authenticated: true, dataKind: "object" })).data,
+    meta: { private: true }, retry: false });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: communicationsKey(leagueId) });
   const review = useMutation({
-    mutationFn: message => communicationRequest(client, leagueId, "/preview", { method: "POST", body: message }, "preview"),
+    mutationFn: message => {
+      const { pushNotify, ...standard } = message;
+      const body = push.data?.available ? { ...standard, pushNotify } : standard;
+      return communicationRequest(client, leagueId, "/preview", { method: "POST", body }, "preview");
+    },
     onSuccess: data => setPreview({ ...data, key: createIdempotencyKey("league-message") }),
   });
   const send = useMutation({
@@ -55,7 +63,7 @@ function CommunicationControls({ leagueId, client }) {
     setDraft(current => ({ ...current, ...values })); setPreview(null); setReceipt(""); review.reset(); send.reset();
   }
   function switchKind(kind) {
-    change({ kind, audience: kind === "announcement" ? "members" : "managers", pinned: false, expiresAtMs: null, notify: true });
+    change({ kind, audience: kind === "announcement" ? "members" : "managers", pinned: false, expiresAtMs: null, notify: true, pushNotify: false });
     setExpiry("");
   }
   return <div>
@@ -72,7 +80,8 @@ function CommunicationControls({ leagueId, client }) {
       <label className={styles.wide}>Message<textarea required maxLength={3000} value={draft.body} disabled={busy} onChange={event => change({ body: event.target.value })} /></label>
       {draft.kind === "announcement" && <>
         <label className={styles.check}><input type="checkbox" checked={draft.pinned} disabled={busy} onChange={event => change({ pinned: event.target.checked })} />Pin to the league dashboard</label>
-        <label className={styles.check}><input type="checkbox" checked={draft.notify} disabled={busy} onChange={event => change({ notify: event.target.checked })} />Also notify league members</label>
+        <label className={styles.check}><input type="checkbox" checked={draft.notify} disabled={busy} onChange={event => change({ notify: event.target.checked, pushNotify: event.target.checked && draft.pushNotify })} />Also notify league members</label>
+        {push.data?.available && <label className={styles.check}><input type="checkbox" checked={draft.pushNotify === true} disabled={busy || !draft.notify} onChange={event => change({ pushNotify: event.target.checked })} />Important: send a short phone alert</label>}
         <label>Optional expiry ({Intl.DateTimeFormat().resolvedOptions().timeZone})<input type="datetime-local" value={expiry} disabled={busy}
           onChange={event => { setExpiry(event.target.value); change({ expiresAtMs: event.target.value ? new Date(event.target.value).getTime() : null }); }} /></label>
       </>}
@@ -84,6 +93,7 @@ function CommunicationControls({ leagueId, client }) {
     {preview && <section className={styles.preview} aria-label="Message preview">
       <h3>{preview.message.title}</h3><p className={styles.message}>{preview.message.body}</p>
       <p>{preview.message.kind === "announcement" ? "Visible to league members." : "Private reminder."} {preview.recipientCount} in-app notifications.</p>
+      {preview.message.pushNotify && <p>Phone alert: Commissioner announcement. Only members who enabled these alerts.</p>}
       {preview.message.pinned && <p>Pinned to the league dashboard.</p>}
       {preview.message.expiresAtMs !== null && <p>Expires {displayTime(preview.message.expiresAtMs)}.</p>}
       <ul className={styles.recipients} aria-label="Notification recipients">{preview.recipients.map(person => <li key={person.userId}>{person.displayName}</li>)}</ul>

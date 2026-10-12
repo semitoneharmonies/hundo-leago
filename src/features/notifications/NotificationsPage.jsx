@@ -59,6 +59,7 @@ function message(notification) {
 }
 
 function notificationDestination(notification) {
+  if (notification.type === "push_alert" && notification.messageData.path?.startsWith(`/leagues/${notification.leagueId}/`)) return notification.messageData.path;
   if (notification.type === 'league_auction_timing_changed') return routePaths.auctionDetail(notification.leagueId, notification.messageData.auctionId);
   if (notification.type === 'league_help_updated') return routePaths.league(notification.leagueId)+'#league-help';
   if (['league_trade_deadline_changed', 'league_calendar_changed', 'league_auction_schedule_changed', 'league_scoring_changed', 'league_picks_repaired', 'league_correction_reversed', 'league_preseason_reset', 'league_pause_changed'].includes(notification.type)) return routePaths.league(notification.leagueId);
@@ -606,7 +607,7 @@ export function NotificationsPage() {
                           {category.label}
                         </small>
                         {timestamp}
-                        <small>{notification.type === "commissioner_assignment_proposed" ? "Review and accept commissioner role" : "Open the trade acceptance preview"}</small>
+                        <small>{notification.type === "commissioner_assignment_proposed" ? "Review and accept commissioner role" : notification.type === "push_alert" ? "View details" : "Open the trade acceptance preview"}</small>
                       </span>
                       <ChevronRight aria-hidden="true" />
                     </Link>

@@ -91,6 +91,7 @@ const CandidateCardPage = lazyNamed(
   "CandidateCardPage"
 );
 
+const InstallPage = lazyNamed(() => import("./features/install/InstallPage.jsx"), "InstallPage");
 const NotificationsPage = lazyNamed(
   () => import("./features/notifications/NotificationsPage.jsx"),
   "NotificationsPage"
@@ -1874,6 +1875,7 @@ return (
           path="/leagues/:leagueId/commissioner/rosters"
           element={<CommissionerRosterPage />}
         />
+        <Route path="/install" element={<InstallPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route
           path="/leagues/:leagueId/teams"

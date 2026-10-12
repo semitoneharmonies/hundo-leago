@@ -216,6 +216,10 @@ export function SessionProvider({
     } catch (error) {
       failure = error;
     }
+    // Remove this browser subscription even when the sign-out request fails.
+    if ("serviceWorker" in navigator) {
+      try { const registration = await navigator.serviceWorker.getRegistration(); const subscription = await registration?.pushManager?.getSubscription(); await subscription?.unsubscribe(); } catch { /* Server delivery independently checks session validity. */ }
+    }
     await clearAuthentication("signed-out");
     if (failure) throw failure;
   }, [clearAuthentication, httpClient]);
