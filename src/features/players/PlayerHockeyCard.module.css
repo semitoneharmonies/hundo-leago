@@ -62,3 +62,5 @@ details[open] .expand::after { content: ' −'; }
 .message p { font-size: 13px; }
 .message button { color: #fff; background: var(--hl-primary); border: 0; border-radius: 6px; padding: 9px 15px; cursor: pointer; }
 @media (prefers-reduced-transparency: reduce) { .dialog::backdrop { backdrop-filter: none; } }
+.injuryDetails { margin: 0 10px 8px; padding: 8px 10px; border: 1px solid #ee999e66; border-radius: 6px; background: #de58671a; color: var(--hl-foreground); font-size: 12px; overflow-wrap: anywhere; }
+.injuryDetails p { margin: 3px 0; }

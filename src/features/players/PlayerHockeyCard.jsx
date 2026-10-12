@@ -1,3 +1,4 @@
+import { injuryDetailLines } from '../../shared/playerInjury.js';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -93,6 +94,9 @@ function CardContent({ card, httpClient }) {
     </div>
     {!stats && <p className={styles.unavailable}>Season statistics unavailable</p>}
     <div className={styles.health} data-status={card.injury?.status}><HeartPulse size={18} aria-hidden="true" /><span>Status</span><strong>{health}</strong>{card.injury?.needsReview && <small>Review pending</small>}</div>
+    {injuryDetailLines(card.injury).length > 0 && <section className={styles.injuryDetails} aria-label="Injury report">
+      {injuryDetailLines(card.injury).map(line => <p key={line}>{line}</p>)}
+    </section>}
     <div className={styles.panels}>
       <section><h3>Hundo contract</h3><strong>{contract ? money(contract.netAavCents) : 'Unsigned'}<small>{contract ? 'net AAV' : 'No cap commitment'}</small></strong>
         {contract && <p>{contract.remainingYears} season{contract.remainingYears === 1 ? '' : 's'} remaining{contract.type === 'fantasy_elc' ? ' · ELC' : ''}</p>}

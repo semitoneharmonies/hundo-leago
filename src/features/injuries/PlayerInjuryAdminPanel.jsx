@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Surface } from '../../components/HundoUi.jsx';
+import { InjuryListImport } from './InjuryListImport.jsx';
 
 const labels = { injured: 'Injured', healthy: 'Healthy', unknown: 'Not confirmed' };
 
@@ -47,7 +48,8 @@ export function PlayerInjuryAdminPanel({ httpClient }) {
     <p className="hl-eyebrow">Platform administration</p>
     <h2 id="player-injuries-title">Player injuries</h2>
     <p>Update a player once for every league. Confirmed healthy players must be removed from injured reserve.</p>
-    <p className="hl-injury-source-note">Automatic imports are off while a free source is being verified.</p>
+    <InjuryListImport httpClient={httpClient} />
+    <h3>Review an individual player</h3>
     <form className="hl-injury-search" onSubmit={event => { event.preventDefault(); setSearch(searchInput.trim()); setSelected(null); mutation.reset(); }}>
       <label htmlFor="injury-search">Find a player</label>
       <div className="hl-button-row">

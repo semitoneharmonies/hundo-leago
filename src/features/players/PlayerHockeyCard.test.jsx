@@ -26,6 +26,21 @@ function setup(client) {
 }
 
 describe('player hockey card', () => {
+  it('shows pasted injury details on the card and removes them on recovery', async () => {
+    const fixture = createCapOutlookFixture(), data = createPlayerCardFixture(fixture);
+    data.injury = { status: 'injured', details: { timeline: 'Week to Week', designation: 'IR', reason: 'Lower Body' } };
+    const request = vi.fn(async () => ({ data }));
+    const { user } = setup({ request });
+    await user.click(screen.getByRole('link', { name: data.name }));
+    expect(await screen.findByLabelText('Injury report')).toHaveTextContent('Timeline: Week to Week');
+    expect(screen.getByLabelText('Injury report')).toHaveTextContent('Status: IR');
+    expect(screen.getByLabelText('Injury report')).toHaveTextContent('Reason: Lower Body');
+    fireEvent(screen.getByRole('dialog'), new Event('cancel'));
+    data.injury.status = 'healthy';
+    await user.click(screen.getByRole('link', { name: data.name }));
+    expect(await screen.findByText('Healthy')).toBeVisible();
+    expect(screen.queryByLabelText('Injury report')).not.toBeInTheDocument();
+  });
   it('closes immediately at an authorization boundary and requires a fresh read on reopening', async () => {
     const fixture = createCapOutlookFixture(), data = createPlayerCardFixture(fixture);
     const request = vi.fn(async () => ({ data })), client = createQueryClient(), user = userEvent.setup();
