@@ -45,3 +45,34 @@
   for = "/leagues/*"
   [headers.values]
     Cache-Control = "no-store"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/install"
+  [headers.values]
+    Cache-Control = "no-store"
+
+# Tip Jar is embedded only by its own league page. Other site pages retain
+# DENY / frame-ancestors 'none'. Keep this specific override after the defaults.
+[[headers]]
+  for = "/games/tip-jar/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Resource-Policy = "same-origin"
+    Permissions-Policy = "camera=(), display-capture=(), geolocation=(), microphone=(), payment=(), usb=()"
+    Referrer-Policy = "same-origin"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    X-Robots-Tag = "noindex"

@@ -3,6 +3,7 @@ import { commissionerSections, commissionerSectionPath } from '../features/commi
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Download,
   Activity,
   ArrowLeftRight,
   BarChart3,
@@ -13,6 +14,7 @@ import {
   ClipboardList,
   ClipboardPen,
   Gavel,
+  Gamepad2,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -51,6 +53,7 @@ function leagueIdFromPathname(pathname) {
 }
 
 function pageLabel(pathname) {
+  if (pathname === routePaths.install) return "Install Hundo Leago";
   if (pathname === "/") return "Account access";
   if (pathname === routePaths.leagues) return "Your leagues";
   if (pathname === routePaths.notifications) return "Notifications";
@@ -65,6 +68,7 @@ function pageLabel(pathname) {
   if (/\/trades$/.test(pathname)) return "Trades";
   if (/\/matchups$/.test(pathname)) return "Matchups";
   if (/\/standings$/.test(pathname)) return "Standings";
+  if (/\/tip-jar$/.test(pathname)) return "Tip Jar";
   if (/\/activity$/.test(pathname)) return "League activity";
   if (/\/commissioner\/rosters$/.test(pathname)) return "Roster operations";
   if (/\/commissioner(?:\/|$)/.test(pathname)) return commissionerSections.find(([key])=>pathname.endsWith('/'+key))?.[1] || 'Commissioner tools';
@@ -81,6 +85,7 @@ const descriptions = Object.freeze({
   Trades: "Proposals and history",
   Matchups: "Head-to-head scoring",
   Standings: "Official league table",
+  "Tip Jar": "Hockey side game and league leaderboard",
   "League activity": "Transactions and moves",
   Drafts: "Free Agent and Entry Drafts",
   "Commissioner tools": "Authorized administration",
@@ -199,6 +204,7 @@ function TopBar({ freezeBanner }) {
       ["Matchups", routePaths.leagueMatchups(leagueId), Trophy],
       ["Standings", routePaths.leagueStandings(leagueId), BarChart3],
       ["League activity", routePaths.leagueActivity(leagueId), Activity],
+      ["Tip Jar", routePaths.leagueTipJar(leagueId), Gamepad2],
     ];
     if (hasCommissionerAuthority(currentLeague?.membership)) {
       links.push([
@@ -393,6 +399,7 @@ function TopBar({ freezeBanner }) {
                       />
                     </>
                   )}
+                  <MenuLink icon={Download} label="Install Hundo Leago" description="iPhone and Android instructions" to={routePaths.install} active={location.pathname === routePaths.install} onSelect={closeMenus} />
                   {session.status !== "authenticated" && (
                     <MenuLink
                       icon={UserRound}

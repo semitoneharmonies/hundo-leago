@@ -8,6 +8,9 @@ import {
   watchActionTokenFragments,
 } from "./features/accounts/actionToken.js";
 
+import { startInstallSupport } from "./features/install/installClient.js";
+startInstallSupport();
+
 const initialActionToken = consumeActionTokenFragment();
 const stopWatchingActionTokens = watchActionTokenFragments();
 if (import.meta.hot) import.meta.hot.dispose(stopWatchingActionTokens);

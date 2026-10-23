@@ -2,7 +2,7 @@ import { LeagueHelpPanel } from "../features/leagues/LeagueHelpPanel.jsx";
 import { commissionerSections, commissionerSectionPath } from "../features/commissioner/commissionerSections.js";
 import { createElement, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Users, X } from "lucide-react";
+import { Download, Bell, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Users, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { routePaths } from "../app/routePaths.js";
 import { leagueSeasonsQuery, leagueTeamsQuery } from "../features/leagues/leagueQueries.js";
@@ -189,6 +189,7 @@ export function DesktopSidebar({ league, leaguesQuery, links, descriptions, sess
       <Link className="hl-sidebar-link" to={routePaths.notifications} aria-current={location.pathname === routePaths.notifications ? "page" : undefined} onClick={() => { setSubmenu(null); setRulesOpen(false); }}>
         <Bell aria-hidden="true" /><span><strong>Notifications</strong></span>{unreadCount > 0 && <span className="hl-sidebar-count">{unreadCount}</span>}
       </Link>
+      <Link className="hl-sidebar-link" to={routePaths.install} aria-current={location.pathname === routePaths.install ? "page" : undefined} onClick={() => { setSubmenu(null); setRulesOpen(false); }}><Download aria-hidden="true" /><span><strong>Install Hundo Leago</strong></span></Link>
       <button ref={rulesButton} type="button" className="hl-sidebar-link" aria-expanded={rulesOpen} onClick={() => { setSubmenu(null); setRulesOpen(!rulesOpen); }}>
         <BookOpen aria-hidden="true" /><span><strong>League Rules</strong></span>
       </button>

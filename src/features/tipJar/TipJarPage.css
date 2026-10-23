@@ -1,0 +1,30 @@
+.hl-tipjar { max-width: 1600px; padding-top: 12px; }
+.hl-tipjar-heading, .hl-tipjar-board-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.hl-tipjar-heading { margin-bottom: 12px; }
+.hl-tipjar-heading h1 { margin: 2px 0 0; font-size: clamp(1.5rem, 3vw, 2rem); }
+.hl-tipjar-heading a { font-size: .82rem; color: var(--hl-text-muted, #aab7c8); }
+.hl-tipjar button { border: 1px solid var(--hl-border, #455368); background: var(--hl-surface, #16212f); color: inherit; padding: 9px 14px; min-height: 44px; border-radius: 9px; cursor: pointer; }
+.hl-tipjar button:disabled { opacity: .55; cursor: default; }
+.hl-tipjar button:focus-visible, .hl-tipjar a:focus-visible { outline: 3px solid #f97316; outline-offset: 3px; }
+.hl-tipjar-game { display: block; width: 100%; height: clamp(440px, 73dvh, 900px); border: 1px solid var(--hl-border, #455368); border-radius: 12px; background: #102b35; }
+.hl-tipjar-game:fullscreen { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+.hl-tipjar-save { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 38px; font-size: .85rem; color: var(--hl-text-muted, #aab7c8); }
+.hl-tipjar-save p { margin: 8px 0; }
+.hl-tipjar-save--save-error, .hl-tipjar-save--start-error { color: #ffc290; }
+.hl-tipjar-leaderboard { border-top: 1px solid var(--hl-border, #455368); padding-top: 12px; padding-bottom: 20px; }
+.hl-tipjar-board-heading h2 { margin: 0; font-size: 1.12rem; }
+.hl-tipjar-explainer { color: var(--hl-text-muted, #aab7c8); font-size: .83rem; margin: 8px 0 14px; }
+.hl-tipjar-table { overflow-x: auto; }
+.hl-tipjar-table table { border-collapse: collapse; width: 100%; text-align: left; font-size: .9rem; }
+.hl-tipjar-table th, .hl-tipjar-table td { padding: 11px 12px; border-bottom: 1px solid var(--hl-border, #455368); }
+.hl-tipjar-table thead th { color: var(--hl-text-muted, #aab7c8); font-weight: 500; }
+.hl-tipjar-table th:last-child, .hl-tipjar-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.hl-tipjar-table .is-you { background: #f9731612; }
+.hl-tipjar-table small { color: #ffad70; font-weight: 400; }
+@media (max-width: 640px) {
+  .hl-tipjar { padding-inline: 8px; }
+  .hl-tipjar-game { height: max(460px, 75svh); height: max(460px, 75dvh); border-radius: 8px; }
+  .hl-tipjar-table th, .hl-tipjar-table td { padding: 10px 7px; font-size: .8rem; }
+  .hl-tipjar-table td:nth-child(3) { max-width: 115px; }
+  .hl-tipjar-heading { gap: 8px; }
+}

@@ -14,10 +14,11 @@ const notice = { id: messageId, leagueId, kind: "announcement", title: "New sche
   body: "Check the updated dates.", pinned: true, expiresAtMs: null, createdAtMs: 1_800_000_000_000,
   authorName: "Commissioner", archivedAtMs: null, version: 1, audience: "members", recipientCount: 1 };
 
-function setup({ canManage = true, messages = [], failFirstSend = false } = {}) {
+function setup({ canManage = true, messages = [], failFirstSend = false, pushAvailable = false } = {}) {
   let attempts = 0;
   let archived = false;
   const client = { request: vi.fn(async (url, options = {}) => {
+    if (url === "/api/v1/push/settings") return { data: { available: pushAvailable } };
     if (url.endsWith("/history")) return { data: { leagueId, messages: messages.map(m => ({ ...m, archivedAtMs: archived ? 1_800_000_001_000 : null })) } };
     if (url.endsWith("/card-progress")) return { data: { leagueId, total: 1, complete: 0, empty: 1,
       cards: [{ teamId, teamName: "Team North", userId, displayName: "Manager North", status: "empty" }] } };
@@ -89,6 +90,22 @@ describe("League communication controls", () => {
     expect(screen.getByRole("button", { name: "Confirm announcement" })).toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "Title" }), " changed");
     expect(screen.queryByRole("button", { name: "Confirm announcement" })).not.toBeInTheDocument();
+  });
+
+  it("preserves standard announcement requests when the server has no push support", async () => {
+    const { user, client } = setup(); await openEditor(user); await fillAndPreview(user);
+    expect(screen.queryByRole("checkbox", { name: "Important: send a short phone alert" })).not.toBeInTheDocument();
+    const preview = client.request.mock.calls.find(([url]) => url.endsWith("/preview"));
+    expect(Object.keys(preview[1].body).sort()).toEqual(["audience", "body", "expiresAtMs", "kind", "notify", "pinned", "title"]);
+  });
+
+  it("includes the requested phone alert only when the server supports it", async () => {
+    const { user, client } = setup({ pushAvailable: true }); await openEditor(user);
+    await user.click(await screen.findByRole("checkbox", { name: "Important: send a short phone alert" }));
+    await fillAndPreview(user);
+    const preview = client.request.mock.calls.find(([url]) => url.endsWith("/preview"));
+    expect(preview[1].body.pushNotify).toBe(true);
+    expect(screen.getByText(/Phone alert: Commissioner announcement/)).toBeInTheDocument();
   });
 
   it("retries an uncertain send using the same idempotency key", async () => {

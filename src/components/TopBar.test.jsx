@@ -198,6 +198,7 @@ describe("top bar navigation", () => {
       Matchups: `/leagues/${leagueId}/matchups`,
       Standings: `/leagues/${leagueId}/standings`,
       "League activity": `/leagues/${leagueId}/activity`,
+      "Tip Jar": `/leagues/${leagueId}/tip-jar`,
       Notifications: "/notifications",
     };
     const navigation = screen.getByRole("navigation", {
@@ -212,6 +213,13 @@ describe("top bar navigation", () => {
     expect(screen.queryByRole("link", { name: "Commissioner tools" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Roster operations" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Free Agent Draft" })).toBeNull();
+  });
+
+  it("keeps Tip Jar in the selected league and marks its navigation active", async () => {
+    await renderTopBar("manager", "manager", { initialEntry: `/leagues/${leagueId}/tip-jar` });
+    const link = screen.getByRole("link", { name: "Tip Jar" });
+    expect(link).toHaveAttribute("href", `/leagues/${leagueId}/tip-jar`);
+    expect(link).toHaveAttribute("aria-current", "page");
   });
 
   it("keeps the permanent Drafts area active on legacy FAD routes and retains live urgency", async () => {

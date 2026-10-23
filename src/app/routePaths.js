@@ -33,12 +33,15 @@ function tradeAssetQuery({
 
 export const routePaths = Object.freeze({
   home: "/",
+  install: "/install",
   verifyEmail: "/verify-email",
   setupAccount: "/setup-account",
   resetPassword: "/reset-password",
   reactivate: "/reactivate",
   leagues: "/leagues",
   league: (leagueId) => `/leagues/${segment(leagueId, "League ID")}`,
+  leagueTipJar: (leagueId) =>
+    `/leagues/${segment(leagueId, "League ID")}/tip-jar`,
   leagueTeams: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/teams`,
   teamRoster: (leagueId, teamId) =>

@@ -91,6 +91,7 @@ const CandidateCardPage = lazyNamed(
   "CandidateCardPage"
 );
 
+const InstallPage = lazyNamed(() => import("./features/install/InstallPage.jsx"), "InstallPage");
 const NotificationsPage = lazyNamed(
   () => import("./features/notifications/NotificationsPage.jsx"),
   "NotificationsPage"
@@ -130,6 +131,10 @@ const LeagueMatchupsPage = lazyNamed(
 const LeagueStandingsPage = lazyNamed(
   loadCompetitionPages,
   "LeagueStandingsPage"
+);
+const TipJarPage = lazyNamed(
+  () => import("./features/tipJar/TipJarPage.jsx"),
+  "TipJarPage"
 );
 
 // Backend endpoint (Netlify env var first, fallback hard-coded)
@@ -1868,12 +1873,14 @@ return (
         <Route path="/leagues/:leagueId/activity" element={<ActivityPage />} />
         <Route path="/leagues/:leagueId/matchups" element={<LeagueMatchupsPage />} />
         <Route path="/leagues/:leagueId/standings" element={<LeagueStandingsPage />} />
+        <Route path="/leagues/:leagueId/tip-jar" element={<TipJarPage />} />
         <Route path="/leagues/:leagueId/commissioner" element={<CommissionerCompetitionPage />} />
         <Route path="/leagues/:leagueId/commissioner/:section" element={<CommissionerCompetitionPage />} />
         <Route
           path="/leagues/:leagueId/commissioner/rosters"
           element={<CommissionerRosterPage />}
         />
+        <Route path="/install" element={<InstallPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route
           path="/leagues/:leagueId/teams"

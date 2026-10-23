@@ -1,0 +1,127 @@
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
+import { SessionContext } from "../session/sessionContext.js";
+import { TipJarPage } from "./TipJarPage.jsx";
+import { TIP_JAR_PROTOCOL } from "./tipJarBridge.js";
+
+const leagueA = "11111111-1111-4111-8111-111111111111";
+const leagueB = "22222222-2222-4222-8222-222222222222";
+const userId = "33333333-3333-4333-8333-333333333333";
+const requestId = "44444444-4444-4444-8444-444444444444";
+const run = { runId: "55555555-5555-4555-8555-555555555555", seed: 8, rulesetVersion: "campaign-v1", createdAt: 1 };
+const league = (id, name) => ({ id, name, status: "active", version: 1, currentSeason: null,
+  membership: { id: userId, version: 1, status: "active", permissionCategory: "manager" } });
+const entries = [
+  { rank: 1, managerId: userId, managerName: "Winning Manager", highestLevelCompleted: 3, shotsToCompletion: 36, completed: true, updatedAt: 1 },
+  { rank: 2, managerId: "other", managerName: "Almost There", highestLevelCompleted: 2, shotsToCompletion: 24, completed: false, updatedAt: 1 },
+  { rank: 3, managerId: "new", managerName: "New Player", highestLevelCompleted: 0, shotsToCompletion: null, completed: false, updatedAt: 1 },
+];
+function setup({ status = "authenticated", allowed = true, failSave = false, startDeferred = null } = {}) {
+  let saves = 0;
+  const request = vi.fn(async (path, options) => {
+    let data;
+    if (path === "/api/v1/leagues") data = { code: "LEAGUES_FOUND", leagues: allowed ? [league(leagueA, "Alpha League"), league(leagueB, "Beta League")] : [] };
+    else if (path.endsWith("/leaderboard")) data = { rulesetVersion: "campaign-v1", entries: path.includes(leagueA) ? entries : [] };
+    else if (path.endsWith("/runs")) data = startDeferred ? await startDeferred : run;
+    else if (path.endsWith("/checkpoint")) {
+      if (failSave && saves++ === 0) throw Error("network");
+      data = { runId: run.runId, highestLevelCompleted: 0, shotsToCompletion: null, shotsUsed: 1,
+        level: 1, pucks: 19, completed: false, failed: false, levelResults: [] };
+    } else throw Error(`Unexpected request ${path}`);
+    options.validateData(data);
+    return { data };
+  });
+  const httpClient = { request };
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const session = { status, httpClient, user: { id: userId }, session: { id: "session-one" } };
+  const view = (value = session) => <QueryClientProvider client={queryClient}><SessionContext.Provider value={value}>
+    <MemoryRouter initialEntries={[`/leagues/${leagueA}/tip-jar`]}>
+      <Link to={`/leagues/${leagueB}/tip-jar`}>Switch to Beta</Link>
+      <Routes><Route path="/leagues/:leagueId/tip-jar" element={<TipJarPage />} /><Route path="/" element={<h1>Sign in</h1>} /></Routes>
+    </MemoryRouter>
+  </SessionContext.Provider></QueryClientProvider>;
+  const rendered = render(view());
+  return { ...rendered, request, queryClient, session, view };
+}
+function message(frame, data) {
+  fireEvent(window, new MessageEvent("message", { origin: window.location.origin, source: frame.contentWindow,
+    data: { protocol: TIP_JAR_PROTOCOL, ...data } }));
+}
+
+describe("Tip Jar league page", () => {
+  it("shows authoritative cumulative scores and loads only read endpoints on viewing", async () => {
+    const test = setup();
+    const frame = await screen.findByTitle("Tip Jar hockey game");
+    expect(frame).toHaveAttribute("src", "/games/tip-jar/campaign-v1/index.html?league=1");
+    expect(screen.getByRole("heading", { name: "Alpha League leaderboard" })).toBeInTheDocument();
+    await screen.findByText("Almost There");
+    const row = screen.getByText("Almost There").closest("tr");
+    expect(within(row).getByText("Level 2 completed")).toBeInTheDocument();
+    expect(within(row).getByText("24")).toBeInTheDocument();
+    expect(screen.getByText("Game beaten")).toBeInTheDocument();
+    expect(within(screen.getByText("New Player").closest("tr")).getByText("—")).toBeInTheDocument();
+    expect(test.request.mock.calls.every(([, options]) => !options.method)).toBe(true);
+  });
+
+  it("does not load the game or leaderboard without league access", async () => {
+    const test = setup({ allowed: false });
+    await screen.findByRole("heading", { name: "League access unavailable" });
+    expect(screen.queryByTitle("Tip Jar hockey game")).toBeNull();
+    expect(test.request.mock.calls.some(([path]) => path.includes("tip-jar"))).toBe(false);
+  });
+
+  it("redirects a signed-out viewer without loading private data", async () => {
+    const test = setup({ status: "unauthenticated" });
+    await screen.findByRole("heading", { name: "Sign in" });
+    expect(test.request).not.toHaveBeenCalled();
+  });
+
+  it("displays a failed save honestly and retries the same transcript and idempotency key", async () => {
+    const test = setup({ failSave: true });
+    const frame = await screen.findByTitle("Tip Jar hockey game");
+    message(frame, { type: "start", requestId });
+    await screen.findByText("League run ready.");
+    const shots = [{ time: 1, x: 0, height: .3, power: 40 }];
+    message(frame, { type: "checkpoint", runId: run.runId, shots });
+    await screen.findByText("Progress has not been saved. Keep this page open and retry.");
+    expect(screen.queryByText("Progress saved to your league.")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Retry save" }));
+    await screen.findByText("Progress saved to your league.");
+    const writes = test.request.mock.calls.filter(([path]) => path.endsWith("/checkpoint"));
+    expect(writes).toHaveLength(2);
+    expect(writes[0][1].body).toEqual(writes[1][1].body);
+    expect(writes[0][1].idempotencyKey).toBe(writes[1][1].idempotencyKey);
+  });
+
+  it("tears down the old league frame and discards late start replies when switching leagues", async () => {
+    let resolve;
+    const pending = new Promise((done) => { resolve = done; });
+    const test = setup({ startDeferred: pending });
+    const oldFrame = await screen.findByTitle("Tip Jar hockey game");
+    const post = vi.spyOn(oldFrame.contentWindow, "postMessage");
+    message(oldFrame, { type: "start", requestId });
+    await screen.findByText("Starting your league run…");
+    fireEvent.click(screen.getByRole("link", { name: "Switch to Beta" }));
+    await screen.findByRole("heading", { name: "Beta League leaderboard" });
+    expect(screen.getByTitle("Tip Jar hockey game")).not.toBe(oldFrame);
+    await act(async () => resolve(run));
+    expect(post.mock.calls.some(([value]) => value.type === "start")).toBe(false);
+    expect(post).toHaveBeenCalledWith({ protocol: TIP_JAR_PROTOCOL, type: "pause" }, window.location.origin);
+    expect(screen.queryByText("Almost There")).toBeNull();
+    expect(test.request.mock.calls.find(([path]) => path.endsWith("/runs"))[1].signal.aborted).toBe(true);
+  });
+
+  it("removes the iframe and aborts pending work on session loss or account replacement", async () => {
+    const test = setup();
+    const firstFrame = await screen.findByTitle("Tip Jar hockey game");
+    const post = vi.spyOn(firstFrame.contentWindow, "postMessage");
+    test.rerender(test.view({ ...test.session, user: { id: "replacement" } }));
+    await waitFor(() => expect(screen.getByTitle("Tip Jar hockey game")).not.toBe(firstFrame));
+    expect(post).toHaveBeenCalledWith({ protocol: TIP_JAR_PROTOCOL, type: "pause" }, window.location.origin);
+    test.rerender(test.view({ ...test.session, status: "unauthenticated" }));
+    await screen.findByRole("heading", { name: "Sign in" });
+    expect(screen.queryByTitle("Tip Jar hockey game")).toBeNull();
+  });
+});

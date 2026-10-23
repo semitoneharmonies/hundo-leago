@@ -700,6 +700,11 @@ export function validateNotifications(data) {
         typeof notification.messageData.message === 'string' && notification.messageData.message.trim().length > 0 &&
         notification.messageData.message.length <= 500, 'The auction timing notification is invalid.');
     }
+    if (notification.type === "push_alert") {
+      contract(typeof notification.messageData.summary === "string" && notification.messageData.summary.length <= 64 &&
+        typeof notification.messageData.path === "string" && notification.messageData.path.startsWith(`/leagues/${notification.leagueId}/`) &&
+        !/[\\\r\n]/.test(notification.messageData.path), "The app alert is invalid.");
+    }
     if (notification.type === "trade_proposal_received") {
       for (const [field, description] of [
         ["tradeId", "trade"],
