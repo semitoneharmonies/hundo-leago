@@ -7,9 +7,9 @@
   <meta name="description" content="Three levels. Twenty pucks to start. All in the timing. A hockey deflection game." />
   <title>Tip Jar</title>
   <link rel="icon" type="image/svg+xml" href="./puck.svg" />
-  <script type="module" crossorigin src="./assets/index-ByxASJ2M.js"></script>
+  <script type="module" crossorigin src="./assets/index-BvsHyKgd.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/three-DBGnS9Ue.js">
-  <link rel="stylesheet" crossorigin href="./assets/index-DDO2x-YE.css">
+  <link rel="stylesheet" crossorigin href="./assets/index-D6Tup03E.css">
 </head>
 <body>
   <div id="app">
@@ -40,7 +40,14 @@
       </div>
       <div class="sr-only" id="feedback" role="status" aria-live="polite"><span id="feedback-title"></span><span id="feedback-detail"></span></div>
       <button id="shoot" class="touch-shot" aria-label="Hold for power, release to shoot" disabled>Shoot</button>
-      <div id="loading" class="loading">Loading the rink…</div>
+      <div id="loading" class="loading">
+        <div class="loading-card">
+          <h2 id="loading-title" role="status" aria-live="polite">Loading the rink…</h2>
+          <p id="loading-message" hidden></p>
+          <button id="loading-retry" class="primary" hidden>Try again</button>
+          <details id="loading-details" hidden><summary>Show details</summary><pre id="loading-report"></pre></details>
+        </div>
+      </div>
       <div id="league-status" class="league-status" role="status" aria-live="polite" hidden></div>
       <section id="intro" class="overlay" aria-label="Welcome to Tip Jar">
         <div class="intro-card">
@@ -48,7 +55,7 @@
           <h1>Off the iron.</h1>
           <p>Tip off each post and the crossbar — and into the net.</p>
           <p class="intro-controls">Space to shoot, hold for power</p>
-          <button id="start" class="primary" aria-keyshortcuts="Space">Play</button>
+          <button id="start" class="primary" aria-keyshortcuts="Space" disabled>Play</button>
         </div>
       </section>
       <dialog id="instructions">
