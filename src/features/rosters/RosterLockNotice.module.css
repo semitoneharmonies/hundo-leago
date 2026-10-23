@@ -1,0 +1,7 @@
+.notice {
+  color: var(--hl-muted-foreground, #b9c4d2);
+  font-size: .75rem;
+  line-height: 1.4;
+}
+.notice time { color: var(--hl-foreground, #e5edf9); font-weight: 600; }
+.notice button { font: inherit; }

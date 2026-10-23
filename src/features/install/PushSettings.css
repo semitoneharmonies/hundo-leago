@@ -1,0 +1,4 @@
+.hl-push-options{display:grid;gap:12px;border:0;padding:0;margin:20px 0}
+.hl-push-options label{display:flex;gap:12px;align-items:center;min-height:36px}
+.hl-push-options input{width:20px;height:20px;accent-color:#f97316;flex-shrink:0}
+.hl-push-note{color:#b8c4d8}

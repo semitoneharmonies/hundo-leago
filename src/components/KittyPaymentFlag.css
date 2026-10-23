@@ -1,0 +1,57 @@
+.hl-kitty-flag {
+  position: absolute;
+  top: 100%;
+  right: 18px;
+  z-index: -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: min(340px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 10px 13px 11px;
+  border: 1px solid #475363;
+  border-top: 2px solid #a88b68;
+  border-radius: 0 0 12px 12px;
+  background: #182331;
+  color: #d5dce5;
+  box-shadow: 0 5px 12px rgb(0 0 0 / 14%);
+  pointer-events: none;
+  animation: hl-kitty-arrive 180ms ease-out;
+}
+
+.hl-kitty-flag__cat {
+  flex: 0 0 21px;
+  width: 21px;
+  height: 21px;
+  margin-top: 2px;
+  color: #d6b28a;
+  stroke-width: 1.6;
+}
+
+.hl-kitty-flag p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@keyframes hl-kitty-arrive {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .hl-kitty-flag { right: 12px; width: min(310px, calc(100vw - 24px)); }
+}
+
+@media (max-width: 1023px) {
+  .hl-app-header:has(.hl-kitty-flag) {
+    margin-bottom: var(--hl-kitty-height, 84px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hl-kitty-flag { animation: none; }
+}

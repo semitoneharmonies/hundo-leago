@@ -1,0 +1,24 @@
+.intro { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.7rem; margin-bottom:1rem; }
+.pickDay { padding:.65rem; background:#294969; color:#fff; border:1px solid #90b8dc; border-radius:5px; text-align:left; cursor:pointer; }
+.popover select { width:100%; min-width:0; padding:.65rem; color:inherit; background:#0c1828; border:1px solid #5f718b; border-radius:5px; }.breakFields { margin:0; min-width:0; padding:.7rem; border:1px solid #6b829d; border-radius:5px; }.breakFields legend { padding:0 .3rem; font-size:.9rem; }
+.workspace:global(.hl-surface) { overflow:visible; }
+.popover.breakPopover { width:420px; max-height:min(650px,calc(100dvh - 16px)); }
+.intro h2 { margin:0 0 .35rem; font-size:1.25rem; }.intro p { margin:0; font-size:.9rem; color:#c4d0df; }.intro > span { color:#a3c6a8; font-size:.8rem; }
+.shortcuts { display:flex; flex-wrap:wrap; gap:.5rem; }.shortcuts button { cursor:pointer; }
+.popover { position:fixed; z-index:1000; width:340px; max-width:calc(100vw - 16px); max-height:min(470px,calc(100dvh - 16px)); overflow:auto; box-sizing:border-box; background:#142338; color:#f1f5fa; border:1px solid #8298b6; border-radius:10px; padding:1rem; box-shadow:0 14px 45px #0009; }
+.popover header { display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-bottom:.7rem; }.popover header button { background:transparent; color:inherit; border:0; font-size:1.5rem; cursor:pointer; }
+.popover form { display:grid; gap:.8rem; }.popover p { margin:0; font-size:.85rem; color:#c6d5e7; }.popover small { color:#b8c7da; }.popover input,.pending input { padding:.6rem; color:inherit; background:#0c1828; border:1px solid #5f718b; border-radius:5px; min-width:0; width:100%; box-sizing:border-box; }
+.popover label,.pending label { display:grid; gap:.35rem; font-size:.85rem; }.dateFields { display:grid; grid-template-columns:1.35fr 1fr; gap:.7rem; }
+.eventChoices { display:grid; gap:.35rem; }.eventChoices button { display:flex; text-align:left; justify-content:space-between; gap:1rem; align-items:center; background:#223956; border:1px solid #415b7c; border-radius:5px; color:inherit; padding:.7rem; cursor:pointer; }.eventChoices button:hover { background:#355577; }.eventChoices small { flex-shrink:0; font-size:.7rem; }
+.footerInfo { display:grid; gap:.5rem; margin:1rem 0; color:#b5c6da; font-size:.8rem; }.footerInfo p { margin:0; }
+.draftDates { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.5rem; margin-top:.7rem; }.draftDates button { display:grid; text-align:left; gap:.3rem; padding:.65rem; color:inherit; background:#172a3d; border:1px solid #41607e; border-radius:5px; cursor:pointer; }.draftDates span { font-size:.75rem; }
+.pending { margin-top:1rem; padding:1rem; border:1px solid #3c526e; border-radius:8px; background:#101d2e; }.pending header { display:flex; align-items:center; flex-wrap:wrap; justify-content:space-between; gap:.65rem; }.pending header div { display:flex; gap:.5rem; }.pending button,.saveBar > button:not(:last-child),.review > button:not(:first-of-type) { cursor:pointer; padding:.45rem .7rem; border-radius:5px; background:#253a52; color:inherit; border:1px solid #4d6786; }.pending button:disabled,.saveBar button:disabled { opacity:.5; cursor:default; }
+.changeTable { overflow-x:auto; margin:.8rem 0; }.changeTable table { width:100%; font-size:.83rem; border-collapse:collapse; text-align:left; }.changeTable th,.changeTable td { padding:.6rem; border-bottom:1px solid #34465d; }.changeTable td:last-child { color:#9ce3c2; }
+.pending label { max-width:650px; }.review { margin-top:1rem; background:#202e40; border:1px solid #d4ad64; border-radius:8px; padding:1rem; }.review h3 { margin-top:0; }.review li { margin:.35rem 0; }.review button { margin:.4rem .5rem .1rem 0; }
+.saveBar { position:sticky; top:70px; z-index:10; display:flex; gap:.6rem; align-items:center; padding:.8rem; margin-bottom:1rem; background:#192d42f5; border:1px solid #567494; border-radius:8px; box-shadow:0 4px 18px #0004; }.saveBar span { flex:1; font-size:.85rem; }.saveBar label { display:grid; gap:.2rem; font-size:.75rem; }.saveBar input { padding:.4rem; background:#0c1828; color:inherit; border:1px solid #5f718b; border-radius:5px; }
+@media(max-width:600px) { .saveBar { flex-wrap:wrap; }.saveBar span { flex-basis:100%; }.changeTable th,.changeTable td { min-width:130px; }.intro > span { display:none; } }
+.saveBar { top:82px; }
+@media(max-width:600px) { .saveBar { top:130px; }.saveBar input { max-width:100%; } }
+/* The calendar now scrolls within its own frame. Keep controls outside it so
+   they never obscure a day while the user is moving an event. */
+.saveBar { position:relative; top:auto; }

@@ -1,5 +1,5 @@
 // src/components/TeamRosterPanel.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   totalCap,
   totalBuyoutPenalty,
@@ -101,7 +101,6 @@ const HealthIcon = ({ size = 14 }) => {
 function TeamRosterPanel({
   team,
   teams,                 // ✅ NEW
-  selectedTeamName,      // ✅ NEW (optional but nice)
   setSelectedTeamName,
   capLimit,
   maxRosterSize,
@@ -124,7 +123,6 @@ function TeamRosterPanel({
   // Local UI state
   // -----------------------
   const [hoveredBuyoutRef, setHoveredBuyoutRef] = useState(null);
-  const [dragFromIndex, setDragFromIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
 // ✅ Sorting (local UI only; safe)
 const [sortKey, setSortKey] = useState("salary"); // default
@@ -141,8 +139,6 @@ const [sortDir, setSortDir] = useState("desc");   // default
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
-
-const [statsSortKey, setStatsSortKey] = useState("fp"); // fp | fpg | gp | g | a | p
 
   if (!team) {
     return (
@@ -322,7 +318,7 @@ const getPlayerDisplayName = (p) => {
   const normalizeNameKey = (s) =>
     String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 
-  const looseNameKey = (s) => normalizeNameKey(s).replace(/[.'’\-]/g, "");
+  const looseNameKey = (s) => normalizeNameKey(s).replace(/[.'’-]/g, "");
 
   const resolvePlayerTokenLabel = (token) => {
     const raw = String(token || "").trim();
@@ -431,7 +427,6 @@ const getPlayerDisplayName = (p) => {
   // -----------------------
   const handleDragStart = (e, index) => {
     if (!canEditThisTeam) return;
-    setDragFromIndex(index);
     e.dataTransfer.setData("text/plain", String(index));
   };
 
@@ -453,7 +448,6 @@ const getPlayerDisplayName = (p) => {
     reordered.splice(index, 0, moved);
 
     onUpdateTeamRoster(team.name, [...reordered, ...irPlayers]);
-    setDragFromIndex(null);
     setDragOverIndex(null);
   };
 
@@ -1264,13 +1258,6 @@ const mobileNameStyle = {
   flex: 1,
 };
 
-const mobileActionsWrapStyle = {
-  display: "flex",
-  gap: 6,
-  alignItems: "center",
-  flexShrink: 0,
-};
-
 const mobileBottomRowStyle = {
   display: "grid",
   gridTemplateColumns: "auto auto auto 1fr", // salary | team | age | stats
@@ -1294,13 +1281,6 @@ const mobileStatsRowStyle = {
 };
 
 
-const mobileMetaPillStyle = {
-  display: "inline-flex",
-  alignItems: "baseline",
-  gap: 6,
-  flexWrap: "wrap",
-};
-
 const mobileSalaryStyle = {
   fontWeight: 600,
   fontSize: "0.82rem",
@@ -1314,12 +1294,6 @@ const mobileMetaStyle = {
   color: "#94a3b8",          // muted slate
   letterSpacing: "0.03em",
   fontVariantNumeric: "tabular-nums",
-};
-
-const mobileMiniStatStyle = {
-  display: "inline-flex",
-  alignItems: "baseline",
-  gap: 2,
 };
 
 const mobileMiniNumStyle = {
@@ -1353,20 +1327,6 @@ const mobileHeaderRowStyle = {
   textTransform: "uppercase",
   letterSpacing: "0.10em",
   userSelect: "none",
-};
-
-
-const mobileHeaderStatsStyle = {
-  minWidth: 0,
-  display: "grid",
-  gridTemplateColumns: "auto auto auto auto auto 6px auto auto",
-  /*            GP   G    A    P    |  FP   FPG  */
-
-  alignItems: "baseline",
-  columnGap: 6,
-  justifyContent: "end",
-  whiteSpace: "nowrap",
-  overflow: "hidden",
 };
 
 
@@ -1616,10 +1576,10 @@ const SortHeader = ({ label, sortId, align = "right", onClick, active, dir }) =>
   );
 };
 
-const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) => {
-  const Arrow = ({ active }) =>
-    active ? <span style={mobileHeaderArrowStyle}>{sortDir === "asc" ? "▲" : "▼"}</span> : null;
+const MobileSortArrow = ({ active, sortDir }) =>
+  active ? <span style={mobileHeaderArrowStyle}>{sortDir === "asc" ? "▲" : "▼"}</span> : null;
 
+const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) => {
   const click = (key) => {
     if (!canSort) return;
     onClickSort(key);
@@ -1632,7 +1592,7 @@ const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) =>
         onClick={() => click("salary")}
         title={canSort ? "Sort by salary" : ""}
       >
-        SAL<Arrow active={sortKey === "salary"} />
+        SAL<MobileSortArrow active={sortKey === "salary"} sortDir={sortDir} />
       </div>
 
       <div style={{ opacity: 0.9 }}>TEAM</div>
@@ -1642,7 +1602,7 @@ const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) =>
         onClick={() => click("age")}
         title={canSort ? "Sort by age" : ""}
       >
-        AGE<Arrow active={sortKey === "age"} />
+        AGE<MobileSortArrow active={sortKey === "age"} sortDir={sortDir} />
       </div>
 
       <div style={mobileStatsGrid}>
@@ -1651,7 +1611,7 @@ const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) =>
     onClick={() => click("gp")}
     title={canSort ? "Sort by GP" : ""}
   >
-    GP<Arrow active={sortKey === "gp"} />
+    GP<MobileSortArrow active={sortKey === "gp"} sortDir={sortDir} />
   </span>
 
   <span
@@ -1659,7 +1619,7 @@ const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) =>
     onClick={() => click("g")}
     title={canSort ? "Sort by G" : ""}
   >
-    G<Arrow active={sortKey === "g"} />
+    G<MobileSortArrow active={sortKey === "g"} sortDir={sortDir} />
   </span>
 
   <span
@@ -1667,7 +1627,7 @@ const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) =>
     onClick={() => click("a")}
     title={canSort ? "Sort by A" : ""}
   >
-    A<Arrow active={sortKey === "a"} />
+    A<MobileSortArrow active={sortKey === "a"} sortDir={sortDir} />
   </span>
 
   <span
@@ -1675,7 +1635,7 @@ const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) =>
     onClick={() => click("p")}
     title={canSort ? "Sort by P" : ""}
   >
-    P<Arrow active={sortKey === "p"} />
+    P<MobileSortArrow active={sortKey === "p"} sortDir={sortDir} />
   </span>
 
   <span /> {/* spacer column (the 6px) */}
@@ -1685,7 +1645,7 @@ const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) =>
     onClick={() => click("fp")}
     title={canSort ? "Sort by FP" : ""}
   >
-    FP<Arrow active={sortKey === "fp"} />
+    FP<MobileSortArrow active={sortKey === "fp"} sortDir={sortDir} />
   </span>
 
   <span
@@ -1693,7 +1653,7 @@ const MobileRosterColumnHeader = ({ canSort, sortKey, sortDir, onClickSort }) =>
     onClick={() => click("fpg")}
     title={canSort ? "Sort by FPG" : ""}
   >
-    FPG<Arrow active={sortKey === "fpg"} />
+    FPG<MobileSortArrow active={sortKey === "fpg"} sortDir={sortDir} />
   </span>
 </div>
 

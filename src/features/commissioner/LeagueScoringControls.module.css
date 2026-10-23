@@ -1,0 +1,14 @@
+table.weights {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+.weights th:first-child { width: 44%; text-align: left; white-space: normal; }
+.weights th, .weights td { padding: 10px 4px; }
+.weights thead th { white-space: normal; }
+.weights td input { width: 100%; min-width: 0; box-sizing: border-box; }
+.weights caption { padding: 12px 0; text-align: left; font-size: .85rem; }
+@media (min-width: 600px) {
+  .weights th, .weights td { padding: 10px 12px; }
+  .weights td input { max-width: 9rem; }
+}

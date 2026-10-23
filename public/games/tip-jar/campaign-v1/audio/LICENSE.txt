@@ -1,0 +1,97 @@
+TIP JAR — SOUND RECORDING CREDITS
+
+These sounds are real recordings, adapted from publicly available
+Freesound HQ preview files under the licenses listed below.
+Attribution applies to the recordings; their creators do not endorse this game.
+No synthesized tones, generated impacts, or artificial reverb were added.
+
+shoot.wav
+  Ice Hockey Sound Library_Wrist Shot — AudioAlchemyDesigns
+  Source: https://freesound.org/people/AudioAlchemyDesigns/sounds/826200/
+  License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+  Use: Isolated sweeping wrist-shot release and its short natural decay.
+  Changes: Excerpt 0.436–0.720s; mono downmix; 48 kHz resampling; 1 pass(es) of 75 Hz single-pole high-pass; peak level adjustment to 0.80; 0.5 ms fade-in and 60 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+tip.wav
+  Ice Hockey Sound Library_Stick Handles — AudioAlchemyDesigns
+  Source: https://freesound.org/people/AudioAlchemyDesigns/sounds/826199/
+  License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+  Use: One isolated puck-to-stick contact from a stickhandling recording.
+  Changes: Excerpt 0.660–0.805s; mono downmix; 48 kHz resampling; 1 pass(es) of 90 Hz single-pole high-pass; peak level adjustment to 0.72; 0.5 ms fade-in and 35 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+post.wav
+  Ice Hockey Sound Library_Post2 — AudioAlchemyDesigns
+  Source: https://freesound.org/people/AudioAlchemyDesigns/sounds/826197/
+  License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+  Use: The actual goalpost strike, with its natural ring and rink decay.
+  Changes: Excerpt 0.192–0.680s; mono downmix; 48 kHz resampling; 1 pass(es) of 70 Hz single-pole high-pass; peak level adjustment to 0.80; 0.5 ms fade-in and 100 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+net.wav
+  hockey net — Luisa_Sanchez
+  Source: https://freesound.org/people/Luisa_Sanchez/sounds/816988/
+  License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+  Use: Soft netting rustle: contact-mic bass resonance removed and level reduced.
+  Changes: Excerpt 0.212–0.632s; mono downmix; 48 kHz resampling; 2 pass(es) of 650 Hz single-pole high-pass; 4000 Hz low-pass; peak level adjustment to 0.16; 10 ms fade-in and 100 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+target-hit.wav
+  Metal pipe hit by metal — copyc4t
+  Source: https://freesound.org/people/copyc4t/sounds/244611/
+  License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+  Use: Physical target impact for direct hits or already-cleared targets; no reward chime.
+  Changes: Excerpt 0.518–0.940s; mono downmix; 48 kHz resampling; 1 pass(es) of 90 Hz single-pole high-pass; peak level adjustment to 0.72; 0.5 ms fade-in and 40 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+target.wav
+  Glockenspiel - C5 (glock_medium_C5.wav) — sgossner
+  Source: https://freesound.org/people/sgossner/sounds/373364/
+  License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+  Use: Real glockenspiel note by Sam Gossner / VSCO 2 Community Edition. Success-only playback rises through C-D-E-G-high C for targets cleared 1-5, independent of location or power.
+  Changes: Excerpt 0.000–1.050s; mono downmix; 48 kHz resampling; 1 pass(es) of 80 Hz single-pole high-pass; peak level adjustment to 0.58; 0.5 ms fade-in and 400 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+body.wav
+  Light Body thud (on clothing) — JonasTisell
+  Source: https://freesound.org/people/JonasTisell/sounds/496187/
+  License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+  Use: Shortened real clothing/body impact, layered in the game with a separately recorded male grunt.
+  Changes: Excerpt 0.050–0.300s; mono downmix; 48 kHz resampling; 1 pass(es) of 40 Hz single-pole high-pass; peak level adjustment to 0.75; 0.5 ms fade-in and 55 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+grunt.wav
+  GRUNT_001.wav — JoelAudio
+  Source: https://freesound.org/people/JoelAudio/sounds/135855/
+  License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+  Use: Real male impact/pain grunt, layered 45 ms after the puck/body thud.
+  Changes: Excerpt 0.105–0.720s; mono downmix; 48 kHz resampling; 1 pass(es) of 65 Hz single-pole high-pass; peak level adjustment to 0.65; 4 ms fade-in and 90 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+target-bell.wav
+  bell1.wav — Tairblenn
+  Source: https://freesound.org/people/Tairblenn/sounds/549898/
+  License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+  Use: A real small metal bell struck with a tea spoon; bell-target reward.
+  Changes: Excerpt 0.000–1.650s; mono downmix; 48 kHz resampling; 1 pass(es) of 55 Hz single-pole high-pass; peak level adjustment to 0.60; 0.5 ms fade-in and 450 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+target-bird.wav
+  Crow Caw — qubodup
+  Source: https://freesound.org/people/qubodup/sounds/813115/
+  License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+  Use: Short recorded crow caw for the falling game bird. The source is a bird call, not a recording of an injured or dying animal. Edited by qubodup from Hooded Crow: Panic Cawing (CC0) by Mish7913.
+  Changes: Excerpt 0.000–0.632s; mono downmix; 48 kHz resampling; 1 pass(es) of 90 Hz single-pole high-pass; peak level adjustment to 0.58; 2 ms fade-in and 70 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+target-can.wav
+  Crushing aluminum can 2.wav — nahmandub
+  Source: https://freesound.org/people/nahmandub/sounds/131323/
+  License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+  Use: Real aluminum-can crumple and metallic crunch for bursting beer-can targets.
+  Changes: Excerpt 0.000–0.750s; mono downmix; 48 kHz resampling; 1 pass(es) of 65 Hz single-pole high-pass; peak level adjustment to 0.75; 0.5 ms fade-in and 100 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+target-plate.wav
+  Plate Break 1.wav — jc.sg
+  Source: https://freesound.org/people/jc.sg/sounds/565642/
+  License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+  Use: Real dropped ceramic plate breaking and small fragments settling.
+  Changes: Excerpt 0.005–0.950s; mono downmix; 48 kHz resampling; 1 pass(es) of 90 Hz single-pole high-pass; peak level adjustment to 0.65; 0.5 ms fade-in and 160 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.
+
+target-duck.wav
+  rubber duck -CsG-.wav — csaszi
+  Source: https://freesound.org/people/csaszi/sounds/350917/
+  License: CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+  Use: One real rubber-toy squeak for the rubber-duck targets.
+  Changes: Excerpt 0.085–0.510s; mono downmix; 48 kHz resampling; 1 pass(es) of 75 Hz single-pole high-pass; peak level adjustment to 0.60; 2 ms fade-in and 55 ms fade-out; 8 ms silent end padding. No added synthesized layer or reverb.

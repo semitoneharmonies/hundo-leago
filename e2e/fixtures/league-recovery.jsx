@@ -1,0 +1,15 @@
+import {createRoot} from 'react-dom/client';
+import {MemoryRouter} from 'react-router-dom';
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
+import {SessionContext} from '../../src/features/session/sessionContext.js';
+import {LeagueRecoveryPanel} from '../../src/features/commissioner/LeagueRecoveryPanel.jsx';
+import {OperationsHealthPanel} from '../../src/features/leagues/OperationsHealthPanel.jsx';
+import '../../src/styles/theme-a.css';
+const leagueId='11111111-1111-4111-8111-111111111111',seasonId='22222222-2222-4222-8222-222222222222';window.recoveryRequests=[];
+const httpClient={async request(url,options){window.recoveryRequests.push({url,method:options.method||'GET',body:options.body});
+ let data={leagueId,seasonId,operationCount:1,tradeCount:1,operations:[{id:'job',kind:'matchup:lock',status:'failed',attempts:2,nextAttemptAtMs:null}],drafts:[{id:'33333333-3333-4333-8333-333333333333',status:'rapid_active'}],weeks:[],trades:[{id:'44444444-4444-4444-8444-444444444444',proposingTeam:'Ice Owls',receivingTeam:'Harbour Seals'}]};
+ if(url.endsWith('/health'))data={lifecycle:'ready',scheduler:{enabled:true,state:'running'},accountEmailDelivery:{enabled:true,pending:3,publishing:0,failed:1},jobs:{pending:7,running:0,failed:1,interrupted:0},outbox:{pending:3,publishing:0,failed:1},backupSchedule:{enabled:true,latestRun:{status:'succeeded'}},lastVerifiedBackup:{verifiedAtMs:1790701200000},lastValidStatisticsRefresh:{completedAtMs:1790701200000}};
+ if(options.body?.confirmed===false)data={code:'MATCHUP_STANDINGS_REBUILD_PREVIEWED',preview:{expectedVersion:1,currentSnapshotId:null,projection:{leagueId,seasonId,rows:[{teamId:'team',teamDisplayName:'Ice Owls',rank:1,wins:2,losses:0,ties:1,standingsPoints:5}]}}};
+ if(options.body?.confirmed===true)data={code:'MATCHUP_STANDINGS_REBUILT',result:{replayed:false}};
+ options.validateData?.(data);return {data};}};
+createRoot(document.getElementById('root')).render(<MemoryRouter><QueryClientProvider client={new QueryClient()}><SessionContext.Provider value={{status:'authenticated',httpClient}}><main style={{maxWidth:1000,margin:'24px auto',padding:16}}><h1>Synthetic recovery tools</h1><LeagueRecoveryPanel leagueId={leagueId} seasonId={seasonId}/><OperationsHealthPanel httpClient={httpClient}/></main></SessionContext.Provider></QueryClientProvider></MemoryRouter>);

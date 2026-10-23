@@ -1,0 +1,23 @@
+.jersey { isolation: isolate; position: relative; display: grid; place-items: center; height: 98px; margin: 8px 10px 0; overflow: hidden; border: 1px solid #ffffff1a; border-radius: 7px; background: radial-gradient(ellipse at 50% 100%, color-mix(in srgb, var(--team-primary) 70%, #ffffff 8%), transparent 75%), var(--hl-panel); }
+.jersey::before { content: ''; position: absolute; z-index: -1; width: 140%; height: 42px; transform: rotate(-20deg); background: var(--team-primary); border-top: 6px solid var(--team-stripe); border-bottom: 2px solid #ffffffb3; box-shadow: 0 6px 0 var(--team-primary), 0 8px 0 var(--team-stripe); opacity: .7; }
+.jersey::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(125deg, #ffffff12, transparent 38%, #ffffff06 48%, transparent 58%), repeating-linear-gradient(90deg, #ffffff03 0 1px, transparent 1px 4px); }
+.speed-lines::after, .paired-lines::after, .speed-trails::after { z-index: -1; background: repeating-linear-gradient(160deg, transparent 0 12px, color-mix(in srgb, var(--team-stripe) 65%, transparent) 12px 13px, transparent 13px 22px, #ffffff24 22px 23px, transparent 23px 34px); mask-image: linear-gradient(90deg, transparent, #000 20% 80%, transparent); }
+.paired-lines::after { background: repeating-linear-gradient(160deg, transparent 0 13px, color-mix(in srgb, var(--team-stripe) 80%, transparent) 13px 14.5px, transparent 14.5px 18px, #ffffff60 18px 19px, transparent 19px 43px); }
+.trailing-ribbons::before, .speed-trails::before { box-shadow: 0 6px 0 var(--team-primary), 0 8px 0 var(--team-stripe), 0 21px 0 -6px var(--hl-panel), 0 24px 0 -6px var(--team-stripe), 0 36px 0 -9px var(--hl-panel), 0 38px 0 -9px var(--team-stripe), 0 -17px 0 -6px var(--hl-panel), 0 -19px 0 -6px #ffffff80; }
+.full-energy::before { background: repeating-linear-gradient(to bottom, var(--team-primary) 0 8px, color-mix(in srgb, var(--team-stripe) 45%, var(--team-primary)) 8px 9px, var(--team-primary) 9px 14px); box-shadow: 0 0 0 4px var(--hl-panel), 0 0 0 7px var(--team-stripe), 0 0 0 11px var(--hl-panel), 0 0 0 12px #ffffffa6, 0 0 0 17px var(--hl-panel), 0 0 0 19px var(--team-stripe); }
+.number { display: block; height: 84px; max-width: 55%; overflow: visible; }
+.number use { stroke-linejoin: round; paint-order: stroke fill; }
+.outer { fill: var(--team-accent); stroke: var(--team-number-outer); stroke-width: 9; }
+.outline { fill: var(--team-accent); stroke: var(--team-number-outline); stroke-width: 5; }
+.fill { fill: var(--team-accent); stroke: none; }
+.detail { fill: var(--team-primary); stroke: none; }
+.fallback { font-family: var(--hl-font-display); font-size: 82px; font-weight: 900; line-height: 1; color: var(--team-accent); }
+.team, .caption { position: absolute; z-index: 1; color: #ffffff; background: #070d1c; font-family: var(--hl-font-mono); font-size: 10px; letter-spacing: .12em; line-height: 1.3; }
+.team { top: 10px; left: 11px; padding: 4px 6px; border: 1px solid #ffffff24; border-radius: 3px; font-weight: 700; }
+.caption { bottom: 8px; right: 10px; padding: 3px 5px; font-size: 7px; text-transform: uppercase; }
+@media (forced-colors: active) {
+  .jersey { background: Canvas; }
+  .jersey::before, .jersey::after, .outer, .outline, .detail { display: none; }
+  .fill { fill: CanvasText; }
+  .fallback, .team, .caption { color: CanvasText; background: Canvas; }
+}

@@ -1,0 +1,5 @@
+.hl-tipjar-nav-label { display: inline-flex; align-items: baseline; gap: .45em; white-space: nowrap; }
+/* Matches the white/mint Arial wordmark on the rink scoreboard. */
+.hl-tipjar-wordmark { display: inline-block; font: 900 1.55em/1 Arial, sans-serif; letter-spacing: -.055em; color: #fff; }
+.hl-tipjar-wordmark > span:last-of-type, .hl-tipjar-wordmark > sup { color: #b4edce; }
+.hl-tipjar-wordmark > sup { font: 700 .42em/1 Arial, sans-serif; letter-spacing: 0; vertical-align: super; margin-left: .06em; }

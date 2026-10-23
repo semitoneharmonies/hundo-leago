@@ -1,0 +1,904 @@
+import { injuryNameProps } from '../../shared/playerInjury.js';
+import { canonicalNhlTeam } from '../../shared/nhlTeams.js';
+import { PlayerName } from './PlayerName.jsx';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
+import { Gavel } from "lucide-react";
+import { Link, Navigate, useParams } from "react-router-dom";
+
+import { SCORING_CATEGORIES, scoringDescription } from "../../shared/scoringCategories.js";
+import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
+import { routePaths } from "../../app/routePaths.js";
+import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
+import {
+  EmptyBlock,
+  ErrorBlock,
+  LoadingBlock,
+  PageHeading,
+  PositionTag,
+  Surface,
+  TableScroll,
+} from "../../components/HundoUi.jsx";
+import {
+  leagueTeamsQuery,
+  visibleLeaguesQuery,
+} from "../leagues/leagueQueries.js";
+import { auctionListQuery } from "../auctions/auctionQueries.js";
+import { capabilityMessage } from "../auctions/auctionUi.js";
+import { useSession } from "../session/sessionContext.js";
+import { AavRangeFilter } from "./AavRangeFilter.jsx";
+import contractFilterStyles from "./AavRangeFilter.module.css";
+import "../../styles/mobile-player-tables.css";
+import {
+  leaguePlayerInfiniteQuery,
+  leaguePlayerDetailQuery,
+  leaguePlayerSearchQuery,
+} from "./playerQueries.js";
+
+const PLAYER_AUTOCOMPLETE_LIMIT = 100;
+
+const NHL_TEAM_OPTIONS = Object.freeze([
+  ["ANA", "Anaheim Ducks"],
+  ["BOS", "Boston Bruins"],
+  ["BUF", "Buffalo Sabres"],
+  ["CAR", "Carolina Hurricanes"],
+  ["CBJ", "Columbus Blue Jackets"],
+  ["CGY", "Calgary Flames"],
+  ["CHI", "Chicago Blackhawks"],
+  ["COL", "Colorado Avalanche"],
+  ["DAL", "Dallas Stars"],
+  ["DET", "Detroit Red Wings"],
+  ["EDM", "Edmonton Oilers"],
+  ["FLA", "Florida Panthers"],
+  ["LAK", "Los Angeles Kings"],
+  ["MIN", "Minnesota Wild"],
+  ["MTL", "Montreal Canadiens"],
+  ["NJD", "New Jersey Devils"],
+  ["NSH", "Nashville Predators"],
+  ["NYI", "New York Islanders"],
+  ["NYR", "New York Rangers"],
+  ["OTT", "Ottawa Senators"],
+  ["PHI", "Philadelphia Flyers"],
+  ["PIT", "Pittsburgh Penguins"],
+  ["SEA", "Seattle Kraken"],
+  ["SJS", "San Jose Sharks"],
+  ["STL", "St. Louis Blues"],
+  ["TBL", "Tampa Bay Lightning"],
+  ["TOR", "Toronto Maple Leafs"],
+  ["UTA", "Utah Mammoth"],
+  ["VAN", "Vancouver Canucks"],
+  ["VGK", "Vegas Golden Knights"],
+  ["WPG", "Winnipeg Jets"],
+  ["WSH", "Washington Capitals"],
+]);
+
+function ErrorMessage({ error }) {
+  if (!error) return null;
+  return <ErrorBlock error={error} fallback="The player request could not be completed." />;
+}
+
+function displayPosition(player) {
+  return (
+    player.provider?.normalizedPosition ||
+    player.provider?.sourcePosition ||
+    "—"
+  );
+}
+
+function ageFromBirthDate(birthDate, now = new Date()) {
+  if (
+    typeof birthDate !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)
+  ) {
+    return "—";
+  }
+  const [year, month, day] = birthDate.split("-").map(Number);
+  const beforeBirthday =
+    now.getUTCMonth() + 1 < month ||
+    (now.getUTCMonth() + 1 === month && now.getUTCDate() < day);
+  return String(now.getUTCFullYear() - year - (beforeBirthday ? 1 : 0));
+}
+
+function playerAavLabel(player) {
+  const contract = player.league.activeContract;
+  if (contract) return `$${(contract.aavCents / 100).toFixed(2)}`;
+  return player.league.ownership ? "—" : "FA";
+}
+
+function playerYearsLabel(player) {
+  return player.league.activeContract?.remainingYears ?? "—";
+}
+
+function fantasyPointsPerGame(statistics) {
+  if (!statistics) return null;
+  if (statistics.gamesPlayed === 0) return 0;
+  return statistics.fantasyPointsHundredths / 100 / statistics.gamesPlayed;
+}
+
+function SortHeading({ activeSort, label, sortKey, onSort }) {
+  return (
+    <button
+      type="button"
+      className="hl-sort-button"
+      onClick={() => onSort(sortKey)}
+      aria-label={`Sort by ${label}`}
+    >
+      {label}
+      {activeSort.key === sortKey
+        ? activeSort.direction === "asc"
+          ? " ↑"
+          : " ↓"
+        : ""}
+    </button>
+  );
+}
+
+function SortableColumnHeading({
+  scoringWeights,
+  activeSort,
+  className,
+  label,
+  sortKey,
+  onSort,
+}) {
+  return (
+    <th
+      className={className}
+      title={scoringDescription(sortKey, scoringWeights)}
+      scope="col"
+      aria-sort={
+        activeSort.key === sortKey
+          ? activeSort.direction === "asc"
+            ? "ascending"
+            : "descending"
+          : undefined
+      }
+    >
+      <SortHeading
+        activeSort={activeSort}
+        label={label}
+        sortKey={sortKey}
+        onSort={onSort}
+      />
+    </th>
+  );
+}
+
+function HockeyStickIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      focusable="false"
+      className="hl-hockey-stick"
+    >
+      <path
+        d="M18.8 2.8 8.1 18.1c-.8 1.1-1.9 1.7-3.3 1.7H2.7"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+      <path
+        d="m16.6 5.9 2.7 1.9M14.7 8.7l2.6 1.8"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.2"
+      />
+    </svg>
+  );
+}
+
+export function PlayersCatalogPage() {
+  const { leagueId } = useParams();
+  const session = useSession();
+  const leagues = useQuery({
+    ...visibleLeaguesQuery(session.httpClient),
+    enabled: session.status === "authenticated",
+  });
+  const league = leagues.data?.find(({ id }) => id === leagueId) || null;
+  const [searchInput, setSearchInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [position, setPosition] = useState("all");
+  const [nhlTeam, setNhlTeam] = useState("all");
+  const [ownership, setOwnership] = useState("all");
+  const [minimumGames, setMinimumGames] = useState("0");
+  const [remainingYears, setRemainingYears] = useState("all");
+  const [contractType, setContractType] = useState("all");
+  const [aavRange, setAavRange] = useState({ enabled: false, minimum: "2", maximum: "6" });
+  const activeAdditionalFilters = [
+    remainingYears !== "all", contractType !== "all",
+    minimumGames !== "0", nhlTeam !== "all", aavRange.enabled,
+  ].filter(Boolean).length;
+  const minimumAavCents = Math.round(Number(aavRange.minimum) * 100);
+  const maximumAavCents = Math.round(Number(aavRange.maximum) * 100);
+  const aavRangeValid = [aavRange.minimum, aavRange.maximum].every(
+    (value) => /^\d+(\.\d{1,2})?$/.test(value) && Number.isSafeInteger(Math.round(Number(value) * 100))
+  ) && minimumAavCents <= maximumAavCents;
+  const contractFilters = useDeferredValue(useMemo(() => ({
+    remainingYears: remainingYears === "all" ? null : Number(remainingYears),
+    contractType,
+    minimumAavCents: aavRange.enabled && aavRangeValid ? minimumAavCents : null,
+    maximumAavCents: aavRange.enabled && aavRangeValid ? maximumAavCents : null,
+  }), [remainingYears, contractType, aavRange.enabled, aavRangeValid, minimumAavCents, maximumAavCents]));
+  const [autocompleteDismissed, setAutocompleteDismissed] = useState(false);
+  const [sort, setSort] = useState({
+    key: "fantasyPoints",
+    direction: "desc",
+  });
+  const [favouriteSelections, setFavouriteSelections] = useState(() => new Map());
+  const favouriteScope = `${session.user?.id || ""}:${leagueId}`;
+  const favourites = useMemo(() => favouriteSelections.get(favouriteScope) || new Map(), [favouriteSelections, favouriteScope]);
+  const comparedIds = useMemo(() => new Set(favourites.keys()), [favourites]);
+  const viewingFavourites = ownership === "favourites";
+  // Contract type is deliberately absent from the player read projection.
+  // Let the existing server filter decide membership when that filter is used.
+  const serverFilteredFavourites = viewingFavourites && contractType !== "all";
+  const favouriteQueries = useQueries({
+    queries: [...favourites.values()].map((player) => ({
+      ...leaguePlayerDetailQuery(session.httpClient, leagueId, player.id),
+      placeholderData: player,
+      enabled: viewingFavourites && session.status === "authenticated" && Boolean(league),
+    })),
+  });
+  const searchInputRef = useRef(null);
+  const suggestionListRef = useRef(null);
+  const deferredSearchInput = useDeferredValue(searchInput.trim());
+  const selectedTeamId = ownership.startsWith("team:")
+    ? ownership.slice(5)
+    : null;
+  const serverOwnership = ["free", "prospects", "signed"].includes(ownership)
+    ? ownership
+    : "all";
+  const players = useInfiniteQuery({
+    ...leaguePlayerInfiniteQuery(session.httpClient, leagueId, {
+      query,
+      status: "active",
+      limit: 100,
+      sort: "fantasyPoints",
+      teamId: selectedTeamId,
+      position: position === "all" ? null : position,
+      nhlTeam: nhlTeam === "all" ? null : nhlTeam,
+      ownership: serverOwnership,
+      minimumGames: Number(minimumGames),
+      ...contractFilters,
+    }),
+    enabled: (!viewingFavourites || serverFilteredFavourites) && session.status === "authenticated" && Boolean(league) && (!aavRange.enabled || aavRangeValid),
+  });
+  const { hasNextPage, isFetching, isError, fetchNextPage } = players;
+  useEffect(() => {
+    if (serverFilteredFavourites && hasNextPage && !isFetching && !isError) {
+      void fetchNextPage();
+    }
+  }, [serverFilteredFavourites, hasNextPage, isFetching, isError, fetchNextPage]);
+  const autocomplete = useQuery({
+    ...leaguePlayerSearchQuery(session.httpClient, leagueId, {
+      query: deferredSearchInput,
+      status: "active",
+      limit: PLAYER_AUTOCOMPLETE_LIMIT,
+      sort: "name",
+    }),
+    enabled:
+      session.status === "authenticated" &&
+      Boolean(league) &&
+      deferredSearchInput.length >= 2 &&
+      deferredSearchInput.toLowerCase() !== query.toLowerCase(),
+  });
+  const teams = useQuery({
+    ...leagueTeamsQuery(session.httpClient, leagueId),
+    enabled: session.status === "authenticated" && Boolean(league),
+  });
+  const auctionActions = useInfiniteQuery({
+    ...auctionListQuery(session.httpClient, leagueId, { limit: 1 }),
+    enabled: session.status === "authenticated" && Boolean(league),
+  });
+  const auctionAction = useMemo(() => {
+    if (auctionActions.isPending) {
+      return {
+        allowed: false,
+        message: "Checking auction availability…",
+      };
+    }
+    if (auctionActions.isError) {
+      return {
+        allowed: false,
+        message:
+          "Auction availability could not be checked. Refresh the page to try again.",
+      };
+    }
+    const startTeams =
+      auctionActions.data?.pages.flatMap(
+        (page) => page.actions.startTeams
+      ) || [];
+    if (startTeams.some(({ startAuction }) => startAuction.allowed)) {
+      return { allowed: true, message: null };
+    }
+    if (startTeams.length === 0) {
+      return {
+        allowed: false,
+        message: "You do not control a team that can start an auction.",
+      };
+    }
+    return {
+      allowed: false,
+      message: capabilityMessage(startTeams[0].startAuction.reasonCode),
+    };
+  }, [auctionActions.data, auctionActions.isError, auctionActions.isPending]);
+
+  const loadedPlayers = useMemo(() => {
+    const playersById = new Map();
+    for (const page of players.data?.pages || []) {
+      for (const player of page.players) {
+        playersById.set(player.id, player);
+      }
+    }
+    return [...playersById.values()];
+  }, [players.data]);
+  const availablePlayers = useMemo(
+    () =>
+      loadedPlayers.filter(
+        (player) =>
+          player.status === "active" && player.provider?.active !== false
+      ),
+    [loadedPlayers]
+  );
+  const leagueTeams = useMemo(() => {
+    if (teams.data) return teams.data;
+    const byId = new Map();
+    for (const player of availablePlayers) {
+      const team = player.league.ownership?.team;
+      if (team) byId.set(team.id, team);
+    }
+    return [...byId.values()].sort((left, right) =>
+      left.name.localeCompare(right.name)
+    );
+  }, [availablePlayers, teams.data]);
+  const visiblePlayers = useMemo(() => {
+    const minimum = Number(minimumGames);
+    const normalizedQuery = query.trim().toLowerCase();
+    const value = (player, key) => {
+      switch (key) {
+        case "player":
+          return player.fullName.toLowerCase();
+        case "position":
+          return displayPosition(player);
+        case "nhlTeam":
+          return player.provider?.nhlTeamAbbreviation || "";
+        case "age":
+          return Number(ageFromBirthDate(player.birthDate)) || -1;
+        case "gamesPlayed":
+          return player.statistics?.gamesPlayed ?? -1;
+        case "goals":
+          return player.statistics?.goals ?? -1;
+        case "assists":
+          return player.statistics?.assists ?? -1;
+        case "nhlPoints":
+          return player.statistics?.nhlPoints ?? -1;
+        case "fantasyPoints":
+          return player.statistics?.fantasyPointsHundredths ?? Number.NEGATIVE_INFINITY;
+        case "fantasyPointsPerGame":
+          return fantasyPointsPerGame(player.statistics) ?? Number.NEGATIVE_INFINITY;
+        case "assignment":
+          return player.league.ownership?.team.name || "";
+        case "contract":
+          return player.league.activeContract?.aavCents ?? -1;
+        default:
+          return player.statistics?.scoringStats?.[key] ?? Number.NEGATIVE_INFINITY;
+      }
+    };
+    return (viewingFavourites && !serverFilteredFavourites ? favouriteQueries.map((result) => result.data).filter(Boolean) : availablePlayers)
+      .filter(
+        (player) =>
+          (!normalizedQuery ||
+            player.fullName.toLowerCase().includes(normalizedQuery)) &&
+          (position === "all" || displayPosition(player) === position) &&
+          (nhlTeam === "all" ||
+            canonicalNhlTeam(player.provider?.nhlTeamAbbreviation) === nhlTeam) &&
+          (ownership === "all" ||
+            (ownership === "free" && !player.league.ownership) ||
+            (ownership === "signed" && Boolean(player.league.activeContract)) ||
+            (ownership === "favourites" && comparedIds.has(player.id)) ||
+            (ownership === "prospects" &&
+              (player.league.ownership?.category === "Prospect" ||
+                player.league.ownership?.kind === "Prospect Right")) ||
+            (ownership.startsWith("team:") &&
+              player.league.ownership?.team.id === ownership.slice(5))) &&
+          (player.statistics?.gamesPlayed ?? 0) >= minimum &&
+          (!viewingFavourites || (
+            player.status === "active" && player.provider?.active !== false &&
+            (remainingYears === "all" || player.league.activeContract?.remainingYears === Number(remainingYears)) &&
+            (!aavRange.enabled || (player.league.activeContract &&
+              player.league.activeContract.aavCents >= minimumAavCents &&
+              player.league.activeContract.aavCents <= maximumAavCents))
+          ))
+      )
+      .sort((left, right) => {
+        const leftValue = value(left, sort.key);
+        const rightValue = value(right, sort.key);
+        const comparison =
+          typeof leftValue === "string"
+            ? leftValue.localeCompare(rightValue)
+            : leftValue - rightValue;
+        return (
+          (sort.direction === "asc" ? comparison : -comparison) ||
+          left.lastName.localeCompare(right.lastName) ||
+          left.fullName.localeCompare(right.fullName)
+        );
+      });
+  }, [
+    availablePlayers,
+    comparedIds,
+    minimumGames,
+    nhlTeam,
+    ownership,
+    position,
+    query,
+    sort,
+    viewingFavourites, serverFilteredFavourites, favouriteQueries, remainingYears,
+    aavRange.enabled, minimumAavCents, maximumAavCents,
+  ]);
+  const autocompletePlayers = useMemo(() => {
+    const needle = searchInput.trim().toLowerCase();
+    if (needle.length < 2 || needle === query.toLowerCase()) return [];
+    return (autocomplete.data?.players || [])
+      .filter(
+        (player) =>
+          player.status === "active" &&
+          player.provider?.active !== false &&
+          player.fullName.toLowerCase().includes(needle)
+      );
+  }, [autocomplete.data, query, searchInput]);
+  const showAutocomplete =
+    !autocompleteDismissed && autocompletePlayers.length > 0;
+
+  function chooseAutocompletePlayer(player) {
+    setSearchInput(player.fullName);
+    setQuery(player.fullName);
+    setAutocompleteDismissed(true);
+    searchInputRef.current?.focus();
+  }
+
+  function moveSuggestionFocus(event, index) {
+    if (!["ArrowDown", "ArrowUp", "Escape"].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === "Escape") {
+      setAutocompleteDismissed(true);
+      searchInputRef.current?.focus();
+      return;
+    }
+    const options = [
+      ...(suggestionListRef.current?.querySelectorAll('[role="option"]') || []),
+    ];
+    const nextIndex =
+      event.key === "ArrowDown"
+        ? Math.min(index + 1, options.length - 1)
+        : index - 1;
+    if (nextIndex < 0) searchInputRef.current?.focus();
+    else options[nextIndex]?.focus();
+  }
+
+  function changeSort(key) {
+    setSort((current) =>
+      current.key === key
+        ? {
+            key,
+            direction: current.direction === "asc" ? "desc" : "asc",
+          }
+        : {
+            key,
+            direction: [
+              "gamesPlayed",
+              "goals",
+              "assists",
+              "nhlPoints",
+              "fantasyPoints",
+              "fantasyPointsPerGame",
+            ].includes(key)
+              ? "desc"
+              : "asc",
+          }
+    );
+  }
+
+  function toggleCompare(player) {
+    setFavouriteSelections((current) => {
+      const next = new Map(current);
+      const selected = new Map(next.get(favouriteScope));
+      if (selected.has(player.id)) selected.delete(player.id);
+      else selected.set(player.id, player);
+      next.set(favouriteScope, selected);
+      return next;
+    });
+  }
+
+  if (session.status === "unauthenticated") {
+    return (
+      <Navigate to={routePaths.home} replace state={{ reason: "sign-in" }} />
+    );
+  }
+  if (session.status === "unknown" || leagues.isPending) {
+    return (
+      <main className="hl-page">
+        <Surface>
+          <LoadingBlock>Checking secure league access…</LoadingBlock>
+        </Surface>
+      </main>
+    );
+  }
+  if (leagues.isError || !league) {
+    return (
+      <main className="hl-page">
+        <PageHeading eyebrow="Players" title="Player access unavailable" />
+        <ErrorMessage error={leagues.error} />
+      </main>
+    );
+  }
+
+  return (
+    <main className="hl-page hl-page--wide">
+      <PageHeading
+        eyebrow={league.name}
+        title="Players"
+      />
+      <Surface
+        as="section"
+        className={`hl-player-search ${contractFilterStyles.panel}`}
+        aria-label="Player filters"
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            setQuery(searchInput.trim());
+            setAutocompleteDismissed(true);
+          }}
+          className={contractFilterStyles.catalogFilters}
+        >
+          <div className={`hl-field hl-player-autocomplete ${contractFilterStyles.search}`}>
+            <label htmlFor="player-name-search">Search by player name</label>
+            <div className={`hl-field ${contractFilterStyles.searchControls}`}>
+              <input
+                ref={searchInputRef}
+                id="player-name-search"
+                type="search"
+                role="combobox"
+                value={searchInput}
+                onChange={(event) => {
+                  setSearchInput(event.target.value);
+                  setAutocompleteDismissed(false);
+                }}
+                onFocus={() => setAutocompleteDismissed(false)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && showAutocomplete) {
+                    event.preventDefault();
+                    setAutocompleteDismissed(true);
+                  } else if (event.key === "ArrowDown" && showAutocomplete) {
+                    event.preventDefault();
+                    suggestionListRef.current
+                      ?.querySelector('[role="option"]')
+                      ?.focus();
+                  }
+                }}
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-controls="player-name-suggestions"
+                aria-expanded={showAutocomplete}
+              />
+              <button className="hl-button hl-button--primary" type="submit">Search</button>
+            </div>
+            {showAutocomplete && (
+              <ul
+                ref={suggestionListRef}
+                id="player-name-suggestions"
+                className="hl-player-suggestions"
+                role="listbox"
+                aria-label="Matching players"
+              >
+                {autocompletePlayers.map((player, index) => (
+                  <li key={player.id} role="presentation">
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected="false"
+                      onClick={() => chooseAutocompletePlayer(player)}
+                      onKeyDown={(event) =>
+                        moveSuggestionFocus(event, index)
+                      }
+                    >
+                      <strong>{player.fullName}</strong>
+                      <span>
+                        {displayPosition(player)} ·{" "}
+                        {player.provider?.nhlTeamAbbreviation ||
+                          "NHL team unavailable"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <label className="hl-field">
+            League assignment
+            <select
+              value={ownership}
+              onChange={(event) => setOwnership(event.target.value)}
+            >
+              <option value="all">All Players</option>
+              <option value="free">Free Agents</option>
+              <option value="signed">Signed players</option>
+              <option value="favourites">
+                Favourites ({comparedIds.size})
+              </option>
+              {leagueTeams.map((team) => (
+                <option value={`team:${team.id}`} key={team.id}>
+                  {team.name}
+                </option>
+              ))}
+              <option value="prospects">Owned prospects</option>
+            </select>
+          </label>
+          <label className="hl-field">
+            Position
+            <select
+              value={position}
+              onChange={(event) => setPosition(event.target.value)}
+            >
+              <option value="all">All positions</option>
+              <option value="F">Forwards</option>
+              <option value="D">Defence</option>
+            </select>
+          </label>
+          <details className={contractFilterStyles.moreFilters}>
+            <summary>
+              More filters
+              {activeAdditionalFilters > 0 && <span> ({activeAdditionalFilters} active)</span>}
+            </summary>
+            <div className={contractFilterStyles.expandedFilters}>
+              <label className="hl-field">
+                Contract length (remaining)
+                <select value={remainingYears} onChange={(event) => setRemainingYears(event.target.value)}>
+                  <option value="all">Any length</option>
+                  <option value="1">1 year</option>
+                  <option value="2">2 years</option>
+                  <option value="3">3 years</option>
+                </select>
+              </label>
+              <label className="hl-field">
+                Contract type
+                <select value={contractType} onChange={(event) => setContractType(event.target.value)}>
+                  <option value="all">All contract types</option>
+                  <option value="normal">Standard contracts</option>
+                  <option value="fantasy_elc">ELC contracts</option>
+                </select>
+              </label>
+              <label className="hl-field">
+                Minimum games
+                <select
+                  value={minimumGames}
+                  onChange={(event) => setMinimumGames(event.target.value)}
+                >
+                  <option value="0">Any</option>
+                  <option value="10">10+</option>
+                  <option value="25">25+</option>
+                  <option value="50">50+</option>
+                </select>
+              </label>
+              <label className="hl-field">
+                NHL team
+                <select
+                  value={nhlTeam}
+                  onChange={(event) => setNhlTeam(event.target.value)}
+                >
+                  <option value="all">All NHL teams</option>
+                  {NHL_TEAM_OPTIONS.map(([abbreviation, name]) => (
+                    <option value={abbreviation} key={abbreviation}>
+                      {name} ({abbreviation})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <AavRangeFilter range={aavRange} onChange={setAavRange} valid={aavRangeValid} />
+            </div>
+          </details>
+        </form>
+      </Surface>
+
+      {aavRange.enabled && !aavRangeValid ? (
+        <Surface><EmptyBlock>Check the AAV range to see matching players.</EmptyBlock></Surface>
+      ) : ((!viewingFavourites && players.isPending) || (serverFilteredFavourites && (players.isPending || players.hasNextPage) && !players.isError)) ? (
+        <Surface>
+          <LoadingBlock>Loading players…</LoadingBlock>
+        </Surface>
+      ) : (viewingFavourites && !serverFilteredFavourites ? favouriteQueries.some((result) => result.isError) : players.isError) ? (
+        <Surface className="hl-state-surface">
+          <ErrorMessage error={viewingFavourites && !serverFilteredFavourites ? favouriteQueries.find((result) => result.isError)?.error : players.error} />
+        </Surface>
+      ) : visiblePlayers.length === 0 ? (
+        <Surface>
+          <EmptyBlock title="No players match these filters" />
+        </Surface>
+      ) : (
+        <Surface className="hl-feature-section">
+          <ScoringStatGuide weights={loadedPlayers.find(p=>p.statistics?.scoringWeights)?.statistics.scoringWeights} />
+          <TableScroll label="Player catalog">
+            <table className="hl-data-table hl-player-row-table hl-player-table hl-expanded-player-table hl-mobile-dense-table">
+              <thead>
+                <tr>
+                  <th className="hl-player-col-order" scope="col">Team</th>
+                  <SortableColumnHeading className="hl-player-col-position" activeSort={sort} label="Pos" sortKey="position" onSort={changeSort} />
+                  <SortableColumnHeading className="hl-player-col-name" activeSort={sort} label="Player" sortKey="player" onSort={changeSort} />
+                  <SortableColumnHeading className="hl-player-col-aav" activeSort={sort} label="AAV / FA" sortKey="contract" onSort={changeSort} />
+                  <th className="hl-player-col-years" scope="col">Years</th>
+                  <SortableColumnHeading className="hl-player-col-age" activeSort={sort} label="Age" sortKey="age" onSort={changeSort} />
+                  <SortableColumnHeading className="hl-player-col-nhl" activeSort={sort} label="NHL" sortKey="nhlTeam" onSort={changeSort} />
+                  {[
+                    ["GP", "gamesPlayed"],
+                    ["G", "goals"],
+                    ["A", "assists"],
+                    ["P", "nhlPoints"],
+                  ...SCORING_CATEGORIES.map(({ abbreviation, key }) => [abbreviation, key]),
+                    ["FP", "fantasyPoints"],
+                    ["FPG", "fantasyPointsPerGame"],
+                  ].map(([label, sortKey]) => (
+                    <SortableColumnHeading
+                      scoringWeights={loadedPlayers.find(p=>p.statistics?.scoringWeights)?.statistics.scoringWeights}
+                      activeSort={sort}
+                      className="hl-player-col-stat"
+                      key={sortKey}
+                      label={label}
+                      sortKey={sortKey}
+                      onSort={changeSort}
+                    />
+                  ))}
+                  <th className="hl-player-col-actions" scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visiblePlayers.map((player) => (
+                  <tr key={player.id}>
+                    <td className="hl-player-col-order">
+                      {player.league.ownership ? (
+                        <Link
+                          to={routePaths.teamRoster(leagueId, player.league.ownership.team.id)}
+                          className={teamColourClass("hl-player-team-badge")}
+                          style={teamColourStyle(leagueTeams.find((team) => team.id === player.league.ownership.team.id) || player.league.ownership.team)}
+                          aria-label={player.league.ownership.team.name}
+                          title={player.league.ownership.team.name}
+                        >
+                          {player.league.ownership.team.name.replace(/\bown\s*goal\b/gi, "Own Goal").split(/\s+/).filter(Boolean).map((word) => word[0]).join("").toUpperCase()}
+                        </Link>
+                      ) : <span className="hl-player-row-placeholder" aria-hidden="true">—</span>}
+                    </td>
+                    <td className="hl-player-col-position">
+                      <PositionTag
+                        position={displayPosition(player)}
+                        category={
+                          player.league.ownership?.category || "Free Agent"
+                        }
+                      />
+                    </td>
+                    <th className="hl-player-col-name" scope="row">
+                      <PlayerName {...injuryNameProps(player)} leagueId={leagueId} playerId={player.id} httpClient={session.httpClient}>
+                        {player.fullName}
+                      </PlayerName>
+                    </th>
+                    <td className="hl-player-col-aav is-mono">
+                      {playerAavLabel(player)}
+                    </td>
+                    <td className="hl-player-col-years">
+                      {playerYearsLabel(player)}
+                    </td>
+                    <td className="hl-player-col-age">
+                      {ageFromBirthDate(player.birthDate)}
+                    </td>
+                    <td className="hl-player-col-nhl">
+                      {player.provider?.nhlTeamAbbreviation || "—"}
+                    </td>
+                    <td className="hl-player-col-stat">{player.statistics?.gamesPlayed ?? "—"}</td>
+                    <td className="hl-player-col-stat">{player.statistics?.goals ?? "—"}</td>
+                    <td className="hl-player-col-stat">{player.statistics?.assists ?? "—"}</td>
+                    <td className="hl-player-col-stat">{player.statistics?.nhlPoints ?? "—"}</td>
+                    {SCORING_CATEGORIES.map(({ key, label }) => (
+                      <td className="hl-player-col-stat" key={key} title={label}>{player.statistics?.scoringStats?.[key] ?? "—"}</td>
+                    ))}
+                    <td className="hl-player-col-stat">
+                      {player.statistics
+                        ? (
+                            player.statistics.fantasyPointsHundredths / 100
+                          ).toFixed(2)
+                        : "—"}
+                    </td>
+                    <td className="hl-player-col-stat">
+                      {player.statistics
+                        ? fantasyPointsPerGame(player.statistics).toFixed(2)
+                        : "—"}
+                    </td>
+                    <td className="hl-player-col-actions">
+                      <div className="hl-player-actions">
+                        <button
+                          type="button"
+                          className={`hl-player-action hl-player-favourite${
+                            comparedIds.has(player.id) ? " is-active" : ""
+                          }`}
+                          aria-pressed={comparedIds.has(player.id)}
+                          aria-label={`${
+                            comparedIds.has(player.id) ? "Remove" : "Add"
+                          } ${player.fullName} ${
+                            comparedIds.has(player.id) ? "from" : "to"
+                          } favourites`}
+                          title={`${
+                            comparedIds.has(player.id)
+                              ? "Remove from"
+                              : "Add to"
+                          } favourites`}
+                          onClick={() => toggleCompare(player)}
+                        >
+                          <HockeyStickIcon />
+                          <span>Favourites</span>
+                        </button>
+                        {!player.league.ownership &&
+                          (auctionAction.allowed ? (
+                            <Link
+                              className="hl-player-action hl-player-auction-action"
+                              to={routePaths.leagueAuctionForPlayer(
+                                leagueId,
+                                player.id
+                              )}
+                            >
+                              <Gavel aria-hidden="true" />
+                              <span>Start auction</span>
+                            </Link>
+                          ) : (
+                            <span
+                              className="hl-player-action hl-player-auction-action is-disabled"
+                              aria-disabled="true"
+                              aria-label={`Start auction unavailable for ${player.fullName}: ${auctionAction.message}`}
+                              tabIndex={0}
+                              title={auctionAction.message}
+                            >
+                              <Gavel aria-hidden="true" />
+                              <span>Start auction</span>
+                            </span>
+                          ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableScroll>
+        </Surface>
+      )}
+
+      {viewingFavourites ? (
+        <p className="hl-player-pagination" aria-live="polite">Showing {visiblePlayers.length} of {comparedIds.size} favourites.</p>
+      ) : !players.isPending && !players.isError && (
+        <div className="hl-player-pagination" aria-live="polite">
+          <p>
+            Showing {visiblePlayers.length} of {availablePlayers.length} loaded
+            players.
+          </p>
+          {players.hasNextPage ? (
+            <button
+              type="button"
+              className="hl-button hl-button--secondary"
+              onClick={() => players.fetchNextPage()}
+              disabled={players.isFetchingNextPage}
+            >
+              {players.isFetchingNextPage
+                ? "Loading next 100 players..."
+                : "Load next 100 players"}
+            </button>
+          ) : (
+            <span>All matching players loaded.</span>
+          )}
+        </div>
+      )}
+
+      <p className="hl-page-backlink">
+        <Link to={routePaths.league(leagueId)}>Back to dashboard</Link>
+      </p>
+    </main>
+  );
+}

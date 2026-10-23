@@ -1,0 +1,10 @@
+.hl-notification-push-settings { padding: 16px; margin-bottom: 16px; }
+.hl-notification-push-settings h2 { margin: 0; font-size: 1.1rem; }
+.hl-notification-push-settings p { line-height: 1.5; }
+.hl-notification-push-settings a { color: var(--accent, #fdba74); }
+.hl-notification-push-settings .hl-push-options { gap: 8px; }
+.hl-notification-push-settings .hl-push-alert-options { margin-top: 12px; }
+.hl-notification-push-settings .hl-push-alert-options > summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
+.hl-notification-push-settings .hl-push-options input[type="checkbox"] {
+  width: 20px; height: 20px; min-height: 20px; padding: 0; margin: 0; flex: 0 0 20px;
+}

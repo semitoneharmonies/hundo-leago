@@ -1,0 +1,9 @@
+.panel { margin-block: 1rem; padding: 1rem; }
+.panel summary { cursor: pointer; padding-block: .5rem; }
+.panel p, .panel form, .panel h3 { margin-block: .8rem; }
+.panel label { display: grid; gap: .4rem; margin-block: .8rem; max-width: 32rem; }
+.panel input, .panel select { box-sizing: border-box; width: 100%; min-width: 0; padding: .65rem; border: 1px solid #39475b; border-radius: .4rem; background: #080f1d; color: inherit; font: inherit; }
+.panel button { margin: .2rem .3rem .4rem 0; }
+.panel li { margin-block: .7rem; overflow-wrap: anywhere; }
+.panel table { width: 100%; border-collapse: collapse; text-align: left; }
+.panel th, .panel td { padding: .65rem .75rem; border-bottom: 1px solid #39475b; }

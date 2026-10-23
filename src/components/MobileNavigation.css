@@ -1,0 +1,117 @@
+/* Every rule is mobile-only: the permanent desktop sidebar stays unchanged. */
+@media (max-width: 1023px) {
+  html:has(.hl-app-shell), body:has(.hl-app-shell) { height: auto; overflow-x: clip; overflow-y: visible; }
+  .hl-app-header .hl-app-header__bar {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas: "nav brand account" "context context context";
+    gap: 0 5px;
+    min-height: 0;
+    padding: max(2px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 0 max(8px, env(safe-area-inset-left));
+  }
+  .hl-app-header .hl-app-header__navigation { grid-area: nav; }
+  .hl-app-header .hl-brand { grid-area: brand; justify-self: start; min-height: 44px; padding: 4px; }
+  .hl-app-header .hl-brand__mark { width: 32px; height: 32px; font-size: .9rem; }
+  .hl-app-header .hl-brand__name,
+  .hl-app-header .hl-app-header__location,
+  .hl-app-header .hl-app-header__context::before,
+  .hl-app-header .hl-menu-trigger > svg:first-child,
+  .hl-app-header .hl-menu-trigger > span,
+  .hl-app-header .hl-account-trigger__identity { display: none; }
+  .hl-app-header .hl-menu-trigger { justify-content: center; width: 44px; min-height: 44px; padding: 0; }
+  .hl-app-header .hl-menu-trigger > svg:last-child { width: 23px; height: 23px; color: var(--hl-foreground); }
+  .hl-app-header .hl-app-header__account { grid-area: account; gap: 3px; }
+  .hl-app-header :is(.hl-account-trigger, .hl-notification-link) { min-height: 44px; min-width: 44px; }
+  .hl-app-header .hl-app-header__context { grid-area: context; min-width: 0; gap: 0; padding: 0; }
+  .hl-app-header .hl-quote-ticker { flex-basis: 100%; height: 24px; border-left: 0; border-radius: 0; }
+  .hl-app-header .hl-quote-ticker__group { font-size: .66rem; }
+  .hl-app-header .hl-account-menu { max-width: calc(100vw - 16px); }
+
+  .hl-mobile-nav { --mobile-main-width: 45%; position: fixed; inset: 0; z-index: 7000; height: 100dvh; color: var(--hl-foreground); }
+  .hl-mobile-nav__backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgb(2 6 23 / 66%); }
+  .hl-mobile-nav__drawer { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); width: var(--mobile-main-width); height: 100%; min-width: 0; animation: hl-mobile-nav-slide 220ms cubic-bezier(.22, 1, .36, 1); }
+  .hl-mobile-nav--expanded .hl-mobile-nav__drawer { width: 100%; grid-template-columns: var(--mobile-main-width) minmax(0, 1fr); }
+  .hl-mobile-nav__main { display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: #091121; border-right: 1px solid #33445f; padding-bottom: env(safe-area-inset-bottom); }
+  .hl-mobile-nav__heading { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; min-height: 54px; padding: max(5px, env(safe-area-inset-top)) 7px 5px; border-bottom: 1px solid var(--hl-border); background: #0c1628; }
+  .hl-mobile-nav__heading > strong { min-width: 0; margin-right: auto; font-size: .76rem; line-height: 1.4; overflow-wrap: anywhere; }
+  .hl-mobile-nav__heading h2 { margin: 0; min-width: 0; font: 700 1rem var(--hl-font-display); overflow-wrap: anywhere; }
+  .hl-mobile-nav__heading h2::after { display: none; }
+  .hl-mobile-nav__main > .hl-mobile-nav__heading { position: sticky; top: 0; z-index: 2; }
+  .hl-mobile-nav__heading button { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 44px; padding: 8px; border: 1px solid var(--hl-border); border-radius: 6px; color: var(--hl-foreground); background: #14233d; cursor: pointer; }
+  .hl-mobile-nav__heading button svg { width: 20px; height: 20px; }
+  .hl-mobile-nav__links { display: flex; flex: 1 0 auto; flex-direction: column; justify-content: space-evenly; gap: 2px; padding: 5px; }
+  .hl-mobile-nav__link { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; align-items: center; gap: 6px; min-height: 44px; width: 100%; padding: 7px 5px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--hl-foreground); font: 600 .74rem/1.4 var(--hl-font-body); text-align: left; text-decoration: none; cursor: pointer; }
+  .hl-mobile-nav__link > svg { width: 17px; height: 17px; color: #b8c4d7; }
+  .hl-mobile-nav__link > svg:last-child:not(:first-child) { width: 13px; height: 13px; }
+  .hl-mobile-nav__link > span { min-width: 0; overflow-wrap: anywhere; }
+  .hl-mobile-nav__link small { display: block; color: #ffbf8f; font-size: .64rem; }
+  .hl-mobile-nav__link:hover, .hl-mobile-nav__link[aria-expanded="true"], .hl-mobile-nav__link[aria-current="page"] { background: #13203a; border-color: var(--hl-border); }
+  .hl-mobile-nav__link[aria-current="page"] { box-shadow: inset 3px 0 var(--hl-accent); }
+  .hl-mobile-nav .hl-quote-menu-footer { flex: 0 0 auto; padding: 9px; gap: 6px; }
+  .hl-mobile-nav .hl-quote-menu-footer button, .hl-mobile-nav .hl-menu-contact { display: block; max-width: 100%; min-height: 36px; white-space: normal; overflow-wrap: anywhere; font-size: .65rem; }
+  .hl-mobile-nav__submenu { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #0c1628; animation: hl-mobile-submenu-reveal 180ms ease-out; }
+  .hl-mobile-nav__submenu-content { flex: 1; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 8px 7px max(10px, env(safe-area-inset-bottom)); }
+  .hl-mobile-nav__text-link { display: grid; gap: 4px; min-height: 44px; padding: 10px 6px; border-bottom: 1px solid var(--hl-border); font-size: .76rem; line-height: 1.5; text-decoration: none; overflow-wrap: anywhere; }
+  .hl-mobile-nav__text-link small { color: var(--hl-muted-foreground); font-size: .65rem; }
+  .hl-mobile-nav__text-link[aria-current] { background: #13203a; }
+  .hl-mobile-nav :is(button, a, summary, select, input, textarea):focus-visible { outline: 2px solid var(--hl-accent); outline-offset: -2px; }
+  .hl-mobile-nav .hl-sidebar-cards { display: grid; gap: 9px; padding: 0; margin: 0; list-style: none; }
+  .hl-mobile-nav .hl-sidebar-team { position: relative; isolation: isolate; display: flex; align-items: center; gap: 7px; min-height: 68px; padding: 8px; border: 1px solid rgb(255 255 255 / 30%); border-radius: 8px; overflow: hidden; text-decoration: none; background-color: var(--team-primary); background-image: var(--team-pattern-image); background-repeat: var(--team-pattern-repeat); background-size: var(--team-pattern-size); }
+  .hl-mobile-nav .hl-sidebar-team::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgb(2 6 23 / 80%), rgb(2 6 23 / 65%) 65%, rgb(2 6 23 / 12%)); }
+  .hl-mobile-nav .hl-sidebar-team .hl-team-mark { flex: 0 0 30px; width: 30px; height: 30px; border: 1px solid rgb(255 255 255 / 60%); }
+  .hl-mobile-nav .hl-sidebar-team__name { display: grid; gap: 4px; min-width: 0; }
+  .hl-mobile-nav .hl-sidebar-team__name strong { color: #fff; font-size: .76rem; line-height: 1.4; overflow-wrap: anywhere; }
+  .hl-mobile-nav .hl-sidebar-team__name small { color: #ffbf8f; font-size: .59rem; text-transform: uppercase; }
+  .hl-mobile-nav .hl-sidebar-cards a[aria-current="page"] { outline: 2px solid var(--hl-accent); outline-offset: -2px; }
+  .hl-mobile-nav .hl-sidebar-state { padding: 8px 2px; margin: 0; font-size: .75rem; line-height: 1.6; }
+  .hl-mobile-nav .hl-sidebar-state button { min-height: 36px; color: #9bbbff; background: transparent; border: 0; text-decoration: underline; cursor: pointer; }
+  .hl-mobile-nav .hl-sidebar-matchups { gap: 14px; }
+  .hl-mobile-nav .hl-week-matchup__team { flex-wrap: wrap; gap: 5px; padding: 7px; }
+  .hl-mobile-nav .hl-week-matchup__team .hl-team-mark { flex-basis: 24px; width: 24px; height: 24px; }
+  .hl-mobile-nav .hl-week-matchup__name { flex: 1; }
+  .hl-mobile-nav .hl-week-matchup__name strong { font-size: .72rem; }
+  .hl-mobile-nav .hl-week-matchup__score { justify-content: flex-end; flex: 1 0 100%; }
+  .hl-mobile-nav .hl-week-matchup__score b { font-size: 1.3rem; }
+  .hl-mobile-nav .hl-sidebar-week { margin: 0 0 8px; font-size: .74rem; }
+  .hl-mobile-nav .hl-sidebar-week-navigation { display: flex; align-items: center; justify-content: space-between; gap: 5px; margin: 12px 0; }
+  .hl-mobile-nav .hl-sidebar-week-navigation button { display: grid; place-items: center; width: 40px; height: 44px; padding: 7px; background: #14233d; color: var(--hl-foreground); border: 1px solid var(--hl-border); border-radius: 6px; }
+  .hl-mobile-nav .hl-sidebar-week-navigation button:disabled { opacity: .4; }
+  .hl-mobile-nav .hl-sidebar-week-navigation span { font-size: .7rem; }
+  .hl-mobile-nav .hl-sidebar-season { display: grid; gap: 5px; font-size: .72rem; }
+  .hl-mobile-nav .hl-sidebar-season select { width: 100%; min-width: 0; min-height: 40px; padding: 5px; font-size: .8rem; }
+  .hl-mobile-nav .hl-rules-panel { width: 100%; min-width: 0; border: 0; }
+  .hl-mobile-nav .hl-rules-panel > header { display: none; }
+  .hl-mobile-nav .hl-rules-quick { padding: 5px; }
+  .hl-mobile-nav .hl-rules-quick > div { display: grid; gap: 3px; padding-block: 7px; }
+  .hl-mobile-nav .hl-rules-quick dd { text-align: left; }
+  .hl-mobile-nav .hl-rules-sections { padding: 0; }
+  .hl-mobile-nav .hl-rules-section :is(p, li) { font-size: .74rem; line-height: 1.6; overflow-wrap: anywhere; }
+  .hl-mobile-nav .hl-rules-section ul { padding-left: 16px; }
+  .hl-mobile-nav .hl-rules-section > div { padding: 8px 5px; overflow-x: auto; }
+  .hl-mobile-nav .hl-rules-section summary { padding: 12px 5px; font-size: .78rem; }
+  .hl-mobile-nav .hl-rules-section :is(th, td) { padding: 5px 3px; font-size: .65rem; }
+  .hl-mobile-nav #league-help { padding: 7px; }
+  .hl-mobile-nav #league-help :is(input, select, textarea) { min-width: 0; width: 100%; font-size: 1rem; }
+  .hl-mobile-nav #league-help label { min-width: 0; }
+  .hl-mobile-nav #league-help button { white-space: normal; overflow-wrap: anywhere; }
+
+  .hl-app-shell .hl-roster-hero, .hl-app-shell .hl-matchup-detail > .hl-matchup-score { position: sticky; top: var(--hl-topbar-height, 70px); z-index: 2000; box-shadow: 0 8px 20px rgb(0 0 0 / 22%); }
+  .hl-app-shell .hl-roster-hero { margin-top: 0; padding: 8px; }
+  .hl-app-shell .hl-roster-identity { flex-direction: row; align-items: center; gap: 10px; padding: 6px; }
+  .hl-app-shell .hl-roster-identity > div:last-child { min-width: 0; gap: 0; }
+  .hl-app-shell .hl-roster-hero .hl-team-logo { flex: 0 0 48px; width: 48px; height: 48px; }
+  .hl-app-shell .hl-roster-hero h1 { font-size: clamp(1.35rem, 5vw, 1.9rem); line-height: 1.1; overflow-wrap: anywhere; }
+  .hl-app-shell .hl-matchup-detail { overflow: visible; }
+  .hl-app-shell .hl-matchup-detail > .hl-matchup-score { background: #091121; }
+  .hl-app-shell :is(.hl-roster-hero, .hl-matchup-score)[data-navigation-animating] { z-index: 4500; }
+  .hl-app-shell .hl-matchup-stat-headings { top: calc(var(--hl-topbar-height, 70px) + var(--matchup-banner-height, 120px)); }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  .hl-mobile-nav { --mobile-main-width: 33.333%; }
+  .hl-mobile-nav__links { justify-content: flex-start; }
+  .hl-mobile-nav .hl-week-matchup__score { flex: 0 0 auto; }
+}
+
+@keyframes hl-mobile-nav-slide { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes hl-mobile-submenu-reveal { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .hl-mobile-nav__drawer, .hl-mobile-nav__submenu { animation: none; } }

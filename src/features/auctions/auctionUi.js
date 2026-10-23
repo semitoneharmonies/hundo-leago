@@ -1,0 +1,178 @@
+import {
+  centsToDollarInput,
+  dollarsToCents,
+} from "../transactions/transactionContracts.js";
+
+const JOINING_MINIMUM_AAV_CENTS = 150;
+
+export function auctionAavCents(totalValueCents, termYears) {
+  const whole = Math.floor(totalValueCents / termYears);
+  const remainder = totalValueCents % termYears;
+  return whole + (remainder * 2 >= termYears ? 1 : 0);
+}
+
+export function auctionTotalValueCents(aavCents, termYears) {
+  const totalValueCents = aavCents * termYears;
+  if (!Number.isSafeInteger(totalValueCents) || totalValueCents < 1) {
+    throw new Error("The calculated total contract value is invalid.");
+  }
+  return totalValueCents;
+}
+
+function offerMinimumAav({ action, sourceKind }) {
+  if (action === "join" || (action === "edit" && sourceKind === "fad_restricted")) {
+    return JOINING_MINIMUM_AAV_CENTS;
+  }
+  return 100;
+}
+
+function floorComparison(termYears, aavCents, floor) {
+  if (aavCents !== floor.aavCents) {
+    return aavCents > floor.aavCents ? 1 : -1;
+  }
+  if (termYears === floor.termYears) return 0;
+  return termYears > floor.termYears ? 1 : -1;
+}
+
+export function validateAuctionOffer(
+  value,
+  termValue,
+  {
+    action,
+    sourceKind = "ordinary_weekly",
+    fadOrigin = null,
+    minimumContract = null,
+  }
+) {
+  const termYears = Number(termValue);
+  if (!Number.isSafeInteger(termYears) || termYears < 1 || termYears > 3) {
+    throw new Error("Choose a contract term from one to three years.");
+  }
+  const aavCents = dollarsToCents(value);
+  if (aavCents < 100) {
+    throw new Error("AAV must be at least $1.00 per year.");
+  }
+  if (aavCents % 25 !== 0) {
+    throw new Error("AAV must use whole-dollar or 25-cent increments.");
+  }
+  const totalValueCents = auctionTotalValueCents(aavCents, termYears);
+  const minimumAavCents = offerMinimumAav({ action, sourceKind });
+  if (aavCents < minimumAavCents) {
+    const kind = action === "start" ? "opening" : action === "join" ? "joining" : "edited";
+    throw new Error(
+      `The minimum ${kind} bid is $${centsToDollarInput(minimumAavCents)} AAV for any contract length.`
+    );
+  }
+  if (minimumContract !== null) {
+    const comparison = floorComparison(termYears, aavCents, minimumContract);
+    if (sourceKind === "fad_restricted" && comparison <= 0) {
+      throw new Error(
+        "To contend, this bid must improve the Candidate minimum with a higher AAV, or the same AAV and a longer contract."
+      );
+    }
+    if (
+      fadOrigin === "restricted_no_improvement_fallback" &&
+      comparison < 0
+    ) {
+      throw new Error(
+        "This bid must meet the fallback floor with a higher AAV, or the same AAV and at least the same contract length."
+      );
+    }
+  }
+  return Object.freeze({ totalValueCents, termYears, aavCents });
+}
+
+export function initialAuctionOffer(auction, viewerTeam) {
+  if (viewerTeam?.bid) {
+    return Object.freeze({
+      aav: centsToDollarInput(viewerTeam.bid.aavCents),
+      term: String(viewerTeam.bid.termYears),
+    });
+  }
+  const floor = auction.minimumContract;
+  const termYears = floor?.termYears ?? 1;
+  let aavCents = JOINING_MINIMUM_AAV_CENTS;
+  if (floor !== null) {
+    while (
+      floorComparison(
+        termYears,
+        aavCents,
+        floor
+      ) < (auction.sourceKind === "fad_restricted" ? 1 : 0)
+    ) {
+      aavCents += 25;
+    }
+  }
+  return Object.freeze({
+    aav: centsToDollarInput(aavCents),
+    term: String(termYears),
+  });
+}
+
+export function auctionTotalPreview(value, termValue) {
+  try {
+    const aavCents = dollarsToCents(value);
+    const termYears = Number(termValue);
+    if (!Number.isSafeInteger(termYears) || termYears < 1 || termYears > 3) {
+      return "";
+    }
+    return centsToDollarInput(auctionTotalValueCents(aavCents, termYears));
+  } catch {
+    return "";
+  }
+}
+
+export function sourceLabel(auction) {
+  if (auction.sourceKind === "ordinary_weekly") return "Auction";
+  if (["fad_restricted", "fad_open_rapid"].includes(auction.sourceKind)) {
+    return "Free Agent Draft Rapid Auction";
+  }
+  return "Auction";
+}
+
+export function sharedAuctionClosingTime(auctions) {
+  const active = auctions.filter((auction) => auction.status === "active");
+  if (active.length === 0) return null;
+  const closingTime = (auction) => auction.sourceKind === "ordinary_weekly"
+    ? auction.resolvesAtMs
+    : auction.targetRolloverAtMs;
+  const first = closingTime(active[0]);
+  return Number.isSafeInteger(first) && active.every((auction) => closingTime(auction) === first)
+    ? first
+    : null;
+}
+
+export function auctionBidAction(viewerTeam) {
+  const hasBid = viewerTeam.bid !== null;
+  const capability = hasBid ? viewerTeam.edit : viewerTeam.join;
+  if (capability.allowed) {
+    return { label: hasBid ? "Rebid" : "Place bid", disabled: false, reason: null };
+  }
+  const editLimitReached = hasBid && capability.reasonCode === "EDIT_LIMIT_REACHED" &&
+    viewerTeam.bid.editCount >= viewerTeam.bid.editLimit;
+  return {
+    label: editLimitReached ? "Edit limit reached"
+      : capability.reasonCode === "COOLDOWN_ACTIVE" ? "Rebid later" : "Bidding unavailable",
+    disabled: true,
+    reason: capabilityMessage(capability.reasonCode),
+  };
+}
+
+export function capabilityMessage(reasonCode) {
+  return {
+    NOT_AUTHORIZED: "You are not authorized to take this action for that team.",
+    HELP_NOT_GRANTED: "Commissioner help access does not authorize this action.",
+    PHASE_CLOSED: "This action isn’t available right now.",
+    DEADLINE_PASSED: "This auction is no longer accepting changes.",
+    LEAGUE_FROZEN: "League transaction writes are currently frozen.",
+    SLOT_LOCKED: "The related Candidate slot is locked.",
+    SLOT_OCCUPIED: "The related Candidate slot is already occupied.",
+    ENTRY_NOT_EDITABLE: "This bid cannot be changed in its current state.",
+    PLAYER_INELIGIBLE: "The player is not currently eligible for this action.",
+    TEAM_NOT_PARTICIPANT: "This team is not an eligible participant in this auction.",
+    COOLDOWN_ACTIVE: "Your bid is saved. You can edit this player's bid 75 minutes after your last submission or edit. You can still join other auctions.",
+    EDIT_LIMIT_REACHED: "This bid has used every manager edit.",
+    PLAYER_QUARANTINED: "The player is awaiting a Free Agent Draft result or recovery.",
+    RECOVERY_NOT_AVAILABLE: "This action is unavailable while recovery is pending.",
+  }[reasonCode] || "This action is not currently available.";
+}

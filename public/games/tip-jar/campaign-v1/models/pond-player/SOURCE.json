@@ -1,0 +1,21 @@
+{
+  "name": "Microsoft Rocketbox Male_Adult_02",
+  "publisher": "Microsoft",
+  "repository": "https://github.com/microsoft/Microsoft-Rocketbox",
+  "repositoryCommit": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "sourcePath": "Assets/Avatars/Adults/Male_Adult_02/Export/Male_Adult_02.fbx",
+  "sourceBlobSHA": "26ff800005a7624afa37fc212d870ea4bf0b5a02",
+  "license": "MIT",
+  "licenseURL": "https://github.com/microsoft/Microsoft-Rocketbox/blob/master/LICENSE.md",
+  "downloadedAt": "2026-10-20T17:48:02.7300218-07:00",
+  "sourceFbx": "Male_Adult_02.fbx",
+  "textureConversion": "Pillow LANCZOS to 1024x1024 PNG; source TGA files retained unchanged",
+  "bodyDescription": "Realistic adult male, beige long-sleeved V-neck sweater, dark trousers",
+  "preparedFiles": [
+    "png/m003_body_color.png",
+    "png/m003_body_normal.png",
+    "png/m003_head_color.png",
+    "png/m003_head_normal.png",
+    "png/m003_opacity_color.png"
+  ]
+}

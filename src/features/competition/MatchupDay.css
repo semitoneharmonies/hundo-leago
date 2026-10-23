@@ -1,0 +1,20 @@
+.hl-matchup-view-controls { grid-area: 1 / 1; justify-self: center; display: flex; align-items: center; gap: 8px; }
+.hl-matchup-view-controls .hl-matchup-period-switch { width: 100px; }
+.hl-matchup-day-status { text-align: center; color: var(--hl-muted-foreground); font-size: .75rem; }
+.hl-matchup-day-status p { margin: 6px 0; }
+.hl-matchup-day-picker { display: grid; gap: 6px; width: min(100%, 360px); margin: 12px auto 6px; }
+.hl-matchup-day-picker__week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.hl-matchup-day-picker button { display: grid; gap: 2px; justify-items: center; min-height: 44px; padding: 5px 2px; border: 1px solid var(--hl-border); border-radius: 8px; color: var(--hl-foreground); background: var(--hl-panel); font: inherit; cursor: pointer; }
+.hl-matchup-day-picker button small { color: var(--hl-muted-foreground); font-size: .65rem; }
+.hl-matchup-day-picker button[aria-pressed="true"] { background: #214b83; border-color: #83b5ff; color: #fff; }
+.hl-matchup-day-picker button[aria-pressed="true"] small { color: #fff; }
+.hl-matchup-day-picker button:focus-visible { outline: 2px solid #a6ceff; outline-offset: 2px; }
+@media (max-width: 1023px) {
+  .hl-page .hl-competition-toolbar.hl-matchup-page-controls,
+  .hl-page .hl-matchup-workspace > .hl-matchup-selector { display: none; }
+}
+/* Keep both switches centered together, without colliding with the stat key or GP/GR. */
+@container (max-width: 1050px) {
+  .hl-scoring-stat-guide:has(.hl-matchup-view-controls) .hl-matchup-view-controls { grid-row: 2; }
+  .hl-scoring-stat-guide:has(.hl-matchup-view-controls) .hl-matchup-game-progress { grid-row: 3; }
+}

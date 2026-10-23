@@ -54,7 +54,6 @@ const rosterPosPill = (pos) => {
 };
 function TeamToolsPanel({
   currentUser,
-  selectedTeam,
   teams,
   capLimit,
   maxRosterSize,
@@ -73,7 +72,6 @@ function TeamToolsPanel({
   freeAgents,
   onPlaceBid,
   onResolveAuctions,
-  onCommissionerRemoveBid,
 
   // NEW (optional): player lookup helpers for ID-ready UI
   playerApi,
@@ -126,7 +124,7 @@ function TeamToolsPanel({
         const results = await playerApi.searchPlayers(q, 12);
         setPlayerSearchResults(Array.isArray(results) ? results : []);
         setPlayerSearchOpen(true);
-      } catch (e) {
+      } catch {
         setPlayerSearchResults([]);
       } finally {
         setPlayerSearchLoading(false);
@@ -210,7 +208,7 @@ const normalizeSearchPlayer = (p) => {
     try {
       if (typeof maybeMap.get === "function") return maybeMap.get(key) || null;
       return maybeMap[key] || null;
-    } catch (_) {
+    } catch {
       return null;
     }
   };
@@ -631,19 +629,6 @@ const handleLiveBidSubmit = (auction) => {
     return "#e5e7eb";
   };
 
-  const pillStyle = {
-    display: "inline-block",
-    padding: "2px 8px",
-    borderRadius: "999px",
-    border: "1px solid #334155",
-    background: "#0b1220",
-    color: "#e2e8f0",
-    fontSize: "0.75rem",
-    marginRight: "6px",
-    marginTop: "4px",
-    whiteSpace: "nowrap",
-  };
-
   const canSubmitThisTrade = canSubmitTrade && !tradeBlockedByRetention;
 
 
@@ -682,7 +667,7 @@ const auctionNameStyle = {
     border: "1px solid #1f2937",
   }}
 >
-  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, fontWeight:1200 }}>
+  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
     <h3 style={{ margin: 0 }}>Trades</h3>
     
   </div>
@@ -1413,10 +1398,6 @@ if (
                           onClick={() => {
   const norm = normalizeSearchPlayer(p);
 
-  // TEMP DEBUG (remove after verification)
-  console.log("[AUCTION] dropdown raw player:", p);
-  console.log("[AUCTION] dropdown normalized:", norm);
-
   if (!norm?.id) {
     window.alert("That player result is missing a valid NHL playerId. Try another search result.");
     return;
@@ -1427,8 +1408,6 @@ if (
   setPlayerSearchQuery(norm.fullName);  // show selection
   setPlayerSearchOpen(false);
 
-  // Optional: auto-set position
-  if (norm.position === "D") setBidPosition("D");
 }}
 
 
@@ -1486,7 +1465,6 @@ if (
 
       if (typeof onPlaceBid !== "function") {
         window.alert("Auction error: onPlaceBid is not wired (not a function).");
-        console.error("[AUCTION] onPlaceBid is not a function:", onPlaceBid);
         return;
       }
 
@@ -1528,9 +1506,8 @@ if (!isExistingAuction && isPlayerRostered(selectedAuctionPlayer.id || selectedA
       setSelectedAuctionPlayer(null);
       setPlayerSearchResults([]);
       setPlayerSearchOpen(false);
-    } catch (err) {
-      console.error("[AUCTION] Start/place bid crashed:", err);
-      window.alert("Auction crashed — check console for [AUCTION] error.");
+    } catch {
+      window.alert("The auction request failed. Please try again.");
     }
   }}
   style={{

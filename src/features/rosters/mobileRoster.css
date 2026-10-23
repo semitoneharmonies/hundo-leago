@@ -1,0 +1,75 @@
+@media (max-width: 1023px) {
+  .hl-team-roster .hl-roster-cap .hl-stat-grid--readable {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .hl-team-roster .hl-roster-cap .hl-stat-card {
+    min-width: 0;
+    min-height: 0;
+    padding: 8px 4px;
+    gap: 5px;
+    align-content: start;
+  }
+
+  .hl-team-roster .hl-roster-cap .hl-stat-card > span {
+    min-height: 2.6em;
+    font-size: 0.625rem;
+    line-height: 1.3;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .hl-team-roster .hl-roster-cap .hl-stat-card strong {
+    font-size: clamp(0.75rem, 3.2vw, 1rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hl-team-roster .hl-roster-cap .hl-stat-card small {
+    font-size: 0.5625rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .hl-team-roster .hl-draft-pick-matrix-wrap {
+    padding: 6px;
+  }
+
+  .hl-team-roster .hl-draft-pick-matrix {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .hl-team-roster .hl-draft-pick-matrix :is(th, td) {
+    height: 38px;
+    padding: 4px 2px;
+    font-size: 0.625rem;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .hl-team-roster .hl-draft-pick-matrix th:first-child {
+    width: 38px;
+    text-align: center;
+  }
+
+  .hl-team-roster .hl-draft-pick-cell {
+    min-width: 0;
+    min-height: 30px;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .hl-team-roster .hl-draft-pick-team-mark {
+    width: 28px;
+    height: 28px;
+    font-size: 0.625rem;
+  }
+
+  .hl-team-roster .hl-draft-pick-team-mark > small {
+    font-size: 0.5625rem;
+  }
+}

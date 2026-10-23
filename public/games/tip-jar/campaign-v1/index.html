@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#102b32" />
+  <meta name="description" content="Three levels. Twenty pucks to start. All in the timing. A hockey deflection game." />
+  <title>Tip Jar</title>
+  <link rel="icon" type="image/svg+xml" href="./puck.svg" />
+  <script type="module" crossorigin src="./assets/index-ByxASJ2M.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/three-DBGnS9Ue.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-DDO2x-YE.css">
+</head>
+<body>
+  <div id="app">
+    <button id="exit-fullscreen" class="fullscreen-close" aria-label="Exit fullscreen" title="Exit fullscreen" hidden>×</button>
+    <header class="topbar">
+      <div class="header-actions">
+        <label class="target-picker"><span class="sr-only">Target style</span><select id="target-style" class="icon-button" aria-label="Target style">
+          <option value="classic">Targets: Classic</option>
+          <option value="bells">Targets: Bells</option>
+          <option value="birds">Targets: Birds</option>
+          <option value="cans">Targets: Beer cans</option>
+          <option value="plates">Targets: Plates</option>
+          <option value="ducks">Targets: Rubber ducks</option>
+        </select></label>
+        <button id="sound" class="icon-button" aria-label="Turn sound off" aria-pressed="true">Sound on</button>
+        <button id="help" class="icon-button">How to play</button>
+      </div>
+    </header>
+    <main id="arena">
+      <canvas id="rink" aria-label="3D hockey rink. Use arrow keys to move the orange aiming circle. Hold Space for power, then release to shoot."></canvas>
+      <div class="vignette"></div>
+      <div id="tipper-bubble" role="status" hidden></div>
+      <div id="aim-reticle" aria-hidden="true" hidden></div>
+      <div class="sr-only" aria-label="Round score">
+        <span><strong id="shots">00</strong> shots</span>
+        <span><strong id="cleared">0<span>/3</span></strong> objectives</span>
+        <span id="campaign-status">Level 1. 20 pucks left.</span>
+      </div>
+      <div class="sr-only" id="feedback" role="status" aria-live="polite"><span id="feedback-title"></span><span id="feedback-detail"></span></div>
+      <button id="shoot" class="touch-shot" aria-label="Hold for power, release to shoot" disabled>Shoot</button>
+      <div id="loading" class="loading">Loading the rink…</div>
+      <div id="league-status" class="league-status" role="status" aria-live="polite" hidden></div>
+      <section id="intro" class="overlay" aria-label="Welcome to Tip Jar">
+        <div class="intro-card">
+          <p class="level-kicker">LEVEL 1 / 3 · 20 PUCKS</p>
+          <h1>Off the iron.</h1>
+          <p>Tip off each post and the crossbar — and into the net.</p>
+          <p class="intro-controls">Space to shoot, hold for power</p>
+          <button id="start" class="primary" aria-keyshortcuts="Space">Play</button>
+        </div>
+      </section>
+      <dialog id="instructions">
+        <button class="close-dialog" aria-label="Close instructions">×</button>
+        <h2>How to play</h2>
+        <ol>
+          <li><strong>Move the orange circle.</strong> Arrow keys aim sideways and up/down at your teammate, from ice level to above his waist. You can also click or drag directly on the rink. Keep adjusting your aim while holding Space.</li>
+          <li><strong>Cycle the power.</strong> Hold Space: power rises to full in 0.9 seconds, falls back down in 0.9 seconds, and repeats. Release to shoot at the current power.</li>
+          <li><strong>Trade speed for accuracy.</strong> Soft shots are slow, lobbed and accurate. Hard shots travel faster and flatter but can miss farther from your aim. The orange circle grows and shrinks with power: it marks the possible spread at your teammate.</li>
+          <li><strong>Beat three levels.</strong> Level 1: tip off the left post, right post and crossbar, each into the net. Level 2: clear all five targets. Level 3: clear all five past a goalie with a repeating movement pattern.</li>
+          <li><strong>Make your pucks count.</strong> Start with 20. Clearing Levels 1 and 2 adds another 20 to whatever you have left. Run out before clearing a level and the next run starts at Level 1.</li>
+        </ol>
+        <p class="help-hint">Only blade or exposed-shaft tips count, including while your teammate crosses. Direct hits never clear an objective. In Level 1 the amber frame sections turn green when cleared; an iron hit that bounces out does not count.</p>
+        <p class="help-hint">Aim lower for lower targets and higher for upper targets. Pucks on the ice can slide into the grounded blade.</p>
+        <p class="help-hint">Change the target style any time using the menu at the top. Your shots and cleared targets stay the same. Only tipped hits break or knock down a target.</p>
+        <p class="help-hint">Space also starts, continues and resumes the game from its menus. On touch screens: drag on the rink to aim, then hold and release Shoot. A second finger can adjust aim while you hold Shoot. Play opens fullscreen on touch screens; use × to leave. Esc cancels a charge or exits fullscreen. P pauses. Leaving the window pauses the game.</p>
+        <p class="personal-best">Best three-level run: <strong id="best">—</strong></p>
+        <p class="help-hint">Character adapted from <a href="https://github.com/microsoft/Microsoft-Rocketbox" target="_blank" rel="noopener noreferrer">Microsoft Rocketbox</a> · MIT licence.</p>
+        <p class="help-hint">Recorded sounds by AudioAlchemyDesigns, copyc4t, Luisa_Sanchez, JonasTisell, JoelAudio, Sam Gossner, Tairblenn, qubodup/Mish7913, nahmandub, jc.sg and csaszi. <a href="./audio/LICENSE.txt" target="_blank" rel="noopener noreferrer">Sound credits and licences</a>.</p>
+        <div class="dialog-actions"><button id="close-help" class="primary">Got it</button><button id="restart" class="quiet-button">New run</button></div>
+      </dialog>
+      <section id="finish" class="overlay hidden" aria-label="Round complete">
+        <div class="finish-card"><p class="level-kicker">THREE FOR THREE</p><h2>Beautiful touch.</h2><div class="final-score"><strong id="final-shots">0</strong><span>shots</span></div><p id="final-pucks"></p><p id="best-message"></p><button id="again" class="primary">Play again</button></div>
+      </section>
+      <section id="level-break" class="overlay hidden" aria-label="Level complete">
+        <div class="finish-card"><p class="level-kicker" id="level-number"></p><h2 id="level-title"></h2><p id="level-objective"></p><p class="puck-award" id="level-pucks"></p><button id="next-level" class="primary">Next level</button></div>
+      </section>
+      <section id="failure" class="overlay hidden" aria-label="Out of pucks">
+        <div class="finish-card"><h2>Out of pucks.</h2><p id="failure-detail"></p><button id="retry" class="primary">Try again</button></div>
+      </section>
+      <div id="pause-overlay" class="overlay hidden"><div class="pause-card"><h2>Paused</h2><button id="resume" class="primary">Resume</button></div></div>
+    </main>
+  </div>
+</body>
+</html>
+

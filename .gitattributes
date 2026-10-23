@@ -1,0 +1,2 @@
+# Keep the versioned game package identical to its frozen build artifact.
+public/games/tip-jar/** -text

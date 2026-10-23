@@ -1,0 +1,92 @@
+.outlook {
+  --outlook-base: #0c1628;
+  --outlook-stripe: #0f192b;
+  --outlook-accent: color-mix(in srgb, var(--team-secondary) 20%, #f8fafc);
+  --outlook-border: color-mix(in srgb, var(--team-primary) 28%, #263248);
+  --outlook-header: color-mix(in srgb, var(--team-primary) 22%, #0c1628);
+  --outlook-space: color-mix(in srgb, var(--team-primary) 30%, #0c1628);
+  min-width: 0;
+  padding: 24px;
+  overflow: hidden;
+  border: 1px solid var(--outlook-border);
+  background: var(--outlook-base);
+}
+
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -24px -24px 0;
+  padding: 28px 24px 24px;
+  border-bottom: 1px solid var(--outlook-border);
+  background: linear-gradient(110deg, var(--outlook-header), var(--outlook-base));
+}
+.header::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background-image: var(--team-pattern-image);
+  background-repeat: var(--team-pattern-repeat);
+  background-size: var(--team-pattern-size);
+  content: "";
+}
+.heading { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.header h2 { margin: 0; font-size: clamp(1.35rem, 2.5vw, 1.75rem); letter-spacing: -0.02em; }
+.teamName { margin: 0 0 6px; color: var(--outlook-accent); font-size: 0.65rem; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; overflow-wrap: anywhere; }
+.teamStripe { flex: 0 0 5px; align-self: stretch; border-radius: 4px; background: linear-gradient(var(--team-primary) 0 60%, var(--team-secondary) 60%); }
+.badge { flex-shrink: 0; border: 1px solid var(--outlook-border); border-radius: 6px; padding: 8px 10px; color: var(--outlook-accent); background: #ffffff05; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.03em; white-space: nowrap; }
+.note { margin: 16px 0; max-width: 90ch; color: #aab8ca; font-size: 0.75rem; line-height: 1.7; }
+.note:last-child { margin-bottom: 0; }
+.scroll { border: 1px solid var(--outlook-border); border-radius: 10px; }
+
+.table { width: 100%; min-width: 680px; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; }
+.table th, .table td { padding: 13px 18px; border-bottom: 1px solid #ffffff08; text-align: right; font-variant-numeric: tabular-nums; }
+.table th:first-child { text-align: left; width: 40%; }
+.table thead th { padding-top: 20px; padding-bottom: 18px; border-bottom: 2px solid var(--outlook-border); background: var(--outlook-header); color: #f8fafc; font-size: 1.05rem; }
+.table thead th:first-child { color: #bdc8d7; font-size: 0.75rem; font-weight: 500; }
+.table thead th:nth-child(2) { border-bottom-color: var(--team-secondary); }
+.table thead th:not(:first-child) { width: 20%; }
+.table small { display: block; margin-top: 5px; color: #aab8ca; font-size: 0.65rem; font-weight: 400; }
+.table thead small { margin-top: 7px; color: #bdc8d7; font-size: 0.6rem; letter-spacing: 0.04em; }
+.table td { white-space: nowrap; font-family: var(--hl-font-mono); }
+
+.group th { padding-top: 13px; padding-bottom: 13px; background: var(--outlook-header); border-top: 1px solid var(--outlook-border); border-left: 3px solid var(--team-secondary); color: var(--outlook-accent); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.65rem; }
+.dataRow { --row-background: var(--outlook-base); }
+.dataRow:nth-child(odd) { --row-background: var(--outlook-stripe); }
+.dataRow:hover { --row-background: var(--outlook-header); }
+.dataRow > th, .dataRow > td { background: var(--row-background); }
+.dataRow > td { color: #e8eef7; font-size: 0.9rem; }
+.table .expired { color: #71839a; }
+.player { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.name { display: flex; align-items: center; gap: 9px; font-weight: 500; }
+
+.move { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 32px; padding: 6px 10px; border: 1px solid var(--outlook-border); border-radius: 6px; background: var(--outlook-header); color: var(--outlook-accent); font: inherit; font-size: 0.67rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.move svg { width: 13px; height: 13px; }
+.move:hover { border-color: var(--team-secondary); background: var(--outlook-space); }
+.move:disabled { opacity: 0.5; cursor: wait; }
+.move:focus-visible { outline: 2px solid var(--outlook-accent); outline-offset: 3px; }
+
+.subtotal > th, .subtotal > td { padding-top: 11px; padding-bottom: 15px; font-weight: 600; font-size: 0.78rem; background: #091221; color: #bac7d9; }
+.empty { text-align: left !important; color: #aab8ca; font-size: 0.75rem; }
+.summary .subtotal > th, .summary .subtotal > td { padding-top: 13px; padding-bottom: 13px; border-top: 1px solid var(--outlook-border); color: #dce6f5; }
+.capSpace > th, .capSpace > td { padding-top: 20px; padding-bottom: 20px; border-top: 2px solid var(--team-secondary); border-bottom: 1px solid var(--outlook-border); background: var(--outlook-space); color: var(--outlook-accent); font-weight: 700; font-size: 1.15rem; }
+.capSpace > th { font-size: 0.95rem; }
+.table .overCap { color: #fda4af; font-weight: 600; }
+
+@media (max-width: 600px) {
+  .outlook { padding: 12px; }
+  .header { margin: -12px -12px 0; padding: 22px 16px 18px; gap: 10px; }
+  .heading { gap: 10px; }
+  .teamName { font-size: 0.6rem; letter-spacing: 0.08em; }
+  .badge { padding: 6px 8px; font-size: 0.6rem; }
+  .table { min-width: 580px; table-layout: fixed; }
+  .table th, .table td { padding-left: 12px; padding-right: 12px; }
+  .table th:first-child { width: 190px; position: sticky; left: 0; z-index: 1; }
+  .table thead th:not(:first-child) { width: 130px; }
+  .table .group th { position: static; }
+  .group span { display: block; position: sticky; left: 12px; width: max-content; }
+  .player { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .move { min-height: 44px; padding: 8px 12px; }
+}
