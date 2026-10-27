@@ -34,6 +34,7 @@ function tradeAssetQuery({
 export const routePaths = Object.freeze({
   home: "/",
   publicTipJar: "/games/tip-jar",
+  publicMrBoni: "/games/mr-boni",
   install: "/install",
   verifyEmail: "/verify-email",
   setupAccount: "/setup-account",
@@ -155,6 +156,8 @@ export const routePaths = Object.freeze({
     `/leagues/${segment(leagueId, "League ID")}/matchups`,
   leagueStandings: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/standings`,
+  leagueMrBoni: (leagueId) =>
+    `/leagues/${segment(leagueId, "League ID")}/mr-boni`,
   leagueTipJar: (leagueId) =>
     `/leagues/${segment(leagueId, "League ID")}/tip-jar`,
   leagueActivity: (leagueId) =>

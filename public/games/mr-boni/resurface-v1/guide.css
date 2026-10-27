@@ -1,0 +1,32 @@
+/* A short, scannable briefing; the operator's guide keeps the deeper detail. */
+#welcome{max-width:min(760px,94vw)}
+.welcome-modal{padding:25px 30px}
+.welcome-modal h1{margin:15px 0 16px}
+#welcome-title{outline:none}
+.welcome-modal .welcome-logo{width:min(340px,100%)}
+.welcome-modal .intro{font-size:15px;line-height:1.45;margin:0 0 18px;color:var(--ink)}
+.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 25px}
+.guide-step h2{font-size:13px;letter-spacing:.15px;margin:0 0 8px;color:var(--cyan)}
+.guide-step p{font-size:12px;line-height:1.5;margin:6px 0;color:var(--ink)}
+.guide-step .guide-note{font-size:11px;color:var(--muted)}
+.pump-guide p{display:grid;grid-template-columns:76px 1fr;gap:9px;margin:5px 0}
+.pump-guide b{font-size:10px;white-space:nowrap}
+.pump-guide kbd{font-size:10px}
+.dump-guidance{padding:12px 14px;border-left:3px solid var(--orange);border-radius:0 7px 7px 0;background:#ffffff07;font-size:12px!important;line-height:1.5;color:var(--ink)!important;margin:17px 0 12px}
+.dump-guidance strong{display:block;margin-bottom:4px}
+.guide-clock{font-size:11px!important;line-height:1.5;margin:9px 0 14px}
+.sound-check{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0}
+.sound-check button{font-size:11px;min-height:34px;padding:6px 11px}
+.sound-message{font-size:10px;line-height:1.5;color:var(--muted);flex:1;min-width:140px}
+.sound-message[data-error=true]{color:#ffbd81}
+.welcome-modal .primary{margin-top:10px}
+.welcome-modal .secondary-start{min-height:36px}
+@media(max-width:600px) and (orientation:portrait){
+ .welcome-modal{padding:20px}
+ .welcome-modal .intro{font-size:14px}
+ .guide-grid{grid-template-columns:1fr;gap:15px}
+ .guide-step h2{font-size:14px}
+ .guide-step p{font-size:12px}
+ .sound-message{flex-basis:100%}
+}
+@media(max-height:520px) and (orientation:landscape){.welcome-modal{padding:18px 24px}.welcome-modal .welcome-logo{width:260px}.guide-grid{gap:12px 22px}}

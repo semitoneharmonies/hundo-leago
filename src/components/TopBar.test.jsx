@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../test/render.jsx";
@@ -237,7 +237,6 @@ describe("top bar navigation", () => {
       Trades: `/leagues/${leagueId}/trades`,
       Standings: `/leagues/${leagueId}/standings`,
       "League activity": `/leagues/${leagueId}/activity`,
-      "Play Tip Jar": `/leagues/${leagueId}/tip-jar`,
       Notifications: "/notifications",
     };
     const navigation = screen.getByRole("navigation", {
@@ -250,7 +249,7 @@ describe("top bar navigation", () => {
       );
     }
     // Teams and Matchups open their accepted mobile submenus.
-    for (const name of ["Teams", "Matchups"]) {
+    for (const name of ["Teams", "Matchups", "Mini Games"]) {
       expect(within(navigation).getByRole("button", { name })).toHaveAttribute("aria-expanded", "false");
     }
     expect(screen.queryByRole("link", { name: "Commissioner tools" })).toBeNull();
@@ -260,22 +259,25 @@ describe("top bar navigation", () => {
 
   it("keeps Tip Jar in the selected league and marks its navigation active", async () => {
     await renderTopBar("manager", "manager", { initialEntry: `/leagues/${leagueId}/tip-jar` });
+    fireEvent.click(screen.getByRole("button", { name: "Mini Games" }));
     const link = screen.getByRole("link", { name: "Play Tip Jar" });
     expect(link).toHaveAttribute("href", `/leagues/${leagueId}/tip-jar`);
     expect(link).toHaveAttribute("aria-current", "page");
-    expect(link.querySelector(".hl-tipjar-wordmark")).toHaveTextContent("tipjar✳");
-    expect(within(link).getByText("Play")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Play Mr. Boni" })).toHaveAttribute("href", `/leagues/${leagueId}/mr-boni`);
+    fireEvent.keyDown(document.activeElement, { key: "Escape" });
+    expect(screen.getByRole("button", { name: "Mini Games" })).toHaveFocus();
   });
 
-  it("shows the same Play wordmark in the desktop league sidebar", async () => {
+  it("opens Mini Games in the desktop sidebar and marks Mr. Boni active", async () => {
     vi.stubGlobal("matchMedia", vi.fn((query) => ({ matches: query === "(min-width: 1024px)", addEventListener: vi.fn(), removeEventListener: vi.fn() })));
     try {
-      await renderTopBar("manager", "manager", { initialEntry: `/leagues/${leagueId}/tip-jar`, openMenu: false });
+      await renderTopBar("manager", "manager", { initialEntry: `/leagues/${leagueId}/mr-boni`, openMenu: false });
       const sidebar = await screen.findByRole("complementary", { name: "League sidebar" });
-      const link = within(sidebar).getByRole("link", { name: "Play Tip Jar" });
-      expect(link).toHaveAttribute("href", `/leagues/${leagueId}/tip-jar`);
+      fireEvent.click(within(sidebar).getByRole("button", { name: "Mini Games" }));
+      const link = within(sidebar).getByRole("link", { name: "Play Mr. Boni" });
+      expect(link).toHaveAttribute("href", `/leagues/${leagueId}/mr-boni`);
       expect(link).toHaveAttribute("aria-current", "page");
-      expect(link.querySelector(".hl-tipjar-wordmark")).toHaveTextContent("tipjar✳");
+      expect(within(sidebar).getByRole("link", { name: "Play Tip Jar" })).toHaveAttribute("href", `/leagues/${leagueId}/tip-jar`);
     } finally { vi.unstubAllGlobals(); }
   });
 

@@ -1,0 +1,33 @@
+/* Readable feedback stays inside the existing control rails, clear of the ice. */
+#toast{display:flex;align-items:center;gap:10px;padding:13px 12px;border:2px solid #72c5e2;border-left-width:5px;border-radius:10px;background:#142b3c;color:#f0f9ff;box-shadow:0 8px 26px #0009,0 0 18px #58b8d322;transform:translateY(6px);transition:opacity .16s,transform .16s;line-height:1.35}
+#toast.visible{transform:translateY(0)}
+#toast[data-kind=warning]{background:#32281c;border-color:#ffb85b;box-shadow:0 8px 26px #0009,0 0 20px #ffae3d35}
+#toast[data-kind=success]{background:#13352e;border-color:#83e0b5;box-shadow:0 8px 26px #0009,0 0 20px #83e0b525}
+#toast-icon{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#77bedb24;font-weight:900;font-size:20px;color:#9fdfff}
+#toast[data-kind=warning] #toast-icon{background:#ffba5730;color:#ffd497}
+#toast[data-kind=success] #toast-icon{background:#83e0b52b;color:#b6f6d4}
+#toast-title{display:block;font-size:15px;line-height:1.2;margin-bottom:5px}
+#toast-detail{display:block;font-size:12px;color:#e1e9ee}
+.snow-panel,.pump-panel{border-radius:5px;transition:box-shadow .15s}
+.snow-panel.tank-full{box-shadow:0 0 0 2px #ffb85b,0 0 15px #ffb85b25}
+body[data-notice-target=pump] .pump-panel{box-shadow:0 0 0 2px #ffb85b,0 0 15px #ffb85b25}
+#sound-button{display:flex;align-items:center;justify-content:center;gap:6px}
+#sound-button svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#sound-button .sound-cross{display:none}
+#sound-button[data-enabled=false]{color:#a9bac5}
+#sound-button[data-enabled=false] .sound-waves{display:none}
+#sound-button[data-enabled=false] .sound-cross{display:block}
+.legend{top:286px}
+@media(max-width:1000px){#toast-title{font-size:14px}#toast-detail{font-size:11px}#toast{gap:8px;padding:11px 9px}}
+@media(max-width:600px) and (orientation:portrait){
+ .brand-logo{width:110px}.brand{flex-shrink:0}
+ #toast{top:48px;min-height:65px;padding:8px 10px;gap:10px}
+ #toast-title{font-size:15px;margin-bottom:3px}#toast-detail{font-size:11px}
+ #sound-button{gap:4px}#sound-button svg{width:14px;height:14px}
+}
+@media(max-width:360px) and (orientation:portrait){.brand-logo{width:82px}.topbar{gap:3px}.topbar .icon-button{padding:5px 4px}.level-badge{letter-spacing:0;font-size:7px}.action-row button{padding:4px 3px}#sound-button{gap:3px}}
+@media(max-height:520px) and (orientation:landscape){
+ .brand-logo{width:120px}.dashboard .timer{left:300px}
+ #toast{bottom:70px;width:176px;padding:9px;gap:8px}#toast-title{font-size:14px}#toast-detail{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){#toast{transform:none;transition:none}}

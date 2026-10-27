@@ -92,6 +92,8 @@ const CandidateCardPage = lazyNamed(
 );
 
 const InstallPage = lazyNamed(() => import("./features/install/InstallPage.jsx"), "InstallPage");
+const MrBoniPage = lazyNamed(() => import("./features/mrBoni/MrBoniPage.jsx"), "MrBoniPage");
+const PublicMrBoniPage = lazyNamed(() => import("./features/mrBoni/MrBoniPage.jsx"), "PublicMrBoniPage");
 const TipJarPage = lazyNamed(() => import("./features/tipJar/TipJarPage.jsx"), "TipJarPage");
 const PublicTipJarPage = lazyNamed(() => import("./features/tipJar/TipJarPage.jsx"), "PublicTipJarPage");
 const NotificationsPage = lazyNamed(
@@ -1871,6 +1873,8 @@ return (
         <Route path="/leagues/:leagueId/activity" element={<ActivityPage />} />
         <Route path="/leagues/:leagueId/matchups" element={<LeagueMatchupsPage />} />
         <Route path="/leagues/:leagueId/standings" element={<LeagueStandingsPage />} />
+        <Route path="/leagues/:leagueId/mr-boni" element={<MrBoniPage />} />
+        <Route path="/games/mr-boni" element={<PublicMrBoniPage />} />
         <Route path="/leagues/:leagueId/tip-jar" element={<TipJarPage />} />
         <Route path="/games/tip-jar" element={<PublicTipJarPage />} />
         <Route path="/leagues/:leagueId/commissioner" element={<CommissionerCompetitionPage />} />

@@ -1,0 +1,14 @@
+/* A stopped opening overview; all normal play layout returns on dismissal. */
+.show-dump-intro .arena-wrap canvas{--play-left:8px;--play-right:8px;--play-top:54px;--play-bottom:150px}
+.show-dump-intro .dashboard,.show-dump-intro .sidebar,.show-dump-intro .action-row,.show-dump-intro .legend,.show-dump-intro .touch-controls,.show-dump-intro .topbar>*:not(.brand){visibility:hidden}
+#dump-intro{position:fixed;inset:auto 12px max(10px,env(safe-area-inset-bottom));width:min(600px,calc(100vw - 24px));max-width:none;margin:0 auto;padding:13px 16px;border:1px solid #43d6f3;border-radius:10px;background:#0c1f3afa;color:#f3f9ff;box-shadow:0 4px 24px #0008}
+#dump-intro::backdrop{background:transparent;backdrop-filter:none}
+#dump-intro h2{font-size:17px;line-height:1.2;margin:0 0 5px;color:#f3f9ff}
+#dump-intro p{font-size:12px;line-height:1.4;margin:0;color:#c2d9eb}
+#dump-intro .primary{font-size:12px;min-height:36px;margin:10px 0 0}
+@media(max-width:600px) and (orientation:portrait){#dump-intro{padding:11px 12px}#dump-intro h2{font-size:15px}#dump-intro p{font-size:11px}#dump-intro kbd{display:none}}
+@media(max-height:520px) and (orientation:landscape){
+ .show-dump-intro .arena-wrap canvas{--play-left:8px;--play-right:260px;--play-top:46px;--play-bottom:8px}
+ #dump-intro{inset:50% 8px auto auto;transform:translateY(-50%);width:236px;margin:0;padding:14px}
+ #dump-intro h2{font-size:16px}#dump-intro p{font-size:12px}#dump-intro .primary{margin-top:13px}#dump-intro kbd{display:none}
+}

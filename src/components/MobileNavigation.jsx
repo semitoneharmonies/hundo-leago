@@ -10,6 +10,7 @@ import { useInstalledApp } from "../features/install/useInstalledApp.js";
 import { hasCommissionerAuthority, leagueAuthorityLabel } from "../shared/leagueAuthority.js";
 import { TeamMenu, MatchupMenu } from "./DesktopSidebar.jsx";
 import LeagueRulesDropdown from "./LeagueRulesDropdown.jsx";
+import { MiniGamesLinks } from "./MiniGamesLinks.jsx";
 import { TipJarNavLabel } from "./TipJarNavLabel.jsx";
 
 const focusableSelector = 'a[href], button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary, [tabindex="0"]';
@@ -108,7 +109,7 @@ export function MobileNavigation({ league, leaguesQuery, links, session, unreadC
         <div className="hl-mobile-nav__links">
           {authenticated && <>
             {links.filter(([label]) => label !== "Roster operations").map(([label, to, Icon, prefixActive, description]) => {
-              if (["Teams", "Matchups", "Commissioner tools"].includes(label)) return disclosure(label, Icon);
+              if (["Teams", "Matchups", "Commissioner tools", "Mini Games"].includes(label)) return disclosure(label, Icon);
               return navLink(label, to, Icon, isActive(label, to, prefixActive), label === "Drafts" && description !== "Free Agent and Entry Drafts" ? description : null);
             })}
             {navLink("Notifications", routePaths.notifications, Bell, location.pathname === routePaths.notifications, unreadCount ? `${unreadCount} unread` : null)}
@@ -126,6 +127,7 @@ export function MobileNavigation({ league, leaguesQuery, links, session, unreadC
           <h2>{submenu}</h2>
         </header>
         <div className="hl-mobile-nav__submenu-content">
+          {submenu === "Mini Games" && authenticated && league && <MiniGamesLinks leagueId={league.id} className="hl-mobile-nav__text-link" onSelect={onNavigate} />}
           {submenu === "Teams" && authenticated && league && <TeamMenu league={league} session={session} onSelect={onNavigate} />}
           {submenu === "Matchups" && authenticated && league && <MatchupMenu league={league} session={session} onSelect={onNavigate} />}
           {submenu === "League Rules" && <LeagueRulesDropdown leagueId={league?.id} httpClient={session.httpClient} onClose={closeSubmenu} />}

@@ -14,7 +14,7 @@ Guest runs use a random browser capability, hashed in server storage, with the s
 
 Migration 0095 adds separate guest run/best tables and schema metadata. Existing league runs and fantasy rows remain intact. Existing league deletion and guided fantasy reset/restore preserve global guest records. No automatic cleanup job is introduced. The narrow iframe hosting policy applies only to `/games/tip-jar/campaign-v1/*`, so the public wrapper retains normal API access and is not embeddable.
 
-The current **Play Tip Jar** menu entry remains. Once another game is finished, a later authorized change can introduce **Games** with game submenus and the same public/league leaderboard structure. Mr. Boni and Flurryton are not added by this extension.
+The later authorized Mr. Boni integration replaces **Play Tip Jar** with **Mini Games**, listing Tip Jar and Mr. Boni. Existing Tip Jar routes, rules and scores are preserved. See [Mr. Boni](MR_BONI.md) for its separate time-based game and leaderboard. Flurryton remains deferred.
 
 Separately, the desktop/mobile menu's league title is now the league-picker button. It lists only the current user's returned memberships, retains role/current-league labels, and switches league using the existing route/preference behavior. The separate **Switch league** navigation/account entries are removed. Escape returns keyboard focus to the title; league-loading, error/retry and no-membership states remain visible.
 

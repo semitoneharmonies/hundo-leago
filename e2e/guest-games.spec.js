@@ -74,6 +74,7 @@ test("league play shows both boards and the title switches authorized leagues wi
   await expect(page.getByRole("heading", { name: "Pacific Hockey League", exact: true })).toBeVisible();
   await expect(choices).toHaveCount(0);
   await menu(page);
+  await page.getByRole("button", { name: "Mini Games", exact: true }).click();
   await page.getByRole("link", { name: "Play Tip Jar", exact: true }).click();
   await expect(page.getByRole("region", { name: "Pacific Hockey League leaderboard" }).getByText("Pacific Manager", { exact: false })).toBeVisible();
   await expect(globalBoard).toBeVisible();

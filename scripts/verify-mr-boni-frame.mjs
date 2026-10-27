@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import {createCampaign, PROTOCOL} from '../public/games/mr-boni/resurface-v1/campaign.js';
+const runId='11111111-1111-4111-8111-111111111111', requestId='22222222-2222-4222-8222-222222222222';
+const sent=[],events=[],listeners=new Map();
+const host={postMessage(message,origin){sent.push({message,origin});}};
+const listen={addEventListener(type,fn){listeners.set(type,fn);},removeEventListener(type,fn){assert.equal(listeners.get(type),fn);listeners.delete(type);}};
+const campaign=createCampaign({host,origin:'https://example.test',listen,newId:()=>requestId,
+  onStart:run=>events.push(['start',run]),onState:state=>events.push(['state',state]),
+  onSaved:result=>events.push(['saved',result]),onPause:()=>events.push(['pause']),onFullscreen:active=>events.push(['fullscreen',active])});
+const message=(data,source=host,origin='https://example.test')=>listeners.get('message')?.({source,origin,data:{protocol:PROTOCOL,...data}});
+assert.equal(sent.length,0,'loading does not create a run');
+campaign.ready();assert.equal(sent[0].message.type,'ready');
+campaign.checkpoint([[1,0]]);assert.equal(sent.length,1,'no checkpoint before issued run');
+campaign.start();campaign.start();assert.equal(sent[1].message.requestId,sent[2].message.requestId,'retries retain start identity');
+message({type:'start',requestId,run:{runId,rulesetVersion:'resurface-v1'}},{},'https://example.test');
+message({type:'start',requestId,run:{runId,rulesetVersion:'resurface-v1'}},host,'https://attacker.test');
+message({type:'start',requestId:'33333333-3333-4333-8333-333333333333',run:{runId,rulesetVersion:'resurface-v1'}});
+message({type:'start',requestId,run:{runId,rulesetVersion:'wrong'}});
+assert.equal(events.length,0,'wrong source, origin, request or ruleset rejected');
+message({type:'error',requestId,message:'Retry'});assert.equal(events[0][1].kind,'start-error');
+message({type:'start',requestId,run:{runId,rulesetVersion:'resurface-v1'}});
+message({type:'start',requestId,run:{runId,rulesetVersion:'resurface-v1'}});
+assert.equal(events.filter(e=>e[0]==='start').length,1,'duplicate start receipt does not reset play');
+campaign.checkpoint([[0,1,1,0,0]]);assert.deepEqual(sent.at(-1).message,{protocol:PROTOCOL,type:'checkpoint',runId,commands:[[0,1,1,0,0]]});
+message({type:'saved',runId:'wrong',result:{runId}});message({type:'saved',runId,result:{runId:'wrong'}});
+assert.equal(events.filter(e=>e[0]==='saved').length,0);
+message({type:'saved',runId,result:{runId,highestLevelCompleted:1,cumulativeTimeMs:12345}});
+assert.equal(events.filter(e=>e[0]==='saved').length,1);
+message({type:'pause'});message({type:'fullscreen',active:true});
+assert.deepEqual(events.slice(-2),[['pause'],['fullscreen',true]]);
+campaign.leaderboard();assert.equal(sent.at(-1).message.type,'leaderboard');
+assert(sent.every(item=>item.origin==='https://example.test'),'never wildcard origin');
+assert(!JSON.stringify(sent).match(/guestKey|csrf|authorization|token/i),'frame messages contain no credentials');
+message({type:'hello'});assert.equal(sent.at(-1).message.type,'ready','host reconnect receives a fresh readiness handshake');
+campaign.dispose();const count=sent.length;campaign.start();assert.equal(sent.length,count);assert.equal(listeners.size,0);
+console.log('Mr. Boni frame transport, authority, retry and lifecycle assertions passed.');

@@ -45,6 +45,7 @@ import "./MobileNavigation.css";
 import { useDesktopLayout } from "../shared/useDesktopLayout.js";
 import { useInstalledApp } from "../features/install/useInstalledApp.js";
 import { KittyPaymentFlag } from "./KittyPaymentFlag.jsx";
+import { MiniGamesLinks } from "./MiniGamesLinks.jsx";
 import { TipJarNavLabel } from "./TipJarNavLabel.jsx";
 
 function leagueIdFromPathname(pathname) {
@@ -73,6 +74,7 @@ function pageLabel(pathname) {
   if (/\/trades$/.test(pathname)) return "Trades";
   if (/\/matchups$/.test(pathname)) return "Matchups";
   if (/\/standings$/.test(pathname)) return "Standings";
+  if (/\/mr-boni$/.test(pathname)) return "Mr. Boni";
   if (/\/tip-jar$/.test(pathname)) return "Tip Jar";
   if (/\/activity$/.test(pathname)) return "League activity";
   if (/\/commissioner\/rosters$/.test(pathname)) return "Roster operations";
@@ -90,7 +92,7 @@ const descriptions = Object.freeze({
   Trades: "Proposals and history",
   Matchups: "Head-to-head scoring",
   Standings: "Official league table",
-  "Tip Jar": "Hockey side game and league leaderboard",
+  "Mini Games": "Tip Jar and Mr. Boni",
   "League activity": "Transactions and moves",
   Drafts: "Free Agent and Entry Drafts",
   "Commissioner tools": "Authorized administration",
@@ -210,7 +212,7 @@ function TopBar({ freezeBanner }) {
       ["Matchups", routePaths.leagueMatchups(leagueId), Trophy],
       ["Standings", routePaths.leagueStandings(leagueId), BarChart3],
       ["League activity", routePaths.leagueActivity(leagueId), Activity],
-      ["Tip Jar", routePaths.leagueTipJar(leagueId), Gamepad2],
+      ["Mini Games", routePaths.leagueTipJar(leagueId), Gamepad2],
     ];
     if (hasCommissionerAuthority(currentLeague?.membership)) {
       links.push([
@@ -366,7 +368,9 @@ function TopBar({ freezeBanner }) {
                 <div className="hl-main-menu__links">
                   {session.status === "authenticated" && (
                     <>
-                      {leagueLinks.filter(([label])=>label!=="Roster operations").map(([label, to, Icon, prefixActive, description]) => label === "Commissioner tools" ? (
+                      {leagueLinks.filter(([label])=>label!=="Roster operations").map(([label, to, Icon, prefixActive, description]) => label === "Mini Games" ? (
+                        <details key={label} className="hl-mini-games"><summary className="hl-menu-link hl-menu-link--button"><Gamepad2 className="hl-menu-link__icon" aria-hidden="true" /><span><strong>Mini Games</strong><small>Tip Jar and Mr. Boni</small></span><ChevronDown aria-hidden="true" /></summary><MiniGamesLinks leagueId={leagueId} className="hl-menu-link" onSelect={closeMenus} /></details>
+                      ) : label === "Commissioner tools" ? (
                         <button key={label} type="button" className="hl-menu-link hl-menu-link--button" aria-expanded={commissionerOpen} aria-controls="commissioner-menu-panel" onClick={()=>{closeHelp();setCommissionerOpen(v=>!v);setRulesOpen(false);}}><Shield className="hl-menu-link__icon" aria-hidden="true"/><span><strong>Commissioner tools</strong><small>Calendar, scoring and administration</small></span><ChevronRight aria-hidden="true"/></button>
                       ) : (
                         <MenuLink

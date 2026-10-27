@@ -396,7 +396,7 @@ export function AccountHome() {
         ) : (
           <p role="status">Checking secure session…</p>
         )}
-        <p><Link className="hl-button" to={routePaths.publicTipJar}>Play Tip Jar</Link> — no account needed.</p>
+        <p><Link className="hl-button" to={routePaths.publicTipJar}>Play Tip Jar</Link> <Link className="hl-button" to={routePaths.publicMrBoni}>Play Mr. Boni</Link> — no account needed.</p>
         </section>
       </main>
     );
@@ -417,8 +417,8 @@ export function AccountHome() {
         <p className="hl-eyebrow">Private fantasy hockey</p>
         <h1 id="accounts-title">Hundo Leago</h1>
         <p>Sign in to your league, or create a manager account.</p>
-        <p><Link className="hl-button hl-button--primary" to={routePaths.publicTipJar}>Play Tip Jar</Link></p>
-        <p>No account needed. Take a shot at the Hundo Leago leaderboard.</p>
+        <p><Link className="hl-button hl-button--primary" to={routePaths.publicTipJar}>Play Tip Jar</Link> <Link className="hl-button hl-button--primary" to={routePaths.publicMrBoni}>Play Mr. Boni</Link></p>
+        <p>No account needed. Play a mini game and try the Hundo Leago leaderboards.</p>
       </header>
       {stagingResetReceipt && (
         <StagingResetReceipt receipt={stagingResetReceipt} />

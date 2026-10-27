@@ -1,0 +1,108 @@
+/* Mr. Boni navy/cyan, with Hundo Leago orange reserved for action and caution. */
+:root {
+  --bg: #070d1c;
+  --panel: #0c1f3a;
+  --line: #2b4a6c;
+  --ink: #f3f9ff;
+  --muted: #a4bcd3;
+  --orange: #f97316;
+  --cyan: #43d6f3;
+  --green: #81ddbe;
+}
+
+body { background: var(--bg); }
+.arena-wrap { background: var(--bg); }
+button { background: #102b4c; border-color: var(--line); }
+button:hover { background: #1c4166; }
+button:active, .pressed { background: #28557c !important; }
+kbd { color: #d9edfb; border-color: #4a7091; }
+
+.dashboard, .sidebar .panel {
+  background: #0c1f3af2;
+  border-color: #2b4a6c;
+}
+.panel { background: linear-gradient(135deg, #102b4c, #0b1d36); }
+.topbar .icon-button, .action-row button, .action-row .quiet {
+  background: #0b2342f2;
+  color: var(--ink);
+  border-color: #345d80;
+}
+.topbar .icon-button:hover, .action-row button:hover { background: #194363; }
+.topbar .icon-button[aria-pressed=true], .action-row button[aria-pressed=true] {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+.level-badge { background: #072653f2; color: var(--cyan); border-color: #2e6389; }
+.legend, .keyboard-guide { background: #0b1e38eb; }
+.action-progress { background: #0b2442f5; border-color: #62b4d4; }
+.meter-track, .rink-card .progress-track { background: #1e3d5b; }
+.pump-options button { background: #102b4c; }
+.pump-options button.selected {
+  background: #123d5c;
+  color: #c9f7ff;
+  border-color: var(--cyan);
+  box-shadow: inset 0 -2px var(--cyan);
+}
+.rink-card { border-color: var(--line); }
+.rink-card .rink-number { background: #173d60; color: #d7f2ff; }
+.level-steps span { color: #99b4cd; border-color: #365575; }
+.level-steps i { background: #365575; }
+.level-steps .active { background: #123d5c; color: #d6f8ff; border-color: var(--cyan); }
+.level-steps .done, .rink-card.done .rink-number {
+  color: #c9f6e7;
+  background: #123d40;
+  border-color: var(--green);
+}
+.badge { color: #bed8eb; border-color: #3a5d7d; }
+.score-row { border-color: var(--line); }
+.tip { border-color: var(--orange); }
+
+dialog { background: #0c1f3a; border-color: #406b91; }
+dialog::backdrop { background: #040b18e8; }
+.intro { color: #d2e8f8; }
+.modal p { color: #b7cfe2; }
+.guide-step p { color: var(--ink); }
+.scope-note { color: var(--muted); }
+.modal input { background: #07172d; border-color: #3a6084; }
+.primary { background: var(--orange); color: #080d19; border-color: var(--orange); }
+.primary:hover { background: #fb923c; }
+.primary kbd { color: #15253a; border-color: #8b450e; }
+.secondary-start { border-color: #547da0; color: var(--ink); }
+
+.touch-controls button, .touch-controls .throttle-pad button:first-child {
+  background: #123c60ed;
+  border-color: #6eafd0;
+}
+.touch-controls button.pressed { background: #28557c; }
+
+#toast {
+  background: #0b2c4d;
+  color: #f3faff;
+  border-color: var(--cyan);
+  box-shadow: 0 8px 26px #0009, 0 0 18px #43d6f322;
+}
+#toast-icon { background: #43d6f324; color: #b9f4ff; }
+#toast-detail { color: #e0edf8; }
+#toast[data-kind=warning] {
+  background: #302018;
+  border-color: #fb923c;
+  box-shadow: 0 8px 26px #0009, 0 0 20px #f9731635;
+}
+#toast[data-kind=warning] #toast-icon { background: #f9731630; color: #ffd5b3; }
+#toast[data-kind=success] {
+  background: #10352f;
+  border-color: var(--green);
+  box-shadow: 0 8px 26px #0009, 0 0 20px #81ddbe25;
+}
+#toast[data-kind=success] #toast-icon { background: #81ddbe2b; color: #c2f8e5; }
+.snow-panel.tank-full, body[data-notice-target=pump] .pump-panel {
+  box-shadow: 0 0 0 2px #fb923c, 0 0 15px #f9731635;
+}
+#sound-button[data-enabled=false] { color: var(--muted); }
+
+/* Snow, fresh/faded ice, dark-blue pools and red missed spots retain their meanings. */
+.dot.snow { background: #f3f8fc; }
+.dot.fresh { background: #48bfdf; }
+.dot.clean { background: #a4b1b7; }
+.dot.wet, .show-missed .dot.wet { background: #1676a4; }
+.show-missed .dot.snow, .show-missed .dot.dry { background: #ff3434; }

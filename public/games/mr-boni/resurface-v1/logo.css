@@ -1,0 +1,27 @@
+/* The selected navy-endcap artwork keeps its natural short, wide proportions. */
+.brand-logo {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  flex: none;
+}
+
+.welcome-logo {
+  display: block;
+  width: min(400px, 100%);
+  height: auto;
+  margin-inline: auto;
+}
+
+@media (max-width: 1000px) {
+  .brand-logo { width: 180px; }
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+  .brand-logo { width: 125px; }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .brand-logo { width: 160px; }
+}

@@ -16,6 +16,7 @@ import { TeamMark } from "./HundoUi.jsx";
 import LeagueRulesDropdown from "./LeagueRulesDropdown.jsx";
 import { LeagueAnnouncements } from "../features/leagues/LeagueAnnouncements.jsx";
 import { useNavigationMotion } from "./navigationMotion.js";
+import { MiniGamesLinks } from "./MiniGamesLinks.jsx";
 import { TipJarNavLabel } from "./TipJarNavLabel.jsx";
 
 function QueryState({ query, children, empty }) {
@@ -180,6 +181,7 @@ export function DesktopSidebar({ league, leaguesQuery, links, descriptions, sess
     </div>
     <nav className="hl-sidebar-navigation" aria-label="Main navigation">
       {links.filter(([label]) => label !== "Roster operations").map(([label, to, Icon, prefixActive, description]) => {
+        if (label === "Mini Games") return disclosure(label, Icon, null, <MiniGamesLinks leagueId={league.id} className="hl-sidebar-link" onSelect={closeSubmenu} />);
         if (label === "Commissioner tools") return disclosure(label, Icon, null, <><Link className="hl-sidebar-all" to={to} onClick={closeSubmenu}>All tools</Link>{commissionerSections.map(([key, title]) => <Link className="hl-sidebar-link" key={key} to={commissionerSectionPath(league.id, key)} onClick={closeSubmenu}>{title}</Link>)}</>, true);
         if (label === "Teams") return disclosure(label, Icon, null, <TeamMenu league={league} session={session} onSelect={closeSubmenu} />, true);
         if (label === "Matchups") return disclosure(label, Icon, null, <MatchupMenu key={`${league.id}:${location.search}`} league={league} session={session} onSelect={closeSubmenu} />, true);

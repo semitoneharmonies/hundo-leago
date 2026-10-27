@@ -88,3 +88,27 @@
   for = "/games/tip-jar/"
   [headers.values]
     Cache-Control = "no-store"
+
+# Mr. Boni assets may be framed only by the public/league game wrapper.
+[[headers]]
+  for = "/games/mr-boni/resurface-v1/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Resource-Policy = "same-origin"
+    Permissions-Policy = "camera=(), display-capture=(), geolocation=(), microphone=(), payment=(), usb=()"
+    Referrer-Policy = "same-origin"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/games/mr-boni"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/games/mr-boni/"
+  [headers.values]
+    Cache-Control = "no-store"
