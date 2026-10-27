@@ -5,8 +5,9 @@ import { routePaths } from "../../app/routePaths.js";
 import { useSession } from "../session/sessionContext.js";
 import { visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import { createTipJarBridge } from "./tipJarBridge.js";
-import { saveTipJarCheckpoint, startTipJarRun, tipJarKey, tipJarLeaderboardQuery, TIP_JAR_RULESET } from "./tipJarApi.js";
+import { nameTipJarGuest, publicTipJarKey, publicTipJarLeaderboardQuery, saveTipJarCheckpoint, startTipJarRun, tipJarKey, tipJarLeaderboardQuery, TIP_JAR_RULESET } from "./tipJarApi.js";
 import { createTipJarOutbox } from "./tipJarOutbox.js";
+import { readTipJarClaim, readTipJarGuest, rememberTipJarClaim, rememberTipJarGuest } from "./tipJarGuest.js";
 import "./TipJarPage.css";
 
 function resultLabel(entry) {
@@ -14,7 +15,25 @@ function resultLabel(entry) {
   return entry.highestLevelCompleted > 0 ? `Level ${entry.highestLevelCompleted} completed` : "No levels completed";
 }
 
-function LeagueGame({ league, session }) {
+function Leaderboard({ title, id, query, userId, publicBoard = false }) {
+  return <section className="hl-tipjar-leaderboard" aria-labelledby={id}>
+    <div className="hl-tipjar-board-heading"><h2 id={id}>{title}</h2>
+      <button type="button" aria-label={`Refresh ${title}`} disabled={query.isFetching} onClick={() => query.refetch()}>Refresh</button></div>
+    <p className="hl-tipjar-explainer">{publicBoard ? "Top 100 places, including ties. One best result per player." : "Your league’s best runs."} More levels completed ranks higher, then fewer shots through the last completed level.</p>
+    {query.isPending ? <p role="status">Loading leaderboard…</p>
+      : query.isError ? <p role="alert">The leaderboard could not be loaded. Refresh to try again.</p>
+        : query.data.entries.length === 0 ? <p>No runs yet. Be the first to play.</p>
+          : <div className="hl-tipjar-table"><table>
+            <thead><tr><th scope="col">Rank</th><th scope="col">{publicBoard ? "Player" : "Manager"}</th><th scope="col">Best result</th><th scope="col">Shots</th></tr></thead>
+            <tbody>{query.data.entries.map((entry) => <tr key={publicBoard ? entry.playerId : entry.managerId} className={!publicBoard && entry.managerId === userId ? "is-you" : undefined}>
+              <td>{entry.rank}</td><th scope="row">{publicBoard ? entry.playerName : entry.managerName}{publicBoard && entry.isGuest && <small> (Guest)</small>}{!publicBoard && entry.managerId === userId && <small> You</small>}</th>
+              <td>{resultLabel(entry)}</td><td>{entry.highestLevelCompleted === 0 ? "—" : entry.shotsToCompletion}</td>
+            </tr>)}</tbody>
+          </table></div>}
+  </section>;
+}
+
+function LeagueGame({ league = null, session }) {
   const queryClient = useQueryClient();
   const frame = useRef(null);
   const viewport = useRef(null);
@@ -25,8 +44,19 @@ function LeagueGame({ league, session }) {
   const [expanded, setExpanded] = useState(false);
   const [gameReady, setGameReady] = useState(false);
   const [frameRevision, setFrameRevision] = useState(0);
-  const leaderboard = useQuery(tipJarLeaderboardQuery(session.httpClient, league.id));
-  const userId = session.user.id;
+  const [guest] = useState(() => league ? null : readTipJarGuest());
+  const [claim, setClaim] = useState(() => guest ? readTipJarClaim(guest) : null);
+  const [name, setName] = useState("");
+  const [nameState, setNameState] = useState({ pending: false, error: "", message: "" });
+  const [temporaryGuest, setTemporaryGuest] = useState(false);
+  const nameRequest = useRef(null);
+  const nameInput = useRef(null);
+  const leagueId = league?.id ?? null;
+  const leaderboard = useQuery({ ...tipJarLeaderboardQuery(session.httpClient, leagueId), enabled: Boolean(league) });
+  const publicLeaderboard = useQuery(publicTipJarLeaderboardQuery(session.httpClient));
+  const userId = session.user?.id;
+
+  useEffect(() => () => nameRequest.current?.abort(), [guest, session.httpClient]);
 
   const updateFullscreen = useCallback((active) => {
     setExpanded(active);
@@ -76,13 +106,29 @@ function LeagueGame({ league, session }) {
     const connection = createTipJarBridge({
       origin: window.location.origin,
       frameWindow: frame.current.contentWindow,
-      outbox: createTipJarOutbox({ userId, leagueId: league.id, rulesetVersion: TIP_JAR_RULESET }),
-      startRun: (requestId, signal) => startTipJarRun(session.httpClient, league.id, requestId, signal),
-      saveCheckpoint: (runId, shots, signal) => saveTipJarCheckpoint(session.httpClient, league.id, runId, shots, signal),
+      publicGame: !leagueId,
+      outbox: createTipJarOutbox({ userId: guest?.id || userId, leagueId: leagueId || "public", rulesetVersion: TIP_JAR_RULESET }),
+      startRun: (requestId, signal) => {
+        if (guest) setTemporaryGuest(!rememberTipJarGuest(guest));
+        return startTipJarRun(session.httpClient, leagueId, requestId, signal, guest?.key);
+      },
+      saveCheckpoint: (runId, shots, signal) => saveTipJarCheckpoint(session.httpClient, leagueId, runId, shots, signal, guest?.key),
       onState: setSaveState,
       onReady: () => { clearTimeout(readyTimeout); setGameReady(true); },
       onFullscreen: updateFullscreen,
-      onSaved: () => { void queryClient.invalidateQueries({ queryKey: tipJarKey(league.id), exact: true }); },
+      onSaved: (result) => {
+        if (leagueId) void queryClient.invalidateQueries({ queryKey: tipJarKey(leagueId), exact: true });
+        void queryClient.invalidateQueries({ queryKey: publicTipJarKey, exact: true });
+        if (guest && result?.named) { setClaim(null); rememberTipJarClaim(guest, null); }
+        else if (guest && result?.qualifies) {
+          const next = { runId: result.runId };
+          setClaim(next); rememberTipJarClaim(guest, next);
+          if (result.completed || result.failed) {
+            updateFullscreen(false);
+            requestAnimationFrame(() => nameInput.current?.focus());
+          }
+        }
+      },
     });
     bridge.current = connection;
     const onMessage = (event) => connection.receive(event);
@@ -116,7 +162,29 @@ function LeagueGame({ league, session }) {
         void document.exitFullscreen?.().catch(() => {});
       }
     };
-  }, [frameRevision, league.id, queryClient, session.httpClient, updateFullscreen, userId]);
+  }, [frameRevision, guest, leagueId, queryClient, session.httpClient, updateFullscreen, userId]);
+
+  async function submitName(event) {
+    event.preventDefault();
+    if (!claim || nameState.pending) return;
+    const controller = new AbortController();
+    nameRequest.current = controller;
+    setNameState({ pending: true, error: "", message: "" });
+    const timer = setTimeout(() => {
+      if (controller.signal.aborted) return;
+      controller.abort();
+      setNameState({ pending: false, message: "", error: "Saving your name timed out. Please try again." });
+    }, 15000);
+    try {
+      const result = await nameTipJarGuest(session.httpClient, claim.runId, guest.key, name.trim(), controller.signal);
+      if (controller.signal.aborted) return;
+      setNameState({ pending: false, error: "", message: result.saved && result.qualifies ? "Your name is on the Hundo Leago leaderboard." : "The leaderboard has moved ahead of this score. Keep playing for another spot!" });
+      setClaim(null); rememberTipJarClaim(guest, null);
+      void queryClient.invalidateQueries({ queryKey: publicTipJarKey, exact: true });
+    } catch (error) {
+      if (!controller.signal.aborted) setNameState({ pending: false, message: "", error: error?.code === "TIP_JAR_NAME_INVALID" ? "Use 1–30 letters, numbers, spaces, periods, hyphens, underscores or apostrophes." : "Your name could not be saved. Please try again." });
+    } finally { clearTimeout(timer); }
+  }
 
   async function fullscreen() {
     updateFullscreen(true);
@@ -128,7 +196,8 @@ function LeagueGame({ league, session }) {
 
   return <main className="hl-page hl-tipjar" aria-labelledby="tipjar-title">
     <header className="hl-tipjar-heading">
-      <div><Link to={routePaths.league(league.id)}>{league.name}</Link><h1 id="tipjar-title">Tip Jar</h1></div>
+      <div><Link to={league ? routePaths.league(league.id) : routePaths.home}>{league ? league.name : "Hundo Leago"}</Link><h1 id="tipjar-title">Tip Jar</h1>
+        {!league && <p className="hl-tipjar-explainer">Play as a guest—no account needed.{session.status === "authenticated" && <> <Link to={routePaths.leagues}>Play for your league</Link></>}</p>}</div>
       <button ref={fullscreenButton} type="button" onClick={fullscreen}>Fullscreen</button>
     </header>
     <div ref={viewport} className={`hl-tipjar-viewport${expanded ? " is-fullscreen" : ""}`} role={expanded ? "dialog" : undefined} aria-modal={expanded || undefined} aria-label={expanded ? "Tip Jar fullscreen game" : undefined}>
@@ -136,27 +205,31 @@ function LeagueGame({ league, session }) {
     <iframe key={frameRevision} ref={frame} className="hl-tipjar-game" title="Tip Jar hockey game"
       src="/games/tip-jar/campaign-v1/index.html?league=1" allow="autoplay; fullscreen" allowFullScreen />
     </div>
+    {temporaryGuest && <p role="status">Browser storage is unavailable. Keep this page open to save your guest score and name.</p>}
+    {claim && <form className="hl-tipjar-name" onSubmit={submitName} aria-labelledby="tipjar-name-title">
+      <h2 id="tipjar-name-title">You made the Hundo Leago leaderboard!</h2>
+      <p>Choose a name to publish your score. It will appear with “(Guest)” beside it.</p>
+      <label htmlFor="tipjar-guest-name">Leaderboard name</label>
+      <div><input ref={nameInput} id="tipjar-guest-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="nickname" required maxLength={30} disabled={nameState.pending} />
+        <button type="submit" disabled={nameState.pending || !name.trim()}>{nameState.pending ? "Saving…" : "Save name"}</button></div>
+      {nameState.error && <p role="alert">{nameState.error}</p>}
+    </form>}
+    {nameState.message && <p role="status">{nameState.message}</p>}
     <div className={`hl-tipjar-save hl-tipjar-save--${saveState.kind}`}>
       <p role={saveState.kind.endsWith("error") ? "alert" : "status"}>{saveState.message}</p>
       {saveState.kind === "load-error" ? <button type="button" onClick={() => { updateFullscreen(false); setGameReady(false); setSaveState({ kind: "loading", message: "Loading Tip Jar…" }); setFrameRevision((value) => value + 1); }}>Reload game</button>
         : saveState.kind.endsWith("error") && <button type="button" onClick={() => bridge.current?.retry()}>Retry {saveState.kind === "start-error" ? "start" : "save"}</button>}
     </div>
-    <section className="hl-tipjar-leaderboard" aria-labelledby="tipjar-leaderboard-title">
-      <div className="hl-tipjar-board-heading"><h2 id="tipjar-leaderboard-title">{league.name} leaderboard</h2>
-        <button type="button" disabled={leaderboard.isFetching} onClick={() => leaderboard.refetch()}>Refresh</button></div>
-      <p className="hl-tipjar-explainer">Your best run counts. More levels completed ranks higher, then fewer shots through the last completed level. Just for fun—fantasy hockey is unchanged.</p>
-      {leaderboard.isPending ? <p role="status">Loading leaderboard…</p>
-        : leaderboard.isError ? <p role="alert">The leaderboard could not be loaded. Refresh to try again.</p>
-        : leaderboard.data.entries.length === 0 ? <p>No runs yet. Be the first to play.</p>
-        : <div className="hl-tipjar-table"><table>
-          <thead><tr><th scope="col">Rank</th><th scope="col">Manager</th><th scope="col">Best result</th><th scope="col">Shots</th></tr></thead>
-          <tbody>{leaderboard.data.entries.map((entry) => <tr key={entry.managerId} className={entry.managerId === userId ? "is-you" : undefined}>
-            <td>{entry.rank}</td><th scope="row">{entry.managerName}{entry.managerId === userId && <small> You</small>}</th>
-            <td>{resultLabel(entry)}</td><td>{entry.highestLevelCompleted === 0 ? "—" : entry.shotsToCompletion}</td>
-          </tr>)}</tbody>
-        </table></div>}
-    </section>
+    <div className={`hl-tipjar-boards${league ? " has-league" : ""}`}>
+      {league && <Leaderboard title={`${league.name} leaderboard`} id="tipjar-league-board" query={leaderboard} userId={userId} />}
+      <Leaderboard title="Hundo Leago leaderboard" id="tipjar-public-board" query={publicLeaderboard} publicBoard />
+    </div>
   </main>;
+}
+
+export function PublicTipJarPage() {
+  const session = useSession();
+  return <LeagueGame key={`public:${session.user?.id || "guest"}`} session={session} />;
 }
 
 export function TipJarPage() {

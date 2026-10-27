@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../test/render.jsx";
 import TopBar from "./TopBar.jsx";
+import { readLeaguePreference } from "../features/leagues/leaguePreference.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 const fadId = "22222222-2222-4222-8222-222222222222";
@@ -11,6 +12,7 @@ const teamId = "44444444-4444-4444-8444-444444444444";
 const cardId = "55555555-5555-4555-8555-555555555555";
 const assignmentId = "66666666-6666-4666-8666-666666666666";
 const unauthorizedLeagueId = "77777777-7777-4777-8777-777777777777";
+const otherLeagueId = "88888888-8888-4888-8888-888888888888";
 const config = Object.freeze({
   appEnv: "local",
   apiOrigin: "http://localhost:4000",
@@ -76,10 +78,7 @@ function fetchScenario(
         ],
       });
     }
-    if (
-      path ===
-      `/api/v1/leagues/${leagueId}/free-agent-drafts/navigation`
-    ) {
+    if ([leagueId, otherLeagueId].some((id) => path === `/api/v1/leagues/${id}/free-agent-drafts/navigation`)) {
       return response(
         fadNavigation || {
           serverNowMs: 1,
@@ -145,6 +144,47 @@ async function renderTopBar(
 }
 
 describe("top bar navigation", () => {
+  it.each([false, true])("switches leagues from the title and restores its keyboard focus (desktop: %s)", async (desktop) => {
+    const previousPreference = localStorage.getItem("hundo:league-preference:v1");
+    vi.stubGlobal("matchMedia", vi.fn((query) => ({ matches: desktop && query === "(min-width: 1024px)", addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+    const visibleLeagues = [leagueId, otherLeagueId].map((id, index) => ({
+      id, name: index ? "Second League" : "Navigation League", status: "active", currentSeason: null, version: 1,
+      membership: { id: `membership-${index}`, permissionCategory: "manager", effectiveAuthority: "manager", status: "active", version: 1 },
+    }));
+    try {
+      const view = await renderTopBar("manager", "manager", { visibleLeagues, openMenu: !desktop });
+      const title = screen.getByRole("button", { name: "Navigation League", exact: true });
+      expect(title).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByRole("button", { name: "Switch league", exact: true })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Switch league", exact: true })).not.toBeInTheDocument();
+      await view.user.click(title);
+      const picker = screen.getByRole("region", { name: "Your leagues" });
+      expect(title).toHaveAttribute("aria-expanded", "true");
+      expect(within(picker).getByRole("link", { name: /Navigation League/ })).toHaveAttribute("aria-current", "true");
+      const destination = within(picker).getByRole("link", { name: /Second League/ });
+      expect(destination).toHaveAttribute("href", `/leagues/${otherLeagueId}`);
+      expect(within(picker).getByRole("link", { name: "League access and invitations" })).toHaveAttribute("href", "/leagues");
+      expect(within(picker).getAllByText("Manager")).toHaveLength(2);
+      await view.user.keyboard("{Escape}");
+      expect(title).toHaveFocus();
+      expect(title).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByRole("region", { name: "Your leagues" })).not.toBeInTheDocument();
+      await view.user.keyboard("{Enter}");
+      await view.user.click(screen.getByRole("link", { name: /Second League/ }));
+      expect(readLeaguePreference()).toBe(otherLeagueId);
+      await waitFor(() => expect(screen.getByRole("link", { name: "Hundo Leago" })).toHaveAttribute("href", `/leagues/${otherLeagueId}`));
+      expect(screen.queryByRole("region", { name: "Your leagues" })).not.toBeInTheDocument();
+      if (!desktop) expect(screen.queryByRole("dialog", { name: "Mobile navigation" })).not.toBeInTheDocument();
+      await view.user.click(screen.getByRole("button", { name: "Account menu" }));
+      const accountMenu = document.querySelector(".hl-account-menu");
+      expect(within(accountMenu).queryByRole("link", { name: /Switch league|Your league/ })).not.toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+      if (previousPreference === null) localStorage.removeItem("hundo:league-preference:v1");
+      else localStorage.setItem("hundo:league-preference:v1", previousPreference);
+    }
+  });
+
   it('opens the manager Help form from the bottom menu without commissioner tools',async()=>{
     const view=await renderTopBar('manager');
     expect(screen.queryByRole('button',{name:/Commissioner tools/})).not.toBeInTheDocument();

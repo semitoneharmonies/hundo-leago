@@ -33,6 +33,7 @@ function tradeAssetQuery({
 
 export const routePaths = Object.freeze({
   home: "/",
+  publicTipJar: "/games/tip-jar",
   install: "/install",
   verifyEmail: "/verify-email",
   setupAccount: "/setup-account",

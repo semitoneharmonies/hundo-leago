@@ -159,8 +159,8 @@ test("desktop sidebar promotes team cards, keeps headers below the bar, and isol
   await expectNoOverflow(page);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `.hundo.local/desktop-sidebar-20261002/roster-${page.viewportSize().width}.png`, fullPage: false });
-  await nav.getByRole("button", { name: "Switch league", exact: true }).click();
-  await nav.getByRole("link", { name: /Pacific Hockey League/ }).click();
+  await sidebar.getByRole("button", { name: "Hundo Hockey League", exact: true }).click();
+  await sidebar.getByRole("link", { name: /Pacific Hockey League/ }).click();
   await expect(page.getByRole("heading", { name: "Pacific Hockey League", exact: true })).toBeVisible();
   await expect(sidebar.getByText("Welcome to the Pacific league.")).toBeVisible();
   await expect(sidebar.getByText(/Remember to set your lineup/)).toHaveCount(0);
@@ -215,10 +215,10 @@ test("commissioner announcements retain failed drafts, publish to the current le
   await sidebar.getByRole("button", { name: "Post announcement" }).click();
   await expect(sidebar.getByRole("status")).toHaveText("Announcement posted.");
   await expect(sidebar.getByText(/League meeting Thursday/)).toBeVisible();
-  await sidebar.getByRole("button", { name: "Switch league", exact: true }).click();
+  await sidebar.getByRole("button", { name: "Hundo Hockey League", exact: true }).click();
   await page.keyboard.press("Escape");
-  await expect(sidebar.getByRole("button", { name: "Switch league", exact: true })).toBeFocused();
-  await expect(sidebar.getByRole("button", { name: "Switch league", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await expect(sidebar.getByRole("button", { name: "Hundo Hockey League", exact: true })).toBeFocused();
+  await expect(sidebar.getByRole("button", { name: "Hundo Hockey League", exact: true })).toHaveAttribute("aria-expanded", "false");
   await expectNoOverflow(page);
 });
 

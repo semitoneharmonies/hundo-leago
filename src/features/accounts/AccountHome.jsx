@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import { useSession } from "../session/sessionContext.js";
@@ -396,6 +396,7 @@ export function AccountHome() {
         ) : (
           <p role="status">Checking secure session…</p>
         )}
+        <p><Link className="hl-button" to={routePaths.publicTipJar}>Play Tip Jar</Link> — no account needed.</p>
         </section>
       </main>
     );
@@ -416,6 +417,8 @@ export function AccountHome() {
         <p className="hl-eyebrow">Private fantasy hockey</p>
         <h1 id="accounts-title">Hundo Leago</h1>
         <p>Sign in to your league, or create a manager account.</p>
+        <p><Link className="hl-button hl-button--primary" to={routePaths.publicTipJar}>Play Tip Jar</Link></p>
+        <p>No account needed. Take a shot at the Hundo Leago leaderboard.</p>
       </header>
       {stagingResetReceipt && (
         <StagingResetReceipt receipt={stagingResetReceipt} />

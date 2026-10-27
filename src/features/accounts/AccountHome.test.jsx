@@ -121,6 +121,7 @@ describe("AccountHome", () => {
     });
 
     expect(screen.getByText("Checking secure session…")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Play Tip Jar" })).toHaveAttribute("href", "/games/tip-jar");
     expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
   });
 

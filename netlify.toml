@@ -62,10 +62,12 @@
   [headers.values]
     Cache-Control = "no-store"
 
-# Tip Jar is embedded only by its own league page. Other site pages retain
+# Only the Tip Jar game assets may be embedded by the public or league wrapper.
+# The public /games/tip-jar page needs the normal website API connection policy.
+# Other site pages retain
 # DENY / frame-ancestors 'none'. Keep this specific override after the defaults.
 [[headers]]
-  for = "/games/tip-jar/*"
+  for = "/games/tip-jar/campaign-v1/*"
   [headers.values]
     Cache-Control = "no-cache"
     Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
@@ -76,3 +78,13 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "SAMEORIGIN"
     X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/games/tip-jar"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/games/tip-jar/"
+  [headers.values]
+    Cache-Control = "no-store"

@@ -93,6 +93,7 @@ const CandidateCardPage = lazyNamed(
 
 const InstallPage = lazyNamed(() => import("./features/install/InstallPage.jsx"), "InstallPage");
 const TipJarPage = lazyNamed(() => import("./features/tipJar/TipJarPage.jsx"), "TipJarPage");
+const PublicTipJarPage = lazyNamed(() => import("./features/tipJar/TipJarPage.jsx"), "PublicTipJarPage");
 const NotificationsPage = lazyNamed(
   () => import("./features/notifications/NotificationsPage.jsx"),
   "NotificationsPage"
@@ -1871,6 +1872,7 @@ return (
         <Route path="/leagues/:leagueId/matchups" element={<LeagueMatchupsPage />} />
         <Route path="/leagues/:leagueId/standings" element={<LeagueStandingsPage />} />
         <Route path="/leagues/:leagueId/tip-jar" element={<TipJarPage />} />
+        <Route path="/games/tip-jar" element={<PublicTipJarPage />} />
         <Route path="/leagues/:leagueId/commissioner" element={<CommissionerCompetitionPage />} />
         <Route path="/leagues/:leagueId/commissioner/:section" element={<CommissionerCompetitionPage />} />
         <Route

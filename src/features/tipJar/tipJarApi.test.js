@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { saveTipJarCheckpoint, startTipJarRun, tipJarKey, tipJarLeaderboardQuery } from "./tipJarApi.js";
+import { nameTipJarGuest, publicTipJarLeaderboardQuery, saveTipJarCheckpoint, startTipJarRun, tipJarKey, tipJarLeaderboardQuery } from "./tipJarApi.js";
 import { routePaths } from "../../app/routePaths.js";
 
 const entry = { rank: 1, managerId: "manager-a", managerName: "Alex", highestLevelCompleted: 2, shotsToCompletion: 24, completed: false, updatedAt: 10 };
@@ -7,6 +7,28 @@ const client = (data) => ({ request: vi.fn(async (_path, options) => { options.v
 const shots = [{ time: 1, x: 0, height: .4, power: 50 }];
 
 describe("Tip Jar API contracts", () => {
+  it("validates public player identity and guest labels without private league context", async () => {
+    const publicEntry = { ...entry, playerId: "guest:opaque", playerName: "Ice Friend", isGuest: true };
+    const query = publicTipJarLeaderboardQuery(client({ rulesetVersion: "campaign-v1", entries: [publicEntry] }));
+    await expect(query.queryFn({})).resolves.toMatchObject({ entries: [publicEntry] });
+    expect(query.meta?.private).not.toBe(true);
+    expect(routePaths.publicTipJar).toBe("/games/tip-jar");
+    for (const data of [
+      { rulesetVersion: "campaign-v1", entries: [publicEntry, publicEntry] },
+      { rulesetVersion: "campaign-v1", entries: [{ ...publicEntry, isGuest: undefined }] },
+      { rulesetVersion: "campaign-v1", entries: [{ ...publicEntry, playerId: "" }] },
+      { rulesetVersion: "campaign-v1", entries: [{ ...publicEntry, highestLevelCompleted: 0 }] },
+    ]) await expect(publicTipJarLeaderboardQuery(client(data)).queryFn({})).rejects.toThrow();
+  });
+
+  it("rejects an invalid public name receipt instead of treating it as saved", async () => {
+    await expect(nameTipJarGuest(client({ saved: "yes", qualifies: true }), "run", "key", "Name")).rejects.toThrow();
+    const http = client({ saved: true, qualifies: true });
+    await nameTipJarGuest(http, "run", "key", "Name");
+    expect(http.request.mock.calls[0][0]).toBe("/api/v1/games/tip-jar/runs/run/name");
+    expect(http.request.mock.calls[0][1]).toMatchObject({ method: "POST", body: { guestKey: "key", name: "Name" } });
+    expect(http.request.mock.calls[0][1].authenticated).not.toBe(true);
+  });
   it("uses encoded routes and private per-league cache keys", async () => {
     const http = client({ rulesetVersion: "campaign-v1", entries: [entry] });
     const query = tipJarLeaderboardQuery(http, "league/a");

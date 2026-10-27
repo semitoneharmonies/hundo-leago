@@ -366,14 +366,6 @@ function TopBar({ freezeBanner }) {
                 <div className="hl-main-menu__links">
                   {session.status === "authenticated" && (
                     <>
-                      <MenuLink
-                        icon={Users}
-                        label={leagues.length > 1 ? "Switch league" : "Your league"}
-                        description="Choose an active membership"
-                        to={routePaths.leagues}
-                        active={location.pathname === routePaths.leagues}
-                        onSelect={closeMenus}
-                      />
                       {leagueLinks.filter(([label])=>label!=="Roster operations").map(([label, to, Icon, prefixActive, description]) => label === "Commissioner tools" ? (
                         <button key={label} type="button" className="hl-menu-link hl-menu-link--button" aria-expanded={commissionerOpen} aria-controls="commissioner-menu-panel" onClick={()=>{closeHelp();setCommissionerOpen(v=>!v);setRulesOpen(false);}}><Shield className="hl-menu-link__icon" aria-hidden="true"/><span><strong>Commissioner tools</strong><small>Calendar, scoring and administration</small></span><ChevronRight aria-hidden="true"/></button>
                       ) : (
@@ -540,9 +532,6 @@ function TopBar({ freezeBanner }) {
                         </small>
                       </div>
                     </div>
-                    {!showSidebar && <Link to={routePaths.leagues} onClick={closeMenus}>
-                      {leagues.length > 1 ? "Switch league" : "Your league"}
-                    </Link>}
                     <Link to={routePaths.account} onClick={closeMenus}>
                       Account and team settings
                     </Link>

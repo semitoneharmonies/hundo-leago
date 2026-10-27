@@ -1,6 +1,24 @@
-# Tip Jar league side game
+# Tip Jar public and league side game
 
 Local integration candidate, 22 October 2026. This document records the requested behavior; it is not evidence of a hosted release or physical-phone acceptance.
+
+## Public games extension — 26 October 2026
+
+The sign-in page links directly to `/games/tip-jar`, where visitors can play without an account or league membership. That page is explicitly guest play, including for an already signed-in visitor; signed-in visitors can choose their league to record an account score. Simply viewing the public page reads the public leaderboard and does not create a game run or guest record.
+
+Each league page keeps its existing private league leaderboard and shows the **Hundo Leago leaderboard** beside it on wide screens; the boards stack on mobile. The site board combines each account's best existing result across all leagues with named guests. No backfill or rewriting of league scores is needed. Public results omit league IDs, emails, raw account IDs and guest capabilities. Account display names are public on this board, as requested.
+
+The site board shows the top 100 places, including ties, and requires at least one completed level. An eligible guest is prompted to enter a 1–30 character name; the UI appends **(Guest)** to every guest entry. A name is published only on explicit submission. The server rechecks qualification when saving it. Named guests' later better runs update the same best. Guest identity is retained in that browser; clearing browser storage or using a different browser creates a separate guest identity. Guest scores are never added to a league board.
+
+Guest runs use a random browser capability, hashed in server storage, with the same server-issued seeds, transcript limits, immutable-prefix checks and server replay as league runs. The wrapper retains the capability; the iframe never receives it. Pending transcripts and unclaimed qualifying results can be retried after a page visit. Origin/JSON/fetch-metadata checks and dedicated rate limits apply to anonymous writes. There is no account creation or fantasy-data mutation.
+
+Migration 0095 adds separate guest run/best tables and schema metadata. Existing league runs and fantasy rows remain intact. Existing league deletion and guided fantasy reset/restore preserve global guest records. No automatic cleanup job is introduced. The narrow iframe hosting policy applies only to `/games/tip-jar/campaign-v1/*`, so the public wrapper retains normal API access and is not embeddable.
+
+The current **Play Tip Jar** menu entry remains. Once another game is finished, a later authorized change can introduce **Games** with game submenus and the same public/league leaderboard structure. Mr. Boni and Flurryton are not added by this extension.
+
+Separately, the desktop/mobile menu's league title is now the league-picker button. It lists only the current user's returned memberships, retains role/current-league labels, and switches league using the existing route/preference behavior. The separate **Switch league** navigation/account entries are removed. Escape returns keyboard focus to the title; league-loading, error/retry and no-membership states remain visible.
+
+This extension is implemented and verified locally only. Publication, schema migration, hosted acceptance and physical-device acceptance are separate steps. A future release must follow the existing backup, isolated migration rehearsal and compatible rollback requirements.
 
 ## Purpose and access
 

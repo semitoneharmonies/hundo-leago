@@ -15,7 +15,12 @@
   .hl-app-header--sidebar .hl-app-header__navigation { display: none; }
   .hl-desktop-sidebar { position: fixed; display: flex; flex-direction: column; inset: var(--hl-topbar-height) auto 0 0; z-index: 3000; width: var(--hl-sidebar-width); background: #091121; border-right: 1px solid var(--hl-border); box-shadow: 8px 0 32px rgb(0 0 0 / 12%); }
   .hl-sidebar-heading { flex: 0 0 auto; display: grid; gap: 6px; padding: 18px 18px 14px; border-bottom: 1px solid var(--hl-border); }
-  .hl-sidebar-heading > strong { font-family: var(--hl-font-display); font-size: 1.25rem; overflow-wrap: anywhere; }
+  .hl-sidebar-league-title { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; border: 1px solid transparent; border-radius: 6px; padding: 5px; background: transparent; color: var(--hl-foreground); text-align: left; cursor: pointer; }
+  .hl-sidebar-league-title strong { flex: 1; min-width: 0; font-family: var(--hl-font-display); font-size: 1.25rem; overflow-wrap: anywhere; }
+  .hl-sidebar-league-title svg { flex: 0 0 18px; width: 18px; height: 18px; transition: transform 180ms; }
+  .hl-sidebar-league-title:hover, .hl-sidebar-league-title[aria-expanded="true"] { background: #13203a; border-color: var(--hl-border); }
+  .hl-sidebar-league-title:focus-visible { outline: 2px solid var(--hl-accent); outline-offset: 2px; }
+  .hl-sidebar-league-picker { max-height: min(40dvh, 360px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
   .hl-sidebar-navigation { flex: 1 1 auto; min-height: 120px; padding: 10px; overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
   .hl-sidebar-link { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; min-height: 42px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--hl-foreground) !important; padding: 9px 10px; text-align: left; text-decoration: none; cursor: pointer; font-family: inherit; }
   .hl-sidebar-link > svg { width: 18px; height: 18px; color: #94a3b8; }

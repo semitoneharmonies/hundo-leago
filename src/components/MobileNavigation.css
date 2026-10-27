@@ -38,6 +38,11 @@
   .hl-mobile-nav__main > .hl-mobile-nav__heading { position: sticky; top: 0; z-index: 2; }
   .hl-mobile-nav__heading button { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 44px; padding: 8px; border: 1px solid var(--hl-border); border-radius: 6px; color: var(--hl-foreground); background: #14233d; cursor: pointer; }
   .hl-mobile-nav__heading button svg { width: 20px; height: 20px; }
+  .hl-mobile-nav__heading .hl-mobile-nav__league-title { display: flex; flex: 1 1 auto; gap: 5px; width: auto; height: auto; min-width: 0; min-height: 44px; padding: 5px; text-align: left; background: transparent; border-color: transparent; }
+  .hl-mobile-nav__league-title strong { flex: 1; min-width: 0; font: 700 .76rem/1.4 var(--hl-font-body); overflow-wrap: anywhere; }
+  .hl-mobile-nav__heading .hl-mobile-nav__league-title svg { flex: 0 0 14px; width: 14px; height: 14px; transition: transform 180ms; }
+  .hl-mobile-nav__league-title:hover, .hl-mobile-nav__heading .hl-mobile-nav__league-title[aria-expanded="true"] { background: #13203a; border-color: var(--hl-border); }
+  .hl-mobile-nav__league-title[aria-expanded="true"] svg { transform: rotate(180deg); }
   .hl-mobile-nav__links { display: flex; flex: 1 0 auto; flex-direction: column; justify-content: space-evenly; gap: 2px; padding: 5px; }
   .hl-mobile-nav__link { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; align-items: center; gap: 6px; min-height: 44px; width: 100%; padding: 7px 5px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--hl-foreground); font: 600 .74rem/1.4 var(--hl-font-body); text-align: left; text-decoration: none; cursor: pointer; }
   .hl-mobile-nav__link > svg { width: 17px; height: 17px; color: #b8c4d7; }

@@ -3,7 +3,7 @@ import { LeagueHelpPanel } from "../features/leagues/LeagueHelpPanel.jsx";
 import { commissionerSections, commissionerSectionPath } from "../features/commissioner/commissionerSections.js";
 import { createElement, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Bell, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Users, X } from "lucide-react";
+import { Download, Bell, BookOpen, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { routePaths } from "../app/routePaths.js";
 import { leagueSeasonsQuery, leagueTeamsQuery } from "../features/leagues/leagueQueries.js";
@@ -163,15 +163,22 @@ export function DesktopSidebar({ league, leaguesQuery, links, descriptions, sess
       closeSubmenu();
     }
   }}>
-    <div className="hl-sidebar-heading"><strong>{league?.name || "Your leagues"}</strong></div>
-    <nav className="hl-sidebar-navigation" aria-label="Main navigation">
-      {disclosure("Switch league", Users, null,
-        <><QueryState query={leaguesQuery} empty="No active league memberships.">
+    <div className="hl-sidebar-heading">
+      <button ref={(element) => { submenuButtons.current["Your leagues"] = element; }} type="button"
+        className="hl-sidebar-league-title" aria-expanded={submenu === "Your leagues"} aria-controls="desktop-league-picker"
+        onClick={(event) => { event.currentTarget.focus(); toggle("Your leagues"); }}>
+        <strong>{league?.name || "Your leagues"}</strong><ChevronDown className={submenu === "Your leagues" ? "is-rotated" : ""} aria-hidden="true" />
+      </button>
+      {submenu === "Your leagues" && <div id="desktop-league-picker" className="hl-sidebar-league-picker" role="region" aria-label="Your leagues">
+        <QueryState query={leaguesQuery} empty="No active league memberships.">
           {leaguesQuery.data?.length > 0 && <ul className="hl-sidebar-leagues">{leaguesQuery.data.map((item) => <li key={item.id}>
             <Link to={routePaths.league(item.id)} aria-current={league?.id === item.id ? "true" : undefined} onClick={() => { writeLeaguePreference(item.id); setSubmenu(null); }}>
               <strong>{item.name}</strong><small>{leagueAuthorityLabel(item.membership)}</small>
             </Link></li>)}</ul>}
-        </QueryState><Link className="hl-sidebar-all" to={routePaths.leagues}>League access and invitations</Link></>)}
+        </QueryState><Link className="hl-sidebar-all" to={routePaths.leagues} onClick={() => setSubmenu(null)}>League access and invitations</Link>
+      </div>}
+    </div>
+    <nav className="hl-sidebar-navigation" aria-label="Main navigation">
       {links.filter(([label]) => label !== "Roster operations").map(([label, to, Icon, prefixActive, description]) => {
         if (label === "Commissioner tools") return disclosure(label, Icon, null, <><Link className="hl-sidebar-all" to={to} onClick={closeSubmenu}>All tools</Link>{commissionerSections.map(([key, title]) => <Link className="hl-sidebar-link" key={key} to={commissionerSectionPath(league.id, key)} onClick={closeSubmenu}>{title}</Link>)}</>, true);
         if (label === "Teams") return disclosure(label, Icon, null, <TeamMenu league={league} session={session} onSelect={closeSubmenu} />, true);

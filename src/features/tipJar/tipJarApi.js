@@ -3,7 +3,8 @@ import { ResponseContractError } from "../../shared/api/responseContracts.js";
 
 export const TIP_JAR_RULESET = "campaign-v1";
 export const tipJarKey = (leagueId) => ["league", leagueId, "tip-jar", TIP_JAR_RULESET];
-const path = (leagueId) => `/api/v1/leagues/${encodeURIComponent(leagueId)}/tip-jar`;
+export const publicTipJarKey = ["games", "tip-jar", "public", TIP_JAR_RULESET];
+const path = (leagueId) => leagueId === null ? "/api/v1/games/tip-jar" : `/api/v1/leagues/${encodeURIComponent(leagueId)}/tip-jar`;
 const integer = (value, minimum, maximum) => Number.isSafeInteger(value) && value >= minimum && value <= maximum;
 const timestamp = (value) => (typeof value === "string" && Number.isFinite(Date.parse(value))) || (Number.isSafeInteger(value) && value >= 0);
 function requireContract(condition) {
@@ -39,10 +40,29 @@ export function tipJarLeaderboardQuery(client, leagueId) {
   });
 }
 
-export async function startTipJarRun(client, leagueId, clientRunId, signal) {
+export function publicTipJarLeaderboardQuery(client) {
+  return queryOptions({
+    queryKey: publicTipJarKey,
+    staleTime: 15000,
+    queryFn: async ({ signal }) => (await client.request(`${path(null)}/leaderboard`, {
+      dataKind: "object", signal,
+      validateData(data) {
+        requireContract(data?.rulesetVersion === TIP_JAR_RULESET && Array.isArray(data.entries));
+        data.entries.forEach((entry) => {
+          requireContract(typeof entry?.isGuest === "boolean" && entry.highestLevelCompleted > 0);
+          validateTipJarEntry({ ...entry, managerId: entry.playerId, managerName: entry.playerName });
+        });
+        requireContract(new Set(data.entries.map((entry) => entry.playerId)).size === data.entries.length);
+        return true;
+      },
+    })).data,
+  });
+}
+
+export async function startTipJarRun(client, leagueId, clientRunId, signal, guestKey) {
   return (await client.request(`${path(leagueId)}/runs`, {
-    method: "POST", authenticated: true, dataKind: "object", signal,
-    body: { clientRunId }, idempotencyKey: `tipjar-start:${clientRunId}`,
+    method: "POST", authenticated: leagueId !== null, dataKind: "object", signal,
+    body: { clientRunId, ...(leagueId === null ? { guestKey } : {}) }, idempotencyKey: `tipjar-start:${clientRunId}`,
     validateData(data) {
       requireContract(typeof data?.runId === "string" && data.runId.length > 0 &&
         integer(data.seed, 0, 0xffffffff) && data.rulesetVersion === TIP_JAR_RULESET && timestamp(data.createdAt));
@@ -51,10 +71,10 @@ export async function startTipJarRun(client, leagueId, clientRunId, signal) {
   })).data;
 }
 
-export async function saveTipJarCheckpoint(client, leagueId, runId, shots, signal) {
+export async function saveTipJarCheckpoint(client, leagueId, runId, shots, signal, guestKey) {
   return (await client.request(`${path(leagueId)}/runs/${encodeURIComponent(runId)}/checkpoint`, {
-    method: "POST", authenticated: true, dataKind: "object", signal,
-    body: { shots }, idempotencyKey: `tipjar-checkpoint:${runId}:${shots.length}`,
+    method: "POST", authenticated: leagueId !== null, dataKind: "object", signal,
+    body: { shots, ...(leagueId === null ? { guestKey } : {}) }, idempotencyKey: `tipjar-checkpoint:${runId}:${shots.length}`,
     validateData(data) {
       // A matching stale prefix can return the run's newer authoritative state.
       requireContract(data?.runId === runId && integer(data.shotsUsed, shots.length, 60) &&
@@ -71,6 +91,18 @@ export async function saveTipJarCheckpoint(client, leagueId, runId, shots, signa
         requireContract(result.level === index + 1 && integer(result.shots, 1, 60) && result.totalShots === cumulative);
       });
       if (data.highestLevelCompleted > 0) requireContract(cumulative === data.shotsToCompletion);
+      if (leagueId === null) requireContract(typeof data.qualifies === "boolean" && typeof data.named === "boolean");
+      return true;
+    },
+  })).data;
+}
+
+export async function nameTipJarGuest(client, runId, guestKey, name, signal) {
+  return (await client.request(`${path(null)}/runs/${encodeURIComponent(runId)}/name`, {
+    method: "POST", dataKind: "object", signal,
+    body: { guestKey, name },
+    validateData(data) {
+      requireContract(typeof data?.saved === "boolean" && typeof data.qualifies === "boolean");
       return true;
     },
   })).data;

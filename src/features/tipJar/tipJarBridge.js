@@ -25,7 +25,7 @@ function withTimeout(action, parentSignal, milliseconds) {
 }
 
 // The wrapper owns authentication. The game receives only a seeded run and its verified results.
-export function createTipJarBridge({ origin, frameWindow, startRun, saveCheckpoint, onState, onSaved = () => {}, onReady = () => {}, onFullscreen = () => {}, outbox = null, requestTimeoutMs = 15000 }) {
+export function createTipJarBridge({ origin, frameWindow, startRun, saveCheckpoint, onState, onSaved = () => {}, onReady = () => {}, onFullscreen = () => {}, outbox = null, requestTimeoutMs = 15000, publicGame = false }) {
   let disposed = false;
   let generation = 0;
   let controller = new AbortController();
@@ -82,19 +82,19 @@ export function createTipJarBridge({ origin, frameWindow, startRun, saveCheckpoi
     const epoch = generation;
     start = { requestId, pending: true };
     run = null; latest = []; queued = null; inFlight = null; failed = null; saved = null; confirmed = []; waitingStart = null;
-    state({ kind: "starting", message: "Starting your league run…" });
+    state({ kind: "starting", message: publicGame ? "Starting your run…" : "Starting your league run…" });
     try {
       const created = await withTimeout((signal) => startRun(requestId, signal), controller.signal, requestTimeoutMs);
       if (!current(epoch)) return;
       start = { requestId, pending: false, run: created };
       run = created;
       emit({ type: "start", requestId, run: created });
-      state({ kind: "ready", message: "League run ready." });
+      state({ kind: "ready", message: publicGame ? "Run ready." : "League run ready." });
       onSaved();
     } catch {
       if (!current(epoch)) return;
       start = { requestId, pending: false };
-      const message = "Your league run could not start. Try again.";
+      const message = publicGame ? "Your run could not start. Try again." : "Your league run could not start. Try again.";
       emit({ type: "error", requestId, message });
       state({ kind: "start-error", message });
     }
@@ -118,8 +118,8 @@ export function createTipJarBridge({ origin, frameWindow, startRun, saveCheckpoi
       confirmed = job;
       try { outbox?.acknowledge(activeRun, job); } catch { storageUnavailable = true; }
       emit({ type: "saved", runId: activeRun, shotsUsed: result.shotsUsed, result });
-      onSaved();
-      state({ kind: "saved", message: "Progress saved to your league." });
+      onSaved(result);
+      state({ kind: "saved", message: publicGame ? "Progress saved." : "Progress saved to your league." });
     } catch {
       if (!current(epoch)) return;
       failed = job;

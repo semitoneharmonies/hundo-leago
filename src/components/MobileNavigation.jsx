@@ -1,6 +1,6 @@
 import { createElement, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bell, BookOpen, ChevronLeft, ChevronRight, Download, UserRound, Users, X } from "lucide-react";
+import { Bell, BookOpen, ChevronDown, ChevronLeft, ChevronRight, Download, UserRound, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { routePaths } from "../app/routePaths.js";
 import { commissionerSections, commissionerSectionPath } from "../features/commissioner/commissionerSections.js";
@@ -96,12 +96,17 @@ export function MobileNavigation({ league, leaguesQuery, links, session, unreadC
     <button className="hl-mobile-nav__backdrop" type="button" aria-label="Dismiss navigation" tabIndex={-1} onClick={onClose} />
     <div className="hl-mobile-nav__drawer">
       <nav className="hl-mobile-nav__main" aria-label="Main navigation">
-        <header className="hl-mobile-nav__heading"><strong>{league?.name || "Hundo Leago"}</strong>
+        <header className="hl-mobile-nav__heading">
+          {authenticated ? <button ref={(element) => { buttons.current["Your leagues"] = element; }} type="button"
+            className="hl-mobile-nav__league-title" aria-expanded={submenu === "Your leagues"}
+            aria-controls={submenu === "Your leagues" ? "mobile-navigation-submenu" : undefined}
+            onClick={() => submenu === "Your leagues" ? closeSubmenu() : setSubmenu("Your leagues")}>
+            <strong>{league?.name || "Your leagues"}</strong><ChevronDown aria-hidden="true" />
+          </button> : <strong>Hundo Leago</strong>}
           <button ref={closeRef} type="button" aria-label="Close menu" onClick={onClose}><X aria-hidden="true" /></button>
         </header>
         <div className="hl-mobile-nav__links">
           {authenticated && <>
-            {disclosure("Switch league", Users)}
             {links.filter(([label]) => label !== "Roster operations").map(([label, to, Icon, prefixActive, description]) => {
               if (["Teams", "Matchups", "Commissioner tools"].includes(label)) return disclosure(label, Icon);
               return navLink(label, to, Icon, isActive(label, to, prefixActive), label === "Drafts" && description !== "Free Agent and Entry Drafts" ? description : null);
@@ -129,9 +134,10 @@ export function MobileNavigation({ league, leaguesQuery, links, session, unreadC
             <Link className="hl-mobile-nav__text-link" to={routePaths.leagueCommissioner(league.id)} onClick={onNavigate}>All tools</Link>
             {commissionerSections.map(([key, label]) => <Link className="hl-mobile-nav__text-link" key={key} to={commissionerSectionPath(league.id, key)} onClick={onNavigate}>{label}</Link>)}
           </>}
-          {submenu === "Switch league" && authenticated && <>
+          {submenu === "Your leagues" && authenticated && <>
             {leaguesQuery.isPending && <p role="status">Loading leagues…</p>}
             {leaguesQuery.isError && <p role="alert">Could not load leagues. <button type="button" onClick={() => leaguesQuery.refetch()}>Retry</button></p>}
+            {!leaguesQuery.isPending && !leaguesQuery.isError && leaguesQuery.data?.length === 0 && <p>No active league memberships.</p>}
             {leaguesQuery.data?.map((item) => <Link key={item.id} className="hl-mobile-nav__text-link" to={routePaths.league(item.id)}
               aria-current={item.id === league?.id ? "true" : undefined} onClick={() => { writeLeaguePreference(item.id); onNavigate(); }}>
               <strong>{item.name}</strong><small>{leagueAuthorityLabel(item.membership)}</small>

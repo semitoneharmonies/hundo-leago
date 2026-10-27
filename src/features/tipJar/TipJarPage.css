@@ -25,6 +25,19 @@
 .hl-tipjar-table th:last-child, .hl-tipjar-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .hl-tipjar-table .is-you { background: #f9731612; }
 .hl-tipjar-table small { color: #ffad70; font-weight: 400; }
+.hl-tipjar-boards { display: grid; gap: 24px; }
+.hl-tipjar-boards.has-league { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hl-tipjar-leaderboard { min-width: 0; }
+.hl-tipjar-table th[scope="row"] { overflow-wrap: anywhere; }
+.hl-tipjar-name { margin: 16px 0; padding: 18px; border: 1px solid #f97316; border-radius: 12px; background: var(--hl-surface, #16212f); }
+.hl-tipjar-name h2 { font-size: 1.1rem; margin-top: 0; }
+.hl-tipjar-name label { display: block; margin-bottom: 6px; }
+.hl-tipjar-name > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.hl-tipjar-name input { min-width: 0; width: min(100%, 300px); min-height: 44px; padding: 9px; font: inherit; color: inherit; background: var(--hl-bg, #0b1420); border: 1px solid var(--hl-border, #455368); border-radius: 8px; }
+.hl-tipjar-name input:focus-visible { outline: 3px solid #f97316; outline-offset: 2px; }
+@media (max-width: 1000px) {
+  .hl-tipjar-boards.has-league { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 640px) {
   .hl-tipjar { padding-inline: 8px; }
   .hl-tipjar-game { height: max(460px, 75svh); height: max(460px, 75dvh); border-radius: 8px; }

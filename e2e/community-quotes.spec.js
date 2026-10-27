@@ -26,14 +26,8 @@ async function reviewPanel(page) {
 }
 async function switchLeague(page) {
   await openMenu(page);
-  if (page.viewportSize().width >= 1024) {
-    await page.getByRole("button", { name: "Switch league", exact: true }).click();
-    await page.getByRole("link", { name: /Pacific Hockey League/ }).click();
-  } else {
-    // The mobile league directory is outside this fixture; use its real route.
-    await page.keyboard.press("Escape");
-    await page.evaluate(() => { window.location.hash = `/leagues/${window.navigationFixture.leagues[1].id}`; });
-  }
+  await page.getByRole("button", { name: "Hundo Hockey League", exact: true }).click();
+  await page.getByRole("link", { name: /Pacific Hockey League/ }).click();
   await expect(page.getByRole("heading", { name: "Pacific Hockey League", exact: true })).toBeVisible();
 }
 
