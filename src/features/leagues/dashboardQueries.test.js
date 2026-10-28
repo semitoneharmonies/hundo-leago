@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 import { clearPrivateQueries } from "../../shared/query/queryClient.js";
 import { activityQuery, transactionKeys } from "../transactions/transactionQueries.js";
-import { dashboardActivityQuery, prefetchDashboardQueries } from "./dashboardQueries.js";
+import { dashboardActivityQuery, prefetchDashboardQueries, prefetchDashboardTeams } from "./dashboardQueries.js";
 
 const league = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -18,6 +18,24 @@ function response(path) {
 }
 
 describe("dashboard load ahead", () => {
+  it("starts all team panels together only within an authorized active season", async () => {
+    const queryClient = client();
+    const pending = [];
+    const httpClient = { request: vi.fn(() => new Promise((resolve) => pending.push(resolve))) };
+    const teams = [{ id: "team-one" }, { id: "team-two" }];
+    await prefetchDashboardTeams(queryClient, httpClient, null, teams);
+    await prefetchDashboardTeams(queryClient, httpClient, { ...league, currentSeason: null }, teams);
+    await prefetchDashboardTeams(queryClient, httpClient, { ...league, membership: { status: "ended" } }, teams);
+    expect(httpClient.request).not.toHaveBeenCalled();
+    const first = prefetchDashboardTeams(queryClient, httpClient, league, teams);
+    const repeated = prefetchDashboardTeams(queryClient, httpClient, league, teams);
+    expect(httpClient.request.mock.calls.map(([path]) => path)).toEqual(teams.map(({ id }) => `/api/v1/leagues/${league.id}/teams/${id}/roster`));
+    expect(httpClient.request.mock.calls.every(([, options]) => options.authenticated && options.signal && !options.method)).toBe(true);
+    pending.forEach((resolve) => resolve({ data: {} }));
+    await Promise.all([first, repeated]);
+    queryClient.clear();
+  });
+
   it("starts independent requests together and reuses them for repeated loads", async () => {
     const queryClient = client();
     const pending = [];

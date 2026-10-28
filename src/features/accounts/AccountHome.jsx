@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
+import { MiniGamesLinks } from "../../components/MiniGamesLinks.jsx";
 import { useSession } from "../session/sessionContext.js";
 import { accountPasswordError } from "./accountPasswordValidation.js";
 import {
@@ -396,7 +397,8 @@ export function AccountHome() {
         ) : (
           <p role="status">Checking secure session…</p>
         )}
-        <p><Link className="hl-button" to={routePaths.publicTipJar}>Play Tip Jar</Link> <Link className="hl-button" to={routePaths.publicMrBoni}>Play Mr. Boni</Link> — no account needed.</p>
+        <MiniGamesLinks publicGames className="hl-button" />
+        <p>No account needed.</p>
         </section>
       </main>
     );
@@ -417,7 +419,7 @@ export function AccountHome() {
         <p className="hl-eyebrow">Private fantasy hockey</p>
         <h1 id="accounts-title">Hundo Leago</h1>
         <p>Sign in to your league, or create a manager account.</p>
-        <p><Link className="hl-button hl-button--primary" to={routePaths.publicTipJar}>Play Tip Jar</Link> <Link className="hl-button hl-button--primary" to={routePaths.publicMrBoni}>Play Mr. Boni</Link></p>
+        <MiniGamesLinks publicGames className="hl-button hl-button--primary" />
         <p>No account needed. Play a mini game and try the Hundo Leago leaderboards.</p>
       </header>
       {stagingResetReceipt && (

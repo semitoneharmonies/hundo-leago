@@ -53,6 +53,7 @@ export function TradeBlockPanel({
   showTeamLogos = true,
   compact = false,
   currentUserId = null,
+  retryOnMount = true,
 }) {
   const compactTeamBadge = !useDesktopLayout() && showTeamLogos;
   const managedTeams = teams.filter((team) => team.currentManager?.userId === currentUserId && currentUserId);
@@ -61,6 +62,7 @@ export function TradeBlockPanel({
     queries: teams.map((team) => ({
       ...teamWorkspaceQuery(httpClient, leagueId, team.id),
       enabled,
+      retryOnMount,
     })),
   });
   const pending = enabled && workspaces.some((query) => query.isPending);

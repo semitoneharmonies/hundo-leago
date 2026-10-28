@@ -311,6 +311,37 @@ describe("public roster response contract", () => {
 });
 
 describe("authoritative team roster page", () => {
+  it("offers repair beside an illegal flag only with authority and blocks competing roster actions during apply", async () => {
+    const data = workspace();
+    data.legality = { legal: false, reasons: [{ code: "SALARY_CAP_EXCEEDED" }] };
+    data.canManage = false;
+    let finish;
+    const httpClient = { resourceUrl: value => value, request: vi.fn(async (path, options) => {
+      const result = path.endsWith("repair-preview") ? {
+        code: "ROSTER_REPAIR_PREVIEW", leagueId, teamId, seasonId, revision: "a".repeat(64), status: "ready", canApply: true,
+        strategy: "legality_only", timing: "no_week", week: null, message: "These moves repair the current roster.", blockers: [],
+        moves: [{ ownershipId: activeOwnershipId, playerId: activePlayerId, name: "Active Player", from: "Active", to: "Bench", scheduledGames: null }],
+        before: { capUsageCents: 1100, capLimitCents: 1000, scheduledGames: null }, after: { capUsageCents: 600, capLimitCents: 1000, scheduledGames: null },
+      } : await new Promise(resolve => { finish = resolve; });
+      options.validateData?.(result);
+      return { data: result };
+    }) };
+    const element = value => <TeamRosterPage workspace={value} teams={[value.team]} onTeamChange={() => {}} httpClient={httpClient} />;
+    const view = renderWithProviders(element(data));
+    expect(screen.getByRole("alert")).toHaveTextContent("Illegal roster");
+    expect(screen.queryByRole("button", { name: "Suggest a fix" })).not.toBeInTheDocument();
+    view.unmount();
+    const managerView = renderWithProviders(element({ ...data, canManage: true }));
+    await managerView.user.click(screen.getByRole("button", { name: "Suggest a fix" }));
+    await managerView.user.click(await screen.findByRole("button", { name: "Apply these moves" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Buy out Active Player" })).toBeDisabled());
+    expect(screen.getByRole("button", { name: "Move to bench Active Player" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Drag to reorder Active Player" })).not.toBeInTheDocument();
+    finish({ code: "ROSTER_REPAIR_APPLIED", leagueId, teamId, seasonId, moved: 1, legality: { legal: true }, lateLock: { status: "not_applicable" } });
+    expect(await screen.findByRole("status")).toHaveTextContent("Roster fixed. 1 player was moved.");
+    expect(httpClient.request.mock.calls).toHaveLength(2);
+  });
+
   it.each(["Active", "Bench", "Injured Reserve"])(
     "shows only net salary for a retained %s player without changing cap totals",
     (rosterCategory) => {

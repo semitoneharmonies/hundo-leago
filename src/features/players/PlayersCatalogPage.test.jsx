@@ -1,5 +1,5 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { Route, Routes } from "react-router-dom";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { Link, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("socket.io-client", () => ({
@@ -214,6 +214,67 @@ function createContractFilterTestFixture() {
 }
 
 describe("league player catalog", () => {
+  it("switches leagues while viewing favourites without waiting for the disabled player list", async () => {
+    const otherLeagueId = "11111111-1111-4111-8111-111111111112";
+    const fixture = createContractFilterTestFixture();
+    const fetchImpl = vi.fn(async (url, options) => {
+      if (new URL(url).pathname === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [league(), { ...league(), id: otherLeagueId, name: "Other League" }] });
+      const response = await fixture.fetchImpl(url, options);
+      if (!url.includes(otherLeagueId)) return response;
+      return new Response((await response.text()).replaceAll(leagueId, otherLeagueId), { status: response.status, headers: response.headers });
+    });
+    const view = renderWithProviders(<><Link to={`/leagues/${otherLeagueId}/players`}>Other league</Link><Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes></>, {
+      initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl },
+    });
+    await view.user.click(await screen.findByRole("button", { name: "Add Free Agent to favourites" }));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "League assignment" }), "favourites");
+    expect(screen.getByText("Showing 1 of 1 favourites.")).toBeInTheDocument();
+    await view.user.click(screen.getByRole("link", { name: "Other league" }));
+    expect(await screen.findByText("Showing 0 of 0 favourites.")).toBeInTheDocument();
+    expect(screen.getByText("Other League", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText("Loading players…")).not.toBeInTheDocument();
+    expect(fetchImpl.mock.calls.some(([url]) => url.includes(otherLeagueId) && new URL(url).pathname.endsWith("/players"))).toBe(false);
+    expect(screen.queryByText("Free Agent", { exact: true })).not.toBeInTheDocument();
+  });
+  it("reveals player filters and rows together after auction actions and preserves rows while refreshing", async () => {
+    const fixture = createContractFilterTestFixture();
+    let releaseActions;
+    let actionsWait = new Promise(resolve => { releaseActions = resolve; });
+    const fetchImpl = vi.fn(async (url, options) => {
+      if (new URL(url).pathname.endsWith("/auctions")) await actionsWait;
+      return fixture.fetchImpl(url, options);
+    });
+    const view = renderWithProviders(<Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>, {
+      initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl },
+    });
+    await waitFor(() => expect(fixture.requests.some(({ url }) => new URL(url).pathname.endsWith("/players"))).toBe(true));
+    expect(screen.getByText("Loading players…")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Player filters" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Free Agent", { exact: true })).not.toBeInTheDocument();
+    await act(async () => releaseActions());
+    expect(await screen.findByText("Free Agent", { exact: true })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Player filters" })).toBeInTheDocument();
+    actionsWait = new Promise(resolve => { releaseActions = resolve; });
+    act(() => { void view.queryClient.invalidateQueries({ queryKey: ["league", leagueId, "auctions"] }); });
+    await waitFor(() => expect(fetchImpl.mock.calls.filter(([url]) => new URL(url).pathname.endsWith("/auctions"))).toHaveLength(2));
+    expect(screen.getByText("Free Agent", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText("Loading players…")).not.toBeInTheDocument();
+    await act(async () => releaseActions());
+    expect(fixture.requests.every(({ method }) => method === "GET")).toBe(true);
+  });
+
+  it("shows players with an unavailable auction action when that optional read fails", async () => {
+    const fixture = createContractFilterTestFixture();
+    const fetchImpl = async (url, options) => new URL(url).pathname.endsWith("/auctions")
+      ? new Response(JSON.stringify({ error: { code: "AUCTIONS_UNAVAILABLE", message: "Auction actions unavailable" } }), { status: 404, headers: { "Content-Type": "application/json" } })
+      : fixture.fetchImpl(url, options);
+    renderWithProviders(<Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>, {
+      initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl },
+    });
+    expect(await screen.findByText("Free Agent", { exact: true })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Start auction unavailable for Free Agent: Auction availability could not be checked/)).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByText("Loading players…")).not.toBeInTheDocument();
+  });
   it.each([
     ["LAK", "LA"], ["MTL", "MON"], ["NJD", "NJ"], ["NSH", "NAS"],
     ["SJS", "SJ"], ["TBL", "TB"], ["VGK", "VEG"], ["WSH", "WAS"],

@@ -17,7 +17,7 @@ import { RosterLockNotice } from "../rosters/RosterLockNotice.jsx";
 import { teamWorkspaceQuery } from "../rosters/teamWorkspaceQueries.js";
 import { useSession } from "../session/sessionContext.js";
 import { LeagueDashboard } from "./LeagueDashboard.jsx";
-import { prefetchDashboardQueries } from "./dashboardQueries.js";
+import { prefetchDashboardQueries, prefetchDashboardTeams } from "./dashboardQueries.js";
 import { TeamCreationPanel } from "./TeamCreationPanel.jsx";
 import { PlayerInjuryAdminPanel } from '../injuries/PlayerInjuryAdminPanel.jsx';
 import { LeagueDeletionPanel } from "./LeagueDeletionPanel.jsx";
@@ -449,6 +449,12 @@ export function LeagueOverviewPage() {
     }
   }, [authorized, queryClient, session.httpClient, session.status]);
 
+  useEffect(() => {
+    if (session.status === "authenticated" && authorized && teamsQuery.data) {
+      void prefetchDashboardTeams(queryClient, session.httpClient, authorized, teamsQuery.data);
+    }
+  }, [authorized, teamsQuery.data, queryClient, session.httpClient, session.status]);
+
   return (
     <SessionGate>
       <main className="hl-page hl-page--wide" aria-labelledby="league-title">
@@ -470,6 +476,7 @@ export function LeagueOverviewPage() {
           <SafeQueryError error={teamsQuery.error} />
         ) : (
           <LeagueDashboard
+            key={`${session.user.id}:${leagueId}:${leagueQuery.data.currentSeason?.id || "none"}`}
             league={leagueQuery.data}
             teams={teamsQuery.data}
             session={session}

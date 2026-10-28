@@ -7,10 +7,11 @@ import { teamColourClass, teamColourStyle } from "../shared/teamIdentity.js";
 import { StatusBadge, TeamMark } from "./HundoUi.jsx";
 import "./MatchupCard.css";
 
-export function MatchupCard({ leagueId, seasonId, week, matchup, teams, httpClient, managedTeamId, sidebar = false, current = false, onSelect }) {
+export function MatchupCard({ leagueId, seasonId, week, matchup, teams, httpClient, managedTeamId, sidebar = false, current = false, onSelect, retryOnMount = true }) {
   const detail = useQuery({
     ...matchupQuery(httpClient, leagueId, seasonId, week.id, matchup.id),
     refetchInterval: 5 * 60_000,
+    retryOnMount,
   });
   const to = `${routePaths.leagueMatchups(leagueId)}?${new URLSearchParams({ season: seasonId, week: week.id, matchup: matchup.id })}`;
   const data = detail.data;

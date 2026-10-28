@@ -11,6 +11,14 @@ import "../../src/styles/theme-a.css";
 // panels start before the league/team details have completed.
 const fixture = createDesktopNavigationFixture();
 const events = [];
+const params = new URLSearchParams(window.location.search);
+let panelKind = params.get("hold");
+let releasePanel;
+let panelReady = new Promise((resolve) => { releasePanel = resolve; });
+let failPanel = params.has("fail");
+const matchesPanel = (path) => panelKind === "roster" ? path.endsWith("/roster")
+  : panelKind === "matchup" ? path.includes("/matchups/")
+  : panelKind === "activity" ? path.endsWith("/activity") : false;
 let release;
 const detailsReady = new Promise((resolve) => { release = resolve; });
 let held = true;
@@ -23,6 +31,13 @@ fixture.client.request = async (path, options = {}) => {
   const url = new URL(path, "http://fixture.local");
   const league = fixture.leagues.find((item) => path.includes(item.id));
   if (held && league && (url.pathname === `/api/v1/leagues/${league.id}` || url.pathname.endsWith("/teams"))) await detailsReady;
+  if (matchesPanel(url.pathname)) {
+    await panelReady;
+    if (failPanel) {
+      event.completedAt = performance.now();
+      throw new Error("This fixture panel is unavailable.");
+    }
+  }
   let response;
   if (url.pathname.endsWith("/standings")) {
     response = { data: { code: "MATCHUP_STANDINGS_FOUND", health: {}, rows: [], results: [], finalizedResultCount: 0, sourceResultVersion: 0 } };
@@ -53,6 +68,14 @@ fixture.client.request = async (path, options = {}) => {
 window.dashboardFixture = {
   events, leagues: fixture.leagues,
   releaseDetails() { held = false; release(); },
+  releasePanel() { releasePanel(); },
+  refreshPanel(kind) {
+    panelKind = kind;
+    failPanel = false;
+    panelReady = new Promise((resolve) => { releasePanel = resolve; });
+    void queryClient.invalidateQueries({ predicate: (query) =>
+      kind === "activity" && query.queryKey.includes("activity") });
+  },
 };
 if (!window.location.hash) window.location.hash = `/leagues/${fixture.leagues[0].id}`;
 

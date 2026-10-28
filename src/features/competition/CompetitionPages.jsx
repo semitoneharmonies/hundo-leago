@@ -337,7 +337,7 @@ export function LeagueMatchupsPage() {
       ? requestedSeasonId
       : seasons.data?.find(({ id }) => id === context.seasonId)?.id ||
         seasons.data?.[0]?.id ||
-        null;
+        (!requestedSeasonId && seasons.isPending ? context.seasonId : null);
   const enabled =
     context.session.status === "authenticated" &&
     Boolean(context.league && effectiveSeasonId);
@@ -395,10 +395,26 @@ export function LeagueMatchupsPage() {
     enabled: enabled && Boolean(effectiveWeekId && effectiveMatchupId),
     refetchInterval: 5 * 60_000,
   });
+  const progressEnabled = enabled && Boolean(
+    matchup.data?.scoring?.home.scoringRuleVersion || matchup.data?.scoring?.away.scoringRuleVersion
+  );
+  const progress = useQuery({
+    ...matchupGameProgressQuery(context.session.httpClient, matchup.data || {}),
+    enabled: progressEnabled,
+  });
+  const loadScope = `${context.session.user?.id}:${leagueId}:${effectiveSeasonId}`;
+  const [readyScope, setReadyScope] = useState(null);
+  const initialPending = seasons.isPending || teams.isPending || (enabled && (
+    weeks.isPending || current.isPending ||
+    (Boolean(effectiveWeekId) && week.isPending) ||
+    (Boolean(effectiveMatchupId) && matchup.isPending) ||
+    (progressEnabled && progress.isPending)
+  ));
+  if (context.league && !initialPending && readyScope !== loadScope) setReadyScope(loadScope);
   const gateContext = {
     ...context,
     seasonId:
-      seasons.isPending && context.league
+      (seasons.isPending || seasons.isError) && context.league
         ? context.seasonId || "pending"
         : effectiveSeasonId,
   };
@@ -433,13 +449,15 @@ export function LeagueMatchupsPage() {
           </aside>
           <div className="hl-matchup-main"><MatchupCard matchup={sampleCompletedMatchup} /></div>
         </div>
-      ) : seasons.isPending || weeks.isPending || current.isPending ? (
-        <Surface><LoadingBlock>Loading matchup schedule…</LoadingBlock></Surface>
       ) : seasons.isError ? <ErrorMessage error={seasons.error} />
         : weeks.isError ? <ErrorMessage error={weeks.error} />
         : current.isError ? <ErrorMessage error={current.error} />
+        : readyScope !== loadScope && initialPending ? (
+          <Surface><LoadingBlock>Loading matchups…</LoadingBlock></Surface>
+        )
           : (
             <>
+              {teams.isError && <ErrorMessage error={teams.error} />}
               <Surface className="hl-competition-toolbar hl-matchup-page-controls">
               <label className="hl-field">
                 Season{" "}
@@ -554,6 +572,7 @@ export function LeagueMatchupsPage() {
                                 <ConnectedMatchupCard
                                   matchup={matchup.data}
                                   teams={teams.data || []}
+                                  retryOnMount={false}
                                 />
                               </>
                             ) : null}
@@ -672,6 +691,7 @@ export function ConnectedMatchupCard(props) {
   const { httpClient } = useSession();
   const progress = useQuery({ ...matchupGameProgressQuery(httpClient, props.matchup),
     enabled: Boolean(props.matchup.scoring?.home.scoringRuleVersion || props.matchup.scoring?.away.scoringRuleVersion),
+    retryOnMount: props.retryOnMount ?? true,
   });
   const scheduleDetails = progress.isError ? undefined : {
     home: progress.data?.home.details,
@@ -682,7 +702,7 @@ export function ConnectedMatchupCard(props) {
     dayView={progress.isError ? null : progress.data?.day} dayLoading={progress.isPending && progress.isFetching} />;
 }
 
-export function MatchupCard({ matchup, teams = [], scheduleDetails, dayView: todayView, dayViews, dayLoading = false, initialPlayerView = 'full' }) {
+export function MatchupCard({ matchup, teams = [], scheduleDetails, dayView: todayView, dayViews, dayLoading = false, initialPlayerView = 'full', retryOnMount = true }) {
   const [playerView, setPlayerView] = useState(initialPlayerView);
   const [period, setPeriod] = useState('week');
   const [daySelection, setDaySelection] = useState(null);
@@ -798,7 +818,7 @@ export function MatchupCard({ matchup, teams = [], scheduleDetails, dayView: tod
               <span>Compact</span><span>Full stats</span>
             </button></span>}
             summaryAside={!day && matchup.leagueId && matchup.seasonId && matchup.weekId
-              ? <MatchupGameProgress matchup={matchup} httpClient={httpClient} selectedSide={scheduleSide} panelId={schedulePanelId} scheduleDetails={scheduleDetails}
+              ? <MatchupGameProgress matchup={matchup} httpClient={httpClient} selectedSide={scheduleSide} panelId={schedulePanelId} scheduleDetails={scheduleDetails} retryOnMount={retryOnMount}
                   onSelectSide={scheduleDetails ? (side, trigger) => { scheduleTrigger.current = trigger; setScheduleSide(value => value === side ? null : side); } : undefined} /> : null} />}
           {scheduleDetails?.[scheduleSide] && <MatchupScheduleDetails id={schedulePanelId}
             details={scheduleDetails[scheduleSide]} side={scheduleSide} team={scheduleSide === 'home' ? homeTeam : awayTeam} onClose={closeSchedule} />}

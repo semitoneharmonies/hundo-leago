@@ -8,6 +8,7 @@ import { useDesktopLayout } from "../../shared/useDesktopLayout.js";
 import {
   useInfiniteQuery,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -67,7 +68,7 @@ import {
   removeTeamManagerAssignment,
 } from "./leagueQueries.js";
 import { AccountSearch } from "./AccountSearch.jsx";
-import { dashboardActivityQuery } from "./dashboardQueries.js";
+import { dashboardActivityQuery, dashboardMatchupQueries, dashboardTeamQueries } from "./dashboardQueries.js";
 import { bidderCountLabel } from "./dashboardLabels.js";
 import { createIntentKey } from "../accounts/accountApi.js";
 import {
@@ -121,7 +122,7 @@ function MatchupScoreboard({ leagueId, seasonId, teams, week, managedTeam, httpC
         <ul className="hl-dashboard-matchups">
           {week.matchups.map((matchup) => <li key={matchup.id}>
             <MatchupCard leagueId={leagueId} seasonId={seasonId} week={week} matchup={matchup}
-              teams={teams} httpClient={httpClient} managedTeamId={managedTeam?.id} />
+              teams={teams} httpClient={httpClient} managedTeamId={managedTeam?.id} retryOnMount={false} />
           </li>)}
         </ul>
         {week.matchups.length === 0 && <EmptyBlock title="No pairings this week" />}
@@ -337,21 +338,22 @@ function CommissionerLeaguePanel({
   );
 }
 
-export function CommissionerMembersPanel({ league, teams, session }) {
+export function CommissionerMembersPanel({ league, teams, session, retryOnMount = true }) {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState("");
   const [teamId, setTeamId] = useState("");
   const [message, setMessage] = useState("");
-  const memberships = useQuery(
-    leagueMembershipsQuery(session.httpClient, league.id)
-  );
-  const invitableUsers = useQuery(
-    invitableUsersQuery(session.httpClient, league.id)
-  );
+  const memberships = useQuery({
+    ...leagueMembershipsQuery(session.httpClient, league.id), retryOnMount,
+  });
+  const invitableUsers = useQuery({
+    ...invitableUsersQuery(session.httpClient, league.id), retryOnMount,
+  });
   const administrator = effectiveLeagueAuthority(league.membership) === PLATFORM_ADMINISTRATOR_AUTHORITY;
   const allAccounts = useQuery({
     ...adminUsersQuery(session.httpClient),
     enabled: administrator,
+    retryOnMount,
   });
   const availableTeams = teams.filter(({ currentManager }) => !currentManager);
   const assignableMembers = (memberships.data || []).filter(
@@ -1141,6 +1143,31 @@ export function LeagueDashboard({ league, teams, session }) {
       null
     : null;
 
+  // Start the reads owned by nested panels before revealing any dashboard
+  // content. Their existing query keys share the same results on mount.
+  const panelQueries = useQueries({
+    queries: [
+      ...(enabled ? dashboardTeamQueries(session.httpClient, leagueId, teams) : []),
+      ...(enabled ? dashboardMatchupQueries(session.httpClient, leagueId, seasonId, week) : []),
+      ...(commissioner ? [
+        leagueMembershipsQuery(session.httpClient, leagueId),
+        invitableUsersQuery(session.httpClient, leagueId),
+      ] : []),
+      ...(platformAdministrator ? [adminUsersQuery(session.httpClient)] : []),
+    ],
+  });
+  const initialPending = (enabled && [currentWeek, standings, auctions, trades, activity].some((query) => query.isPending))
+    || (enabled && Boolean(managedTeam) && roster.isPending)
+    || panelQueries.some((query) => query.isPending);
+  const readinessScope = `${session.user.id}:${leagueId}:${seasonId || "none"}`;
+  const [readyScope, setReadyScope] = useState(null);
+  // A failed read is settled and its panel displays its normal error. Once
+  // revealed, background refreshes or a panel retry must not hide the page.
+  if (!initialPending && readyScope !== readinessScope) setReadyScope(readinessScope);
+  if (initialPending && readyScope !== readinessScope) {
+    return <Surface><LoadingBlock>Loading {league.name} dashboard…</LoadingBlock></Surface>;
+  }
+
   return (
     <div className="hl-dashboard">
       <PageHeading
@@ -1257,6 +1284,7 @@ export function LeagueDashboard({ league, teams, session }) {
           managedTeamId={managedTeam?.id || null}
         />
         <TradeBlockPanel
+          retryOnMount={false}
           currentUserId={session.user?.id}
           enabled={enabled}
           httpClient={session.httpClient}
@@ -1275,7 +1303,7 @@ export function LeagueDashboard({ league, teams, session }) {
       </section>
 
       {commissioner && (
-        <CommissionerMembersPanel league={league} teams={teams} session={session} />
+        <CommissionerMembersPanel league={league} teams={teams} session={session} retryOnMount={false} />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Link,
   Navigate,
@@ -988,7 +988,7 @@ function AssetEditor({
   );
 }
 
-function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeId = null, onReviewChange }) {
+function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeId = null, onReviewChange, retryOnMount = true }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const submission = useRef(null);
@@ -1055,6 +1055,7 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
       leagueId,
       proposer || "invalid"
     ),
+    retryOnMount,
     enabled:
       context.session.status === "authenticated" &&
       Boolean(context.league) &&
@@ -1066,6 +1067,7 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
       leagueId,
       receiving || "invalid"
     ),
+    retryOnMount,
     enabled:
       context.session.status === "authenticated" &&
       Boolean(context.league) &&
@@ -1240,12 +1242,12 @@ function NewTradeForm({ context, leagueId, initialProposal = null, counterTradeI
   );
 }
 
-function TradeComposer({ context, leagueId, reviewing, onReviewChange }) {
+function TradeComposer({ context, leagueId, reviewing, onReviewChange, retryOnMount = true }) {
   const [format, setFormat] = useState("two");
   if (context.teams.isPending) return <LoadingBlock>Loading trade teams…</LoadingBlock>;
   return <>{!reviewing && <label className="hl-field hl-compact-filter">Trade format<select value={format} onChange={event => setFormat(event.target.value)}>
     <option value="two">Two-team trade</option><option value="three">Three-team trade</option>
-  </select></label>}{format === "three" ? <ThreeTeamTradeForm context={context} leagueId={leagueId} AssetEditor={AssetEditor} assetChoices={assetChoices} ImpactPreview={DraftImpactPreview} ReviewScreen={TradeProposalReview} onReviewChange={onReviewChange} /> : <NewTradeForm context={context} leagueId={leagueId} onReviewChange={onReviewChange} />}</>;
+  </select></label>}{format === "three" ? <ThreeTeamTradeForm context={context} leagueId={leagueId} AssetEditor={AssetEditor} assetChoices={assetChoices} ImpactPreview={DraftImpactPreview} ReviewScreen={TradeProposalReview} onReviewChange={onReviewChange} /> : <NewTradeForm context={context} leagueId={leagueId} onReviewChange={onReviewChange} retryOnMount={retryOnMount} />}</>;
 }
 
 function CounterTradeForm({ context, leagueId, tradeId, respondingTeamId, onReviewChange }) {
@@ -1281,6 +1283,18 @@ export function TradesPage() {
     ...tradesQuery(context.session.httpClient, leagueId),
     enabled: context.session.status === "authenticated" && Boolean(context.league),
   });
+  // Start the existing trade-block reads before mounting the composer and list.
+  // Their child observers reuse these keys instead of adding another load stage.
+  const workspaceReadsEnabled = context.session.status === "authenticated" && Boolean(context.league?.currentSeason);
+  const workspaces = useQueries({
+    queries: (workspaceReadsEnabled ? context.teams.data || [] : []).map((team) => teamWorkspaceQuery(
+      context.session.httpClient, leagueId, team.id
+    )),
+  });
+  const loadScope = `${context.session.user?.id}:${leagueId}:${context.league?.currentSeason?.id}`;
+  const [readyScope, setReadyScope] = useState(null);
+  const initialPending = context.teams.isPending || trades.isPending || workspaces.some((query) => query.isPending);
+  if (context.league && !initialPending && readyScope !== loadScope) setReadyScope(loadScope);
   const controlledIds = new Set(context.managerControlledTeams.map(team => team.id));
   const visible = (trades.data || []).filter((trade) =>
     trade.storageStatus !== "expired" &&
@@ -1298,13 +1312,17 @@ export function TradesPage() {
       )
       .map(({ id }) => id)
   );
+  if (readyScope !== loadScope && initialPending) return <LeaguePageState context={context} title="Trades">
+    <Surface><LoadingBlock>Loading trades…</LoadingBlock></Surface>
+  </LeaguePageState>;
   return (
     <LeaguePageState context={context} title="Trades">
       {counterTradeId
         ? <CounterTradeForm key={`${leagueId}:${counterTradeId}`} context={context} leagueId={leagueId} tradeId={counterTradeId} respondingTeamId={searchParams.get("counterTeamId")} onReviewChange={setReviewing} />
-        : <TradeComposer key={`${context.session.user?.id}:${leagueId}`} context={context} leagueId={leagueId} reviewing={reviewing} onReviewChange={setReviewing} />}
+        : <TradeComposer key={`${context.session.user?.id}:${leagueId}`} context={context} leagueId={leagueId} reviewing={reviewing} onReviewChange={setReviewing} retryOnMount={!workspaceReadsEnabled} />}
       {!reviewing && <>
       <TradeBlockPanel
+        retryOnMount={!workspaceReadsEnabled}
         currentUserId={context.session.user?.id}
         enabled={context.session.status === "authenticated" && Boolean(context.league?.currentSeason) && !context.teams.isPending}
         httpClient={context.session.httpClient}

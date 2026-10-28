@@ -6,7 +6,8 @@ export const announcementKey = (leagueId) => ["league", leagueId, "announcements
 function validateAnnouncement(item, leagueId) {
   if (!item || typeof item.id !== "string" || item.leagueId !== leagueId ||
       typeof item.body !== "string" || !item.body.trim() || item.body.length > 3000 ||
-      typeof item.authorName !== "string" || !Number.isSafeInteger(item.createdAtMs)) {
+      typeof item.authorName !== "string" || !Number.isSafeInteger(item.createdAtMs) ||
+      !Number.isSafeInteger(item.version) || item.version < 1) {
     throw new ResponseContractError("The league announcement is invalid.");
   }
 }

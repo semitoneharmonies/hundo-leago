@@ -1,0 +1,22 @@
+.hl-announcement-removable { position: relative; padding-right: 36px; }
+.hl-announcement-removable button.hl-announcement-remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--hl-muted-foreground);
+  font: 500 1.3rem/1 sans-serif;
+  cursor: pointer;
+}
+.hl-announcement-removable button.hl-announcement-remove:hover { color: var(--hl-foreground); background: #24334b; }
+.hl-announcement-removable button.hl-announcement-remove:focus-visible { outline: 2px solid var(--hl-primary); outline-offset: 2px; }
+.hl-announcement-removable button.hl-announcement-remove:disabled { opacity: .5; cursor: wait; }
+.hl-announcement-remove-error { color: #fca5a5; font-size: .75rem; }
+.hl-sidebar-announcements li + li > .hl-announcement-remove { top: 12px; }

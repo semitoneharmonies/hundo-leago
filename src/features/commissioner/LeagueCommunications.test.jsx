@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
@@ -69,6 +69,7 @@ describe("League communication controls", () => {
     expect(await screen.findByText("New schedule")).toBeInTheDocument();
     expect(screen.getByText("<script>private()</script>")).toBeInTheDocument();
     expect(screen.queryByText("Manage announcements and reminders")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Remove announcement:/ })).not.toBeInTheDocument();
     expect(client.request.mock.calls.every(([url, options]) => !url.includes("history") && !url.includes("card-progress") && !options.method)).toBe(true);
   });
 
@@ -90,6 +91,20 @@ describe("League communication controls", () => {
     expect(screen.getByRole("button", { name: "Confirm announcement" })).toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "Title" }), " changed");
     expect(screen.queryByRole("button", { name: "Confirm announcement" })).not.toBeInTheDocument();
+  });
+
+  it("explains the seven-day cap when the selected expiry is later", async () => {
+    const { user, client } = setup();
+    await openEditor(user);
+    const laterExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+    fireEvent.change(screen.getByLabelText(/^Optional expiry/), { target: { value: laterExpiry } });
+    await fillAndPreview(user);
+    const preview = screen.getByRole("region", { name: "Message preview" });
+    expect(within(preview).getByText(/^Automatically disappears 7 days after publishing, or on .+ if sooner\.$/)).toBeInTheDocument();
+    expect(within(preview).queryByText(/^Expires /)).not.toBeInTheDocument();
+    const request = client.request.mock.calls.find(([url]) => url.endsWith("/preview"));
+    expect(request[1].body.expiresAtMs).toBeGreaterThan(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    expect(client.request.mock.calls.filter(([url, options]) => options.method === "POST" && !url.endsWith("/preview"))).toHaveLength(0);
   });
 
   it("preserves standard announcement requests when the server has no push support", async () => {
@@ -127,6 +142,22 @@ describe("League communication controls", () => {
     expect(client.request.mock.calls.some(([url]) => url.endsWith("archive"))).toBe(false);
     await user.click(screen.getByRole("button", { name: "Confirm archive" }));
     expect(await screen.findByText("Announcement archived. Its history is preserved.")).toBeInTheDocument();
+  });
+
+  it("removes a visible announcement with its X and preserves it in message history", async () => {
+    const { user, client } = setup({ messages: [notice] });
+    await user.click(await screen.findByRole("button", { name: "Remove announcement: New schedule" }));
+    await screen.findByText("No current announcements.");
+    expect(client.request.mock.calls.filter(([url]) => url.endsWith("/archive"))).toEqual([
+      [`/api/v1/leagues/${leagueId}/communications/${messageId}/archive`, expect.objectContaining({
+        method: "POST", body: { version: 1, confirmed: true }, authenticated: true,
+      })],
+    ]);
+    await openEditor(user);
+    await user.click(screen.getByText("Recent message history"));
+    expect(await screen.findByText("New schedule")).toBeInTheDocument();
+    expect(screen.getByText(/Announcement · 1 notifications · Archived/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Remove announcement:/ })).not.toBeInTheDocument();
   });
 
   it("rejects a response belonging to another league", async () => {

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -151,6 +151,40 @@ function renderPage(path, route, element, fetchImpl) {
 }
 
 describe("M5-11 authenticated transaction pages", () => {
+  it.each([false, true])("waits for trade-block rosters before revealing the composer and proposals (workspace failure: %s)", async (failWorkspace) => {
+    let releaseWorkspaces;
+    const workspaceWait = new Promise(resolve => { releaseWorkspaces = resolve; });
+    const request = baseFetch(path => {
+      if (path.endsWith("/trades")) return envelope({ code: "TRADE_PROPOSALS_FOUND", proposals: [] });
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const fetchImpl = vi.fn(async (url, options) => {
+      const path = new URL(url).pathname;
+      if (path === "/api/v1/leagues") {
+        const response = await request(url, options);
+        const body = await response.json();
+        body.data.leagues[0].currentSeason = { id: seasonId, label: "2026-27", status: "active", version: 1 };
+        return envelope(body.data);
+      }
+      if (path.endsWith("/roster")) {
+        await workspaceWait;
+        if (failWorkspace && path.includes(teamB)) return new Response(JSON.stringify({ error: { code: "ROSTER_UNAVAILABLE", message: "Roster unavailable" } }), { status: 404, headers: { "Content-Type": "application/json" } });
+      }
+      return request(url, options);
+    });
+    renderPage(`/leagues/${leagueId}/trades`, "/leagues/:leagueId/trades", <TradesPage />, fetchImpl);
+    await waitFor(() => expect(fetchImpl.mock.calls.filter(([url]) => url.endsWith("/roster"))).toHaveLength(2));
+    expect(screen.getByText("Loading trades…")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "New trade proposal" })).not.toBeInTheDocument();
+    expect(screen.queryByText("No proposals in this view.")).not.toBeInTheDocument();
+    await act(async () => releaseWorkspaces());
+    expect(await screen.findByRole("heading", { name: "New trade proposal" })).toBeInTheDocument();
+    expect(screen.getByText("No proposals in this view.")).toBeInTheDocument();
+    expect(screen.queryByText("Loading trades…")).not.toBeInTheDocument();
+    if (failWorkspace) expect(await screen.findByText("The trade block could not be loaded.")).toBeInTheDocument();
+    else expect(fetchImpl.mock.calls.filter(([url]) => url.endsWith("/roster"))).toHaveLength(2);
+    expect(fetchImpl.mock.calls.every(([, options]) => !options.method || options.method === "GET")).toBe(true);
+  });
   it.each(["accept", "approve"])("refreshes both current cap totals after %s without invalidating another team's workspace", async (action) => {
     let completed = false;
     let writes = 0;

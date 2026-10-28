@@ -1,8 +1,11 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../../test/render.jsx";
-import { CommissionerMembersPanel } from "./LeagueDashboard.jsx";
+import { CommissionerMembersPanel, LeagueDashboard } from "./LeagueDashboard.jsx";
+import { createDesktopNavigationFixture } from "../../test/desktopNavigationFixture.js";
+import { dashboardActivityQuery } from "./dashboardQueries.js";
 import { validateTeamList } from "./leagueContracts.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
@@ -11,6 +14,125 @@ const managerId = "33333333-3333-4333-8333-333333333333";
 const teamOneId = "44444444-4444-4444-8444-444444444444";
 const teamTwoId = "55555555-5555-4555-8555-555555555555";
 const teamThreeId = "66666666-6666-4666-8666-666666666666";
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+function dashboardFixture(intercept = async () => {}) {
+  const fixture = createDesktopNavigationFixture();
+  const original = fixture.client.request;
+  fixture.client.request = vi.fn(async (path, options) => {
+    await intercept(path);
+    return original(path, options);
+  });
+  function Dashboard({ league = fixture.leagues[0] }) {
+    return <LeagueDashboard league={league}
+      teams={fixture.teams.filter((team) => team.leagueId === league.id)} session={fixture.session} />;
+  }
+  return { ...fixture, Dashboard };
+}
+
+describe("initial dashboard readiness", () => {
+  it("reveals all panels together after the slow trade-block roster and matchup score arrive", async () => {
+    const workspace = deferred();
+    const matchup = deferred();
+    const fixture = dashboardFixture(async (path) => {
+      if (path.endsWith("/roster")) await workspace.promise;
+      if (path.includes("/matchups/")) await matchup.promise;
+    });
+    const { Dashboard } = fixture;
+    renderWithProviders(<Dashboard />);
+    await waitFor(() => expect(fixture.client.request.mock.calls.filter(([path]) => path.endsWith("/roster"))).toHaveLength(6));
+    await waitFor(() => expect(fixture.client.request.mock.calls.filter(([path]) => path.includes("/matchups/"))).toHaveLength(3));
+    expect(screen.getByText("Loading Hundo Hockey League dashboard…")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "League history log" })).not.toBeInTheDocument();
+    await act(async () => workspace.resolve());
+    expect(screen.queryByRole("heading", { name: "League history log" })).not.toBeInTheDocument();
+    await act(async () => matchup.resolve());
+    expect(await screen.findByRole("heading", { name: "League history log" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Trade block" })).toBeVisible();
+    expect(screen.queryByLabelText(/loading score/)).not.toBeInTheDocument();
+    expect(fixture.client.request.mock.calls.filter(([path]) => path.endsWith("/roster"))).toHaveLength(6);
+    expect(fixture.client.request.mock.calls.filter(([path]) => path.includes("/matchups/"))).toHaveLength(3);
+    expect(fixture.requests.every(({ method }) => method === "GET")).toBe(true);
+  });
+
+  it("settles a failed nested read with its visible error instead of waiting forever", async () => {
+    let fail = true;
+    const fixture = dashboardFixture(async (path) => {
+      if (fail && path.includes("/matchups/")) throw new Error("Synthetic score failure");
+    });
+    const { Dashboard } = fixture;
+    const { user } = renderWithProviders(<Dashboard />);
+    expect(await screen.findByRole("heading", { name: "League history log" })).toBeVisible();
+    expect(await screen.findAllByText("Scores unavailable.", { exact: false })).toHaveLength(3);
+    expect(fixture.client.request.mock.calls.filter(([path]) => path.includes("/matchups/"))).toHaveLength(3);
+    expect(screen.queryByText("Loading Hundo Hockey League dashboard…")).not.toBeInTheDocument();
+    fail = false;
+    await user.click(screen.getAllByRole("button", { name: "Retry", exact: true })[0]);
+    await waitFor(() => expect(screen.getAllByText("Scores unavailable.", { exact: false })).toHaveLength(2));
+    expect(fixture.client.request.mock.calls.filter(([path]) => path.includes("/matchups/"))).toHaveLength(4);
+  });
+
+  it("shows a failed trade-block roster once without restarting it when the panel mounts", async () => {
+    const failedPath = "/teams/11111111-1111-4111-8111-000000000200/roster";
+    const fixture = dashboardFixture(async (path) => {
+      if (path.endsWith(failedPath)) throw new Error("Synthetic trade block failure");
+    });
+    const { Dashboard } = fixture;
+    renderWithProviders(<Dashboard />);
+    expect(await screen.findByRole("heading", { name: "League history log" })).toBeVisible();
+    expect(screen.getByText("The trade block could not be loaded.")).toBeVisible();
+    expect(fixture.client.request.mock.calls.filter(([path]) => path.endsWith(failedPath))).toHaveLength(1);
+  });
+
+  it("keeps loaded content visible during background refresh", async () => {
+    const refresh = deferred();
+    let refreshing = false;
+    const fixture = dashboardFixture(async (path) => {
+      if (refreshing && path.includes("/activity?")) await refresh.promise;
+    });
+    const { Dashboard } = fixture;
+    const view = renderWithProviders(<Dashboard />);
+    await screen.findByRole("heading", { name: "League history log" });
+    refreshing = true;
+    const key = dashboardActivityQuery(fixture.client, fixture.leagues[0].id).queryKey;
+    let invalidation;
+    await act(async () => { invalidation = view.queryClient.invalidateQueries({ queryKey: key, exact: true }); });
+    await waitFor(() => expect(view.queryClient.getQueryState(key).fetchStatus).toBe("fetching"));
+    expect(screen.getByRole("heading", { name: "League history log" })).toBeVisible();
+    expect(screen.queryByText("Loading Hundo Hockey League dashboard…")).not.toBeInTheDocument();
+    await act(async () => { refresh.resolve(); await invalidation; });
+  });
+
+  it("starts a fresh readiness boundary when switching to another league", async () => {
+    const secondLeague = deferred();
+    const fixture = dashboardFixture(async (path) => {
+      if (path.includes("11111111-1111-4111-8111-000000000101") && path.endsWith("/roster")) await secondLeague.promise;
+    });
+    function Chooser() {
+      const [selected, setSelected] = useState(0);
+      return <><button onClick={() => setSelected(1)}>Other league</button><fixture.Dashboard league={fixture.leagues[selected]} /></>;
+    }
+    const { user } = renderWithProviders(<Chooser />);
+    await screen.findByRole("heading", { name: "Hundo Hockey League" });
+    await user.click(screen.getByRole("button", { name: "Other league" }));
+    expect(screen.getByText("Loading Pacific Hockey League dashboard…")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Hundo Hockey League" })).not.toBeInTheDocument();
+    await act(async () => secondLeague.resolve());
+    expect(await screen.findByRole("heading", { name: "Pacific Hockey League" })).toBeVisible();
+  });
+
+  it("does not wait for disabled season reads when a league has no season", async () => {
+    const fixture = dashboardFixture();
+    renderWithProviders(<fixture.Dashboard league={{ ...fixture.leagues[0], currentSeason: null }} />);
+    expect(screen.getByText("No active season is configured")).toBeVisible();
+    expect(fixture.client.request).not.toHaveBeenCalled();
+  });
+});
 
 function manager(assignmentId, version, protectedAdministrator = false) {
   return {

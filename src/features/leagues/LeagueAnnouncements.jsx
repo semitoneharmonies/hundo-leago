@@ -4,6 +4,8 @@ import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
 import { relativeTime } from "../../shared/hundoFormat.js";
 import { createIntentKey } from "../accounts/accountApi.js";
 import { announcementKey, announcementsQuery, postAnnouncement } from "./announcementQueries.js";
+import { communicationsKey } from "../commissioner/leagueCommunicationApi.js";
+import { AnnouncementRemoveButton } from "./AnnouncementRemoveButton.jsx";
 
 export function LeagueAnnouncements({ league, session }) {
   const queryClient = useQueryClient();
@@ -25,10 +27,14 @@ export function LeagueAnnouncements({ league, session }) {
       intent.current = null;
       setComposing(false);
       setPosted(true);
-      await queryClient.invalidateQueries({ queryKey: announcementKey(league.id) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: announcementKey(league.id) }),
+        queryClient.invalidateQueries({ queryKey: communicationsKey(league.id) }),
+      ]);
     },
   });
   const items = announcements.data?.pages.flatMap((page) => page.announcements) || [];
+  const canManage = hasCommissionerAuthority(league.membership);
   return <section className="hl-sidebar-announcements" aria-labelledby="sidebar-announcements-title" tabIndex={0}>
     <header><h2 id="sidebar-announcements-title">League announcements</h2>
       {hasCommissionerAuthority(league.membership) && <button type="button" disabled={post.isPending} aria-expanded={composing} onClick={() => { setComposing(!composing); setPosted(false); post.reset(); }}>
@@ -38,12 +44,16 @@ export function LeagueAnnouncements({ league, session }) {
     {composing && hasCommissionerAuthority(league.membership) && <form onSubmit={(event) => { event.preventDefault(); if (body.trim() && !post.isPending) post.mutate(); }}>
       <label>Announcement<textarea ref={composer} maxLength={2000} required value={body} disabled={post.isPending} onChange={(event) => setBody(event.target.value)} /></label>
       <small>{body.length}/2000</small>
+      <small>Announcements disappear after 7 days. Use the X to remove one sooner.</small>
       <button type="submit" disabled={post.isPending || !body.trim()}>{post.isPending ? "Posting…" : "Post announcement"}</button>
       {post.isError && <p role="alert">The announcement could not be posted. Your draft is still here. Try again.</p>}
     </form>}
     {posted && <p role="status">Announcement posted.</p>}
     {announcements.isPending ? <p role="status">Loading announcements…</p> : announcements.isError ? <p role="alert">Announcements could not be loaded. <button type="button" onClick={() => announcements.refetch()}>Retry</button></p> : items.length === 0 ? <p>No announcements yet.</p> : <ol>
-      {items.map((item) => <li key={item.id}><p>{item.body}</p><small>{item.authorName} · </small><time dateTime={new Date(item.createdAtMs).toISOString()}>{relativeTime(item.createdAtMs)}</time></li>)}
+      {items.map((item) => <li key={item.id} className={canManage ? "hl-announcement-removable" : undefined}>
+        {canManage && <AnnouncementRemoveButton announcement={item} leagueId={league.id} httpClient={session.httpClient} />}
+        <p>{item.body}</p><small>{item.authorName} · </small><time dateTime={new Date(item.createdAtMs).toISOString()}>{relativeTime(item.createdAtMs)}</time>
+      </li>)}
     </ol>}
     {announcements.hasNextPage && <button type="button" disabled={announcements.isFetchingNextPage} onClick={() => announcements.fetchNextPage()}>{announcements.isFetchingNextPage ? "Loading…" : "Older announcements"}</button>}
   </section>;

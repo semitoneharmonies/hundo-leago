@@ -11,8 +11,8 @@ function description(count, pending) {
   return 'Player-games for the locked matchup lineup. GP counts games accepted by Hundo. GR includes games not yet accepted; confirmed non-appearances are excluded.';
 }
 
-export function MatchupGameProgress({matchup,httpClient,onSelectSide,selectedSide,panelId,scheduleDetails}) {
-  const query=useQuery(matchupGameProgressQuery(httpClient,matchup));
+export function MatchupGameProgress({matchup,httpClient,onSelectSide,selectedSide,panelId,scheduleDetails,retryOnMount=true}) {
+  const query=useQuery({...matchupGameProgressQuery(httpClient,matchup),retryOnMount});
   return <span className="hl-matchup-game-progress" aria-label="Matchup player-game totals">
     {['home','away'].map(side => {
       const count = query.isError ? null : query.data?.[side];

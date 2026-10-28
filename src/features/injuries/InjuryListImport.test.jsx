@@ -62,6 +62,21 @@ describe('admin injury list', () => {
     expect(screen.getByRole('checkbox')).not.toBeChecked();
     expect(screen.queryByLabelText('Jordyn Staal')).not.toBeInTheDocument();
   });
+  it('separately counts skipped names and similar names that still need review', async () => {
+    const request = vi.fn(async () => ({ data: { ...preview, total: 5, matched: 1, canApply: false,
+      skipped: [{ name: "Jake O'Brien" }, { name: 'Patrick Thomas' }],
+      unresolved: [
+        { key: 'jordynstaal', name: 'Jordyn Staal', candidates: [{ id: 'one', name: 'Jordan Staal' }] },
+        { key: 'henrymews', name: 'Henry Mews', candidates: [{ id: 'three', name: 'Harry Mews' }] },
+      ],
+    } }));
+    start(request);
+    expect(await screen.findByText('5 names · 1 matched · 2 skipped · 2 need review')).toBeVisible();
+    expect(screen.getByText("Will not be imported: Jake O'Brien, Patrick Thomas.")).toBeVisible();
+    expect(screen.getAllByRole('combobox')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Apply to all leagues' })).toBeDisabled();
+    expect(request).toHaveBeenCalledTimes(1);
+  });
   it('retains input and discards a stale preview after an apply conflict', async () => {
     const request = vi.fn(async url => { if (url.includes('apply')) throw { code: 'INJURY_VERSION_CONFLICT' }; return { data: preview }; });
     start(request); await screen.findByRole('checkbox'); fireEvent.click(screen.getByRole('checkbox'));

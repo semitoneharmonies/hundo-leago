@@ -1,5 +1,6 @@
 .section { margin-block: 1rem; padding: clamp(.85rem, 2vw, 1.5rem); }
 .notice { border-inline-start: 3px solid var(--hl-accent, #6ee7b7); padding: .8rem 1rem; margin-block: .75rem; overflow-wrap: anywhere; }
+.notice:global(.hl-announcement-removable) { padding-right: 40px; }
 .notice h3 { margin: 0 0 .4rem; }
 .message { white-space: pre-wrap; overflow-wrap: anywhere; }
 .meta { font-size: .85rem; opacity: .8; }

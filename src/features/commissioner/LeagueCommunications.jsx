@@ -4,18 +4,22 @@ import { ErrorBlock, LoadingBlock, Surface } from "../../components/HundoUi.jsx"
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { useSession } from "../session/sessionContext.js";
 import { communicationRequest, communicationsKey, communicationsQuery } from "./leagueCommunicationApi.js";
+import { AnnouncementRemoveButton } from "../leagues/AnnouncementRemoveButton.jsx";
+import { announcementKey } from "../leagues/announcementQueries.js";
 import styles from "./LeagueCommunications.module.css";
 
 const INITIAL = { kind: "announcement", title: "", body: "", audience: "members", pinned: false, expiresAtMs: null, notify: true, pushNotify: false };
 const labels = { complete: "Complete", incomplete: "Incomplete", empty: "Empty" };
 function displayTime(value) { return new Date(value).toLocaleString(); }
 
-function Message({ message }) {
-  return <article className={styles.notice}>
+function Message({ message, canManage = false, leagueId, client }) {
+  const expiresAtMs = message.kind === "announcement" ? Math.min(message.expiresAtMs ?? Infinity, message.createdAtMs + 7 * 24 * 60 * 60 * 1000) : message.expiresAtMs;
+  return <article className={`${styles.notice}${canManage ? " hl-announcement-removable" : ""}`}>
+    {canManage && <AnnouncementRemoveButton announcement={message} leagueId={leagueId} httpClient={client} />}
     <h3>{message.pinned && <span className={styles.pinned}>Pinned</span>}{message.title}</h3>
     <p className={styles.message}>{message.body}</p>
     <p className={styles.meta}>{message.authorName || "League administration"} · {displayTime(message.createdAtMs)}
-      {message.expiresAtMs !== null && <> · Expires {displayTime(message.expiresAtMs)}</>}</p>
+      {expiresAtMs !== null && <> · Expires {displayTime(expiresAtMs)}</>}</p>
   </article>;
 }
 
@@ -31,7 +35,10 @@ function CommunicationControls({ leagueId, client }) {
   const push = useQuery({ queryKey: ["push-settings", session.user?.id],
     queryFn: async () => (await client.request("/api/v1/push/settings", { authenticated: true, dataKind: "object" })).data,
     meta: { private: true }, retry: false });
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: communicationsKey(leagueId) });
+  const invalidate = () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: communicationsKey(leagueId) }),
+    queryClient.invalidateQueries({ queryKey: announcementKey(leagueId) }),
+  ]);
   const review = useMutation({
     mutationFn: message => {
       const { pushNotify, ...standard } = message;
@@ -84,6 +91,7 @@ function CommunicationControls({ leagueId, client }) {
         {push.data?.available && <label className={styles.check}><input type="checkbox" checked={draft.pushNotify === true} disabled={busy || !draft.notify} onChange={event => change({ pushNotify: event.target.checked })} />Important: send a short phone alert</label>}
         <label>Optional expiry ({Intl.DateTimeFormat().resolvedOptions().timeZone})<input type="datetime-local" value={expiry} disabled={busy}
           onChange={event => { setExpiry(event.target.value); change({ expiresAtMs: event.target.value ? new Date(event.target.value).getTime() : null }); }} /></label>
+        <p className={styles.wide}>Announcements disappear after 7 days. Choose an earlier expiry if needed, or use the X to remove one sooner.</p>
       </>}
       <p className={styles.wide}>Delivery: in-app notifications.</p>
       <div className={styles.actions}><button className="hl-button hl-button--secondary" type="submit" disabled={busy || !draft.title.trim() || !draft.body.trim()}>
@@ -95,7 +103,7 @@ function CommunicationControls({ leagueId, client }) {
       <p>{preview.message.kind === "announcement" ? "Visible to league members." : "Private reminder."} {preview.recipientCount} in-app notifications.</p>
       {preview.message.pushNotify && <p>Phone alert: Commissioner announcement. Only members who enabled these alerts.</p>}
       {preview.message.pinned && <p>Pinned to the league dashboard.</p>}
-      {preview.message.expiresAtMs !== null && <p>Expires {displayTime(preview.message.expiresAtMs)}.</p>}
+      {preview.message.kind === "announcement" && <p>Automatically disappears 7 days after publishing{preview.message.expiresAtMs !== null && <>, or on {displayTime(preview.message.expiresAtMs)} if sooner</>}.</p>}
       <ul className={styles.recipients} aria-label="Notification recipients">{preview.recipients.map(person => <li key={person.userId}>{person.displayName}</li>)}</ul>
       <div className={styles.actions}><button type="button" className="hl-button hl-button--primary" disabled={busy} onClick={() => send.mutate(preview)}>
         {send.isPending ? "Sending…" : preview.message.kind === "announcement" ? "Confirm announcement" : "Confirm reminder"}</button>
@@ -128,7 +136,7 @@ export function LeagueCommunications({ leagueId, canManage = false, initiallyExp
   if (!canManage && announcements.isSuccess && !announcements.data.messages.length) return null;
   return <Surface className={styles.section} as="section" aria-label="League announcements">
     <h2>League announcements</h2>
-    {announcements.data?.messages.map(message => <Message key={message.id} message={message} />)}
+    {announcements.data?.messages.map(message => <Message key={message.id} message={message} canManage={canManage} leagueId={leagueId} client={session.httpClient} />)}
     {announcements.isPending && <LoadingBlock>Loading announcements…</LoadingBlock>}
     {announcements.error && <ErrorBlock error={announcements.error} fallback="League announcements are unavailable." />}
     {canManage && announcements.data?.messages.length === 0 && <p>No current announcements.</p>}

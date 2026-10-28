@@ -34,10 +34,10 @@ export function createDesktopNavigationFixture({ commissioner = false, administr
         matchups: original.matchups.map((matchup, index) => ({ ...matchup, id: id(1200 + weeks.length * 10 + index), weekId, status: "scheduled" })) });
     }
   }
-  const announcements = leagues.map((league, index) => ({ id: id(950 + index), leagueId: league.id, body: index ? "Welcome to the Pacific league." : "Welcome to the season!\nRemember to set your lineup before Monday’s lock.", authorName: "League Commissioner", createdAtMs: Date.now() - 3600000 }));
+  const announcements = leagues.map((league, index) => ({ id: id(950 + index), leagueId: league.id, body: index ? "Welcome to the Pacific league." : "Welcome to the season!\nRemember to set your lineup before Monday’s lock.", authorName: "League Commissioner", createdAtMs: Date.now() - 3600000, version: 1 }));
   const fixture = {
     quotes: [], failQuoteSubmit: false, failQuoteReview: false,
-    leagues, teams, weeks, announcements, requests: [], failAnnouncements: false, failTeams: false, failPost: false,
+    leagues, teams, weeks, announcements, requests: [], failAnnouncements: false, failTeams: false, failPost: false, failArchive: false,
     session: { status: "authenticated", user: { id: id(3), displayName: "Preview Manager" }, async signOut() {} },
     async request(path, options = {}) {
       fixture.requests.push({ path, method: options.method || "GET", body: options.body });
@@ -50,6 +50,7 @@ export function createDesktopNavigationFixture({ commissioner = false, administr
       const week = seasonWeeks.find((item) => item.id === parts[8]) || seasonWeeks[0] || null;
       let data;
       if (path === "/api/v1/leagues") data = { code: "LEAGUES_FOUND", leagues };
+      else if (url.pathname === "/api/v1/push/settings") data = { available: false };
       else if (url.pathname === "/api/v1/notifications") data = { code: "NOTIFICATIONS_FOUND", notifications: [], page: { limit: 25, nextCursor: null } };
       else if (url.pathname.endsWith("/free-agent-drafts/navigation")) data = { serverNowMs: Date.now(), timeZone: "America/Vancouver", fadId: null, seasonId: null, phase: "inactive", showMainNavigation: false, candidateDeadlineAtMs: null, nextRolloverAtMs: null, frozenFadFirstMatchupStartsAtMs: null, competitionFirstMatchupStartsAtMs: null, managedCards: [], rosterLinks: [], urgencyCode: "NONE" };
       else if (url.pathname.endsWith("/quotes") || url.pathname.includes("/quote-submissions")) {
@@ -74,15 +75,29 @@ export function createDesktopNavigationFixture({ commissioner = false, administr
           data = { code: "QUOTES_FOUND", quotes: quotes.map((item) => reviewing ? { ...item } : ({ id: item.id, text: item.text, author: item.author, scope: item.scope })), page: { limit: 100, nextCursor: null } };
         }
       }
+      else if (url.pathname.endsWith("/communications") || url.pathname.endsWith("/communications/history")) {
+        const history = url.pathname.endsWith("/history");
+        data = { leagueId, messages: announcements.filter(item => item.leagueId === leagueId && (history || !item.archivedAtMs && item.createdAtMs > Date.now() - 604800000)).map(item => ({
+          ...item, kind: "announcement", title: "League update", pinned: false, expiresAtMs: null, archivedAtMs: item.archivedAtMs || null, audience: "members", recipientCount: 0,
+        })) };
+      }
+      else if (url.pathname.includes("/communications/") && url.pathname.endsWith("/archive")) {
+        if (!(commissioner || administrator) || fixture.failArchive) throw new Error("Removal unavailable");
+        const item = announcements.find(item => item.id === parts[6] && item.leagueId === leagueId);
+        if (!item || item.version !== options.body.version || options.body.confirmed !== true) throw new Error("Announcement changed");
+        item.archivedAtMs = Date.now();
+        item.version += 1;
+        data = { leagueId, id: item.id, archived: true };
+      }
       else if (url.pathname.endsWith("/announcements")) {
         if (options.method === "POST") {
           if (!(commissioner || administrator) || fixture.failPost) throw new Error("Posting unavailable");
-          const item = { id: id(1000 + announcements.length), leagueId, body: options.body.body, authorName: "Preview Manager", createdAtMs: Date.now() };
+          const item = { id: id(1000 + announcements.length), leagueId, body: options.body.body, authorName: "Preview Manager", createdAtMs: Date.now(), version: 1 };
           announcements.unshift(item);
           data = { code: "LEAGUE_ANNOUNCEMENT_POSTED", announcement: item };
         } else {
           if (fixture.failAnnouncements) throw new Error("Announcements unavailable");
-          data = { code: "LEAGUE_ANNOUNCEMENTS_FOUND", announcements: announcements.filter((item) => item.leagueId === leagueId), page: { limit: 10, nextCursor: null } };
+          data = { code: "LEAGUE_ANNOUNCEMENTS_FOUND", announcements: announcements.filter((item) => item.leagueId === leagueId && !item.archivedAtMs && item.createdAtMs > Date.now() - 604800000).map(item => ({ ...item })), page: { limit: 10, nextCursor: null } };
         }
       } else if (url.pathname.endsWith("/teams")) {
         if (fixture.failTeams) throw new Error("Teams unavailable");

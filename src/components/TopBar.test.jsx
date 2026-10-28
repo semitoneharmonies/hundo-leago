@@ -263,7 +263,10 @@ describe("top bar navigation", () => {
     const link = screen.getByRole("link", { name: "Play Tip Jar" });
     expect(link).toHaveAttribute("href", `/leagues/${leagueId}/tip-jar`);
     expect(link).toHaveAttribute("aria-current", "page");
+    expect(link.querySelector(".hl-tipjar-wordmark")).not.toBeNull();
+    expect(link).not.toHaveTextContent("Play");
     expect(screen.getByRole("link", { name: "Play Mr. Boni" })).toHaveAttribute("href", `/leagues/${leagueId}/mr-boni`);
+    expect(screen.getByRole("img", { name: "Mr. Boni" })).toHaveAttribute("src", "/games/mr-boni/resurface-v1/assets/mr-boni-logo.svg");
     fireEvent.keyDown(document.activeElement, { key: "Escape" });
     expect(screen.getByRole("button", { name: "Mini Games" })).toHaveFocus();
   });
@@ -273,11 +276,22 @@ describe("top bar navigation", () => {
     try {
       await renderTopBar("manager", "manager", { initialEntry: `/leagues/${leagueId}/mr-boni`, openMenu: false });
       const sidebar = await screen.findByRole("complementary", { name: "League sidebar" });
-      fireEvent.click(within(sidebar).getByRole("button", { name: "Mini Games" }));
+      const trigger = within(sidebar).getByRole("button", { name: "Mini Games" });
+      expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+      fireEvent.click(trigger);
+      const flyout = within(sidebar).getByRole("dialog", { name: "Mini Games" });
+      expect(flyout).toHaveClass("hl-sidebar-flyout");
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      expect(within(flyout).getByRole("button", { name: "Close Mini Games" })).toHaveFocus();
       const link = within(sidebar).getByRole("link", { name: "Play Mr. Boni" });
       expect(link).toHaveAttribute("href", `/leagues/${leagueId}/mr-boni`);
       expect(link).toHaveAttribute("aria-current", "page");
       expect(within(sidebar).getByRole("link", { name: "Play Tip Jar" })).toHaveAttribute("href", `/leagues/${leagueId}/tip-jar`);
+      expect(within(link).getByRole("img", { name: "Mr. Boni" })).toHaveAttribute("src", "/games/mr-boni/resurface-v1/assets/mr-boni-logo.svg");
+      fireEvent.keyDown(document.activeElement, { key: "Escape" });
+      expect(screen.queryByRole("dialog", { name: "Mini Games" })).not.toBeInTheDocument();
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      expect(trigger).toHaveFocus();
     } finally { vi.unstubAllGlobals(); }
   });
 

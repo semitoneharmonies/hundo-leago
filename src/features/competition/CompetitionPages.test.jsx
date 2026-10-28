@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -380,6 +380,49 @@ describe("M6-12 authenticated competition pages", () => {
   beforeEach(() => {
     vi.spyOn(Date, "now").mockReturnValue(Date.parse("2026-09-01T12:00:00Z"));
   });
+  it("starts current-season reads together and reveals controls with the score, retaining them on refresh", async () => {
+    let releaseSeasons;
+    let releaseScore;
+    const seasonWait = new Promise(resolve => { releaseSeasons = resolve; });
+    let scoreWait = new Promise(resolve => { releaseScore = resolve; });
+    const matchupWeek = week();
+    const fetchImpl = baseFetch(async path => {
+      if (path.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [] });
+      if (path.endsWith("/seasons")) { await seasonWait; return envelope(seasonList()); }
+      if (path.endsWith("/matchup-weeks")) return envelope({ code: "MATCHUP_WEEKS_FOUND", health: health(), weeks: [matchupWeek] });
+      if (path.endsWith("/matchup-weeks/current")) return envelope({ code: "CURRENT_MATCHUP_WEEK_FOUND", health: health(), week: matchupWeek });
+      if (path.endsWith(`/matchup-weeks/${weekId}`)) return envelope({ code: "MATCHUP_WEEK_FOUND", week: matchupWeek });
+      if (path.endsWith(`/matchups/${matchupId}`)) { await scoreWait; return envelope(matchupDetail(matchupSummary())); }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const view = renderPage(`/leagues/${leagueId}/matchups`, "/leagues/:leagueId/matchups", <LeagueMatchupsPage />, fetchImpl);
+    await waitFor(() => expect(fetchImpl.mock.calls.some(([url]) => url.endsWith(`/matchups/${matchupId}`))).toBe(true));
+    expect(screen.queryByRole("combobox", { name: "Season" })).not.toBeInTheDocument();
+    await act(async () => releaseSeasons());
+    expect(screen.getByText("Loading matchups…")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Home Team vs Away Team" })).not.toBeInTheDocument();
+    await act(async () => releaseScore());
+    expect(await screen.findByRole("heading", { name: "Home Team vs Away Team" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Season" })).toBeInTheDocument();
+    scoreWait = new Promise(resolve => { releaseScore = resolve; });
+    await view.user.click(screen.getByRole("button", { name: "Refresh", exact: true }));
+    expect(screen.getByRole("heading", { name: "Home Team vs Away Team" })).toBeInTheDocument();
+    expect(screen.queryByText("Loading matchups…")).not.toBeInTheDocument();
+    await act(async () => releaseScore());
+    expect(fetchImpl.mock.calls.every(([, options]) => !options.method || options.method === "GET")).toBe(true);
+  });
+
+  it("reports a season-list failure rather than waiting for disabled dependent reads", async () => {
+    const fetchImpl = baseFetch(path => {
+      if (path.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [] });
+      if (path.endsWith("/seasons")) return envelope({ code: "SEASONS_UNAVAILABLE" }, 404);
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    renderPage(`/leagues/${leagueId}/matchups?season=${historicalSeasonId}`, "/leagues/:leagueId/matchups", <LeagueMatchupsPage />, fetchImpl);
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("Loading matchups…")).not.toBeInTheDocument();
+    expect(fetchImpl.mock.calls.some(([url]) => url.includes("/matchup-weeks"))).toBe(false);
+  });
   it.each(["local", "staging", "production"])("limits the read-only sample to review environments (%s)", async (appEnv) => {
     const fetchImpl = baseFetch((path) => {
       if (path.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [] });
@@ -435,6 +478,7 @@ describe("M6-12 authenticated competition pages", () => {
       if (path === `${prefix}/matchup-weeks/current`) return envelope({ code: "CURRENT_MATCHUP_WEEK_FOUND", health: health(), week: matchupWeek });
       if (path === `${prefix}/matchup-weeks/${weekId}`) return envelope({ code: "MATCHUP_WEEK_FOUND", week: matchupWeek });
       if (path.endsWith(`/matchups/${matchupId}`)) return envelope(detail);
+      if (path.endsWith("/game-progress")) return envelope({ code: "GAME_PROGRESS_UNAVAILABLE" }, 404);
       throw new Error(`Unexpected request: ${path}`);
     });
     renderPage(`/leagues/${leagueId}/matchups`, "/leagues/:leagueId/matchups", <LeagueMatchupsPage />, fetchImpl);
@@ -666,6 +710,7 @@ describe("M6-12 authenticated competition pages", () => {
       if (path === `/api/v1/leagues/${leagueId}/seasons`) {
         return envelope(seasonList(true));
       }
+      if (path.endsWith("/teams")) return envelope({ code: "TEAMS_FOUND", teams: [] });
       if (path === `${currentPrefix}/matchup-weeks`) {
         return envelope({
           code: "MATCHUP_WEEKS_FOUND",

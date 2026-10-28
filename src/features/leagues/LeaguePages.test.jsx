@@ -184,6 +184,12 @@ function fetchScenario(
         "request-league"
       );
     }
+    if (path === `/api/v1/leagues/${leagueOneId}/memberships`) {
+      return response({ code: "LEAGUE_MEMBERSHIPS_FOUND", memberships: [] });
+    }
+    if (path === `/api/v1/leagues/${leagueOneId}/invitable-users`) {
+      return response({ code: "INVITABLE_LEAGUE_USERS_FOUND", users: [] });
+    }
     if (path === `/api/v1/leagues/${leagueOneId}/seasons/${seasonId}/matchup-weeks`) {
       return response({ code: "MATCHUP_WEEKS_FOUND", health: {}, weeks: [] });
     }

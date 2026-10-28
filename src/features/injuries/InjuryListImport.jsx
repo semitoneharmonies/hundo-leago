@@ -48,7 +48,7 @@ export function InjuryListImport({ httpClient }) {
   }
   return <section className="hl-injury-import" aria-labelledby="injury-import-title">
     <h3 id="injury-import-title">Update IR list</h3>
-    <p>Paste the complete list copied from PuckPedia, including player names, timeline, status, and reason. Matched players become IR-eligible. Names with no database matches are skipped automatically and shown in the preview. Previously injured players absent from the list return to regular status.</p>
+    <p>Paste the complete list copied from PuckPedia, including player names, timeline, status, and reason. Matched players become IR-eligible. Names with no plausible database match are skipped automatically, including shared surnames with clearly different first names. Similar or ambiguous names still need review. Previously injured players absent from the list return to regular status.</p>
     <form onSubmit={event => { event.preventDefault(); request('preview'); }}>
       <label htmlFor="injury-list-text">Complete injury list</label>
       <textarea id="injury-list-text" rows={8} maxLength={100000} value={text} disabled={Boolean(busy)}
@@ -59,12 +59,12 @@ export function InjuryListImport({ httpClient }) {
     {error && <p role="alert">{error}</p>}
     {preview && <div className="hl-injury-import-review">
       <h4>Review before updating all leagues</h4>
-      <p>{preview.total} names · {preview.matched} matched · {preview.skipped.length} skipped</p>
+      <p>{preview.total} names · {preview.matched} matched · {preview.skipped.length} skipped{preview.unresolved.length > 0 && ` · ${preview.unresolved.length} need review`}</p>
       <dl className="hl-injury-import-counts">
         {Object.entries({ add: 'Newly eligible', update: 'Details updated', clear: 'Return to regular', unchanged: 'Unchanged' }).map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{preview.counts[key]}</dd></div>)}
       </dl>
       {preview.unresolved.length > 0 && <div className="hl-injury-unresolved">
-        <h4>Resolve names</h4><p>These names need review. Choose the correct player, or edit the pasted name, then preview again. Names with no database matches are skipped automatically.</p>
+        <h4>Resolve names</h4><p>These names have similar or ambiguous database matches. Choose the correct player, or edit the pasted name, then preview again. Clearly different first names sharing a surname are skipped automatically.</p>
         {preview.unresolved.map(row => <div key={row.key}>
           <label htmlFor={`injury-match-${row.key}`}>{row.name}</label>
           <select id={`injury-match-${row.key}`} value={resolutions[row.key] || ''} onChange={event => resolve(row.key, event.target.value)}>

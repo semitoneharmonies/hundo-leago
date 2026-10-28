@@ -1,0 +1,33 @@
+.hl-roster-illegal:has(.hl-roster-repair) { flex-wrap: wrap; }
+.hl-roster-repair { margin-top: .25rem; flex: 1 1 100%; min-width: 0; width: 100%; }
+.hl-roster-repair .hl-roster-repair-review span { font-size: inherit; }
+.hl-roster-repair-review { margin-top: .75rem; padding: 1rem; border: 1px solid var(--hl-border, #334155); border-radius: .65rem; background: var(--hl-surface, #0f172a); color: var(--hl-text, #e2e8f0); font-size: .95rem; line-height: 1.45; }
+.hl-roster-repair-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+.hl-roster-repair-review h3 { margin: 0; font-size: 1.1rem; }
+.hl-roster-repair-heading p { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0; font-size: .85rem; }
+.hl-roster-repair-heading p span, .hl-roster-repair-note { color: #b8c5d7; }
+.hl-roster-repair-note { margin: .5rem 0 .85rem; }
+.hl-roster-repair-summary { display: flex; flex-wrap: wrap; gap: .65rem; margin: 0 0 1rem; }
+.hl-roster-repair-summary > div { flex: 1 1 140px; padding: .65rem .8rem; border-radius: .45rem; background: #172338; }
+.hl-roster-repair-summary dt, .hl-roster-repair-summary small { font-size: .8rem; color: #b8c5d7; }
+.hl-roster-repair-summary dd { margin: .2rem 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hl-roster-repair-before { color: #b8c5d7; font-weight: 400; }
+.hl-roster-repair-review .hl-roster-repair-moves { list-style: none; padding: 0; margin: 0; }
+.hl-roster-repair-review .hl-roster-repair-moves li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .3rem 1rem; padding: .7rem 0; border-bottom: 1px solid #29364a; font-size: .95rem; }
+.hl-roster-repair-review .hl-roster-repair-moves strong { font-size: .95rem; text-transform: none; }
+.hl-roster-repair-route { display: inline-flex; align-items: center; gap: .5rem; font-size: .85rem; color: #b8c5d7; }
+.hl-roster-repair-destination { padding: .2rem .5rem; border-radius: .3rem; color: #e2e8f0; background: #25354c; font-weight: 650; }
+.hl-roster-repair-details { margin: .8rem 0; font-size: .85rem; color: #b8c5d7; }
+.hl-roster-repair-details summary { cursor: pointer; width: fit-content; }
+.hl-roster-repair-details p { margin: .5rem 0; }
+.hl-roster-repair-details ul { padding-left: 1.25rem; }
+.hl-roster-repair-buttons { display: flex; align-items: center; flex-wrap: wrap; gap: .7rem 1.1rem; }
+.hl-roster-repair-refresh { padding: .5rem 0; border: 0; background: none; color: #b8c5d7; font: inherit; font-size: .85rem; text-decoration: underline; text-underline-offset: .2rem; cursor: pointer; }
+.hl-roster-repair-refresh:disabled { opacity: .5; cursor: default; }
+.hl-roster-repair-review [role="alert"] { color: #fca5a5; margin: .5rem 0; }
+@media (max-width: 600px) {
+  .hl-roster-repair-review { padding: .85rem; }
+  .hl-roster-repair-summary > div { flex-basis: 115px; }
+  .hl-roster-repair-summary dd { font-size: 1rem; }
+  .hl-roster-repair-buttons .hl-button { flex: 1 1 100%; }
+}

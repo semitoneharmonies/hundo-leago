@@ -3,7 +3,7 @@ import { useRosterActions } from "./useRosterActions.js";
 import { rosterLegalityMessages } from './rosterLegalityMessages.js';
 import { injuryNameProps } from '../../shared/playerInjury.js';
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useIsMutating, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowLeftRight,
@@ -34,6 +34,8 @@ import {
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import { CapOutlook } from "./CapOutlook.jsx";
 import { RosterSchedule } from "./RosterSchedule.jsx";
+import { RosterRepairPanel } from "./RosterRepairPanel.jsx";
+import { rosterRepairKey } from "./rosterRepairApi.js";
 import { PlayerName } from '../players/PlayerName.jsx';
 import { leagueDateTime } from "../../shared/hundoFormat.js";
 import {
@@ -222,6 +224,7 @@ function CategoryTable({
   onMove,
   onAction,
   actionPending = false,
+  orderPending = false,
   canRequestTrade = false,
   prospectDecisionAllowed = false,
   leagueId,
@@ -238,7 +241,7 @@ function CategoryTable({
   const defence = players.length - forwards;
   const displayedPlayers = sortedByStatistic(players, sort);
   const draggable =
-    showOrder && ["Active", "Bench"].includes(category.key) && canManage;
+    showOrder && ["Active", "Bench"].includes(category.key) && canManage && !orderPending;
   const capacity =
     category.key === "Active"
       ? `${players.length}/18 used · F ${forwards}/12 · D ${defence}/6`
@@ -719,6 +722,7 @@ export function TeamRosterPage({
 }) {
   const queryClient = useQueryClient();
   const { cap, league, team } = workspace;
+  const repairPending = useIsMutating({ mutationKey: rosterRepairKey(league.id, team.id) }) > 0;
   const promotedHeader = usePromotedHeader(`team:${league.id}:${team.id}`);
   const desktopLayout = useDesktopLayout();
   const legality = workspace.legality ?? { legal: true, reasons: [] };
@@ -789,6 +793,7 @@ export function TeamRosterPage({
   function reorder(sourceId, targetId, basisPlayers = activePlayers) {
     if (
       !workspace.canManage ||
+      repairPending ||
       mutation.isPending ||
       !sourceId ||
       sourceId === targetId
@@ -845,6 +850,7 @@ export function TeamRosterPage({
     );
     if (
       !source ||
+      repairPending ||
       !["Active", "Bench"].includes(destinationCategory) ||
       actionMutation.isPending
     ) {
@@ -983,6 +989,8 @@ export function TeamRosterPage({
           <ul className="hl-roster-issues">
             {rosterLegalityMessages(workspace).map(message => <li key={message}>{message}</li>)}
           </ul>
+          <RosterRepairPanel workspace={workspace} httpClient={httpClient}
+            pending={actionMutation.isPending || mutation.isPending || repairPending} onApplied={setSaveMessage} />
         </div>
       )}
 
@@ -1046,7 +1054,7 @@ export function TeamRosterPage({
       {view === "schedule" ? (
         <RosterSchedule key={`${league.id}:${workspace.season.id}:${team.id}`} workspace={workspace} httpClient={httpClient} />
       ) : view === "cap" ? (
-        <CapOutlook workspace={workspace} httpClient={httpClient} pending={actionMutation.isPending || mutation.isPending} onAction={runRosterAction} />
+        <CapOutlook workspace={workspace} httpClient={httpClient} pending={actionMutation.isPending || mutation.isPending || repairPending} onAction={runRosterAction} />
       ) : (
         <div className="hl-roster-categories">
           {CATEGORY_DETAILS.map((category) => (
@@ -1079,7 +1087,8 @@ export function TeamRosterPage({
               onSort={changeRosterSort}
               leagueId={league.id}
               onAction={runRosterAction}
-              actionPending={actionMutation.isPending}
+              actionPending={actionMutation.isPending || repairPending}
+              orderPending={repairPending}
               canRequestTrade={canRequestTrade}
               prospectDecisionAllowed={managesViewedTeam}
               requestingTeamId={requestingTeam?.id || null}

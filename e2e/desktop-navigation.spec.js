@@ -21,6 +21,43 @@ async function expectNoOverflow(page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 }
 
+test("Mini Games opens beside navigation with both game logos and keyboard recovery", async ({ page }, testInfo) => {
+  await openPreview(page);
+  const desktop = page.viewportSize().width >= 1024;
+  if (!desktop) await page.getByRole("button", { name: "Menu", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "Mini Games", exact: true });
+  await trigger.click();
+  const panel = page.getByRole(desktop ? "dialog" : "region", { name: "Mini Games", exact: true });
+  await expect(panel).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(panel.getByRole("button", { name: "Close Mini Games" })).toBeFocused();
+  const tipJar = panel.getByRole("link", { name: "Play Tip Jar" });
+  const boni = panel.getByRole("link", { name: "Play Mr. Boni" });
+  await expect(tipJar.locator(".hl-tipjar-wordmark")).toBeVisible();
+  const logo = boni.getByRole("img", { name: "Mr. Boni" });
+  await expect(logo).toBeVisible();
+  await expect.poll(() => logo.evaluate((image) => image.complete && image.naturalWidth > 0)).toBe(true);
+  const leagueId = await page.evaluate(() => window.navigationFixture.leagues[0].id);
+  await expect(tipJar).toHaveAttribute("href", `#/leagues/${leagueId}/tip-jar`);
+  await expect(boni).toHaveAttribute("href", `#/leagues/${leagueId}/mr-boni`);
+  const navigation = page.getByRole(desktop ? "complementary" : "navigation", { name: desktop ? "League sidebar" : "Main navigation" });
+  const navBox = await navigation.boundingBox();
+  const panelBox = await panel.boundingBox();
+  expect(panelBox.x).toBeGreaterThanOrEqual(navBox.x + navBox.width - 1);
+  for (const graphic of [tipJar.locator(".hl-tipjar-nav-label"), logo]) {
+    const box = await graphic.boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(panelBox.x);
+    expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
+  }
+  await expectNoOverflow(page);
+  await page.screenshot({ path: testInfo.outputPath("mini-games-menu.png"), fullPage: false });
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  expect(await page.evaluate(() => window.navigationFixture.requests.every((item) => item.method === "GET"))).toBe(true);
+});
+
 test("matchup submenu browses weeks and seasons while mobile keeps its page controls", async ({ page }) => {
   await openPreview(page);
   if (page.viewportSize().width < 1024) {

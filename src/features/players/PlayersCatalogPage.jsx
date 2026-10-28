@@ -252,6 +252,8 @@ export function PlayersCatalogPage() {
   const serverOwnership = ["free", "prospects", "signed"].includes(ownership)
     ? ownership
     : "all";
+  const playerListEnabled = (!viewingFavourites || serverFilteredFavourites) &&
+    session.status === "authenticated" && Boolean(league) && (!aavRange.enabled || aavRangeValid);
   const players = useInfiniteQuery({
     ...leaguePlayerInfiniteQuery(session.httpClient, leagueId, {
       query,
@@ -265,7 +267,7 @@ export function PlayersCatalogPage() {
       minimumGames: Number(minimumGames),
       ...contractFilters,
     }),
-    enabled: (!viewingFavourites || serverFilteredFavourites) && session.status === "authenticated" && Boolean(league) && (!aavRange.enabled || aavRangeValid),
+    enabled: playerListEnabled,
   });
   const { hasNextPage, isFetching, isError, fetchNextPage } = players;
   useEffect(() => {
@@ -294,6 +296,12 @@ export function PlayersCatalogPage() {
     ...auctionListQuery(session.httpClient, leagueId, { limit: 1 }),
     enabled: session.status === "authenticated" && Boolean(league),
   });
+  const loadScope = `${session.user?.id}:${leagueId}`;
+  const [readyScope, setReadyScope] = useState(null);
+  const initialPending = teams.isPending || auctionActions.isPending ||
+    (playerListEnabled && players.isPending) ||
+    (viewingFavourites && favouriteQueries.some((result) => result.isPending));
+  if (league && !initialPending && readyScope !== loadScope) setReadyScope(loadScope);
   const auctionAction = useMemo(() => {
     if (auctionActions.isPending) {
       return {
@@ -535,6 +543,10 @@ export function PlayersCatalogPage() {
       </main>
     );
   }
+  if (readyScope !== loadScope && initialPending) return <main className="hl-page hl-page--wide">
+    <PageHeading eyebrow={league.name} title="Players" />
+    <Surface><LoadingBlock>Loading players…</LoadingBlock></Surface>
+  </main>;
 
   return (
     <main className="hl-page hl-page--wide">
@@ -542,6 +554,7 @@ export function PlayersCatalogPage() {
         eyebrow={league.name}
         title="Players"
       />
+      {teams.isError && <ErrorMessage error={teams.error} />}
       <Surface
         as="section"
         className={`hl-player-search ${contractFilterStyles.panel}`}
