@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Home, Plane } from "lucide-react";
 import { ErrorBlock, PositionTag } from "../../components/HundoUi.jsx";
+import { injuryNameProps } from "../../shared/playerInjury.js";
 import { matchupWeeksQuery } from "../competition/competitionQueries.js";
 import { rosterScheduleQuery } from "./rosterScheduleQueries.js";
+import { fantasyPointsPerGame } from "./rosterStatistics.js";
 import styles from "./RosterSchedule.module.css";
 
 const CATEGORIES = [["Active", "Active roster"], ["Bench", "Bench"], ["Injured Reserve", "Injured reserve"], ["Prospect", "Prospects"]];
@@ -12,11 +14,15 @@ const format = (ms, timeZone, options) => new Intl.DateTimeFormat("en-CA", { tim
 const dateLabel = (ms, zone) => format(ms, zone, { month: "short", day: "numeric" });
 const normalizeTeam = (value) => ({ LA: "LAK", NJ: "NJD", SJ: "SJS", TB: "TBL", MON: "MTL", WSH: "WSH" }[value] || value);
 
-function GameCard({ game, team, timeZone }) {
+function GameCard({ game, team, timeZone, playerId }) {
   const home = game.homeTeam === team;
   const opponent = home ? game.awayTeam : game.homeTeam;
   const status = game.status === "postponed" ? "Postponed" : game.status === "cancelled" ? "Cancelled" : game.timeTbd ? "Time TBD" : format(game.startsAtMs, timeZone, { hour: "numeric", minute: "2-digit" });
   const compactStatus = status.replace(":00", "").replace(/\s*([ap])\.m\./, "$1m");
+  const points = game.status === "final"
+    ? game.playerPoints?.find((result) => result.playerId === playerId)?.fantasyPointsHundredths
+    : null;
+  const pointsLabel = game.status === "live" ? "Game in progress" : "Final game points unavailable";
   return <li className={styles.game}>
     <span className={styles.day}>{format(game.startsAtMs, timeZone, { weekday: "short", day: "numeric", month: "short" })}</span>
     <span className={styles.opponent}>
@@ -24,11 +30,33 @@ function GameCard({ game, team, timeZone }) {
       <span className={styles.teamBadge}>{opponent}</span>
       <span className={styles.time} aria-label={status} title={status}>{compactStatus}</span>
     </span>
-    {game.status === "final" || game.status === "live" ? <span className={styles.time}>{game.status === "final" ? "Final" : "In progress"}</span> : null}
+    {(game.status === "final" || game.status === "live") && (
+      <span className={styles.gamePoints}>
+        {points != null ? <>
+          <strong>{(points / 100).toFixed(2)}</strong>
+          <small className={styles.pointsUnit}>FP</small>
+        </> : <span role="img" aria-label={pointsLabel} title={pointsLabel}>—</span>}
+      </span>
+    )}
   </li>;
 }
 
-export function RosterSchedule({ workspace, httpClient, nowMs }) {
+function scheduleRow(player, gamesByTeam) {
+  const team = normalizeTeam(player.nhlTeamAbbreviation || player.provider?.nhlTeamAbbreviation || "");
+  const knownTeam = NHL_TEAMS.has(team);
+  const games = knownTeam ? gamesByTeam.get(team) || [] : [];
+  const count = games.filter((game) => !["postponed", "cancelled"].includes(game.status)).length;
+  return { player, team, knownTeam, games, count, fpg: fantasyPointsPerGame(player.statistics) };
+}
+
+function compareRows(left, right) {
+  return Number(right.player.normalizedPosition === "F") - Number(left.player.normalizedPosition === "F")
+    || right.count - left.count
+    || (right.fpg ?? -Infinity) - (left.fpg ?? -Infinity)
+    || left.player.name.localeCompare(right.player.name);
+}
+
+export function RosterSchedule({ workspace, httpClient, nowMs, renderMoveActions }) {
   const [openedAtMs] = useState(Date.now);
   const currentTime = nowMs ?? openedAtMs;
   const [selectedWeekId, setSelectedWeekId] = useState(null);
@@ -71,22 +99,28 @@ export function RosterSchedule({ workspace, httpClient, nowMs }) {
       : schedule.isPending ? <p role="status">Loading NHL schedule…</p>
         : <>
           {CATEGORIES.map(([key, title]) => {
-            const players = workspace.players.filter((player) => player.rosterCategory === key);
+            const rows = workspace.players.filter((player) => player.rosterCategory === key)
+              .map((player) => scheduleRow(player, gamesByTeam)).sort(compareRows);
             return <section key={key} className={`${styles.category} ${key === "Bench" ? styles.bench : ""}`} aria-label={`${title} schedule`}>
-              <header className={styles.categoryHeading}><h3>{title}</h3><span>{players.length} {players.length === 1 ? "player" : "players"}</span></header>
-              {players.length === 0 ? <p className={styles.empty}>No players in this section.</p> : players.map((player) => {
-                const team = normalizeTeam(player.nhlTeamAbbreviation || player.provider?.nhlTeamAbbreviation || "");
-                const knownTeam = NHL_TEAMS.has(team);
-                const games = knownTeam ? gamesByTeam.get(team) || [] : [];
-                const count = games.filter((game) => !["postponed", "cancelled"].includes(game.status)).length;
+              <header className={styles.categoryHeading}><h3>{title}</h3><span>{rows.length} {rows.length === 1 ? "player" : "players"}</span></header>
+              {rows.length === 0 ? <p className={styles.empty}>No players in this section.</p> : rows.map(({ player, team, knownTeam, games, count, fpg }) => {
+                const injury = injuryNameProps(player);
+                const nameClasses = [styles.name, injury.className, player.onTradeBlock && "hl-trade-block-player-name"].filter(Boolean).join(" ");
                 return <article className={styles.player} key={player.ownershipId || player.playerId} aria-label={`${player.name} schedule`}>
                   <div className={styles.identity}>
                     <PositionTag position={player.normalizedPosition} category={player.rosterCategory} />
-                    <div><strong className={styles.name}>{player.name}</strong><span className={styles.playerMeta}>{team || "No NHL team"}</span></div>
+                    <div><strong className={nameClasses} title={injury.title || (player.onTradeBlock ? "On trade block" : undefined)}>{player.name}</strong><span className={styles.playerMeta}>{team || "No NHL team"}</span></div>
                   </div>
-                  {games.length ? <ul className={styles.games} aria-label={`${player.name} games`}>{games.map((game) => <GameCard key={game.id} game={game} team={team} timeZone={timeZone} />)}</ul>
+                  <span className={styles.fpg} title="Fantasy points per game">
+                    <strong>{fpg == null ? "—" : fpg.toFixed(2)}</strong>
+                    <small className={styles.pointsUnit}>FPG</small>
+                  </span>
+                  {games.length ? <ul className={styles.games} style={{ "--game-count": games.length }} tabIndex={0} aria-label={`${player.name} games`}>{games.map((game) => <GameCard key={game.id} game={game} team={team} timeZone={timeZone} playerId={player.playerId} />)}</ul>
                     : <p className={styles.noGames}>{knownTeam ? "No NHL games this week" : "NHL schedule unavailable for this player"}</p>}
-                  <div className={styles.count} aria-label={knownTeam ? `${count} ${count === 1 ? "game" : "games"} this week` : "Game count unavailable"}><strong>{knownTeam ? count : "—"}</strong><span>{count === 1 ? "game" : "games"}</span></div>
+                  <div className={styles.rowEnd}>
+                    <div className={styles.count} aria-label={knownTeam ? `${count} ${count === 1 ? "game" : "games"} this week` : "Game count unavailable"}><strong>{knownTeam ? count : "—"}</strong><span>{count === 1 ? "game" : "games"}</span></div>
+                    {renderMoveActions?.(player)}
+                  </div>
                 </article>;
               })}
             </section>;

@@ -6994,12 +6994,14 @@ textarea {
   .hl-matchup-player .hl-matchup-player-fp { font-size: 1rem; }
   .hl-matchup-player-fp small { display: block; font-size: 0.6rem; }
 }
-.hl-roster-table tr.is-on-trade-block > .hl-player-col-name {
+.hl-roster-table tr.is-on-trade-block > .hl-player-col-name,
+.hl-trade-block-player-name:not(.hl-injured-player-name) {
   color: #dcc57e;
 }
 
 @supports (background-clip: text) {
-  .hl-roster-table tr.is-on-trade-block .hl-roster-player-name:not(.hl-injured-player-name) {
+  .hl-roster-table tr.is-on-trade-block .hl-roster-player-name:not(.hl-injured-player-name),
+  .hl-trade-block-player-name:not(.hl-injured-player-name) {
     background: linear-gradient(110deg, #eadba7, #c9ad60);
     background-clip: text;
     color: transparent;
@@ -7007,7 +7009,8 @@ textarea {
 }
 
 @media (forced-colors: active) {
-  .hl-roster-table tr.is-on-trade-block .hl-roster-player-name:not(.hl-injured-player-name) {
+  .hl-roster-table tr.is-on-trade-block .hl-roster-player-name:not(.hl-injured-player-name),
+  .hl-trade-block-player-name:not(.hl-injured-player-name) {
     background: none;
     color: CanvasText;
   }

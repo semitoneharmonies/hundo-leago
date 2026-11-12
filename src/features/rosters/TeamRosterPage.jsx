@@ -1,4 +1,5 @@
 import { RosterActions } from "./RosterActions.jsx";
+import { fantasyPointsPerGame } from "./rosterStatistics.js";
 import { useRosterActions } from "./useRosterActions.js";
 import { rosterLegalityMessages } from './rosterLegalityMessages.js';
 import { injuryNameProps } from '../../shared/playerInjury.js';
@@ -54,12 +55,6 @@ function money(cents) {
   if (cents === null) return "No contract";
   const sign = cents < 0 ? "-" : "";
   return `${sign}$${(Math.abs(cents) / 100).toFixed(2)}`;
-}
-
-function fantasyPointsPerGame(statistics) {
-  if (!statistics) return null;
-  if (statistics.gamesPlayed === 0) return 0;
-  return statistics.fantasyPointsHundredths / 100 / statistics.gamesPlayed;
 }
 
 function nhlTeamAbbreviation(player) {
@@ -1052,7 +1047,19 @@ export function TeamRosterPage({
       )}
 
       {view === "schedule" ? (
-        <RosterSchedule key={`${league.id}:${workspace.season.id}:${team.id}`} workspace={workspace} httpClient={httpClient} />
+        <RosterSchedule
+          key={`${league.id}:${workspace.season.id}:${team.id}`}
+          workspace={workspace}
+          httpClient={httpClient}
+          renderMoveActions={workspace.canManage ? (player) => (
+            <RosterActions
+              movesOnly
+              player={player}
+              pending={actionMutation.isPending || mutation.isPending || repairPending}
+              onAction={runRosterAction}
+            />
+          ) : undefined}
+        />
       ) : view === "cap" ? (
         <CapOutlook workspace={workspace} httpClient={httpClient} pending={actionMutation.isPending || mutation.isPending || repairPending} onAction={runRosterAction} />
       ) : (

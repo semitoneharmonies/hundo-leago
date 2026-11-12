@@ -3,6 +3,48 @@ import { Link } from "react-router-dom";
 import { ArrowDown, ArrowLeftRight, ArrowUp, CircleDollarSign, FileSignature, HeartPulse, Megaphone, Trash2, XCircle } from "lucide-react";
 import { routePaths } from "../../app/routePaths.js";
 
+const MOVE_TYPES = {
+  Active: ["ir", "bench"],
+  Bench: ["ir", "active"],
+  "Injured Reserve": ["ir", "active"],
+  Prospect: ["active", "bench", "ir"],
+};
+const MOVE_DETAILS = {
+  active: { Icon: ArrowUp, label: "Move to active" },
+  bench: { Icon: ArrowDown, label: "Move to bench" },
+  ir: { Icon: HeartPulse, label: "Move to injured reserve" },
+};
+
+function RosterMoveButtons({ player, pending, onAction }) {
+  const category = player.rosterCategory;
+  const prospect = category === "Prospect";
+  return MOVE_TYPES[category].map((type) => {
+    const isIr = type === "ir";
+    const irDisabled = isIr && (!player.injuredReserveEligible || (!prospect && category !== "Active"));
+    const { Icon, label } = MOVE_DETAILS[type];
+    const ariaLabel = isIr && !prospect ? `Move ${player.name} to injured reserve` : `${label} ${player.name}`;
+    let title = ariaLabel;
+    if (irDisabled) title = `${player.name} is not currently eligible for injured reserve`;
+    if (type === "active" && player.rosterCategory === "Injured Reserve") {
+      title = `Move ${player.name} to active before moving them to the bench`;
+    }
+    return (
+      <button
+        key={type}
+        type="button"
+        className={`hl-roster-action${isIr && player.injury?.status === "injured" ? " is-injury-action" : ""}`}
+        disabled={pending || irDisabled}
+        onClick={() => onAction(type, player)}
+        aria-label={ariaLabel}
+        title={title}
+      >
+        <Icon aria-hidden="true" />
+        <span>{isIr && !prospect ? "Move to IR" : label}</span>
+      </button>
+    );
+  });
+}
+
 export function RosterActions({
   leagueId,
   teamId,
@@ -10,6 +52,7 @@ export function RosterActions({
   pending,
   onAction,
   prospectDecisionAllowed = false,
+  movesOnly = false,
 }) {
   const assetType =
     player.rosterCategory === "Prospect"
@@ -27,21 +70,11 @@ export function RosterActions({
     player.rosterCategory === "Prospect" &&
     player.ownershipKind === "Prospect Right" &&
     player.contract?.type === "fantasy_elc";
-  const irDisabled =
-    player.rosterCategory !== "Active" || !player.injuredReserveEligible;
-  const rosterMove =
-    player.rosterCategory === "Active"
-      ? { type: "bench", label: "Move to bench", Icon: ArrowDown }
-      : player.rosterCategory === "Bench"
-        ? { type: "active", label: "Move to active", Icon: ArrowUp }
-        : player.rosterCategory === "Injured Reserve"
-          ? {
-              type: "active",
-              label: "Move to active",
-              Icon: ArrowUp,
-              title: `Move ${player.name} to active before moving them to the bench`,
-            }
-        : null;
+  const moveButtons = <RosterMoveButtons player={player} pending={pending} onAction={onAction} />;
+  if (movesOnly) {
+    if (player.rosterCategory === "Prospect" && !signedProspect) return null;
+    return <div className="hl-roster-actions">{moveButtons}</div>;
+  }
 
   return (
     <div className="hl-roster-actions">
@@ -109,31 +142,7 @@ export function RosterActions({
       )}
       {signedProspect && (
         <>
-          {[
-            ["active", "Move to active", ArrowUp],
-            ["bench", "Move to bench", ArrowDown],
-            ["ir", "Move to injured reserve", HeartPulse],
-          ].map(([type, label, Icon]) => (
-            <button
-              key={type}
-              type="button"
-              className={`hl-roster-action ${type.endsWith("ir") && player.injury?.status === "injured" ? "is-injury-action" : ""}`}
-              disabled={
-                pending ||
-                (type === "ir" && !player.injuredReserveEligible)
-              }
-              onClick={() => onAction(type, player)}
-              aria-label={`${label} ${player.name}`}
-              title={
-                type === "ir" && !player.injuredReserveEligible
-                  ? `${player.name} is not currently eligible for injured reserve`
-                  : `${label} ${player.name}`
-              }
-            >
-              {createElement(Icon, { "aria-hidden": true })}
-              <span>{label}</span>
-            </button>
-          ))}
+          {moveButtons}
           <button
             type="button"
             className="hl-roster-action"
@@ -164,34 +173,7 @@ export function RosterActions({
             <CircleDollarSign aria-hidden="true" />
             <span>Buyout</span>
           </button>
-          <button
-            type="button"
-            className={`hl-roster-action ${player.injury?.status === "injured" ? "is-injury-action" : ""}`}
-            disabled={pending || irDisabled}
-            onClick={() => onAction("ir", player)}
-            aria-label={`Move ${player.name} to injured reserve`}
-            title={
-              irDisabled
-                ? `${player.name} is not currently eligible for injured reserve`
-                : `Move ${player.name} to injured reserve`
-            }
-          >
-            <HeartPulse aria-hidden="true" />
-            <span>Move to IR</span>
-          </button>
-          {rosterMove && (
-            <button
-              type="button"
-              className="hl-roster-action"
-              disabled={pending}
-              onClick={() => onAction(rosterMove.type, player)}
-              aria-label={`${rosterMove.label} ${player.name}`}
-              title={rosterMove.title || `${rosterMove.label} ${player.name}`}
-            >
-              <rosterMove.Icon aria-hidden="true" />
-              <span>{rosterMove.label}</span>
-            </button>
-          )}
+          {moveButtons}
         </>
       )}
       <Link

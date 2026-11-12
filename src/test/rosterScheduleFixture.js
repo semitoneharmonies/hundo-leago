@@ -11,9 +11,25 @@ export function createRosterScheduleFixture() {
   const weeks = [week(1, start, start + 4 * day), week(2, start + 8 * day, start + 15 * day)];
   const teams = ["EDM", "TBL", "CGY", "COL", "MTL", "VGK", "MTL", null];
   fixture.players.forEach((player, index) => { player.nhlTeamAbbreviation = teams[index]; });
+  const [mcdavid, kucherov, kadri, makar] = fixture.players;
+  for (const [player, points] of [[mcdavid, 2250], [kucherov, 1250], [kadri, 2500], [makar, 4150]]) {
+    player.statistics = { gamesPlayed: 10, goals: 4, assists: 6, nhlPoints: 10, fantasyPointsHundredths: points };
+  }
+  const injury = { status: "injured", source: "admin", observedAtMs: nowMs, stale: false, needsReview: false };
+  mcdavid.onTradeBlock = true;
+  Object.assign(kadri, { injury, injuredReserveEligible: true });
+  Object.assign(makar, { injury, injuredReserveEligible: true, onTradeBlock: true });
   const baseRequest = fixture.request;
   const game = (number, hours, homeTeam, awayTeam, status = "scheduled") => ({ id: String(number), nhlSeasonKey: "20262027", startsAtMs: start + hours * 3600_000, homeTeam, awayTeam, status, timeTbd: false });
-  const games = [game(1, 19, "EDM", "VAN"), game(2, 43, "SEA", "EDM"), game(3, 67, "EDM", "COL"), game(4, 91, "CGY", "EDM"), game(5, 43, "TBL", "MTL", "postponed"), game(6, 67, "VGK", "MTL")];
+  const games = [
+    { ...game(1, 19.5, "EDM", "VAN", "final"), playerPoints: [{ playerId: mcdavid.playerId, fantasyPointsHundredths: 350 }] },
+    { ...game(2, 43, "COL", "EDM", "final"), playerPoints: [{ playerId: mcdavid.playerId, fantasyPointsHundredths: 0 }] },
+    game(3, 67, "EDM", "SEA", "live"),
+    game(4, 91, "CGY", "EDM"),
+    game(5, 43, "TBL", "MTL", "postponed"),
+    game(6, 67, "COL", "MTL"),
+    game(7, 67, "TBL", "NJD"),
+  ];
   Object.assign(fixture, { weeks, nowMs, scheduleFailure: false, emptyWeeks: false, games, scheduleRequests: [] });
   fixture.request = async (path, options = {}) => {
     if (!path.includes("matchup-weeks")) return baseRequest(path, options);
