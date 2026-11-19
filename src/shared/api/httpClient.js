@@ -89,6 +89,7 @@ export function createHttpClient({
       actionsKind,
       validateActions,
       validatePage,
+      includeServerTime,
     } = {}
   ) {
     if (typeof path !== "string" || !SAFE_PATH.test(path)) {
@@ -204,6 +205,7 @@ export function createHttpClient({
         actionsKind,
         validateActions,
         validatePage,
+        includeServerTime,
       });
     } catch (error) {
       if (error instanceof ResponseContractError) {

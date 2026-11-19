@@ -29,7 +29,7 @@ import {
   resolveAuctions,
   removeAuctionBidById,
 } from "./leagueUtils";
-import { Route } from "react-router-dom";
+import { Route, useLocation } from "react-router-dom";
 import { AccountHome } from "./features/accounts/AccountHome.jsx";
 import { loadLazyNamedRoute } from "./shared/lazyRoute.js";
 
@@ -171,7 +171,25 @@ const MIN_DEFENSEMEN = 4;
 
 const normalizeKey = (s) => String(s || "").trim().toLowerCase();
 
+const DailyPage = lazyNamed(() => import("./features/daily/DailyPage.jsx"), "DailyPage");
+
 function App() {
+  const { pathname } = useLocation();
+  if (pathname === "/daily" || pathname.startsWith("/daily/")) {
+    return <Suspense fallback={<p role="status">Loading Hundo Daily…</p>}>
+      <ApplicationRoutes>
+        <Route path="/daily" element={<DailyPage />} />
+        <Route path="/daily/history" element={<DailyPage screen="history" />} />
+        <Route path="/daily/create" element={<DailyPage screen="create" />} />
+        <Route path="/daily/practice" element={<DailyPage screen="practice" />} />
+        <Route path="/daily/rooms/:roomId" element={<DailyPage />} />
+      </ApplicationRoutes>
+    </Suspense>;
+  }
+  return <SeasonApp />;
+}
+
+function SeasonApp() {
 
  // --- Phase 0 safety: prevent accidental wipes ---
 // "Valid" means: looks like a real league, not an empty/malformed response.
