@@ -1,7 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import { ResponseContractError } from '../../shared/api/responseContracts.js';
 import { validateExpandedScoring } from '../../shared/scoringCategories.js';
-import { scheduleDay } from './matchupSchedulePresentation.js';
 import { validMatchupDate } from './matchupDaySelection.js';
 import { LIVE_STAT_POLL_INTERVAL_MS, validateLiveScoringStatus } from './liveScoring.js';
 
@@ -43,7 +42,10 @@ export function validateMatchupGameProgress(data, matchup) {
     validateLiveScoringStatus(day.live);
     valid(typeof day.timeZone === 'string' && Number.isSafeInteger(day.asOfMs));
     valid(validMatchupDate(day.date));
-    try { valid(!today || day.date === scheduleDay(day.asOfMs, day.timeZone)); new Intl.DateTimeFormat('en', { timeZone: day.timeZone }); } catch { valid(false); }
+    // Server and browser timezone databases can disagree after a rule change.
+    // Keep the server's calendar label, bounded to a possible local date of this instant.
+    valid(!today || Math.abs(Date.parse(`${day.date}T00:00:00Z`) - Math.floor(day.asOfMs / 86_400_000) * 86_400_000) <= 86_400_000);
+    try { new Intl.DateTimeFormat('en', { timeZone: day.timeZone }); } catch { valid(false); }
     for (const side of ['home', 'away']) {
       const daily = day[side];
       valid(daily && daily.teamId === matchup[`${side}Team`].id && Array.isArray(daily.players));

@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SessionContext } from '../session/sessionContext.js';
 import { MatchupCard, ConnectedMatchupCard } from './CompetitionPages.jsx';
 import { sampleCompletedMatchup } from './sampleCompletedMatchup.js';
 import { SCORING_CATEGORIES } from '../../shared/scoringCategories.js';
 import { validateMatchupGameProgress } from './matchupGameProgressQueries.js';
+import * as schedulePresentation from './matchupSchedulePresentation.js';
 
 const matchup = { ...sampleCompletedMatchup, leagueId: 'league', seasonId: 'season', weekId: 'week', status: 'live' };
 function daily() {
@@ -123,11 +124,39 @@ describe('Week / Day matchup view', () => {
     expect(await screen.findByText(/Today · Oct 15/)).toBeInTheDocument();
     expect(screen.getAllByRole('article')).toHaveLength(3);
   });
+  it('uses the authoritative server day when an older browser timezone database disagrees near midnight', async () => {
+    const browserDate = vi.spyOn(schedulePresentation, 'scheduleDay').mockReturnValue('2026-11-18');
+    try {
+      const today = { ...daily(), date: '2026-11-19', asOfMs: 1795073028782 };
+      const yesterday = { ...structuredClone(today), date: '2026-11-18' };
+      const data = { ...payload(today), days: [yesterday, today] };
+      expect(validateMatchupGameProgress(data, matchup)).toBe(true);
+      const request = vi.fn(async (path, options) => { options.validateData(data); return { data }; });
+      show({}, { request }, true); switchDay();
+      expect(await screen.findByText(/Today · Nov 19/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Thursday, Nov 19' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: 'Wednesday, Nov 18' })).toHaveAttribute('aria-pressed', 'false');
+      expect(document.querySelector('.hl-matchup-score__team b')).toHaveTextContent('0.40');
+      expect(request.mock.calls[0][1].authenticated).toBe(true);
+      expect(request.mock.calls[0][1].method).toBeUndefined();
+    } finally { browserDate.mockRestore(); }
+  });
+  it('rejects impossible server dates, distant today labels, invalid timestamps and unknown timezones', () => {
+    const data = payload({ ...daily(), date: '2026-11-19', asOfMs: 1795073028782 });
+    for (const change of [
+      { date: '2026-11-17' }, { date: '2026-11-21' }, { date: '2026-02-30' },
+      { date: '2026-11-19T00:00:00Z' }, { asOfMs: NaN }, { asOfMs: Number.MAX_SAFE_INTEGER },
+      { timeZone: 'not-a-timezone' },
+    ]) {
+      const invalid = structuredClone(data); Object.assign(invalid.day, change);
+      expect(() => validateMatchupGameProgress(invalid, matchup)).toThrow();
+    }
+  });
   it('validates daily team identity, roster membership, exact totals, dates and scoring categories', () => {
     const data = payload(daily());
     expect(validateMatchupGameProgress(data, matchup)).toBe(true);
     for (const change of [
-      d => { d.day.home.teamId = 'other'; }, d => { d.day.date = '2026-10-16'; },
+      d => { d.day.home.teamId = 'other'; }, d => { d.day.date = '2026-10-18'; },
       d => { d.day.home.scoreHundredths = 12345; }, d => { d.day.home.players[0].playerId = 'other'; },
       d => { d.day.home.players.push(d.day.home.players[0]); }, d => { d.day.home.players[0].scoringStats = {}; },
     ]) {
