@@ -53,7 +53,7 @@ describe('compact matchup player-game totals', () => {
     for (const change of [{ leagueId: 'other' }, { weekId: 'other' }, { id: 'other' }, { status: 'final' }, { liveScore: { source: { refreshId: 'new' } } }]) {
       expect(matchupGameProgressQuery({}, { ...matchup, ...change }).queryKey).not.toEqual(key);
     }
-    expect(matchupGameProgressQuery({}, { ...matchup, status: 'final' }).refetchInterval).toBe(60_000);
+    expect(matchupGameProgressQuery({}, { ...matchup, status: 'final' }).refetchInterval).toBe(120_000);
   });
   it('rejects cross-scope responses and contradictory or invalid counts', () => {
     expect(validateMatchupGameProgress(counts(), matchup)).toBe(true);

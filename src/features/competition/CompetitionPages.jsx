@@ -13,6 +13,7 @@ import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { SCORING_CATEGORIES, scoringWeight } from "../../shared/scoringCategories.js";
 import { ScoringStatGuide } from "../../components/ScoringStatGuide.jsx";
 import { MatchupGameProgress } from "./MatchupGameProgress.jsx";
+import { LiveScoringStatus } from './LiveScoringStatus.jsx';
 import { matchupGameProgressQuery } from "./matchupGameProgressQueries.js";
 import { MatchupScheduleDetails } from "./MatchupScheduleDetails.jsx";
 import { scheduleDay } from "./matchupSchedulePresentation.js";
@@ -393,7 +394,6 @@ export function LeagueMatchupsPage() {
       effectiveMatchupId || "pending"
     ),
     enabled: enabled && Boolean(effectiveWeekId && effectiveMatchupId),
-    refetchInterval: 5 * 60_000,
   });
   const progressEnabled = enabled && Boolean(
     matchup.data?.scoring?.home.scoringRuleVersion || matchup.data?.scoring?.away.scoringRuleVersion
@@ -786,6 +786,7 @@ export function MatchupCard({ matchup, teams = [], scheduleDetails, dayView: tod
       <div className="hl-navigation-details">
       <h2 className="hl-visually-hidden" id="matchup-detail-title">{homeTeam.name} vs {awayTeam.name}</h2>
       <Health health={matchup.health} />
+      {!official && <LiveScoringStatus live={day ? dayView?.live : scoring?.source?.live} />}
       {!scoring ? (
         <p>
           {official

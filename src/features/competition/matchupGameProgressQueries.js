@@ -3,6 +3,7 @@ import { ResponseContractError } from '../../shared/api/responseContracts.js';
 import { validateExpandedScoring } from '../../shared/scoringCategories.js';
 import { scheduleDay } from './matchupSchedulePresentation.js';
 import { validMatchupDate } from './matchupDaySelection.js';
+import { LIVE_STAT_POLL_INTERVAL_MS, validateLiveScoringStatus } from './liveScoring.js';
 
 const STATUSES = new Set(['available', 'complete', 'not_scoring', 'not_started', 'schedule_unavailable', 'scoring_unavailable', 'team_unavailable']);
 export function validateMatchupGameProgress(data, matchup) {
@@ -39,6 +40,7 @@ export function validateMatchupGameProgress(data, matchup) {
     }
   }
   const validateDay = (day, today = false) => {
+    validateLiveScoringStatus(day.live);
     valid(typeof day.timeZone === 'string' && Number.isSafeInteger(day.asOfMs));
     valid(validMatchupDate(day.date));
     try { valid(!today || day.date === scheduleDay(day.asOfMs, day.timeZone)); new Intl.DateTimeFormat('en', { timeZone: day.timeZone }); } catch { valid(false); }
@@ -87,6 +89,6 @@ export function matchupGameProgressQuery(httpClient, matchup) {
     queryKey:['league',leagueId,'season',seasonId,'matchup-week',weekId,'matchup',id,'game-progress',matchup.status,matchup.liveScore?.source?.refreshId ?? null,matchup.result?.version ?? null],
     queryFn:async({signal})=>(await httpClient.request(`/api/v1/leagues/${path[0]}/seasons/${path[1]}/matchup-weeks/${path[2]}/matchups/${path[3]}/game-progress`,{authenticated:true,dataKind:'object',validateData:data=>validateMatchupGameProgress(data,matchup),signal})).data,
     // Today changes even while a finalized matchup remains open overnight.
-    meta:{private:true,leagueId},staleTime:30_000,refetchInterval:60_000,
+    meta:{private:true,leagueId},staleTime:30_000,refetchInterval:LIVE_STAT_POLL_INTERVAL_MS,refetchIntervalInBackground:false,
   });
 }

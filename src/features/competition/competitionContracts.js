@@ -1,4 +1,5 @@
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
+import { validateLiveScoringStatus } from './liveScoring.js';
 
 import { validateExpandedScoring, validateScoringWeights } from "../../shared/scoringCategories.js";
 
@@ -213,6 +214,7 @@ export function validateMatchupDetail(data) {
   }
   if (data.matchup.liveScore !== null) {
     object(data.matchup.liveScore, "The live score is invalid.");
+    validateLiveScoringStatus(data.matchup.liveScore.source?.live);
     for (const side of ["home", "away"]) {
       validateTeamScore(
         data.matchup.liveScore[side],
@@ -227,6 +229,7 @@ export function validateMatchupDetail(data) {
   );
   if (data.matchup.scoring !== null) {
     object(data.matchup.scoring, "The canonical matchup scoring is invalid.");
+    validateLiveScoringStatus(data.matchup.scoring.source?.live);
     contract(
       ["live", "final"].includes(data.matchup.scoring.mode),
       "The canonical matchup scoring mode is invalid."

@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { matchupRefetchInterval } from './liveScoring.js';
 
 import {
   validateCurrentWeek,
@@ -65,6 +66,8 @@ export function matchupQuery(httpClient, leagueId, seasonId, weekId, matchupId) 
     )).data.matchup,
     meta: { private: true, leagueId },
     staleTime: 10_000,
+    refetchInterval: matchupRefetchInterval,
+    refetchIntervalInBackground: false,
   });
 }
 
