@@ -65,6 +65,7 @@ export function parseSuccessEnvelope(
     actionsKind,
     validateActions,
     validatePage,
+    includeServerTime = false,
   } = {}
 ) {
   contract(isRecord(value), "The success response must be an object.");
@@ -115,7 +116,11 @@ export function parseSuccessEnvelope(
 
   return Object.freeze({
     data: value.data,
-    meta: Object.freeze({ requestId }),
+    meta: Object.freeze({
+      requestId,
+      ...(includeServerTime && Number.isSafeInteger(value.meta.serverNowMs) && value.meta.serverNowMs > 0
+        ? { serverNowMs: value.meta.serverNowMs } : {}),
+    }),
     ...(actionsRequested
       ? { actions: freezeTopLevel(value.actions) }
       : {}),

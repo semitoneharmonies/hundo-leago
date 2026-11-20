@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { routePaths } from "../../app/routePaths.js";
 import { MiniGamesLinks } from "../../components/MiniGamesLinks.jsx";
@@ -83,7 +83,7 @@ function StagingResetReceipt({ receipt }) {
   );
 }
 
-function SignInForm({ session }) {
+function SignInForm({ session, destination }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -101,7 +101,7 @@ function SignInForm({ session }) {
     });
     try {
       await session.signIn(credentials);
-      navigate(routePaths.leagues, { replace: true });
+      navigate(destination, { replace: true });
     } catch (requestError) {
       setEmail(credentials.email);
       setError(safeMessage(requestError, "Sign in could not be completed."));
@@ -151,7 +151,7 @@ function SignInForm({ session }) {
   );
 }
 
-function SignUpForm({ session }) {
+function SignUpForm({ session, destination }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -192,7 +192,7 @@ function SignUpForm({ session }) {
       intentKeyRef.current = null;
       if (result.automaticVerification === true) {
         await session.adoptSession(result);
-        navigate(routePaths.leagues, { replace: true });
+        navigate(destination, { replace: true });
         return;
       }
       setSuccess(
@@ -370,6 +370,9 @@ function RecoveryRequest({ httpClient }) {
 
 export function AccountHome() {
   const session = useSession();
+  const returnTo = useLocation().state?.dailyReturnTo;
+  const destination = typeof returnTo === "string" && /^\/daily(?:\/(?:create|practice|rooms\/[a-zA-Z0-9_-]+))?$/.test(returnTo)
+    ? returnTo : routePaths.leagues;
   const consumeStagingResetReceipt = session.consumeStagingResetReceipt;
   const [stagingResetReceipt] = useState(() =>
     session.appEnv === "staging" &&
@@ -405,7 +408,7 @@ export function AccountHome() {
   }
 
   if (session.status === "authenticated") {
-    return <Navigate to={routePaths.leagues} replace />;
+    return <Navigate to={destination} replace />;
   }
 
   return (
@@ -419,6 +422,7 @@ export function AccountHome() {
         <p className="hl-eyebrow">Private fantasy hockey</p>
         <h1 id="accounts-title">Hundo Leago</h1>
         <p>Sign in to your league, or create a manager account.</p>
+        <Link className="hl-button" to={routePaths.daily}>Hundo Daily</Link>
         <MiniGamesLinks publicGames className="hl-button hl-button--primary" />
         <p>No account needed. Play a mini game and try the Hundo Leago leaderboards.</p>
       </header>
@@ -439,8 +443,8 @@ export function AccountHome() {
         </p>
       )}
       <div className="hl-auth-grid">
-        <SignInForm session={session} />
-        <SignUpForm session={session} />
+        <SignInForm session={session} destination={destination} />
+        <SignUpForm session={session} destination={destination} />
       </div>
       <section className="hl-account-recovery" aria-labelledby="recovery-title">
         <div>

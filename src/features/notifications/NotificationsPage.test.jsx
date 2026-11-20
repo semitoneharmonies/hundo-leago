@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useLocation } from "react-router-dom";
 
@@ -280,6 +280,73 @@ function renderReadInbox({ failures = 0, malformed = null, beforeRead = null } =
   }), fetchImpl, items };
 }
 
+describe("Daily inbox notifications", () => {
+  function renderDailyInbox() {
+    const items = [
+      { id: notificationId, type: "daily_auction_reminder", messageData: {
+        roomId: fadId, roomName: "Pacific Daily", auctionStartsAt: "2026-11-20T01:00:00.000Z",
+        path: "https://example.test/ignored",
+      } },
+      { id: invitationId, type: "daily_room_won", messageData: {
+        roomId: auctionId, roomName: "Thursday Daily", points: 21.35, tied: false, winnerCount: 1,
+      } },
+      { id: tradeId, type: "daily_room_won", messageData: {
+        roomId: cardId, roomName: "Tied Daily", points: 0, tied: true, winnerCount: 2,
+      } },
+    ].map(item => ({ ...item, leagueId: null, createdAtMs: 1, readAtMs: null, version: 1 }));
+    const fetchImpl = vi.fn(async (url, options = {}) => {
+      const parsed = new URL(url);
+      if (parsed.pathname === "/api/v1/session") return envelope(sessionData());
+      if (parsed.pathname === "/api/v1/leagues") return envelope({ code: "LEAGUES_FOUND", leagues: [] });
+      if (parsed.pathname === "/api/v1/notifications") {
+        const read = parsed.searchParams.get("readStatus") === "read";
+        return envelope({ code: "NOTIFICATIONS_FOUND", notifications: items.filter(item => read === (item.readAtMs !== null)),
+          page: { nextCursor: null } });
+      }
+      const item = items.find(item => parsed.pathname === `/api/v1/notifications/${item.id}/read`);
+      if (item && options.method === "POST") {
+        item.readAtMs = 2;
+        item.version += 1;
+        return envelope({ code: "NOTIFICATION_READ", notification: item });
+      }
+      throw new Error(`Unexpected request: ${parsed.pathname}`);
+    });
+    return { ...renderWithProviders(<><NotificationsPage /><LocationProbe /></>, {
+      enableSession: true, config, initialEntries: ["/notifications"], sessionOptions: { fetchImpl },
+    }), fetchImpl, items };
+  }
+
+  it("renders the Pacific start, solo and tied results with canonical Daily room links", async () => {
+    const view = renderDailyInbox();
+    const reminder = await screen.findByRole("link", { name: /Pacific Daily auction starts Thu, Nov 19 at 6:00 p.m. PT/ });
+    expect(reminder).toHaveAttribute("href", `/daily/rooms/${fadId}`);
+    expect(screen.getByRole("link", { name: /You won Thursday Daily with 21.35 FP/ }))
+      .toHaveAttribute("href", `/daily/rooms/${auctionId}`);
+    expect(screen.getByRole("link", { name: /You tied for first in Tied Daily with 0.00 FP \(2 winners\)/ }))
+      .toHaveAttribute("href", `/daily/rooms/${cardId}`);
+    expect(screen.getAllByText("Hundo Daily")).toHaveLength(3);
+    expect(screen.getAllByText("Open the Daily room")).toHaveLength(3);
+    expect(view.fetchImpl.mock.calls.some(([, options]) => options?.method === "POST")).toBe(false);
+    await view.user.click(reminder);
+    expect(screen.getByTestId("location")).toHaveTextContent(`/daily/rooms/${fadId}`);
+  });
+
+  it("marks only the selected Daily notification read and retains its room link in history", async () => {
+    const view = renderDailyInbox();
+    const winner = await screen.findByRole("link", { name: /You won Thursday Daily/ });
+    await view.user.click(within(winner.closest("li")).getByRole("button", { name: /Mark as read/ }));
+    await waitFor(() => expect(screen.queryByRole("link", { name: /You won Thursday Daily/ })).not.toBeInTheDocument());
+    expect(view.items.filter(item => item.readAtMs !== null).map(item => item.id)).toEqual([invitationId]);
+    await view.user.click(screen.getByRole("button", { name: "Previous notifications" }));
+    const previous = await screen.findByRole("link", { name: /You won Thursday Daily/ });
+    expect(previous).toHaveAttribute("href", `/daily/rooms/${auctionId}`);
+    expect(within(previous.closest("li")).getByText("Read")).toBeInTheDocument();
+    const writes = view.fetchImpl.mock.calls.filter(([, options]) => options?.method === "POST");
+    expect(writes).toHaveLength(1);
+    expect(new URL(writes[0][0]).pathname).toBe(`/api/v1/notifications/${invitationId}/read`);
+  });
+});
+
 describe("M5-11 owner notifications", () => {
   it("blocks an invitation team name over 35 characters without submitting", async () => {
     const view = renderCreateTeamInvitation();
@@ -378,7 +445,7 @@ describe("M5-11 owner notifications", () => {
     const view = renderReadInbox({ failures: 1 });
     const button = await screen.findByRole("button", { name: "Mark as read: Commissioner invitation for Giggles" });
     await view.user.click(button);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t mark as read. Try again.");
+    expect(await screen.findByText("Couldn’t mark as read. Try again.")).toHaveAttribute("role", "alert");
     expect(screen.getByRole("link", { name: "Notifications, 2 unread" })).toBeInTheDocument();
     expect(view.items[0].readAtMs).toBeNull();
     await view.user.click(button);
@@ -389,7 +456,7 @@ describe("M5-11 owner notifications", () => {
   it.each(["wrong-id", "missing-time"])("rejects a %s read confirmation without hiding the notification", async malformed => {
     const view = renderReadInbox({ malformed });
     await view.user.click(await screen.findByRole("button", { name: "Mark as read: Commissioner invitation for Giggles" }));
-    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(await screen.findByText("Couldn’t mark as read. Try again.")).toHaveAttribute("role", "alert");
     expect(screen.getByText("Commissioner invitation for Giggles")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Notifications, 2 unread" })).toBeInTheDocument();
     expect(view.items[0].readAtMs).toBeNull();

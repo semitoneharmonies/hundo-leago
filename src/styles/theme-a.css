@@ -1112,6 +1112,8 @@ textarea {
 }
 
 .hl-brand__mark {
+  flex-shrink: 0;
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1128,6 +1130,8 @@ textarea {
 }
 
 .hl-brand__name {
+  color: inherit;
+  text-decoration: none;
   overflow: hidden;
   font-family: var(--hl-font-display);
   font-size: 1.06rem;

@@ -33,6 +33,12 @@ function tradeAssetQuery({
 
 export const routePaths = Object.freeze({
   home: "/",
+  daily: "/daily",
+  dailyHistory: "/daily/history",
+  dailyProfile: "/daily/profile",
+  dailyCreate: "/daily/create",
+  dailyPractice: "/daily/practice",
+  dailyRoom: (roomId) => `/daily/rooms/${segment(roomId, "Room ID")}`,
   publicTipJar: "/games/tip-jar",
   publicMrBoni: "/games/mr-boni",
   install: "/install",
