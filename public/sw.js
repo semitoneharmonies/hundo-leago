@@ -26,7 +26,7 @@ self.addEventListener("push", (event) => {
   try { payload = event.data?.json() || {}; } catch { /* Show a generic, bounded alert. */ }
   const title = typeof payload.title === "string" ? payload.title.slice(0, 64) : "Hundo update";
   const body = typeof payload.body === "string" ? payload.body.slice(0, 48) : "";
-  const path = typeof payload.url === "string" && /^\/(notifications|leagues)(\/|\?|$)/.test(payload.url)
+  const path = typeof payload.url === "string" && (/^\/(notifications|leagues)(\/|\?|$)/.test(payload.url) || /^\/daily\/rooms\/[A-Za-z0-9_-]+$/.test(payload.url))
     ? payload.url : "/notifications";
   event.waitUntil(self.registration.showNotification(title, {
     body, icon: "/icons/app-192.png", badge: "/icons/app-192.png",

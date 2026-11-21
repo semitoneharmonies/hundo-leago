@@ -19,9 +19,11 @@ import {
 import { leagueKeys, visibleLeaguesQuery } from "../leagues/leagueQueries.js";
 import { auctionDetailQuery } from "../auctions/auctionQueries.js";
 import { money } from "../../shared/hundoFormat.js";
+import { formatDay, formatTime } from "../daily/dailyApi.js";
 import { useSession } from "../session/sessionContext.js";
 import {
   getFreeAgentDraftNotificationListCopy,
+  isDailyNotificationType,
   isFreeAgentDraftNotificationType,
 } from "./notificationContracts.js";
 import {
@@ -39,6 +41,16 @@ import {
 } from "./notificationQueries.js";
 
 function message(notification) {
+  if (notification.type === "daily_auction_reminder") {
+    const { roomName, auctionStartsAt } = notification.messageData;
+    return `${roomName} auction starts ${formatDay(auctionStartsAt)} at ${formatTime(auctionStartsAt)}.`;
+  }
+  if (notification.type === "daily_room_won") {
+    const { roomName, points, tied, winnerCount } = notification.messageData;
+    return tied
+      ? `You tied for first in ${roomName} with ${points.toFixed(2)} FP (${winnerCount} winners).`
+      : `You won ${roomName} with ${points.toFixed(2)} FP.`;
+  }
   if (["league_announcement", "league_reminder"].includes(notification.type)) {
     return `${notification.messageData.title}: ${notification.messageData.message}`;
   }
@@ -59,6 +71,7 @@ function message(notification) {
 }
 
 function notificationDestination(notification) {
+  if (isDailyNotificationType(notification.type)) return routePaths.dailyRoom(notification.messageData.roomId);
   if (notification.type === "push_alert" && notification.messageData.path?.startsWith(`/leagues/${notification.leagueId}/`)) return notification.messageData.path;
   if (notification.type === 'league_auction_timing_changed') return routePaths.auctionDetail(notification.leagueId, notification.messageData.auctionId);
   if (notification.type === 'league_help_updated') return routePaths.league(notification.leagueId)+'#league-help';
@@ -169,6 +182,7 @@ export function PendingLeagueAccess({ session }) {
 }
 
 function notificationCategory(type) {
+  if (isDailyNotificationType(type)) return { label: "Hundo Daily", tone: type === "daily_auction_reminder" ? "auction" : "account" };
   const value = String(type || "").toLowerCase();
   if (value.includes("trade")) return { label: "Trade", tone: "trade" };
   if (value.includes("auction")) return { label: "Auction", tone: "auction" };
@@ -607,7 +621,7 @@ export function NotificationsPage() {
                           {category.label}
                         </small>
                         {timestamp}
-                        <small>{notification.type === "commissioner_assignment_proposed" ? "Review and accept commissioner role" : notification.type === "push_alert" ? "View details" : "Open the trade acceptance preview"}</small>
+                        <small>{isDailyNotificationType(notification.type) ? "Open the Daily room" : notification.type === "commissioner_assignment_proposed" ? "Review and accept commissioner role" : notification.type === "push_alert" ? "View details" : "Open the trade acceptance preview"}</small>
                       </span>
                       <ChevronRight aria-hidden="true" />
                     </Link>

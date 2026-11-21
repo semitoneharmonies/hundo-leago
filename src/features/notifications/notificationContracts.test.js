@@ -188,6 +188,48 @@ function page(type, messageData) {
   };
 }
 
+describe("Daily notifications", () => {
+  function dailyPage(type, messageData) {
+    const result = page(type, { roomId: ids.fadId, roomName: "Pacific Daily", ...messageData });
+    result.notifications[0].leagueId = null;
+    return result;
+  }
+
+  it("accepts scheduled reminders and solo or tied winners with signed point totals", () => {
+    expect(validateNotifications(dailyPage("daily_auction_reminder", {
+      auctionStartsAt: "2026-11-20T01:00:00.000Z",
+    }))).toBe(true);
+    for (const [points, tied, winnerCount] of [[21.35, false, 1], [0, true, 2], [-1.25, false, 1]]) {
+      expect(validateNotifications(dailyPage("daily_room_won", { points, tied, winnerCount }))).toBe(true);
+    }
+  });
+
+  it.each(["../account", "https://example.test", "room/another", null])(
+    "rejects an invalid Daily room destination %s", (roomId) => {
+      expect(() => validateNotifications(dailyPage("daily_room_won", {
+        roomId, points: 1, tied: false, winnerCount: 1,
+      }))).toThrow();
+    }
+  );
+
+  it("rejects malformed reminder dates and winner metadata", () => {
+    for (const auctionStartsAt of [null, 0, "tomorrow", "2026-02-30T01:00:00.000Z"]) {
+      expect(() => validateNotifications(dailyPage("daily_auction_reminder", { auctionStartsAt }))).toThrow();
+    }
+    for (const invalid of [
+      { points: "21" }, { points: NaN }, { points: Infinity }, { winnerCount: 0 },
+      { winnerCount: 1.5 }, { tied: true }, { winnerCount: 2 }, { roomName: "" },
+    ]) {
+      expect(() => validateNotifications(dailyPage("daily_room_won", {
+        points: 21, tied: false, winnerCount: 1, ...invalid,
+      }))).toThrow();
+    }
+    const crossLeague = dailyPage("daily_room_won", { points: 1, tied: false, winnerCount: 1 });
+    crossLeague.notifications[0].leagueId = ids.leagueId;
+    expect(() => validateNotifications(crossLeague)).toThrow();
+  });
+});
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }

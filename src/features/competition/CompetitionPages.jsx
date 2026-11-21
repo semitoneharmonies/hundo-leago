@@ -45,7 +45,7 @@ import { LeagueHelpPanel } from '../leagues/LeagueHelpPanel.jsx';
 import { LeaguePauseControls } from '../commissioner/LeaguePauseControls.jsx';
 import { LeaguePickRepairControls } from '../commissioner/LeaguePickRepairControls.jsx';
 import { LeagueManagementPanel } from '../commissioner/LeagueManagementPanel.jsx';
-import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
+import { effectiveLeagueAuthority, hasCommissionerAuthority, PLATFORM_ADMINISTRATOR_AUTHORITY } from "../../shared/leagueAuthority.js";
 import { teamColourClass, teamColourStyle } from "../../shared/teamIdentity.js";
 import {
   competitionKeys,
@@ -1336,7 +1336,7 @@ export function CommissionerCompetitionPage() {
           {['readiness','history','export'].includes(section) && <LeagueManagementPanel key={'management-'+leagueId+'-'+section} leagueId={leagueId} initialSection={section} standalone/>}
           {section==='auctions' && <LeagueAuctionScheduleControls key={'auction-schedule-'+leagueId} leagueId={leagueId}/>}
           {section==='scoring' && <LeagueScoringControls key={'scoring-'+leagueId} leagueId={leagueId}/>}
-          {section==='communications' && <LeagueCommunications leagueId={leagueId} canManage initiallyExpanded/>}
+          {section==='communications' && <LeagueCommunications leagueId={leagueId} canManage initiallyExpanded canManageSitewide={effectiveLeagueAuthority(context.league?.membership) === PLATFORM_ADMINISTRATOR_AUTHORITY} initialAudienceScope={searchParams.get('audience') === 'all_leagues' ? 'all_leagues' : 'league'}/>}
           {section==='calendar' && <>
           {availableWeeks.length > 0 ? (
             <Surface className="hl-competition-setup-card">

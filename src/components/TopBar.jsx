@@ -25,6 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { HundoBrand } from "./HundoBrand.jsx";
 
 import { routePaths } from "../app/routePaths.js";
 import { readLeaguePreference } from "../features/leagues/leaguePreference.js";
@@ -442,19 +443,8 @@ function TopBar({ freezeBanner }) {
             )}
           </div>
 
-          <Link
-            className="hl-brand"
-            to={logoTarget}
-            aria-label="Hundo Leago"
-            title={leagueId ? `${currentLeague.name} dashboard` : "Hundo Leago"}
-          >
-            <span className="hl-brand__mark" aria-hidden="true">
-              HL
-            </span>
-            <span className="hl-brand__name">
-              Hundo<span>·</span>Leago
-            </span>
-          </Link>
+          <HundoBrand mode="leago" homeTarget={logoTarget} switchTarget={routePaths.daily}
+            homeTitle={leagueId ? `${currentLeague.name} dashboard` : "Hundo Leago"} />
 
           <div className="hl-app-header__context">
             <div

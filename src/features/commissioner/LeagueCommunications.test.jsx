@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 import { SessionContext } from "../session/sessionContext.js";
 import { LeagueCommunications, CandidateCardProgress } from "./LeagueCommunications.jsx";
-import { communicationRequest } from "./leagueCommunicationApi.js";
+import { communicationRequest, communicationsKey, sitewideAnnouncementRequest } from "./leagueCommunicationApi.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 const messageId = "22222222-2222-4222-8222-222222222222";
@@ -14,10 +14,24 @@ const notice = { id: messageId, leagueId, kind: "announcement", title: "New sche
   body: "Check the updated dates.", pinned: true, expiresAtMs: null, createdAtMs: 1_800_000_000_000,
   authorName: "Commissioner", archivedAtMs: null, version: 1, audience: "members", recipientCount: 1 };
 
-function setup({ canManage = true, messages = [], failFirstSend = false, pushAvailable = false } = {}) {
+const secondLeagueId = "55555555-5555-4555-8555-555555555555";
+const globalPeople = [userId, teamId, messageId].map((id, index) => ({ userId: id, displayName: `Manager ${index + 1}` }));
+const globalLeagues = [
+  { leagueId, leagueName: "Amigo Leago", recipientCount: 2 },
+  { leagueId: secondLeagueId, leagueName: "Goon Spoons", recipientCount: 2 },
+];
+
+function setup({ canManage = true, canManageSitewide = false, initialAudienceScope = "league", messages = [], failFirstSend = false, pushAvailable = false } = {}) {
   let attempts = 0;
   let archived = false;
   const client = { request: vi.fn(async (url, options = {}) => {
+    if (url.startsWith("/api/v1/admin/announcements")) {
+      const common = { scope: "all_leagues", leagues: globalLeagues, recipientCount: 4, uniqueRecipientCount: 3 };
+      if (url.endsWith("/preview")) return { data: { ...common, message: options.body, recipients: globalPeople, previewHash: "b".repeat(64) } };
+      attempts += 1;
+      if (failFirstSend && attempts === 1) throw new Error("Connection lost after sending");
+      return { data: { ...common, id: messageId, leagues: globalLeagues.map(league => ({ ...league, id: messageId })), replayed: attempts > 1 } };
+    }
     if (url === "/api/v1/push/settings") return { data: { available: pushAvailable } };
     if (url.endsWith("/history")) return { data: { leagueId, messages: messages.map(m => ({ ...m, archivedAtMs: archived ? 1_800_000_001_000 : null })) } };
     if (url.endsWith("/card-progress")) return { data: { leagueId, total: 1, complete: 0, empty: 1,
@@ -35,9 +49,9 @@ function setup({ canManage = true, messages = [], failFirstSend = false, pushAva
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const user = userEvent.setup();
   const view = render(<QueryClientProvider client={queryClient}><SessionContext.Provider value={{ status: "authenticated", httpClient: client }}>
-    <LeagueCommunications leagueId={leagueId} canManage={canManage} />{canManage&&<CandidateCardProgress leagueId={leagueId}/>}
+    <LeagueCommunications leagueId={leagueId} canManage={canManage} canManageSitewide={canManageSitewide} initialAudienceScope={initialAudienceScope} />{canManage&&<CandidateCardProgress leagueId={leagueId}/>}
   </SessionContext.Provider></QueryClientProvider>);
-  return { client, user, ...view };
+  return { client, user, queryClient, ...view };
 }
 
 async function openEditor(user) {
@@ -52,6 +66,79 @@ async function fillAndPreview(user) {
 }
 
 describe("League communication controls", () => {
+  it.each([true, false])("only honors all-leagues entry for platform administrator authority: %s", async canManageSitewide => {
+    const { user, client } = setup({ canManageSitewide, initialAudienceScope: "all_leagues" });
+    await openEditor(user);
+    if (canManageSitewide) expect(screen.getByLabelText("Announcement audience")).toHaveValue("all_leagues");
+    else expect(screen.queryByLabelText("Announcement audience")).not.toBeInTheDocument();
+    expect(client.request.mock.calls.every(([, options]) => !options.method)).toBe(true);
+  });
+  it("keeps commissioner announcements within this league without an all-leagues option", async () => {
+    const { user, client } = setup(); await openEditor(user); await fillAndPreview(user);
+    expect(screen.queryByLabelText("Announcement audience")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Confirm announcement" }));
+    await screen.findByText("Announcement published. 1 in-app notifications delivered.");
+    expect(client.request.mock.calls.every(([url]) => !url.startsWith("/api/v1/admin/"))).toBe(true);
+  });
+
+  it("previews both leagues and distinct people before one administrator publish", async () => {
+    const { user, client, queryClient } = setup({ canManageSitewide: true });
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    await openEditor(user);
+    expect(screen.getByLabelText("Announcement audience")).toHaveValue("league");
+    await user.selectOptions(screen.getByLabelText("Announcement audience"), "all_leagues");
+    await fillAndPreview(user);
+    const preview = screen.getByRole("region", { name: "Message preview" });
+    expect(within(preview).getByText("Visible in all 2 leagues. 4 in-app notifications for 3 people.")).toBeInTheDocument();
+    expect(within(preview).getByRole("list", { name: "Announcement leagues" }).children).toHaveLength(2);
+    expect(within(preview).getByRole("list", { name: "Notification recipients" }).children).toHaveLength(3);
+    expect(client.request.mock.calls.filter(([url, options]) => options.method === "POST" && !url.endsWith("/preview"))).toHaveLength(0);
+    await user.click(within(preview).getByRole("button", { name: "Confirm announcement" }));
+    await screen.findByText("Announcement published to 2 leagues. 4 in-app notifications for 3 people.");
+    const sends = client.request.mock.calls.filter(([url, options]) => options.method === "POST" && !url.endsWith("/preview"));
+    expect(sends).toHaveLength(1);
+    expect(sends[0][0]).toBe("/api/v1/admin/announcements");
+    expect(sends[0][1].body.message).toMatchObject({ kind: "announcement", audience: "members" });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: communicationsKey(secondLeagueId) });
+  });
+
+  it("clears the global preview when switching audience and keeps reminders league-only", async () => {
+    const { user, client } = setup({ canManageSitewide: true }); await openEditor(user);
+    await user.selectOptions(screen.getByLabelText("Announcement audience"), "all_leagues"); await fillAndPreview(user);
+    await user.selectOptions(screen.getByLabelText("Announcement audience"), "league");
+    expect(screen.queryByRole("region", { name: "Message preview" })).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Message type"), "reminder");
+    expect(screen.queryByLabelText("Announcement audience")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Preview message" }));
+    await screen.findByRole("button", { name: "Confirm reminder" });
+    expect(client.request.mock.calls.filter(([url]) => url.endsWith("/preview")).at(-1)[0]).toBe(`/api/v1/leagues/${leagueId}/communications/preview`);
+    expect(client.request.mock.calls.filter(([url, options]) => options.method === "POST" && !url.endsWith("/preview"))).toHaveLength(0);
+  });
+
+  it("reuses one administrator publication key after an uncertain response", async () => {
+    const { user, client } = setup({ canManageSitewide: true, failFirstSend: true }); await openEditor(user);
+    await user.selectOptions(screen.getByLabelText("Announcement audience"), "all_leagues"); await fillAndPreview(user);
+    await user.click(screen.getByRole("button", { name: "Confirm announcement" }));
+    await screen.findByRole("alert");
+    await user.click(screen.getByRole("button", { name: "Confirm announcement" }));
+    await screen.findByText("Announcement published to 2 leagues. 4 in-app notifications for 3 people.");
+    const sends = client.request.mock.calls.filter(([url]) => url === "/api/v1/admin/announcements");
+    expect(sends).toHaveLength(2);
+    expect(sends[1][1].idempotencyKey).toBe(sends[0][1].idempotencyKey);
+    expect(sends[1][1].body).toEqual(sends[0][1].body);
+  });
+
+  it("rejects invalid global scope, totals and duplicate recipient identities", async () => {
+    const valid = { scope: "all_leagues", leagues: globalLeagues, recipientCount: 4, uniqueRecipientCount: 3,
+      message: { kind: "announcement", audience: "members", title: "Update", body: "Check the schedule." },
+      recipients: globalPeople, previewHash: "a".repeat(64) };
+    for (const invalid of [{ ...valid, scope: "league" }, { ...valid, recipientCount: 3 },
+      { ...valid, recipients: [globalPeople[0], globalPeople[0], globalPeople[2]] },
+      { ...valid, leagues: [globalLeagues[0], globalLeagues[0]] }]) {
+      const client = { request: vi.fn(async () => ({ data: invalid })) };
+      await expect(sitewideAnnouncementRequest(client, "/preview", { method: "POST", body: valid.message }, "preview")).rejects.toThrow("could not be verified");
+    }
+  });
   it('sends a standard unfinished-card reminder directly and safely retries an uncertain send',async()=>{
     const {user,client}=setup({failFirstSend:true});
     await user.click(await screen.findByRole('button',{name:'Remind managers with unfinished cards'}));

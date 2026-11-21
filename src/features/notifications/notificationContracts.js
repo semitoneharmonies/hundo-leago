@@ -600,6 +600,10 @@ export function validateFreeAgentDraftNotificationMessageData(
   return true;
 }
 
+export function isDailyNotificationType(type) {
+  return type === "daily_auction_reminder" || type === "daily_room_won";
+}
+
 export function validateNotifications(data) {
   contract(data?.code === "NOTIFICATIONS_FOUND", "The notification code is invalid.");
   contract(Array.isArray(data.notifications), "The notification list is invalid.");
@@ -610,6 +614,27 @@ export function validateNotifications(data) {
     contract(typeof notification.type === "string", "A notification type is invalid.");
     contract(notification.messageData && typeof notification.messageData === "object",
       "Notification message data is invalid.");
+    if (isDailyNotificationType(notification.type)) {
+      const message = notification.messageData;
+      contract(notification.leagueId === null && stableId(message.roomId) &&
+        typeof message.roomName === "string" && message.roomName.trim().length > 0 &&
+        message.roomName.length <= 60 && Array.from(message.roomName).every(character => {
+          const codePoint = character.codePointAt(0);
+          return codePoint >= 32 && codePoint !== 127;
+        }),
+      "The Daily notification room is invalid.");
+      if (notification.type === "daily_auction_reminder") {
+        const startsAt = Date.parse(message.auctionStartsAt);
+        contract(typeof message.auctionStartsAt === "string" && Number.isFinite(startsAt) &&
+          new Date(startsAt).toISOString() === message.auctionStartsAt,
+        "The Daily auction reminder time is invalid.");
+      } else {
+        contract(typeof message.points === "number" && Number.isFinite(message.points) &&
+          Number.isSafeInteger(message.winnerCount) && message.winnerCount >= 1 &&
+          typeof message.tied === "boolean" && message.tied === (message.winnerCount > 1),
+        "The Daily winner notification is invalid.");
+      }
+    }
     if (notification.type.startsWith("fad_")) {
       contract(
         isFreeAgentDraftNotificationType(notification.type),

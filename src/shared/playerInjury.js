@@ -16,3 +16,9 @@ export function injuryNameProps(player) {
     ? { className: `hl-injured-player-name${player.onTradeBlock ? ' is-injury-trade-block' : ''}`, title: `Injured${player.onTradeBlock ? ' · On trade block' : ''}${player.injury.needsReview ? ' · awaiting review' : ''}${player.injury.stale ? ' · last report is outdated' : ''}` }
     : {};
 }
+
+export function injuryDetailLines(injury) {
+  if (injury?.status !== 'injured' || !injury.details) return [];
+  const { timeline, designation, reason } = injury.details;
+  return [timeline && `Timeline: ${timeline}`, designation && `Status: ${designation}`, reason && `Reason: ${reason}`].filter(Boolean);
+}
