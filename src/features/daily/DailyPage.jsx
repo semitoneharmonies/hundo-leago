@@ -9,6 +9,8 @@ import { DailyReminders } from "./DailyReminders.jsx";
 import { DailyRoom } from "./DailyRoom.jsx";
 import { DailyHistory } from "./DailyHistory.jsx";
 import { DailyProfile } from "./DailyProfile.jsx";
+import { DailyHelp } from "./DailyHelp.jsx";
+import { DailyScoringGuide } from "./DailyScoringGuide.jsx";
 import { DailyAudioProvider, DailySoundToggle } from "./DailyAudio.jsx";
 import { DailyAudioContext } from "./dailyAudioContext.js";
 import { dailyGameDate, isDailyHistoryRoom } from "./dailyHistory.js";
@@ -68,6 +70,8 @@ function DailyDesk({ session, screen, roomId }) {
         <ArrowLeft size={15} aria-hidden="true" />All rooms</Link>}
       {screen !== "history" && <Link className="hd-history-link" to={routePaths.dailyHistory}>View your Hundo Daily history</Link>}
       <DailySoundToggle />
+      <DailyHelp />
+      <DailyScoringGuide />
       {showCreateLinks && practiceSlate?.status === "available" && <Link className="hd-action hd-practice-link" to={routePaths.dailyPractice}>Practice now</Link>}
       {showCreateLinks && slate && <Link className="hd-action hd-primary" to={routePaths.dailyCreate}>Open a room</Link>}
     </nav>

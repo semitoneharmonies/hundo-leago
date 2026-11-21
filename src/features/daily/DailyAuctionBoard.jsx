@@ -1,9 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { canonicalNhlTeam } from "../../shared/nhlTeams.js";
 import { nhlTeamColours } from "../players/nhlTeamColours.js";
 import { dailyNow, formatTime } from "./dailyApi.js";
 import { DailyPlayerName } from "./DailyPlayerName.jsx";
+import { DailyUserStripes } from "./DailyUserStripes.jsx";
+import { DailyCapJersey } from "./DailyCapJersey.jsx";
 import "./DailyAuctionBoard.css";
 
 const positionGroup = (player) => player.position === "D" ? "D" : "F";
@@ -164,17 +166,23 @@ export function Roster({ room, viewer, selectedId, onSelect }) {
   const prefix = "hd-" + room.id + "-roster";
   const scoring = ["locked", "finished", "void"].includes(room.phase);
   return <section className={"hda-panel hda-roster" + (scoring ? " hda-score-roster" : "")} id={prefix} tabIndex="-1" aria-labelledby={prefix + "-title"}>
-    <header className="hda-panel-head"><h2 id={prefix + "-title"}>Roster</h2></header>
+    <div className="hda-roster-banner hd-user-stripe-cell">
+    <DailyUserStripes appearance={member.dailyAppearance}/>
+    <header className="hda-panel-head"><h2 id={prefix + "-title"}>Roster</h2>
+      {!scoring && <DailyCapJersey amount={member.remainingCap}/>}
+    </header>
     <div className="hda-roster-controls">
+      <div className="hda-manager-switch" title={member.name + (member.id === viewer ? " (you)" : "")}>
+      <ChevronDown className="hda-manager-chevron" size={17} aria-hidden="true"/>
       <select aria-label="Manager" value={member.id} onChange={(event) => {
         setLocalSelection(event.target.value);
         onSelect?.(event.target.value);
       }}>{room.members.map(({ id, name }) => <option key={id} value={id}>{name}{id === viewer ? " (you)" : ""}</option>)}</select>
-      {!scoring && <div className="hda-cap" aria-label={"Remaining cap $" + member.remainingCap}>
-        <strong>${member.remainingCap}</strong><span>remaining</span></div>}
+      </div>
     </div>
     {!scoring && member.id === viewer && member.reserved > 0 && <p className="hda-reserved">
       Active bids <strong>${member.reserved}</strong> · Uncommitted <strong>${member.availableCap}</strong></p>}
+    </div>
     <div className="hda-roster-list"><table className="hda-slots"><caption className="hda-sr-only">Roster slots for {member.name}</caption>
       <thead className={scoring ? undefined : "hda-sr-only"}><tr><th scope="col">Slot</th><th scope="col">Player</th>
         <th scope="col">{scoring ? "FP" : "Price"}</th></tr></thead>

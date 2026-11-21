@@ -130,6 +130,45 @@
 .hda-lot-footer .hda-bid { min-width: clamp(48px, 4vw, 70px); }
 .hda-roster-controls { flex-wrap: wrap; gap: 5px 8px; margin-bottom: 8px; }
 .hda-roster-controls select { flex: 1 1 80px; }
+.hda-roster-banner {
+  --roster-raised-shadow:0 1px 0 #02050b,0 2px 2px #02050b,0 4px 8px #000b;
+  flex-shrink:0; margin:calc(-1 * clamp(7px,.65vw,12px)); margin-bottom:0;
+  padding:clamp(7px,.65vw,12px); padding-bottom:10px; border-radius:8px 8px 0 0;
+}
+.hda-roster-banner > .hd-user-stripes {
+  border-radius:inherit;
+  background-image:
+    radial-gradient(ellipse 78% 33% at 28% 66%,#02050be6 0%,#02050bb3 48%,transparent 100%),
+    radial-gradient(ellipse 40% 29% at 86% 25%,#02050bd9 0%,#02050b80 48%,transparent 100%),
+    linear-gradient(165deg,#07122080 0%,#07122099 45%,#071220d9 100%),var(--daily-stripe-image);
+  background-size:100% 100%,100% 100%,100% 100%,var(--daily-stripe-size);
+  background-repeat:no-repeat,no-repeat,no-repeat,var(--daily-stripe-repeat);
+  mask-image:linear-gradient(#000 0%,#000 55%,transparent 100%);
+}
+.hda-roster-banner .hda-panel-head { margin-bottom:4px; justify-content:space-between; }
+.hda-roster-banner .hda-panel-head h2 { text-shadow:var(--roster-raised-shadow); }
+.hda-manager-switch {
+  position:relative; flex:1 1 130px; min-width:0; border-radius:4px; isolation:isolate;
+}
+.hda-manager-switch > select {
+  appearance:none; width:100%; min-height:40px; padding:3px 25px 3px 0;
+  border:0; background:transparent; color:#fff; cursor:pointer;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:clamp(17px,1.1vw,20px); font-weight:800; line-height:1.35;
+  -webkit-text-stroke:1.5px #02050b; paint-order:stroke fill;
+  text-shadow:var(--roster-raised-shadow);
+}
+.hda-manager-switch option { background:#071220; color:#fff; font-size:13px; font-weight:400; -webkit-text-stroke:0; text-shadow:none; }
+.hda-manager-chevron { position:absolute; right:4px; top:50%; transform:translateY(-50%); pointer-events:none; color:white; filter:drop-shadow(0 1px 2px #000); }
+.hda-manager-switch:focus-within { outline:2px solid var(--board-accent); outline-offset:2px; }
+.hda-manager-switch:hover select { color:#f4d6ed; }
+.hda-roster-banner:has(.hda-cap-jersey) { display:grid; grid-template-columns:minmax(0,1fr) 84px; column-gap:6px; }
+.hda-roster-banner:has(.hda-cap-jersey) .hda-panel-head { display:contents; }
+.hda-roster-banner:has(.hda-cap-jersey) h2 { grid-column:1; grid-row:1; align-self:end; }
+.hda-roster-banner:has(.hda-cap-jersey) .hda-roster-controls { grid-column:1; grid-row:2; align-self:start; margin-bottom:0; }
+.hda-roster-banner .hda-cap-jersey { grid-column:2; grid-row:1 / span 2; width:84px; height:auto; align-self:center; filter:drop-shadow(0 3px 3px #000b); }
+.hda-roster-banner:has(.hda-cap-jersey) .hda-reserved { grid-column:1 / -1; }
+.hda-roster-banner .hda-reserved { text-shadow:0 1px 3px #000; }
 .hda-cap { display: inline-flex; align-items: baseline; gap: 4px; font-weight: 400; font-size: 12px; }
 .hda-cap strong { color: var(--board-accent); font-size: 18px; font-weight: 600; line-height: 1.2; }
 .hda-panel .hda-reserved { color: var(--board-faint); font-size: 12px; margin: 0 0 6px; line-height: 1.4; }
@@ -211,6 +250,10 @@
     gap: 5px; overflow: visible; scroll-snap-type: none;
   }
   .hda-board > .hda-panel { display: flex; flex-direction: column; min-height: 0; padding: 5px; }
+  .hda-roster-banner { margin:-5px -5px 0; padding:5px; }
+  .hda-roster-banner:has(.hda-cap-jersey) { grid-template-columns:minmax(0,1fr) 56px; column-gap:3px; }
+  .hda-roster-banner .hda-cap-jersey { width:56px; }
+  .hda-roster-banner .hda-manager-switch > select { height:30px; min-height:30px; font-size:15px; padding:2px 23px 2px 0; }
   .hda-panel-nav { display: none; }
   .hda-panel-head { min-height: 22px; margin-bottom: 5px; gap: 5px; }
   .hda-panel .hda-panel-head h2, .hda-panel .hda-live-count { font-size: 20px; }
