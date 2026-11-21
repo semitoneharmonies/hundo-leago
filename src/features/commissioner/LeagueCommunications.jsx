@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ErrorBlock, LoadingBlock, Surface } from "../../components/HundoUi.jsx";
 import { createIdempotencyKey } from "../../shared/api/idempotency.js";
 import { useSession } from "../session/sessionContext.js";
-import { communicationRequest, communicationsKey, communicationsQuery } from "./leagueCommunicationApi.js";
+import { communicationRequest, communicationsKey, communicationsQuery, sitewideAnnouncementRequest } from "./leagueCommunicationApi.js";
 import { AnnouncementRemoveButton } from "../leagues/AnnouncementRemoveButton.jsx";
 import { announcementKey } from "../leagues/announcementQueries.js";
 import styles from "./LeagueCommunications.module.css";
@@ -23,40 +23,50 @@ function Message({ message, canManage = false, leagueId, client }) {
   </article>;
 }
 
-function CommunicationControls({ leagueId, client }) {
+function CommunicationControls({ leagueId, client, canManageSitewide, initialAudienceScope }) {
   const session = useSession();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(INITIAL);
   const [expiry, setExpiry] = useState("");
-  const [preview, setPreview] = useState(null);
+  const [previewState, setPreview] = useState(null);
+  const [audienceScope, setAudienceScope] = useState(canManageSitewide && initialAudienceScope === "all_leagues" ? "all_leagues" : "league");
+  const sitewide = canManageSitewide && draft.kind === "announcement" && audienceScope === "all_leagues";
+  const preview = previewState?.scope === "all_leagues" && !canManageSitewide ? null : previewState;
   const [receipt, setReceipt] = useState("");
   const [archiveTarget, setArchiveTarget] = useState(null);
   const history = useQuery(communicationsQuery(client, leagueId, true));
   const push = useQuery({ queryKey: ["push-settings", session.user?.id],
     queryFn: async () => (await client.request("/api/v1/push/settings", { authenticated: true, dataKind: "object" })).data,
     meta: { private: true }, retry: false });
-  const invalidate = () => Promise.all([
-    queryClient.invalidateQueries({ queryKey: communicationsKey(leagueId) }),
-    queryClient.invalidateQueries({ queryKey: announcementKey(leagueId) }),
-  ]);
+  const invalidate = (leagueIds = [leagueId]) => Promise.all(leagueIds.flatMap(id => [
+    queryClient.invalidateQueries({ queryKey: communicationsKey(id) }),
+    queryClient.invalidateQueries({ queryKey: announcementKey(id) }),
+  ]));
   const review = useMutation({
-    mutationFn: message => {
+    mutationFn: ({ message, scope }) => {
       const { pushNotify, ...standard } = message;
       const body = push.data?.available ? { ...standard, pushNotify } : standard;
-      return communicationRequest(client, leagueId, "/preview", { method: "POST", body }, "preview");
+      return scope === "all_leagues"
+        ? sitewideAnnouncementRequest(client, "/preview", { method: "POST", body }, "preview")
+        : communicationRequest(client, leagueId, "/preview", { method: "POST", body }, "preview");
     },
     onSuccess: data => setPreview({ ...data, key: createIdempotencyKey("league-message") }),
   });
   const send = useMutation({
-    mutationFn: saved => communicationRequest(client, leagueId, "", {
-      method: "POST", body: { message: saved.message, previewHash: saved.previewHash }, idempotencyKey: saved.key,
-    }, "sent"),
+    mutationFn: saved => {
+      const options = { method: "POST", body: { message: saved.message, previewHash: saved.previewHash }, idempotencyKey: saved.key };
+      return saved.scope === "all_leagues"
+        ? sitewideAnnouncementRequest(client, "", options, "sent")
+        : communicationRequest(client, leagueId, "", options, "sent");
+    },
     onSuccess: async (data, saved) => {
-      setReceipt(saved.message.kind === "announcement"
+      setReceipt(saved.scope === "all_leagues"
+        ? `Announcement published to ${data.leagues.length} leagues. ${data.recipientCount} in-app notifications for ${data.uniqueRecipientCount} people.`
+        : saved.message.kind === "announcement"
         ? `Announcement published. ${data.recipientCount} in-app notifications delivered.`
         : `Reminder delivered to ${data.recipientCount} ${data.recipientCount === 1 ? "person" : "people"}.`);
-      setPreview(null); setDraft(INITIAL); setExpiry("");
-      await invalidate();
+      setPreview(null); setDraft(INITIAL); setExpiry(""); setAudienceScope("league");
+      await invalidate(data.scope === "all_leagues" ? data.leagues.map(league => league.leagueId) : [leagueId]);
     },
   });
   const archive = useMutation({
@@ -71,14 +81,18 @@ function CommunicationControls({ leagueId, client }) {
   }
   function switchKind(kind) {
     change({ kind, audience: kind === "announcement" ? "members" : "managers", pinned: false, expiresAtMs: null, notify: true, pushNotify: false });
-    setExpiry("");
+    setExpiry(""); setAudienceScope("league");
   }
   return <div>
-    <form className={styles.editor+" "+styles.compactEditor} onSubmit={event => { event.preventDefault(); setPreview(null); send.reset(); review.mutate(draft); }}>
+    <form className={styles.editor+" "+styles.compactEditor} onSubmit={event => { event.preventDefault(); setPreview(null); send.reset(); review.mutate({ message: draft, scope: sitewide ? "all_leagues" : "league" }); }}>
       <h3>Announcements and reminders</h3>
       <label>Message type<select value={draft.kind} disabled={busy} onChange={event => switchKind(event.target.value)}>
         <option value="announcement">League announcement</option><option value="reminder">Targeted reminder</option>
       </select></label>
+      {canManageSitewide && draft.kind === "announcement" && <label>Announcement audience<select value={sitewide ? "all_leagues" : "league"} disabled={busy}
+        onChange={event => { setAudienceScope(event.target.value); change({}); }}>
+        <option value="league">This league</option><option value="all_leagues">All leagues</option>
+      </select></label>}
       {draft.kind === "reminder" && <label>Recipients<select value={draft.audience} disabled={busy} onChange={event => change({ audience: event.target.value })}>
         <option value="managers">All team managers</option><option value="unfinished_cards">Managers with unfinished Candidate Cards</option>
         <option value="pending_invitations">People with pending league invitations</option><option value="members">All active league members</option>
@@ -100,7 +114,11 @@ function CommunicationControls({ leagueId, client }) {
     </form>
     {preview && <section className={styles.preview} aria-label="Message preview">
       <h3>{preview.message.title}</h3><p className={styles.message}>{preview.message.body}</p>
-      <p>{preview.message.kind === "announcement" ? "Visible to league members." : "Private reminder."} {preview.recipientCount} in-app notifications.</p>
+      {preview.scope === "all_leagues" ? <>
+        <p>Visible in all {preview.leagues.length} leagues. {preview.recipientCount} in-app notifications for {preview.uniqueRecipientCount} people.</p>
+        <p>People in more than one league receive one notification for each league.</p>
+        <ul aria-label="Announcement leagues">{preview.leagues.map(league => <li key={league.leagueId}>{league.leagueName} · {league.recipientCount} notifications</li>)}</ul>
+      </> : <p>{preview.message.kind === "announcement" ? "Visible to league members." : "Private reminder."} {preview.recipientCount} in-app notifications.</p>}
       {preview.message.pushNotify && <p>Phone alert: Commissioner announcement. Only members who enabled these alerts.</p>}
       {preview.message.pinned && <p>Pinned to the league dashboard.</p>}
       {preview.message.kind === "announcement" && <p>Automatically disappears 7 days after publishing{preview.message.expiresAtMs !== null && <>, or on {displayTime(preview.message.expiresAtMs)} if sooner</>}.</p>}
@@ -129,7 +147,7 @@ function CommunicationControls({ leagueId, client }) {
   </div>;
 }
 
-export function LeagueCommunications({ leagueId, canManage = false, initiallyExpanded = false }) {
+export function LeagueCommunications({ leagueId, canManage = false, canManageSitewide = false, initialAudienceScope = "league", initiallyExpanded = false }) {
   const session = useSession();
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const announcements = useQuery({ ...communicationsQuery(session.httpClient, leagueId), enabled: session.status === "authenticated" });
@@ -141,7 +159,7 @@ export function LeagueCommunications({ leagueId, canManage = false, initiallyExp
     {announcements.error && <ErrorBlock error={announcements.error} fallback="League announcements are unavailable." />}
     {canManage && announcements.data?.messages.length === 0 && <p>No current announcements.</p>}
     {canManage && <details open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}><summary>Manage announcements and reminders</summary>
-      {expanded && <CommunicationControls key={leagueId} leagueId={leagueId} client={session.httpClient} />}
+      {expanded && <CommunicationControls key={`${leagueId}:${canManageSitewide && initialAudienceScope === "all_leagues" ? "all" : "league"}`} leagueId={leagueId} client={session.httpClient} canManageSitewide={canManageSitewide} initialAudienceScope={initialAudienceScope} />}
     </details>}
   </Surface>;
 }

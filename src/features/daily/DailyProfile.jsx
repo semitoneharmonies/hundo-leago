@@ -74,11 +74,9 @@ export function DailyProfile({ session }) {
             <p className="hdp-note">Choose None to keep your standings row plain.</p>
           </fieldset>
           <section className="hdp-preview" aria-label="Stripe preview">
-            <h2>Standings preview</h2>
-            <table><thead><tr><th scope="col">Rank</th><th scope="col">Manager</th><th scope="col">Salary</th><th scope="col">Total FP</th></tr></thead>
-              <tbody><tr><td>1</td><th scope="row" className="hd-user-stripe-cell"><DailyUserStripes appearance={appearance}/>{session.user.displayName}</th><td>$24</td><td className="hdp-preview-fp">19.25</td></tr></tbody>
-            </table>
-            <p>{selected ? selected.name : "No stripes selected."}</p>
+            <div className="hdp-preview-bar hd-user-stripe-cell">
+              <DailyUserStripes appearance={appearance}/><span>{session.user.displayName}</span>
+            </div>
             {dirty && <small>Unsaved preview</small>}
           </section>
         </div>

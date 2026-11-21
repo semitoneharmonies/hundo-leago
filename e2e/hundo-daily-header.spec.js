@@ -238,7 +238,8 @@ test("Daily header retains the sign-out failure after the local session clears",
   expect(unexpected).toEqual([]);
 });
 
-test("anonymous Daily header preserves the requested Daily path through sign-in", async ({ page }, testInfo) => {
+for (const identifier of ["header-fixture@example.test", "Header Fixture Manager"]) {
+test(`anonymous Daily header preserves the requested Daily path through sign-in with ${identifier}`, async ({ page }, testInfo) => {
   const { requests, writes, unexpected } = await installHeaderFixture(page, { authenticated: false });
   await page.goto("/daily/create");
   const header = page.getByRole("banner");
@@ -249,8 +250,15 @@ test("anonymous Daily header preserves the requested Daily path through sign-in"
   await expect(page).toHaveURL(/\/#account-access$/);
   expect(await page.evaluate(() => history.state.usr.dailyReturnTo)).toBe("/daily/create");
   const form = page.getByRole("form", { name: "Sign in", exact: true });
-  await form.getByLabel("Email address").fill("header-fixture@example.test");
+  const login = form.getByLabel("Username or email");
+  await login.fill(identifier);
+  await expect(login).toHaveAttribute("type", "text");
+  await expect(login).toHaveAttribute("autocomplete", "username");
+  expect(await login.evaluate(input => input.checkValidity())).toBe(true);
+  await expect(page.getByRole("form", { name: "Create an account", exact: true }).getByLabel("Email address", { exact: true })).toHaveAttribute("type", "email");
   await form.getByLabel("Password", { exact: true }).fill("local-header-fixture-password");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(page.viewportSize().width);
+  await page.screenshot({ path: testInfo.outputPath("login-identifier.png"), fullPage: true, animations: "disabled" });
   await form.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/daily\/create$/);
   await expect(page.getByLabel("Room name")).toBeVisible();
@@ -258,10 +266,11 @@ test("anonymous Daily header preserves the requested Daily path through sign-in"
   await page.clock.install();
   await page.clock.runFor(31_000);
   expect(writes).toEqual([{ path: "/session", method: "POST",
-    body: { email: "header-fixture@example.test", password: "local-header-fixture-password" } }]);
+    body: { identifier, password: "local-header-fixture-password" } }]);
   expect(requests.slice(dailyCheckpoint).some(({ path }) => path.startsWith("/leagues"))).toBe(false);
   expect(unexpected).toEqual([]);
 });
+}
 
 test("Daily quote ticker pauses on hover and focus and respects reduced motion", async ({ page }, testInfo) => {
   const { requests, unexpected } = await installHeaderFixture(page);

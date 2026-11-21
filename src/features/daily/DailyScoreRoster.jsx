@@ -1,6 +1,7 @@
 import { SCORING_CATEGORIES } from "../../shared/scoringCategories.js";
 import { salaryText, scoreText, statText } from "./dailyScorePresentation.js";
 import { hasProvisionalStats } from './dailyLiveScoring.js';
+import { DailyPlayerName } from "./DailyPlayerName.jsx";
 
 const slotNames = ["F1", "F2", "F3", "D1", "D2", "Flex 1", "Flex 2"];
 const collectionStates = {
@@ -39,7 +40,7 @@ export function ScoreRosterTable({ member, detailed = false }) {
     </tr></thead>
     <tbody>{rosterSlots(member.roster).map((player, index) => <tr key={slotNames[index]}>
       <th scope="row">{slotNames[index]}</th>
-      <td className="hds-roster-player">{player ? <><strong>{player.name}</strong><small>{player.team} · {player.position === "D" ? "D" : "F"}</small></> : <span className="hds-empty-slot">Empty slot</span>}</td>
+      <td className="hds-roster-player">{player ? <><strong><DailyPlayerName player={player}/></strong><small>{player.team} · {player.position === "D" ? "D" : "F"}</small></> : <span className="hds-empty-slot">Empty slot</span>}</td>
       {detailed && SCORING_CATEGORIES.map(({ key }) => <td key={key}>{player ? statText(player, key) : "—"}</td>)}
       <td>{player ? <StatsCollection row={player}/> : "—"}</td>
       <td>{salaryText(player?.price)}</td>

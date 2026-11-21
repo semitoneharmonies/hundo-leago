@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { hasCommissionerAuthority } from "../../shared/leagueAuthority.js";
+import { Link } from "react-router-dom";
+import { effectiveLeagueAuthority, hasCommissionerAuthority, PLATFORM_ADMINISTRATOR_AUTHORITY } from "../../shared/leagueAuthority.js";
+import { commissionerSectionPath } from "../commissioner/commissionerSections.js";
 import { relativeTime } from "../../shared/hundoFormat.js";
 import { createIntentKey } from "../accounts/accountApi.js";
 import { announcementKey, announcementsQuery, postAnnouncement } from "./announcementQueries.js";
@@ -41,6 +43,8 @@ export function LeagueAnnouncements({ league, session }) {
         {composing ? "Cancel" : "Write"}
       </button>}
     </header>
+    {effectiveLeagueAuthority(league.membership) === PLATFORM_ADMINISTRATOR_AUTHORITY &&
+      <Link to={`${commissionerSectionPath(league.id, "communications")}?audience=all_leagues`}>Announce to all leagues</Link>}
     {composing && hasCommissionerAuthority(league.membership) && <form onSubmit={(event) => { event.preventDefault(); if (body.trim() && !post.isPending) post.mutate(); }}>
       <label>Announcement<textarea ref={composer} maxLength={2000} required value={body} disabled={post.isPending} onChange={(event) => setBody(event.target.value)} /></label>
       <small>{body.length}/2000</small>

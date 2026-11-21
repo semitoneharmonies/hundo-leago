@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { LeagueAnnouncements } from "./LeagueAnnouncements.jsx";
 import { announcementKey } from "./announcementQueries.js";
 import { LeagueCommunications } from "../commissioner/LeagueCommunications.jsx";
@@ -37,10 +38,10 @@ function setup({ authority = "commissioner", mainView = false, onArchive } = {})
   queryClient.setQueryData(announcementKey(otherLeagueId), { pages: [{ announcements: [{ id: otherMessageId, body: "Other league notice" }] }], pageParams: [null] });
   queryClient.setQueryData([...communicationsKey(otherLeagueId), "visible"], { messages: [{ id: otherMessageId }] });
   const user = userEvent.setup();
-  const view = render(<QueryClientProvider client={queryClient}><SessionContext.Provider value={session}>
+  const view = render(<MemoryRouter><QueryClientProvider client={queryClient}><SessionContext.Provider value={session}>
     <LeagueAnnouncements league={league} session={session} />
     {mainView && <LeagueCommunications leagueId={leagueId} canManage={authority !== "manager"} />}
-  </SessionContext.Provider></QueryClientProvider>);
+  </SessionContext.Provider></QueryClientProvider></MemoryRouter>);
   const sidebar = view.container.querySelector(".hl-sidebar-announcements");
   const writes = () => client.request.mock.calls.filter(([, options]) => options.method === "POST");
   return { ...view, client, queryClient, user, sidebar, state, writes };
@@ -53,6 +54,9 @@ describe("Sidebar announcement removal", () => {
     const button = within(sidebar).queryByRole("button", { name: "Remove announcement: Practice reminder" });
     if (authority === "manager") expect(button).not.toBeInTheDocument();
     else expect(button).toBeEnabled();
+    const globalLink = within(sidebar).queryByRole("link", { name: "Announce to all leagues" });
+    if (authority === "platform_administrator") expect(globalLink).toHaveAttribute("href", `/leagues/${leagueId}/commissioner/communications?audience=all_leagues`);
+    else expect(globalLink).not.toBeInTheDocument();
     expect(writes()).toHaveLength(0);
   });
 

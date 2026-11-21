@@ -40,3 +40,27 @@ export function communicationsQuery(client, leagueId, history = false) {
     queryFn: ({ signal }) => communicationRequest(client, leagueId, history ? "/history" : "", { signal }),
     meta: { private: true, leagueId }, staleTime: 10_000, refetchInterval: 30_000, retry: false };
 }
+
+function validateSitewide(data, kind) {
+  requireContract(data?.scope === "all_leagues" && Array.isArray(data.leagues) && data.leagues.length > 0 &&
+    data.leagues.every(league => id(league.leagueId) && text(league.leagueName) && integer(league.recipientCount)) &&
+    new Set(data.leagues.map(league => league.leagueId)).size === data.leagues.length &&
+    integer(data.recipientCount) && integer(data.uniqueRecipientCount) && data.uniqueRecipientCount <= data.recipientCount &&
+    data.leagues.reduce((total, league) => total + league.recipientCount, 0) === data.recipientCount);
+  if (kind === "preview") requireContract(/^[a-f0-9]{64}$/.test(data.previewHash || "") &&
+    data.message?.kind === "announcement" && data.message.audience === "members" && text(data.message.title) && text(data.message.body) &&
+    Array.isArray(data.recipients) && data.recipients.length === data.uniqueRecipientCount &&
+    data.recipients.every(person => id(person.userId) && text(person.displayName)) &&
+    new Set(data.recipients.map(person => person.userId)).size === data.recipients.length);
+  else requireContract(id(data.id) && typeof data.replayed === "boolean" && data.leagues.every(league => id(league.id)));
+  return true;
+}
+
+export function sitewideAnnouncementRequest(client, suffix, options, kind) {
+  return client.request(`/api/v1/admin/announcements${suffix}`, {
+    ...options, authenticated: true, dataKind: "object", validateData: data => validateSitewide(data, kind),
+  }).then(response => {
+    validateSitewide(response.data, kind);
+    return response.data;
+  });
+}

@@ -11,7 +11,7 @@ export class AccountPage {
     await navigateToAppPath(this.page, '/')
     const form = this.page.getByRole('form', { name: 'Sign in' })
     await expect(form).toBeVisible()
-    await form.getByLabel('Email address').fill(account.email)
+    await form.getByLabel('Username or email').fill(account.email)
     await form.getByLabel('Password').fill(this.fixture.password)
     await form.getByRole('button', { name: 'Sign in' }).click()
     await expect(this.page).toHaveURL(/\/leagues(?:\/|$)/, {

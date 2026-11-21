@@ -49,7 +49,7 @@ test("an unset Daily profile loads read-only with None and a plain preview",asyn
   await expect(page.getByLabel("Stripe template")).toHaveValue("");
   await expect(page.locator('input[type="color"]')).toHaveCount(0);
   await expect(page.locator(".hd-user-stripes")).toHaveCount(0);
-  await expect(page.getByText("No stripes selected.")).toBeVisible();
+  await expect(page.locator(".hdp-preview-bar")).toHaveText(viewer.displayName);
   await expect(page.getByRole("button",{name:"Save stripes"})).toBeDisabled();
   await expect(page.getByRole("button",{name:"Clear stripes"})).toBeDisabled();
   expect(state.writes).toEqual([]);

@@ -85,7 +85,7 @@ function StagingResetReceipt({ receipt }) {
 
 function SignInForm({ session, destination }) {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -94,16 +94,16 @@ function SignInForm({ session, destination }) {
     event.preventDefault();
     setPending(true);
     setError("");
-    const credentials = { email, password };
+    const credentials = { identifier, password };
     flushSync(() => {
-      setEmail("");
+      setIdentifier("");
       setPassword("");
     });
     try {
       await session.signIn(credentials);
       navigate(destination, { replace: true });
     } catch (requestError) {
-      setEmail(credentials.email);
+      setIdentifier(credentials.identifier);
       setError(safeMessage(requestError, "Sign in could not be completed."));
     } finally {
       setPending(false);
@@ -121,13 +121,15 @@ function SignInForm({ session, destination }) {
         Sign in
       </h2>
       <label className="hl-field">
-        Email address
+        Username or email
         <input
-          type="email"
-          autoComplete="email"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
         />
       </label>
       <label className="hl-field">

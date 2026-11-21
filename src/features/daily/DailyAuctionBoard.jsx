@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { canonicalNhlTeam } from "../../shared/nhlTeams.js";
 import { nhlTeamColours } from "../players/nhlTeamColours.js";
 import { dailyNow, formatTime } from "./dailyApi.js";
+import { DailyPlayerName } from "./DailyPlayerName.jsx";
 import "./DailyAuctionBoard.css";
 
 const positionGroup = (player) => player.position === "D" ? "D" : "F";
@@ -31,6 +32,7 @@ function BidEntry({ player, cap, minBid, pending, error, disabled, prefix, retur
     viewport?.addEventListener("resize", fitViewport);
     viewport?.addEventListener("scroll", fitViewport);
     dialog.showModal();
+    dialog.querySelector("input")?.focus({ preventScroll: true });
     const timer = setInterval(tick, 500);
     return () => {
       clearInterval(timer);
@@ -46,11 +48,11 @@ function BidEntry({ player, cap, minBid, pending, error, disabled, prefix, retur
       event.preventDefault();
       if (valid && !pending && !disabled && !expired) onBid(player.id, numericAmount);
     }}>
-      <h2 id={prefix + "-bid-title"}>Bid on {player.name}</h2>
+      <h2 id={prefix + "-bid-title"}>Bid on <DailyPlayerName player={player}/></h2>
       <p>{player.team} · {positionGroup(player)} vs {player.opponent}</p>
-      <label>Sealed bid for {player.name}
+      <label>Sealed bid
         <span className="hda-amount"><span aria-hidden="true">$</span><input type="number" inputMode="numeric" required autoFocus
-          value={amount} min={minBid} max={cap} step="1" aria-describedby={prefix + "-bid-help"}
+          value={amount} min={minBid} max={cap} step="1" aria-label={"Sealed bid for " + player.name} aria-describedby={prefix + "-bid-help"}
           onChange={event => setAmount(event.target.value)} /></span>
       </label>
       <p id={prefix + "-bid-help"}>Enter a whole-dollar amount from ${minBid} to ${cap}. Your one bid per skater is binding.</p>
@@ -95,7 +97,7 @@ function PlayerPool({ room, prefix, bidButton }) {
     <ul className="hda-pool-list" aria-label="Available players">{filtered.map((player) => <li key={player.id}>
       <div className="hda-pool-row">
         <span className="hda-position-swatch" style={nhlTeamColours(player.team)}><b>{positionGroup(player)}</b></span>
-        <strong className="hda-pool-name" title={player.name}>{player.name}</strong>
+        <strong className="hda-pool-name"><DailyPlayerName player={player}/></strong>
         <small>{player.team} vs {player.opponent}</small>{bidButton(player)}
       </div></li>)}</ul>
     {filtered.length === 0 && <p className="hda-empty">{room.availablePlayers.length ? "No players match these filters." : "No available players."}</p>}
@@ -129,7 +131,7 @@ function Auctions({ room, prefix, bidButton }) {
         <div className="hda-lot-face">
           <span className="hda-team-stripe" aria-hidden="true" />
           <time className="hda-lot-clock" dateTime={player.endsAt} title={"Ends at " + formatTime(player.endsAt)}>{clock}</time>
-          <strong className="hda-lot-name" title={player.name}>{player.name}</strong>
+          <strong className="hda-lot-name"><DailyPlayerName player={player}/></strong>
           <span className="hda-lot-matchup">{player.team} · {positionGroup(player)} vs {player.opponent}</span>
         </div>
         <div className="hda-lot-footer"><strong>{player.bidCount} {player.bidCount === 1 ? "bid" : "bids"}</strong>
@@ -178,7 +180,7 @@ export function Roster({ room, viewer, selectedId, onSelect }) {
         <th scope="col">{scoring ? "FP" : "Price"}</th></tr></thead>
       <tbody>{assignRosterSlots(member.roster).map((player, index) => <tr key={slotNames[index]}>
         <th scope="row">{slotNames[index]}</th>
-        <td title={player?.name}>{player?.name}</td>
+        <td>{player && <DailyPlayerName player={player}/>}</td>
         <td>{player && (scoring ? (player.points ?? 0).toFixed(2) : "$" + player.price)}</td>
       </tr>)}</tbody>
     </table></div>

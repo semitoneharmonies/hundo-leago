@@ -170,7 +170,7 @@ describe("AccountHome", () => {
     expect(screen.queryByText("Existing Manager")).toBeNull();
   });
 
-  it("submits sign-in to the backend and clears a rejected password", async () => {
+  it.each(["user@example.test", "Manager Example"])("submits %s and clears a rejected password", async (identifier) => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(noSession())
@@ -179,7 +179,7 @@ describe("AccountHome", () => {
           {
             error: {
               code: "SIGN_IN_FAILED",
-              message: "The email or password is incorrect, or the account cannot sign in.",
+              message: "The username, email, or password is incorrect, or the account cannot sign in.",
               requestId: "request-sign-in",
             },
           },
@@ -195,19 +195,24 @@ describe("AccountHome", () => {
     const signIn = (await screen.findByRole("heading", { name: "Sign in" })).closest(
       "form"
     );
-    await view.user.type(within(signIn).getByLabelText("Email address"), "user@example.test");
+    const login = within(signIn).getByLabelText("Username or email");
+    await view.user.type(login, identifier);
+    expect(login).toBeValid();
+    expect(login).toHaveAttribute("type", "text");
+    expect(login).toHaveAttribute("autocomplete", "username");
     const password = within(signIn).getByLabelText("Password");
     await view.user.type(password, "incorrect");
     await view.user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "email or password is incorrect"
+      "username, email, or password is incorrect"
     );
+    expect(login).toHaveValue(identifier);
     expect(password).toHaveValue("");
     const [url, request] = fetchImpl.mock.calls[1];
     expect(url).toBe("http://localhost:4000/api/v1/session");
     expect(JSON.parse(request.body)).toEqual({
-      email: "user@example.test",
+      identifier,
       password: "incorrect",
     });
   });
@@ -402,7 +407,7 @@ describe("AccountHome", () => {
     });
   });
 
-  it("navigates a successful sign-in to league selection", async () => {
+  it.each(["manager@example.test", "Manager Example"])("navigates a successful %s sign-in to league selection", async (identifier) => {
     const sessionData = {
       csrfToken: "B".repeat(43),
       session: {
@@ -446,9 +451,9 @@ describe("AccountHome", () => {
     const signIn = (await screen.findByRole("heading", { name: "Sign in" })).closest(
       "form"
     );
-    const email = within(signIn).getByLabelText("Email address");
+    const login = within(signIn).getByLabelText("Username or email");
     const password = within(signIn).getByLabelText("Password");
-    await view.user.type(email, "manager@example.test");
+    await view.user.type(login, identifier);
     await view.user.type(
       password,
       "correct password"
@@ -460,8 +465,9 @@ describe("AccountHome", () => {
         screen.getByRole("heading", { name: "League selection" })
       ).toBeInTheDocument()
     );
-    expect(email).toHaveValue("");
+    expect(login).toHaveValue("");
     expect(password).toHaveValue("");
+    expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({ identifier, password: "correct password" });
   });
 
   it("shows a sanitized staging reset receipt once without retaining authenticated state", async () => {
