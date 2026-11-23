@@ -67,6 +67,12 @@ export function RealtimeProvider({
     });
 
     const onAny = (eventName, payload) => {
+      if (eventName === "daily.chat.changed") {
+        if (typeof payload?.roomId === "string" && /^[a-f0-9-]{36}$/.test(payload.roomId)) {
+          void queryClient.invalidateQueries({ queryKey: ["daily", userId, `/rooms/${payload.roomId}/chat`], exact: true });
+        }
+        return;
+      }
       let envelope;
       try {
         envelope = parseRealtimeEnvelope(eventName, payload);

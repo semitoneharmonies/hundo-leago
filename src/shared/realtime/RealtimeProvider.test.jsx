@@ -114,11 +114,13 @@ function renderProvider({
   request = vi.fn(async () => ({ data: sessionData() })),
   adoptSession = vi.fn(),
   children = <StatusProbe />,
+  sessionUser,
 } = {}) {
   const session = {
     status: "authenticated",
     httpClient: { request },
     adoptSession,
+    user: sessionUser,
   };
   const view = render(
     <QueryClientProvider client={queryClient}>
@@ -137,6 +139,18 @@ function renderProvider({
 }
 
 describe("RealtimeProvider", () => {
+  it("invalidates only this user's matching Daily chat on a live room signal", async () => {
+    const view = renderProvider({ sessionUser: { id: 'me' } });
+    const target = ['daily','me',`/rooms/${leagueId}/chat`];
+    const otherRoom = ['daily','me',`/rooms/${otherLeagueId}/chat`];
+    const otherUser = ['daily','someone-else',`/rooms/${leagueId}/chat`];
+    for (const key of [target,otherRoom,otherUser]) view.queryClient.setQueryData(key,{messages:[]});
+    await act(async()=>view.harness.any('daily.chat.changed',{roomId:leagueId}));
+    expect(view.queryClient.getQueryState(target).isInvalidated).toBe(true);
+    expect(view.queryClient.getQueryState(otherRoom).isInvalidated).toBe(false);
+    expect(view.queryClient.getQueryState(otherUser).isInvalidated).toBe(false);
+    view.unmount();view.queryClient.clear();
+  });
   it("owns one credentialed Socket.IO lifecycle and cleans up every listener", () => {
     const view = renderProvider();
     expect(view.harness.socketFactory).toHaveBeenCalledTimes(1);

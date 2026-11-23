@@ -6,6 +6,7 @@ import { dailyKey, dailyNow, dailyRead, dailyWrite, formatDay, formatTime, phase
 import { AuctionBoard } from "./DailyAuctionBoard.jsx";
 import { DailyScoreboard } from "./HundoDailyRoomScreens.jsx";
 import { useDailyRoomAudio } from "./dailyAudioContext.js";
+import { DailyChat } from "./DailyChat.jsx";
 
 function RoomClock({ room }) {
   const waiting = room.phase === "waiting";
@@ -70,6 +71,7 @@ export function DailyRoom({ session, roomId, primary = false }) {
   const commish = room.commissionerName || room.members.find(member => member.id === room.commissionerId)?.name;
   const Heading = primary ? "h1" : "h2";
   return <article className="hd-room-box" aria-labelledby={"hd-room-" + room.id}>
+    {room.joined && <DailyChat session={session} room={room}/>}
     <header className="hd-room-bar">
       <Heading id={"hd-room-" + room.id}>{room.name}</Heading>
       <span>Commish <b>{commish ?? "—"}</b></span>
