@@ -92,6 +92,7 @@ function validateStatistics(statistics, position) {
       "nhlPoints",
       "fantasyPointsHundredths",
       "sourceUpdatedAtMs",
+      ...(statistics.period === undefined ? [] : ["period"]),
       ...(expanded ? ["scoringRuleVersion", "scoringStats"] : []), ...(expanded && statistics.scoringWeights ? ["scoringWeights"] : []),
     ],
     "The player statistics are invalid."
@@ -123,6 +124,21 @@ function validateStatistics(statistics, position) {
     statistics.nhlPoints === statistics.goals + statistics.assists,
     "The player NHL points do not reconcile."
   );
+  if (statistics.period !== undefined) {
+    const period = object(statistics.period, "The statistics period is invalid.");
+    contract(["dateRange", "lastGames"].includes(period.mode), "The statistics period mode is invalid.");
+    exactKeys(period, period.mode === "dateRange" ? ["mode", "startDate", "endDate", "timeZone"] : ["mode", "lastGames", "timeZone"],
+      "The statistics period is invalid.");
+    contract(typeof period.timeZone === "string" && period.timeZone.length > 0, "The statistics time zone is invalid.");
+    if (period.mode === "dateRange") {
+      contract([period.startDate, period.endDate].every(date => typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+        Number.isFinite(Date.parse(`${date}T12:00:00Z`)) && new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) === date) &&
+        period.startDate <= period.endDate, "The statistics date range is invalid.");
+    } else {
+      contract(Number.isInteger(period.lastGames) && period.lastGames >= 1 && period.lastGames <= 200 && statistics.gamesPlayed <= period.lastGames,
+        "The statistics game count is invalid.");
+    }
+  }
 }
 
 export function validatePlayerSummary(player) {

@@ -213,7 +213,108 @@ function createContractFilterTestFixture() {
   return { fetchImpl, requests };
 }
 
+function createPeriodFixture({ delayDetail, unavailable = false, omitPeriod = false } = {}) {
+  const fixture = createContractFilterTestFixture();
+  return { ...fixture, fetchImpl: async (url, options) => {
+    const response = await fixture.fetchImpl(url, options);
+    const { pathname, searchParams } = new URL(url);
+    const mode = searchParams.get("statsPeriod");
+    if (!mode || !pathname.includes("/players")) return response;
+    if (unavailable) return new Response(JSON.stringify({ error: { code: "PLAYER_PERIOD_UNAVAILABLE", message: "Game data is incomplete.", requestId: "period-request" } }),
+      { status: 503, headers: { "Content-Type": "application/json" } });
+    if (delayDetail && !pathname.endsWith("/players")) await delayDetail;
+    const body = await response.json();
+    const period = mode === "dateRange"
+      ? { mode, startDate: searchParams.get("startDate"), endDate: searchParams.get("endDate"), timeZone: "America/Vancouver" }
+      : { mode, lastGames: Number(searchParams.get("lastGames")), timeZone: "America/Vancouver" };
+    const scoped = row => ({ ...row, statistics: { ...row.statistics, gamesPlayed: mode === "dateRange" ? 2 : Math.min(5, period.lastGames),
+      fantasyPointsHundredths: 1250, ...(omitPeriod ? {} : { period }) } });
+    body.data = Array.isArray(body.data) ? body.data.map(scoped) : scoped(body.data);
+    return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
+  } };
+}
+
 describe("league player catalog", () => {
+  it("keeps period controls under More filters, validates dates before applying, combines filters and returns to season totals", async () => {
+    const fixture = createPeriodFixture();
+    const view = renderWithProviders(<Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>, {
+      initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl: fixture.fetchImpl },
+    });
+    await screen.findByRole("rowheader", { name: "Free Agent" });
+    expect(screen.getByRole("combobox", { name: "Show stats for" })).not.toBeVisible();
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "League assignment" }), "free");
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "Position" }), "F");
+    await view.user.click(screen.getByText("More filters"));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "Show stats for" }), "dateRange");
+    fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-11-18" } });
+    await view.user.click(screen.getByRole("button", { name: "Apply period" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Choose a valid start and end date");
+    fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2026-10-28" } });
+    await view.user.click(screen.getByRole("button", { name: "Apply period" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("end date must be on or after");
+    expect(fixture.requests.some(({ url }) => new URL(url).searchParams.has("statsPeriod"))).toBe(false);
+    fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-10-28" } });
+    fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2026-11-18" } });
+    await view.user.click(screen.getByRole("button", { name: "Apply period" }));
+    const row = (await screen.findByRole("rowheader", { name: "Free Agent" })).closest("tr");
+    expect(within(row).getByText("12.50")).toBeInTheDocument();
+    expect(within(row).getByText("6.25")).toBeInTheDocument();
+    const request = fixture.requests.map(({ url }) => new URL(url)).find(url => url.searchParams.get("statsPeriod") === "dateRange");
+    expect(Object.fromEntries(request.searchParams)).toMatchObject({ startDate: "2026-10-28", endDate: "2026-11-18", position: "F", ownership: "free" });
+    await view.user.click(screen.getByText("More filters"));
+    expect(screen.getByRole("combobox", { name: "Show stats for" })).not.toBeVisible();
+    expect(screen.getByText(/Stats: Oct 28, 2026 – Nov 18, 2026/)).toBeVisible();
+    expect(screen.getByText("More filters")).toHaveTextContent("1 active");
+    await view.user.click(screen.getByText("More filters"));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "Show stats for" }), "season");
+    await waitFor(() => expect(within(screen.getByRole("rowheader", { name: "Free Agent" }).closest("tr")).getByText("90.00")).toBeInTheDocument());
+    expect(screen.queryByText(/^Stats:/)).not.toBeInTheDocument();
+    expect(fixture.requests.every(({ method }) => method === "GET")).toBe(true);
+  });
+
+  it("loads scoped favourite stats without temporarily showing saved season totals and accepts a custom game count", async () => {
+    let releaseDetail;
+    const delayDetail = new Promise(resolve => { releaseDetail = resolve; });
+    const fixture = createPeriodFixture({ delayDetail });
+    const view = renderWithProviders(<Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>, {
+      initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl: fixture.fetchImpl },
+    });
+    await view.user.click(await screen.findByRole("button", { name: "Add Free Agent to favourites" }));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "League assignment" }), "favourites");
+    await screen.findByText("Showing 1 of 1 favourites.");
+    await view.user.click(screen.getByText("More filters"));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "Show stats for" }), "lastGames");
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Games per player" }), { target: { value: "0" } });
+    await view.user.click(screen.getByRole("button", { name: "Apply period" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("between 1 and 200");
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Games per player" }), { target: { value: "7" } });
+    await view.user.click(screen.getByRole("button", { name: "Apply period" }));
+    await waitFor(() => expect(fixture.requests.some(({ url }) => new URL(url).pathname.endsWith(freeAgentId) && new URL(url).searchParams.get("lastGames") === "7")).toBe(true));
+    expect(screen.getByText("Loading players…")).toBeInTheDocument();
+    expect(screen.queryByText("90.00")).not.toBeInTheDocument();
+    await act(async () => releaseDetail());
+    const row = (await screen.findByRole("rowheader", { name: "Free Agent" })).closest("tr");
+    expect(within(row).getByText("12.50")).toBeInTheDocument();
+    expect(within(row).getByText("2.50")).toBeInTheDocument();
+    expect(screen.getByText(/Stats: Last 7 games per player/)).toBeVisible();
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "Show stats for" }), "season");
+    expect(await screen.findByText("90.00")).toBeInTheDocument();
+  });
+
+  it.each([true, false])("never substitutes season totals when period data is unavailable or missing metadata (%s)", async unavailable => {
+    const fixture = createPeriodFixture({ unavailable, omitPeriod: !unavailable });
+    const view = renderWithProviders(<Routes><Route path="/leagues/:leagueId/players" element={<PlayersCatalogPage />} /></Routes>, {
+      initialEntries: [`/leagues/${leagueId}/players`], enableSession: true, config, sessionOptions: { fetchImpl: fixture.fetchImpl },
+    });
+    await screen.findByRole("rowheader", { name: "Free Agent" });
+    await view.user.click(screen.getByText("More filters"));
+    await view.user.selectOptions(screen.getByRole("combobox", { name: "Show stats for" }), "lastGames");
+    await view.user.click(screen.getByRole("button", { name: "Apply period" }));
+    expect(await screen.findByRole("alert", {}, { timeout: 3000 })).toHaveTextContent(unavailable ? "Stats for this period are not available yet" : "player request could not be completed");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByText("90.00")).not.toBeInTheDocument();
+  });
+
   it("switches leagues while viewing favourites without waiting for the disabled player list", async () => {
     const otherLeagueId = "11111111-1111-4111-8111-111111111112";
     const fixture = createContractFilterTestFixture();

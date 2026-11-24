@@ -1,6 +1,8 @@
 import { createAuctionAudioTracker } from "./dailyAuctionAudioEvents.js";
+import { createAuctioneerLoop } from "./dailyAuctioneerAudio.js";
 
 const preferenceKey = userId => `hundo-daily-sound:${userId}`;
+const auctioneerPreferenceKey = userId => `hundo-daily-auctioneer:${userId}`;
 const priority = ["end", "start", "win", "denied", "confirmed", "closing", "countdown", "slot"];
 
 // Short sine/triangle tones with gentle attack/release envelopes, no samples,
@@ -19,10 +21,21 @@ const cues = {
 export function createDailyAudio({ userId, now, browser = globalThis.window, doc = globalThis.document }) {
   let enabled = true;
   try { enabled = browser.localStorage.getItem(preferenceKey(userId)) !== "off"; } catch { /* Device storage is optional. */ }
+  // Existing users who muted all Daily audio keep silence until they opt in.
+  let auctioneerEnabled = enabled;
+  try {
+    const saved = browser.localStorage.getItem(auctioneerPreferenceKey(userId));
+    if (saved != null) auctioneerEnabled = saved !== "off";
+    else browser.localStorage.setItem(auctioneerPreferenceKey(userId), auctioneerEnabled ? "on" : "off");
+  } catch { /* Device storage is optional. */ }
   let context = null, master = null, flushTimer = null, connection = null;
-  let snapshot = { enabled, available: Boolean(browser?.AudioContext || browser?.webkitAudioContext) };
+  let snapshot = { enabled, auctioneerEnabled, auctioneerStatus: "idle",
+    available: Boolean(browser?.AudioContext || browser?.webkitAudioContext) };
   const listeners = new Set(), voices = new Set(), pending = new Set(), lastPlayed = new Map();
-  const publish = () => { snapshot = { ...snapshot, enabled }; for (const listener of listeners) listener(); };
+  const publish = () => { snapshot = { ...snapshot, enabled, auctioneerEnabled }; for (const listener of listeners) listener(); };
+  const auctioneer = createAuctioneerLoop({ now, browser, doc, getContext: () => context,
+    isEnabled: () => auctioneerEnabled,
+    onStatus: auctioneerStatus => { snapshot = { ...snapshot, auctioneerStatus }; publish(); } });
   const visible = () => doc?.visibilityState !== "hidden";
   function stop() {
     clearTimeout(flushTimer); flushTimer = null; pending.clear();
@@ -74,7 +87,7 @@ export function createDailyAudio({ userId, now, browser = globalThis.window, doc
   }
   const tracker = createAuctionAudioTracker({ play, now });
   async function unlock() {
-    if (!enabled || !visible() || !snapshot.available) return;
+    if ((!enabled && !auctioneerEnabled) || !visible() || !snapshot.available) return;
     try {
       if (!context || context.state === "closed") {
         const AudioContext = browser.AudioContext || browser.webkitAudioContext;
@@ -82,6 +95,7 @@ export function createDailyAudio({ userId, now, browser = globalThis.window, doc
         master = context.createGain(); master.gain.value = .12; master.connect(context.destination);
       }
       if (context.state !== "running") await context.resume();
+      auctioneer.retry();
     } catch { /* Autoplay restrictions or interrupted mobile audio must not block bidding. */ }
   }
   function setEnabled(value) {
@@ -90,17 +104,25 @@ export function createDailyAudio({ userId, now, browser = globalThis.window, doc
     stop(); tracker.rebaseline(); publish();
     if (enabled) void unlock();
   }
+  function setAuctioneerEnabled(value) {
+    auctioneerEnabled = Boolean(value);
+    try { browser.localStorage.setItem(auctioneerPreferenceKey(userId), auctioneerEnabled ? "on" : "off"); } catch { /* Session preference still works. */ }
+    publish(); auctioneer.sync();
+    if (auctioneerEnabled) void unlock();
+  }
+  function observe(room, viewerId) { tracker.observe(room, viewerId); auctioneer.observe(room); }
+  function forget(roomId) { tracker.forget(roomId); auctioneer.forget(roomId); }
   function connect() {
     if (connection) return connection;
     const gesture = event => { if (event.isTrusted) void unlock(); };
-    const visibility = () => { stop(); tracker.rebaseline(); };
+    const visibility = () => { stop(); tracker.rebaseline(); auctioneer.sync(); };
     doc.addEventListener("pointerdown", gesture, true);
     doc.addEventListener("click", gesture, true);
     doc.addEventListener("keydown", gesture, true);
     doc.addEventListener("visibilitychange", visibility);
-    const timer = setInterval(tracker.tick, 200);
+    const timer = setInterval(() => { tracker.tick(); auctioneer.sync(); }, 200);
     connection = () => {
-      clearInterval(timer); stop();
+      clearInterval(timer); stop(); auctioneer.disconnect();
       doc.removeEventListener("pointerdown", gesture, true);
       doc.removeEventListener("click", gesture, true);
       doc.removeEventListener("keydown", gesture, true);
@@ -112,7 +134,9 @@ export function createDailyAudio({ userId, now, browser = globalThis.window, doc
     };
     return connection;
   }
-  return { ...tracker, roomCreated: room => tracker.roomCreated(room, userId), connect, unlock, setEnabled,
+  return { ...tracker, observe, forget,
+    roomCreated: room => { tracker.roomCreated(room, userId); auctioneer.observe(room); },
+    connect, unlock, setEnabled, setAuctioneerEnabled,
     subscribe: listener => { listeners.add(listener); return () => listeners.delete(listener); },
     getSnapshot: () => snapshot };
 }

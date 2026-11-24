@@ -9,6 +9,7 @@ import { DailyReminders } from "./DailyReminders.jsx";
 import { DailyRoom } from "./DailyRoom.jsx";
 import { DailyHistory } from "./DailyHistory.jsx";
 import { DailyProfile } from "./DailyProfile.jsx";
+import { DailyNotifications } from "./DailyNotifications.jsx";
 import { DailyHelp } from "./DailyHelp.jsx";
 import { DailyScoringGuide } from "./DailyScoringGuide.jsx";
 import { DailyAudioProvider, DailySoundToggle } from "./DailyAudio.jsx";
@@ -69,6 +70,7 @@ function DailyDesk({ session, screen, roomId }) {
       {screen !== "lobby" && <Link className="hd-action hd-back" to={routePaths.daily}>
         <ArrowLeft size={15} aria-hidden="true" />All rooms</Link>}
       {screen !== "history" && <Link className="hd-history-link" to={routePaths.dailyHistory}>View your Hundo Daily history</Link>}
+      <DailySoundToggle auctioneer />
       <DailySoundToggle />
       <DailyHelp />
       <DailyScoringGuide />
@@ -90,6 +92,7 @@ function DailyDesk({ session, screen, roomId }) {
       </>}
       {screen === "history" && lobby.data && <DailyHistory rooms={historyRooms} viewer={session.user}/>}
       {screen === "profile" && <DailyProfile session={session}/>}
+      {screen === "notifications" && <DailyNotifications session={session}/>}
       {creating && lobby.data && <DailyCreateScreen key={screen} options={options}
         today={today}
         initialDate={(practice ? practiceSlate : slate)?.date ?? options[0]?.date ?? ""}

@@ -181,6 +181,7 @@ function App() {
         <Route path="/daily" element={<DailyPage />} />
         <Route path="/daily/history" element={<DailyPage screen="history" />} />
         <Route path="/daily/profile" element={<DailyPage screen="profile" />} />
+        <Route path="/daily/notifications" element={<DailyPage screen="notifications" />} />
         <Route path="/daily/create" element={<DailyPage screen="create" />} />
         <Route path="/daily/practice" element={<DailyPage screen="practice" />} />
         <Route path="/daily/rooms/:roomId" element={<DailyPage />} />

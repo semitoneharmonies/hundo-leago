@@ -27,6 +27,9 @@ import { auctionListQuery } from "../auctions/auctionQueries.js";
 import { capabilityMessage } from "../auctions/auctionUi.js";
 import { useSession } from "../session/sessionContext.js";
 import { AavRangeFilter } from "./AavRangeFilter.jsx";
+import { StatisticsPeriodFilter } from "./StatisticsPeriodFilter.jsx";
+import { SEASON_STATISTICS_PERIOD, statisticsPeriodLabel } from "./playerStatisticsPeriod.js";
+import periodStyles from "./StatisticsPeriodFilter.module.css";
 import contractFilterStyles from "./AavRangeFilter.module.css";
 import "../../styles/mobile-player-tables.css";
 import {
@@ -74,6 +77,10 @@ const NHL_TEAM_OPTIONS = Object.freeze([
 
 function ErrorMessage({ error }) {
   if (!error) return null;
+  if (error.code === "PLAYER_PERIOD_UNAVAILABLE") return <ErrorBlock error={error}
+    fallback="Stats for this period are not available yet."
+    impact="Complete game data is still needed to calculate this period."
+    recovery="Try again after the next stats update, or choose Season to date." />;
   return <ErrorBlock error={error} fallback="The player request could not be completed." />;
 }
 
@@ -208,9 +215,11 @@ export function PlayersCatalogPage() {
   const [remainingYears, setRemainingYears] = useState("all");
   const [contractType, setContractType] = useState("all");
   const [aavRange, setAavRange] = useState({ enabled: false, minimum: "2", maximum: "6" });
+  const [statisticsPeriod, setStatisticsPeriod] = useState(SEASON_STATISTICS_PERIOD);
   const activeAdditionalFilters = [
     remainingYears !== "all", contractType !== "all",
     minimumGames !== "0", nhlTeam !== "all", aavRange.enabled,
+    statisticsPeriod.statsPeriod !== "season",
   ].filter(Boolean).length;
   const minimumAavCents = Math.round(Number(aavRange.minimum) * 100);
   const maximumAavCents = Math.round(Number(aavRange.maximum) * 100);
@@ -238,8 +247,9 @@ export function PlayersCatalogPage() {
   const serverFilteredFavourites = viewingFavourites && contractType !== "all";
   const favouriteQueries = useQueries({
     queries: [...favourites.values()].map((player) => ({
-      ...leaguePlayerDetailQuery(session.httpClient, leagueId, player.id),
-      placeholderData: player,
+      ...leaguePlayerDetailQuery(session.httpClient, leagueId, player.id, statisticsPeriod),
+      // A saved season/period row must not appear as another period while its read loads.
+      placeholderData: statisticsPeriod.statsPeriod === "season" && !player.statistics?.period ? player : undefined,
       enabled: viewingFavourites && session.status === "authenticated" && Boolean(league),
     })),
   });
@@ -266,6 +276,7 @@ export function PlayersCatalogPage() {
       ownership: serverOwnership,
       minimumGames: Number(minimumGames),
       ...contractFilters,
+      ...statisticsPeriod,
     }),
     enabled: playerListEnabled,
   });
@@ -712,14 +723,19 @@ export function PlayersCatalogPage() {
                 </select>
               </label>
               <AavRangeFilter range={aavRange} onChange={setAavRange} valid={aavRangeValid} />
+              <StatisticsPeriodFilter value={statisticsPeriod} onChange={setStatisticsPeriod}
+                seasonKey={loadedPlayers.find(player => player.statistics)?.statistics.nhlSeasonKey} />
             </div>
           </details>
         </form>
+        {statisticsPeriod.statsPeriod !== "season" && <p className={periodStyles.summary}>
+          Stats: {statisticsPeriodLabel(statisticsPeriod)} · completed games
+        </p>}
       </Surface>
 
       {aavRange.enabled && !aavRangeValid ? (
         <Surface><EmptyBlock>Check the AAV range to see matching players.</EmptyBlock></Surface>
-      ) : ((!viewingFavourites && players.isPending) || (serverFilteredFavourites && (players.isPending || players.hasNextPage) && !players.isError)) ? (
+      ) : ((!viewingFavourites && players.isPending) || (viewingFavourites && !serverFilteredFavourites && favouriteQueries.some(result => result.isPending)) || (serverFilteredFavourites && (players.isPending || players.hasNextPage) && !players.isError)) ? (
         <Surface>
           <LoadingBlock>Loading players…</LoadingBlock>
         </Surface>

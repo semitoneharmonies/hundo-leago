@@ -36,6 +36,7 @@ export const routePaths = Object.freeze({
   daily: "/daily",
   dailyHistory: "/daily/history",
   dailyProfile: "/daily/profile",
+  dailyNotifications: "/daily/notifications",
   dailyCreate: "/daily/create",
   dailyPractice: "/daily/practice",
   dailyRoom: (roomId) => `/daily/rooms/${segment(roomId, "Room ID")}`,

@@ -5,7 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 import { routePaths } from "../../app/routePaths.js";
 import QuoteTicker from "../../components/QuoteTicker.jsx";
 import { HundoBrand } from "../../components/HundoBrand.jsx";
-import { notificationsQuery } from "../notifications/notificationQueries.js";
+import { dailyRead } from "./dailyApi.js";
 import { useSession } from "../session/sessionContext.js";
 
 export function DailyHeader() {
@@ -18,11 +18,12 @@ export function DailyHeader() {
   const accountButtonRef = useRef(null);
   const authenticated = session.status === "authenticated";
   const notifications = useQuery({
-    ...notificationsQuery(session.httpClient, null, "unread"),
+    ...dailyRead(session, "/notifications"),
     enabled: authenticated,
+    refetchInterval: 15_000,
   });
-  const unreadCount = notifications.data?.notifications.filter(item => item.readAtMs === null).length || 0;
-  const unreadLabel = `${unreadCount}${notifications.data?.page.nextCursor ? "+" : ""}`;
+  const unreadCount = notifications.data?.unreadCount || 0;
+  const unreadLabel = String(unreadCount);
   const leagoTarget = authenticated ? routePaths.leagues : routePaths.home;
 
   useEffect(() => {
@@ -63,8 +64,8 @@ export function DailyHeader() {
       <div className="hl-app-header__account" ref={accountRef}
         onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setAccountOpen(false); }}>
         {authenticated ? <>
-          <Link className="hl-notification-link" to={routePaths.notifications}
-            aria-label={unreadCount ? `Notifications, ${unreadLabel} unread` : "Notifications"}>
+          <Link className="hl-notification-link" to={routePaths.dailyNotifications}
+            aria-label={unreadCount ? `Daily notifications, ${unreadLabel} unread` : "Daily notifications"}>
             <Bell aria-hidden="true" />
             {unreadCount > 0 && <span aria-hidden="true">{unreadLabel}</span>}
           </Link>

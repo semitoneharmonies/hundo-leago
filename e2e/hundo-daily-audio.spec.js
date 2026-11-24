@@ -3,11 +3,20 @@ import { expect, test } from "@playwright/test";
 async function fixture(page, saved) {
   await page.addInitScript(saved => {
     if (saved) localStorage.setItem("hundo-daily-sound:audio-me",saved);
-    window.audioContexts = []; window.audioTones = [];
+    window.audioContexts = []; window.audioTones = []; window.auctioneerNodes = [];
     const Native = window.AudioContext || window.webkitAudioContext;
     if (!Native) return;
     window.AudioContext = class extends Native {
       constructor(...args) { super(...args); window.audioContexts.push(this); }
+      createBufferSource() {
+        const node = super.createBufferSource();
+        const entry = { node, started: false, stopped: false };
+        window.auctioneerNodes.push(entry);
+        const start = node.start.bind(node), stop = node.stop.bind(node);
+        node.start = (...args) => { entry.started = true; return start(...args); };
+        node.stop = (...args) => { entry.stopped = true; return stop(...args); };
+        return node;
+      }
       createOscillator() {
         const node = super.createOscillator();
         let frequency = 0;
@@ -42,6 +51,7 @@ async function fixture(page, saved) {
     if (path === "/daily/rooms/audio-room") return controls.closed
       ? route.fulfill({status:410,json:{error:{code:"ROOM_CLOSED",message:"This room was closed.",requestId:"audio-fixture"}}})
       : answer({room});
+    if (path === "/daily/rooms/audio-room/chat") return answer({ messages: [], readOnly: room.phase === "finished" });
     if (path === "/daily/rooms/audio-room/bids") {
       writes.push(request.postDataJSON());
       if (failBid) { failBid=false; return route.fulfill({status:409,json:{error:{code:"BID_REJECTED",message:"That bid could not be accepted.",requestId:"audio-fixture"}}}); }
@@ -55,12 +65,13 @@ async function fixture(page, saved) {
 }
 const tones = page => page.evaluate(() => window.audioTones);
 const clearTones = page => page.evaluate(() => { window.audioTones.length=0; });
+const activeLoops = page => page.evaluate(() => window.auctioneerNodes.filter(node => node.started && !node.stopped).length);
 
 test("auction sounds unlock on a first tap and follow confirmed bids, slots, awards and early closure",async ({page}) => {
   const {room,player,writes,at} = await fixture(page);
   await page.goto("/daily/rooms/audio-room");
   test.skip(!await page.evaluate(()=>Boolean(window.AudioContext || window.webkitAudioContext)),"This automated browser build has no Web Audio implementation.");
-  await expect(page.getByRole("button",{name:"Sounds on",exact:true})).toHaveAttribute("aria-pressed","true");
+  await expect(page.getByRole("button",{name:"Sound FX on",exact:true})).toHaveAttribute("aria-pressed","true");
   await expect(page.getByRole("heading",{name:"Sound check",exact:true})).toBeVisible();
   expect(await page.evaluate(()=>window.audioContexts.length)).toBe(0);
   await page.getByRole("heading",{name:"Sound check",exact:true}).click();
@@ -94,7 +105,7 @@ test("sound toggle stays outside rooms, saves mute and does not replay events",a
   const {room,player,at} = await fixture(page,"off");
   await page.goto("/daily/rooms/audio-room");
   test.skip(!await page.evaluate(()=>Boolean(window.AudioContext || window.webkitAudioContext)),"This automated browser build has no Web Audio implementation.");
-  const toggle=page.getByRole("button",{name:"Sounds off",exact:true});
+  const toggle=page.getByRole("button",{name:"Sound FX off",exact:true});
   await expect(toggle).toHaveAttribute("aria-pressed","false");
   expect(await toggle.evaluate(el=>Boolean(el.closest(".hd-room-box")))).toBe(false);
   await page.getByRole("heading",{name:"Sound check",exact:true}).click();
@@ -102,13 +113,13 @@ test("sound toggle stays outside rooms, saves mute and does not replay events",a
   room.auctions.push({...player,id:"while-muted",name:"While muted",ownBid:null,bidCount:1,endsAt:at(120000)});
   await expect(page.getByText("While muted",{exact:true})).toBeAttached({timeout:7000});
   await toggle.click();
-  await expect(page.getByRole("button",{name:"Sounds on",exact:true})).toHaveAttribute("aria-pressed","true");
+  await expect(page.getByRole("button",{name:"Sound FX on",exact:true})).toHaveAttribute("aria-pressed","true");
   await expect.poll(()=>page.evaluate(()=>window.audioContexts[0]?.state)).toBe("running");
   expect(await tones(page)).toEqual([]);
-  await page.getByRole("button",{name:"Sounds on",exact:true}).click();
+  await page.getByRole("button",{name:"Sound FX on",exact:true}).click();
   expect(await page.evaluate(()=>localStorage.getItem("hundo-daily-sound:audio-me"))).toBe("off");
   await page.reload();
-  await expect(page.getByRole("button",{name:"Sounds off",exact:true})).toHaveAttribute("aria-pressed","false");
+  await expect(page.getByRole("button",{name:"Sound FX off",exact:true})).toHaveAttribute("aria-pressed","false");
   expect(await page.evaluate(()=>window.audioContexts.length)).toBe(0);
 });
 
@@ -117,7 +128,8 @@ test("unsupported audio leaves the controls and bidding usable",async ({page}) =
   await page.addInitScript(()=>{ window.AudioContext=undefined; window.webkitAudioContext=undefined; });
   const errors=[]; page.on("pageerror",error=>errors.push(error.message));
   await page.goto("/daily/rooms/audio-room");
-  await expect(page.getByRole("button",{name:"Sound unavailable",exact:true})).toBeDisabled();
+  await expect(page.getByRole("button",{name:"Sound FX unavailable",exact:true})).toBeDisabled();
+  await expect(page.getByRole("button",{name:"Auctioneer unavailable",exact:true})).toBeDisabled();
   await page.getByRole("button",{name:"Bid on Test Skater",exact:true}).click();
   await page.getByLabel("Sealed bid for Test Skater").fill("12");
   await page.getByRole("button",{name:"Place bid",exact:true}).click();
@@ -140,4 +152,75 @@ test("a remotely closed room stops its stale auction countdown",async ({page}) =
   await page.clock.fastForward(Math.max(0,Date.parse(room.auctionEndsAt)-time-5000));
   await page.clock.runFor(6000);
   expect(await tones(page)).toEqual([]);
+});
+
+test("auctioneer decodes the real MP3 and stays independent of FX, chat and saved preferences", async ({page}, testInfo) => {
+  const { room, player, at } = await fixture(page);
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/daily/rooms/audio-room");
+  await expect(page.getByRole("button", { name: "Auctioneer on", exact: true })).toBeVisible();
+  expect(await activeLoops(page)).toBe(0);
+  await page.getByRole("heading", { name: "Sound check", exact: true }).click();
+  await expect.poll(() => activeLoops(page)).toBe(1);
+  const recording = await page.evaluate(() => {
+    const node = window.auctioneerNodes[0].node;
+    return { duration: node.buffer.duration, loop: node.loop };
+  });
+  expect(recording.loop).toBe(true);
+  expect(recording.duration).toBeGreaterThan(106);
+  expect(recording.duration).toBeLessThan(107);
+  await page.screenshot({ path: testInfo.outputPath("audio-controls.png"), fullPage: true });
+
+  await page.getByRole("button", { name: "Auctioneer on", exact: true }).click();
+  await expect.poll(() => activeLoops(page)).toBe(0);
+  await expect(page.getByRole("button", { name: "Sound FX on", exact: true })).toHaveAttribute("aria-pressed", "true");
+  room.auctions.push({ ...player, id: "fx-only", ownBid: null, bidCount: 1, endsAt: at(120000) });
+  await expect.poll(() => tones(page), { timeout: 7000 }).toContain(620);
+
+  await page.getByRole("button", { name: "Sound FX on", exact: true }).click();
+  await page.getByRole("button", { name: "Auctioneer off", exact: true }).click();
+  await expect.poll(() => activeLoops(page)).toBe(1);
+  await clearTones(page);
+  room.auctions.push({ ...player, id: "auctioneer-only", ownBid: null, bidCount: 1, endsAt: at(120000) });
+  await expect(page.locator(".hda-auction")).toContainText("Test Skater");
+  await page.getByRole("button", { name: "Chat in Sound check", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Sound check · Chat" })).toBeVisible();
+  await page.getByLabel("Message", { exact: true }).fill("Local fixture only");
+  await page.screenshot({ path: testInfo.outputPath("audio-with-chat.png"), fullPage: true });
+  expect(await activeLoops(page)).toBe(1);
+  await page.getByRole("button", { name: "Close chat", exact: true }).click();
+  expect(await tones(page)).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Auctioneer on", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Sound FX off", exact: true })).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("heading", { name: "Sound check", exact: true }).click();
+  await expect.poll(() => activeLoops(page)).toBe(1);
+  room.phase = "locked";
+  await expect(page.getByRole("heading", { name: "Room standings", exact: true })).toBeVisible({timeout: 7000});
+  await expect.poll(() => activeLoops(page)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test("leaving the auction desk stops the loop and unavailable audio does not block bids", async ({page}) => {
+  await fixture(page);
+  await page.route("**/audio/daily-auctioneer-v1.mp3", route => route.fulfill({status: 404, body: "Missing recording"}));
+  const errors = []; page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/daily/rooms/audio-room");
+  await page.getByRole("heading", { name: "Sound check", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Auctioneer on", exact: true })).toHaveAttribute("title", /couldn’t load/);
+  await page.getByRole("button", { name: "Bid on Test Skater", exact: true }).click();
+  await page.getByLabel("Sealed bid for Test Skater").fill("12");
+  await page.getByRole("button", { name: "Place bid", exact: true }).click();
+  await expect(page.getByRole("alert").filter({hasText: "That bid could not be accepted."}).first()).toBeVisible();
+  expect(errors).toEqual([]);
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".hda-bid-dialog")).not.toBeVisible();
+  await page.unroute("**/audio/daily-auctioneer-v1.mp3");
+  await page.getByRole("button", { name: "Auctioneer on", exact: true }).click();
+  await page.getByRole("button", { name: "Auctioneer off", exact: true }).click();
+  await expect.poll(() => activeLoops(page)).toBe(1);
+  await page.getByRole("link", { name: "All rooms", exact: true }).click();
+  await expect.poll(() => activeLoops(page)).toBe(0);
 });

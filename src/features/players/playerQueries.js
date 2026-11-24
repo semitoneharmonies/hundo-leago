@@ -10,6 +10,22 @@ import {
 
 const part = (value) => encodeURIComponent(value);
 
+function periodParameters({ statsPeriod = "season", startDate, endDate, lastGames } = {}) {
+  if (statsPeriod === "dateRange") return { statsPeriod, startDate, endDate };
+  if (statsPeriod === "lastGames") return { statsPeriod, lastGames: String(lastGames) };
+  return {};
+}
+
+function validateRequestedPeriod(player, period) {
+  if (!period.statsPeriod || period.statsPeriod === "season" || player.statistics === null) return;
+  const received = player.statistics?.period;
+  if (received?.mode !== period.statsPeriod ||
+    (period.statsPeriod === "dateRange" && (received.startDate !== period.startDate || received.endDate !== period.endDate)) ||
+    (period.statsPeriod === "lastGames" && received.lastGames !== Number(period.lastGames))) {
+    throw new ResponseContractError("The player statistics do not match the requested period.");
+  }
+}
+
 export const playerKeys = Object.freeze({
   searches: ["players", "search"],
   search: ({
@@ -56,6 +72,10 @@ export const playerKeys = Object.freeze({
     maximumAavCents,
     remainingYears,
     contractType,
+    statsPeriod,
+    startDate,
+    endDate,
+    lastGames,
   }) => [
     "league",
     leagueId,
@@ -74,13 +94,18 @@ export const playerKeys = Object.freeze({
     maximumAavCents,
     remainingYears,
     contractType,
+    statsPeriod,
+    startDate,
+    endDate,
+    lastGames,
   ],
-  leagueDetail: (leagueId, playerId) => [
+  leagueDetail: (leagueId, playerId, period = {}) => [
     "league",
     leagueId,
     "players",
     "detail",
     playerId,
+    ...(Object.keys(periodParameters(period)).length ? [periodParameters(period)] : []),
   ],
 });
 
@@ -224,6 +249,10 @@ export function leaguePlayerInfiniteQuery(
     maximumAavCents = null,
     remainingYears = null,
     contractType = "all",
+    statsPeriod = "season",
+    startDate = null,
+    endDate = null,
+    lastGames = null,
   } = {}
 ) {
   return infiniteQueryOptions({
@@ -242,6 +271,10 @@ export function leaguePlayerInfiniteQuery(
       maximumAavCents,
       remainingYears,
       contractType,
+      statsPeriod,
+      startDate,
+      endDate,
+      lastGames,
     }),
     initialPageParam: null,
     queryFn: async ({ pageParam, signal }) => {
@@ -262,14 +295,18 @@ export function leaguePlayerInfiniteQuery(
           ? { minimumGames: String(minimumGames) }
           : {}),
         ...(pageParam ? { cursor: pageParam } : {}),
+        ...periodParameters({ statsPeriod, startDate, endDate, lastGames }),
       });
       const response = await httpClient.request(
         `/api/v1/leagues/${part(leagueId)}/players?${search.toString()}`,
         {
           authenticated: true,
           dataKind: "array",
-          validateData: (data) =>
-            validateLeaguePlayerList(data, leagueId),
+          validateData: (data) => {
+            validateLeaguePlayerList(data, leagueId);
+            for (const player of data) validateRequestedPeriod(player, { statsPeriod, startDate, endDate, lastGames });
+            return true;
+          },
           signal,
         }
       );
@@ -291,18 +328,23 @@ export function leaguePlayerInfiniteQuery(
 export function leaguePlayerDetailQuery(
   httpClient,
   leagueId,
-  playerId
+  playerId,
+  period = {}
 ) {
+  const search = new URLSearchParams(periodParameters(period)).toString();
   return queryOptions({
-    queryKey: playerKeys.leagueDetail(leagueId, playerId),
+    queryKey: playerKeys.leagueDetail(leagueId, playerId, period),
     queryFn: async ({ signal }) => {
       const response = await httpClient.request(
-        `/api/v1/leagues/${part(leagueId)}/players/${part(playerId)}`,
+        `/api/v1/leagues/${part(leagueId)}/players/${part(playerId)}${search ? `?${search}` : ""}`,
         {
           authenticated: true,
           dataKind: "object",
-          validateData: (data) =>
-            validateLeaguePlayerDetail(data, leagueId),
+          validateData: (data) => {
+            validateLeaguePlayerDetail(data, leagueId);
+            validateRequestedPeriod(data, period);
+            return true;
+          },
           signal,
         }
       );

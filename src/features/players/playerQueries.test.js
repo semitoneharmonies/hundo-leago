@@ -3,11 +3,43 @@ import { describe, expect, it, vi } from "vitest";
 import {
   leaguePlayerInfiniteQuery,
   leaguePlayerSearchQuery,
+  leaguePlayerDetailQuery,
 } from "./playerQueries.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
 
 describe("league player catalog queries", () => {
+  it.each([
+    { statsPeriod: "dateRange", startDate: "2026-10-28", endDate: "2026-11-18" },
+    { statsPeriod: "lastGames", lastGames: 10 },
+  ])("keeps a stats period in page and favourite requests and independent cache keys: %j", async (period) => {
+    const request = vi.fn(async () => ({ data: [], page: { nextCursor: null, hasMore: false } }));
+    const query = leaguePlayerInfiniteQuery({ request }, leagueId, { ownership: "free", position: "F", ...period });
+    await query.queryFn({ pageParam: "next-player", signal: new AbortController().signal });
+    const params = new URL(request.mock.calls[0][0], "http://localhost").searchParams;
+    for (const [name, value] of Object.entries(period)) expect(params.get(name)).toBe(String(value));
+    expect(params.get("ownership")).toBe("free");
+    expect(params.get("position")).toBe("F");
+    expect(params.get("cursor")).toBe("next-player");
+    expect(query.queryKey).not.toEqual(leaguePlayerInfiniteQuery({ request }, leagueId).queryKey);
+    const detail = leaguePlayerDetailQuery({ request }, leagueId, "favourite-player", period);
+    await detail.queryFn({ signal: new AbortController().signal });
+    const detailParams = new URL(request.mock.calls[1][0], "http://localhost").searchParams;
+    for (const [name, value] of Object.entries(period)) expect(detailParams.get(name)).toBe(String(value));
+    expect(detail.queryKey).not.toEqual(leaguePlayerDetailQuery({ request }, leagueId, "favourite-player").queryKey);
+  });
+
+  it("preserves the default detail request and invalidation prefix", async () => {
+    const request = vi.fn(async () => ({ data: {} }));
+    const defaultQuery = leaguePlayerDetailQuery({ request }, leagueId, "player");
+    const seasonQuery = leaguePlayerDetailQuery({ request }, leagueId, "player", { statsPeriod: "season" });
+    expect(seasonQuery.queryKey).toEqual(defaultQuery.queryKey);
+    await seasonQuery.queryFn({ signal: new AbortController().signal });
+    expect(request.mock.calls[0][0]).toBe(`/api/v1/leagues/${leagueId}/players/player`);
+    const scoped = leaguePlayerDetailQuery({ request }, leagueId, "player", { statsPeriod: "lastGames", lastGames: 5 });
+    expect(scoped.queryKey.slice(0, defaultQuery.queryKey.length)).toEqual(defaultQuery.queryKey);
+  });
+
   it("keeps every contract filter in requests, subsequent pages and cache identity", async () => {
     const request = vi.fn(async () => ({ data: [], page: { nextCursor: null, hasMore: false } }));
     const filters = { ownership: "signed", minimumAavCents: 0, maximumAavCents: 600, remainingYears: 1, contractType: "fantasy_elc" };
