@@ -12,12 +12,15 @@ import { DailyProfile } from "./DailyProfile.jsx";
 import { DailyNotifications } from "./DailyNotifications.jsx";
 import { DailyHelp } from "./DailyHelp.jsx";
 import { DailyScoringGuide } from "./DailyScoringGuide.jsx";
-import { DailyAudioProvider, DailySoundToggle } from "./DailyAudio.jsx";
+import { DailyAudioProvider, DailyLobbyAudio, DailySoundToggle } from "./DailyAudio.jsx";
 import { DailyAudioContext } from "./dailyAudioContext.js";
+import { useDailyOpeningRefresh } from "./useDailyOpeningRefresh.js";
 import { dailyGameDate, isDailyHistoryRoom } from "./dailyHistory.js";
 import { DailyCreateScreen, DailyLobbyScreen } from "./HundoDailyRoomScreens.jsx";
 import { dailyKey, dailyRead, dailyWrite, formatDay, rememberParticipation, roomPath } from "./dailyApi.js";
 import "./daily.css";
+import { assignRoomOutlineColours } from "./dailyRoomColours.js";
+import "./DailyRoomColours.css";
 
 const dayNames = { today: "Today", tomorrow: "Tomorrow", next: "Next game day" };
 const slateMessages = {
@@ -48,6 +51,10 @@ function DailyDesk({ session, screen, roomId }) {
     onError: () => { void lobby.refetch(); },
   });
   const { rooms = [], slate, practiceSlate, slateOptions } = lobby.data ?? {};
+  const nextOpening = screen === "lobby" ? rooms.filter(room => room.joined && room.phase === "waiting")
+    .map(room => room.auctionStartsAt).filter(value => Number.isFinite(Date.parse(value)))
+    .sort((a, b) => Date.parse(a) - Date.parse(b))[0] : null;
+  useDailyOpeningRefresh(nextOpening, lobby.refetch);
   useEffect(() => {
     const refresh = () => setClockDay(dailyGameDate());
     refresh();
@@ -58,6 +65,8 @@ function DailyDesk({ session, screen, roomId }) {
   const currentRooms = rooms.filter(room => !isDailyHistoryRoom(room, today));
   const historyRooms = rooms.filter(room => isDailyHistoryRoom(room, today));
   const viewingHistoryRoom = isDailyHistoryRoom(rooms.find(room => room.id === roomId) ?? {}, today);
+  const otherVisibleRooms = roomId && !viewingHistoryRoom ? currentRooms.filter(room => room.joined && room.id !== roomId) : [];
+  const roomOutlines = assignRoomOutlineColours(roomId ? [roomId, ...otherVisibleRooms.map(room => room.id)] : []);
   const options = slateOptions ?? (slate ? [{ ...slate, status: "open" }] : []);
   const showCreateLinks = screen === "lobby" || ["auction", "waiting"].includes(rooms.find(room => room.id === roomId)?.phase);
   useEffect(() => {
@@ -84,6 +93,7 @@ function DailyDesk({ session, screen, roomId }) {
       {mutation.isError && <p className="hd-error" role="alert">{mutation.error.message}</p>}
       {lobby.isPending && !roomId && <p role="status">Loading rooms…</p>}
       {screen === "lobby" && lobby.data && <>
+        <DailyLobbyAudio rooms={currentRooms} viewerId={session.user.id}/>
         <DailyLobbyScreen rooms={currentRooms} slate={slate} viewer={session.user} pending={mutation.isPending}
           onJoin={(id) => mutation.mutate({ path: roomPath(id) + "/join", body: {} })} />
         {!slate && (options.length ? options.map(option => <p className="hd-note" key={option.date} role="status">
@@ -100,9 +110,9 @@ function DailyDesk({ session, screen, roomId }) {
         onCreate={(body, key) => mutation.mutate({ path: "/rooms", body, key })}
         onCancel={() => navigate(routePaths.daily)} />}
       {roomId && <div className="hd-room-stack">
-        <DailyRoom key={roomId} session={session} roomId={roomId} primary />
-        {!viewingHistoryRoom && currentRooms.filter(room => room.joined && room.id !== roomId).map(room =>
-          <DailyRoom key={room.id} session={session} roomId={room.id} />)}
+        <DailyRoom key={roomId} session={session} roomId={roomId} outlineColour={roomOutlines.get(roomId)} primary />
+        {otherVisibleRooms.map(room =>
+          <DailyRoom key={room.id} session={session} roomId={room.id} outlineColour={roomOutlines.get(room.id)} />)}
       </div>}
     </main>
   </>;

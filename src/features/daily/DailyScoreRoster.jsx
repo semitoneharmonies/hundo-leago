@@ -31,7 +31,7 @@ function rosterSlots(roster = []) {
   return slots;
 }
 
-export function ScoreRosterTable({ member, detailed = false }) {
+export function ScoreRosterTable({ member, detailed = false, capBonusRatePercent = 0 }) {
   return <table className={"hds-roster-table" + (detailed ? " hds-roster-table-detailed" : "")}>
     <caption className="hds-visually-hidden">{detailed ? "Roster for " + member.name : "Your roster slots"}</caption>
     <thead><tr><th scope="col">Slot</th><th scope="col">Player</th>
@@ -46,16 +46,21 @@ export function ScoreRosterTable({ member, detailed = false }) {
       <td>{salaryText(player?.price)}</td>
       <td className="hds-fp">{player ? scoreText(player.points) : "—"}</td>
     </tr>)}</tbody>
-    <tfoot><tr><th scope="row" colSpan={detailed ? SCORING_CATEGORIES.length + 3 : 3}>Team total</th>
+    <tfoot>{capBonusRatePercent > 0 && <>
+      <tr className="hds-cap-subtotal"><th scope="row" colSpan={detailed ? SCORING_CATEGORIES.length + 4 : 4}>Hockey FP</th>
+        <td className="hds-fp">{scoreText(member.hockeyPoints)}</td></tr>
+      <tr className="hds-cap-subtotal"><th scope="row" colSpan={detailed ? SCORING_CATEGORIES.length + 4 : 4}>Cap bonus ({member.capBonusPercent}%)</th>
+        <td className="hds-fp">+{scoreText(member.capBonusPoints)}</td></tr>
+    </>}<tr><th scope="row" colSpan={detailed ? SCORING_CATEGORIES.length + 3 : 3}>Team total</th>
       <td className="hds-salary-total">{salaryText(member.spent)}</td>
       <td className={detailed ? "hds-fp" : "hds-team-total"}>{scoreText(member.points)} {detailed ? "FP" : <small>FP</small>}</td></tr></tfoot>
   </table>;
 }
 
-export function DailyScoreRoster({ member }) {
+export function DailyScoreRoster({ member, capBonusRatePercent = 0 }) {
   return <section className="hds-own-roster hds-pane" aria-label="Your roster">
     <h2>Your roster</h2>
-    {member ? <div className="hds-table-scroll" role="region" aria-label="Your roster details" tabIndex={0}><ScoreRosterTable member={member}/></div>
+    {member ? <div className="hds-table-scroll" role="region" aria-label="Your roster details" tabIndex={0}><ScoreRosterTable member={member} capBonusRatePercent={capBonusRatePercent}/></div>
       : <p className="hds-empty">You aren’t a participant in this room, so you don’t have a roster here. Expand a manager in the standings to view their players.</p>}
   </section>;
 }

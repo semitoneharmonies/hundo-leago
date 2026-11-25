@@ -31,6 +31,8 @@ export function DailyScoringGuide() {
         })}</tbody>
       </table>
       <div className="hd-scoring-notes">
+        <p><strong>Save cap, boost your score.</strong> Rooms with the optional cap savings bonus add 0.25% to positive team FP for every $1 of the $100 cap left unspent when the auction closes. Save $40 for a 10% bonus: 30 hockey FP + 3 bonus FP = 33 total FP.</p>
+        <p>The bonus is rounded once per team to two decimal places. Individual player FP stays unchanged; zero or negative team FP gets no bonus. The commissioner chooses this rule at creation; check the lobby label before joining. Rooms with the bonus off use hockey FP only. Existing rooms retain their original scoring rules.</p>
         <p><strong>Defence earns extra.</strong> Hits and blocks are +0.35 each for D and +0.20 for F. Flex players keep the scoring for their actual position.</p>
         <p><strong>A winner gets a bonus.</strong> A goal earns its even-strength, power-play or shorthanded value. A game-winning goal adds another +1.00 FP.</p>
         <p><strong>Assists, explained.</strong> The primary assist is the last pass before the goal; the secondary assist is the pass before that. Negative values deduct points from your total.</p>

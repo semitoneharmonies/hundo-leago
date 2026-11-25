@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 import { Volume2, VolumeX } from "lucide-react";
-import { DailyAudioContext } from "./dailyAudioContext.js";
+import { DailyAudioContext, useDailyRoomAudio } from "./dailyAudioContext.js";
 import { createDailyAudio } from "./dailyAuctionSounds.js";
 import { dailyNow } from "./dailyApi.js";
 
@@ -8,6 +8,18 @@ export function DailyAudioProvider({ userId, children }) {
   const audio = useMemo(() => createDailyAudio({ userId, now: dailyNow }), [userId]);
   useEffect(() => audio.connect(), [audio]);
   return <DailyAudioContext.Provider value={audio}>{children}</DailyAudioContext.Provider>;
+}
+
+function LobbyRoomAudio({ room, viewerId }) {
+  useDailyRoomAudio(room, viewerId);
+  return null;
+}
+
+// Lobby summaries include the scheduled deadlines, so the five-second cues do
+// not depend on opening a room or on the lobby's slower refresh interval.
+export function DailyLobbyAudio({ rooms, viewerId }) {
+  return rooms.filter(room => room.joined).map(room =>
+    <LobbyRoomAudio key={room.id} room={room} viewerId={viewerId}/>);
 }
 
 export function DailySoundToggle({ auctioneer = false }) {

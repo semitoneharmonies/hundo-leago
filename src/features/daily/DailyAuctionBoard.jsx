@@ -208,12 +208,13 @@ export function AuctionBoard({ room, session, command }) {
     return room.bidLimits?.[positionGroup(player)] || { maxAmount: 0, reason: "Bid limits are unavailable." };
   }
   function bidButton(player, expired = false) {
-    if (!live) return null;
+    if (!room.joined) return null;
     const limit = limitFor(player);
     const limitId = prefix + "-limit-" + positionGroup(player);
     return <button type="button" className="hda-bid" aria-label={"Bid on " + player.name}
-      aria-describedby={limit.reason && room.bidLimits ? limitId : undefined} title={limit.reason || "Maximum bid $" + limit.maxAmount}
-      disabled={expired || command.isPending || limit.maxAmount < room.rules.minBid}
+      aria-describedby={live && limit.reason && room.bidLimits ? limitId : undefined}
+      title={!live ? "Bidding opens when the auction starts." : limit.reason || "Maximum bid $" + limit.maxAmount}
+      disabled={!live || expired || command.isPending || limit.maxAmount < room.rules.minBid}
       onClick={event => { bidTriggerRef.current = event.currentTarget; command.reset(); setSelection(player.id); }}>Bid</button>;
   }
   return <div className="hda-auction">

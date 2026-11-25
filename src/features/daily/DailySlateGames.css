@@ -1,0 +1,11 @@
+.hd-slate-games { display:flex; align-items:center; gap:8px 12px; flex:1 1 260px; min-width:0; }
+.hd-slate-label { font-size:10px; color:var(--muted,#a6b3c6); }
+.hd-slate-games ul { display:flex; flex-wrap:wrap; gap:5px 14px; list-style:none; padding:0; margin:0; }
+.hd-slate-games li { white-space:nowrap; font-size:11px; line-height:1.5; font-weight:500; color:var(--text,#dbe4f0); }
+.hd-slate-games li span { color:var(--muted,#a6b3c6); }
+.hd-room-slate { padding:8px 14px 12px; }
+.hd-waiting .hd-slate-games { flex-basis:280px; }
+.hds-standings-title { flex-wrap:wrap; gap:10px 20px; }
+.hds-standings-title > .hd-slate-games { display:flex; flex-direction:row; align-items:center; text-align:left; }
+.hds-final > .hd-slate-games { margin:12px 0; }
+@media(max-width:600px) { .hd-slate-games { flex-basis:100%; } .hd-slate-games ul { gap:4px 12px; } }

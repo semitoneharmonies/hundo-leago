@@ -20,6 +20,13 @@ describe("selectable Daily auction starts", () => {
     expect(dailyStartTimes({...slate,auctionStartsAt:"2026-11-19T23:30:00Z"},now)).toEqual(["2026-11-19T23:30:00Z"]);
     expect(dailyStartTimes({...slate,auctionStartsAt:"2026-11-19T23:30:00Z"},Date.parse("2026-11-19T23:30:00Z"))).toEqual([]);
   });
+  it("allows tonight's quarter-hour slots for tomorrow's games without confusing the slate date", () => {
+    expect(dailyStartTimes({date:"2026-11-20",status:"open",firstGameAt:"2026-11-21T00:00:00Z",auctionStartOptions:[
+      "2026-11-20T03:15:00Z", "2026-11-20T18:30:00Z", "2026-11-20T23:30:00Z", "2026-11-20T23:45:00Z",
+    ]},Date.parse("2026-11-20T03:08:00Z"))).toEqual([
+      "2026-11-20T03:15:00Z", "2026-11-20T18:30:00Z", "2026-11-20T23:30:00Z",
+    ]);
+  });
   it("accepts the established numeric-millisecond slate contract", () => {
     expect(dailyStartTimes({...slate,firstGameAt:Date.parse(slate.firstGameAt),auctionStartOptions:["2026-11-19T19:30:00.000Z"]},now)).toEqual(["2026-11-19T19:30:00.000Z"]);
     expect(dailyStartTimes({...slate,firstGameAt:Date.parse(slate.firstGameAt),auctionStartsAt:Date.parse("2026-11-19T23:30:00Z")},now)).toEqual(["2026-11-19T23:30:00.000Z"]);

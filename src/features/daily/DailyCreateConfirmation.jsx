@@ -13,7 +13,7 @@ export function DailyCreateConfirmation({ date, startsAt, tomorrow, onConfirm, o
     onCancel={event => { event.preventDefault(); onCancel(); }}>
     <h2 id="daily-confirm-title">{tomorrow ? "Create a room for tomorrow?" : "Create a room for this game day?"}</h2>
     <p>This room is for <strong>{tomorrow ? "tomorrow’s" : "a future"} slate of games</strong> — {formatDay(date + "T12:00:00Z")}.</p>
-    <p>The auction starts at <strong>{formatTime(startsAt)}</strong> and lasts 30 minutes.</p>
+    <p>The auction starts <strong>{formatDay(startsAt)} · {formatTime(startsAt)}</strong> and lasts 30 minutes.</p>
     <div className="hds-confirm-actions"><button type="button" className="hds-button" autoFocus onClick={onCancel}>Go back</button>
       <button type="button" className="hds-button hds-button-solid" onClick={onConfirm}>{tomorrow ? "Create tomorrow’s room" : "Confirm room"}</button></div>
   </dialog>;

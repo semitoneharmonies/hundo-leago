@@ -1,0 +1,25 @@
+.hd-room-box[data-room-outline] {
+  position:relative;
+  border-color:var(--room-metal);
+  box-shadow:0 0 0 1px var(--room-metal-shadow),0 8px 28px #0004;
+}
+.hd-room-box[data-room-outline]::before {
+  content:""; position:absolute; inset:0; z-index:5; padding:2px; border-radius:inherit; pointer-events:none;
+  background:linear-gradient(115deg,var(--room-metal) 5%,var(--room-metal-dark) 23%,var(--room-metal) 38%,var(--room-metal-light) 47%,var(--room-metal) 56%,var(--room-metal-dark) 75%,var(--room-metal) 95%);
+  background-size:250% 100%;
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  animation:hd-room-metal-sheen 16s ease-in-out infinite alternate;
+}
+.hd-room-box[data-room-outline=blue] { --room-metal:#598fd3; --room-metal-dark:#234467; --room-metal-light:#deedff; --room-metal-shadow:#598fd333; }
+.hd-room-box[data-room-outline=green] { --room-metal:#53a67b; --room-metal-dark:#244b39; --room-metal-light:#d8fbe8; --room-metal-shadow:#53a67b33; }
+.hd-room-box[data-room-outline=red] { --room-metal:#cc6372; --room-metal-dark:#672e3b; --room-metal-light:#ffe0e6; --room-metal-shadow:#cc637233; }
+.hd-room-box[data-room-outline=silver] { --room-metal:#a3b0c2; --room-metal-dark:#424e61; --room-metal-light:#f6faff; --room-metal-shadow:#a3b0c233; }
+.hd-room-box[data-room-outline=pink] { --room-metal:#cf81b9; --room-metal-dark:#65395a; --room-metal-light:#ffe4f7; --room-metal-shadow:#cf81b933; }
+.hd-room-box[data-room-outline=teal] { --room-metal:#43aaa7; --room-metal-dark:#205151; --room-metal-light:#d8fffa; --room-metal-shadow:#43aaa733; }
+.hd-room-box[data-room-outline=yellow] { --room-metal:#c8ad50; --room-metal-dark:#65522c; --room-metal-light:#fff7cb; --room-metal-shadow:#c8ad5033; }
+.hd-room-box[data-room-outline=dark-purple] { --room-metal:#7954a8; --room-metal-dark:#36234f; --room-metal-light:#cdb7ef; --room-metal-shadow:#7954a833; }
+@keyframes hd-room-metal-sheen { from { background-position:0 0; } to { background-position:100% 0; } }
+@media (prefers-reduced-motion:reduce) { .hd-room-box[data-room-outline]::before { animation:none; } }
+@media (forced-colors:active) { .hd-room-box[data-room-outline] { border:2px solid CanvasText; box-shadow:none; } .hd-room-box[data-room-outline]::before { display:none; } }

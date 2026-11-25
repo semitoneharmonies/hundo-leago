@@ -115,11 +115,17 @@ export function createDailyAudio({ userId, now, browser = globalThis.window, doc
   function connect() {
     if (connection) return connection;
     const gesture = event => { if (event.isTrusted) void unlock(); };
-    const visibility = () => { stop(); tracker.rebaseline(); auctioneer.sync(); };
+    const resumeActivated = () => {
+      if (browser.navigator?.userActivation?.hasBeenActive) void unlock();
+    };
+    const visibility = () => { stop(); tracker.rebaseline(); auctioneer.sync(); if (visible()) resumeActivated(); };
     doc.addEventListener("pointerdown", gesture, true);
     doc.addEventListener("click", gesture, true);
     doc.addEventListener("keydown", gesture, true);
     doc.addEventListener("visibilitychange", visibility);
+    // The tap that navigated from Leago can happen before this provider mounts.
+    // Reuse that activation when supported; never play queued historical cues.
+    resumeActivated();
     const timer = setInterval(() => { tracker.tick(); auctioneer.sync(); }, 200);
     connection = () => {
       clearInterval(timer); stop(); auctioneer.disconnect();

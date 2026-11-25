@@ -7,6 +7,8 @@ import { AuctionBoard } from "./DailyAuctionBoard.jsx";
 import { DailyScoreboard } from "./HundoDailyRoomScreens.jsx";
 import { useDailyRoomAudio } from "./dailyAudioContext.js";
 import { DailyChat } from "./DailyChat.jsx";
+import { useDailyOpeningRefresh } from "./useDailyOpeningRefresh.js";
+import { DailySlateGames } from "./DailySlateGames.jsx";
 
 function RoomClock({ room }) {
   const waiting = room.phase === "waiting";
@@ -25,7 +27,7 @@ function RoomClock({ room }) {
   </span>;
 }
 
-export function DailyRoom({ session, roomId, primary = false }) {
+export function DailyRoom({ session, roomId, primary = false, outlineColour }) {
   const navigate = useNavigate();
   const client = useQueryClient();
   const [confirmClose, setConfirmClose] = useState(false);
@@ -38,6 +40,7 @@ export function DailyRoom({ session, roomId, primary = false }) {
     },
   });
   const room = result.data?.room;
+  useDailyOpeningRefresh(room?.phase === "waiting" ? room.auctionStartsAt : null, result.refetch);
   const unavailable = [403, 404, 410].includes(result.error?.status);
   const audio = useDailyRoomAudio(unavailable ? undefined : room, session.user.id);
   const command = useMutation({
@@ -70,26 +73,32 @@ export function DailyRoom({ session, roomId, primary = false }) {
   const canJoin = !room.joined && room.memberCount < room.capacity && bidding;
   const commish = room.commissionerName || room.members.find(member => member.id === room.commissionerId)?.name;
   const Heading = primary ? "h1" : "h2";
-  return <article className="hd-room-box" aria-labelledby={"hd-room-" + room.id}>
-    {room.joined && <DailyChat session={session} room={room}/>}
+  return <article className="hd-room-box" data-room-outline={outlineColour} aria-labelledby={"hd-room-" + room.id}>
+    {(room.joined || room.allowSpectatorChat) && <DailyChat session={session} room={room}/>}
     <header className="hd-room-bar">
       <Heading id={"hd-room-" + room.id}>{room.name}</Heading>
       <span>Commish <b>{commish ?? "—"}</b></span>
       <span>{room.memberCount}/{room.capacity} managers</span>
       {bidding ? <RoomClock room={room} /> : <strong className="hd-room-status">{phaseLabels[room.phase]}</strong>}
     </header>
+    {!room.joined && <p className="hd-note hd-room-footnote">Watching as a spectator.</p>}
     {result.isError && <p className="hd-error" role="alert">Room updates paused. {result.error.message}{" "}
       <button className="hd-action" onClick={() => result.refetch()}>Retry</button></p>}
     {command.error && <p className="hd-error" role="alert">{command.error.message}</p>}
     {canJoin && <button className="hd-action hd-primary hd-room-join" disabled={command.isPending}
       onClick={() => command.mutate({ action: "join" })}>Join room</button>}
     {bidding ? <>
+      <p className="hd-note hd-room-footnote">{room.capBonusRatePercent > 0
+        ? `Cap bonus: ${room.capBonusRatePercent}% extra positive team FP per $1 unspent.`
+        : "Cap bonus off · Team score uses hockey FP only."}</p>
       {room.phase === "waiting" && <section className="hd-waiting" aria-label="Auction schedule">
         <div><h2>{formatDay(room.firstGameAt)}</h2>
-          <p>Auction opens <strong>{formatTime(room.auctionStartsAt)}</strong> · Rosters lock <strong>{formatTime(room.auctionEndsAt ?? room.firstGameAt)}</strong> · Puck drop <strong>{formatTime(room.firstGameAt)}</strong></p></div>
+          <p>Auction opens <strong>{formatDay(room.auctionStartsAt)} · {formatTime(room.auctionStartsAt)}</strong> · Rosters lock <strong>{formatDay(room.auctionEndsAt ?? room.firstGameAt)} · {formatTime(room.auctionEndsAt ?? room.firstGameAt)}</strong> · Puck drop <strong>{formatDay(room.firstGameAt)} · {formatTime(room.firstGameAt)}</strong></p></div>
+        <DailySlateGames games={room.games}/>
         {room.joined && room.mode !== "practice" && <p className="hd-note">Reminder 10 minutes before bidding opens.{" "}
-          <Link to={routePaths.notifications}>Device notifications</Link></p>}
+          <Link to={routePaths.dailyNotifications}>Daily notifications</Link></p>}
       </section>}
+      {room.phase === "auction" && <div className="hd-room-slate"><DailySlateGames games={room.games}/></div>}
       <AuctionBoard room={room} session={session} command={command} />
       <details className="hd-participants" open={room.phase === "waiting"}>
         <summary>Participants · {room.memberCount}</summary>

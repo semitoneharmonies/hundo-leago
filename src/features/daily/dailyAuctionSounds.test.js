@@ -27,6 +27,30 @@ beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { vi.useRealTimers(); });
 
 describe("quiet, user-controlled Daily sounds", () => {
+  it("reuses the navigation gesture and plays all five start-countdown tones without another tap", async () => {
+    const { audio, browser, contexts } = harness();
+    browser.navigator = { userActivation: { hasBeenActive: true } };
+    audio.observe({ ...room(), phase: "waiting", auctionStartsAt: new Date(Date.now() + 6000).toISOString() }, "me");
+    const disconnect = audio.connect();
+    await vi.advanceTimersByTimeAsync(6100);
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0].oscillators).toHaveLength(5);
+    expect(contexts[0].oscillators.every(node => node.frequency.setValueAtTime.mock.calls[0][0] === 620)).toBe(true);
+    audio.observe(room(), "me");
+    await vi.advanceTimersByTimeAsync(100);
+    expect(contexts[0].oscillators).toHaveLength(7);
+    disconnect();
+  });
+  it("does not bypass saved mute or start audio before browser activation", async () => {
+    for (const saved of [undefined, "off"]) {
+      const { audio, browser, contexts } = harness(saved);
+      browser.navigator = { userActivation: { hasBeenActive: saved === "off" } };
+      const disconnect = audio.connect();
+      await vi.advanceTimersByTimeAsync(100);
+      expect(contexts).toHaveLength(0);
+      disconnect();
+    }
+  });
   it("defaults on without creating audio until unlocked and never replays old events", async () => {
     const { audio, contexts } = harness();
     expect(audio.getSnapshot()).toEqual({ enabled: true, auctioneerEnabled: true, auctioneerStatus: "idle", available: true });
