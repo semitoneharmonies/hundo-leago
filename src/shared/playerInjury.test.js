@@ -17,4 +17,10 @@ describe('injury details', () => {
   it('rejects malformed public details', () => {
     expect(() => validatePlayerInjury({ ...injury, details: { ...injury.details, reason: {} } })).toThrow();
   });
+  it('accepts Realtime injury and recovery provenance while rejecting unknown providers', () => {
+    for (const status of ['injured', 'healthy', 'unknown']) {
+      expect(validatePlayerInjury({ ...injury, status, source: 'realtime' })).toBe(true);
+    }
+    expect(() => validatePlayerInjury({ ...injury, source: 'unrecognized-provider' })).toThrow();
+  });
 });

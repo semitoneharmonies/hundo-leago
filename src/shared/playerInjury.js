@@ -3,7 +3,7 @@ import { ResponseContractError } from './api/responseContracts.js';
 export function validatePlayerInjury(injury) {
   if (injury === undefined) return true;
   if (!injury || !['unknown', 'injured', 'healthy'].includes(injury.status) ||
-      ![null, 'admin', 'espn'].includes(injury.source) ||
+      ![null, 'admin', 'espn', 'realtime'].includes(injury.source) ||
       !(injury.observedAtMs === null || (Number.isSafeInteger(injury.observedAtMs) && injury.observedAtMs >= 0)) ||
       typeof injury.needsReview !== 'boolean' || typeof injury.stale !== 'boolean') {
     throw new ResponseContractError('The player injury status is invalid.');
