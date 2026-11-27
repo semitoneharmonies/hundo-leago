@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { renderWithProviders } from "../test/render.jsx";
 import TopBar from "./TopBar.jsx";
+import { adminAnalyticsFixture } from "../test/adminAnalyticsFixture.js";
 import { readLeaguePreference } from "../features/leagues/leaguePreference.js";
 
 const leagueId = "11111111-1111-4111-8111-111111111111";
@@ -403,5 +404,37 @@ describe("top bar navigation", () => {
       .toHaveClass("hl-notification-link");
     expect(screen.getByRole("link", { name: "Notifications" }))
       .toHaveAttribute("href", "/notifications");
+  });
+  it("shows Site analytics in the account menu for a known platform administrator", async () => {
+    const fetchImpl = fetchScenario("member", "platform_administrator");
+    const view = renderWithProviders(<TopBar />, { config, enableSession: true, sessionOptions: { fetchImpl } });
+    await screen.findByRole("button", { name: "Account menu" });
+    await view.user.click(screen.getByRole("button", { name: "Account menu" }));
+    expect(screen.getByRole("link", { name: "Site analytics" })).toHaveAttribute("href", "/admin/analytics");
+    expect(fetchImpl.mock.calls.some(([url]) => new URL(url).pathname === "/api/v1/admin/users")).toBe(false);
+  });
+
+  it("discovers analytics access for an administrator with no leagues only when their menu opens", async () => {
+    const baseFetch = fetchScenario("member", "member", null, []);
+    const fetchImpl = vi.fn((url, options) => new URL(url).pathname === "/api/v1/admin/analytics"
+      ? Promise.resolve(response(adminAnalyticsFixture())) : baseFetch(url, options));
+    const view = renderWithProviders(<TopBar />, { config, enableSession: true, sessionOptions: { fetchImpl } });
+    await screen.findByRole("button", { name: "Account menu" });
+    expect(fetchImpl.mock.calls.some(([url]) => new URL(url).pathname === "/api/v1/admin/analytics")).toBe(false);
+    await view.user.click(screen.getByRole("button", { name: "Account menu" }));
+    expect(await screen.findByRole("link", { name: "Site analytics" })).toHaveAttribute("href", "/admin/analytics");
+    expect(fetchImpl.mock.calls.some(([url]) => new URL(url).pathname === "/api/v1/admin/users")).toBe(false);
+  });
+
+  it("keeps the analytics link hidden for a regular manager without a popup", async () => {
+    const baseFetch = fetchScenario("manager");
+    const fetchImpl = vi.fn((url, options) => new URL(url).pathname === "/api/v1/admin/analytics"
+      ? Promise.resolve(new Response(JSON.stringify({ error: { code: "PLATFORM_ADMINISTRATOR_REQUIRED", message: "Administrator access required.", requestId: "analytics-denied" } }), { status: 403, headers: { "Content-Type": "application/json" } })) : baseFetch(url, options));
+    const view = renderWithProviders(<TopBar />, { config, enableSession: true, sessionOptions: { fetchImpl } });
+    await screen.findByRole("button", { name: "Account menu" });
+    await view.user.click(screen.getByRole("button", { name: "Account menu" }));
+    await waitFor(() => expect(fetchImpl.mock.calls.some(([url]) => new URL(url).pathname === "/api/v1/admin/analytics")).toBe(true));
+    expect(screen.queryByRole("link", { name: "Site analytics" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Administrator access required.")).not.toBeInTheDocument();
   });
 });

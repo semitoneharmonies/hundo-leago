@@ -1,0 +1,21 @@
+.motion-preview { max-width:1080px; margin:0 auto; padding:24px; color:#dce6f5; font-family:var(--hl-font-body,Sora,sans-serif); }
+.motion-preview > header { margin-bottom:24px; }
+.motion-preview h1 { font-size:clamp(22px,4vw,32px); margin:8px 0; }
+.motion-preview p { line-height:1.6; }
+.motion-preview a { color:#8cebdc; }
+.motion-preview-room { min-height:360px; border:1px solid #80a5c9; border-radius:9px; background:#091121; }
+.motion-preview-room .hd-room-bar { padding:14px 62px 14px 14px; border-bottom:1px solid #5d3f61; background:linear-gradient(90deg,#292036,#171a2b); border-radius:8px 8px 0 0; }
+.motion-preview-room h2 { margin:0 0 8px; font-size:22px; }
+.motion-preview-room .hd-room-bar span { color:#aab8ca; font-size:12px; }
+.motion-preview-games { padding:0 14px; color:#b9c8d9; font-size:12px; }
+.motion-preview-panels { display:grid; grid-template-columns:1fr 1.5fr 1fr; gap:9px; padding:0 12px 12px; }
+.motion-preview-panels > div { border:1px solid #354259; border-radius:7px; background:#0b1727; padding:12px; min-width:0; }
+.motion-preview-panels h3 { margin:0 0 12px; font-size:17px; }
+.motion-preview-panels p { font-size:12px; border-top:1px solid #29394f; padding-top:10px; }
+.motion-preview-panels strong { color:#e6a7d9; }
+.motion-preview-log { min-height:270px; margin-top:24px; }
+.motion-preview-log h2,.motion-preview-below h2 { font-size:20px; }
+.motion-preview-log p,.motion-preview-log li { font-size:13px; color:#aab8ca; }
+.motion-preview-log li { line-height:1.7; }
+.motion-preview-below { margin-top:110vh; min-height:100vh; padding:40px 0; }
+@media(max-width:600px) { .motion-preview { padding:16px; } .motion-preview-panels { grid-template-columns:1fr; } .motion-preview-panels > div:first-child,.motion-preview-panels > div:last-child { display:none; } .motion-preview-room { min-height:380px; } }

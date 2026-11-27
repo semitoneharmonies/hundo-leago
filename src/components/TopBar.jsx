@@ -33,6 +33,7 @@ import { visibleLeaguesQuery } from "../features/leagues/leagueQueries.js";
 import { notificationsQuery } from "../features/notifications/notificationQueries.js";
 import { freeAgentDraftNavigationQuery } from "../features/freeAgentDraft/freeAgentDraftQueries.js";
 import { useSession } from "../features/session/sessionContext.js";
+import { adminAnalyticsQuery } from "../features/analytics/analyticsQueries.js";
 import {
   hasCommissionerAuthority,
   leagueAuthorityLabel,
@@ -65,6 +66,7 @@ function pageLabel(pathname) {
   if (pathname === routePaths.leagues) return "Your leagues";
   if (pathname === routePaths.notifications) return "Notifications";
   if (pathname === routePaths.account) return "Account settings";
+  if (pathname === routePaths.adminAnalytics) return "Site analytics";
   if (/\/players\/[^/]+$/.test(pathname)) return "Player detail";
   if (/\/trades\/[^/]+$/.test(pathname)) return "Trade detail";
   if (/\/drafts(?:\/|$)/.test(pathname)) return "Drafts";
@@ -163,6 +165,14 @@ function TopBar({ freezeBanner }) {
     enabled: session.status === "authenticated",
   });
   const leagues = leaguesQuery.data || [];
+  const knownAdministrator = leagues.some((league) =>
+    league.membership.effectiveAuthority === "platform_administrator"
+  );
+  const analyticsAccess = useQuery({
+    ...adminAnalyticsQuery(session.httpClient),
+    enabled: session.status === "authenticated" && accountOpen && !knownAdministrator,
+  });
+  const showAnalytics = knownAdministrator || analyticsAccess.isSuccess;
   const routeLeagueId = leagueIdFromPathname(location.pathname);
   const preferredLeagueId = readLeaguePreference();
   const currentLeague = routeLeagueId
@@ -526,6 +536,11 @@ function TopBar({ freezeBanner }) {
                         </small>
                       </div>
                     </div>
+                    {showAnalytics && (
+                      <Link to={routePaths.adminAnalytics} onClick={closeMenus}>
+                        <BarChart3 aria-hidden="true" /> Site analytics
+                      </Link>
+                    )}
                     <Link to={routePaths.account} onClick={closeMenus}>
                       Account and team settings
                     </Link>

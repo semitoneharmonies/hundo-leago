@@ -51,6 +51,8 @@ const AccountSettingsPage = lazyNamed(
   "AccountSettingsPage"
 );
 
+const AdminAnalyticsPage = lazyNamed(() => import("./features/analytics/AdminAnalyticsPage.jsx"), "AdminAnalyticsPage");
+
 const loadLeaguePages = () => import("./features/leagues/LeaguePages.jsx");
 const LeagueOverviewPage = lazyNamed(loadLeaguePages, "LeagueOverviewPage");
 const LeagueSelectionPage = lazyNamed(loadLeaguePages, "LeagueSelectionPage");
@@ -1844,6 +1846,7 @@ return (
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/reactivate" element={<ReactivateAccountPage />} />
         <Route path="/account" element={<AccountSettingsPage />} />
+        <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
         <Route path="/leagues" element={<LeagueSelectionPage />} />
         <Route path="/leagues/:leagueId" element={<LeagueOverviewPage />} />
         <Route path="/leagues/:leagueId/players" element={<PlayersPage />} />

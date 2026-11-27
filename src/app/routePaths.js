@@ -185,6 +185,7 @@ export const routePaths = Object.freeze({
   notifications: "/notifications",
   account: "/account",
   admin: "/admin",
+  adminAnalytics: "/admin/analytics",
   publicTeamRoster: (leagueId, teamId) =>
     `/public/leagues/${segment(leagueId, "League ID")}/teams/${segment(
       teamId,

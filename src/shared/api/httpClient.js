@@ -1,3 +1,4 @@
+import { aggregateRequestKind, reportAggregateMetric } from "../../features/analytics/aggregateMetrics.js";
 import { ApiError } from "./ApiError.js";
 import { RECOVERY_EPOCH_HEADER } from "./recoveryIntent.js";
 import {
@@ -222,5 +223,16 @@ export function createHttpClient({
     return `${origin}${path}`;
   }
 
-  return Object.freeze({ request, resourceUrl });
+  async function measuredRequest(path, options = {}) {
+    const kind = aggregateRequestKind(path, String(options.method || 'GET').toUpperCase());
+    try {
+      const result = await request(path, options);
+      if (kind) reportAggregateMetric(`action.${kind}.success`);
+      return result;
+    } catch (error) {
+      if (kind && error?.category !== 'aborted' && error?.category !== 'client') reportAggregateMetric(`action.${kind}.failure`);
+      throw error;
+    }
+  }
+  return Object.freeze({ request: measuredRequest, resourceUrl });
 }

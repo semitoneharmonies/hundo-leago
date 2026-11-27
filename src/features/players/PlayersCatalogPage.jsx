@@ -1,3 +1,4 @@
+import { reportAggregateMetric } from "../analytics/aggregateMetrics.js";
 import { injuryNameProps } from '../../shared/playerInjury.js';
 import { canonicalNhlTeam } from '../../shared/nhlTeams.js';
 import { PlayerName } from './PlayerName.jsx';
@@ -473,6 +474,7 @@ export function PlayersCatalogPage() {
     !autocompleteDismissed && autocompletePlayers.length > 0;
 
   function chooseAutocompletePlayer(player) {
+    reportAggregateMetric("feature.players_filter");
     setSearchInput(player.fullName);
     setQuery(player.fullName);
     setAutocompleteDismissed(true);
@@ -522,6 +524,7 @@ export function PlayersCatalogPage() {
   }
 
   function toggleCompare(player) {
+    reportAggregateMetric("feature.favourites");
     setFavouriteSelections((current) => {
       const next = new Map(current);
       const selected = new Map(next.get(favouriteScope));
@@ -570,10 +573,12 @@ export function PlayersCatalogPage() {
         as="section"
         className={`hl-player-search ${contractFilterStyles.panel}`}
         aria-label="Player filters"
+        onChange={(event) => { if (event.target.type !== "search") reportAggregateMetric("feature.players_filter"); }}
       >
         <form
           onSubmit={(event) => {
             event.preventDefault();
+            reportAggregateMetric("feature.players_filter");
             setQuery(searchInput.trim());
             setAutocompleteDismissed(true);
           }}

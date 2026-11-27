@@ -1,3 +1,4 @@
+import { reportAggregateMetric } from "../analytics/aggregateMetrics.js";
 import { RosterActions } from "./RosterActions.jsx";
 import { fantasyPointsPerGame } from "./rosterStatistics.js";
 import { useRosterActions } from "./useRosterActions.js";
@@ -1023,7 +1024,7 @@ export function TeamRosterPage({
         >
           <CircleDollarSign aria-hidden="true" /> Cap outlook
         </button>
-        <button type="button" className={view === "schedule" ? "is-active" : ""} aria-pressed={view === "schedule"} onClick={() => setView("schedule")}><CalendarDays aria-hidden="true" /> Schedule</button>
+        <button type="button" className={view === "schedule" ? "is-active" : ""} aria-pressed={view === "schedule"} onClick={() => { if (view !== "schedule") reportAggregateMetric("feature.roster_schedule"); setView("schedule"); }}><CalendarDays aria-hidden="true" /> Schedule</button>
       </div>
       {(mutation.isError || actionMutation.isError) && (
         <ErrorBlock

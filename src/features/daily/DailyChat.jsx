@@ -1,7 +1,9 @@
+import { reportAggregateMetric } from '../analytics/aggregateMetrics.js';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageCircle, Sparkles, ThumbsDown, ThumbsUp, X } from 'lucide-react';
 import { dailyRead, dailyWrite, roomPath } from './dailyApi.js';
+import { useDailyChatMotion } from './useDailyChatMotion.js';
 import './DailyChat.css';
 
 const noMessages = [];
@@ -15,6 +17,7 @@ export function DailyChat({ session, room }) {
   const [readCursors, setReadCursors] = useState({});
   const dialog = useRef(null), history = useRef(null), follow = useRef(true), request = useRef(null);
   const launcher = useRef(null);
+  useDailyChatMotion(launcher, open);
   const visible = useRef(true);
   const titleId = useId(), inputId = useId(), unreadId = useId();
   const client = useQueryClient();
@@ -38,6 +41,7 @@ export function DailyChat({ session, room }) {
   const send = useMutation({
     mutationFn: ({ value, key }) => dailyWrite(session, path, { text: value }, key),
     onSuccess: async (data, { value }) => {
+      reportAggregateMetric("feature.daily_chat_send");
       await client.cancelQueries({ queryKey: options.queryKey, exact: true });
       client.setQueryData(options.queryKey, old => old?.messages.length > data.messages.length ? old : data);
       setText(current => current === value ? '' : current);
@@ -95,8 +99,8 @@ export function DailyChat({ session, room }) {
   return <>
     <button ref={launcher} type="button" className="hd-chat-launch" aria-label={`Chat in ${room.name}`} aria-haspopup="dialog"
       aria-expanded={open} aria-describedby={unread ? unreadId : undefined}
-      title="Room chat" onClick={() => { follow.current = true; setOpen(true); }}>
-      <MessageCircle size={21} aria-hidden="true"/><Sparkles className="hd-chat-sparkle" size={12} aria-hidden="true"/>
+      title="Room chat" onClick={() => { reportAggregateMetric("feature.daily_chat_open"); follow.current = true; setOpen(true); }}>
+      <span className="hd-chat-face" aria-hidden="true"><MessageCircle size={21}/><Sparkles className="hd-chat-sparkle" size={12}/></span>
       {unread > 0 && <span className="hd-chat-unread" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
     </button>
     {unread > 0 && <span className="hd-chat-unread-description" id={unreadId}>{unread} unread {unread === 1 ? 'message' : 'messages'}</span>}
