@@ -6,13 +6,14 @@ import { dailyNow, formatTime } from "./dailyApi.js";
 import { DailyPlayerName } from "./DailyPlayerName.jsx";
 import { DailyUserStripes } from "./DailyUserStripes.jsx";
 import { DailyCapJersey } from "./DailyCapJersey.jsx";
+import { MINUTE_FLOOR_VERSION, nominationMinimum, playerMinimum } from "./dailyBidMinimum.js";
 import "./DailyAuctionBoard.css";
 
 const positionGroup = (player) => player.position === "D" ? "D" : "F";
 const searchName = (name) => name.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
 const slotNames = ["F1", "F2", "F3", "D1", "D2", "Flex 1", "Flex 2"];
 
-function BidEntry({ player, cap, minBid, pending, error, disabled, prefix, returnFocusRef, onBid, onCancel }) {
+function BidEntry({ player, cap, minBid, rising, pending, error, disabled, prefix, returnFocusRef, onBid, onCancel }) {
   const [amount, setAmount] = useState("");
   const [, tick] = useReducer(value => value + 1, 0);
   const dialogRef = useRef(null);
@@ -57,9 +58,14 @@ function BidEntry({ player, cap, minBid, pending, error, disabled, prefix, retur
           value={amount} min={minBid} max={cap} step="1" aria-label={"Sealed bid for " + player.name} aria-describedby={prefix + "-bid-help"}
           onChange={event => setAmount(event.target.value)} /></span>
       </label>
-      <p id={prefix + "-bid-help"}>Enter a whole-dollar amount from ${minBid} to ${cap}. Your one bid per skater is binding.</p>
+      <p id={prefix + "-bid-help"}>{cap >= minBid
+        ? `Enter a whole-dollar amount from $${minBid} to $${cap}.`
+        : `The minimum is $${minBid}; your available bid limit is $${cap}.`}{" "}Your one bid per skater is binding.</p>
+      {rising && <p className="hda-bid-minimum-note">{player.endsAt
+        ? `This player’s $${minBid} minimum is fixed until their auction ends.`
+        : "The minimum for a new player can rise before your bid reaches the server. Your entered amount will not change."}</p>}
       {expired && <p role="status">This auction has ended.</p>}
-      {disabled && !expired && <p role="status">Your available cap or roster spots have changed. Close this bid to review your roster.</p>}
+      {disabled && !expired && <p role="status">This bid no longer fits the current minimum, cap or roster limits. Close this bid to review your options.</p>}
       {error && <p className="hda-bid-error" role="alert">{error.message}</p>}
       <div><button className="hda-submit" disabled={!valid || disabled || expired || pending}>{pending ? "Placing bid…" : "Place bid"}</button>
         <button type="button" disabled={pending} onClick={onCancel}>Cancel</button></div>
@@ -67,7 +73,7 @@ function BidEntry({ player, cap, minBid, pending, error, disabled, prefix, retur
   </dialog>;
 }
 
-function PlayerPool({ room, prefix, bidButton }) {
+function PlayerPool({ room, prefix, bidButton, minBid }) {
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState("all");
   const [team, setTeam] = useState("all");
@@ -80,7 +86,8 @@ function PlayerPool({ room, prefix, bidButton }) {
     (!term || searchName(player.name).includes(term))
   );
   return <section className="hda-panel hda-pool" id={prefix + "-pool"} tabIndex="-1" aria-labelledby={prefix + "-pool-title"}>
-    <header className="hda-panel-head"><h2 id={prefix + "-pool-title"}>Player pool</h2></header>
+    <header className="hda-panel-head"><h2 id={prefix + "-pool-title"}>Player pool</h2>
+      <small className="hda-minimum" aria-label={"New player minimum $" + minBid}>Min ${minBid}</small></header>
     <div className="hda-filters">
       <label className="hda-search"><Search size={17} aria-hidden="true" /><input type="search"
         aria-label="Search the player pool" placeholder="Search players" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
@@ -137,6 +144,7 @@ function Auctions({ room, prefix, bidButton }) {
           <span className="hda-lot-matchup">{player.team} · {positionGroup(player)} vs {player.opponent}</span>
         </div>
         <div className="hda-lot-footer"><strong>{player.bidCount} {player.bidCount === 1 ? "bid" : "bids"}</strong>
+          <small className="hda-lot-minimum" title="Minimum fixed when this player’s auction opened">Min ${playerMinimum(room, player)}</small>
           {player.ownBid == null && bidButton(player, seconds === 0)}</div>
         {player.ownBid != null && <strong className="hda-own-bid">Your bid ${player.ownBid}</strong>}
       </li>;
@@ -201,7 +209,29 @@ export function AuctionBoard({ room, session, command }) {
   const [activePanel, setActivePanel] = useState(0);
   const boardRef = useRef(null);
   const bidTriggerRef = useRef(null);
-  const live = room.phase === "auction" && room.joined;
+  const [, tick] = useReducer(value => value + 1, 0);
+  const now = dailyNow();
+  const endsAt = Date.parse(room.auctionEndsAt);
+  const roomOpen = !Number.isFinite(endsAt) || now < endsAt;
+  const live = room.phase === "auction" && room.joined && roomOpen;
+  const minBid = nominationMinimum(room, now);
+  useEffect(() => {
+    if (room.phase !== "auction") return;
+    let shownMinimum = minBid;
+    let wasOpen = roomOpen;
+    const timer = setInterval(() => {
+      const currentTime = dailyNow();
+      const nextMinimum = nominationMinimum(room, currentTime);
+      const open = !Number.isFinite(endsAt) || currentTime < endsAt;
+      // Avoid refiltering hundreds of pool rows on every countdown tick.
+      if (nextMinimum !== shownMinimum || open !== wasOpen) {
+        shownMinimum = nextMinimum;
+        wasOpen = open;
+        tick();
+      }
+    }, 500);
+    return () => clearInterval(timer);
+  }, [room, minBid, roomOpen, endsAt]);
   const prefix = "hd-" + room.id;
   const selectedPlayer = [...room.availablePlayers, ...room.auctions].find(player => player.id === selection && player.ownBid == null);
   function limitFor(player) {
@@ -210,11 +240,15 @@ export function AuctionBoard({ room, session, command }) {
   function bidButton(player, expired = false) {
     if (!room.joined) return null;
     const limit = limitFor(player);
+    const minimum = playerMinimum(room, player, now);
+    const belowMinimum = limit.maxAmount < minimum;
     const limitId = prefix + "-limit-" + positionGroup(player);
     return <button type="button" className="hda-bid" aria-label={"Bid on " + player.name}
       aria-describedby={live && limit.reason && room.bidLimits ? limitId : undefined}
-      title={!live ? "Bidding opens when the auction starts." : limit.reason || "Maximum bid $" + limit.maxAmount}
-      disabled={!live || expired || command.isPending || limit.maxAmount < room.rules.minBid}
+      title={!live ? "Bidding is not open." : limit.reason || (belowMinimum
+        ? `Minimum $${minimum} exceeds your available bid limit of $${limit.maxAmount}.`
+        : `Minimum $${minimum} · Maximum bid $${limit.maxAmount}`)}
+      disabled={!live || expired || command.isPending || belowMinimum}
       onClick={event => { bidTriggerRef.current = event.currentTarget; command.reset(); setSelection(player.id); }}>Bid</button>;
   }
   return <div className="hda-auction">
@@ -233,14 +267,15 @@ export function AuctionBoard({ room, session, command }) {
       const panelWidth = board.children[1].offsetLeft - board.children[0].offsetLeft;
       setActivePanel(Math.round(board.scrollLeft / panelWidth));
     }}>
-      <PlayerPool room={room} prefix={prefix} bidButton={bidButton} />
+      <PlayerPool room={room} prefix={prefix} bidButton={bidButton} minBid={minBid} />
       <Auctions room={room} prefix={prefix} bidButton={bidButton} />
       <Roster room={room} viewer={session.user.id} />
     </div>
     {live && selectedPlayer && <BidEntry key={selectedPlayer.id} player={selectedPlayer} prefix={prefix}
+      rising={room.biddingVersion === MINUTE_FLOOR_VERSION}
       returnFocusRef={bidTriggerRef}
-      cap={limitFor(selectedPlayer).maxAmount} minBid={room.rules.minBid} pending={command.isPending} error={command.error}
-      disabled={limitFor(selectedPlayer).maxAmount < room.rules.minBid}
+      cap={limitFor(selectedPlayer).maxAmount} minBid={playerMinimum(room, selectedPlayer, now)} pending={command.isPending} error={command.error}
+      disabled={limitFor(selectedPlayer).maxAmount < playerMinimum(room, selectedPlayer, now)}
       onCancel={() => { setSelection(null); command.reset(); }}
       onBid={(playerId, amount) => command.mutate({ action: "bids", body: { playerId, amount } },
         { onSuccess: () => setSelection(null) })} />}

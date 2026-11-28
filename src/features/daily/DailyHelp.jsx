@@ -22,8 +22,10 @@ export function DailyHelp() {
           <p>Your seven spots are <strong>3 forwards, 2 defencemen and 2 flex</strong>. Either position can fill a flex spot. The player pool shows who’s playing and their opponent.</p>
           <h3>Name your price</h3>
           <p>Hit Bid to put a player on the auction floor or join an auction already running. Bids are sealed: you can see how many bids there are, but only your own amount. You get one binding bid per player, so make it count. The highest bid wins when that player’s timer runs out.</p>
+          <p>New rooms start with a $1 minimum for new players. It rises by $1 each minute after the room’s auction opens: $2 at 1:00, $3 at 2:00, and so on. A player keeps the minimum from when their own auction opened. Put McDavid up late in the first minute for $1 and someone can still bid $2 on him in the third minute. The minimum shown beside each auction stays fixed. Existing rooms keep their original bidding rules.</p>
           <h3>Spend smart</h3>
           <p>A signing comes out of your budget. You can bid on several players at once; Daily reserves enough money and roster space in case you win them all. That keeps every bid within your budget and position limits.</p>
+          <p>Leave yourself room to finish. Daily reserves only $1 for each other empty spot, so a legal early bid can leave too little cap for later minimums. That reserve does not guarantee you can fill all seven spots.</p>
           <p>With the cap savings bonus enabled, a bargain can pay twice: once on the ice, then through your cap bonus. Spend $60 and save $40 for a 10% boost. If your players earn 30 FP, your total becomes 33 FP. Every dollar counts; there are no spending brackets.</p>
           <h3>Watch the clock</h3>
           <p>The room creator picks the start time. Auctions last up to 30 minutes and finish by the first puck drop; they can end early when everyone’s roster is full. Room members get a reminder 10 minutes before the start. Once the auction closes, your lineup is locked. Any empty spots earn zero.</p>

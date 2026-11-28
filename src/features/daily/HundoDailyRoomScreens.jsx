@@ -165,6 +165,7 @@ export function DailyCreateScreen({ options = [], initialDate, today, practice =
           <div><dt>Rosters lock</dt><dd>{practice ? "In 30 minutes" : endsAt ? auctionTimeLabel(endsAt) : "30 minutes after opening"}</dd></div>
           {!practice && <div><dt>First puck drop</dt><dd>{auctionTimeLabel(slate.firstGameAt)}</dd></div>}</dl>}
         <p id={fieldId + "-schedule"} className="hds-preview-note">{schedule}</p>
+        <p className="hds-preview-note"><strong>Rising minimum</strong> · New players start at $1 in the first minute, then $1 more each minute. Each player keeps the minimum from when their auction opened. Save enough cap for later picks.</p>
         <p className="hds-preview-note"><strong>Cap savings bonus · {capSavingsBonus ? "On" : "Off"}</strong> · {capSavingsBonus
           ? "Every $1 unspent adds 0.25% to positive team FP. A $60 roster gets a 10% boost."
           : "Team score uses hockey FP only. Unspent cap adds no bonus."}</p>

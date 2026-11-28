@@ -9,6 +9,7 @@ import { useDailyRoomAudio } from "./dailyAudioContext.js";
 import { DailyChat } from "./DailyChat.jsx";
 import { useDailyOpeningRefresh } from "./useDailyOpeningRefresh.js";
 import { DailySlateGames } from "./DailySlateGames.jsx";
+import { DailyAuctionOpeningBanner } from "./DailyAuctionOpeningBanner.jsx";
 
 function RoomClock({ room }) {
   const waiting = room.phase === "waiting";
@@ -88,9 +89,7 @@ export function DailyRoom({ session, roomId, primary = false, outlineColour }) {
     {canJoin && <button className="hd-action hd-primary hd-room-join" disabled={command.isPending}
       onClick={() => command.mutate({ action: "join" })}>Join room</button>}
     {bidding ? <>
-      <p className="hd-note hd-room-footnote">{room.capBonusRatePercent > 0
-        ? `Cap bonus: ${room.capBonusRatePercent}% extra positive team FP per $1 unspent.`
-        : "Cap bonus off · Team score uses hockey FP only."}</p>
+      <DailyAuctionOpeningBanner room={room} viewerId={session.user.id}/>
       {room.phase === "waiting" && <section className="hd-waiting" aria-label="Auction schedule">
         <div><h2>{formatDay(room.firstGameAt)}</h2>
           <p>Auction opens <strong>{formatDay(room.auctionStartsAt)} · {formatTime(room.auctionStartsAt)}</strong> · Rosters lock <strong>{formatDay(room.auctionEndsAt ?? room.firstGameAt)} · {formatTime(room.auctionEndsAt ?? room.firstGameAt)}</strong> · Puck drop <strong>{formatDay(room.firstGameAt)} · {formatTime(room.firstGameAt)}</strong></p></div>
