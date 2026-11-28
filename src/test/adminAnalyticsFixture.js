@@ -1,7 +1,9 @@
+import { ANALYTICS_PAGE_CATALOG } from "../features/analytics/analyticsPageCatalog.js";
 import { ANALYTICS_METRIC_NAMES } from "../features/analytics/analyticsContracts.js";
+import { calendarCoverage, calendarPeriod, shiftAnalyticsDate } from "../features/analytics/analyticsPeriods.js";
 
-export function adminAnalyticsFixture({ days = 28, coverage = "full", startedOn = "2026-08-01", expandedCoverage = coverage, expandedStartedOn = startedOn, sourcesUnavailable = false } = {}) {
-  const end = Date.parse("2026-11-27T00:00:00Z");
+export function adminAnalyticsFixture({ endDate = "2026-11-27", days = 28, coverage = "full", startedOn = "2026-08-01", expandedCoverage = coverage, expandedStartedOn = startedOn, sourcesUnavailable = false } = {}) {
+  const end = Date.parse(endDate + "T00:00:00Z");
   const date = (offset) => new Date(end + offset * 86_400_000).toISOString().slice(0, 10);
   const daily = Array.from({ length: days }, (_, index) => ({
     date: date(index - days + 1),
@@ -82,4 +84,54 @@ export function adminAnalyticsFixture({ days = 28, coverage = "full", startedOn 
     peakUsage: { status: timingStatus, minimumMeasuredDays: 14, minimumPageViews: 20, suppressionThreshold: 5 },
     operations, releases: expandedCoverage === "not_started" ? [] : [{ date: date(-2), buildId: "hundo-analytics-example-build" }],
   };
+}
+export function makeCalendarAnalytics(kind, value, today = "2026-11-27", {
+  startedOn = "2026-11-27", expandedStartedOn = startedOn, sourcesUnavailable = false,
+} = {}) {
+  const period = calendarPeriod(kind, value, today);
+  const retainedFrom = shiftAnalyticsDate(today, -364);
+  const primary = calendarCoverage(startedOn, retainedFrom, period);
+  const expanded = calendarCoverage(expandedStartedOn, retainedFrom, period);
+  const data = adminAnalyticsFixture({
+    days: period.days, endDate: period.endDate, coverage: primary.coverage,
+    startedOn: primary.availableFrom, expandedCoverage: expanded.coverage,
+    expandedStartedOn: expanded.availableFrom, sourcesUnavailable,
+  });
+  data.period = period;
+  data.measurement = {
+    startedOn, coverage: primary.coverage, retentionDays: 365,
+    expandedStartedOn, expandedCoverage: expanded.coverage, retainedFrom,
+    availableFrom: primary.availableFrom, expandedAvailableFrom: expanded.availableFrom,
+  };
+  if (primary.availableFrom === null || primary.availableFrom > period.previousEndDate) {
+    data.previousTotals = { pageViews: 0, activeSeconds: 0 };
+  }
+  if (expanded.availableFrom === null || expanded.availableFrom > period.previousEndDate) {
+    data.metrics.forEach((metric) => { metric.previousCount = 0; });
+  }
+  data.releases = data.releases.filter((row) => expanded.availableFrom !== null &&
+    row.date >= expanded.availableFrom && row.date >= period.startDate && row.date <= period.endDate);
+  if (data.operations.freshness.status === "available") {
+    data.operations.freshness.statistics.lastSuccessAtMs = Date.parse(today) + 12 * 3_600_000;
+    data.operations.freshness.injuries.lastSuccessAtMs = Date.parse(today) + 9 * 3_600_000;
+  }
+  return data;
+}
+
+export function withPageDetail(data, { startedOn = "2026-11-27" } = {}) {
+  const retainedFrom = shiftAnalyticsDate(data.period.today || data.period.endDate, -364);
+  const coverage = calendarCoverage(startedOn, retainedFrom, data.period);
+  data.pageDetail = {
+    startedOn, availableFrom: coverage.availableFrom, coverage: coverage.coverage,
+    rows: ANALYTICS_PAGE_CATALOG.map(({product, category}) => ({
+      product, category, pageViews: 0, activeSeconds: 0,
+      ...data.pages.find(row => row.product === product && row.category === category),
+    })),
+    dailyProducts: data.daily.map(day => ({ date: day.date, products: [
+      {product:"leago",pageViews:day.pageViews * .6,activeSeconds:day.activeSeconds * .6},
+      {product:"daily",pageViews:day.pageViews * .3,activeSeconds:day.activeSeconds * .3},
+      {product:"shared",pageViews:day.pageViews * .1,activeSeconds:day.activeSeconds * .1},
+    ]})),
+  };
+  return data;
 }

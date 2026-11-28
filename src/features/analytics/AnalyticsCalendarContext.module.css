@@ -1,0 +1,26 @@
+.weeks { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.week { min-width:0; background:#102036; border:1px solid #314a69; border-radius:.65rem; padding:1.1rem; align-self:start; }
+.heading { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.35rem .75rem; align-items:baseline; margin-bottom:1.1rem; }
+.heading h3 { margin:0; font-size:1rem; color:#edf5ff; }
+.heading > span { color:#a7bedb; font-size:.75rem; }
+.metrics { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.metrics > div { display:flex; flex-direction:column; gap:.3rem; }
+.metrics span { color:#b5cbe4; font-size:.78rem; }
+.metrics strong { color:#fff; font-size:1.4rem; font-variant-numeric:tabular-nums; }
+.metrics small,.unknown { color:#eac38d; font-size:.75rem; }
+.deadlines { margin-top:1rem; padding-top:.85rem; border-top:1px solid #2b425f; }
+.deadlines h4 { color:#c6d9ef; margin:0 0 .65rem; font-size:.78rem; }
+.deadlines p { color:#9db3cf; font-size:.8rem; margin:.3rem 0 .6rem; }
+.deadlines ul { list-style:none; padding:0; margin:0; display:grid; gap:.45rem; }
+.deadlines li { display:grid; grid-template-columns:minmax(65px,auto) 1fr auto; align-items:center; gap:.6rem; color:#bfd3ec; font-size:.78rem; padding:.45rem .6rem; background:#152a43; border-radius:.3rem; }
+.deadlineType { color:#daeaff; font-weight:600; }
+.deadlines time { text-align:right; }
+.deadlines b { color:#ffc38f; font-variant-numeric:tabular-nums; }
+.details { margin-top:.95rem; color:#afcef3; font-size:.78rem; }
+.details summary { cursor:pointer; padding:.4rem 0; }
+.details summary:focus-visible { outline:2px solid #ffad66; outline-offset:3px; }
+.details table { width:100%; border-collapse:collapse; margin-top:.6rem; font-size:.75rem; }
+.details th,.details td { text-align:right; padding:.55rem .35rem; border-bottom:1px solid #2b425f; color:#c1d4eb; }
+.details th:first-child { text-align:left; white-space:nowrap; }
+.details thead th { color:#9cb6d7; font-weight:500; }
+@media(max-width:800px) { .weeks { grid-template-columns:1fr; } }

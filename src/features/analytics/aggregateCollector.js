@@ -1,51 +1,47 @@
 import { AGGREGATE_METRICS } from './aggregateMetricNames.js';
+import { ANALYTICS_PAGE_CATALOG } from './analyticsPageCatalog.js';
 const allowedMetrics = new Set(AGGREGATE_METRICS);
-// Only these fixed categories leave the browser. Never transmit a URL or route ID.
+const allowedPages = new Set(ANALYTICS_PAGE_CATALOG.map(({ product, category }) => product + "/" + category));
+// Only fixed page types leave the browser. Never transmit a URL or route identifier.
 export function analyticsCategory(pathname) {
   if (typeof pathname !== "string" || /[?#]/.test(pathname)) return null;
+  const normalized = pathname.replace(/\/$/, "") || "/";
   const exact = {
-    "/": ["shared", "home"],
-    "/leagues": ["shared", "leagues"],
-    "/account": ["shared", "account"],
-    "/notifications": ["shared", "notifications"],
-    "/install": ["shared", "install"],
-    "/games/tip-jar": ["shared", "games"],
-    "/games/mr-boni": ["shared", "games"],
-    "/daily": ["daily", "lobby"],
-    "/daily/history": ["daily", "history"],
-    "/daily/profile": ["daily", "profile"],
-    "/daily/notifications": ["daily", "notifications"],
-    "/daily/create": ["daily", "create"],
+    "/": ["shared", "home"], "/leagues": ["shared", "leagues"],
+    "/account": ["shared", "account"], "/notifications": ["shared", "notifications"],
+    "/install": ["shared", "install"], "/games/tip-jar": ["shared", "tip_jar"],
+    "/games/mr-boni": ["shared", "mr_boni"], "/daily": ["daily", "lobby"],
+    "/daily/history": ["daily", "history"], "/daily/profile": ["daily", "profile"],
+    "/daily/notifications": ["daily", "notifications"], "/daily/create": ["daily", "create"],
     "/daily/practice": ["daily", "practice"],
   };
-  const pair = exact[pathname.replace(/\/$/, "") || "/"];
+  const pair = exact[normalized];
   if (pair) return { product: pair[0], category: pair[1] };
-  if (/^\/daily\/rooms\/[^/]+\/?$/.test(pathname)) {
-    return { product: "daily", category: "room" };
-  }
-  if (/^\/public\/leagues\/[^/]+\/teams\/[^/]+\/roster\/?$/.test(pathname)) {
-    return { product: "leago", category: "rosters" };
-  }
-  const league = /^\/leagues\/[^/]+(?:\/(.*))?$/.exec(pathname);
+  if (/^\/daily\/rooms\/[^/]+$/.test(normalized)) return { product: "daily", category: "room" };
+  if (/^\/public\/leagues\/[^/]+\/teams\/[^/]+\/roster$/.test(normalized)) return { product: "leago", category: "public_roster" };
+  const league = /^\/leagues\/[^/]+(?:\/(.*))?$/.exec(normalized);
   if (!league) return null;
-  const rest = (league[1] || "").replace(/\/$/, "");
-  if (!rest) return { product: "leago", category: "dashboard" };
-  if (/^teams\/[^/]+\/roster$/.test(rest)) return { product: "leago", category: "rosters" };
+  const rest = league[1] || "";
+  const leagueExact = {
+    "": "dashboard", teams: "teams", players: "players_list", auctions: "auctions_list", trades: "trades_list",
+    matchups: "matchups", standings: "standings", activity: "activity", drafts: "drafts_free_agent",
+    "drafts/free-agent": "drafts_free_agent", "drafts/entry": "drafts_entry",
+    "free-agent-draft": "draft_current", commissioner: "commissioner_overview",
+  };
+  if (Object.hasOwn(leagueExact, rest)) return { product: "leago", category: leagueExact[rest] };
+  if (rest === "mr-boni" || rest === "tip-jar") return { product: "shared", category: rest === "mr-boni" ? "mr_boni" : "tip_jar" };
+  const section = /^commissioner\/(calendar|scoring|auctions|rosters|fad|communications|readiness|history|help|recovery|pause|season|export)$/.exec(rest);
+  if (section) return { product: "leago", category: "commissioner_" + section[1] };
   const patterns = [
-    ["teams", /^teams$/],
-    ["players", /^players(?:\/[^/]+)?$/],
-    ["auctions", /^auctions(?:\/[^/]+)?$/],
-    ["trades", /^trades(?:\/[^/]+)?$/],
-    ["drafts", /^(?:drafts|free-agent-draft)(?:\/[^/]+)*$/],
-    ["matchups", /^matchups$/],
-    ["standings", /^standings$/],
-    ["activity", /^activity$/],
-    ["commissioner", /^commissioner(?:\/[^/]+)?$/],
+    ["team_roster", /^teams\/[^/]+\/roster$/],
+    ["player_detail", /^players\/[^/]+$/], ["auction_detail", /^auctions\/[^/]+$/], ["trade_detail", /^trades\/[^/]+$/],
+    ["draft_card", /^(?:drafts\/free-agent|free-agent-draft)\/[^/]+\/cards\/[^/]+$/],
+    ["draft_allocation_results", /^drafts\/free-agent\/[^/]+\/results$/],
+    ["draft_results", /^free-agent-draft\/[^/]+\/results$/],
+    ["draft_room", /^free-agent-draft\/[^/]+$/],
   ];
   const match = patterns.find(([, pattern]) => pattern.test(rest));
-  if (match) return { product: "leago", category: match[0] };
-  if (/^(?:mr-boni|tip-jar)$/.test(rest)) return { product: "shared", category: "games" };
-  return null;
+  return match ? { product: "leago", category: match[0] } : null;
 }
 
 export function analyticsAllowed(navigatorObject = globalThis.navigator) {
@@ -59,6 +55,7 @@ export function createAggregateSender(apiOrigin, fetchImpl = globalThis.fetch) {
     if (!analyticsAllowed()) return;
     const { product, category, pageViews, activeSeconds, metric } = input;
     if (metric !== undefined && (!allowedMetrics.has(metric) || input.value !== 1)) return;
+    if (metric === undefined && !allowedPages.has(product + "/" + category)) return;
     const body = metric !== undefined ? { metric, value: 1 } : { product, category, pageViews, activeSeconds };
     // No auth client, cookies, referrer, request IDs, retries, or persistent queue.
     try {

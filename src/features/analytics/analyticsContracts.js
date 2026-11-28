@@ -1,4 +1,6 @@
+import { ANALYTICS_PAGE_CATALOG } from "./analyticsPageCatalog.js";
 import { ResponseContractError } from "../../shared/api/responseContracts.js";
+import { availableUsageStart, calendarCoverage, calendarPeriod, normalizeAnalyticsSelection, shiftAnalyticsDate } from "./analyticsPeriods.js";
 
 export const ANALYTICS_PRODUCTS = Object.freeze({
   leago: "Hundo Leago",
@@ -31,22 +33,55 @@ function totals(value, extraKeys = []) {
   count(value.pageViews);
   count(value.activeSeconds);
 }
-export function validateAdminAnalytics(data, expectedDays) {
-  record(data, ["code", "timeZone", "period", "measurement", "totals", "previousTotals", "products", "pages", "daily", "accounts", "metrics", "timeBlocks", "peakUsage", "operations", "releases"]);
+export function validateAdminAnalytics(data, expectedSelection, expectedDetail) {
+  const detailed = Object.hasOwn(data || {}, "pageDetail");
+  if (expectedDetail !== undefined) check(detailed === expectedDetail, "Unexpected analytics detail.");
+  record(data, ["code", "timeZone", "period", "measurement", "totals", "previousTotals", "products", "pages", "daily", "accounts", "metrics", "timeBlocks", "peakUsage", "operations", "releases", ...(detailed ? ["pageDetail"] : [])]);
   check(data.code === "ADMIN_ANALYTICS_FOUND", "Invalid analytics response.");
   check(data.timeZone === "Etc/GMT+8", "Invalid analytics time zone.");
-  record(data.period, ["days", "startDate", "endDate", "previousStartDate", "previousEndDate"]);
-  check([7, 28, 90].includes(data.period.days) && (expectedDays === undefined || data.period.days === expectedDays), "Unexpected analytics period.");
+  const calendar = data.period?.kind !== undefined;
+  const periodKeys = ["days", "startDate", "endDate", "previousStartDate", "previousEndDate"];
+  record(data.period, calendar ? [...periodKeys, "kind", "value", "calendarEndDate", "today"] : periodKeys);
   for (const field of ["startDate", "endDate", "previousStartDate", "previousEndDate"]) date(data.period[field]);
   const dayMs = 86_400_000;
-  check(Date.parse(data.period.endDate) - Date.parse(data.period.startDate) === (data.period.days - 1) * dayMs &&
-    Date.parse(data.period.startDate) - Date.parse(data.period.previousStartDate) === data.period.days * dayMs &&
-    Date.parse(data.period.startDate) - Date.parse(data.period.previousEndDate) === dayMs, "Inconsistent analytics period.");
-  record(data.measurement, ["startedOn", "coverage", "retentionDays", "expandedStartedOn", "expandedCoverage"]);
+  if (calendar) {
+    date(data.period.calendarEndDate); date(data.period.today);
+    let expected;
+    try { expected = calendarPeriod(data.period.kind, data.period.value, data.period.today); }
+    catch { check(false, "Invalid calendar analytics period."); }
+    check(Object.entries(expected).every(([key, value]) => data.period[key] === value), "Inconsistent calendar analytics period.");
+  } else {
+    check([7, 28, 90].includes(data.period.days), "Unexpected analytics period.");
+    check(Date.parse(data.period.endDate) - Date.parse(data.period.startDate) === (data.period.days - 1) * dayMs &&
+      Date.parse(data.period.startDate) - Date.parse(data.period.previousStartDate) === data.period.days * dayMs &&
+      Date.parse(data.period.startDate) - Date.parse(data.period.previousEndDate) === dayMs, "Inconsistent analytics period.");
+  }
+  if (expectedSelection !== undefined) {
+    let selected;
+    try { selected = normalizeAnalyticsSelection(expectedSelection); }
+    catch { check(false, "Unexpected analytics period."); }
+    check(selected.kind === "days" ? !calendar && selected.days === data.period.days :
+      calendar && selected.kind === data.period.kind && selected.value === data.period.value, "Unexpected analytics period.");
+  }
+  const measurementKeys = ["startedOn", "coverage", "retentionDays", "expandedStartedOn", "expandedCoverage"];
+  record(data.measurement, calendar ? [...measurementKeys, "retainedFrom", "availableFrom", "expandedAvailableFrom"] : measurementKeys);
   check(["not_started", "partial", "full"].includes(data.measurement.coverage), "Invalid analytics coverage.");
   check(data.measurement.retentionDays === 365, "Invalid analytics retention.");
   if (data.measurement.startedOn !== null) date(data.measurement.startedOn);
-  check((data.measurement.startedOn === null) === (data.measurement.coverage === "not_started"), "Inconsistent analytics coverage.");
+  if (calendar) {
+    date(data.measurement.retainedFrom);
+    check(data.measurement.retainedFrom === shiftAnalyticsDate(data.period.today, -364), "Invalid retained analytics boundary.");
+    for (const [startKey, availableKey, coverageKey] of [
+      ["startedOn", "availableFrom", "coverage"], ["expandedStartedOn", "expandedAvailableFrom", "expandedCoverage"],
+    ]) {
+      const startedOn = data.measurement[startKey];
+      if (startedOn !== null) { date(startedOn); check(startedOn <= data.period.today, "Invalid measurement start."); }
+      const expected = calendarCoverage(startedOn, data.measurement.retainedFrom, data.period);
+      check(data.measurement[availableKey] === expected.availableFrom && data.measurement[coverageKey] === expected.coverage, "Inconsistent calendar measurement coverage.");
+    }
+  } else {
+    check((data.measurement.startedOn === null) === (data.measurement.coverage === "not_started"), "Inconsistent analytics coverage.");
+  }
   totals(data.totals);
   totals(data.previousTotals);
   check(Array.isArray(data.products) && data.products.length === 3, "Invalid analytics products.");
@@ -70,6 +105,9 @@ export function validateAdminAnalytics(data, expectedDays) {
     totals(item, ["date"]);
     date(item.date);
     check(Date.parse(item.date) === Date.parse(data.period.startDate) + index * dayMs, "Incomplete daily analytics.");
+    if (calendar && (availableUsageStart(data) === null || item.date < availableUsageStart(data))) {
+      check(item.pageViews === 0 && item.activeSeconds === 0, "Unmeasured dates must not contain usage totals.");
+    }
   });
   for (const field of ["pageViews", "activeSeconds"]) {
     for (const rows of [data.products, data.pages, data.daily]) {
@@ -81,6 +119,7 @@ export function validateAdminAnalytics(data, expectedDays) {
   count(data.accounts.createdInPeriod);
   check(data.accounts.createdInPeriod <= data.accounts.total, "Inconsistent account totals.");
   validateExpandedAnalytics(data);
+  if (detailed) validatePageDetail(data);
   return true;
 }
 export const ANALYTICS_METRIC_NAMES = Object.freeze([
@@ -106,7 +145,7 @@ function validateExpandedAnalytics(data) {
   const measurement = data.measurement;
   check(["not_started", "partial", "full"].includes(measurement.expandedCoverage), "Invalid additional measurement coverage.");
   if (measurement.expandedStartedOn !== null) date(measurement.expandedStartedOn);
-  check((measurement.expandedStartedOn === null) === (measurement.expandedCoverage === "not_started"), "Inconsistent additional measurement coverage.");
+  if (!data.period.kind) check((measurement.expandedStartedOn === null) === (measurement.expandedCoverage === "not_started"), "Inconsistent additional measurement coverage.");
   list(data.metrics, ANALYTICS_METRIC_NAMES.length);
   check(data.metrics.length === ANALYTICS_METRIC_NAMES.length, "Incomplete aggregate metrics.");
   const seen = new Set();
@@ -114,6 +153,7 @@ function validateExpandedAnalytics(data) {
     record(row, ["metric", "count", "previousCount"]);
     check(ANALYTICS_METRIC_NAMES.includes(row.metric) && !seen.has(row.metric), "Unexpected aggregate metric.");
     count(row.count); count(row.previousCount); seen.add(row.metric);
+    if (data.period.kind && measurement.expandedCoverage === "not_started") check(row.count === 0, "Unmeasured periods must not contain browser metrics.");
   }
   record(data.peakUsage, ["status", "minimumMeasuredDays", "minimumPageViews", "suppressionThreshold"]);
   check(["not_measured", "insufficient_data", "available"].includes(data.peakUsage.status), "Invalid timing status.");
@@ -195,3 +235,41 @@ function validateExpandedAnalytics(data) {
   }
 }
 export function analyticsMetric(data, name) { return data.metrics.find((row) => row.metric === name)?.count || 0; }
+
+function validatePageDetail(data) {
+  const detail = data.pageDetail;
+  record(detail, ["startedOn", "availableFrom", "coverage", "rows", "dailyProducts"]);
+  const today = data.period.today || data.period.endDate;
+  if (detail.startedOn !== null) { date(detail.startedOn); check(detail.startedOn <= today, "Invalid page-detail measurement start."); }
+  const expected = calendarCoverage(detail.startedOn, shiftAnalyticsDate(today, -364), data.period);
+  check(detail.availableFrom === expected.availableFrom && detail.coverage === expected.coverage, "Inconsistent page-detail coverage.");
+  check(Array.isArray(detail.rows) && detail.rows.length === ANALYTICS_PAGE_CATALOG.length, "Incomplete page catalog.");
+  const seen = new Set();
+  for (const row of detail.rows) {
+    totals(row, ["product", "category"]);
+    const key = row.product + ":" + row.category;
+    const entry = ANALYTICS_PAGE_CATALOG.find(item => item.product === row.product && item.category === row.category);
+    check(entry && !seen.has(key), "Unexpected page type.");
+    seen.add(key);
+    if (entry.kind === "refined" && detail.coverage === "not_started") check(row.pageViews === 0 && row.activeSeconds === 0, "Unmeasured page types must not contain totals.");
+  }
+  check(Array.isArray(detail.dailyProducts) && detail.dailyProducts.length === data.daily.length, "Incomplete daily product totals.");
+  for (const [index, day] of detail.dailyProducts.entries()) {
+    record(day, ["date", "products"]);
+    check(day.date === data.daily[index].date && Array.isArray(day.products) && day.products.length === 3, "Invalid daily product totals.");
+    const products = new Set();
+    for (const product of day.products) {
+      totals(product, ["product"]);
+      check(Object.hasOwn(ANALYTICS_PRODUCTS, product.product) && !products.has(product.product), "Invalid daily product.");
+      products.add(product.product);
+    }
+    for (const field of ["pageViews", "activeSeconds"]) check(day.products.reduce((sum, row) => sum + row[field], 0) === data.daily[index][field], "Inconsistent daily product sum.");
+  }
+  for (const field of ["pageViews", "activeSeconds"]) {
+    check(detail.rows.reduce((sum, row) => sum + row[field], 0) === data.totals[field], "Inconsistent page-detail totals.");
+    for (const product of data.products) {
+      check(detail.dailyProducts.reduce((sum, row) => sum + row.products.find(item => item.product === product.product)[field], 0) === product[field], "Inconsistent product history.");
+      check(detail.rows.filter(row => row.product === product.product).reduce((sum, row) => sum + row[field], 0) === product[field], "Inconsistent page product sum.");
+    }
+  }
+}

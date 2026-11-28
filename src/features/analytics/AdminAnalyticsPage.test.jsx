@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { createQueryClient } from "../../shared/query/queryClient.js";
 import { SessionContext } from "../session/sessionContext.js";
-import { adminAnalyticsFixture } from "../../test/adminAnalyticsFixture.js";
+import { adminAnalyticsFixture, withPageDetail } from "../../test/adminAnalyticsFixture.js";
 import { AdminAnalyticsPage } from "./AdminAnalyticsPage.jsx";
 import { Freshness } from "./AnalyticsExpandedPanels.jsx";
 import { validateAdminAnalytics } from "./analyticsContracts.js";
@@ -16,7 +16,7 @@ function renderPage({ status = "authenticated", fixture = {}, failure = null, pe
     if (pending) return new Promise(() => {});
     if (failure) throw failure;
     const days = Number(new URL(path, "https://example.test").searchParams.get("days"));
-    const data = transform(adminAnalyticsFixture({ days, ...fixture }));
+    const data = withPageDetail(transform(adminAnalyticsFixture({ days, ...fixture })));
     options.validateData(data);
     return { data };
   });
@@ -36,8 +36,8 @@ describe("Admin analytics page", () => {
     expect(screen.getByRole("img", { name: /Daily page views from/ })).toBeInTheDocument();
     expect(screen.getByText(/not unique people or visits/)).toBeInTheDocument();
     expect(screen.queryByText("admin-fixture")).not.toBeInTheDocument();
-    expect(view.request).toHaveBeenCalledExactlyOnceWith("/api/v1/admin/analytics?days=28", expect.objectContaining({ authenticated: true, signal: expect.any(AbortSignal) }));
-    const query = view.queryClient.getQueryCache().find({ queryKey: ["admin", "analytics", 28] });
+    expect(view.request).toHaveBeenCalledExactlyOnceWith("/api/v1/admin/analytics?days=28&detail=pages", expect.objectContaining({ authenticated: true, signal: expect.any(AbortSignal) }));
+    const query = view.queryClient.getQueryCache().find({ queryKey: ["admin", "analytics", 28, "pages"] });
     expect(query.meta.private).toBe(true);
     expect(view.request.mock.calls[0][1].method).toBeUndefined();
   });
@@ -47,7 +47,7 @@ describe("Admin analytics page", () => {
     await screen.findByText("Registered accounts");
     await view.user.click(screen.getByRole("button", { name: "Last 7 days" }));
     await screen.findByText(/Created in the selected 7-day period/);
-    expect(view.request).toHaveBeenLastCalledWith("/api/v1/admin/analytics?days=7", expect.any(Object));
+    expect(view.request).toHaveBeenLastCalledWith("/api/v1/admin/analytics?days=7&detail=pages", expect.any(Object));
     await view.user.click(screen.getByText("View daily totals"));
     const daily = within(screen.getByRole("region", { name: "Daily analytics totals" }));
     expect(daily.getAllByRole("row")).toHaveLength(8);
@@ -59,7 +59,9 @@ describe("Admin analytics page", () => {
     renderPage({ fixture: { coverage: "not_started" } });
     expect(await screen.findByRole("heading", { name: "Activity measurement has not started" })).toBeInTheDocument();
     expect(screen.getByText("46")).toBeInTheDocument();
-    expect(screen.getAllByText("—")).toHaveLength(4);
+    for (const label of ["Page views", "Active minutes · estimated", "Minutes per page view", "Reported installations"]) {
+      expect(within(screen.getByText(label, { selector: "span" }).parentElement.parentElement).getByText("—")).toBeInTheDocument();
+    }
     expect(screen.queryByRole("heading", { name: "Daily page views" })).not.toBeInTheDocument();
   });
 
